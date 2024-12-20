@@ -12,7 +12,7 @@ const form = reactive({
   password: '',
   role: 'employee', // Default to 'Operator'
   address: '',
-  user_id: null,
+  device_user_id: null,
   is_active: true, // Default value for new users
 })
 
@@ -33,7 +33,7 @@ const saveUser = async () => {
     password: form.password,
     role: form.role,
     address: form.address,
-    user_id: form.user_id,
+    device_user_id: form.device_user_id,
     is_active: form.is_active,
   }
 
@@ -67,8 +67,8 @@ const saveUser = async () => {
           </div>
 
           <div class="">
-            <label class="">মেশিন আইডি</label>
-            <input v-model="form.user_id" type="number" class="w-full p-2 border rounded" />
+            <label class="">ডিভাইস ইউজার আইডি</label>
+            <input v-model="form.device_user_id" type="number" class="w-full p-2 border rounded" />
           </div>
 
           <div class="">

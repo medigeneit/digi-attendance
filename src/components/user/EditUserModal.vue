@@ -15,7 +15,7 @@ const form = reactive({
   email: '',
   role: '',
   address: '',
-  user_id: null,
+  device_user_id: null,
   is_active: true,
 })
 
@@ -31,7 +31,7 @@ watch(
     form.email = newUser.email || ''
     form.role = newUser.role || 'Operator'
     form.address = newUser.address || ''
-    form.user_id = newUser.user_id || null
+    form.device_user_id = newUser.device_user_id || null
     form.is_active = newUser.is_active ?? true
   },
   { immediate: true },
@@ -46,7 +46,7 @@ const updateUser = async () => {
     email: form.email,
     role: form.role,
     address: form.address,
-    user_id: form.user_id,
+    device_user_id: form.device_user_id,
     is_active: form.is_active,
   }
 
@@ -80,8 +80,8 @@ const updateUser = async () => {
           </div>
 
           <div class="">
-            <label class="">মেশিন আইডি</label>
-            <input v-model="form.user_id" type="number" class="w-full p-2 border rounded" />
+            <label class="">ডিভাইস ইউজার আইডি</label>
+            <input v-model="form.device_user_id" type="number" class="w-full p-2 border rounded" />
           </div>
 
           <div class="grid grid-cols-2 gap-4">

@@ -113,7 +113,7 @@ const filteredUsers = computed(() => {
             <td class="border border-gray-300 px-4 py-2">{{ index + 1 }}</td>
             <td class="border border-gray-300 px-4 py-2">{{ user.name }}</td>
             <td class="border border-gray-300 px-4 py-2">{{ user.role }}</td>
-            <td class="border border-gray-300 px-4 py-2">{{ user.user_id || 'নেই' }}</td>
+            <td class="border border-gray-300 px-4 py-2">{{ user.device_user_id || 'নেই' }}</td>
             <td class="border border-gray-300 px-4 py-2">{{ user.phone }}</td>
             <td class="border border-gray-300 px-4 py-2">{{ user.email || 'নেই' }}</td>
             <td class="border border-gray-300 px-4 py-2">
