@@ -7,7 +7,11 @@
     </RouterLink>
     <RouterLink :to="{ name: 'DeviceList' }" class="main-button">
       <i class="fas fa-cash-register text-3xl"></i>
-       Device List
+      Device List
+    </RouterLink>
+    <RouterLink :to="{ name: 'CompanyList' }" class="main-button">
+      <i class="fas fa-building text-3xl"></i>
+      Company List
     </RouterLink>
   </div>
 </template>
