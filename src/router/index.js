@@ -82,6 +82,12 @@ const router = createRouter({
           component: () => import('@/views/private-pages/CompanyList.vue'),
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
         },
+        {
+          path: '/settings/department-list',
+          name: 'DepartmentList',
+          component: () => import('@/views/private-pages/DepartmentList.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+        },
 
       ]
     }

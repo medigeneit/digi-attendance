@@ -138,19 +138,3 @@ const filteredUsers = computed(() => {
   </div>
 </template>
 
-<style>
-/* টেইলউইন্ড স্পিন লোডারের স্টাইল */
-.loader {
-  border-top-color: #3490dc;
-  animation: spin 1s ease-in-out infinite;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-</style>

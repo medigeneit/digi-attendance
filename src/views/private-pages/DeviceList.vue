@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useDeviceStore } from '@/stores/device'
 import { useToast } from 'vue-toastification'
 
-import DeviceModal from '@/components/device/DeviceModal.vue'
+import DeviceModal from '@/components/DeviceModal.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import DeleteModal from '@/components/common/DeleteModal.vue'
 

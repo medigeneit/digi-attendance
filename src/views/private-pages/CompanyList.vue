@@ -3,15 +3,15 @@ import { ref, onMounted } from 'vue';
 import { useCompanyStore } from '@/stores/company';
 import { useToast } from 'vue-toastification';
 
-import CompanyModal from '@/components/company/CompanyModal.vue';
+import CompanyModal from '@/components/CompanyModal.vue';
 import DeleteModal from '@/components/common/DeleteModal.vue';
 import LoaderView from '@/components/common/LoaderView.vue';
 
 const companyStore = useCompanyStore();
 const toast = useToast();
 
-const companies = companyStore.companies; // Reactive companies list from store
-const isLoading = companyStore.loading; // Loading state from store
+const companies = companyStore.companies;
+const isLoading = companyStore.loading; 
 
 const showCompanyModal = ref(false);
 const showDeleteModal = ref(false);
@@ -64,7 +64,7 @@ const handleDelete = async () => {
     return;
   }
   try {
-    await companyStore.deleteCompany(selectedCompany.value.id); 
+    await companyStore.deleteCompany(selectedCompany.value.id);
     toast.success('Company deleted successfully!');
   } catch (error) {
     toast.error('Failed to delete company!');
