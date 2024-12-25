@@ -48,14 +48,14 @@ const router = createRouter({
         {
           path: '/dashboard',
           name: 'Dashboard',
-          component: () => import('@/views/admin-pages/DashBoard.vue'),
+          component: () => import('@/views/private-pages/DashBoard.vue'),
           meta: { requiresAuth: true }
         },
 
         {
           path: '/attendance',
           name: 'AttendanceView',
-          component: () => import('@/views/admin-pages/AttendanceView.vue'),
+          component: () => import('@/views/private-pages/AttendanceView.vue'),
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
         },
         {
