@@ -6,6 +6,7 @@ import { useToast } from 'vue-toastification'
 import DesignationModal from '@/components/DesignationModal.vue'
 import DeleteModal from '@/components/common/DeleteModal.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
+import HeaderWithButtons from '@/components/common/HeaderWithButtons.vue'
 
 const designationStore = useDesignationStore()
 const toast = useToast()
@@ -91,10 +92,7 @@ onMounted(async () => {
 
 <template>
   <div class="my-container space-y-2">
-    <div class="flex justify-between items-center">
-      <h1 class="title-lg">Designation List</h1>
-      <button class="btn-2" @click="openAddModal">Add New</button>
-    </div>
+    <HeaderWithButtons title="Designation List" @add="openAddModal" />
 
     <div class="overflow-x-auto">
       <table class="min-w-full table-auto bg-white shadow-md rounded-lg overflow-hidden">

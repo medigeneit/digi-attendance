@@ -28,12 +28,10 @@ const goBack = () => {
       <span class="hidden md:flex">Back</span>
     </button>
 
-    <!-- Title -->
     <h1 class="title-md md:title-lg flex-wrap text-center">
       {{ title }}
     </h1>
 
-    <!-- Fixed Right Button (Add New) -->
     <button class="btn-2" @click="emit('add')">
       <span class="hidden md:flex">{{ rightButtonLabel }}</span>
       <i class="far fa-plus"></i>

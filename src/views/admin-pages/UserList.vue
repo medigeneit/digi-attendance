@@ -4,6 +4,7 @@ import { useUserStore } from '@/stores/user'
 import { useAuthStore } from '@/stores/auth'
 import EditUserModal from '@/components/user/EditUserModal.vue'
 import AddUserModal from '@/components/user/AddUserModal.vue'
+import HeaderWithButtons from '@/components/common/HeaderWithButtons.vue'
 
 const userStore = useUserStore()
 const authStore = useAuthStore()
@@ -12,14 +13,12 @@ const showAddModal = ref(false)
 const showEditModal = ref(false)
 const selectedUser = ref(null)
 const loading = ref(true)
-const syncing = ref(false) // নতুন লোডার স্টেট
 
 onMounted(async () => {
   await userStore.fetchUsers()
   loading.value = false
 })
 
-// Add Modal
 const openAddModal = () => {
   showAddModal.value = true
 }
@@ -27,7 +26,6 @@ const closeAddModal = () => {
   showAddModal.value = false
 }
 
-// Edit Modal
 const editUser = (user) => {
   selectedUser.value = user
   showEditModal.value = true
@@ -37,14 +35,6 @@ const closeEditModal = () => {
   selectedUser.value = null
 }
 
-// Sync Users
-const syncUsers = async () => {
-  syncing.value = true
-  await userStore.syncUsers() // Pinia Store থেকে অ্যাকশন কল
-  syncing.value = false
-}
-
-// Filter Users
 const filteredUsers = computed(() => {
   if (authStore.user && authStore.user.role === 'developer') {
     return userStore.users
@@ -54,44 +44,15 @@ const filteredUsers = computed(() => {
 </script>
 
 <template>
-  <div class="px-4 space-y-2">
-    <div class="flex items-center justify-between">
-      <h1 class="title-lg">ইউজার তালিকা</h1>
-      <div class="flex gap-2">
-        <button class="btn-2" @click="openAddModal">Add New</button>
-        <button class="btn-1 flex items-center" @click="syncUsers" :disabled="syncing">
-          <span v-if="!syncing">Sync Users</span>
-          <span v-else>
-            <svg
-              class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <circle
-                class="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                stroke-width="4"
-              ></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-            </svg>
-            Syncing...
-          </span>
-        </button>
-      </div>
-    </div>
+  <div class="my-container space-y-2">
+    <HeaderWithButtons title="Employee List" @add="openAddModal" />
 
-    <!-- স্পিন লোডার -->
     <div v-if="loading" class="flex items-center justify-center py-10">
       <div
         class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12"
       ></div>
     </div>
 
-    <!-- ইউজার তালিকা -->
     <div v-else>
       <table
         class="min-w-full table-auto border-collapse border border-gray-200 bg-white rounded-md"
@@ -137,4 +98,3 @@ const filteredUsers = computed(() => {
     <EditUserModal v-if="showEditModal" :user="selectedUser" @close="closeEditModal" class="z-50" />
   </div>
 </template>
-
