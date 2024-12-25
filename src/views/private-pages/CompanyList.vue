@@ -1,92 +1,92 @@
 <script setup>
-import { ref, onMounted } from 'vue';
-import { useCompanyStore } from '@/stores/company';
-import { useToast } from 'vue-toastification';
+import { ref, onMounted } from 'vue'
+import { useCompanyStore } from '@/stores/company'
+import { useToast } from 'vue-toastification'
 
-import CompanyModal from '@/components/CompanyModal.vue';
-import DeleteModal from '@/components/common/DeleteModal.vue';
-import LoaderView from '@/components/common/LoaderView.vue';
+import CompanyModal from '@/components/CompanyModal.vue'
+import DeleteModal from '@/components/common/DeleteModal.vue'
+import LoaderView from '@/components/common/LoaderView.vue'
 
-const companyStore = useCompanyStore();
-const toast = useToast();
+const companyStore = useCompanyStore()
+const toast = useToast()
 
-const companies = companyStore.companies;
-const isLoading = companyStore.loading; 
+const companies = companyStore.companies
+const isLoading = companyStore.loading
 
-const showCompanyModal = ref(false);
-const showDeleteModal = ref(false);
-const selectedCompany = ref(null);
+const showCompanyModal = ref(false)
+const showDeleteModal = ref(false)
+const selectedCompany = ref(null)
 
 const openAddModal = () => {
-  selectedCompany.value = null;
-  showCompanyModal.value = true;
-};
+  selectedCompany.value = null
+  showCompanyModal.value = true
+}
 
 const closeCompanyModal = () => {
-  showCompanyModal.value = false;
-};
+  showCompanyModal.value = false
+}
 
 const openEditModal = (company) => {
-  selectedCompany.value = company;
-  showCompanyModal.value = true;
-};
+  selectedCompany.value = company
+  showCompanyModal.value = true
+}
 
 const openDeleteModal = (company) => {
-  selectedCompany.value = company;
-  showDeleteModal.value = true;
-};
+  selectedCompany.value = company
+  showDeleteModal.value = true
+}
 
 const closeDeleteModal = () => {
-  showDeleteModal.value = false;
-};
+  showDeleteModal.value = false
+}
 
 const handleSave = async (company) => {
   try {
     if (company.id) {
-      await companyStore.updateCompany(company.id, company);
-      toast.success('Company updated successfully!');
+      await companyStore.updateCompany(company.id, company)
+      toast.success('Company updated successfully!')
     } else {
-      await companyStore.createCompany(company);
-      toast.success('Company added successfully!');
+      await companyStore.createCompany(company)
+      toast.success('Company added successfully!')
     }
   } catch (error) {
-    toast.error('Failed to save company!');
-    console.error('Error handling save:', error);
+    toast.error('Failed to save company!')
+    console.error('Error handling save:', error)
   } finally {
-    await fetchCompanies();
-    closeCompanyModal();
+    await fetchCompanies()
+    closeCompanyModal()
   }
-};
+}
 
 const handleDelete = async () => {
   if (!selectedCompany.value || !selectedCompany.value.id) {
-    toast.error('Invalid company selected for deletion!');
-    return;
+    toast.error('Invalid company selected for deletion!')
+    return
   }
   try {
-    await companyStore.deleteCompany(selectedCompany.value.id);
-    toast.success('Company deleted successfully!');
+    await companyStore.deleteCompany(selectedCompany.value.id)
+    toast.success('Company deleted successfully!')
   } catch (error) {
-    toast.error('Failed to delete company!');
-    console.error('Error deleting company:', error);
+    toast.error('Failed to delete company!')
+    console.error('Error deleting company:', error)
   } finally {
-    await fetchCompanies();
-    closeDeleteModal();
+    await fetchCompanies()
+    closeDeleteModal()
   }
-};
+}
 
 const fetchCompanies = async () => {
   try {
-    await companyStore.fetchCompanies();
+    await companyStore.fetchCompanies()
   } catch (error) {
-    toast.error('Failed to fetch companies!');
-    console.error('Error fetching companies:', error);
+    toast.error('Failed to fetch companies!')
+    console.error('Error fetching companies:', error)
   }
-};
+}
 
 onMounted(async () => {
-  await fetchCompanies();
-});
+  await fetchCompanies()
+})
 </script>
 
 <template>

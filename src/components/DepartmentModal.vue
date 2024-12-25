@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, reactive, onMounted } from 'vue'
+import { ref, watch, reactive } from 'vue'
 import { useCompanyStore } from '@/stores/company' // Import the company store
 
 const props = defineProps({
@@ -14,6 +14,7 @@ const companyStore = useCompanyStore()
 const companies = companyStore.companies;
 
 const isEditMode = ref(false)
+const isCompaniesFetched = ref(false) // Track if companies are fetched
 const departmentForm = reactive({
   id: null,
   company_id: '',
@@ -55,6 +56,15 @@ watch(
   { immediate: true, deep: true },
 )
 
+watch(
+  () => props.show,
+  async (isShown) => {
+    if (isShown && !isCompaniesFetched.value) {
+      await fetchCompanies() // Fetch companies when the modal is shown
+    }
+  },
+)
+
 const handleSubmit = () => {
   emit('save', { ...departmentForm }) // Emit the department form data to the parent
   resetForm() // Reset the form after submission
@@ -68,15 +78,12 @@ const closeModal = () => {
 
 const fetchCompanies = async () => {
   try {
-    await companyStore.fetchCompanies();
+    await companyStore.fetchCompanies()
+    isCompaniesFetched.value = true // Mark companies as fetched
   } catch (error) {
-    console.error('Failed to fetch companies:', error);
+    console.error('Failed to fetch companies:', error)
   }
-};
-
-onMounted(async () => {
-  await fetchCompanies();
-});
+}
 </script>
 
 <template>

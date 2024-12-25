@@ -10,15 +10,15 @@ import LoaderView from '@/components/common/LoaderView.vue'
 const departmentStore = useDepartmentStore()
 const toast = useToast()
 
-const departments = departmentStore.departments // Reactive departments list from store
-const isLoading = departmentStore.loading // Loading state from store
+const departments = departmentStore.departments
+const isLoading = departmentStore.loading
 
 const showDepartmentModal = ref(false)
 const showDeleteModal = ref(false)
 const selectedDepartment = ref(null)
 
 const openAddModal = () => {
-  selectedDepartment.value = null // Set null for new department
+  selectedDepartment.value = null 
   showDepartmentModal.value = true
 }
 
