@@ -48,44 +48,44 @@ const router = createRouter({
         {
           path: '/dashboard',
           name: 'Dashboard',
-          component: () => import('@/views/private-pages/DashBoard.vue'),
+          component: () => import('@/views/admin-pages/DashBoard.vue'),
           meta: { requiresAuth: true }
         },
 
         {
           path: '/attendance',
           name: 'AttendanceView',
-          component: () => import('@/views/private-pages/AttendanceView.vue'),
+          component: () => import('@/views/admin-pages/AttendanceView.vue'),
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
         },
         {
           path: '/settings',
           name: 'SettingsView',
-          component: () => import('@/views/private-pages/SettingsView.vue'),
+          component: () => import('@/views/admin-pages/SettingsView.vue'),
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
         },
         {
           path: '/settings/user-list',
           name: 'UserList',
-          component: () => import('@/views/private-pages/UserList.vue'),
+          component: () => import('@/views/admin-pages/UserList.vue'),
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
         },
         {
           path: '/settings/device-list',
           name: 'DeviceList',
-          component: () => import('@/views/private-pages/DeviceList.vue'),
+          component: () => import('@/views/admin-pages/DeviceList.vue'),
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
         },
         {
           path: '/settings/company-list',
           name: 'CompanyList',
-          component: () => import('@/views/private-pages/CompanyList.vue'),
+          component: () => import('@/views/admin-pages/CompanyList.vue'),
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
         },
         {
           path: '/settings/department-list',
           name: 'DepartmentList',
-          component: () => import('@/views/private-pages/DepartmentList.vue'),
+          component: () => import('@/views/admin-pages/DepartmentList.vue'),
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
         },
 
