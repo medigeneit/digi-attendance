@@ -88,6 +88,12 @@ const router = createRouter({
           component: () => import('@/views/admin-pages/DepartmentList.vue'),
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
         },
+        {
+          path: '/settings/designation-list',
+          name: 'DesignationList',
+          component: () => import('@/views/admin-pages/DesignationList.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+        },
 
       ]
     }
