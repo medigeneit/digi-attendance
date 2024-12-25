@@ -1,77 +1,90 @@
-import { defineStore } from 'pinia'
-import apiClient from '../axios'
+import { reactive, computed } from 'vue';
+import apiClient from '../axios';
 
-export const useDeviceStore = defineStore('device', {
-  state: () => ({
+export function useDeviceStore() {
+  const state = reactive({
     devices: [],
     device: null,
     loading: false,
     error: null,
-  }),
+  });
 
-  actions: {
-    async fetchDevices() {
-      this.loading = true;
-      try {
-        const response = await apiClient.get('/devices');
-        this.devices = response.data;
-        return this.devices;
-      } catch (error) {
-        this.error = error.response?.data?.message || 'Failed to fetch devices';
-      } finally {
-        this.loading = false;
-      }
-    },
+  const devices = computed(() => state.devices);
+  const loading = computed(() => state.loading);
+  const error = computed(() => state.error);
 
-    async fetchDevice(id) {
-      this.loading = true;
-      try {
-        const response = await apiClient.get(`/devices/${id}`);
-        this.device = response.data;
-      } catch (error) {
-        this.error = error.response?.data?.message || 'Failed to fetch device';
-      } finally {
-        this.loading = false;
-      }
-    },
+  const fetchDevices = async () => {
+    state.loading = true;
+    try {
+      const response = await apiClient.get('/devices');
+      state.devices = response.data;
+      return state.devices;
+    } catch (error) {
+      state.error = error.response?.data?.message || 'Failed to fetch devices';
+    } finally {
+      state.loading = false;
+    }
+  };
 
-    async createDevice(data) {
-      this.loading = true;
-      try {
-        const response = await apiClient.post('/devices', data);
-        this.devices.push(response.data);
-      } catch (error) {
-        this.error = error.response?.data?.message || 'Failed to create device';
-      } finally {
-        this.loading = false;
-      }
-    },
+  const fetchDevice = async (id) => {
+    state.loading = true;
+    try {
+      const response = await apiClient.get(`/devices/${id}`);
+      state.device = response.data;
+    } catch (error) {
+      state.error = error.response?.data?.message || 'Failed to fetch device';
+    } finally {
+      state.loading = false;
+    }
+  };
 
-    async updateDevice(id, data) {
-      this.loading = true;
-      try {
-        const response = await apiClient.put(`/devices/${id}`, data);
-        const index = this.devices.findIndex(device => device.id === id);
-        if (index !== -1) {
-          this.devices[index] = response.data;
-        }
-      } catch (error) {
-        this.error = error.response?.data?.message || 'Failed to update device';
-      } finally {
-        this.loading = false;
-      }
-    },
+  const createDevice = async (data) => {
+    state.loading = true;
+    try {
+      const response = await apiClient.post('/devices', data);
+      state.devices.push(response.data);
+    } catch (error) {
+      state.error = error.response?.data?.message || 'Failed to create device';
+    } finally {
+      state.loading = false;
+    }
+  };
 
-    async deleteDevice(id) {
-      this.loading = true;
-      try {
-        await apiClient.delete(`/devices/${id}`);
-        this.devices = this.devices.filter(device => device.id !== id);
-      } catch (error) {
-        this.error = error.response?.data?.message || 'Failed to delete device';
-      } finally {
-        this.loading = false;
+  const updateDevice = async (id, data) => {
+    state.loading = true;
+    try {
+      const response = await apiClient.put(`/devices/${id}`, data);
+      const index = state.devices.findIndex((device) => device.id === id);
+      if (index !== -1) {
+        state.devices[index] = response.data;
       }
-    },
-  },
-});
+    } catch (error) {
+      state.error = error.response?.data?.message || 'Failed to update device';
+    } finally {
+      state.loading = false;
+    }
+  };
+
+  const deleteDevice = async (id) => {
+    state.loading = true;
+    try {
+      await apiClient.delete(`/devices/${id}`);
+      state.devices = state.devices.filter((device) => device.id !== id);
+    } catch (error) {
+      state.error = error.response?.data?.message || 'Failed to delete device';
+    } finally {
+      state.loading = false;
+    }
+  };
+
+  return {
+    devices,
+    loading,
+    error,
+    fetchDevices,
+    fetchDevice,
+    createDevice,
+    updateDevice,
+    deleteDevice,
+  };
+}

@@ -1,47 +1,81 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useDeviceStore } from '@/stores/device'
+import { useToast } from 'vue-toastification'
 
-import AddDevice from '@/components/device/AddDevice.vue'
-import EditDevice from '@/components/device/EditDevice.vue'
-import DeleteDevice from '@/components/device/DeleteDevice.vue'
+import DeviceModal from '@/components/device/DeviceModal.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
+import DeleteModal from '@/components/common/DeleteModal.vue'
 
 const deviceStore = useDeviceStore()
+const toast = useToast()
 
-const showAddModal = ref(false)
-const showEditModal = ref(false)
+const devices = deviceStore.devices
+const isLoading = deviceStore.loading
+
+const showDeviceModal = ref(false)
 const showDeleteModal = ref(false)
 const selectedDevice = ref(null)
-const isLoading = ref(true)
 
-const openAddModal = () => (showAddModal.value = true)
-const closeAddModal = async () => {
-  showAddModal.value = false
-  await deviceStore.fetchDevices()
+const openAddModal = () => {
+  selectedDevice.value = null
+  showDeviceModal.value = true
 }
 
 const openEditModal = (device) => {
   selectedDevice.value = device
-  showEditModal.value = true
+  showDeviceModal.value = true
 }
-const closeEditModal = async () => {
-  showEditModal.value = false
-  await deviceStore.fetchDevices()
+
+const closeDeviceModal = () => {
+  showDeviceModal.value = false
+}
+
+const handleSave = async (device) => {
+  try {
+    if (device.id) {
+      await deviceStore.updateDevice(device.id, device)
+      toast.success('Device updated successfully!')
+    } else {
+      await deviceStore.createDevice(device)
+      toast.success('Device added successfully!')
+    }
+
+    await deviceStore.fetchDevices()
+  } catch (error) {
+    toast.error('Failed to save device!')
+    console.error('Error handling save:', error)
+  }
 }
 
 const openDeleteModal = (device) => {
   selectedDevice.value = device
   showDeleteModal.value = true
 }
-const closeDeleteModal = () => (showDeleteModal.value = false)
+
+const closeDeleteModal = () => {
+  showDeleteModal.value = false
+}
+
+const handleDelete = async () => {
+  if (!selectedDevice.value || !selectedDevice.value.id) {
+    toast.error('Invalid device selected for deletion!')
+    return
+  }
+  try {
+    await deviceStore.deleteDevice(selectedDevice.value.id)
+    toast.warning('Device deleted successfully!')
+    await deviceStore.fetchDevices()
+  } catch (error) {
+    toast.error('Failed to delete device!')
+    console.error('Error deleting device:', error)
+  } finally {
+    closeDeleteModal()
+  }
+}
 
 onMounted(async () => {
-  try {
-    await deviceStore.fetchDevices()
-  } finally {
-    isLoading.value = false
-  }
+  await deviceStore.fetchDevices()
 })
 </script>
 
@@ -51,9 +85,8 @@ onMounted(async () => {
       <h1 class="title-lg">Device List</h1>
       <button class="btn-2" @click="openAddModal">Add New</button>
     </div>
-    <LoaderView v-if="isLoading" />
 
-    <div v-else class="overflow-x-auto">
+    <div class="overflow-x-auto">
       <table class="min-w-full table-auto bg-white shadow-md rounded-lg overflow-hidden">
         <thead>
           <tr class="bg-gray-200 text-gray-700 text-sm leading-normal">
@@ -65,9 +98,14 @@ onMounted(async () => {
           </tr>
         </thead>
         <tbody class="text-gray-600 text-sm font-light">
-          <template v-if="deviceStore.devices.length">
+          <tr v-if="isLoading">
+            <td colspan="5">
+              <LoaderView />
+            </td>
+          </tr>
+          <template v-else-if="devices && devices.length">
             <tr
-              v-for="device in deviceStore.devices"
+              v-for="device in devices"
               :key="device.id"
               class="border-b border-gray-200 hover:bg-gray-100"
             >
@@ -101,9 +139,19 @@ onMounted(async () => {
         </tbody>
       </table>
     </div>
-  </div>
 
-  <AddDevice v-if="showAddModal" @close="closeAddModal" />
-  <EditDevice v-if="showEditModal" :device="selectedDevice" @close="closeEditModal" />
-  <DeleteDevice v-if="showDeleteModal" :device="selectedDevice" @close="closeDeleteModal" />
+    <DeviceModal
+      :show="showDeviceModal"
+      :device="selectedDevice"
+      @close="closeDeviceModal"
+      @save="handleSave"
+    />
+    <DeleteModal
+      :show="showDeleteModal"
+      :title="'Delete Device'"
+      :message="`Are you sure you want to delete ${selectedDevice?.name}?`"
+      @close="closeDeleteModal"
+      @confirm="handleDelete"
+    />
+  </div>
 </template>

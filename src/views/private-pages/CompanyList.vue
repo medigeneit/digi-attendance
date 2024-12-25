@@ -1,59 +1,92 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useCompanyStore } from '@/stores/company'
+import { ref, onMounted } from 'vue';
+import { useCompanyStore } from '@/stores/company';
+import { useToast } from 'vue-toastification';
 
-import AddCompany from '@/components/company/AddCompany.vue'
-import EditCompany from '@/components/company/EditCompany.vue'
-import DeleteCompany from '@/components/company/DeleteCompany.vue'
-import LoaderView from '@/components/common/LoaderView.vue'
+import CompanyModal from '@/components/company/CompanyModal.vue';
+import DeleteModal from '@/components/common/DeleteModal.vue';
+import LoaderView from '@/components/common/LoaderView.vue';
 
-const companyStore = useCompanyStore()
+const companyStore = useCompanyStore();
+const toast = useToast();
 
-const showAddModal = ref(false)
-const companies = ref([])
-const showEditModal = ref(false)
-const showDeleteModal = ref(false)
-const selectedCompany = ref(null)
-const isLoading = ref(true)
+const companies = companyStore.companies; // Reactive companies list from store
+const isLoading = companyStore.loading; // Loading state from store
 
-const openAddModal = () => (showAddModal.value = true)
+const showCompanyModal = ref(false);
+const showDeleteModal = ref(false);
+const selectedCompany = ref(null);
 
-const closeAddModal = async () => {
-  showAddModal.value = false
-  await companyStore.fetchCompanies()
-  companies.value = response
-}
+const openAddModal = () => {
+  selectedCompany.value = null;
+  showCompanyModal.value = true;
+};
+
+const closeCompanyModal = () => {
+  showCompanyModal.value = false;
+};
 
 const openEditModal = (company) => {
-  selectedCompany.value = company
-  showEditModal.value = true
-}
-
-const closeEditModal = async () => {
-  showEditModal.value = false
-  await companyStore.fetchCompanies()
-  companies.value = response 
-}
+  selectedCompany.value = company;
+  showCompanyModal.value = true;
+};
 
 const openDeleteModal = (company) => {
-  selectedCompany.value = company
-  showDeleteModal.value = true
-}
+  selectedCompany.value = company;
+  showDeleteModal.value = true;
+};
 
-const closeDeleteModal = async () => {
-  showDeleteModal.value = false
-  await companyStore.fetchCompanies()
-  companies.value = response
-}
+const closeDeleteModal = () => {
+  showDeleteModal.value = false;
+};
+
+const handleSave = async (company) => {
+  try {
+    if (company.id) {
+      await companyStore.updateCompany(company.id, company);
+      toast.success('Company updated successfully!');
+    } else {
+      await companyStore.createCompany(company);
+      toast.success('Company added successfully!');
+    }
+  } catch (error) {
+    toast.error('Failed to save company!');
+    console.error('Error handling save:', error);
+  } finally {
+    await fetchCompanies();
+    closeCompanyModal();
+  }
+};
+
+const handleDelete = async () => {
+  if (!selectedCompany.value || !selectedCompany.value.id) {
+    toast.error('Invalid company selected for deletion!');
+    return;
+  }
+  try {
+    await companyStore.deleteCompany(selectedCompany.value.id); 
+    toast.success('Company deleted successfully!');
+  } catch (error) {
+    toast.error('Failed to delete company!');
+    console.error('Error deleting company:', error);
+  } finally {
+    await fetchCompanies();
+    closeDeleteModal();
+  }
+};
+
+const fetchCompanies = async () => {
+  try {
+    await companyStore.fetchCompanies();
+  } catch (error) {
+    toast.error('Failed to fetch companies!');
+    console.error('Error fetching companies:', error);
+  }
+};
 
 onMounted(async () => {
-  try {
-    let response = await companyStore.fetchCompanies()
-    companies.value = response
-  } finally {
-    isLoading.value = false
-  }
-})
+  await fetchCompanies();
+});
 </script>
 
 <template>
@@ -63,15 +96,12 @@ onMounted(async () => {
       <button class="btn-2" @click="openAddModal">Add New</button>
     </div>
 
-    <LoaderView v-if="isLoading" />
-
-    <div v-else class="overflow-x-auto">
+    <div class="overflow-x-auto">
       <table class="min-w-full table-auto bg-white shadow-md rounded-lg overflow-hidden">
         <thead>
           <tr class="bg-gray-200 text-gray-700 text-sm leading-normal">
             <th class="py-3 px-2 text-left">Name</th>
             <th class="py-3 px-2 text-left">Short Name</th>
-            <th class="py-3 px-2 text-left">Address</th>
             <th class="py-3 px-2 text-center">Phone</th>
             <th class="py-3 px-2 text-center">Email</th>
             <th class="py-3 px-2 text-center">Status</th>
@@ -79,7 +109,12 @@ onMounted(async () => {
           </tr>
         </thead>
         <tbody class="text-gray-600 text-sm font-light">
-          <template v-if="companies.length">
+          <tr v-if="isLoading">
+            <td colspan="6">
+              <LoaderView />
+            </td>
+          </tr>
+          <template v-else-if="companies && companies.length">
             <tr
               v-for="company in companies"
               :key="company.id"
@@ -90,9 +125,6 @@ onMounted(async () => {
               </td>
               <td class="py-3 px-2 text-left whitespace-nowrap">
                 <p class="font-medium">{{ company.short_name }}</p>
-              </td>
-              <td class="py-3 px-2 text-left">
-                <p class="font-medium">{{ company.address }}</p>
               </td>
               <td class="py-3 px-2 text-center">
                 <p class="font-medium">{{ company.phone }}</p>
@@ -116,14 +148,26 @@ onMounted(async () => {
             </tr>
           </template>
           <tr v-else>
-            <td colspan="7" class="text-center text-red-500 py-4">No companies found</td>
+            <td colspan="6" class="text-center text-red-500 py-4">No companies found</td>
           </tr>
         </tbody>
       </table>
     </div>
-  </div>
 
-  <AddCompany v-if="showAddModal" @close="closeAddModal" />
-  <EditCompany v-if="showEditModal" :company="selectedCompany" @close="closeEditModal" />
-  <DeleteCompany v-if="showDeleteModal" :company="selectedCompany" @close="closeDeleteModal" />
+    <!-- Add/Edit Company Modal -->
+    <CompanyModal
+      :show="showCompanyModal"
+      :company="selectedCompany"
+      @close="closeCompanyModal"
+      @save="handleSave"
+    />
+
+    <DeleteModal
+      :show="showDeleteModal"
+      :title="'Delete Company'"
+      :message="`Are you sure you want to delete ${selectedCompany?.name}?`"
+      @close="closeDeleteModal"
+      @confirm="handleDelete"
+    />
+  </div>
 </template>

@@ -1,62 +1,89 @@
-import { ref } from 'vue';
+import { reactive, computed } from 'vue';
 import apiClient from '../axios';
 
 export function useCompanyStore() {
-  const companies = ref([]);
-  const company = ref(null);
+  const state = reactive({
+    companies: [], // List of companies
+    company: null, // Single company details
+    loading: false, // Loading state
+    error: null, // Error state
+  });
+
+  const companies = computed(() => state.companies);
+  const loading = computed(() => state.loading);
+  const error = computed(() => state.error);
 
   const fetchCompanies = async () => {
+    state.loading = true;
     try {
       const response = await apiClient.get('/companies');
-      companies.value = response.data;
-      return response.data
+      state.companies = response.data;
+      return state.companies;
     } catch (error) {
-      console.error('Error fetching companies:', error);
+      state.error = error.response?.data?.message || 'Failed to fetch companies';
+    } finally {
+      state.loading = false;
     }
   };
 
   const fetchCompany = async (id) => {
+    state.loading = true;
     try {
       const response = await apiClient.get(`/companies/${id}`);
-      company.value = response.data;
+      state.company = response.data;
+      return state.company;
     } catch (error) {
-      console.error(`Error fetching company with id ${id}:`, error);
+      state.error = error.response?.data?.message || 'Failed to fetch company';
+    } finally {
+      state.loading = false;
     }
   };
 
-  const createCompany = async (companyData) => {
+  const createCompany = async (data) => {
+    state.loading = true;
     try {
-      const response = await apiClient.post('/companies', companyData);
-      companies.value.push(response.data);
+      const response = await apiClient.post('/companies', data);
+      state.companies.push(response.data);
+      return response.data;
     } catch (error) {
-      console.error('Error creating company:', error);
+      state.error = error.response?.data?.message || 'Failed to create company';
+    } finally {
+      state.loading = false;
     }
   };
 
-  const updateCompany = async (id, companyData) => {
+  const updateCompany = async (id, data) => {
+    state.loading = true;
     try {
-      const response = await apiClient.put(`/companies/${id}`, companyData);
-      const index = companies.value.findIndex((c) => c.id === id);
+      const response = await apiClient.put(`/companies/${id}`, data);
+      const index = state.companies.findIndex((company) => company.id === id);
       if (index !== -1) {
-        companies.value[index] = response.data;
+        state.companies[index] = response.data;
       }
+      return response.data;
     } catch (error) {
-      console.error(`Error updating company with id ${id}:`, error);
+      state.error = error.response?.data?.message || 'Failed to update company';
+    } finally {
+      state.loading = false;
     }
   };
 
   const deleteCompany = async (id) => {
+    state.loading = true;
     try {
       await apiClient.delete(`/companies/${id}`);
-      companies.value = companies.value.filter((c) => c.id !== id);
+      state.companies = state.companies.filter((company) => company.id !== id);
     } catch (error) {
-      console.error(`Error deleting company with id ${id}:`, error);
+      state.error = error.response?.data?.message || 'Failed to delete company';
+    } finally {
+      state.loading = false;
     }
   };
 
   return {
     companies,
-    company,
+    loading,
+    error,
     fetchCompanies,
     fetchCompany,
     createCompany,
