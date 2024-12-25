@@ -94,6 +94,12 @@ const router = createRouter({
           component: () => import('@/views/admin-pages/DesignationList.vue'),
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
         },
+        {
+          path: '/settings/shift-list',
+          name: 'ShiftList',
+          component: () => import('@/views/admin-pages/ShiftList.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+        },
 
       ]
     }

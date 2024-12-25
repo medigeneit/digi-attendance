@@ -5,6 +5,10 @@
       <i class="fas fa-users text-3xl"></i>
       User List
     </RouterLink>
+    <RouterLink :to="{ name: 'ShiftList' }" class="main-button">
+      <i class="fas fa-calendar-alt text-3xl"></i>
+      Shift List
+    </RouterLink>
     <RouterLink :to="{ name: 'DesignationList' }" class="main-button">
       <i class="fas fa-layer-group text-3xl"></i>
       Designation List
