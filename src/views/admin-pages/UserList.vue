@@ -1,10 +1,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useAuthStore } from '@/stores/auth'
 import EditUserModal from '@/components/user/EditUserModal.vue'
 import AddUserModal from '@/components/user/AddUserModal.vue'
 import HeaderWithButtons from '@/components/common/HeaderWithButtons.vue'
+
+const router = useRouter()
 
 const userStore = useUserStore()
 const authStore = useAuthStore()
@@ -41,11 +44,27 @@ const filteredUsers = computed(() => {
   }
   return userStore.users.filter((user) => user.role !== 'developer')
 })
+
+const goBack = () => {
+  router.go(-1)
+}
 </script>
 
 <template>
   <div class="my-container space-y-2">
-    <HeaderWithButtons title="Employee List" @add="openAddModal" />
+    <div class="flex items-center justify-between gap-2">
+      <button class="btn-3" @click="goBack">
+        <i class="far fa-arrow-left"></i>
+        <span class="hidden md:flex">Back</span>
+      </button>
+
+      <h1 class="title-md md:title-lg flex-wrap text-center">Employee List</h1>
+
+      <RouterLink :to="{ name: 'UserAdd' }" class="btn-2">
+        <span class="hidden md:flex">Add New</span>
+        <i class="far fa-plus"></i>
+      </RouterLink>
+    </div>
 
     <div v-if="loading" class="flex items-center justify-center py-10">
       <div
@@ -82,7 +101,14 @@ const filteredUsers = computed(() => {
               <span v-else class="text-red-500">Inactive</span>
             </td>
             <td class="border border-gray-300 px-4 py-2">
-              <button class="btn-1" @click="editUser(user)">Edit</button>
+              <div class="flex gap-2">
+                <button class="btn-icon" @click="editUser(user)">
+                  <i class="far fa-edit"></i>
+                </button>
+                <RouterLink :to="{ name: 'UserShow', params: { id: user?.id } }" class="btn-icon">
+                  <i class="far fa-eye"></i>
+                </RouterLink>
+              </div>
             </td>
           </tr>
           <tr v-if="filteredUsers.length === 0">

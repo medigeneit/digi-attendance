@@ -1,67 +1,79 @@
-import { defineStore } from 'pinia'
-import apiClient from '../axios'
+import { reactive, computed } from 'vue';
+import apiClient from '../axios';
 
-export const useUserStore = defineStore('user', {
-  state: () => ({
-    users: [],
-    user: null,
-    error: null,
-  }),
+export function useUserStore() {
+  const state = reactive({
+    users: [], // List of users
+    user: null, // Single user details
+    error: null, // Error state
+  });
 
-  actions: {
-    async fetchUsers() {
-      try {
-        const response = await apiClient.get('/users')
-        this.users = response.data
-        this.error = null
-      } catch (error) {
-        this.error = error.response?.data?.message || 'Something went wrong'
+  const users = computed(() => state.users);
+  const user = computed(() => state.user);
+  const error = computed(() => state.error);
+
+  const fetchUsers = async () => {
+    try {
+      const response = await apiClient.get('/users');
+      state.users = response.data;
+      state.error = null;
+    } catch (err) {
+      state.error = err.response?.data?.message || 'Something went wrong';
+    }
+  };
+
+  const fetchUser = async (id) => {
+    try {
+      const response = await apiClient.get(`/users/${id}`);
+      state.user = response.data;
+      state.error = null;
+      return response.data;
+    } catch (err) {
+      state.error = err.response?.data?.message || 'Something went wrong';
+    }
+  };
+
+  const createUser = async (payload) => {
+    try {
+      const response = await apiClient.post('/users', payload);
+      state.users.push(response.data.user);
+      state.error = null;
+    } catch (err) {
+      state.error = err.response?.data?.message || 'Something went wrong';
+    }
+  };
+
+  const updateUser = async (id, payload) => {
+    try {
+      const response = await apiClient.put(`/users/${id}`, payload);
+      const index = state.users.findIndex((u) => u.id === id);
+      if (index !== -1) {
+        state.users[index] = response.data.user;
       }
-    },
+      state.error = null;
+    } catch (err) {
+      state.error = err.response?.data?.message || 'Something went wrong';
+    }
+  };
 
-    async fetchUser(id) {
-      try {
-        const response = await apiClient.get(`/users/${id}`)
-        this.user = response.data
-        this.error = null
-      } catch (error) {
-        this.error = error.response?.data?.message || 'Something went wrong'
-      }
-    },
+  const deleteUser = async (id) => {
+    try {
+      await apiClient.delete(`/users/${id}`);
+      state.users = state.users.filter((u) => u.id !== id);
+      state.error = null;
+    } catch (err) {
+      state.error = err.response?.data?.message || 'Something went wrong';
+    }
+  };
 
-    async createUser(payload) {
-      try {
-        const response = await apiClient.post('/users', payload)
-        this.users.push(response.data.user)
-        this.error = null
-      } catch (error) {
-        this.error = error.response?.data?.message || 'Something went wrong'
-      }
-    },
-
-    async updateUser(id, payload) {
-      try {
-        const response = await apiClient.put(`/users/${id}`, payload)
-
-        const index = this.users.findIndex((user) => user.id === id)
-        if (index !== -1) {
-          this.users[index] = response.data.user
-        }
-        this.error = null
-      } catch (error) {
-        this.error = error.response?.data?.message || 'Something went wrong'
-      }
-    },
-
-    async deleteUser(id) {
-      try {
-        await apiClient.delete(`/users/${id}`)
-        this.users = this.users.filter((user) => user.id !== id)
-        this.error = null
-      } catch (error) {
-        this.error = error.response?.data?.message || 'Something went wrong'
-      }
-    },
-
-  },
-})
+  return {
+    users,
+    user,
+    error,
+    fetchUsers,
+    fetchUser,
+    createUser,
+    updateUser,
+    deleteUser,
+  };
+}

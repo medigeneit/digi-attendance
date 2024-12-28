@@ -71,6 +71,24 @@ const router = createRouter({
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
         },
         {
+          path: '/settings/user-add',
+          name: 'UserAdd',
+          component: () => import('@/views/admin-pages/UserAdd.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+        },
+        {
+          path: '/settings/user-show/:id',
+          name: 'UserShow',
+          component: () => import('@/views/admin-pages/UserShow.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+        },
+        {
+          path: '/settings/user-edit/:id',
+          name: 'UserEdit',
+          component: () => import('@/views/admin-pages/UserEdit.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+        },
+        {
           path: '/settings/device-list',
           name: 'DeviceList',
           component: () => import('@/views/admin-pages/DeviceList.vue'),

@@ -43,7 +43,7 @@ onMounted(async () => {
       <div class="flex gap-4 items-center">
         <div class="flex gap-4">
           <div class="hidden md:flex items-center gap-8">
-            <RouterLink to="/" class="font-medium hover:text-blue-600">Hone</RouterLink>
+            <RouterLink to="/" class="font-medium hover:text-blue-600">Home</RouterLink>
             <RouterLink to="/" class="font-medium hover:text-blue-600">About</RouterLink>
             <RouterLink to="/" class="font-medium hover:text-blue-600">Contact</RouterLink>
           </div>
