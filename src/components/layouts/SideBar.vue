@@ -56,6 +56,15 @@ onMounted(async () => {
       </RouterLink>
 
       <RouterLink
+        to="/hrd"
+        class="side-menu"
+        :class="{ 'side-menu-active': currentRoute.includes('/hrd') }"
+      >
+        <i class="fas fa-users-cog py-2"></i>
+        <h4 v-if="open">HR Department</h4>
+      </RouterLink>
+      
+      <RouterLink
         to="/settings"
         class="side-menu"
         :class="{ 'side-menu-active': currentRoute.includes('/settings') }"

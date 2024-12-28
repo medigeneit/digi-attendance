@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useToast } from 'vue-toastification'
+import LoaderView from '@/components/common/LoaderView.vue'
 
 const userStore = useUserStore()
 const toast = useToast()
@@ -13,7 +14,7 @@ const isLoading = ref(true)
 const error = ref(null)
 
 const formatDate = (date) => {
-  return date ? new Date(date).toLocaleDateString() : 'N/A'
+  return date ? new Date(date).toLocaleDateString('en-GB') : 'N/A'
 }
 
 const fetchUser = async () => {
@@ -36,91 +37,107 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="my-container space-y-4">
-
-    <div v-if="isLoading" class="flex justify-center items-center h-64">
-      <p>Loading user details...</p>
-    </div>
-
-    <div v-else-if="error" class="text-center text-red-500">
-      <p>{{ error }}</p>
-    </div>
-
-    <div v-else class="card-bg p-8">
-      <h2 class="title-lg text-center mb-4">User Details</h2>
-
-      <div class="grid gap-4">
-        <div class="grid md:grid-cols-2 gap-4">
-          <div>
-            <p class="font-bold">Name:</p>
-            <p>{{ user?.name }}</p>
-          </div>
-          <div>
-            <p class="font-bold">Phone:</p>
-            <p>{{ user?.phone }}</p>
-          </div>
-          <div>
-            <p class="font-bold">Email:</p>
-            <p>{{ user?.email || 'N/A' }}</p>
-          </div>
-          <div>
-            <p class="font-bold">Address:</p>
-            <p>{{ user?.address || 'N/A' }}</p>
-          </div>
-          <div>
-            <p class="font-bold">NID:</p>
-            <p>{{ user?.nid || 'N/A' }}</p>
-          </div>
-          <div>
-            <p class="font-bold">Date of Birth:</p>
-            <p>{{ formatDate(user?.date_of_birth) }}</p>
-          </div>
-        </div>
-
-        <div class="grid md:grid-cols-2 gap-4">
-          <div>
-            <p class="font-bold">Company:</p>
-            <p>{{ user?.company?.name || 'N/A' }}</p>
-          </div>
-          <div>
-            <p class="font-bold">Department:</p>
-            <p>{{ user?.department?.name || 'N/A' }}</p>
-          </div>
-          <div>
-            <p class="font-bold">Designation:</p>
-            <p>{{ user?.designation?.title || 'N/A' }}</p>
-          </div>
-          <div>
-            <p class="font-bold">Shift:</p>
-            <p>{{ user?.shift?.name || 'N/A' }}</p>
-          </div>
-          <div>
-            <p class="font-bold">Joining Date:</p>
-            <p>{{ formatDate(user?.joining_date) }}</p>
-          </div>
-          <div>
-            <p class="font-bold">Employment Type:</p>
-            <p>{{ user?.employment_type }}</p>
-          </div>
-        </div>
-
-        <div>
-          <p class="font-bold">Role:</p>
-          <p>{{ user?.role }}</p>
-        </div>
-        <div>
-          <p class="font-bold">Status:</p>
-          <p>{{ user?.is_active ? 'Active' : 'Inactive' }}</p>
-        </div>
+  <div class="my-container space-y-6">
+    <div class="card-bg p-6">
+      <h2 class="title-lg text-center">User Details</h2>
+      <LoaderView v-if="isLoading" class="shadow-none" />
+      <div v-else-if="error" class="text-center text-red-500">
+        <p>{{ error }}</p>
       </div>
-
-      <div class="flex justify-center mt-6">
-        <RouterLink
-          :to="{ name: 'UserEdit', params: { id: user?.id } }"
-          class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-        >
-          Edit
-        </RouterLink>
+      <div v-else class="grid gap-2">
+        <div class="bg-gray-100 p-4 rounded-lg">
+          <p class="title-md">Personal Info</p>
+          <hr class="mb-2" />
+          <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <p class="text-sm font-bold text-gray-600">Name:</p>
+              <p class="text-lg text-gray-800">{{ user?.name }}</p>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-gray-600">Phone:</p>
+              <p class="text-lg text-gray-800">{{ user?.phone }}</p>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-gray-600">Email:</p>
+              <p class="text-lg text-gray-800">{{ user?.email || 'N/A' }}</p>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-gray-600">Address:</p>
+              <p class="text-lg text-gray-800">{{ user?.address || 'N/A' }}</p>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-gray-600">NID:</p>
+              <p class="text-lg text-gray-800">{{ user?.nid || 'N/A' }}</p>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-gray-600">Date of Birth:</p>
+              <p class="text-lg text-gray-800">{{ formatDate(user?.date_of_birth) }}</p>
+            </div>
+          </div>
+        </div>
+        <div class="bg-gray-100 p-4 rounded-lg">
+          <p class="title-md">Professional Info</p>
+          <hr class="mb-2" />
+          <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <p class="text-sm font-bold text-gray-600">Company:</p>
+              <p class="text-lg text-gray-800">{{ user?.company?.name || 'N/A' }}</p>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-gray-600">Department:</p>
+              <p class="text-lg text-gray-800">{{ user?.department?.name || 'N/A' }}</p>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-gray-600">Designation:</p>
+              <p class="text-lg text-gray-800">{{ user?.designation?.title || 'N/A' }}</p>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-gray-600">Shift:</p>
+              <p class="text-lg text-gray-800">{{ user?.shift?.name || 'N/A' }}</p>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-gray-600">Joining Date:</p>
+              <p class="text-lg text-gray-800">{{ formatDate(user?.joining_date) }}</p>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-gray-600">Employment Type:</p>
+              <p class="text-lg text-gray-800">{{ user?.employment_type }}</p>
+            </div>
+          </div>
+        </div>
+        <div class="bg-gray-100 p-4 rounded-lg">
+          <p class="title-md">Technical Info</p>
+          <hr class="mb-2" />
+          <div class="grid md:grid-cols-3 gap-4">
+            <div>
+              <p class="text-sm font-bold text-gray-600">Role:</p>
+              <p class="text-lg text-gray-800">{{ user?.role }}</p>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-gray-600">Biometric Device ID:</p>
+              <p class="text-lg text-gray-800">{{ user?.device_user_id }}</p>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-gray-600">Status:</p>
+              <p class="text-lg text-gray-800">{{ user?.is_active ? 'Active' : 'Inactive' }}</p>
+            </div>
+          </div>
+        </div>
+        <div class="flex justify-center mt-8 gap-4">
+          <RouterLink
+            :to="{ name: 'UserList' }"
+            type="button"
+            class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+          >
+            Back to List
+          </RouterLink>
+          <RouterLink
+            :to="{ name: 'UserEdit', params: { id: user?.id } }"
+            class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          >
+            Edit
+          </RouterLink>
+        </div>
       </div>
     </div>
   </div>
