@@ -7,6 +7,7 @@ module.exports = {
     extend: {
       fontFamily: {
           'noto-bangla': ['Noto Sans Bengali','sans-serif'],
+          'open-sans': ['Open Sans','serif'],
           'lily': ['Courgette']
         },
     },

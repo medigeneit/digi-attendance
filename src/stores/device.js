@@ -1,90 +1,97 @@
-import { reactive, computed } from 'vue';
+import { ref, computed } from 'vue';
+import { defineStore } from 'pinia';
 import apiClient from '../axios';
 
-export function useDeviceStore() {
-  const state = reactive({
-    devices: [],
-    device: null,
-    loading: false,
-    error: null,
-  });
-
-  const devices = computed(() => state.devices);
-  const loading = computed(() => state.loading);
-  const error = computed(() => state.error);
+export const useDeviceStore = defineStore('device', () => {
+  const devices = ref([]); // ডিভাইস লিস্ট
+  const device = ref(null); // একক ডিভাইস ডিটেইল
+  const loading = ref(false); // লোডিং স্টেট
+  const error = ref(null); // এরর স্টেট
 
   const fetchDevices = async () => {
-    state.loading = true;
+    loading.value = true;
+    error.value = null;
     try {
       const response = await apiClient.get('/devices');
-      state.devices = response.data;
-      return state.devices;
-    } catch (error) {
-      state.error = error.response?.data?.message || 'Failed to fetch devices';
+      devices.value = response.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'ডিভাইস লোড করতে ব্যর্থ হয়েছে।';
+      console.error('Error fetching devices:', err);
     } finally {
-      state.loading = false;
+      loading.value = false;
     }
   };
 
   const fetchDevice = async (id) => {
-    state.loading = true;
+    loading.value = true;
+    error.value = null;
     try {
       const response = await apiClient.get(`/devices/${id}`);
-      state.device = response.data;
-    } catch (error) {
-      state.error = error.response?.data?.message || 'Failed to fetch device';
+      device.value = response.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || `ডিভাইস (ID: ${id}) লোড করতে ব্যর্থ হয়েছে।`;
+      console.error(`Error fetching device with id ${id}:`, err);
     } finally {
-      state.loading = false;
+      loading.value = false;
     }
   };
 
   const createDevice = async (data) => {
-    state.loading = true;
+    loading.value = true;
+    error.value = null;
     try {
       const response = await apiClient.post('/devices', data);
-      state.devices.push(response.data);
-    } catch (error) {
-      state.error = error.response?.data?.message || 'Failed to create device';
+      devices.value.push(response.data); // নতুন ডিভাইস লিস্টে যোগ করুন
+      return response.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'ডিভাইস তৈরি করতে ব্যর্থ হয়েছে।';
+      console.error('Error creating device:', err);
     } finally {
-      state.loading = false;
+      loading.value = false;
     }
   };
 
   const updateDevice = async (id, data) => {
-    state.loading = true;
+    loading.value = true;
+    error.value = null;
     try {
       const response = await apiClient.put(`/devices/${id}`, data);
-      const index = state.devices.findIndex((device) => device.id === id);
+      const index = devices.value.findIndex((device) => device.id === id);
       if (index !== -1) {
-        state.devices[index] = response.data;
+        devices.value[index] = response.data; // আপডেট করা ডিভাইস
       }
-    } catch (error) {
-      state.error = error.response?.data?.message || 'Failed to update device';
+      return response.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || `ডিভাইস (ID: ${id}) আপডেট করতে ব্যর্থ হয়েছে।`;
+      console.error(`Error updating device with id ${id}:`, err);
     } finally {
-      state.loading = false;
+      loading.value = false;
     }
   };
 
   const deleteDevice = async (id) => {
-    state.loading = true;
+    loading.value = true;
+    error.value = null;
     try {
       await apiClient.delete(`/devices/${id}`);
-      state.devices = state.devices.filter((device) => device.id !== id);
-    } catch (error) {
-      state.error = error.response?.data?.message || 'Failed to delete device';
+      devices.value = devices.value.filter((device) => device.id !== id); // ডিভাইস রিমুভ
+    } catch (err) {
+      error.value = err.response?.data?.message || `ডিভাইস (ID: ${id}) মুছতে ব্যর্থ হয়েছে।`;
+      console.error(`Error deleting device with id ${id}:`, err);
     } finally {
-      state.loading = false;
+      loading.value = false;
     }
   };
 
   return {
-    devices,
-    loading,
-    error,
+    devices: computed(() => devices.value),
+    device: computed(() => device.value),
+    loading: computed(() => loading.value),
+    error: computed(() => error.value),
     fetchDevices,
     fetchDevice,
     createDevice,
     updateDevice,
     deleteDevice,
   };
-}
+});

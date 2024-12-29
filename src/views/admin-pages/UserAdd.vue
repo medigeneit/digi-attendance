@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, onMounted, watch } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
@@ -24,6 +24,7 @@ const form = reactive({
   date_of_birth: '',
   joining_date: '',
   employment_type: 'Provisional',
+  weekends: [],
 })
 
 const showPassword = ref(false)
@@ -35,24 +36,24 @@ const designationStore = useDesignationStore()
 const shiftStore = useShiftStore()
 const toast = useToast()
 
-const fetchOptions = async () => {
-  try {
-    await Promise.all([
-      companyStore.fetchCompanies(),
-      departmentStore.fetchDepartments(),
-      designationStore.fetchDesignations(),
-      shiftStore.fetchShifts(),
-    ])
-  } catch (error) {
-    toast.error('Failed to load options')
-    console.error(error)
-  }
-}
+onMounted(async () => {
+  await companyStore.fetchCompanies()
+})
 
-const companies = companyStore.companies
-const departments = departmentStore.departments
-const designations = designationStore.designations
-const shifts = shiftStore.shifts
+watch(
+  () => form.company_id,
+  async (newCompanyId) => {
+    if (newCompanyId) {
+      await departmentStore.fetchDepartments(newCompanyId)
+      await designationStore.fetchDesignations(newCompanyId)
+      await shiftStore.fetchShifts(newCompanyId)
+
+      form.department_id = ''
+      form.designation_id = ''
+      form.shift_id = ''
+    }
+  },
+)
 
 const saveUser = async () => {
   try {
@@ -73,6 +74,7 @@ const saveUser = async () => {
       date_of_birth: form.date_of_birth,
       joining_date: form.joining_date,
       employment_type: form.employment_type,
+      weekends: form.weekends,
     }
 
     await userStore.createUser(dataToSend)
@@ -84,10 +86,6 @@ const saveUser = async () => {
     console.error(errorMessage)
   }
 }
-
-onMounted(async () => {
-  await fetchOptions()
-})
 </script>
 
 <template>
@@ -135,7 +133,7 @@ onMounted(async () => {
               </div>
             </div>
           </div>
-
+{{ companyStore.companies }}
           <div class="border p-4 rounded-md bg-gray-100">
             <p class="title-md">Professional Info</p>
             <hr class="my-2" />
@@ -149,9 +147,11 @@ onMounted(async () => {
                   required
                 >
                   <option value="" disabled>Select a company</option>
-                  <option v-for="company in companies" :key="company?.id" :value="company?.id">
-                    {{ company?.name }}
-                  </option>
+                  <template v-for="company in companyStore.companies" :key="company?.id">
+                    <option :value="company?.id">
+                      {{ company?.name }}
+                    </option>
+                  </template>
                 </select>
               </div>
 
@@ -160,7 +160,7 @@ onMounted(async () => {
                 <select v-model="form.department_id" class="w-full p-2 border rounded">
                   <option value="" disabled>Select a department</option>
                   <option
-                    v-for="department in departments"
+                    v-for="department in departmentStore.departments"
                     :key="department?.id"
                     :value="department?.id"
                   >
@@ -174,7 +174,7 @@ onMounted(async () => {
                 <select v-model="form.designation_id" class="w-full p-2 border rounded">
                   <option value="" disabled>Select a designation</option>
                   <option
-                    v-for="designation in designations"
+                    v-for="designation in designationStore.designations"
                     :key="designation?.id"
                     :value="designation?.id"
                   >
@@ -187,7 +187,7 @@ onMounted(async () => {
                 <label>Shift</label>
                 <select v-model="form.shift_id" class="w-full p-2 border rounded">
                   <option value="" disabled>Select a shift</option>
-                  <option v-for="shift in shifts" :key="shift?.id" :value="shift?.id">
+                  <option v-for="shift in shiftStore.shifts" :key="shift?.id" :value="shift?.id">
                     {{ shift?.name }}
                   </option>
                 </select>
@@ -198,7 +198,7 @@ onMounted(async () => {
                 <select v-model="form.employment_type" class="w-full p-2 border rounded">
                   <option value="Provisional">Provisional</option>
                   <option value="Permanent">Permanent</option>
-                  <option value="Parttime">Parttime</option>
+                  <option value="Part_Time">Part Time</option>
                   <option value="Remote">Remote</option>
                   <option value="Contract">Contract</option>
                   <option value="Freelance">Freelance</option>
@@ -210,6 +210,76 @@ onMounted(async () => {
                 <label>Joining Date</label>
                 <input v-model="form.joining_date" type="date" class="w-full p-2 border rounded" />
               </div>
+
+              <div class="">
+                <p class="">Select Weekends</p>
+                <div class="flex flex-wrap gap-2 md:gap-4 bg-white p-2 border rounded">
+                  <label class="flex items-center gap-1.5 md:gap-2">
+                    <input
+                      type="checkbox"
+                      value="Saturday"
+                      v-model="form.weekends"
+                      class="form-checkbox"
+                    />
+                    SAT
+                  </label>
+                  <label class="flex items-center gap-1.5 md:gap-2">
+                    <input
+                      type="checkbox"
+                      value="Sunday"
+                      v-model="form.weekends"
+                      class="form-checkbox"
+                    />
+                    SUN
+                  </label>
+                  <label class="flex items-center gap-1.5 md:gap-2">
+                    <input
+                      type="checkbox"
+                      value="Monday"
+                      v-model="form.weekends"
+                      class="form-checkbox"
+                    />
+                    MON
+                  </label>
+                  <label class="flex items-center gap-1.5 md:gap-2">
+                    <input
+                      type="checkbox"
+                      value="Tuesday"
+                      v-model="form.weekends"
+                      class="form-checkbox"
+                    />
+                    TUE
+                  </label>
+                  <label class="flex items-center gap-1.5 md:gap-2">
+                    <input
+                      type="checkbox"
+                      value="Wednesday"
+                      v-model="form.weekends"
+                      class="form-checkbox"
+                    />
+                    WED
+                  </label>
+                  <label class="flex items-center gap-1.5 md:gap-2">
+                    <input
+                      type="checkbox"
+                      value="Thursday"
+                      v-model="form.weekends"
+                      class="form-checkbox"
+                    />
+                    THU
+                  </label>
+                  <label class="flex items-center gap-1.5 md:gap-2">
+                    <input
+                      type="checkbox"
+                      value="Friday"
+                      v-model="form.weekends"
+                      class="form-checkbox"
+                    />
+                    FRI
+                  </label>
+                </div>
+              </div>
+
               <div>
                 <label>Active Status</label>
                 <select v-model="form.is_active" class="w-full p-2 border rounded">

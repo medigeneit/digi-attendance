@@ -1,79 +1,105 @@
-import { reactive, computed } from 'vue';
+import { defineStore } from 'pinia';
+import { ref, computed } from 'vue';
 import apiClient from '../axios';
 
-export function useUserStore() {
-  const state = reactive({
-    users: [], // List of users
-    user: null, // Single user details
-    error: null, // Error state
-  });
+export const useUserStore = defineStore('user', () => {
+  // State
+  const users = ref([]);
+  const user = ref({});
+  const error = ref(null);
+  const isLoading = ref(false); // লোডিং স্টেট
 
-  const users = computed(() => state.users);
-  const user = computed(() => state.user);
-  const error = computed(() => state.error);
+  // Getters
+  const allUsers = computed(() => users.value);
+  const singleUser = computed(() => user.value);
+  const errorMessage = computed(() => error.value);
 
+  // Actions
   const fetchUsers = async () => {
     try {
+      isLoading.value = true; // লোডিং শুরু
       const response = await apiClient.get('/users');
-      state.users = response.data;
-      state.error = null;
+      users.value = response.data;
+      error.value = null;
     } catch (err) {
-      state.error = err.response?.data?.message || 'Something went wrong';
+      error.value = err.response?.data?.message || 'Something went wrong';
+    } finally {
+      isLoading.value = false; // লোডিং শেষ
     }
   };
 
   const fetchUser = async (id) => {
     try {
+      isLoading.value = true;
       const response = await apiClient.get(`/users/${id}`);
-      state.user = response.data;
-      state.error = null;
-      return response.data;
+      const data = response.data;
+      if(data) {
+        user.value = data;
+      }
+      error.value = null;
+      return data;
     } catch (err) {
-      state.error = err.response?.data?.message || 'Something went wrong';
+      error.value = err.response?.data?.message || 'Something went wrong';
+    } finally {
+      isLoading.value = false;
     }
   };
 
   const createUser = async (payload) => {
     try {
+      isLoading.value = true;
       const response = await apiClient.post('/users', payload);
-      state.users.push(response.data.user);
-      state.error = null;
+      users.value.push(response.data.user);
+      error.value = null;
     } catch (err) {
-      state.error = err.response?.data?.message || 'Something went wrong';
+      error.value = err.response?.data?.message || 'Something went wrong';
+    } finally {
+      isLoading.value = false;
     }
   };
 
   const updateUser = async (id, payload) => {
     try {
+      isLoading.value = true;
       const response = await apiClient.put(`/users/${id}`, payload);
-      const index = state.users.findIndex((u) => u.id === id);
+      const index = users.value.findIndex((u) => u.id === id);
       if (index !== -1) {
-        state.users[index] = response.data.user;
+        users.value[index] = response.data.user;
       }
-      state.error = null;
+      error.value = null;
     } catch (err) {
-      state.error = err.response?.data?.message || 'Something went wrong';
+      error.value = err.response?.data?.message || 'Something went wrong';
+    } finally {
+      isLoading.value = false;
     }
   };
 
   const deleteUser = async (id) => {
     try {
+      isLoading.value = true;
       await apiClient.delete(`/users/${id}`);
-      state.users = state.users.filter((u) => u.id !== id);
-      state.error = null;
+      users.value = users.value.filter((u) => u.id !== id);
+      error.value = null;
     } catch (err) {
-      state.error = err.response?.data?.message || 'Something went wrong';
+      error.value = err.response?.data?.message || 'Something went wrong';
+    } finally {
+      isLoading.value = false;
     }
   };
 
+  // Return state, getters, and actions
   return {
     users,
     user,
     error,
+    isLoading, // লোডিং স্টেট রিটার্ন করা
+    allUsers,
+    singleUser,
+    errorMessage,
     fetchUsers,
     fetchUser,
     createUser,
     updateUser,
     deleteUser,
   };
-}
+});

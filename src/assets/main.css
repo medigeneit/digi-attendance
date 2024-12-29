@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@300;400;500;600;700;800&display=swap');
+/* @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@300;400;500;600;700;800&display=swap'); */
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -57,7 +58,7 @@
       @apply p-4 md:p-6 bg-white  rounded-xl grid items-center gap-2  w-full border-[2px] border-transparent border-blue-500 transition-all ease-in-out duration-300;
     }
     .btn-1 {
-      @apply flex items-center justify-center gap-2 bg-gradient-to-br from-orange-100 to-blue-100 md:px-6 px-4 pt-2 pb-1 rounded-full font-semibold text-sm border-[2px] border-transparent hover:border-blue-400 hover:text-blue-600 transition-all ease-in-out duration-300 text-blue-900 print:hidden;
+      @apply flex items-center justify-center gap-2 bg-gradient-to-br from-orange-100 to-blue-100 md:px-6 px-4 py-1.5 rounded-full font-semibold text-sm border-[2px] border-transparent hover:border-blue-400 hover:text-blue-600 transition-all ease-in-out duration-300 text-blue-900 print:hidden;
     }
   
     .btn-1:disabled {
@@ -70,21 +71,21 @@
     }
   
     .btn-2 {
-      @apply flex gap-2 items-center justify-center bg-gradient-to-br from-blue-900 to-blue-500 md:px-6 px-4 pt-2 pb-1 rounded-full font-semibold text-white text-sm border-[2px] border-transparent hover:border-blue-300 hover:text-blue-200 transition-all ease-in-out duration-300 print:hidden;
+      @apply flex gap-2 items-center justify-center bg-gradient-to-br from-blue-900 to-blue-500 md:px-6 px-4 py-1.5 rounded-full font-semibold text-white text-sm border-[2px] border-transparent hover:border-blue-300 hover:text-blue-200 transition-all ease-in-out duration-300 print:hidden;
     }
     .btn-3 {
-      @apply flex items-center justify-center gap-2 hover:text-white hover:bg-blue-500 transition-all ease-in-out duration-300 font-medium text-blue-900 border md:border-2 border-blue-900 hover:border-blue-500 md:px-6 px-4 rounded-full py-1 print:hidden;
+      @apply flex items-center justify-center gap-2 hover:text-white hover:bg-blue-500 transition-all ease-in-out duration-300 font-medium text-blue-900 border md:border-2 border-blue-900 hover:border-blue-500 md:px-6 px-4 rounded-full py-1.5 print:hidden;
     }
   
     .btn-4 {
-      @apply flex items-center justify-center gap-2 py-1 md:px-6 px-4 
+      @apply flex items-center justify-center gap-2 py-1.5 md:px-6 px-4 
       bg-gray-100 rounded-full hover:bg-blue-50
       font-medium text-blue-900 hover:text-blue-600
       transition-all ease-in-out duration-300 print:hidden;
     }
 
     .btn-contrast {
-      @apply flex items-center justify-center gap-2 bg-gradient-to-br from-orange-700 to-orange-300 md:px-6 px-4 pt-2 p-1 rounded-full font-semibold text-sm border-[2px] border-transparent hover:border-orange-100 hover:text-orange-200 transition-all ease-in-out duration-300 text-white print:hidden;
+      @apply flex items-center justify-center gap-2 bg-gradient-to-br from-orange-700 to-orange-300 md:px-6 px-4 py-1.5 rounded-full font-semibold text-sm border-[2px] border-transparent hover:border-orange-100 hover:text-orange-200 transition-all ease-in-out duration-300 text-white print:hidden;
     }
   
     .btn-link {

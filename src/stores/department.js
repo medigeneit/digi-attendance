@@ -1,98 +1,99 @@
-import { reactive, computed } from 'vue';
+import { ref, computed } from 'vue';
+import { defineStore } from 'pinia';
 import apiClient from '../axios';
 
-export function useDepartmentStore() {
-  const state = reactive({
-    departments: [], // List of departments
-    department: null, // Single department details
-    loading: false, // Loading state
-    error: null, // Error state
-  });
+export const useDepartmentStore = defineStore('department', () => {
+  const departments = ref([]); // Department লিস্ট
+  const department = ref(null); // একক Department ডিটেইল
+  const loading = ref(false); // লোডিং স্টেট
+  const error = ref(null); // এরর স্টেট
 
-  const departments = computed(() => state.departments);
-  const loading = computed(() => state.loading);
-  const error = computed(() => state.error);
-
-  const fetchDepartments = async () => {
-    state.loading = true;
+  const fetchDepartments = async (companyId = null) => {
+    loading.value = true;
+    error.value = null;
     try {
-      const response = await apiClient.get('/departments');
-      state.departments = response.data;
-      return state.departments;
-    } catch (error) {
-      state.error = error.response?.data?.message || 'Failed to fetch departments';
-      console.error('Error fetching departments:', error);
+      const response = await apiClient.get('/departments', {
+        params: { company_id: companyId },
+      });
+      departments.value = response.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'ডিপার্টমেন্ট লোড করতে ব্যর্থ হয়েছে।';
+      console.error('Error fetching departments:', err);
     } finally {
-      state.loading = false;
+      loading.value = false;
     }
   };
 
   const fetchDepartment = async (id) => {
-    state.loading = true;
+    loading.value = true;
+    error.value = null;
     try {
       const response = await apiClient.get(`/departments/${id}`);
-      state.department = response.data;
-      return state.department;
-    } catch (error) {
-      state.error = error.response?.data?.message || 'Failed to fetch department';
-      console.error(`Error fetching department with id ${id}:`, error);
+      department.value = response.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || `ডিপার্টমেন্ট (ID: ${id}) লোড করতে ব্যর্থ হয়েছে।`;
+      console.error(`Error fetching department with id ${id}:`, err);
     } finally {
-      state.loading = false;
+      loading.value = false;
     }
   };
 
   const createDepartment = async (data) => {
-    state.loading = true;
+    loading.value = true;
+    error.value = null;
     try {
       const response = await apiClient.post('/departments', data);
-      state.departments.push(response.data); // Add new department to list
+      departments.value.push(response.data); // নতুন ডিপার্টমেন্ট লিস্টে যোগ করুন
       return response.data;
-    } catch (error) {
-      state.error = error.response?.data?.message || 'Failed to create department';
-      console.error('Error creating department:', error);
+    } catch (err) {
+      error.value = err.response?.data?.message || 'ডিপার্টমেন্ট তৈরি করতে ব্যর্থ হয়েছে।';
+      console.error('Error creating department:', err);
     } finally {
-      state.loading = false;
+      loading.value = false;
     }
   };
 
   const updateDepartment = async (id, data) => {
-    state.loading = true;
+    loading.value = true;
+    error.value = null;
     try {
       const response = await apiClient.put(`/departments/${id}`, data);
-      const index = state.departments.findIndex((d) => d.id === id);
+      const index = departments.value.findIndex((d) => d.id === id);
       if (index !== -1) {
-        state.departments[index] = response.data; // Update the department in the list
+        departments.value[index] = response.data; // আপডেট করা ডিপার্টমেন্ট
       }
       return response.data;
-    } catch (error) {
-      state.error = error.response?.data?.message || 'Failed to update department';
-      console.error(`Error updating department with id ${id}:`, error);
+    } catch (err) {
+      error.value = err.response?.data?.message || `ডিপার্টমেন্ট (ID: ${id}) আপডেট করতে ব্যর্থ হয়েছে।`;
+      console.error(`Error updating department with id ${id}:`, err);
     } finally {
-      state.loading = false;
+      loading.value = false;
     }
   };
 
   const deleteDepartment = async (id) => {
-    state.loading = true;
+    loading.value = true;
+    error.value = null;
     try {
       await apiClient.delete(`/departments/${id}`);
-      state.departments = state.departments.filter((d) => d.id !== id); // Remove the department
-    } catch (error) {
-      state.error = error.response?.data?.message || 'Failed to delete department';
-      console.error(`Error deleting department with id ${id}:`, error);
+      departments.value = departments.value.filter((d) => d.id !== id); // ডিপার্টমেন্ট রিমুভ করুন
+    } catch (err) {
+      error.value = err.response?.data?.message || `ডিপার্টমেন্ট (ID: ${id}) মুছতে ব্যর্থ হয়েছে।`;
+      console.error(`Error deleting department with id ${id}:`, err);
     } finally {
-      state.loading = false;
+      loading.value = false;
     }
   };
 
   return {
-    departments,
-    loading,
-    error,
+    departments: computed(() => departments.value),
+    department: computed(() => department.value),
+    loading: computed(() => loading.value),
+    error: computed(() => error.value),
     fetchDepartments,
     fetchDepartment,
     createDepartment,
     updateDepartment,
     deleteDepartment,
   };
-}
+});

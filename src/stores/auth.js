@@ -1,136 +1,152 @@
-import { defineStore } from 'pinia'
-import apiClient from '../axios'
+import { ref, computed } from 'vue';
+import { defineStore } from 'pinia';
+import apiClient from '../axios';
 
-export const useAuthStore = defineStore('auth', {
-  state: () => ({
-    user: null,
-    token: null,
-    error: null,
-  }),
-  actions: {
+export const useAuthStore = defineStore('auth', () => {
+  const user = ref(null);
+  const token = ref(null);
+  const error = ref(null);
 
-    async register(name, phone, password) {
-      try {
-        const response = await apiClient.post('/register', { name, phone, password })
-        this.user = response.data.user
-        this.token = response.data.access_token
-        localStorage.setItem('auth_token', this.token)
-        localStorage.setItem('user', JSON.stringify(this.user))
-        this.error = null
-      } catch (error) {
-        this.error = error.response.data.message
-      }
-    },
-    async login(phone, password) {
-      try {
-        const response = await apiClient.post('/login', { phone, password })
-        this.user = response.data.user
-        this.token = response.data.token
-        localStorage.setItem('auth_token', this.token)
-        localStorage.setItem('user', JSON.stringify(this.user))
-        this.error = null
-      } catch (error) {
-        this.error = error.response.data.message
-      }
-    },
-    logout() {
-      this.user = null
-      this.token = null
-      localStorage.removeItem('auth_token')
-      localStorage.removeItem('user')
-    },
-    async checkPhone(phone) {
-      try {
-        const response = await apiClient.post('/check-phone', { phone })
-        return response.data.isRegistered
-      } catch (error) {
-        this.error = error.response.data.message
-        return false
-      }
-    },
-    async fetchUser() {
-      try {
-        const token = localStorage.getItem('auth_token')
-        if (token) {
-          const response = await apiClient.get('/user', {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          })
-          this.user = response.data
-          this.token = token
-        }
-      } catch (error) {
-        if(error?.response?.status === 401) {
-          this.logout();
-        }
-        this.error = error.response.data.message
-      }
-    },
+  const isAuthenticated = computed(() => !!token.value);
 
-    async updateProfile(payload) {
-      try {
-        const token = this.token
-        const response = await apiClient.put('/profile', payload, {
+  async function register(name, phone, password) {
+    try {
+      const response = await apiClient.post('/register', { name, phone, password });
+      user.value = response.data.user;
+      token.value = response.data.access_token;
+      localStorage.setItem('auth_token', token.value);
+      localStorage.setItem('user', JSON.stringify(user.value));
+      error.value = null;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Registration failed.';
+    }
+  }
+
+  async function login(phone, password) {
+    try {
+      const response = await apiClient.post('/login', { phone, password });
+      user.value = response.data.user;
+      token.value = response.data.token;
+      localStorage.setItem('auth_token', token.value);
+      localStorage.setItem('user', JSON.stringify(user.value));
+      error.value = null;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Login failed.';
+    }
+  }
+
+  function logout() {
+    user.value = null;
+    token.value = null;
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user');
+  }
+
+  async function checkPhone(phone) {
+    try {
+      const response = await apiClient.post('/check-phone', { phone });
+      return response.data.isRegistered;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to check phone.';
+      return false;
+    }
+  }
+
+  async function fetchUser() {
+    try {
+      const storedToken = localStorage.getItem('auth_token');
+      if (storedToken) {
+        const response = await apiClient.get('/user', {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            Authorization: `Bearer ${storedToken}`,
           },
-        })
-
-        this.user = response.data.user
-        localStorage.setItem('user', JSON.stringify(this.user))
-        this.error = null
-      } catch (error) {
-        this.error = error.response.data.message
+        });
+        user.value = response.data;
+        token.value = storedToken;
       }
-    },
-
-    async uploadProfilePhoto(formData) {
-      try {
-        const response = await apiClient.post('/upload-profile-photo', formData, {
-          headers: {
-            'Authorization': `Bearer ${this.token}`,
-            'Content-Type': 'multipart/form-data'
-          }
-        })
-        this.user = response.data.user
-        localStorage.setItem('user', JSON.stringify(this.user))
-        this.error = null
-      } catch (error) {
-        this.error = error.response.data.message
+    } catch (err) {
+      if (err?.response?.status === 401) {
+        logout();
       }
-    },
+      error.value = err.response?.data?.message || 'Failed to fetch user.';
+    }
+  }
 
-    async changePassword(currentPassword, newPassword, newPasswordConfirmation) {
-      try {
-        const response = await apiClient.post('/change-password', {
-          current_password: currentPassword,
-          new_password: newPassword,
-          new_password_confirmation: newPasswordConfirmation
-        })
-        this.error = null
-        return response.data.message
-      } catch (error) {
-        this.error = error.response.data.message
+  async function updateProfile(payload) {
+    try {
+      const response = await apiClient.put('/profile', payload, {
+        headers: {
+          Authorization: `Bearer ${token.value}`,
+        },
+      });
+      user.value = response.data.user;
+      localStorage.setItem('user', JSON.stringify(user.value));
+      error.value = null;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to update profile.';
+    }
+  }
+
+  async function uploadProfilePhoto(formData) {
+    try {
+      const response = await apiClient.post('/upload-profile-photo', formData, {
+        headers: {
+          Authorization: `Bearer ${token.value}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      user.value = response.data.user;
+      localStorage.setItem('user', JSON.stringify(user.value));
+      error.value = null;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to upload profile photo.';
+    }
+  }
+
+  async function changePassword(currentPassword, newPassword, newPasswordConfirmation) {
+    try {
+      const response = await apiClient.post('/change-password', {
+        current_password: currentPassword,
+        new_password: newPassword,
+        new_password_confirmation: newPasswordConfirmation,
+      });
+      error.value = null;
+      return response.data.message;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to change password.';
+    }
+  }
+
+  async function fetchAttendance() {
+    try {
+      const response = await apiClient.get('/attendance/me', {
+        headers: {
+          Authorization: `Bearer ${token.value}`,
+        },
+      });
+      return response.data;
+    } catch (err) {
+      if (err?.response?.status === 401) {
+        logout();
       }
-    },
+      error.value = err.response?.data?.message || 'Failed to fetch attendance.';
+      return null;
+    }
+  }
 
-    async fetchAttendance() {
-      try {
-        const response = await apiClient.get('/attendance/me', {
-          headers: {
-            Authorization: `Bearer ${this.token}`,
-          },
-        })
-        return response.data
-      } catch (error) {
-        if (error?.response?.status === 401) {
-          this.logout(); 
-        }
-        this.error = error.response?.data?.message || 'Failed to fetch attendance';
-        return null;
-      }
-    },
-
-  },
-})
+  return {
+    user,
+    token,
+    error,
+    isAuthenticated,
+    register,
+    login,
+    logout,
+    checkPhone,
+    fetchUser,
+    updateProfile,
+    uploadProfilePhoto,
+    changePassword,
+    fetchAttendance,
+  };
+});

@@ -1,34 +1,41 @@
-import { reactive, computed } from 'vue';
+import { ref } from 'vue';
+import { defineStore } from 'pinia';
 import apiClient from '../axios';
 
-export function useAttendanceStore() {
-  const state = reactive({
-    attendances: [], // List of attendance records
-    monthlyAttendance: null, // Monthly attendance for a specific user
-    error: null, // Error state
-  });
+export const useAttendanceStore = defineStore('attendance', () => {
+  const monthlyLogs = ref([]);
+  const summary = ref(null);
+  const selectedMonth = ref(new Date().toISOString().substring(0, 7));
+  const error = ref(null);
+  const isLoading = ref(false);
 
-  const attendances = computed(() => state.attendances);
-  const monthlyAttendance = computed(() => state.monthlyAttendance);
-  const error = computed(() => state.error);
-
-  // Fetch Monthly Attendance by Shift
   const getMonthlyAttendanceByShift = async (userId, month) => {
+    if (!userId || !month) {
+      error.value = 'Invalid user ID or month';
+      return;
+    }
+
+    isLoading.value = true;
     try {
       const response = await apiClient.get(`/user/${userId}/attendance/monthly/${month}`);
-      state.monthlyAttendance = response.data;
-      state.error = null;
-      return response.data;
+      monthlyLogs.value = response.data.monthly_logs; // শুধু logs
+      summary.value = response.data.summary; // শুধু summary
+      error.value = null;
     } catch (err) {
-      state.error = err.response?.data?.message || 'Something went wrong';
-      console.error(state.error);
+      error.value = err.response?.data?.message || 'Something went wrong';
+      console.error(error.value);
+    } finally {
+      isLoading.value = false;
     }
   };
 
   return {
-    attendances,
-    monthlyAttendance,
+    monthlyLogs,
+    summary,
+    selectedMonth,
     error,
+    isLoading,
     getMonthlyAttendanceByShift,
   };
-}
+});
+

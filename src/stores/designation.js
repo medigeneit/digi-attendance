@@ -1,98 +1,99 @@
-import { reactive, computed } from 'vue';
+import { ref, computed } from 'vue';
+import { defineStore } from 'pinia';
 import apiClient from '../axios';
 
-export function useDesignationStore() {
-  const state = reactive({
-    designations: [], // List of designations
-    designation: null, // Single designation details
-    loading: false, // Loading state
-    error: null, // Error state
-  });
+export const useDesignationStore = defineStore('designation', () => {
+  const designations = ref([]); // Designation লিস্ট
+  const designation = ref(null); // একক Designation ডিটেইল
+  const loading = ref(false); // লোডিং স্টেট
+  const error = ref(null); // এরর স্টেট
 
-  const designations = computed(() => state.designations);
-  const loading = computed(() => state.loading);
-  const error = computed(() => state.error);
-
-  const fetchDesignations = async () => {
-    state.loading = true;
+  const fetchDesignations = async (companyId = null) => {
+    loading.value = true;
+    error.value = null;
     try {
-      const response = await apiClient.get('/designations');
-      state.designations = response.data;
-      return state.designations;
-    } catch (error) {
-      state.error = error.response?.data?.message || 'Failed to fetch designations';
-      console.error('Error fetching designations:', error);
+      const response = await apiClient.get('/designations', {
+        params: { company_id: companyId },
+      });
+      designations.value = response.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'ডিজাইনেশন লোড করতে ব্যর্থ হয়েছে।';
+      console.error('Error fetching designations:', err);
     } finally {
-      state.loading = false;
+      loading.value = false;
     }
   };
 
   const fetchDesignation = async (id) => {
-    state.loading = true;
+    loading.value = true;
+    error.value = null;
     try {
       const response = await apiClient.get(`/designations/${id}`);
-      state.designation = response.data;
-      return state.designation;
-    } catch (error) {
-      state.error = error.response?.data?.message || 'Failed to fetch designation';
-      console.error(`Error fetching designation with id ${id}:`, error);
+      designation.value = response.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || `ডিজাইনেশন (ID: ${id}) লোড করতে ব্যর্থ হয়েছে।`;
+      console.error(`Error fetching designation with id ${id}:`, err);
     } finally {
-      state.loading = false;
+      loading.value = false;
     }
   };
 
   const createDesignation = async (data) => {
-    state.loading = true;
+    loading.value = true;
+    error.value = null;
     try {
       const response = await apiClient.post('/designations', data);
-      state.designations.push(response.data); // Add new designation to list
+      designations.value.push(response.data); // নতুন ডিজাইনেশন লিস্টে যোগ করুন
       return response.data;
-    } catch (error) {
-      state.error = error.response?.data?.message || 'Failed to create designation';
-      console.error('Error creating designation:', error);
+    } catch (err) {
+      error.value = err.response?.data?.message || 'ডিজাইনেশন তৈরি করতে ব্যর্থ হয়েছে।';
+      console.error('Error creating designation:', err);
     } finally {
-      state.loading = false;
+      loading.value = false;
     }
   };
 
   const updateDesignation = async (id, data) => {
-    state.loading = true;
+    loading.value = true;
+    error.value = null;
     try {
       const response = await apiClient.put(`/designations/${id}`, data);
-      const index = state.designations.findIndex((d) => d.id === id);
+      const index = designations.value.findIndex((d) => d.id === id);
       if (index !== -1) {
-        state.designations[index] = response.data; // Update the designation in the list
+        designations.value[index] = response.data; // আপডেট করা ডিজাইনেশন
       }
       return response.data;
-    } catch (error) {
-      state.error = error.response?.data?.message || 'Failed to update designation';
-      console.error(`Error updating designation with id ${id}:`, error);
+    } catch (err) {
+      error.value = err.response?.data?.message || `ডিজাইনেশন (ID: ${id}) আপডেট করতে ব্যর্থ হয়েছে।`;
+      console.error(`Error updating designation with id ${id}:`, err);
     } finally {
-      state.loading = false;
+      loading.value = false;
     }
   };
 
   const deleteDesignation = async (id) => {
-    state.loading = true;
+    loading.value = true;
+    error.value = null;
     try {
       await apiClient.delete(`/designations/${id}`);
-      state.designations = state.designations.filter((d) => d.id !== id); // Remove the designation
-    } catch (error) {
-      state.error = error.response?.data?.message || 'Failed to delete designation';
-      console.error(`Error deleting designation with id ${id}:`, error);
+      designations.value = designations.value.filter((d) => d.id !== id); // ডিজাইনেশন রিমুভ করুন
+    } catch (err) {
+      error.value = err.response?.data?.message || `ডিজাইনেশন (ID: ${id}) মুছতে ব্যর্থ হয়েছে।`;
+      console.error(`Error deleting designation with id ${id}:`, err);
     } finally {
-      state.loading = false;
+      loading.value = false;
     }
   };
 
   return {
-    designations,
-    loading,
-    error,
+    designations: computed(() => designations.value),
+    designation: computed(() => designation.value),
+    loading: computed(() => loading.value),
+    error: computed(() => error.value),
     fetchDesignations,
     fetchDesignation,
     createDesignation,
     updateDesignation,
     deleteDesignation,
   };
-}
+});
