@@ -133,7 +133,6 @@ const saveUser = async () => {
               </div>
             </div>
           </div>
-{{ companyStore.companies }}
           <div class="border p-4 rounded-md bg-gray-100">
             <p class="title-md">Professional Info</p>
             <hr class="my-2" />
