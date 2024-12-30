@@ -67,34 +67,44 @@ const goBack = () => router.go(-1)
       <div class="overflow-x-auto card-bg">
         <table class="min-w-full table-auto border-collapse border border-gray-300 bg-white">
           <thead>
-            <tr class="bg-gray-200">
+            <tr class="bg-gray-200 text-xs">
               <th class="border px-2 py-1">Date</th>
+              <th class="border px-2 py-1">Day</th>
               <th class="border px-2 py-1">Shift</th>
               <th class="border px-2 py-1">Entry Time</th>
               <th class="border px-2 py-1">Exit Time</th>
-              <th class="border px-2 py-1">Status</th>
               <th class="border px-2 py-1">Working Hours</th>
-              <th class="border px-2 py-1">Remarks</th>
+              <th class="border px-2 py-1">Late Entry</th>
+              <th class="border px-2 py-1">Early Leave</th>
+              <th class="border px-2 py-1">Status</th>
             </tr>
           </thead>
-          <tbody class="text-center text-sm">
+          <tbody class="text-center text-xs">
             <tr v-for="log in attendanceStore?.monthlyLogs" :key="log?.date">
               <td class="border px-2 py-1">{{ log.date }}</td>
+              <td class="border px-2 py-1">{{ log.weekday }}</td>
               <td
                 class="border px-2 py-1"
                 :title="`${log.shift_start_time} to ${log.shift_end_time}`"
               >
                 {{ log.shift_name }}
               </td>
-              <td class="border px-2 py-1" :title="`Device: ${log.entry_device}`">
+              <td class="border px-2 py-1" :class="{'bg-red-200': log.late_duration }" :title="`Device: ${log.entry_device}`">
                 {{ log.entry_time }}
               </td>
-              <td class="border px-2 py-1" :title="`Device: ${log.exit_device}`">
+              <td class="border px-2 py-1" :class="{'bg-red-200': log.early_leave_duration }" :title="`Device: ${log.exit_device}`">
                 {{ log.exit_time }}
               </td>
-              <td class="border px-2 py-1">{{ log.status }}</td>
               <td class="border px-2 py-1">{{ log.working_hours }}</td>
-              <td class="border px-2 py-1">{{ log.remarks }}</td>
+              <td class="border px-2 py-1">
+                {{ log.late_duration }}
+                <span v-if="log.late_duration">(Accepted)</span>
+              </td>
+              <td class="border px-2 py-1">
+                {{ log.early_leave_duration }}
+                <span v-if="log.early_leave_duration">(Accepted)</span>
+              </td>
+              <td class="border px-2 py-1">{{ log.status }}</td>
             </tr>
           </tbody>
         </table>

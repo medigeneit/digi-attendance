@@ -1,83 +1,79 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useDeviceStore } from '@/stores/device'
-import { useToast } from 'vue-toastification'
+import { onMounted, ref } from 'vue';
+import { useDeviceStore } from '@/stores/device';
+import { useToast } from 'vue-toastification';
 
-import DeviceModal from '@/components/DeviceModal.vue'
-import LoaderView from '@/components/common/LoaderView.vue'
-import DeleteModal from '@/components/common/DeleteModal.vue'
-import HeaderWithButtons from '@/components/common/HeaderWithButtons.vue'
+import DeviceModal from '@/components/DeviceModal.vue';
+import LoaderView from '@/components/common/LoaderView.vue';
+import DeleteModal from '@/components/common/DeleteModal.vue';
+import HeaderWithButtons from '@/components/common/HeaderWithButtons.vue';
 
-const deviceStore = useDeviceStore()
-const toast = useToast()
+const deviceStore = useDeviceStore();
+const toast = useToast();
 
-const devices = deviceStore.devices
-const isLoading = deviceStore.loading
-
-const showDeviceModal = ref(false)
-const showDeleteModal = ref(false)
-const selectedDevice = ref(null)
+const showDeviceModal = ref(false);
+const showDeleteModal = ref(false);
+const selectedDevice = ref(null);
 
 const openAddModal = () => {
-  selectedDevice.value = null
-  showDeviceModal.value = true
-}
+  selectedDevice.value = null;
+  showDeviceModal.value = true;
+};
 
 const openEditModal = (device) => {
-  selectedDevice.value = device
-  showDeviceModal.value = true
-}
+  selectedDevice.value = device;
+  showDeviceModal.value = true;
+};
 
 const closeDeviceModal = () => {
-  showDeviceModal.value = false
-}
+  showDeviceModal.value = false;
+};
 
 const handleSave = async (device) => {
   try {
     if (device.id) {
-      await deviceStore.updateDevice(device.id, device)
-      toast.success('Device updated successfully!')
+      await deviceStore.updateDevice(device.id, device);
+      toast.success('Device updated successfully!');
     } else {
-      await deviceStore.createDevice(device)
-      toast.success('Device added successfully!')
+      await deviceStore.createDevice(device);
+      toast.success('Device added successfully!');
     }
-
-    await deviceStore.fetchDevices()
+    await deviceStore.fetchDevices();
   } catch (error) {
-    toast.error('Failed to save device!')
-    console.error('Error handling save:', error)
+    toast.error('Failed to save device!');
+    console.error('Error handling save:', error);
   }
-}
+};
 
 const openDeleteModal = (device) => {
-  selectedDevice.value = device
-  showDeleteModal.value = true
-}
+  selectedDevice.value = device;
+  showDeleteModal.value = true;
+};
 
 const closeDeleteModal = () => {
-  showDeleteModal.value = false
-}
+  showDeleteModal.value = false;
+};
 
 const handleDelete = async () => {
   if (!selectedDevice.value || !selectedDevice.value.id) {
-    toast.error('Invalid device selected for deletion!')
-    return
+    toast.error('Invalid device selected for deletion!');
+    return;
   }
   try {
-    await deviceStore.deleteDevice(selectedDevice.value.id)
-    toast.warning('Device deleted successfully!')
-    await deviceStore.fetchDevices()
+    await deviceStore.deleteDevice(selectedDevice.value.id);
+    toast.warning('Device deleted successfully!');
+    await deviceStore.fetchDevices();
   } catch (error) {
-    toast.error('Failed to delete device!')
-    console.error('Error deleting device:', error)
+    toast.error('Failed to delete device!');
+    console.error('Error deleting device:', error);
   } finally {
-    closeDeleteModal()
+    closeDeleteModal();
   }
-}
+};
 
 onMounted(async () => {
-  await deviceStore.fetchDevices()
-})
+  await deviceStore.fetchDevices();
+});
 </script>
 
 <template>
@@ -96,14 +92,14 @@ onMounted(async () => {
           </tr>
         </thead>
         <tbody class="text-gray-600 text-sm font-light">
-          <tr v-if="isLoading">
+          <tr v-if="deviceStore.loading">
             <td colspan="5">
               <LoaderView />
             </td>
           </tr>
-          <template v-else-if="devices && devices.length">
+          <template v-else-if="deviceStore.devices && deviceStore.devices.length">
             <tr
-              v-for="device in devices"
+              v-for="device in deviceStore.devices"
               :key="device.id"
               class="border-b border-gray-200 hover:bg-gray-100"
             >

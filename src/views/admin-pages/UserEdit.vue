@@ -7,6 +7,7 @@ import { useDesignationStore } from '@/stores/designation';
 import { useShiftStore } from '@/stores/shift';
 import { useToast } from 'vue-toastification';
 import { useRoute, useRouter } from 'vue-router';
+import LoaderView from '@/components/common/LoaderView.vue';
 
 const form = reactive({
   name: '',
@@ -28,7 +29,6 @@ const form = reactive({
   weekends: [],
 });
 
-const showPassword = ref(false);
 const userStore = useUserStore();
 const companyStore = useCompanyStore();
 const departmentStore = useDepartmentStore();
@@ -38,7 +38,11 @@ const toast = useToast();
 const route = useRoute();
 const router = useRouter();
 
+const showPassword = ref(false);
+const isLoading = ref(false);
+
 onMounted(async () => {
+  isLoading.value = true;
   await companyStore.fetchCompanies();
   await loadUser();
 });
@@ -51,9 +55,10 @@ watch(
       await designationStore.fetchDesignations(newCompanyId);
       await shiftStore.fetchShifts(newCompanyId);
 
-      form.department_id = '';
-      form.designation_id = '';
-      form.shift_id = '';
+      // form.department_id = '';
+      // form.designation_id = '';
+      // form.shift_id = '';
+      isLoading.value = false;
     }
   },
 );
@@ -92,7 +97,7 @@ const updateUser = async () => {
     const dataToSend = { ...form };
     await userStore.updateUser(route.params.id, dataToSend);
     toast.success('User updated successfully');
-    router.push({ name: 'UserList' });
+    router.push({ name: 'UserShow', params: { id: route.params.id } });
   } catch (error) {
     const errorMessage = error.response?.data?.message || 'Failed to update user';
     toast.error(errorMessage);
@@ -105,7 +110,8 @@ const updateUser = async () => {
   <div class="my-container space-y-2">
     <div class="card-bg md:p-8 p-4 mx-4">
       <h2 class="title-lg text-center">Edit Employee</h2>
-      <form @submit.prevent="updateUser" class="space-y-4">
+      <LoaderView v-if="isLoading" class="bg-gray-100 border shadow-none" />
+      <form v-else @submit.prevent="updateUser" class="space-y-4">
         <div class="grid gap-4">
           <div class="border p-4 rounded-md bg-gray-100">
             <p class="title-md">Personal Info</p>

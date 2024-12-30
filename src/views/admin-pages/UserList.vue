@@ -8,11 +8,11 @@ const router = useRouter();
 const userStore = useUserStore();
 
 onMounted(() => {
-  userStore.fetchUsers(); // Fetch users when the component is mounted
+  userStore.fetchUsers();
 });
 
 const goBack = () => {
-  router.go(-1); // Go back to the previous page
+  router.go(-1); 
 };
 </script>
 

@@ -100,15 +100,23 @@ onMounted(async () => {
               <p class="text-lg text-gray-800">{{ formatDate(user?.joining_date) }}</p>
             </div>
             <div>
+              <p class="text-sm font-bold text-gray-600">Weekends:</p>
+              <p class="text-lg text-gray-800">{{ user?.weekends.join(', ') }}</p>
+            </div>
+            <div>
               <p class="text-sm font-bold text-gray-600">Employment Type:</p>
               <p class="text-lg text-gray-800">{{ user?.employment_type }}</p>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-gray-600">Status:</p>
+              <p class="text-lg text-gray-800">{{ user?.is_active ? 'Active' : 'Inactive' }}</p>
             </div>
           </div>
         </div>
         <div class="bg-gray-100 p-4 rounded-lg">
           <p class="title-md">Technical Info</p>
           <hr class="mb-2" />
-          <div class="grid md:grid-cols-3 gap-4">
+          <div class="grid md:grid-cols-2 gap-4">
             <div>
               <p class="text-sm font-bold text-gray-600">Role:</p>
               <p class="text-lg text-gray-800">{{ user?.role }}</p>
@@ -117,10 +125,7 @@ onMounted(async () => {
               <p class="text-sm font-bold text-gray-600">Biometric Device ID:</p>
               <p class="text-lg text-gray-800">{{ user?.device_user_id }}</p>
             </div>
-            <div>
-              <p class="text-sm font-bold text-gray-600">Status:</p>
-              <p class="text-lg text-gray-800">{{ user?.is_active ? 'Active' : 'Inactive' }}</p>
-            </div>
+
           </div>
         </div>
         <div class="flex justify-center mt-8 gap-4">
