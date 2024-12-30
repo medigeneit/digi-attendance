@@ -119,6 +119,12 @@ const router = createRouter({
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
         },
         {
+          path: '/settings/leave-type-list',
+          name: 'LeaveTypeList',
+          component: () => import('@/views/admin-pages/LeaveTypeList.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+        },
+        {
           path: '/hrd',
           name: 'HrdView',
           component: () => import('@/views/admin-pages/HrdView.vue'),
