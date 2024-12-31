@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useLeaveTypeStore } from '@/stores/leave-type'
 import { useToast } from 'vue-toastification'
 import LeaveTypeModal from '@/components/LeaveTypeModal.vue'
@@ -28,23 +28,6 @@ const closeLeaveTypeModal = () => {
   showLeaveTypeModal.value = false
 }
 
-const handleSave = async (leaveType) => {
-  try {
-    if (leaveType.id) {
-      await leaveTypeStore.updateLeaveType(leaveType.id, leaveType)
-      toast.success('Leave Type updated successfully!')
-    } else {
-      await leaveTypeStore.createLeaveType(leaveType)
-      toast.success('Leave Type added successfully!')
-    }
-  } catch (error) {
-    toast.error('Failed to save leave type!')
-    console.error('Error saving leave type:', error)
-  } finally {
-    closeLeaveTypeModal()
-  }
-}
-
 const openDeleteModal = (leaveType) => {
   selectedLeaveType.value = leaveType
   showDeleteModal.value = true
@@ -55,23 +38,31 @@ const closeDeleteModal = () => {
 }
 
 const handleDelete = async () => {
-  if (!selectedLeaveType.value || !selectedLeaveType.value.id) {
+  if (!selectedLeaveType.value?.id) {
     toast.error('Invalid leave type selected for deletion!')
     return
   }
+  await leaveTypeStore.deleteLeaveType(selectedLeaveType.value.id)
+  toast.success('Leave Type deleted successfully!')
+  closeDeleteModal()
+}
+
+const handleSave = async (leaveType) => {
+  const action = leaveType.id ? 'updateLeaveType' : 'createLeaveType'
+  const successMessage = leaveType.id
+    ? 'Leave Type updated successfully!'
+    : 'Leave Type added successfully!'
+
   try {
-    await leaveTypeStore.deleteLeaveType(selectedLeaveType.value.id)
-    toast.warning('Leave Type deleted successfully!')
-  } catch (error) {
-    toast.error('Failed to delete leave type!')
-    console.error('Error deleting leave type:', error)
+    await leaveTypeStore[action](leaveType.id || leaveType, leaveType)
+    toast.success(successMessage)
   } finally {
-    closeDeleteModal()
+    closeLeaveTypeModal()
   }
 }
 
-onMounted(async () => {
-  await leaveTypeStore.fetchLeaveTypes()
+onMounted(() => {
+  leaveTypeStore.fetchLeaveTypes()
 })
 </script>
 
@@ -83,6 +74,7 @@ onMounted(async () => {
       <table class="min-w-full table-auto bg-white shadow-md rounded-lg overflow-hidden">
         <thead>
           <tr class="bg-gray-200 text-gray-700 text-sm leading-normal">
+            <th class="py-3 px-2 text-left">#</th>
             <th class="py-3 px-2 text-left">Company</th>
             <th class="py-3 px-2 text-left">Leave Name</th>
             <th class="py-3 px-2 text-left">Annual Quota</th>
@@ -93,7 +85,7 @@ onMounted(async () => {
         </thead>
         <tbody class="text-gray-600 text-sm font-light">
           <tr v-if="leaveTypeStore.loading">
-            <td colspan="6">
+            <td colspan="7">
               <LoaderView class="shadow-none" />
             </td>
           </tr>
@@ -103,21 +95,12 @@ onMounted(async () => {
               :key="leaveType.id"
               class="border-b border-gray-200 hover:bg-gray-100"
             >
-              <td class="py-3 px-2 text-left">
-                <p class="font-medium">{{ leaveType.company.name }}</p>
-              </td>
-              <td class="py-3 px-2 text-left">
-                <p class="font-medium">{{ leaveType.name }}</p>
-              </td>
-              <td class="py-3 px-2 text-left">
-                <p class="font-medium">{{ leaveType.annual_quota }}</p>
-              </td>
-              <td class="py-3 px-2 text-center">
-                <p class="font-medium">{{ leaveType.type }}</p>
-              </td>
-              <td class="py-3 px-2 text-center">
-                <p class="font-medium">{{ leaveType.max_consecutive_days || 'N/A' }}</p>
-              </td>
+              <td class="py-3 px-2 text-left">{{ leaveType?.id }}</td>
+              <td class="py-3 px-2 text-left">{{ leaveType?.company?.name }}</td>
+              <td class="py-3 px-2 text-left">{{ leaveType?.name }}</td>
+              <td class="py-3 px-2 text-left">{{ leaveType?.annual_quota }}</td>
+              <td class="py-3 px-2 text-center">{{ leaveType?.type }}</td>
+              <td class="py-3 px-2 text-center">{{ leaveType?.max_consecutive_days || 'N/A' }}</td>
               <td class="py-3 px-2 text-center">
                 <div class="flex justify-center gap-4">
                   <button
@@ -137,7 +120,7 @@ onMounted(async () => {
             </tr>
           </template>
           <tr v-else>
-            <td colspan="5" class="text-center text-red-500 py-4">No leave types found</td>
+            <td colspan="7" class="text-center text-red-500 py-4">No leave types found</td>
           </tr>
         </tbody>
       </table>

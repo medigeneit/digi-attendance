@@ -12,6 +12,7 @@ const companyStore = useCompanyStore();
 
 const isEditMode = ref(false);
 const form = reactive({
+  id: null, // ID যোগ করা হয়েছে
   company_id: '',
   name: '',
   annual_quota: 0,
@@ -22,6 +23,7 @@ const form = reactive({
 
 const resetForm = () => {
   isEditMode.value = false;
+  form.id = null; // ID রিসেট করা
   form.company_id = '';
   form.name = '';
   form.annual_quota = 0;
@@ -35,6 +37,7 @@ watch(
   (newLeaveType) => {
     if (newLeaveType) {
       isEditMode.value = true;
+      form.id = newLeaveType.id; 
       form.company_id = newLeaveType.company_id;
       form.name = newLeaveType.name;
       form.annual_quota = newLeaveType.annual_quota;

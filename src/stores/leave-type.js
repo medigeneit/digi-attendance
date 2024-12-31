@@ -3,10 +3,10 @@ import { defineStore } from 'pinia';
 import apiClient from '../axios';
 
 export const useLeaveTypeStore = defineStore('leaveType', () => {
-  const leaveTypes = ref([]); // লিভ টাইপ লিস্ট
-  const leaveType = ref(null); // একক লিভ টাইপ ডিটেইল
-  const loading = ref(false); // লোডিং স্টেট
-  const error = ref(null); // এরর স্টেট
+  const leaveTypes = ref([]);
+  const leaveType = ref(null);
+  const loading = ref(false);
+  const error = ref(null);
 
   const fetchLeaveTypes = async (companyId = null) => {
     loading.value = true;
@@ -43,7 +43,7 @@ export const useLeaveTypeStore = defineStore('leaveType', () => {
     error.value = null;
     try {
       const response = await apiClient.post('/leave-types', data);
-      leaveTypes.value.push(response.data); // নতুন লিভ টাইপ লিস্টে যোগ করুন
+      await fetchLeaveTypes();
       return response.data;
     } catch (err) {
       error.value = err.response?.data?.message || 'লিভ টাইপ তৈরি করতে ব্যর্থ হয়েছে।';
@@ -58,10 +58,7 @@ export const useLeaveTypeStore = defineStore('leaveType', () => {
     error.value = null;
     try {
       const response = await apiClient.put(`/leave-types/${id}`, data);
-      const index = leaveTypes.value.findIndex((type) => type.id === id);
-      if (index !== -1) {
-        leaveTypes.value[index] = response.data; // আপডেট করা লিভ টাইপ
-      }
+      await fetchLeaveTypes();
       return response.data;
     } catch (err) {
       error.value = err.response?.data?.message || `লিভ টাইপ (ID: ${id}) আপডেট করতে ব্যর্থ হয়েছে।`;
@@ -76,7 +73,7 @@ export const useLeaveTypeStore = defineStore('leaveType', () => {
     error.value = null;
     try {
       await apiClient.delete(`/leave-types/${id}`);
-      leaveTypes.value = leaveTypes.value.filter((type) => type.id !== id); // লিভ টাইপ রিমুভ
+      leaveTypes.value = leaveTypes.value.filter((type) => type.id !== id);
     } catch (err) {
       error.value = err.response?.data?.message || `লিভ টাইপ (ID: ${id}) মুছতে ব্যর্থ হয়েছে।`;
       console.error(`Error deleting leave type with id ${id}:`, err);

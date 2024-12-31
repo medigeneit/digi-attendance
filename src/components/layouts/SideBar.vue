@@ -47,12 +47,12 @@ onMounted(async () => {
       </RouterLink>
 
       <RouterLink
-        to="/attendance"
+        to="/my-attendance"
         class="side-menu"
-        :class="{ 'side-menu-active': currentRoute.includes('/attendance') }"
+        :class="{ 'side-menu-active': currentRoute.includes('/my-attendance') }"
       >
         <i class="fad fa-list py-2"></i>
-        <h4 v-if="open">Attendance</h4>
+        <h4 v-if="open">My Attendance</h4>
       </RouterLink>
 
       <RouterLink
@@ -63,7 +63,7 @@ onMounted(async () => {
         <i class="fas fa-users-cog py-2"></i>
         <h4 v-if="open">HR Department</h4>
       </RouterLink>
-      
+
       <RouterLink
         to="/settings"
         class="side-menu"

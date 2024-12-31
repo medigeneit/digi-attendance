@@ -51,6 +51,12 @@ const router = createRouter({
           component: () => import('@/views/private-pages/DashBoard.vue'),
           meta: { requiresAuth: true }
         },
+        {
+          path: '/my-attendance',
+          name: 'MyAttendance',
+          component: () => import('@/views/private-pages/MyAttendance.vue'),
+          meta: { requiresAuth: true }
+        },
 
         {
           path: '/attendance',
