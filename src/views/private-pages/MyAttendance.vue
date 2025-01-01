@@ -99,9 +99,6 @@ const goBack = () => router.go(-1)
       </div>
     </div>
 
-    <!-- Month Selection -->
-
-    <!-- Attendance Table -->
     <LoaderView v-if="attendanceStore.isLoading" />
 
     <div v-else class="space-y-4">
