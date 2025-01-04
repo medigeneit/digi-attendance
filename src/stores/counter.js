@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
+import apiClient from '@/axios';
 
 export const useCounterStore = defineStore('counter', () => {
   const count = ref(0)

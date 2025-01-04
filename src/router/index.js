@@ -131,6 +131,12 @@ const router = createRouter({
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
         },
         {
+          path: '/settings/leave-approval-list',
+          name: 'LeaveApprovalList',
+          component: () => import('@/views/admin-pages/LeaveApprovalList.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+        },
+        {
           path: '/hrd',
           name: 'HrdView',
           component: () => import('@/views/admin-pages/HrdView.vue'),
