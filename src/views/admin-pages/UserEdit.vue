@@ -1,13 +1,16 @@
 <script setup>
-import { reactive, ref, onMounted, watch } from 'vue';
-import { useUserStore } from '@/stores/user';
-import { useCompanyStore } from '@/stores/company';
-import { useDepartmentStore } from '@/stores/department';
-import { useDesignationStore } from '@/stores/designation';
-import { useShiftStore } from '@/stores/shift';
-import { useToast } from 'vue-toastification';
-import { useRoute, useRouter } from 'vue-router';
-import LoaderView from '@/components/common/LoaderView.vue';
+import { reactive, ref, onMounted, watch } from 'vue'
+import { useUserStore } from '@/stores/user'
+import { useCompanyStore } from '@/stores/company'
+import { useDepartmentStore } from '@/stores/department'
+import { useDesignationStore } from '@/stores/designation'
+import { useLeaveApprovalStore } from '@/stores/leave-approval'
+import { useShiftStore } from '@/stores/shift'
+import { useToast } from 'vue-toastification'
+import { useRoute, useRouter } from 'vue-router'
+import LoaderView from '@/components/common/LoaderView.vue'
+
+const leaveApprovalStore = useLeaveApprovalStore()
 
 const form = reactive({
   name: '',
@@ -27,83 +30,83 @@ const form = reactive({
   joining_date: '',
   employment_type: 'Provisional',
   weekends: [],
-});
+  leave_approval_id: '',
+})
 
-const userStore = useUserStore();
-const companyStore = useCompanyStore();
-const departmentStore = useDepartmentStore();
-const designationStore = useDesignationStore();
-const shiftStore = useShiftStore();
-const toast = useToast();
-const route = useRoute();
-const router = useRouter();
+const userStore = useUserStore()
+const companyStore = useCompanyStore()
+const departmentStore = useDepartmentStore()
+const designationStore = useDesignationStore()
+const shiftStore = useShiftStore()
+const toast = useToast()
+const route = useRoute()
+const router = useRouter()
 
-const showPassword = ref(false);
-const isLoading = ref(false);
+const showPassword = ref(false)
+const isLoading = ref(false)
 
 onMounted(async () => {
-  isLoading.value = true;
-  await companyStore.fetchCompanies();
-  await loadUser();
-});
+  isLoading.value = true
+  await companyStore.fetchCompanies()
+  await leaveApprovalStore.fetchLeaveApprovals()
+  await loadUser()
+  isLoading.value = false
+})
 
 watch(
   () => form.company_id,
   async (newCompanyId) => {
     if (newCompanyId) {
-      await departmentStore.fetchDepartments(newCompanyId);
-      await designationStore.fetchDesignations(newCompanyId);
-      await shiftStore.fetchShifts(newCompanyId);
-
-      // form.department_id = '';
-      // form.designation_id = '';
-      // form.shift_id = '';
-      isLoading.value = false;
+      await departmentStore.fetchDepartments(newCompanyId)
+      await designationStore.fetchDesignations(newCompanyId)
+      await shiftStore.fetchShifts(newCompanyId)
+      isLoading.value = false
     }
   },
-);
+)
 
 const loadUser = async () => {
   try {
-    const userId = route.params.id;
-    const user = await userStore.fetchUser(userId);
+    const userId = route.params.id
+    const user = await userStore.fetchUser(userId)
 
-    form.name = user.name;
-    form.phone = user.phone;
-    form.email = user.email;
-    form.address = user.address;
-    form.nid = user.nid;
-    form.date_of_birth = user.date_of_birth;
-    form.joining_date = user.joining_date;
-    form.employment_type = user.employment_type;
-    form.weekends = user.weekends || [];
-    form.is_active = user.is_active;
-    form.company_id = user.company_id;
-    form.department_id = user.department_id;
-    form.designation_id = user.designation_id;
-    form.shift_id = user.shift_id;
-    form.role = user.role;
-    form.device_user_id = user.device_user_id;
+    form.name = user.name
+    form.phone = user.phone
+    form.email = user.email
+    form.address = user.address
+    form.nid = user.nid
+    form.date_of_birth = user.date_of_birth
+    form.joining_date = user.joining_date
+    form.employment_type = user.employment_type
+    form.weekends = user.weekends || []
+    form.is_active = user.is_active
+    form.company_id = user.company_id
+    form.department_id = user.department_id
+    form.designation_id = user.designation_id
+    form.shift_id = user.shift_id
+    form.role = user.role
+    form.device_user_id = user.device_user_id
+    form.leave_approval_id = user.leave_approval_id
   } catch (error) {
-    const errorMessage = error.response?.data?.message || 'Failed to load user data';
-    toast.error(errorMessage);
-    console.error(errorMessage);
-    router.push({ name: 'UserList' });
+    const errorMessage = error.response?.data?.message || 'Failed to load user data'
+    toast.error(errorMessage)
+    console.error(errorMessage)
+    router.push({ name: 'UserList' })
   }
-};
+}
 
 const updateUser = async () => {
   try {
-    const dataToSend = { ...form };
-    await userStore.updateUser(route.params.id, dataToSend);
-    toast.success('User updated successfully');
-    router.push({ name: 'UserShow', params: { id: route.params.id } });
+    const dataToSend = { ...form }
+    await userStore.updateUser(route.params.id, dataToSend)
+    toast.success('User updated successfully')
+    router.push({ name: 'UserShow', params: { id: route.params.id } })
   } catch (error) {
-    const errorMessage = error.response?.data?.message || 'Failed to update user';
-    toast.error(errorMessage);
-    console.error(errorMessage);
+    const errorMessage = error.response?.data?.message || 'Failed to update user'
+    toast.error(errorMessage)
+    console.error(errorMessage)
   }
-};
+}
 </script>
 
 <template>
@@ -296,6 +299,18 @@ const updateUser = async () => {
                     FRI
                   </label>
                 </div>
+              </div>
+              <div>
+                <label>Leave Approval Group</label>
+                <select v-model="form.leave_approval_id" class="w-full p-2 border rounded">
+                  <option value="" disabled>Select Leave Approval Group</option>
+                  <template
+                    v-for="leaveApproval in leaveApprovalStore.leaveApprovals"
+                    :key="leaveApproval.id"
+                  >
+                    <option :value="leaveApproval.id">{{ leaveApproval.name }}</option>
+                  </template>
+                </select>
               </div>
 
               <div>

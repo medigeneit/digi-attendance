@@ -1,11 +1,22 @@
 <script setup>
 import { reactive, ref, onMounted, watch } from 'vue'
+import { useToast } from 'vue-toastification'
 import { useUserStore } from '@/stores/user'
+import { useShiftStore } from '@/stores/shift'
 import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
 import { useDesignationStore } from '@/stores/designation'
-import { useShiftStore } from '@/stores/shift'
-import { useToast } from 'vue-toastification'
+import { useLeaveApprovalStore } from '@/stores/leave-approval'
+
+const toast = useToast()
+const userStore = useUserStore()
+const shiftStore = useShiftStore()
+const companyStore = useCompanyStore()
+const departmentStore = useDepartmentStore()
+const designationStore = useDesignationStore()
+const leaveApprovalStore = useLeaveApprovalStore()
+
+const showPassword = ref(false)
 
 const form = reactive({
   name: '',
@@ -25,19 +36,12 @@ const form = reactive({
   joining_date: '',
   employment_type: 'Provisional',
   weekends: [],
+  leave_approval_id: '',
 })
-
-const showPassword = ref(false)
-
-const userStore = useUserStore()
-const companyStore = useCompanyStore()
-const departmentStore = useDepartmentStore()
-const designationStore = useDesignationStore()
-const shiftStore = useShiftStore()
-const toast = useToast()
 
 onMounted(async () => {
   await companyStore.fetchCompanies()
+  await leaveApprovalStore.fetchLeaveApprovals()
 })
 
 watch(
@@ -75,6 +79,7 @@ const saveUser = async () => {
       joining_date: form.joining_date,
       employment_type: form.employment_type,
       weekends: form.weekends,
+      leave_approval_id: form.leave_approval_id,
     }
 
     await userStore.createUser(dataToSend)
@@ -277,6 +282,19 @@ const saveUser = async () => {
                     FRI
                   </label>
                 </div>
+              </div>
+
+              <div>
+                <label>Leave Approval Group</label>
+                <select v-model="form.leave_approval_id" class="w-full p-2 border rounded">
+                  <option value="" disabled>Select Leave Approval Group</option>
+                  <template
+                    v-for="leaveApproval in leaveApprovalStore.leaveApprovals"
+                    :key="leaveApproval.id"
+                  >
+                    <option :value="leaveApproval.id">{{ leaveApproval.name }}</option>
+                  </template>
+                </select>
               </div>
 
               <div>

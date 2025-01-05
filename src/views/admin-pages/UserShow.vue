@@ -104,6 +104,10 @@ onMounted(async () => {
               <p class="text-lg text-gray-800">{{ user?.weekends.join(', ') }}</p>
             </div>
             <div>
+              <p class="text-sm font-bold text-gray-600">Leave Approval Group:</p>
+              <p class="text-lg text-gray-800">{{ user?.leave_approval.name }}</p>
+            </div>
+            <div>
               <p class="text-sm font-bold text-gray-600">Employment Type:</p>
               <p class="text-lg text-gray-800">{{ user?.employment_type }}</p>
             </div>
@@ -125,7 +129,6 @@ onMounted(async () => {
               <p class="text-sm font-bold text-gray-600">Biometric Device ID:</p>
               <p class="text-lg text-gray-800">{{ user?.device_user_id }}</p>
             </div>
-
           </div>
         </div>
         <div class="flex justify-center mt-8 gap-4">
