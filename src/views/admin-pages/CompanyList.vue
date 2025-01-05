@@ -1,77 +1,77 @@
 <script setup>
-import { ref, onMounted } from 'vue';
-import { useCompanyStore } from '@/stores/company';
-import { useToast } from 'vue-toastification';
+import { ref, onMounted } from 'vue'
+import { useCompanyStore } from '@/stores/company'
+import { useToast } from 'vue-toastification'
 
-import CompanyModal from '@/components/CompanyModal.vue';
-import DeleteModal from '@/components/common/DeleteModal.vue';
-import LoaderView from '@/components/common/LoaderView.vue';
-import HeaderWithButtons from '@/components/common/HeaderWithButtons.vue';
+import CompanyModal from '@/components/CompanyModal.vue'
+import DeleteModal from '@/components/common/DeleteModal.vue'
+import LoaderView from '@/components/common/LoaderView.vue'
+import HeaderWithButtons from '@/components/common/HeaderWithButtons.vue'
 
-const companyStore = useCompanyStore();
-const toast = useToast();
+const companyStore = useCompanyStore()
+const toast = useToast()
 
-const showCompanyModal = ref(false);
-const showDeleteModal = ref(false);
-const selectedCompany = ref(null);
+const showCompanyModal = ref(false)
+const showDeleteModal = ref(false)
+const selectedCompany = ref(null)
 
 const openAddModal = () => {
-  selectedCompany.value = null;
-  showCompanyModal.value = true;
-};
+  selectedCompany.value = null
+  showCompanyModal.value = true
+}
 
 const closeCompanyModal = () => {
-  showCompanyModal.value = false;
-};
+  showCompanyModal.value = false
+}
 
 const openEditModal = (company) => {
-  selectedCompany.value = company;
-  showCompanyModal.value = true;
-};
+  selectedCompany.value = company
+  showCompanyModal.value = true
+}
 
 const openDeleteModal = (company) => {
-  selectedCompany.value = company;
-  showDeleteModal.value = true;
-};
+  selectedCompany.value = company
+  showDeleteModal.value = true
+}
 
 const closeDeleteModal = () => {
-  showDeleteModal.value = false;
-};
+  showDeleteModal.value = false
+}
 
 const handleSave = async (company) => {
   try {
     if (company.id) {
-      await companyStore.updateCompany(company.id, company);
-      toast.success('Company updated successfully!');
+      await companyStore.updateCompany(company.id, company)
+      toast.success('Company updated successfully!')
     } else {
-      await companyStore.createCompany(company);
-      toast.success('Company added successfully!');
+      await companyStore.createCompany(company)
+      toast.success('Company added successfully!')
     }
   } catch (error) {
-    toast.error(companyStore.error || 'Failed to save company!');
+    toast.error(companyStore.error || 'Failed to save company!')
   } finally {
-    closeCompanyModal();
+    closeCompanyModal()
   }
-};
+}
 
 const handleDelete = async () => {
   if (!selectedCompany.value || !selectedCompany.value.id) {
-    toast.error('Invalid company selected for deletion!');
-    return;
+    toast.error('Invalid company selected for deletion!')
+    return
   }
   try {
-    await companyStore.deleteCompany(selectedCompany.value.id);
-    toast.success('Company deleted successfully!');
+    await companyStore.deleteCompany(selectedCompany.value.id)
+    toast.success('Company deleted successfully!')
   } catch (error) {
-    toast.error(companyStore.error || 'Failed to delete company!');
+    toast.error(companyStore.error || 'Failed to delete company!')
   } finally {
-    closeDeleteModal();
+    closeDeleteModal()
   }
-};
+}
 
 onMounted(async () => {
-  await companyStore.fetchCompanies();
-});
+  await companyStore.fetchCompanies()
+})
 </script>
 
 <template>
@@ -90,7 +90,7 @@ onMounted(async () => {
             <th class="py-3 px-2 text-center">Action</th>
           </tr>
         </thead>
-        <tbody class="text-gray-600 text-sm font-light">
+        <tbody class="text-gray-600 text-sm">
           <tr v-if="companyStore.loading">
             <td colspan="6">
               <LoaderView />

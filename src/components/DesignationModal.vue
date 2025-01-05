@@ -1,20 +1,18 @@
 <script setup>
-import { ref, watch, reactive } from 'vue';
-import { useCompanyStore } from '@/stores/company'; // Import the company store
+import { ref, watch, reactive } from 'vue'
+import { useCompanyStore } from '@/stores/company'
 
 const props = defineProps({
   show: { type: Boolean, required: true },
   designation: { type: Object, default: null },
-});
+})
 
-const emit = defineEmits(['close', 'save']);
+const emit = defineEmits(['close', 'save'])
 
-const companyStore = useCompanyStore();
+const companyStore = useCompanyStore()
 
-const companies = companyStore.companies;
-
-const isEditMode = ref(false);
-const isCompaniesFetched = ref(false); // Track if companies are fetched
+const isEditMode = ref(false)
+const isCompaniesFetched = ref(false)
 const designationForm = reactive({
   id: null,
   company_id: '',
@@ -22,68 +20,69 @@ const designationForm = reactive({
   grade: '',
   description: '',
   status: 'Active',
-});
+})
 
 const resetForm = () => {
-  isEditMode.value = false;
-  designationForm.id = null;
-  designationForm.company_id = '';
-  designationForm.title = '';
-  designationForm.grade = '';
-  designationForm.description = '';
-  designationForm.status = 'Active';
-};
+  isEditMode.value = false
+  designationForm.id = null
+  designationForm.company_id = ''
+  designationForm.title = ''
+  designationForm.grade = ''
+  designationForm.description = ''
+  designationForm.status = 'Active'
+}
 
+// `props.designation` এর উপর নির্ভর করে ফর্ম আপডেট
 watch(
   () => props.designation,
   (newDesignation) => {
-    if (
-      newDesignation &&
-      typeof newDesignation === 'object' &&
-      Object.keys(newDesignation).length > 0
-    ) {
-      isEditMode.value = true;
-      designationForm.id = newDesignation.id || null;
-      designationForm.company_id = newDesignation.company_id || '';
-      designationForm.title = newDesignation.title || '';
-      designationForm.grade = newDesignation.grade || '';
-      designationForm.description = newDesignation.description || '';
-      designationForm.status = newDesignation.status || 'Active';
+    if (newDesignation && Object.keys(newDesignation).length > 0) {
+      isEditMode.value = true
+      designationForm.id = newDesignation.id || null
+      designationForm.company_id = newDesignation.company_id || ''
+      designationForm.title = newDesignation.title || ''
+      designationForm.grade = newDesignation.grade || ''
+      designationForm.description = newDesignation.description || ''
+      designationForm.status = newDesignation.status || 'Active'
     } else {
-      resetForm();
+      resetForm()
     }
   },
   { immediate: true, deep: true },
-);
+)
 
+// মোডাল শো হওয়ার সময় কোম্পানি ফেচ করা
 watch(
   () => props.show,
   async (isShown) => {
     if (isShown && !isCompaniesFetched.value) {
-      await fetchCompanies(); // Fetch companies when the modal is shown
+      await fetchCompanies() // কোম্পানি ফেচ করুন
     }
   },
-);
+)
 
+// ফর্ম সাবমিট হ্যান্ডলার
 const handleSubmit = () => {
-  emit('save', { ...designationForm }); // Emit the designation form data to the parent
-  resetForm(); // Reset the form after submission
-  closeModal();
-};
+  emit('save', { ...designationForm })
+  resetForm()
+  closeModal()
+}
 
+// মোডাল ক্লোজ হ্যান্ডলার
 const closeModal = () => {
-  resetForm(); // Reset the form when the modal is closed
-  emit('close');
-};
+  resetForm()
+  emit('close')
+}
 
+// কোম্পানি ফেচ ফাংশন
 const fetchCompanies = async () => {
   try {
-    await companyStore.fetchCompanies();
-    isCompaniesFetched.value = true; // Mark companies as fetched
+    await companyStore.fetchCompanies() // পিনিয়া স্টোর থেকে ফেচ
+    isCompaniesFetched.value = true // ফেচ সাফল্যের পর ফ্ল্যাগ আপডেট
   } catch (error) {
-    console.error('Failed to fetch companies:', error);
+    console.error('Failed to fetch companies:', error)
   }
-};
+}
 </script>
 
 <template>
@@ -102,7 +101,7 @@ const fetchCompanies = async () => {
             required
           >
             <option value="" disabled>Select a company</option>
-            <option v-for="company in companies" :key="company.id" :value="company.id">
+            <option v-for="company in companyStore.companies" :key="company.id" :value="company.id">
               {{ company.name }}
             </option>
           </select>

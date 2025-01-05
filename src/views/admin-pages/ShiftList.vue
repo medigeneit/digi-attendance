@@ -105,9 +105,8 @@ onMounted(async () => {
       <LoaderView />
     </div>
 
-    <div v-else>
-      <template v-for="(shifts, companyName) in groupedShifts" :key="companyName">
-
+    <div v-else class="space-y-4">
+      <div v-for="(shifts, companyName) in groupedShifts" :key="companyName">
         <h2 class="title-md">{{ companyName }}</h2>
         <div class="overflow-x-auto">
           <table class="min-w-full table-auto bg-white shadow-md rounded-lg overflow-hidden">
@@ -120,7 +119,7 @@ onMounted(async () => {
                 <th class="py-3 px-2 text-center">Action</th>
               </tr>
             </thead>
-            <tbody class="text-gray-600 text-sm font-light">
+            <tbody class="text-gray-600 text-sm">
               <tr
                 v-for="shift in shifts"
                 :key="shift.id"
@@ -144,7 +143,7 @@ onMounted(async () => {
             </tbody>
           </table>
         </div>
-      </template>
+      </div>
     </div>
 
     <ShiftModal

@@ -1,20 +1,20 @@
 <script setup>
-import { ref, watch, reactive } from 'vue';
-import { useCompanyStore } from '@/stores/company'; // Import the company store
+import { ref, watch, reactive } from 'vue'
+import { useCompanyStore } from '@/stores/company' // Import the company store
 
 const props = defineProps({
   show: { type: Boolean, required: true },
   shift: { type: Object, default: null },
-});
+})
 
-const emit = defineEmits(['close', 'save']);
+const emit = defineEmits(['close', 'save'])
 
-const companyStore = useCompanyStore();
+const companyStore = useCompanyStore()
 
-const companies = companyStore.companies;
+const companies = companyStore.companies
 
-const isEditMode = ref(false);
-const isCompaniesFetched = ref(false); // Track if companies are fetched
+const isEditMode = ref(false)
+const isCompaniesFetched = ref(false) // Track if companies are fetched
 const shiftForm = reactive({
   id: null,
   company_id: '',
@@ -23,70 +23,66 @@ const shiftForm = reactive({
   end_time: '',
   description: '',
   status: 'Active',
-});
+})
 
 const resetForm = () => {
-  isEditMode.value = false;
-  shiftForm.id = null;
-  shiftForm.company_id = '';
-  shiftForm.name = '';
-  shiftForm.start_time = '';
-  shiftForm.end_time = '';
-  shiftForm.description = '';
-  shiftForm.status = 'Active';
-};
+  isEditMode.value = false
+  shiftForm.id = null
+  shiftForm.company_id = ''
+  shiftForm.name = ''
+  shiftForm.start_time = ''
+  shiftForm.end_time = ''
+  shiftForm.description = ''
+  shiftForm.status = 'Active'
+}
 
 watch(
   () => props.shift,
   (newShift) => {
-    if (
-      newShift &&
-      typeof newShift === 'object' &&
-      Object.keys(newShift).length > 0
-    ) {
-      isEditMode.value = true;
-      shiftForm.id = newShift.id || null;
-      shiftForm.company_id = newShift.company_id || '';
-      shiftForm.name = newShift.name || '';
-      shiftForm.start_time = newShift.start_time || '';
-      shiftForm.end_time = newShift.end_time || '';
-      shiftForm.description = newShift.description || '';
-      shiftForm.status = newShift.status || 'Active';
+    if (newShift && typeof newShift === 'object' && Object.keys(newShift).length > 0) {
+      isEditMode.value = true
+      shiftForm.id = newShift.id || null
+      shiftForm.company_id = newShift.company_id || ''
+      shiftForm.name = newShift.name || ''
+      shiftForm.start_time = newShift.start_time || ''
+      shiftForm.end_time = newShift.end_time || ''
+      shiftForm.description = newShift.description || ''
+      shiftForm.status = newShift.status || 'Active'
     } else {
-      resetForm();
+      resetForm()
     }
   },
   { immediate: true, deep: true },
-);
+)
 
 watch(
   () => props.show,
   async (isShown) => {
     if (isShown && !isCompaniesFetched.value) {
-      await fetchCompanies(); // Fetch companies when the modal is shown
+      await fetchCompanies() // Fetch companies when the modal is shown
     }
   },
-);
+)
 
 const handleSubmit = () => {
-  emit('save', { ...shiftForm }); // Emit the shift form data to the parent
-  resetForm(); // Reset the form after submission
-  closeModal();
-};
+  emit('save', { ...shiftForm }) // Emit the shift form data to the parent
+  resetForm() // Reset the form after submission
+  closeModal()
+}
 
 const closeModal = () => {
-  resetForm(); // Reset the form when the modal is closed
-  emit('close');
-};
+  resetForm() // Reset the form when the modal is closed
+  emit('close')
+}
 
 const fetchCompanies = async () => {
   try {
-    await companyStore.fetchCompanies();
-    isCompaniesFetched.value = true; // Mark companies as fetched
+    await companyStore.fetchCompanies()
+    isCompaniesFetched.value = true // Mark companies as fetched
   } catch (error) {
-    console.error('Failed to fetch companies:', error);
+    console.error('Failed to fetch companies:', error)
   }
-};
+}
 </script>
 
 <template>
@@ -105,7 +101,7 @@ const fetchCompanies = async () => {
             required
           >
             <option value="" disabled>Select a company</option>
-            <option v-for="company in companies" :key="company.id" :value="company.id">
+            <option v-for="company in companyStore.companies" :key="company.id" :value="company.id">
               {{ company.name }}
             </option>
           </select>

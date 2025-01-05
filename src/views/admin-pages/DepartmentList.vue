@@ -1,147 +1,154 @@
 <script setup>
-import { ref, onMounted } from 'vue';
-import { useDepartmentStore } from '@/stores/department';
-import { useToast } from 'vue-toastification';
-import DepartmentModal from '@/components/DepartmentModal.vue';
-import DeleteModal from '@/components/common/DeleteModal.vue';
-import LoaderView from '@/components/common/LoaderView.vue';
-import HeaderWithButtons from '@/components/common/HeaderWithButtons.vue';
+import { ref, computed, onMounted } from 'vue'
+import { useDepartmentStore } from '@/stores/department'
+import { useToast } from 'vue-toastification'
+import DepartmentModal from '@/components/DepartmentModal.vue'
+import DeleteModal from '@/components/common/DeleteModal.vue'
+import LoaderView from '@/components/common/LoaderView.vue'
+import HeaderWithButtons from '@/components/common/HeaderWithButtons.vue'
 
-const departmentStore = useDepartmentStore();
-const toast = useToast();
+// পিনিয়া স্টোর এবং টোস্ট ইন্সট্যান্স
+const departmentStore = useDepartmentStore()
+const toast = useToast()
 
-const showDepartmentModal = ref(false);
-const showDeleteModal = ref(false);
-const selectedDepartment = ref(null);
+const showDepartmentModal = ref(false)
+const showDeleteModal = ref(false)
+const selectedDepartment = ref(null)
 
 const openAddModal = () => {
-  selectedDepartment.value = null;
-  showDepartmentModal.value = true;
-};
+  selectedDepartment.value = null
+  showDepartmentModal.value = true
+}
 
 const closeDepartmentModal = () => {
-  showDepartmentModal.value = false;
-};
+  showDepartmentModal.value = false
+}
 
 const openEditModal = (department) => {
-  selectedDepartment.value = department;
-  showDepartmentModal.value = true;
-};
+  selectedDepartment.value = department
+  showDepartmentModal.value = true
+}
 
 const openDeleteModal = (department) => {
-  selectedDepartment.value = department;
-  showDeleteModal.value = true;
-};
+  selectedDepartment.value = department
+  showDeleteModal.value = true
+}
 
 const closeDeleteModal = () => {
-  showDeleteModal.value = false;
-};
+  showDeleteModal.value = false
+}
 
+// সেভ অপারেশন
 const handleSave = async (department) => {
   try {
     if (department.id) {
-      await departmentStore.updateDepartment(department.id, department);
-      toast.success('Department updated successfully!');
+      await departmentStore.updateDepartment(department.id, department)
+      toast.success('Department updated successfully!')
     } else {
-      await departmentStore.createDepartment(department);
-      toast.success('Department added successfully!');
+      await departmentStore.createDepartment(department)
+      toast.success('Department added successfully!')
     }
   } catch (error) {
-    toast.error('Failed to save department!');
-    console.error('Error handling save:', error);
+    toast.error('Failed to save department!')
+    console.error('Error handling save:', error)
   } finally {
-    closeDepartmentModal();
+    closeDepartmentModal()
   }
-};
+}
 
+// ডিলিট অপারেশন
 const handleDelete = async () => {
   if (!selectedDepartment.value?.id) {
-    toast.error('Invalid department selected for deletion!');
-    return;
+    toast.error('Invalid department selected for deletion!')
+    return
   }
   try {
-    await departmentStore.deleteDepartment(selectedDepartment.value.id);
-    toast.success('Department deleted successfully!');
+    await departmentStore.deleteDepartment(selectedDepartment.value.id)
+    toast.success('Department deleted successfully!')
   } catch (error) {
-    toast.error('Failed to delete department!');
-    console.error('Error deleting department:', error);
+    toast.error('Failed to delete department!')
+    console.error('Error deleting department:', error)
   } finally {
-    closeDeleteModal();
+    closeDeleteModal()
   }
-};
+}
 
+// কোম্পানির ভিত্তিতে ডিপার্টমেন্ট গ্রুপ করা
+const groupedDepartments = computed(() => {
+  const grouped = {}
+  departmentStore.departments.forEach((department) => {
+    const companyName = department.company?.name || 'Unknown Company'
+    if (!grouped[companyName]) {
+      grouped[companyName] = []
+    }
+    grouped[companyName].push(department)
+  })
+  return grouped
+})
+
+// মাউন্ট হুকে ডেটা লোড
 onMounted(async () => {
   try {
-    await departmentStore.fetchDepartments();
+    await departmentStore.fetchDepartments()
   } catch (error) {
-    toast.error('Failed to fetch departments!');
-    console.error('Error fetching departments:', error);
+    toast.error('Failed to fetch departments!')
+    console.error('Error fetching departments:', error)
   }
-});
+})
 </script>
-
 <template>
-  <div class="my-container space-y-2">
+  <div class="my-container space-y-4">
+    <!-- হেডার -->
     <HeaderWithButtons title="Department List" @add="openAddModal" />
 
-    <div class="overflow-x-auto">
-      <table class="min-w-full table-auto bg-white shadow-md rounded-lg overflow-hidden">
-        <thead>
-          <tr class="bg-gray-200 text-gray-700 text-sm leading-normal">
-            <th class="py-3 px-2 text-left">Name</th>
-            <th class="py-3 px-2 text-left">Short Name</th>
-            <th class="py-3 px-2 text-center">Company</th>
-            <th class="py-3 px-2 text-center">Status</th>
-            <th class="py-3 px-2 text-center">Action</th>
-          </tr>
-        </thead>
-        <tbody class="text-gray-600 text-sm font-light">
-          <tr v-if="departmentStore.loading">
-            <td colspan="5">
-              <LoaderView />
-            </td>
-          </tr>
-          <template v-else-if="departmentStore.departments.length">
-            <tr
-              v-for="department in departmentStore.departments"
-              :key="department.id"
-              class="border-b border-gray-200 hover:bg-gray-100"
-            >
-              <td class="py-3 px-2 text-left">
-                <p class="font-medium">{{ department.name }}</p>
-              </td>
-              <td class="py-3 px-2 text-left whitespace-nowrap">
-                <p class="font-medium">{{ department.short_name }}</p>
-              </td>
-              <td class="py-3 px-2 text-center">
-                <p class="font-medium">{{ department.company?.name }}</p>
-              </td>
-              <td class="py-3 px-2 text-center">
-                <p class="font-medium">{{ department.status }}</p>
-              </td>
-              <td class="py-3 px-2 text-center">
-                <div class="flex item-center justify-center gap-4">
-                  <button
-                    @click="openEditModal(department)"
-                    class="text-blue-600 hover:text-blue-800"
-                  >
-                    <i class="fas fa-edit"></i>
-                  </button>
-                  <button
-                    @click="openDeleteModal(department)"
-                    class="text-red-600 hover:text-red-800"
-                  >
-                    <i class="fas fa-trash"></i>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </template>
-          <tr v-else>
-            <td colspan="5" class="text-center text-red-500 py-4">No departments found</td>
-          </tr>
-        </tbody>
-      </table>
+    <div v-if="departmentStore.loading" class="text-center py-4">
+      <LoaderView />
+    </div>
+
+    <div v-else class="space-y-4">
+      <div v-for="(departments, companyName) in groupedDepartments" :key="companyName">
+        
+        <h2 class="title-md">{{ companyName }}</h2>
+        <div class="overflow-x-auto">
+          <table class="min-w-full table-auto bg-white shadow-md rounded-lg overflow-hidden">
+            <thead>
+              <tr class="bg-gray-200 text-gray-700 text-sm leading-normal">
+                <th class="py-3 px-2 text-left">Name</th>
+                <th class="py-3 px-2 text-left">Short Name</th>
+                <th class="py-3 px-2 text-center">Status</th>
+                <th class="py-3 px-2 text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody class="text-gray-600 text-sm">
+              <tr
+                v-for="department in departments"
+                :key="department.id"
+                class="border-b border-gray-200 hover:bg-gray-100"
+              >
+                <td class="py-3 px-2 text-left">{{ department.name }}</td>
+                <td class="py-3 px-2 text-left whitespace-nowrap">{{ department.short_name }}</td>
+                <td class="py-3 px-2 text-center">{{ department.status }}</td>
+                <td class="py-3 px-2 text-center">
+                  <div class="flex item-center justify-center gap-4">
+                    <button
+                      @click="openEditModal(department)"
+                      class="text-blue-600 hover:text-blue-800"
+                    >
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button
+                      @click="openDeleteModal(department)"
+                      class="text-red-600 hover:text-red-800"
+                    >
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <DepartmentModal

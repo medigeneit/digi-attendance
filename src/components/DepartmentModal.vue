@@ -79,7 +79,7 @@ const closeModal = () => {
 const fetchCompanies = async () => {
   try {
     await companyStore.fetchCompanies()
-    isCompaniesFetched.value = true // Mark companies as fetched
+    isCompaniesFetched.value = true 
   } catch (error) {
     console.error('Failed to fetch companies:', error)
   }

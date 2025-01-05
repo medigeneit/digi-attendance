@@ -1,79 +1,79 @@
 <script setup>
-import { ref, onMounted } from 'vue';
-import { useLeaveApprovalStore } from '@/stores/leave-approval';
-import { useToast } from 'vue-toastification';
-import LeaveApprovalModal from '@/components/LeaveApprovalModal.vue';
-import DeleteModal from '@/components/common/DeleteModal.vue';
-import HeaderWithButtons from '@/components/common/HeaderWithButtons.vue';
-import LoaderView from '@/components/common/LoaderView.vue';
+import { ref, onMounted } from 'vue'
+import { useLeaveApprovalStore } from '@/stores/leave-approval'
+import { useToast } from 'vue-toastification'
+import LeaveApprovalModal from '@/components/LeaveApprovalModal.vue'
+import DeleteModal from '@/components/common/DeleteModal.vue'
+import HeaderWithButtons from '@/components/common/HeaderWithButtons.vue'
+import LoaderView from '@/components/common/LoaderView.vue'
 
-const leaveApprovalStore = useLeaveApprovalStore();
-const toast = useToast();
+const leaveApprovalStore = useLeaveApprovalStore()
+const toast = useToast()
 
-const showLeaveApprovalModal = ref(false);
-const showDeleteModal = ref(false);
-const selectedLeaveApproval = ref(null);
+const showLeaveApprovalModal = ref(false)
+const showDeleteModal = ref(false)
+const selectedLeaveApproval = ref(null)
 
 const openAddModal = () => {
-  selectedLeaveApproval.value = null;
-  showLeaveApprovalModal.value = true;
-};
+  selectedLeaveApproval.value = null
+  showLeaveApprovalModal.value = true
+}
 
 const openEditModal = (leaveApproval) => {
-  selectedLeaveApproval.value = { ...leaveApproval }; // Ensure we don't modify the original object
-  showLeaveApprovalModal.value = true;
-};
+  selectedLeaveApproval.value = { ...leaveApproval } // Ensure we don't modify the original object
+  showLeaveApprovalModal.value = true
+}
 
 const closeLeaveApprovalModal = () => {
-  showLeaveApprovalModal.value = false;
-};
+  showLeaveApprovalModal.value = false
+}
 
 const openDeleteModal = (leaveApproval) => {
-  selectedLeaveApproval.value = leaveApproval;
-  showDeleteModal.value = true;
-};
+  selectedLeaveApproval.value = leaveApproval
+  showDeleteModal.value = true
+}
 
 const closeDeleteModal = () => {
-  showDeleteModal.value = false;
-};
+  showDeleteModal.value = false
+}
 
 const handleDelete = async () => {
   if (!selectedLeaveApproval.value?.id) {
-    toast.error('Invalid leave approval selected for deletion!');
-    return;
+    toast.error('Invalid leave approval selected for deletion!')
+    return
   }
 
   try {
-    await leaveApprovalStore.deleteLeaveApproval(selectedLeaveApproval.value.id);
-    toast.success('Leave approval deleted successfully!');
+    await leaveApprovalStore.deleteLeaveApproval(selectedLeaveApproval.value.id)
+    toast.success('Leave approval deleted successfully!')
   } catch (error) {
-    toast.error('Failed to delete leave approval!');
-    console.error('Error deleting leave approval:', error);
+    toast.error('Failed to delete leave approval!')
+    console.error('Error deleting leave approval:', error)
   } finally {
-    closeDeleteModal();
+    closeDeleteModal()
   }
-};
+}
 
 const handleSave = async (leaveApproval) => {
-  const action = leaveApproval.id ? 'updateLeaveApproval' : 'createLeaveApproval';
+  const action = leaveApproval.id ? 'updateLeaveApproval' : 'createLeaveApproval'
   const successMessage = leaveApproval.id
     ? 'Leave approval updated successfully!'
-    : 'Leave approval added successfully!';
+    : 'Leave approval added successfully!'
 
   try {
-    await leaveApprovalStore[action](leaveApproval.id || leaveApproval, leaveApproval);
-    toast.success(successMessage);
+    await leaveApprovalStore[action](leaveApproval.id || leaveApproval, leaveApproval)
+    toast.success(successMessage)
   } catch (error) {
-    toast.error('Failed to save leave approval!');
-    console.error('Error saving leave approval:', error);
+    toast.error('Failed to save leave approval!')
+    console.error('Error saving leave approval:', error)
   } finally {
-    closeLeaveApprovalModal();
+    closeLeaveApprovalModal()
   }
-};
+}
 
 onMounted(() => {
-  leaveApprovalStore.fetchLeaveApprovals();
-});
+  leaveApprovalStore.fetchLeaveApprovals()
+})
 </script>
 
 <template>
@@ -94,7 +94,7 @@ onMounted(() => {
             <th class="py-3 px-2 text-center">Actions</th>
           </tr>
         </thead>
-        <tbody class="text-gray-600 text-sm font-light">
+        <tbody class="text-gray-600 text-sm">
           <tr v-if="leaveApprovalStore.loading">
             <td colspan="8">
               <LoaderView class="shadow-none" />
@@ -109,10 +109,18 @@ onMounted(() => {
               <td class="py-3 px-2 text-left">{{ leaveApproval.id }}</td>
               <td class="py-3 px-2 text-left">{{ leaveApproval.name }}</td>
               <td class="py-3 px-2 text-left">{{ leaveApproval.in_charge_user?.name || 'N/A' }}</td>
-              <td class="py-3 px-2 text-left">{{ leaveApproval.coordinator_user?.name || 'N/A' }}</td>
-              <td class="py-3 px-2 text-left">{{ leaveApproval.operational_admin_user?.name || 'N/A' }}</td>
-              <td class="py-3 px-2 text-left">{{ leaveApproval.recommend_by_user?.name || 'N/A' }}</td>
-              <td class="py-3 px-2 text-left">{{ leaveApproval.approved_by_user?.name || 'N/A' }}</td>
+              <td class="py-3 px-2 text-left">
+                {{ leaveApproval.coordinator_user?.name || 'N/A' }}
+              </td>
+              <td class="py-3 px-2 text-left">
+                {{ leaveApproval.operational_admin_user?.name || 'N/A' }}
+              </td>
+              <td class="py-3 px-2 text-left">
+                {{ leaveApproval.recommend_by_user?.name || 'N/A' }}
+              </td>
+              <td class="py-3 px-2 text-left">
+                {{ leaveApproval.approved_by_user?.name || 'N/A' }}
+              </td>
               <td class="py-3 px-2 text-center">
                 <div class="flex justify-center gap-4">
                   <button
