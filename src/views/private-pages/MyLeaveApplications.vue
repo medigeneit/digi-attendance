@@ -1,5 +1,5 @@
 <script setup>
-import {  onMounted, computed } from 'vue'
+import { onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
 import { useAuthStore } from '@/stores/auth'
@@ -51,6 +51,7 @@ const myLeaveApplications = computed(() => {
               <th class="border border-gray-300 px-2 text-left">Start Date</th>
               <th class="border border-gray-300 px-2 text-left">End Date</th>
               <th class="border border-gray-300 px-2 text-left">Total Days</th>
+              <th class="border border-gray-300 px-2 text-left">Handover</th>
               <th class="border border-gray-300 px-2 text-left">Status</th>
               <th class="border border-gray-300 px-2 text-left">Action</th>
             </tr>
@@ -65,15 +66,8 @@ const myLeaveApplications = computed(() => {
               <td class="border border-gray-300 px-2">{{ application.start_date }}</td>
               <td class="border border-gray-300 px-2">{{ application.end_date }}</td>
               <td class="border border-gray-300 px-2">{{ application.total_days }}</td>
-              <td class="border border-gray-300 px-2">
-                <span v-if="application.status === 'Approved'" class="text-green-500"
-                  >Approved</span
-                >
-                <span v-else-if="application.status === 'Pending'" class="text-yellow-500"
-                  >Pending</span
-                >
-                <span v-else class="text-red-500">Rejected</span>
-              </td>
+              <td class="border border-gray-300 px-2">{{ application.handover_user.name || 'N/A' }}</td>
+              <td class="border border-gray-300 px-2">{{ application.status || 'N/A' }}</td>
               <td class="border border-gray-300 px-2">
                 <div class="flex gap-2">
                   <RouterLink

@@ -103,16 +103,10 @@ const filteredLeaveApplications = computed(() => {
                   >
                     <i class="far fa-eye"></i>
                   </RouterLink>
-                  <RouterLink
-                    :to="{ name: 'LeaveApplicationEdit', params: { id: application.id } }"
-                    class="btn-icon"
-                  >
-                    <i class="far fa-edit"></i>
-                  </RouterLink>
                 </div>
               </td>
             </tr>
-            <tr>
+            <tr v-if="filteredLeaveApplications.length === 0">
               <td colspan="7" class="p-1 text-center text-red-500">No application found</td>
             </tr>
           </tbody>
