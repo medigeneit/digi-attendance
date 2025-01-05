@@ -148,6 +148,38 @@ const router = createRouter({
           component: () => import('@/views/admin-pages/EmployeeAttendance.vue'),
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
         },
+        {
+          path: '/hrd/leave-application-list',
+          name: 'LeaveApplicationList',
+          component: () => import('@/views/admin-pages/LeaveApplicationList.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+        },
+
+        {
+          path: '/my-applications',
+          name: 'MyApplications',
+          component: () => import('@/views/private-pages/MyApplications.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+        },
+
+        {
+          path: '/my-applications/leave-applications',
+          name: 'MyLeaveApplications',
+          component: () => import('@/views/private-pages/MyLeaveApplications.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+        },
+        {
+          path: '/my-applications/leave-application-add',
+          name: 'LeaveApplicationAdd',
+          component: () => import('@/views/private-pages/LeaveApplicationAdd.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+        },
+        {
+          path: '/my-applications/leave-application-show/:id',
+          name: 'LeaveApplicationShow',
+          component: () => import('@/views/private-pages/LeaveApplicationShow.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+        },
       ]
     }
   ],

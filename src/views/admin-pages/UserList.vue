@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import LoaderView from '@/components/common/LoaderView.vue'
@@ -7,17 +7,14 @@ import LoaderView from '@/components/common/LoaderView.vue'
 const router = useRouter()
 const userStore = useUserStore()
 
-// টেবিল লোড করার জন্য ফাংশন
 onMounted(() => {
   userStore.fetchUsers()
 })
 
-// ব্যাক নেভিগেশনের জন্য ফাংশন
 const goBack = () => {
   router.go(-1)
 }
 
-// গ্রুপ করা ইউজার ডেটা
 const groupedUsers = computed(() => {
   const grouped = {}
   userStore.users.forEach((user) => {
@@ -33,7 +30,6 @@ const groupedUsers = computed(() => {
 
 <template>
   <div class="space-y-2 px-4">
-    <!-- Header Section -->
     <div class="flex items-center justify-between gap-2">
       <button class="btn-3" @click="goBack">
         <i class="far fa-arrow-left"></i>
@@ -48,19 +44,15 @@ const groupedUsers = computed(() => {
       </RouterLink>
     </div>
 
-    <!-- Table Section -->
     <div v-if="userStore.isLoading" class="text-center py-4">
       <LoaderView />
     </div>
 
     <div v-else class="space-y-4">
       <div v-for="(users, companyName) in groupedUsers" :key="companyName">
-        <!-- Company Name -->
         <h2 class="title-md">{{ companyName }}</h2>
         <div class="overflow-x-auto">
-          <table
-            class="min-w-full table-auto border-collapse border border-gray-200 bg-white rounded-md text-sm"
-          >
+          <table class="min-w-full table-auto bg-white shadow-md rounded-lg overflow-hidden">
             <thead>
               <tr class="bg-gray-200">
                 <th class="border border-gray-300 px-2 text-left">#</th>

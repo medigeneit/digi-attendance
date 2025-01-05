@@ -54,6 +54,14 @@ onMounted(async () => {
         <i class="fad fa-list py-2"></i>
         <h4 v-if="open">My Attendance</h4>
       </RouterLink>
+      <RouterLink
+        to="/my-applications"
+        class="side-menu"
+        :class="{ 'side-menu-active': currentRoute.includes('/my-applications') }"
+      >
+        <i class="fad fa-list-alt py-2"></i>
+        <h4 v-if="open">My Applications</h4>
+      </RouterLink>
 
       <RouterLink
         to="/hrd"
