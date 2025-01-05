@@ -1,19 +1,17 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useShiftStore } from '@/stores/shift'
 import { useToast } from 'vue-toastification'
-
-import ShiftModal from '@/components/ShiftModal.vue'
-import DeleteModal from '@/components/common/DeleteModal.vue'
-import LoaderView from '@/components/common/LoaderView.vue'
 import HeaderWithButtons from '@/components/common/HeaderWithButtons.vue'
+import DeleteModal from '@/components/common/DeleteModal.vue'
+import ShiftModal from '@/components/ShiftModal.vue'
+import LoaderView from '@/components/common/LoaderView.vue'
 
+// শিফ্ট স্টোর এবং টোস্ট ইন্সট্যান্স
 const shiftStore = useShiftStore()
 const toast = useToast()
 
-const shifts = shiftStore.shifts
-const isLoading = shiftStore.loading
-
+// মডাল অপারেশন
 const showShiftModal = ref(false)
 const showDeleteModal = ref(false)
 const selectedShift = ref(null)
@@ -41,6 +39,7 @@ const closeDeleteModal = () => {
   showDeleteModal.value = false
 }
 
+// সেভ অপারেশন
 const handleSave = async (shift) => {
   try {
     if (shift.id) {
@@ -54,11 +53,11 @@ const handleSave = async (shift) => {
     toast.error('Failed to save shift!')
     console.error('Error handling save:', error)
   } finally {
-    await fetchShifts()
     closeShiftModal()
   }
 }
 
+// ডিলিট অপারেশন
 const handleDelete = async () => {
   if (!selectedShift.value || !selectedShift.value.id) {
     toast.error('Invalid shift selected for deletion!')
@@ -71,91 +70,81 @@ const handleDelete = async () => {
     toast.error('Failed to delete shift!')
     console.error('Error deleting shift:', error)
   } finally {
-    await fetchShifts()
     closeDeleteModal()
   }
 }
 
-const fetchShifts = async () => {
+// কোম্পানির ভিত্তিতে শিফ্ট গ্রুপ করা
+const groupedShifts = computed(() => {
+  const grouped = {}
+  shiftStore.shifts.forEach((shift) => {
+    const companyName = shift?.company?.name || 'Unknown Company'
+    if (!grouped[companyName]) {
+      grouped[companyName] = []
+    }
+    grouped[companyName].push(shift)
+  })
+  return grouped
+})
+
+// মাউন্ট হুকে শিফট ডেটা লোড
+onMounted(async () => {
   try {
     await shiftStore.fetchShifts()
   } catch (error) {
     toast.error('Failed to fetch shifts!')
     console.error('Error fetching shifts:', error)
   }
-}
-
-onMounted(async () => {
-  await fetchShifts()
 })
 </script>
-
 <template>
-  <div class="my-container space-y-2">
+  <div class="my-container space-y-4">
     <HeaderWithButtons title="Shift List" @add="openAddModal" />
 
-    <div class="overflow-x-auto">
-      <table class="min-w-full table-auto bg-white shadow-md rounded-lg overflow-hidden">
-        <thead>
-          <tr class="bg-gray-200 text-gray-700 text-sm leading-normal">
-            <th class="py-3 px-2 text-left">Name</th>
-            <th class="py-3 px-2 text-left">Start Time</th>
-            <th class="py-3 px-2 text-left">End Time</th>
-            <th class="py-3 px-2 text-center">Company</th>
-            <th class="py-3 px-2 text-center">Status</th>
-            <th class="py-3 px-2 text-center">Action</th>
-          </tr>
-        </thead>
-        <tbody class="text-gray-600 text-sm font-light">
-          <tr v-if="isLoading">
-            <td colspan="6">
-              <LoaderView />
-            </td>
-          </tr>
-          <template v-else-if="shifts && shifts.length">
-            <tr
-              v-for="shift in shifts"
-              :key="shift.id"
-              class="border-b border-gray-200 hover:bg-gray-100"
-            >
-              <td class="py-3 px-2 text-left">
-                <p class="font-medium">{{ shift.name }}</p>
-              </td>
-              <td class="py-3 px-2 text-left">
-                <p class="font-medium">{{ shift.start_time }}</p>
-              </td>
-              <td class="py-3 px-2 text-left">
-                <p class="font-medium">{{ shift.end_time }}</p>
-              </td>
-              <td class="py-3 px-2 text-center">
-                <p class="font-medium">{{ shift?.company?.name }}</p>
-              </td>
-              <td class="py-3 px-2 text-center">
-                <p class="font-medium">{{ shift.status }}</p>
-              </td>
-              <td class="py-3 px-2 text-center">
-                <div class="flex item-center justify-center gap-4">
-                  <button
-                    @click="openEditModal(shift)"
-                    class="text-blue-600 hover:text-blue-800"
-                  >
-                    <i class="fas fa-edit"></i>
-                  </button>
-                  <button
-                    @click="openDeleteModal(shift)"
-                    class="text-red-600 hover:text-red-800"
-                  >
-                    <i class="fas fa-trash"></i>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </template>
-          <tr v-else>
-            <td colspan="6" class="text-center text-red-500 py-4">No shifts found</td>
-          </tr>
-        </tbody>
-      </table>
+    <div v-if="shiftStore.loading" class="text-center py-4">
+      <LoaderView />
+    </div>
+
+    <div v-else>
+      <template v-for="(shifts, companyName) in groupedShifts" :key="companyName">
+
+        <h2 class="title-md">{{ companyName }}</h2>
+        <div class="overflow-x-auto">
+          <table class="min-w-full table-auto bg-white shadow-md rounded-lg overflow-hidden">
+            <thead>
+              <tr class="bg-gray-200 text-gray-700 text-sm leading-normal">
+                <th class="py-3 px-2 text-left">Name</th>
+                <th class="py-3 px-2 text-left">Start Time</th>
+                <th class="py-3 px-2 text-left">End Time</th>
+                <th class="py-3 px-2 text-center">Status</th>
+                <th class="py-3 px-2 text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody class="text-gray-600 text-sm font-light">
+              <tr
+                v-for="shift in shifts"
+                :key="shift.id"
+                class="border-b border-gray-200 hover:bg-gray-100"
+              >
+                <td class="py-3 px-2 text-left">{{ shift.name }}</td>
+                <td class="py-3 px-2 text-left">{{ shift.start_time }}</td>
+                <td class="py-3 px-2 text-left">{{ shift.end_time }}</td>
+                <td class="py-3 px-2 text-center">{{ shift.status }}</td>
+                <td class="py-3 px-2 text-center">
+                  <div class="flex item-center justify-center gap-4">
+                    <button @click="openEditModal(shift)" class="text-blue-600 hover:text-blue-800">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button @click="openDeleteModal(shift)" class="text-red-600 hover:text-red-800">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </template>
     </div>
 
     <ShiftModal
