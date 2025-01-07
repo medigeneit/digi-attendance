@@ -69,6 +69,26 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
     }
   }
 
+  async function acceptHandover(id) {
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const response = await apiClient.post(`/leave-applications/${id}/handover-accept`);
+      const index = leaveApplications.value.findIndex((app) => app.id === id);
+      if (index !== -1) {
+        leaveApplications.value[index] = response.data.data;
+      }
+      return response.data.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to accept handover';
+      throw new Error(error.value);
+    } finally {
+      loading.value = false;
+    }
+  }
+
+
   return {
     leaveApplications,
     leaveApplication,
@@ -78,5 +98,6 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
     storeLeaveApplication,
     updateLeaveApplication,
     fetchLeaveApplicationById,
+    acceptHandover,
   };
 });

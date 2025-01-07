@@ -176,6 +176,12 @@ const router = createRouter({
         },
         {
           path: '/my-applications/leave-application-show/:id',
+          name: 'MyLeaveApplicationShow',
+          component: () => import('@/views/private-pages/LeaveApplicationShow.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+        },
+        {
+          path: '/leave-application-show/:id',
           name: 'LeaveApplicationShow',
           component: () => import('@/views/private-pages/LeaveApplicationShow.vue'),
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }

@@ -87,13 +87,7 @@ const filteredLeaveApplications = computed(() => {
               <td class="border border-gray-300 px-2">{{ application.end_date }}</td>
               <td class="border border-gray-300 px-2">{{ application.total_days }}</td>
               <td class="border border-gray-300 px-2">
-                <span v-if="application.status === 'Approved'" class="text-green-500"
-                  >Approved</span
-                >
-                <span v-else-if="application.status === 'Pending'" class="text-yellow-500"
-                  >Pending</span
-                >
-                <span v-else class="text-red-500">Rejected</span>
+                {{ application.status || 'N/A' }}
               </td>
               <td class="border border-gray-300 px-2">
                 <div class="flex gap-2">

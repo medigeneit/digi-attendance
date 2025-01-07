@@ -71,7 +71,7 @@ const myLeaveApplications = computed(() => {
               <td class="border border-gray-300 px-2">
                 <div class="flex gap-2">
                   <RouterLink
-                    :to="{ name: 'LeaveApplicationShow', params: { id: application?.id } }"
+                    :to="{ name: 'MyLeaveApplicationShow', params: { id: application?.id } }"
                     class="btn-icon"
                   >
                     <i class="far fa-eye"></i>

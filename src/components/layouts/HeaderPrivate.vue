@@ -1,56 +1,55 @@
 <script setup>
-import { ref, computed } from 'vue'
-import { RouterLink } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
+import { ref, computed, onMounted } from 'vue';
+import { RouterLink } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
+import { useNotificationStore } from '@/stores/notification';
+import MyNotifications from '@/components/MyNotifications.vue'; 
 
-const authStore = useAuthStore()
+const authStore = useAuthStore();
+const notificationStore = useNotificationStore();
 
-const showNotice = ref(false)
+const showNotice = ref(false);
+
 const toggleNotice = () => {
-  showNotice.value = !showNotice.value
-}
-
-const notices = ref([
-  {
-    notice_id: '1',
-    notice_title: 'Notice Title',
-    notice_details:
-      'Brief description of the notice goes here. This is a summary. Brief description of the notice goes here. This is a summary',
-    date: '01-05-2024',
-    url: '/dashboard/notice/noticeId/notice-show',
-  },
-  {
-    notice_id: '2',
-    notice_title: 'Notice Title',
-    notice_details:
-      'Brief description of the notice goes here. This is a summary. Brief description of the notice goes here. This is a summary',
-    date: '01-05-2024',
-    url: '/dashboard/notice/noticeId/notice-show',
-  },
-  {
-    notice_id: '3',
-    notice_title: 'Notice Title',
-    notice_details:
-      'Brief description of the notice goes here. This is a summary. Brief description of the notice goes here. This is a summary',
-    date: '01-05-2024',
-    url: '/dashboard/notice/noticeId/notice-show',
-  },
-])
+  showNotice.value = !showNotice.value;
+};
 
 const userInitial = computed(() => {
-  return authStore.user && authStore.user.name ? authStore.user.name.charAt(0).toUpperCase() : ''
-})
+  return authStore.user && authStore.user.name ? authStore.user.name.charAt(0).toUpperCase() : '';
+});
+
+onMounted(() => {
+  notificationStore.fetchNotifications();
+});
+
+const markNotificationAndNavigate = async (notificationId, url) => {
+  await notificationStore.markAsRead(notificationId);
+  window.location.href = url;
+};
 </script>
 
 <template>
   <div class="bg-white py-2 shadow">
     <div class="mx-auto flex justify-between items-center px-4">
-      <RouterLink to="/" class="">
-        <img class="h-[50px]" src="/src/assets/logo.png" alt="" />
+      <RouterLink to="/" class="logo">
+        <img class="h-[50px]" src="/src/assets/logo.png" alt="Logo" />
       </RouterLink>
       <ul class="flex gap-4 items-center">
-        <button class="btn-icon" @click="toggleNotice">
+        <!-- Notification Bell -->
+        <button class="btn-icon relative" @click="toggleNotice">
           <i class="fas fa-bell"></i>
+
+          <div
+            v-if="notificationStore.unreadCount > 0"
+            class="absolute top-0 right-0"
+          >
+            <span class="relative flex h-3 w-3">
+              <span
+                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"
+              ></span>
+              <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+            </span>
+          </div>
         </button>
 
         <RouterLink
@@ -76,20 +75,13 @@ const userInitial = computed(() => {
           </h4>
         </RouterLink>
       </ul>
-      <div
+
+      <MyNotifications
         v-if="showNotice"
-        class="bg-teal-50 shadow-xl rounded-lg absolute md:right-10 md:top-24 top-16 w-80"
-      >
-        <ul class="divide-y divide-gray-200">
-          <li v-for="notice in notices" :key="notice.notice_id" class="p-4">
-            <RouterLink :to="notice.url">
-              <h4 class="font-bold">{{ notice.notice_title }}</h4>
-              <p>{{ notice.notice_details }}</p>
-              <span class="text-sm text-gray-500">{{ notice.date }}</span>
-            </RouterLink>
-          </li>
-        </ul>
-      </div>
+        :notifications="notificationStore.notifications"
+        :markNotification="markNotificationAndNavigate"
+        @close="showNotice = false"
+      />
     </div>
   </div>
 </template>
