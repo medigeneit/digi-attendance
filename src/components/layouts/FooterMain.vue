@@ -9,7 +9,7 @@ const currentYear = new Date().getFullYear()
         <div class="grid md:grid-cols-4 grid-cols-1 gap-4 md:gap-10 max-w-6xl">
           <div class="flex flex-col justify-center gap-4 items-center md:items-start px-2">
             <div class="flex items-start gap-2">
-              <div class="text-3xl font-semibold">ঠিকানা</div>
+              <div class="text-3xl font-semibold">Address</div>
             </div>
             <div class="flex">
               <i class="far fa-map-marker-alt pr-2"></i>

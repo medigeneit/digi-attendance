@@ -22,7 +22,7 @@ const login = async () => {
     if (!authStore.error) {
       router.push('/dashboard')
     } else {
-      error.value = authStore.error // Display the backend error message
+      error.value = authStore.error 
     }
   } catch (err) {
     error.value = 'An unexpected error occurred. Please try again.'
@@ -33,10 +33,10 @@ const login = async () => {
 <template>
   <div class="my-container max-w-2xl">
     <div class="card-bg p-8 my-6 items-center">
-      <h1 class="title-lg">লগইন করুন</h1>
+      <h1 class="title-lg">Login Now</h1>
       <form class="space-y-4 w-full" @submit.prevent="login">
         <div>
-          <label for="phone" class="block font-medium text-gray-700">ফোন নাম্বার</label>
+          <label for="phone" class="block font-medium text-gray-700">Phone Number</label>
           <input
             v-model="phone"
             type="text"
@@ -48,7 +48,7 @@ const login = async () => {
           />
         </div>
         <div>
-          <label for="password" class="block font-medium text-gray-700">পাসওয়ার্ড:</label>
+          <label for="password" class="block font-medium text-gray-700">Password</label>
           <input
             v-model="password"
             type="password"
@@ -62,7 +62,7 @@ const login = async () => {
         </div>
         <div v-if="error" class="mt-4 text-sm text-red-500 text-center">{{ error }}</div>
         <div class="flex justify-center">
-          <button class="btn-2" type="submit">লগইন</button>
+          <button class="btn-2" type="submit">Login</button>
         </div>
       </form>
     </div>
