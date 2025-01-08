@@ -5,6 +5,7 @@ import apiClient from '../axios';
 export const useLeaveTypeStore = defineStore('leaveType', () => {
   const leaveTypes = ref([]);
   const leaveType = ref(null);
+  const leaveBalance = ref([]);
   const loading = ref(false);
   const error = ref(null);
 
@@ -33,6 +34,21 @@ export const useLeaveTypeStore = defineStore('leaveType', () => {
     } catch (err) {
       error.value = err.response?.data?.message || `লিভ টাইপ (ID: ${id}) লোড করতে ব্যর্থ হয়েছে।`;
       console.error(`Error fetching leave type with id ${id}:`, err);
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const fetchLeaveBalance = async (userId, year = null) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const params = year ? { year } : {}; 
+      const response = await apiClient.get(`/leave-applications/balance/${userId}`, { params });
+      leaveBalance.value = response.data.leave_balances;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'লিভ ব্যালেন্স লোড করতে ব্যর্থ হয়েছে।';
+      console.error('Error fetching leave balance:', err);
     } finally {
       loading.value = false;
     }
@@ -85,10 +101,12 @@ export const useLeaveTypeStore = defineStore('leaveType', () => {
   return {
     leaveTypes: computed(() => leaveTypes.value),
     leaveType: computed(() => leaveType.value),
+    leaveBalance: computed(() => leaveBalance.value), // Computed for leave balance
     loading: computed(() => loading.value),
     error: computed(() => error.value),
     fetchLeaveTypes,
     fetchLeaveType,
+    fetchLeaveBalance, // New leave balance action
     createLeaveType,
     updateLeaveType,
     deleteLeaveType,
