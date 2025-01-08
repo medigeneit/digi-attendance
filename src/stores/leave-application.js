@@ -3,13 +3,11 @@ import { defineStore } from 'pinia';
 import apiClient from '@/axios'; // Assuming axios is configured in '@/axios'
 
 export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
-  // State
   const leaveApplications = ref([]);
   const leaveApplication = ref(null);
   const loading = ref(false);
   const error = ref(null);
 
-  // Actions
   async function fetchLeaveApplications(filters = {}) {
     loading.value = true;
     error.value = null;
@@ -88,6 +86,100 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
     }
   }
 
+  async function acceptInCharge(id) {
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const response = await apiClient.post(`/leave-applications/${id}/incharge-accept`);
+      const index = leaveApplications.value.findIndex((app) => app.id === id);
+      if (index !== -1) {
+        leaveApplications.value[index] = response.data.data;
+      }
+      return response.data.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to accept in-charge approval';
+      throw new Error(error.value);
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function acceptCoordinator(id) {
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const response = await apiClient.post(`/leave-applications/${id}/coordinator-accept`);
+      const index = leaveApplications.value.findIndex((app) => app.id === id);
+      if (index !== -1) {
+        leaveApplications.value[index] = response.data.data;
+      }
+      return response.data.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to accept coordinator approval';
+      throw new Error(error.value);
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function acceptOperationalAdmin(id) {
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const response = await apiClient.post(`/leave-applications/${id}/operational-admin-accept`);
+      const index = leaveApplications.value.findIndex((app) => app.id === id);
+      if (index !== -1) {
+        leaveApplications.value[index] = response.data.data;
+      }
+      return response.data.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to accept operational admin approval';
+      throw new Error(error.value);
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function acceptRecommendBy(id) {
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const response = await apiClient.post(`/leave-applications/${id}/recommend-by-accept`);
+      const index = leaveApplications.value.findIndex((app) => app.id === id);
+      if (index !== -1) {
+        leaveApplications.value[index] = response.data.data;
+      }
+      return response.data.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to accept recommend by approval';
+      throw new Error(error.value);
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function acceptApprovedBy(id) {
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const response = await apiClient.post(`/leave-applications/${id}/approved-by-accept`);
+      const index = leaveApplications.value.findIndex((app) => app.id === id);
+      if (index !== -1) {
+        leaveApplications.value[index] = response.data.data;
+      }
+      return response.data.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to accept approval by admin';
+      throw new Error(error.value);
+    } finally {
+      loading.value = false;
+    }
+  }
 
   return {
     leaveApplications,
@@ -99,5 +191,10 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
     updateLeaveApplication,
     fetchLeaveApplicationById,
     acceptHandover,
+    acceptInCharge,
+    acceptCoordinator,
+    acceptOperationalAdmin,
+    acceptRecommendBy,
+    acceptApprovedBy,
   };
 });
