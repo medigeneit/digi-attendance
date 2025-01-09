@@ -7,11 +7,9 @@ import DeleteModal from '@/components/common/DeleteModal.vue'
 import ShiftModal from '@/components/ShiftModal.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 
-// শিফ্ট স্টোর এবং টোস্ট ইন্সট্যান্স
 const shiftStore = useShiftStore()
 const toast = useToast()
 
-// মডাল অপারেশন
 const showShiftModal = ref(false)
 const showDeleteModal = ref(false)
 const selectedShift = ref(null)
@@ -39,7 +37,6 @@ const closeDeleteModal = () => {
   showDeleteModal.value = false
 }
 
-// সেভ অপারেশন
 const handleSave = async (shift) => {
   try {
     if (shift.id) {
@@ -57,7 +54,6 @@ const handleSave = async (shift) => {
   }
 }
 
-// ডিলিট অপারেশন
 const handleDelete = async () => {
   if (!selectedShift.value || !selectedShift.value.id) {
     toast.error('Invalid shift selected for deletion!')
@@ -74,7 +70,6 @@ const handleDelete = async () => {
   }
 }
 
-// কোম্পানির ভিত্তিতে শিফ্ট গ্রুপ করা
 const groupedShifts = computed(() => {
   const grouped = {}
   shiftStore.shifts.forEach((shift) => {
@@ -87,7 +82,6 @@ const groupedShifts = computed(() => {
   return grouped
 })
 
-// মাউন্ট হুকে শিফট ডেটা লোড
 onMounted(async () => {
   try {
     await shiftStore.fetchShifts()

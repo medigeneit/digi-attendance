@@ -39,20 +39,7 @@ export const useLeaveTypeStore = defineStore('leaveType', () => {
     }
   };
 
-  const fetchLeaveBalance = async (userId, year = null) => {
-    loading.value = true;
-    error.value = null;
-    try {
-      const params = year ? { year } : {}; 
-      const response = await apiClient.get(`/leave-applications/balance/${userId}`, { params });
-      leaveBalance.value = response.data.leave_balances;
-    } catch (err) {
-      error.value = err.response?.data?.message || 'লিভ ব্যালেন্স লোড করতে ব্যর্থ হয়েছে।';
-      console.error('Error fetching leave balance:', err);
-    } finally {
-      loading.value = false;
-    }
-  };
+
 
   const createLeaveType = async (data) => {
     loading.value = true;
@@ -106,7 +93,7 @@ export const useLeaveTypeStore = defineStore('leaveType', () => {
     error: computed(() => error.value),
     fetchLeaveTypes,
     fetchLeaveType,
-    fetchLeaveBalance, // New leave balance action
+    
     createLeaveType,
     updateLeaveType,
     deleteLeaveType,

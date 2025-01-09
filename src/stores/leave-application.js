@@ -4,6 +4,7 @@ import apiClient from '@/axios'; // Assuming axios is configured in '@/axios'
 
 export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
   const leaveApplications = ref([]);
+  const leaveBalance = ref([]);
   const leaveApplication = ref(null);
   const loading = ref(false);
   const error = ref(null);
@@ -200,9 +201,25 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
     }
   }
 
+  const fetchLeaveBalance = async (userId, year = null) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const params = year ? { year } : {};
+      const response = await apiClient.get(`/leave-balance/${userId}`, { params });
+      leaveBalance.value = response.data.leave_balances;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'লিভ ব্যালেন্স লোড করতে ব্যর্থ হয়েছে।';
+      console.error('Error fetching leave balance:', err);
+    } finally {
+      loading.value = false;
+    }
+  };
+
   return {
     leaveApplications,
     leaveApplication,
+    leaveBalance,
     loading,
     error,
     fetchLeaveApplications,
@@ -216,5 +233,6 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
     acceptRecommendBy,
     acceptApprovedBy,
     rejectLeaveApplication,
+    fetchLeaveBalance,
   };
 });

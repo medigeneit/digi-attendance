@@ -61,7 +61,6 @@ const handleSave = async (leaveType) => {
   }
 };
 
-// লিভ টাইপগুলো কোম্পানির ভিত্তিতে গ্রুপ করা
 const groupedLeaveTypes = computed(() => {
   const grouped = {};
   leaveTypeStore.leaveTypes.forEach((leaveType) => {
@@ -89,7 +88,7 @@ onMounted(() => {
 
     <div v-else class="space-y-4">
       <div v-for="(leaveTypes, companyName) in groupedLeaveTypes" :key="companyName">
-        <!-- কোম্পানির নাম -->
+
         <h2 class="title-md">{{ companyName }}</h2>
         <div class="overflow-x-auto">
           <table class="min-w-full table-auto bg-white shadow-md rounded-lg overflow-hidden">
