@@ -23,7 +23,9 @@ const emits = defineEmits(['close'])
 </script>
 
 <template>
-  <div class="bg-teal-50 shadow-xl rounded-lg absolute md:right-10 md:top-20 top-16 w-80">
+  <div
+    class="bg-teal-50 shadow-xl rounded-lg absolute md:right-10 md:top-20 top-16 w-80 max-h-96 overflow-y-auto"
+  >
     <ul class="divide-y divide-gray-200">
       <li
         v-for="notification in notifications"

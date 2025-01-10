@@ -37,6 +37,7 @@ const form = reactive({
   employment_type: 'Provisional',
   weekends: [],
   leave_approval_id: '',
+  other_approval_id: '',
 })
 
 onMounted(async () => {
@@ -80,6 +81,7 @@ const saveUser = async () => {
       employment_type: form.employment_type,
       weekends: form.weekends,
       leave_approval_id: form.leave_approval_id,
+      other_approval_id: form.other_approval_id,
     }
 
     await userStore.createUser(dataToSend)
@@ -288,6 +290,18 @@ const saveUser = async () => {
                 <label>Leave Approval Group</label>
                 <select v-model="form.leave_approval_id" class="w-full p-2 border rounded">
                   <option value="" disabled>Select Leave Approval Group</option>
+                  <template
+                    v-for="leaveApproval in leaveApprovalStore.leaveApprovals"
+                    :key="leaveApproval.id"
+                  >
+                    <option :value="leaveApproval.id">{{ leaveApproval.name }}</option>
+                  </template>
+                </select>
+              </div>
+              <div>
+                <label>Other Approval Group</label>
+                <select v-model="form.other_approval_id" class="w-full p-2 border rounded">
+                  <option value="" disabled>Select Other Approval Group</option>
                   <template
                     v-for="leaveApproval in leaveApprovalStore.leaveApprovals"
                     :key="leaveApproval.id"
