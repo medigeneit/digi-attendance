@@ -1,24 +1,27 @@
 <script setup>
 import { onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useLeaveApplicationStore } from '@/stores/leave-application'
+import { useShortLeaveStore } from '@/stores/short-leave'
 import { useAuthStore } from '@/stores/auth'
 import LoaderView from '@/components/common/LoaderView.vue'
 
 const router = useRouter()
-const leaveApplicationStore = useLeaveApplicationStore()
+const shortLeaveStore = useShortLeaveStore()
 const authStore = useAuthStore()
 
+// Fetch short leaves for the logged-in user
 onMounted(() => {
-  leaveApplicationStore.fetchLeaveApplications({ user_id: authStore?.user?.id })
+  shortLeaveStore.fetchShortLeaves({ user_id: authStore?.user?.id })
 })
 
+// Go back function
 const goBack = () => {
   router.go(-1)
 }
 
-const myLeaveApplications = computed(() => {
-  return leaveApplicationStore.leaveApplications
+// Computed property for short leaves
+const myShortLeaves = computed(() => {
+  return shortLeaveStore.shortLeaves
 })
 </script>
 
@@ -30,13 +33,13 @@ const myLeaveApplications = computed(() => {
         <span class="hidden md:flex">Back</span>
       </button>
 
-      <h1 class="title-md md:title-lg flex-wrap text-center">My Leave Applications</h1>
+      <h1 class="title-md md:title-lg flex-wrap text-center">My Short Leaves</h1>
       <div>
-        <RouterLink :to="{ name: 'LeaveApplicationAdd' }" class="btn-2">Apply for Leave</RouterLink>
+        <RouterLink :to="{ name: 'ShortLeaveAdd' }" class="btn-2">Apply for Short Leave</RouterLink>
       </div>
     </div>
 
-    <div v-if="leaveApplicationStore?.loading" class="text-center py-4">
+    <div v-if="shortLeaveStore?.loading" class="text-center py-4">
       <LoaderView />
     </div>
 
@@ -48,32 +51,30 @@ const myLeaveApplications = computed(() => {
           <thead>
             <tr class="bg-gray-200">
               <th class="border border-gray-300 px-2 text-left">#</th>
-              <th class="border border-gray-300 px-2 text-left">Start Date</th>
-              <th class="border border-gray-300 px-2 text-left">End Date</th>
-              <th class="border border-gray-300 px-2 text-left">Total Days</th>
-              <th class="border border-gray-300 px-2 text-left">Handover</th>
+              <th class="border border-gray-300 px-2 text-left">Date</th>
+              <th class="border border-gray-300 px-2 text-left">Start Time</th>
+              <th class="border border-gray-300 px-2 text-left">End Time</th>
+              <th class="border border-gray-300 px-2 text-left">Total Minutes</th>
               <th class="border border-gray-300 px-2 text-left">Status</th>
               <th class="border border-gray-300 px-2 text-left">Action</th>
             </tr>
           </thead>
           <tbody>
             <tr
-              v-for="(application, index) in myLeaveApplications"
-              :key="application?.id"
+              v-for="(leave, index) in myShortLeaves"
+              :key="leave?.id"
               class="border-b border-gray-200 hover:bg-gray-100"
             >
               <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
-              <td class="border border-gray-300 px-2">{{ application.start_date }}</td>
-              <td class="border border-gray-300 px-2">{{ application.end_date }}</td>
-              <td class="border border-gray-300 px-2">{{ application.total_days }}</td>
-              <td class="border border-gray-300 px-2">
-                {{ application?.handover_user?.name || 'N/A' }}
-              </td>
-              <td class="border border-gray-300 px-2">{{ application.status || 'N/A' }}</td>
+              <td class="border border-gray-300 px-2">{{ leave.date }}</td>
+              <td class="border border-gray-300 px-2">{{ leave.start_time }}</td>
+              <td class="border border-gray-300 px-2">{{ leave.end_time }}</td>
+              <td class="border border-gray-300 px-2">{{ leave.total_minutes }}</td>
+              <td class="border border-gray-300 px-2">{{ leave.status || 'N/A' }}</td>
               <td class="border border-gray-300 px-2">
                 <div class="flex gap-2">
                   <RouterLink
-                    :to="{ name: 'MyLeaveApplicationShow', params: { id: application?.id } }"
+                    :to="{ name: 'ShortLeaveShow', params: { id: leave?.id } }"
                     class="btn-icon"
                   >
                     <i class="far fa-eye"></i>
@@ -81,8 +82,8 @@ const myLeaveApplications = computed(() => {
                 </div>
               </td>
             </tr>
-            <tr v-if="myLeaveApplications.length === 0">
-              <td colspan="6" class="p-2 text-center text-red-500">No applications found</td>
+            <tr v-if="myShortLeaves.length === 0">
+              <td colspan="8" class="p-2 text-center text-red-500">No short leaves found</td>
             </tr>
           </tbody>
         </table>

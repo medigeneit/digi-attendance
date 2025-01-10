@@ -156,35 +156,63 @@ const router = createRouter({
         },
 
         {
+          path: '/my-notifications',
+          name: 'MyNotificationList',
+          component: () => import('@/views/private-pages/MyNotificationList.vue'),
+          meta: { requiresAuth: true }
+        },
+
+        {
           path: '/my-applications',
           name: 'MyApplications',
           component: () => import('@/views/private-pages/MyApplications.vue'),
-          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+          meta: { requiresAuth: true }
         },
 
         {
           path: '/my-applications/leave-applications',
           name: 'MyLeaveApplications',
           component: () => import('@/views/private-pages/MyLeaveApplications.vue'),
-          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+          meta: { requiresAuth: true }
         },
         {
           path: '/my-applications/leave-application-add',
           name: 'LeaveApplicationAdd',
           component: () => import('@/views/private-pages/LeaveApplicationAdd.vue'),
-          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+          meta: { requiresAuth: true }
         },
         {
           path: '/my-applications/leave-application-show/:id',
           name: 'MyLeaveApplicationShow',
           component: () => import('@/views/private-pages/LeaveApplicationShow.vue'),
-          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+          meta: { requiresAuth: true }
         },
         {
           path: '/leave-application-show/:id',
           name: 'LeaveApplicationShow',
           component: () => import('@/views/private-pages/LeaveApplicationShow.vue'),
-          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+          meta: { requiresAuth: true }
+        },
+
+        {
+          path: '/my-applications/short-leaves',
+          name: 'MyShortLeaves',
+          component: () => import('@/views/private-pages/MyShortLeaves.vue'),
+          meta: { requiresAuth: true }
+        },
+
+        {
+          path: '/my-applications/short-leaves-add',
+          name: 'ShortLeaveAdd',
+          component: () => import('@/views/private-pages/ShortLeaveAdd.vue'),
+          meta: { requiresAuth: true }
+        },
+
+        {
+          path: '/short-leave-show/:id',
+          name: 'ShortLeaveShow',
+          component: () => import('@/views/private-pages/ShortLeaveShow.vue'),
+          meta: { requiresAuth: true }
         },
       ]
     }

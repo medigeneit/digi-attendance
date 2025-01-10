@@ -47,6 +47,15 @@ onMounted(async () => {
       </RouterLink>
 
       <RouterLink
+        to="/my-notifications"
+        class="side-menu"
+        :class="{ 'side-menu-active': currentRoute.includes('/my-notifications') }"
+      >
+        <i class="fad fa-bells py-2"></i>
+        <h4 v-if="open">My Notifications</h4>
+      </RouterLink>
+
+      <RouterLink
         to="/my-attendance"
         class="side-menu"
         :class="{ 'side-menu-active': currentRoute.includes('/my-attendance') }"

@@ -14,7 +14,6 @@ const loading = ref(true)
 
 const rejectionModal = ref(false)
 const rejectionReason = ref('')
-const currentRejectId = ref(null)
 
 const leaveApplication = computed(() => leaveApplicationStore.leaveApplication)
 
@@ -32,21 +31,19 @@ onMounted(async () => {
 
 async function rejectApplication() {
   try {
-    await leaveApplicationStore.rejectLeaveApplication(currentRejectId.value, {
+    await leaveApplicationStore.rejectLeaveApplication(route.params.id, {
       rejection_reason: rejectionReason.value,
     })
     alert('Leave application rejected successfully!')
     rejectionModal.value = false
     rejectionReason.value = ''
-    currentRejectId.value = null
-    await leaveApplicationStore.fetchLeaveApplicationById(currentRejectId.value)
+    await leaveApplicationStore.fetchLeaveApplicationById(route.params.id)
   } catch (err) {
     alert(err.message)
   }
 }
 
-function openRejectionModal(id) {
-  currentRejectId.value = id
+function openRejectionModal() {
   rejectionModal.value = true
 }
 
@@ -186,30 +183,43 @@ const goBack = () => router.go(-1)
               <p><strong>Phone:</strong> {{ leaveApplication?.user?.phone }}</p>
             </div>
           </div>
+
           <div class="flex flex-col justify-center items-center text-sm">
+            <p>{{ leaveApplication?.handover_user?.name || 'Not assigned' }}</p>
             <div
               v-if="
                 !leaveApplication?.status && leaveApplication.handover_user_id === authStore.user.id
               "
-              class="flex gap-4"
+              class="print:hidden"
             >
-              <button
-                class="font-bold text-lg text-green-600"
-                @click="acceptHandoverApplication(leaveApplication.id)"
-              >
-                ✔
-              </button>
+              <p class="text-xs text-center">
+                {{ leaveApplication?.user?.name }} has assigned you for his handover. <br />
+                Do you agree?
+              </p>
+              <div class="flex justify-center gap-2">
+                <button
+                  class="font-bold text-lg text-green-600 px-2"
+                  @click="acceptHandoverApplication(leaveApplication.id)"
+                >
+                  ✔
+                </button>
+                <button class="px-2">❌</button>
+              </div>
             </div>
-            <p>{{ leaveApplication?.handover_user?.name || 'Not assigned' }}</p>
             <hr class="w-44 border-black" />
             <h4 class="font-bold">
               Handover
               <span
-                v-if="leaveApplication?.status === 'Pending'"
+                v-if="leaveApplication?.handover_user_id && leaveApplication?.status"
                 class="text-green-600 print:text-black"
               >
                 (✔)
               </span>
+              <span
+                v-if="leaveApplication?.handover_user_id && !leaveApplication?.status"
+                class="pl-2 text-yellow-700"
+                ><i class="fad fa-spinner"></i
+              ></span>
             </h4>
           </div>
         </div>
@@ -271,17 +281,30 @@ const goBack = () => router.go(-1)
             {{ leaveApplication?.status || 'N/A' }}
           </b>
         </p>
+        <div v-if="leaveApplication?.status === 'Rejected'">
+          <p><b>Rejected by: </b> {{ leaveApplication?.rejected_by_user?.name }}</p>
+          <p><b>rejection Reason: </b> {{ leaveApplication.rejection_reason }}</p>
+        </div>
 
         <div class="grid md:grid-cols-3 print:grid-cols-3 gap-4 text-sm items-end">
           <!-- In-Charge Approval -->
           <div class="flex flex-col justify-center items-center">
             <div
               v-if="
+                leaveApplication.status !== 'Rejected' &&
+                leaveApplication.status !== 'Approved' &&
                 !leaveApplication?.in_charge_user_id &&
                 leaveApplication?.user?.leave_approval?.in_charge_user_id === authStore.user.id
               "
               class="print:hidden"
             >
+              <p class="text-center">
+                {{ leaveApplication?.user?.leave_approval?.in_charge_user?.name || 'N/A' }}
+              </p>
+              <p class="text-xs text-center text-blue-600">
+                {{ leaveApplication?.user?.name }} has submitted an application. <br />
+                Will you forward it?
+              </p>
               <div class="flex justify-center gap-4">
                 <button
                   class="font-bold text-lg text-green-600"
@@ -289,9 +312,8 @@ const goBack = () => router.go(-1)
                 >
                   ✔
                 </button>
-                <button class="" @click="openRejectionModal(leaveApplication.id)">❌</button>
+                <button class="" @click="openRejectionModal">❌</button>
               </div>
-              <p>{{ leaveApplication?.user?.leave_approval?.in_charge_user?.name || 'N/A' }}</p>
             </div>
             <p>{{ leaveApplication?.in_charge_user?.name || '' }}</p>
             <hr class="w-44 border-black" />
@@ -305,11 +327,20 @@ const goBack = () => router.go(-1)
           <div class="flex flex-col justify-center items-center">
             <div
               v-if="
+                leaveApplication.status !== 'Rejected' &&
+                leaveApplication.status !== 'Approved' &&
                 !leaveApplication?.coordinator_user_id &&
                 leaveApplication?.user?.leave_approval?.coordinator_user_id === authStore.user.id
               "
               class="print:hidden"
             >
+              <p class="text-center">
+                {{ leaveApplication?.user?.leave_approval?.coordinator_user?.name || 'N/A' }}
+              </p>
+              <p class="text-xs text-center text-blue-600">
+                {{ leaveApplication?.user?.name }} has submitted an application. <br />
+                Will you recommend it?
+              </p>
               <div class="flex justify-center gap-4">
                 <button
                   class="font-bold text-lg text-green-600"
@@ -317,9 +348,8 @@ const goBack = () => router.go(-1)
                 >
                   ✔
                 </button>
-                <button class="" @click="openRejectionModal(leaveApplication.id)">❌</button>
+                <button class="" @click="openRejectionModal">❌</button>
               </div>
-              <p>{{ leaveApplication?.user?.leave_approval?.coordinator_user?.name || 'N/A' }}</p>
             </div>
             <p>{{ leaveApplication?.coordinator_user?.name || '' }}</p>
             <hr class="w-44 border-black" />
@@ -333,12 +363,21 @@ const goBack = () => router.go(-1)
           <div class="flex flex-col justify-center items-center">
             <div
               v-if="
+                leaveApplication.status !== 'Rejected' &&
+                leaveApplication.status !== 'Approved' &&
                 !leaveApplication?.operational_admin_user_id &&
                 leaveApplication?.user?.leave_approval?.operational_admin_user_id ===
                   authStore.user.id
               "
               class="print:hidden"
             >
+              <p class="text-center">
+                {{ leaveApplication?.user?.leave_approval?.operational_admin_user?.name || 'N/A' }}
+              </p>
+              <p class="text-xs text-center text-blue-600">
+                {{ leaveApplication?.user?.name }} has submitted an application.<br />
+                Will you recommend it?
+              </p>
               <div class="flex justify-center gap-4">
                 <button
                   class="font-bold text-lg text-green-600"
@@ -346,11 +385,8 @@ const goBack = () => router.go(-1)
                 >
                   ✔
                 </button>
-                <button class="" @click="openRejectionModal(leaveApplication.id)">❌</button>
+                <button class="" @click="openRejectionModal">❌</button>
               </div>
-              <p>
-                {{ leaveApplication?.user?.leave_approval?.operational_admin_user?.name || 'N/A' }}
-              </p>
             </div>
             <p>{{ leaveApplication?.operational_admin_user?.name || '' }}</p>
             <hr class="w-44 border-black" />
@@ -369,11 +405,20 @@ const goBack = () => router.go(-1)
           <div class="flex flex-col justify-center items-center">
             <div
               v-if="
+                leaveApplication.status !== 'Rejected' &&
+                leaveApplication.status !== 'Approved' &&
                 !leaveApplication?.recommend_by_user_id &&
                 leaveApplication?.user?.leave_approval?.recommend_by_user_id === authStore.user.id
               "
               class="print:hidden"
             >
+              <p class="text-center">
+                {{ leaveApplication?.user?.leave_approval?.recommend_by_user?.name || 'N/A' }}
+              </p>
+              <p class="text-xs text-center text-blue-600">
+                {{ leaveApplication?.user?.name }} has submitted an application.<br />
+                Will you recommend it?
+              </p>
               <div class="flex justify-center gap-4">
                 <button
                   class="font-bold text-lg text-green-600"
@@ -381,9 +426,8 @@ const goBack = () => router.go(-1)
                 >
                   ✔
                 </button>
-                <button class="" @click="openRejectionModal(leaveApplication.id)">❌</button>
+                <button class="" @click="openRejectionModal">❌</button>
               </div>
-              <p>{{ leaveApplication?.user?.leave_approval?.recommend_by_user?.name || 'N/A' }}</p>
             </div>
             <p>{{ leaveApplication?.recommend_by_user?.name || '' }}</p>
             <hr class="w-44 border-black" />
@@ -397,11 +441,20 @@ const goBack = () => router.go(-1)
           <div class="flex flex-col justify-center items-center">
             <div
               v-if="
+                leaveApplication.status !== 'Rejected' &&
+                leaveApplication.status !== 'Approved' &&
                 !leaveApplication?.approved_by_user_id &&
                 leaveApplication?.user?.leave_approval?.approved_by_user_id === authStore.user.id
               "
               class="print:hidden"
             >
+              <p class="text-center">
+                {{ leaveApplication?.user?.leave_approval?.approved_by_user?.name || 'N/A' }}
+              </p>
+              <p class="text-xs text-center text-blue-600">
+                {{ leaveApplication?.user?.name }} has submitted an application.<br />
+                Will you recommend it?
+              </p>
               <div class="flex justify-center gap-4">
                 <button
                   class="font-bold text-lg text-green-600"
@@ -409,9 +462,8 @@ const goBack = () => router.go(-1)
                 >
                   ✔
                 </button>
-                <button class="" @click="openRejectionModal(leaveApplication.id)">❌</button>
+                <button class="" @click="openRejectionModal">❌</button>
               </div>
-              <p>{{ leaveApplication?.user?.leave_approval?.approved_by_user?.name || 'N/A' }}</p>
             </div>
             <p>{{ leaveApplication?.approved_by_user?.name || '' }}</p>
             <hr class="w-44 border-black" />
