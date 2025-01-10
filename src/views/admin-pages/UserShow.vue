@@ -108,6 +108,10 @@ onMounted(async () => {
               <p class="text-lg text-gray-800">{{ user?.leave_approval.name }}</p>
             </div>
             <div>
+              <p class="text-sm font-bold text-gray-600">Other Approval Group:</p>
+              <p class="text-lg text-gray-800">{{ user?.other_approval.name }}</p>
+            </div>
+            <div>
               <p class="text-sm font-bold text-gray-600">Employment Type:</p>
               <p class="text-lg text-gray-800">{{ user?.employment_type }}</p>
             </div>

@@ -31,6 +31,7 @@ const form = reactive({
   employment_type: 'Provisional',
   weekends: [],
   leave_approval_id: '',
+  other_approval_id: '',
 })
 
 const userStore = useUserStore()
@@ -87,6 +88,7 @@ const loadUser = async () => {
     form.role = user.role
     form.device_user_id = user.device_user_id
     form.leave_approval_id = user.leave_approval_id
+    form.other_approval_id = user.other_approval_id
   } catch (error) {
     const errorMessage = error.response?.data?.message || 'Failed to load user data'
     toast.error(errorMessage)
@@ -304,6 +306,18 @@ const updateUser = async () => {
                 <label>Leave Approval Group</label>
                 <select v-model="form.leave_approval_id" class="w-full p-2 border rounded">
                   <option value="" disabled>Select Leave Approval Group</option>
+                  <template
+                    v-for="leaveApproval in leaveApprovalStore.leaveApprovals"
+                    :key="leaveApproval.id"
+                  >
+                    <option :value="leaveApproval.id">{{ leaveApproval.name }}</option>
+                  </template>
+                </select>
+              </div>
+              <div>
+                <label>Other Approval Group</label>
+                <select v-model="form.other_approval_id" class="w-full p-2 border rounded">
+                  <option value="" disabled>Select Other Approval Group</option>
                   <template
                     v-for="leaveApproval in leaveApprovalStore.leaveApprovals"
                     :key="leaveApproval.id"
