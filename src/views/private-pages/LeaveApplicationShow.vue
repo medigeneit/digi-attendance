@@ -453,7 +453,7 @@ const goBack = () => router.go(-1)
               </p>
               <p class="text-xs text-center text-blue-600">
                 {{ leaveApplication?.user?.name }} has submitted an application.<br />
-                Will you recommend it?
+                Will you accept it?
               </p>
               <div class="flex justify-center gap-4">
                 <button

@@ -92,7 +92,109 @@ export const useShortLeaveStore = defineStore('shortLeave', () => {
     }
   };
 
-  // Computed properties
+  // Handover Accept
+  const handoverAccept = async (id) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await apiClient.post(`/short-leaves/${id}/handover-accept`);
+      const index = shortLeaves.value.findIndex((leave) => leave.id === id);
+      if (index !== -1) {
+        shortLeaves.value[index] = response.data.data;
+      }
+      return response.data.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || `Failed to accept handover for short leave (ID: ${id})`;
+      console.error(`Error accepting handover for short leave with id ${id}:`, err);
+      throw new Error(error.value);
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  // In-Charge Accept
+  const inChargeAccept = async (id) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await apiClient.post(`/short-leaves/${id}/in-charge-accept`);
+      const index = shortLeaves.value.findIndex((leave) => leave.id === id);
+      if (index !== -1) {
+        shortLeaves.value[index] = response.data.data;
+      }
+      return response.data.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || `Failed to accept In-Charge for short leave (ID: ${id})`;
+      console.error(`Error accepting In-Charge for short leave with id ${id}:`, err);
+      throw new Error(error.value);
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  // Recommend By Accept
+  const recommendByAccept = async (id) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await apiClient.post(`/short-leaves/${id}/recommend-by-accept`);
+      const index = shortLeaves.value.findIndex((leave) => leave.id === id);
+      if (index !== -1) {
+        shortLeaves.value[index] = response.data.data;
+      }
+      return response.data.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || `Failed to accept recommend by for short leave (ID: ${id})`;
+      console.error(`Error accepting recommend by for short leave with id ${id}:`, err);
+      throw new Error(error.value);
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  // Approved By Accept
+  const approvedByAccept = async (id) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await apiClient.post(`/short-leaves/${id}/approved-by-accept`);
+      const index = shortLeaves.value.findIndex((leave) => leave.id === id);
+      if (index !== -1) {
+        shortLeaves.value[index] = response.data.data;
+      }
+      return response.data.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || `Failed to accept approval for short leave (ID: ${id})`;
+      console.error(`Error accepting approval for short leave with id ${id}:`, err);
+      throw new Error(error.value);
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  // Reject Short Leave
+  const rejectShortLeave = async (id, rejectionReason) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await apiClient.post(`/short-leaves/${id}/reject`, {
+        rejection_reason: rejectionReason,
+      });
+      const index = shortLeaves.value.findIndex((leave) => leave.id === id);
+      if (index !== -1) {
+        shortLeaves.value[index] = response.data.data;
+      }
+      return response.data.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || `Failed to reject short leave (ID: ${id})`;
+      console.error(`Error rejecting short leave with id ${id}:`, err);
+      throw new Error(error.value);
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  // Computed properties and return
   return {
     shortLeaves: computed(() => shortLeaves.value),
     shortLeave: computed(() => shortLeave.value),
@@ -103,5 +205,10 @@ export const useShortLeaveStore = defineStore('shortLeave', () => {
     createShortLeave,
     updateShortLeave,
     deleteShortLeave,
+    handoverAccept,
+    inChargeAccept,
+    recommendByAccept,
+    approvedByAccept,
+    rejectShortLeave,
   };
 });

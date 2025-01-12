@@ -42,7 +42,6 @@ const emits = defineEmits(['close'])
         "
         class="cursor-pointer"
       >
-        <h4 class="font-bold">Notification</h4>
         <p>{{ notification.data.message }}</p>
         <span class="text-sm text-gray-500">{{
           new Date(notification.created_at).toLocaleString('en-US')
