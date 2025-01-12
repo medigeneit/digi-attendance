@@ -223,12 +223,6 @@ const router = createRouter({
         },
 
         {
-          path: '/my-applications/my-exchanges',
-          name: 'MyExchanges',
-          component: () => import('@/views/private-pages/MyExchanges.vue'),
-          meta: { requiresAuth: true }
-        },
-        {
           path: '/my-applications/my-offday-exchanges',
           name: 'MyOffdayExchangeList',
           component: () => import('@/views/private-pages/MyOffdayExchangeList.vue'),
@@ -252,13 +246,6 @@ const router = createRouter({
           path: '/my-applications/shift-exchanges-add',
           name: 'ShiftExchangeAdd',
           component: () => import('@/views/private-pages/ShiftExchangeAdd.vue'),
-          meta: { requiresAuth: true }
-        },
-
-        {
-          path: '/my-applications/exchange-add',
-          name: 'ExchangeAdd',
-          component: () => import('@/views/private-pages/ExchangeAdd.vue'),
           meta: { requiresAuth: true }
         },
 
