@@ -221,6 +221,54 @@ const router = createRouter({
           component: () => import('@/views/private-pages/ShortLeaveShow.vue'),
           meta: { requiresAuth: true }
         },
+
+        {
+          path: '/my-applications/my-exchanges',
+          name: 'MyExchanges',
+          component: () => import('@/views/private-pages/MyExchanges.vue'),
+          meta: { requiresAuth: true }
+        },
+        {
+          path: '/my-applications/my-offday-exchanges',
+          name: 'MyOffdayExchangeList',
+          component: () => import('@/views/private-pages/MyOffdayExchangeList.vue'),
+          meta: { requiresAuth: true }
+        },
+        {
+          path: '/my-applications/offday-exchanges-add',
+          name: 'OffdayExchangeAdd',
+          component: () => import('@/views/private-pages/OffdayExchangeAdd.vue'),
+          meta: { requiresAuth: true }
+        },
+
+        {
+          path: '/my-applications/my-shift-exchanges',
+          name: 'MyShiftExchangeList',
+          component: () => import('@/views/private-pages/MyShiftExchangeList.vue'),
+          meta: { requiresAuth: true }
+        },
+
+        {
+          path: '/my-applications/shift-exchanges-add',
+          name: 'ShiftExchangeAdd',
+          component: () => import('@/views/private-pages/ShiftExchangeAdd.vue'),
+          meta: { requiresAuth: true }
+        },
+
+        {
+          path: '/my-applications/exchange-add',
+          name: 'ExchangeAdd',
+          component: () => import('@/views/private-pages/ExchangeAdd.vue'),
+          meta: { requiresAuth: true }
+        },
+
+        {
+          path: '/exchange-show/:id',
+          name: 'ExchangeShow',
+          component: () => import('@/views/private-pages/ExchangeShow.vue'),
+          meta: { requiresAuth: true }
+        },
+
       ]
     }
   ],

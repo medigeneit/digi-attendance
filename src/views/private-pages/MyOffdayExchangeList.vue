@@ -1,24 +1,24 @@
 <script setup>
 import { onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useShortLeaveStore } from '@/stores/short-leave'
+import { useExchangeStore } from '@/stores/exchange'
 import { useAuthStore } from '@/stores/auth'
 import LoaderView from '@/components/common/LoaderView.vue'
 
 const router = useRouter()
-const shortLeaveStore = useShortLeaveStore()
+const exchangeStore = useExchangeStore()
 const authStore = useAuthStore()
 
 onMounted(() => {
-  shortLeaveStore.fetchShortLeaves({ user_id: authStore?.user?.id })
+  exchangeStore.fetchExchanges({ user_id: authStore?.user?.id })
 })
 
 const goBack = () => {
   router.go(-1)
 }
 
-const myShortLeaves = computed(() => {
-  return shortLeaveStore.shortLeaves
+const offdayExchanges = computed(() => {
+  return exchangeStore.exchanges.filter((exchange) => exchange.exchange_type === 'offday')
 })
 </script>
 
@@ -30,13 +30,13 @@ const myShortLeaves = computed(() => {
         <span class="hidden md:flex">Back</span>
       </button>
 
-      <h1 class="title-md md:title-lg flex-wrap text-center">My Short Leaves</h1>
+      <h1 class="title-md md:title-lg flex-wrap text-center">My Offday Exchanges</h1>
       <div>
-        <RouterLink :to="{ name: 'ShortLeaveAdd' }" class="btn-2">Apply for Short Leave</RouterLink>
+        <RouterLink :to="{ name: 'OffdayExchangeAdd' }" class="btn-2">Request Exchange</RouterLink>
       </div>
     </div>
 
-    <div v-if="shortLeaveStore?.loading" class="text-center py-4">
+    <div v-if="exchangeStore?.loading" class="text-center py-4">
       <LoaderView />
     </div>
 
@@ -48,30 +48,26 @@ const myShortLeaves = computed(() => {
           <thead>
             <tr class="bg-gray-200">
               <th class="border border-gray-300 px-2 text-left">#</th>
-              <th class="border border-gray-300 px-2 text-left">Date</th>
-              <th class="border border-gray-300 px-2 text-left">Start Time</th>
-              <th class="border border-gray-300 px-2 text-left">End Time</th>
-              <th class="border border-gray-300 px-2 text-left">Total Minutes</th>
+              <th class="border border-gray-300 px-2 text-left">Current Date</th>
+              <th class="border border-gray-300 px-2 text-left">Exchange Date</th>
               <th class="border border-gray-300 px-2 text-left">Status</th>
               <th class="border border-gray-300 px-2 text-left">Action</th>
             </tr>
           </thead>
           <tbody>
             <tr
-              v-for="(leave, index) in myShortLeaves"
-              :key="leave?.id"
+              v-for="(exchange, index) in offdayExchanges"
+              :key="exchange?.id"
               class="border-b border-gray-200 hover:bg-gray-100"
             >
               <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
-              <td class="border border-gray-300 px-2">{{ leave.date }}</td>
-              <td class="border border-gray-300 px-2">{{ leave.start_time }}</td>
-              <td class="border border-gray-300 px-2">{{ leave.end_time }}</td>
-              <td class="border border-gray-300 px-2">{{ leave.total_minutes }}</td>
-              <td class="border border-gray-300 px-2">{{ leave.status || 'N/A' }}</td>
+              <td class="border border-gray-300 px-2">{{ exchange?.current_date }}</td>
+              <td class="border border-gray-300 px-2">{{ exchange?.exchange_date }}</td>
+              <td class="border border-gray-300 px-2">{{ exchange?.status || 'N/A' }}</td>
               <td class="border border-gray-300 px-2">
                 <div class="flex gap-2">
                   <RouterLink
-                    :to="{ name: 'ShortLeaveShow', params: { id: leave?.id } }"
+                    :to="{ name: 'ExchangeShow', params: { id: exchange?.id } }"
                     class="btn-icon"
                   >
                     <i class="far fa-eye"></i>
@@ -79,8 +75,8 @@ const myShortLeaves = computed(() => {
                 </div>
               </td>
             </tr>
-            <tr v-if="myShortLeaves.length === 0">
-              <td colspan="8" class="p-2 text-center text-red-500">No short leaves found</td>
+            <tr v-if="offdayExchanges.length === 0">
+              <td colspan="5" class="p-2 text-center text-red-500">No offday exchanges found</td>
             </tr>
           </tbody>
         </table>

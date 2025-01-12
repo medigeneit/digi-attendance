@@ -23,6 +23,7 @@ const getTargetUrl = (eventType) => {
   const eventTypes = {
     leaveApplication: '/leave-application-show/',
     shortLeave: '/short-leave-show/',
+    exchange: '/exchange-show/',
   }
 
   return eventTypes[eventType] || '#'

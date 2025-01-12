@@ -9,5 +9,13 @@
       <i class="fab fa-pagelines text-3xl"></i>
       My Short Leaves
     </RouterLink>
+    <RouterLink :to="{ name: 'MyShiftExchangeList' }" class="main-button">
+      <i class="fas fa-exchange text-3xl"></i>
+      My Shift Exchanges
+    </RouterLink>
+    <RouterLink :to="{ name: 'MyOffdayExchangeList' }" class="main-button">
+      <i class="fas fa-calendar-day text-3xl"></i>
+      My Offday Exchanges
+    </RouterLink>
   </div>
 </template>
