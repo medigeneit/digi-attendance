@@ -156,6 +156,27 @@ const router = createRouter({
         },
 
         {
+          path: '/hrd/short-leave-list',
+          name: 'ShortLeaveList',
+          component: () => import('@/views/admin-pages/ShortLeaveList.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+        },
+
+        {
+          path: '/hrd/offday-exchange-list',
+          name: 'OffdayExchangeList',
+          component: () => import('@/views/admin-pages/OffdayExchangeList.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+        },
+
+        {
+          path: '/hrd/shift-exchange-list',
+          name: 'ShiftExchangeList',
+          component: () => import('@/views/admin-pages/ShiftExchangeList.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+        },
+
+        {
           path: '/my-profile',
           name: 'MyProfile',
           component: () => import('@/views/private-pages/MyProfile.vue'),

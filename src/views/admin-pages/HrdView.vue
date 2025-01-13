@@ -9,5 +9,17 @@
       <i class="fas fa-leaf text-3xl"></i>
       Employee Leave Applications
     </RouterLink>
+    <RouterLink :to="{ name: 'ShortLeaveList' }" class="main-button">
+      <i class="fab fa-pagelines text-3xl"></i>
+      Employee Short Leaves
+    </RouterLink>
+    <RouterLink :to="{ name: 'ShiftExchangeList' }" class="main-button">
+      <i class="fas fa-exchange text-3xl"></i>
+      Employee Shift Exchanges
+    </RouterLink>
+    <RouterLink :to="{ name: 'OffdayExchangeList' }" class="main-button">
+      <i class="fas fa-calendar-day text-3xl"></i>
+      Employee Offday Exchanges
+    </RouterLink>
   </div>
 </template>
