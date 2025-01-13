@@ -5,6 +5,10 @@
       <i class="fas fa-users text-3xl"></i>
       User List
     </RouterLink>
+    <RouterLink :to="{ name: 'HoliDayList' }" class="main-button">
+      <i class="fas fa-mosque text-3xl"></i>
+      Holiday List
+    </RouterLink>
     <RouterLink :to="{ name: 'LeaveApprovalList' }" class="main-button">
       <i class="fas fa-users-class text-3xl"></i>
       Leave Approval List
