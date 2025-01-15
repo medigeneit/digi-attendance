@@ -1,5 +1,6 @@
 <script setup>
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, onMounted } from 'vue'
+import { useCompanyStore } from '@/stores/company'
 
 const props = defineProps({
   show: { type: Boolean, required: true },
@@ -11,13 +12,17 @@ const emit = defineEmits(['close', 'save'])
 const isEditMode = ref(false)
 const holidayForm = reactive({
   id: null,
-  year: new Date().getFullYear(), // Default to current year
+  year: new Date().getFullYear(),
   name: '',
   start_date: '',
   end_date: '',
   type: 'government',
   description: '',
+  company_id: null,
 })
+
+const companyStore = useCompanyStore()
+const companies = ref([])
 
 const resetForm = () => {
   isEditMode.value = false
@@ -28,6 +33,7 @@ const resetForm = () => {
   holidayForm.end_date = ''
   holidayForm.type = 'government'
   holidayForm.description = ''
+  holidayForm.company_id = null
 }
 
 watch(
@@ -51,17 +57,22 @@ const handleSubmit = () => {
 const closeModal = () => {
   emit('close')
 }
+
+onMounted(async () => {
+  await companyStore.fetchCompanies()
+  companies.value = [{ id: null, name: 'All' }, ...companyStore.companies]
+})
 </script>
 
 <template>
   <div v-if="show" class="modal-bg">
     <div class="modal-card">
-      <h2 class="text-lg font-semibold mb-4">
+      <h2 class="text-lg font-semibold">
         {{ isEditMode ? 'Edit Holiday' : 'Add Holiday' }}
       </h2>
-      <form @submit.prevent="handleSubmit">
-        <div class="mb-4">
-          <label for="year" class="block text-sm font-medium mb-2">Year</label>
+      <form @submit.prevent="handleSubmit" class="space-y-2">
+        <div class="">
+          <label for="year" class="block text-sm font-medium">Year</label>
           <input
             id="year"
             v-model="holidayForm.year"
@@ -71,8 +82,8 @@ const closeModal = () => {
             required
           />
         </div>
-        <div class="mb-4">
-          <label for="name" class="block text-sm font-medium mb-2">Name</label>
+        <div class="">
+          <label for="name" class="block text-sm font-medium">Name</label>
           <input
             id="name"
             v-model="holidayForm.name"
@@ -82,8 +93,8 @@ const closeModal = () => {
             required
           />
         </div>
-        <div class="mb-4">
-          <label for="start_date" class="block text-sm font-medium mb-2">Start Date</label>
+        <div class="">
+          <label for="start_date" class="block text-sm font-medium">Start Date</label>
           <input
             id="start_date"
             v-model="holidayForm.start_date"
@@ -92,8 +103,8 @@ const closeModal = () => {
             required
           />
         </div>
-        <div class="mb-4">
-          <label for="end_date" class="block text-sm font-medium mb-2">End Date</label>
+        <div class="">
+          <label for="end_date" class="block text-sm font-medium">End Date</label>
           <input
             id="end_date"
             v-model="holidayForm.end_date"
@@ -102,8 +113,8 @@ const closeModal = () => {
             required
           />
         </div>
-        <div class="mb-4">
-          <label for="type" class="block text-sm font-medium mb-2">Type</label>
+        <div class="">
+          <label for="type" class="block text-sm font-medium">Type</label>
           <select
             id="type"
             v-model="holidayForm.type"
@@ -115,8 +126,20 @@ const closeModal = () => {
             <option value="organizational">Organizational</option>
           </select>
         </div>
-        <div class="mb-4">
-          <label for="description" class="block text-sm font-medium mb-2">Description</label>
+        <div class="">
+          <label for="company_id" class="block text-sm font-medium">Company</label>
+          <select
+            id="company_id"
+            v-model="holidayForm.company_id"
+            class="w-full border rounded px-3 py-2"
+          >
+            <option v-for="company in companies" :key="company.id" :value="company.id">
+              {{ company.name }}
+            </option>
+          </select>
+        </div>
+        <div class="">
+          <label for="description" class="block text-sm font-medium">Description</label>
           <textarea
             id="description"
             v-model="holidayForm.description"

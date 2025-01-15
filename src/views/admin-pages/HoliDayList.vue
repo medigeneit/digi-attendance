@@ -85,6 +85,7 @@ onMounted(async () => {
         <thead>
           <tr class="bg-gray-200 text-gray-700 text-sm leading-normal">
             <th class="py-3 px-2 text-left">Name</th>
+            <th class="py-3 px-2 text-left">Company</th>
             <th class="py-3 px-2 text-center">Start Date</th>
             <th class="py-3 px-2 text-center">End Date</th>
             <th class="py-3 px-2 text-center">Type</th>
@@ -105,6 +106,9 @@ onMounted(async () => {
             >
               <td class="py-3 px-2 text-left">
                 <p class="font-medium">{{ holiday.name }}</p>
+              </td>
+              <td class="py-3 px-2 text-left">
+                <p class="font-medium">{{ holiday?.company?.name || 'All' }}</p>
               </td>
               <td class="py-3 px-2 text-center">
                 <p class="font-medium">{{ holiday.start_date }}</p>
