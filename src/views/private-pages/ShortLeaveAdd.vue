@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useShortLeaveStore } from '@/stores/short-leave'
 import { useUserStore } from '@/stores/user'
@@ -11,17 +11,34 @@ const shortLeaveStore = useShortLeaveStore()
 const userStore = useUserStore()
 const authStore = useAuthStore()
 
+const todayDate = new Date().toISOString().split('T')[0]
+
 const form = ref({
-  date: '',
+  date: todayDate,
   start_time: '',
   end_time: '',
   reason: '',
   works_in_hand: '',
   handover_user_id: '',
+  type: '',
 })
 
 const loading = ref(false)
 const error = ref(null)
+
+// Computed property to calculate duration in minutes
+const durationInMinutes = computed(() => {
+  if (form.value.start_time && form.value.end_time) {
+    const startTime = new Date(`1970-01-01T${form.value.start_time}:00`)
+    const endTime = new Date(`1970-01-01T${form.value.end_time}:00`)
+    const diffInMs = endTime - startTime
+    return Math.round(diffInMs / (1000 * 60)) // Convert milliseconds to minutes
+  }
+  return 0
+})
+
+// Watch durationInMinutes to show/hide handover user selection
+const showHandoverUser = computed(() => durationInMinutes.value > 30)
 
 const submitShortLeave = async () => {
   loading.value = true
@@ -75,6 +92,17 @@ const goBack = () => {
         <input type="date" id="date" v-model="form.date" class="input-1 w-full" required />
       </div>
 
+      <!-- Type Field -->
+      <div>
+        <label for="type" class="block text-sm font-medium">Type</label>
+        <select id="type" v-model="form.type" class="input-1 w-full" required>
+          <option value="">Select Type</option>
+          <option value="First">First</option>
+          <option value="Middle">Middle</option>
+          <option value="Last">Last</option>
+        </select>
+      </div>
+
       <div>
         <label for="start-time" class="block text-sm font-medium">Start Time</label>
         <input
@@ -102,10 +130,8 @@ const goBack = () => {
         ></textarea>
       </div>
 
-      <div>
-        <label for="works-in-hand" class="block text-sm font-medium"
-          >Works in Hand (Optional)</label
-        >
+      <div v-if="showHandoverUser">
+        <label for="works-in-hand" class="block text-sm font-medium">Works in Hand</label>
         <textarea
           id="works-in-hand"
           v-model="form.works_in_hand"
@@ -114,7 +140,7 @@ const goBack = () => {
         ></textarea>
       </div>
 
-      <div>
+      <div v-if="showHandoverUser">
         <label for="handover-user" class="block text-sm font-medium">Handover User</label>
         <select id="handover-user" v-model="form.handover_user_id" class="input-1 w-full" required>
           <option value="">Select Handover User</option>
