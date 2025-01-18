@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 import { useDeviceStore } from '@/stores/device'
 import { useToast } from 'vue-toastification'
 
+import CheckDeviceConnection from '@/components/CheckDeviceConnection.vue'
 import DeviceModal from '@/components/DeviceModal.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import DeleteModal from '@/components/common/DeleteModal.vue'
@@ -88,12 +89,13 @@ onMounted(async () => {
             <th class="py-3 px-2 text-left">IP Address</th>
             <th class="py-3 px-2 text-center">Port</th>
             <th class="py-3 px-2 text-center">Status</th>
+            <th class="py-3 px-2 text-center">Connection</th>
             <th class="py-3 px-2 text-center">Action</th>
           </tr>
         </thead>
         <tbody class="text-gray-600 text-sm">
           <tr v-if="deviceStore.loading">
-            <td colspan="5">
+            <td colspan="6">
               <LoaderView />
             </td>
           </tr>
@@ -116,11 +118,18 @@ onMounted(async () => {
                 <p class="font-medium">{{ device.status }}</p>
               </td>
               <td class="py-3 px-2 text-center">
+                <CheckDeviceConnection :device="device" />
+              </td>
+              <td class="py-3 px-2 text-center">
                 <div class="flex item-center justify-center gap-4">
                   <button @click="openEditModal(device)" class="text-blue-600 hover:text-blue-800">
                     <i class="fas fa-edit"></i>
                   </button>
-                  <button @click="openDeleteModal(device)" class="text-red-600 hover:text-red-800">
+                  <button
+                    v-if="false"
+                    @click="openDeleteModal(device)"
+                    class="text-red-600 hover:text-red-800"
+                  >
                     <i class="fas fa-trash"></i>
                   </button>
                 </div>
