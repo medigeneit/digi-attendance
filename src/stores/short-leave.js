@@ -1,15 +1,13 @@
 import { ref, computed } from 'vue';
 import { defineStore } from 'pinia';
-import apiClient from '@/axios'; // Assuming axios is configured in '@/axios'
+import apiClient from '@/axios';
 
 export const useShortLeaveStore = defineStore('shortLeave', () => {
-  // State
   const shortLeaves = ref([]);
   const shortLeave = ref(null);
   const loading = ref(false);
   const error = ref(null);
 
-  // Fetch all short leaves
   const fetchShortLeaves = async (filters = {}) => {
     loading.value = true;
     error.value = null;
@@ -24,7 +22,6 @@ export const useShortLeaveStore = defineStore('shortLeave', () => {
     }
   };
 
-  // Fetch a single short leave by ID
   const fetchShortLeaveById = async (id) => {
     loading.value = true;
     error.value = null;
@@ -39,7 +36,6 @@ export const useShortLeaveStore = defineStore('shortLeave', () => {
     }
   };
 
-  // Create a new short leave
   const createShortLeave = async (data) => {
     loading.value = true;
     error.value = null;
@@ -56,7 +52,6 @@ export const useShortLeaveStore = defineStore('shortLeave', () => {
     }
   };
 
-  // Update a short leave
   const updateShortLeave = async (id, data) => {
     loading.value = true;
     error.value = null;

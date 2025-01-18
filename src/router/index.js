@@ -283,6 +283,27 @@ const router = createRouter({
           meta: { requiresAuth: true }
         },
 
+        {
+          path: '/my-applications/my-manual-attendances',
+          name: 'MyManualAttendanceList',
+          component: () => import('@/views/private-pages/MyManualAttendanceList.vue'),
+          meta: { requiresAuth: true }
+        },
+
+        {
+          path: '/my-applications/manual-attendances-add',
+          name: 'ManualAttendanceAdd',
+          component: () => import('@/views/private-pages/ManualAttendanceAdd.vue'),
+          meta: { requiresAuth: true }
+        },
+
+        {
+          path: '/manual-attendance-show/:id',
+          name: 'ManualAttendanceShow',
+          component: () => import('@/views/private-pages/ManualAttendanceShow.vue'),
+          meta: { requiresAuth: true }
+        }
+
       ]
     }
   ],
