@@ -1,14 +1,15 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRoute, RouterLink } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 
-const authStore = useAuthStore()
-const router = useRouter()
+const props = defineProps({
+  user: Object,
+})
 
 const open = ref(true)
 const route = useRoute()
+const router = useRouter()
 
 const currentRoute = computed(() => route.path)
 
@@ -16,15 +17,6 @@ const logout = () => {
   authStore.logout()
   router.push('/login')
 }
-
-const user = ref(authStore.user)
-
-onMounted(async () => {
-  if (!user.value) {
-    await authStore.fetchUser()
-    user.value = authStore.user
-  }
-})
 </script>
 
 <template>
@@ -72,6 +64,7 @@ onMounted(async () => {
         <i class="fad fa-list py-2"></i>
         <h4 v-if="open">My Attendance</h4>
       </RouterLink>
+
       <RouterLink
         to="/my-applications"
         class="side-menu"
@@ -82,6 +75,7 @@ onMounted(async () => {
       </RouterLink>
 
       <RouterLink
+        v-if="['admin', 'super_admin', 'developer'].includes(user?.role)"
         to="/hrd"
         class="side-menu"
         :class="{ 'side-menu-active': currentRoute.includes('/hrd') }"
@@ -91,6 +85,7 @@ onMounted(async () => {
       </RouterLink>
 
       <RouterLink
+        v-if="['admin', 'super_admin', 'developer'].includes(user?.role)"
         to="/settings"
         class="side-menu"
         :class="{ 'side-menu-active': currentRoute.includes('/settings') }"

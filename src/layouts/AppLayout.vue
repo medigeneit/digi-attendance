@@ -1,27 +1,41 @@
 <script setup>
+import { computed, onMounted, ref } from 'vue'
+import { RouterView } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import HeaderPrivate from '@/components/layouts/HeaderPrivate.vue'
 import SideBar from '@/components/layouts/SideBar.vue'
-import { ref } from 'vue'
-import { RouterView } from 'vue-router'
 
+const authStore = useAuthStore()
 const sidebarVisible = ref(JSON.parse(localStorage.getItem('sidebarVisible')) ?? true)
 
 const toggleSidebar = () => {
   sidebarVisible.value = !sidebarVisible.value
   localStorage.setItem('sidebarVisible', JSON.stringify(sidebarVisible.value))
 }
+
+const user = ref(null)
+
+const userInitial = computed(() =>
+  user?.value && user?.value?.name ? user?.value?.name.charAt(0).toUpperCase() : '',
+)
+
+onMounted(async () => {
+  if (!authStore.user) {
+    await authStore.fetchUser()
+  }
+  user.value = authStore.user
+})
 </script>
 
 <template>
   <div class="md:flex relative">
-    <!-- Sidebar Container -->
     <div
       :class="{ 'hidden md:block': !sidebarVisible }"
       class="bg-white md:shadow-md shadow-2xl absolute md:static z-50 transition-transform duration-300 print:hidden"
     >
       <div class="sticky top-0 print:hidden">
         <div class="relative">
-          <SideBar :visible="sidebarVisible" />
+          <SideBar :visible="sidebarVisible" :user="user" />
           <button
             class="md:hidden absolute -right-10 top-1/2 transform -translate-y-1/2 bg-red-500 text-white px-2 py-1 pt-2 rounded-full"
             @click="toggleSidebar"
@@ -43,7 +57,7 @@ const toggleSidebar = () => {
           >
             <i class="fad fa-bars text-2xl"></i>
           </button>
-          <HeaderPrivate class="w-full" />
+          <HeaderPrivate class="w-full" :user="user" :userInitial="userInitial" />
         </div>
       </header>
 
