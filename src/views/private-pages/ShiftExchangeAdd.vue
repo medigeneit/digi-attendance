@@ -38,9 +38,9 @@ const submitShiftExchange = async () => {
       handover_user_id: form.value.handover_user_id,
       reason: form.value.reason,
     }
-    await exchangeStore.createExchange(payload)
-    alert('Shift exchange request submitted successfully!')
-    router.push({ name: 'MyExchanges' })
+    const newExchange = await exchangeStore.createExchange(payload)
+
+    router.push({ name: 'ExchangeShow', params: { id: newExchange.id } })
   } catch (err) {
     error.value = err.message || 'Failed to submit shift exchange request'
   } finally {

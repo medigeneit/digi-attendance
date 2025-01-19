@@ -36,13 +36,13 @@ export const useExchangeStore = defineStore('exchange', () => {
     }
   }
 
-  // Create a new exchange
   async function createExchange(payload) {
     loading.value = true;
     error.value = null;
     try {
       const response = await apiClient.post('/exchanges', payload);
-      exchanges.value.push(response.data);
+      exchanges.value.push(response.data.data);
+      return response.data.data;
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to create exchange';
     } finally {
@@ -50,7 +50,6 @@ export const useExchangeStore = defineStore('exchange', () => {
     }
   }
 
-  // Update an existing exchange
   async function updateExchange(id, payload) {
     loading.value = true;
     error.value = null;
