@@ -33,9 +33,9 @@ const submitManualAttendance = async () => {
       check_in: form.value.check_in ? `${form.value.date} ${form.value.check_in}:00` : null,
       check_out: form.value.check_out ? `${form.value.date} ${form.value.check_out}:00` : null,
     }
-    await manualAttendanceStore.createManualAttendance(payload)
-    alert('Manual attendance request submitted successfully!')
-    router.push({ name: 'MyManualAttendanceList' })
+    const newAttendance = await manualAttendanceStore.createManualAttendance(payload)
+
+    router.push({ name: 'ManualAttendanceShow', params: { id: newAttendance.id } })
   } catch (err) {
     error.value = err.message || 'Failed to submit manual attendance request.'
   } finally {

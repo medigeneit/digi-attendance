@@ -57,6 +57,10 @@ const acceptManualAttendanceAction = async (action) => {
 }
 
 const goBack = () => router.go(-1)
+
+function print() {
+  window.print()
+}
 </script>
 
 <template>
@@ -66,8 +70,13 @@ const goBack = () => router.go(-1)
         <i class="far fa-arrow-left"></i>
         <span class="hidden md:flex">Back</span>
       </button>
-      <h1 class="title-md md:title-xl flex-wrap text-center">Manual Attendance Details</h1>
-      <div></div>
+      <h1 class="title-lg text-center">Manual Attendance Details</h1>
+      <div>
+        <button class="btn-2" @click="print">
+          <i class="far fa-print"></i>
+          Print
+        </button>
+      </div>
     </div>
 
     <LoaderView v-if="loading" />
