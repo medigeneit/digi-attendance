@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useManualAttendanceStore } from '@/stores/manual-attendance'
 import { useAuthStore } from '@/stores/auth'
 import LoaderView from '@/components/common/LoaderView.vue'
+import ShareComponent from '@/components/common/ShareComponent.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -263,6 +264,7 @@ function print() {
         </p>
       </div>
     </div>
+    <ShareComponent />
   </div>
 
   <!-- Rejection Modal -->

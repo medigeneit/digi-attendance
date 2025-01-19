@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
 import { useAuthStore } from '@/stores/auth'
 import LoaderView from '@/components/common/LoaderView.vue'
+import ShareComponent from '@/components/common/ShareComponent.vue'
 
 const authStore = useAuthStore()
 const leaveApplicationStore = useLeaveApplicationStore()
@@ -475,6 +476,8 @@ const goBack = () => router.go(-1)
         </div>
       </div>
     </div>
+
+    <ShareComponent />
   </div>
   <div v-if="rejectionModal" class="modal-bg">
     <div class="modal-card">
