@@ -32,7 +32,7 @@ const myShortLeaves = computed(() => {
 
       <h1 class="title-md md:title-lg flex-wrap text-center">My Short Leaves</h1>
       <div>
-        <RouterLink :to="{ name: 'ShortLeaveAdd' }" class="btn-2">Apply for Short Leave</RouterLink>
+        <RouterLink :to="{ name: 'ShortLeaveAdd' }" class="btn-2">New Short Leave</RouterLink>
       </div>
     </div>
 

@@ -49,9 +49,10 @@ const submitShortLeave = async () => {
       user_id: authStore?.user?.id,
       ...form.value,
     }
-    await shortLeaveStore.createShortLeave(payload)
-    alert('Short leave application submitted successfully!')
-    router.push({ name: 'MyShortLeaves' })
+
+    const newShortLeave = await shortLeaveStore.createShortLeave(payload)
+
+    router.push({ name: 'ShortLeaveShow', params: { id: newShortLeave.id } })
   } catch (err) {
     error.value = err.message || 'Failed to submit short leave application'
   } finally {
@@ -76,9 +77,9 @@ const goBack = () => {
         <span class="hidden md:flex">Back</span>
       </button>
 
-      <h1 class="title-md md:title-lg flex-wrap text-center">Short Leave Application Form</h1>
+      <h1 class="title-lg flex-wrap text-center">Short Leave Application Form</h1>
       <div>
-        <RouterLink to="/" class="btn-2">Home</RouterLink>
+        <RouterLink to="/my-applications" class="btn-2">Home</RouterLink>
       </div>
     </div>
 

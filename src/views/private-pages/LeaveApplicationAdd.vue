@@ -34,9 +34,10 @@ const submitLeaveApplication = async () => {
       user_id: authStore?.user?.id,
       ...form.value,
     }
-    await leaveApplicationStore.storeLeaveApplication(payload)
-    alert('Leave application submitted successfully!')
-    router.push({ name: 'MyLeaveApplications' })
+
+    const newApplication = await leaveApplicationStore.storeLeaveApplication(payload)
+
+    router.push({ name: 'LeaveApplicationShow', params: { id: newApplication.id } })
   } catch (err) {
     error.value = err.message || 'Failed to submit leave application'
   } finally {
@@ -54,17 +55,29 @@ onMounted(() => {
   }),
     userStore.fetchUsers()
 })
+
+const goBack = () => {
+  router.go(-1)
+}
 </script>
 
 <template>
-  <div class="max-w-3xl mx-auto p-4 bg-white shadow-md rounded-md space-y-4">
-    <h1 class="title-md text-center">Leave Application Form</h1>
+  <div class="my-container max-w-3xl space-y-4">
+    <div class="flex items-center justify-between gap-2">
+      <button class="btn-3" @click="goBack">
+        <i class="far fa-arrow-left"></i>
+        <span class="hidden md:flex">Back</span>
+      </button>
 
-    <div v-if="loading" class="text-center">
-      <LoaderView />
+      <h1 class="title-md md:title-lg flex-wrap text-center">Leave Application Form</h1>
+      <div>
+        <RouterLink to="/my-applications" class="btn-2">Home</RouterLink>
+      </div>
     </div>
 
-    <form v-else @submit.prevent="submitLeaveApplication" class="space-y-4">
+    <LoaderView v-if="loading" />
+
+    <form v-else @submit.prevent="submitLeaveApplication" class="space-y-4 card-bg p-4 md:p-8">
       <div>
         <label for="leave-type" class="block text-sm font-medium">Leave Type</label>
         <select id="leave-type" v-model="form.leave_type_id" class="input-1 w-full" required>
@@ -92,7 +105,7 @@ onMounted(() => {
       </div>
 
       <div>
-        <label for="reason" class="block text-sm font-medium">Reason (Optional)</label>
+        <label for="reason" class="block text-sm font-medium">Reason</label>
         <textarea
           id="reason"
           v-model="form.reason"
@@ -102,9 +115,7 @@ onMounted(() => {
       </div>
 
       <div>
-        <label for="works-in-hand" class="block text-sm font-medium"
-          >Works in Hand (Optional)</label
-        >
+        <label for="works-in-hand" class="block text-sm font-medium">Works in Hand</label>
         <textarea
           id="works-in-hand"
           v-model="form.works_in_hand"
