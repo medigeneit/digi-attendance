@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useExchangeStore } from '@/stores/exchange'
 import { useAuthStore } from '@/stores/auth'
 import LoaderView from '@/components/common/LoaderView.vue'
+import ShareComponent from '@/components/common/ShareComponent.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -266,6 +267,7 @@ const goBack = () => router.go(-1)
         </p>
       </div>
     </div>
+    <ShareComponent />
   </div>
 
   <div v-if="rejectionModal" class="modal-bg">
