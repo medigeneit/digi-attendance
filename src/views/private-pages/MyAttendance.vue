@@ -142,8 +142,39 @@ const goBack = () => router.go(-1)
                 {{ log.exit_time }}
               </td>
               <td class="border px-1 py-0.5">{{ log.working_hours }}</td>
-              <td class="border px-1 py-0.5">{{ log.late_duration }}</td>
-              <td class="border px-1 py-0.5">{{ log.early_leave_duration }}</td>
+              <td class="border px-1 py-0.5">
+                <div v-if="log.late_duration">
+                  {{ log.late_duration }}
+                  <span>
+                    <i
+                      :class="{
+                        'fas fa-check-circle text-green-500': log.first_short_leave === 'Approved',
+                        'fas fa-hourglass-half text-yellow-500':
+                          log.first_short_leave === 'Pending',
+                        'fas fa-times-circle text-red-500': log.first_short_leave === 'Rejected',
+                        'fas fa-question-circle text-gray-400': !log.first_short_leave,
+                      }"
+                      :title="log.first_short_leave || 'Unknown'"
+                    ></i>
+                  </span>
+                </div>
+              </td>
+              <td class="border px-1 py-0.5">
+                <div v-if="log.early_leave_duration">
+                  {{ log.early_leave_duration }}
+                  <span>
+                    <i
+                      :class="{
+                        'fas fa-check-circle text-green-500': log.last_short_leave === 'Approved',
+                        'fas fa-hourglass-half text-yellow-500': log.last_short_leave === 'Pending',
+                        'fas fa-times-circle text-red-500': log.last_short_leave === 'Rejected',
+                        'fas fa-question-circle text-gray-400': !log.last_short_leave,
+                      }"
+                      :title="log.last_short_leave || 'Unknown'"
+                    ></i>
+                  </span>
+                </div>
+              </td>
               <td
                 class="border px-1 py-0.5"
                 :class="{
