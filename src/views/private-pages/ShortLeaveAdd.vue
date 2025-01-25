@@ -1,20 +1,24 @@
 <script setup>
-import { onMounted, ref, computed, watch } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useShortLeaveStore } from '@/stores/short-leave'
 import { useUserStore } from '@/stores/user'
 import { useAuthStore } from '@/stores/auth'
+import { useRoute } from 'vue-router'
 import LoaderView from '@/components/common/LoaderView.vue'
 
+const route = useRoute()
 const router = useRouter()
 const shortLeaveStore = useShortLeaveStore()
 const userStore = useUserStore()
 const authStore = useAuthStore()
 
+const { type, start_time, end_time } = route.query
+
 const todayDate = new Date().toISOString().split('T')[0]
 
 const form = ref({
-  date: todayDate,
+  date: '',
   start_time: '',
   end_time: '',
   reason: '',
@@ -60,8 +64,33 @@ const submitShortLeave = async () => {
   }
 }
 
+const formatDate = (datetime) => {
+  if (!datetime) return todayDate
+
+  return datetime.split(' ')[0]
+}
+
+const formatTime = (timeStr) => {
+  if (!timeStr) return null
+  const timeParts = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i)
+  if (!timeParts) return null
+  let [_, hours, minutes, period] = timeParts
+  hours = parseInt(hours, 10)
+  if (period.toUpperCase() === 'PM' && hours < 12) hours += 12
+  if (period.toUpperCase() === 'AM' && hours === 12) hours = 0
+  return `${hours.toString().padStart(2, '0')}:${minutes}`
+}
+
 onMounted(() => {
   userStore.fetchUsers()
+
+  form.value.date = formatDate(
+    type === 'First' ? start_time : type === 'Last' ? end_time : todayDate,
+  )
+
+  form.value.type = type || ''
+  form.value.start_time = formatTime(start_time) || ''
+  form.value.end_time = formatTime(end_time) || ''
 })
 
 const goBack = () => {

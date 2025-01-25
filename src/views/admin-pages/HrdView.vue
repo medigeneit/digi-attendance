@@ -21,5 +21,9 @@
       <i class="fas fa-calendar-day text-3xl"></i>
       Employee Offday Exchanges
     </RouterLink>
+    <RouterLink :to="{ name: 'ManualAttendanceList' }" class="main-button">
+      <i class="fas fa-fingerprint text-3xl"></i>
+      Manual Attendance List
+    </RouterLink>
   </div>
 </template>

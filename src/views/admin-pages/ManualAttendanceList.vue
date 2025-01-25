@@ -1,33 +1,31 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { onMounted, computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useShortLeaveStore } from '@/stores/short-leave'
+import { useManualAttendanceStore } from '@/stores/manual-attendance'
 import { useUserStore } from '@/stores/user'
 import LoaderView from '@/components/common/LoaderView.vue'
 
 const router = useRouter()
-const shortLeaveStore = useShortLeaveStore()
+const manualAttendanceStore = useManualAttendanceStore()
 const userStore = useUserStore()
 
 const selectedUserId = ref('')
 
 onMounted(() => {
   userStore.fetchUsers()
-  shortLeaveStore.fetchShortLeaves()
+  manualAttendanceStore.fetchManualAttendances()
 })
 
-const fetchShortLeavesByUser = async () => {
+const fetchManualAttendancesByUser = async () => {
   if (selectedUserId.value) {
-    await shortLeaveStore.fetchShortLeaves({ user_id: selectedUserId.value })
+    await manualAttendanceStore.fetchManualAttendances({ user_id: selectedUserId.value })
   } else {
-    // Fetch all short leaves if no user is selected
-    await shortLeaveStore.fetchShortLeaves()
+    await manualAttendanceStore.fetchManualAttendances()
   }
 }
 
-// Filtered short leaves based on selected user
-const filteredShortLeaves = computed(() => {
-  return shortLeaveStore.shortLeaves
+const filteredManualAttendances = computed(() => {
+  return manualAttendanceStore.manualAttendances
 })
 
 const goBack = () => {
@@ -43,14 +41,14 @@ const goBack = () => {
         <span class="hidden md:flex">Back</span>
       </button>
 
-      <h1 class="title-md md:title-lg flex-wrap text-center">Short Leaves</h1>
+      <h1 class="title-md md:title-lg flex-wrap text-center">My Manual Attendances</h1>
 
       <div>
         <select
           id="user-filter"
           v-model="selectedUserId"
           class="input-1"
-          @change="fetchShortLeavesByUser"
+          @change="fetchManualAttendancesByUser"
         >
           <option value="">All Users</option>
           <option v-for="user in userStore.users" :key="user.id" :value="user.id">
@@ -60,7 +58,7 @@ const goBack = () => {
       </div>
     </div>
 
-    <div v-if="shortLeaveStore.loading" class="text-center py-4">
+    <div v-if="manualAttendanceStore?.loading" class="text-center py-4">
       <LoaderView />
     </div>
 
@@ -72,32 +70,38 @@ const goBack = () => {
           <thead>
             <tr class="bg-gray-200">
               <th class="border border-gray-300 px-2 text-left">#</th>
-              <th class="border border-gray-300 px-2 text-left">Employee Name</th>
               <th class="border border-gray-300 px-2 text-left">Date</th>
-              <th class="border border-gray-300 px-2 text-left">Start Time</th>
-              <th class="border border-gray-300 px-2 text-left">End Time</th>
-              <th class="border border-gray-300 px-2 text-left">Total Minutes</th>
+              <th class="border border-gray-300 px-2 text-left">Type</th>
+              <th class="border border-gray-300 px-2 text-left">Check-In</th>
+              <th class="border border-gray-300 px-2 text-left">Check-Out</th>
               <th class="border border-gray-300 px-2 text-left">Status</th>
               <th class="border border-gray-300 px-2 text-left">Action</th>
             </tr>
           </thead>
           <tbody>
             <tr
-              v-for="(leave, index) in filteredShortLeaves"
-              :key="leave?.id"
+              v-for="(attendance, index) in filteredManualAttendances"
+              :key="attendance?.id"
               class="border-b border-gray-200 hover:bg-gray-100"
             >
               <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
-              <td class="border border-gray-300 px-2">{{ leave?.user?.name || 'Unknown' }}</td>
-              <td class="border border-gray-300 px-2">{{ leave.date }}</td>
-              <td class="border border-gray-300 px-2">{{ leave.start_time }}</td>
-              <td class="border border-gray-300 px-2">{{ leave.end_time }}</td>
-              <td class="border border-gray-300 px-2">{{ leave.total_minutes }}</td>
-              <td class="border border-gray-300 px-2">{{ leave.status || 'N/A' }}</td>
+              <td class="border border-gray-300 px-2">
+                {{
+                  new Date(attendance.created_at).toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                  })
+                }}
+              </td>
+              <td class="border border-gray-300 px-2">{{ attendance.type }}</td>
+              <td class="border border-gray-300 px-2">{{ attendance.check_in || 'N/A' }}</td>
+              <td class="border border-gray-300 px-2">{{ attendance.check_out || 'N/A' }}</td>
+              <td class="border border-gray-300 px-2">{{ attendance.status || 'Pending' }}</td>
               <td class="border border-gray-300 px-2">
                 <div class="flex gap-2">
                   <RouterLink
-                    :to="{ name: 'ShortLeaveShow', params: { id: leave?.id } }"
+                    :to="{ name: 'ManualAttendanceShow', params: { id: attendance?.id } }"
                     class="btn-icon"
                   >
                     <i class="far fa-eye"></i>
@@ -105,8 +109,8 @@ const goBack = () => {
                 </div>
               </td>
             </tr>
-            <tr v-if="filteredShortLeaves.length === 0">
-              <td colspan="8" class="p-2 text-center text-red-500">No short leaves found</td>
+            <tr v-if="filteredManualAttendances.length === 0">
+              <td colspan="7" class="p-2 text-center text-red-500">No manual attendances found</td>
             </tr>
           </tbody>
         </table>

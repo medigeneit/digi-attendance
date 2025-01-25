@@ -127,52 +127,71 @@ const goBack = () => router.go(-1)
               >
                 {{ log.shift_name }}
               </td>
-              <td
-                class="border px-1 py-0.5"
-                :class="{ 'bg-red-200': log.late_duration }"
-                :title="`Device: ${log.entry_device}`"
-              >
+              <td class="border px-1 py-0.5" :title="`Device: ${log.entry_device}`">
                 {{ log.entry_time }}
               </td>
-              <td
-                class="border px-1 py-0.5"
-                :class="{ 'bg-red-200': log.early_leave_duration }"
-                :title="`Device: ${log.exit_device}`"
-              >
+              <td class="border px-1 py-0.5" :title="`Device: ${log.exit_device}`">
                 {{ log.exit_time }}
               </td>
               <td class="border px-1 py-0.5">{{ log.working_hours }}</td>
-              <td class="border px-1 py-0.5">
+
+              <td class="border px-1 py-0.5" :class="{ 'bg-red-100': log.late_duration }">
                 <div v-if="log.late_duration">
                   {{ log.late_duration }}
-                  <span>
+                  <span v-if="log.first_short_leave">
                     <i
                       :class="{
                         'fas fa-check-circle text-green-500': log.first_short_leave === 'Approved',
                         'fas fa-hourglass-half text-yellow-500':
                           log.first_short_leave === 'Pending',
                         'fas fa-times-circle text-red-500': log.first_short_leave === 'Rejected',
-                        'fas fa-question-circle text-gray-400': !log.first_short_leave,
                       }"
-                      :title="log.first_short_leave || 'Unknown'"
+                      :title="log.first_short_leave"
                     ></i>
                   </span>
+                  <router-link
+                    v-if="log.late_duration && !log.first_short_leave"
+                    :to="{
+                      name: 'ShortLeaveAdd',
+                      query: {
+                        type: 'First',
+                        start_time: log.shift_start_time,
+                        end_time: log.entry_time,
+                      },
+                    }"
+                    class="btn-link"
+                  >
+                    (Apply)
+                  </router-link>
                 </div>
               </td>
-              <td class="border px-1 py-0.5">
+              <td class="border px-1 py-0.5" :class="{ 'bg-red-100': log.early_leave_duration }">
                 <div v-if="log.early_leave_duration">
                   {{ log.early_leave_duration }}
-                  <span>
+                  <span v-if="log.last_short_leave">
                     <i
                       :class="{
                         'fas fa-check-circle text-green-500': log.last_short_leave === 'Approved',
                         'fas fa-hourglass-half text-yellow-500': log.last_short_leave === 'Pending',
                         'fas fa-times-circle text-red-500': log.last_short_leave === 'Rejected',
-                        'fas fa-question-circle text-gray-400': !log.last_short_leave,
                       }"
-                      :title="log.last_short_leave || 'Unknown'"
+                      :title="log.last_short_leave"
                     ></i>
                   </span>
+                  <router-link
+                    v-if="log.early_leave_duration && !log.last_short_leave"
+                    :to="{
+                      name: 'ShortLeaveAdd',
+                      query: {
+                        type: 'Last',
+                        start_time: log.exit_time,
+                        end_time: log.shift_end_time,
+                      },
+                    }"
+                    class="btn-link"
+                  >
+                    (Apply)
+                  </router-link>
                 </div>
               </td>
               <td
