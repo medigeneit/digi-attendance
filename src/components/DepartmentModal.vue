@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch, reactive } from 'vue'
 import { useCompanyStore } from '@/stores/company' // Import the company store
+import { storeToRefs } from 'pinia'
 
 const props = defineProps({
   show: { type: Boolean, required: true },
@@ -11,7 +12,7 @@ const emit = defineEmits(['close', 'save'])
 
 const companyStore = useCompanyStore()
 
-const companies = companyStore.companies;
+const { companies } = storeToRefs(companyStore)
 
 const isEditMode = ref(false)
 const isCompaniesFetched = ref(false) // Track if companies are fetched
@@ -66,8 +67,8 @@ watch(
 )
 
 const handleSubmit = () => {
-  emit('save', { ...departmentForm }) // Emit the department form data to the parent
-  resetForm() // Reset the form after submission
+  emit('save', { ...departmentForm }) 
+  resetForm() 
   closeModal()
 }
 

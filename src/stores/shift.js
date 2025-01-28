@@ -1,12 +1,13 @@
-import { ref, computed } from 'vue';
 import { defineStore } from 'pinia';
+import { computed, ref } from 'vue';
 import apiClient from '../axios';
 
 export const useShiftStore = defineStore('shift', () => {
-  const shifts = ref([]); // শিফট লিস্ট
+  const shifts = ref({}); // শিফট লিস্ট
   const shift = ref(null); // একক শিফট ডিটেইল
   const loading = ref(false); // লোডিং স্টেট
   const error = ref(null); // এরর স্টেট
+  const message = ref(""); // এরর স্টেট
 
   const fetchShifts = async (companyId = null) => {
     loading.value = true;
@@ -43,7 +44,9 @@ export const useShiftStore = defineStore('shift', () => {
     error.value = null;
     try {
       const response = await apiClient.post('/shifts', data);
-      shifts.value.push(response.data); // নতুন শিফট লিস্টে যোগ করুন
+      message.value = response.data.message;
+      shifts.value = response.data.shifts
+      // shifts.value.push(response.data.shifts, response.data.message); // নতুন শিফট লিস্টে যোগ করুন
       return response.data;
     } catch (err) {
       error.value = err.response?.data?.message || 'শিফট তৈরি করতে ব্যর্থ হয়েছে।';
@@ -58,10 +61,8 @@ export const useShiftStore = defineStore('shift', () => {
     error.value = null;
     try {
       const response = await apiClient.put(`/shifts/${id}`, data);
-      const index = shifts.value.findIndex((shift) => shift.id === id);
-      if (index !== -1) {
-        shifts.value[index] = response.data; // আপডেট করা শিফট
-      }
+      message.value = response.data.message;
+      shifts.value = response.data.shifts
       return response.data;
     } catch (err) {
       error.value = err.response?.data?.message || `শিফট (ID: ${id}) আপডেট করতে ব্যর্থ হয়েছে।`;
@@ -75,8 +76,10 @@ export const useShiftStore = defineStore('shift', () => {
     loading.value = true;
     error.value = null;
     try {
-      await apiClient.delete(`/shifts/${id}`);
-      shifts.value = shifts.value.filter((shift) => shift.id !== id); // শিফট রিমুভ
+      const response = await apiClient.delete(`/shifts/${id}`);
+      message.value = response.data.message;
+      shifts.value = response.data.shifts
+      // shifts.value = shifts.value.filter((shift) => shift.id !== id); // শিফট রিমুভ
     } catch (err) {
       error.value = err.response?.data?.message || `শিফট (ID: ${id}) মুছতে ব্যর্থ হয়েছে।`;
       console.error(`Error deleting shift with id ${id}:`, err);
@@ -90,6 +93,7 @@ export const useShiftStore = defineStore('shift', () => {
     shift: computed(() => shift.value),
     loading: computed(() => loading.value),
     error: computed(() => error.value),
+    message,
     fetchShifts,
     fetchShift,
     createShift,

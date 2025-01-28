@@ -1,11 +1,11 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useDepartmentStore } from '@/stores/department'
-import { useToast } from 'vue-toastification'
 import DepartmentModal from '@/components/DepartmentModal.vue'
 import DeleteModal from '@/components/common/DeleteModal.vue'
-import LoaderView from '@/components/common/LoaderView.vue'
 import HeaderWithButtons from '@/components/common/HeaderWithButtons.vue'
+import LoaderView from '@/components/common/LoaderView.vue'
+import { useDepartmentStore } from '@/stores/department'
+import { computed, onMounted, ref } from 'vue'
+import { useToast } from 'vue-toastification'
 
 // পিনিয়া স্টোর এবং টোস্ট ইন্সট্যান্স
 const departmentStore = useDepartmentStore()
@@ -44,6 +44,7 @@ const handleSave = async (department) => {
     if (department.id) {
       await departmentStore.updateDepartment(department.id, department)
       toast.success('Department updated successfully!')
+      await departmentStore.fetchDepartments()
     } else {
       await departmentStore.createDepartment(department)
       toast.success('Department added successfully!')
@@ -107,7 +108,6 @@ onMounted(async () => {
 
     <div v-else class="space-y-4">
       <div v-for="(departments, companyName) in groupedDepartments" :key="companyName">
-        
         <h2 class="title-md">{{ companyName }}</h2>
         <div class="overflow-x-auto">
           <table class="min-w-full table-auto bg-white shadow-md rounded-lg overflow-hidden">
@@ -150,7 +150,6 @@ onMounted(async () => {
         </div>
       </div>
     </div>
-
     <DepartmentModal
       :show="showDepartmentModal"
       :department="selectedDepartment"

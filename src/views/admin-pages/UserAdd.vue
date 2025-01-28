@@ -1,12 +1,12 @@
 <script setup>
-import { reactive, ref, onMounted, watch } from 'vue'
-import { useToast } from 'vue-toastification'
-import { useUserStore } from '@/stores/user'
-import { useShiftStore } from '@/stores/shift'
 import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
 import { useDesignationStore } from '@/stores/designation'
 import { useLeaveApprovalStore } from '@/stores/leave-approval'
+import { useShiftStore } from '@/stores/shift'
+import { useUserStore } from '@/stores/user'
+import { onMounted, reactive, ref, watch } from 'vue'
+import { useToast } from 'vue-toastification'
 
 const toast = useToast()
 const userStore = useUserStore()
@@ -24,6 +24,7 @@ const form = reactive({
   email: '',
   password: '',
   role: 'employee',
+  type: '',
   address: '',
   device_user_id: null,
   is_active: true,
@@ -68,6 +69,7 @@ const saveUser = async () => {
       email: form.email,
       password: form.password,
       role: form.role,
+      type: form.type,
       address: form.address,
       device_user_id: form.device_user_id,
       is_active: form.is_active,
@@ -209,6 +211,15 @@ const saveUser = async () => {
                   <option value="Contract">Contract</option>
                   <option value="Freelance">Freelance</option>
                   <option value="Intern">Intern</option>
+                </select>
+              </div>
+              <div>
+                <label>Line Type</label>
+                <select v-model="form.type" class="w-full p-2 border rounded" required>
+                  <option value="Executive">Executive</option>
+                  <option value="Staff">Staff</option>
+                  <option value="Engineer">Engineer</option>
+                  <option value="Doctor">Doctor</option>
                 </select>
               </div>
 

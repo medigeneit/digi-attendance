@@ -1,5 +1,5 @@
-import { ref, computed } from 'vue';
 import { defineStore } from 'pinia';
+import { computed, ref } from 'vue';
 import apiClient from '../axios';
 
 export const useDesignationStore = defineStore('designation', () => {
@@ -15,7 +15,21 @@ export const useDesignationStore = defineStore('designation', () => {
       const response = await apiClient.get('/designations', {
         params: { company_id: companyId },
       });
-      designations.value = response.data;
+      const data = response.data.map(designation => ({
+        ...designation,
+        companyName: designation?.company?.name || 'Unknown Company'
+      }))
+      .reduce((acc, designation) => {
+        const { companyName } = designation;
+        if (!acc[companyName]) {
+          acc[companyName] = [];
+        }
+        acc[companyName].push(designation);
+        return acc;
+      }, {});
+
+      designations.value = data;
+      // designations.value = response.data;
     } catch (err) {
       error.value = err.response?.data?.message || 'ডিজাইনেশন লোড করতে ব্যর্থ হয়েছে।';
       console.error('Error fetching designations:', err);
