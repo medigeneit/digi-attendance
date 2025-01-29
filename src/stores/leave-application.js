@@ -1,6 +1,6 @@
-import { ref } from 'vue';
-import { defineStore } from 'pinia';
 import apiClient from '@/axios'; // Assuming axios is configured in '@/axios'
+import { defineStore } from 'pinia';
+import { ref } from 'vue';
 
 export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
   const leaveApplications = ref([]);

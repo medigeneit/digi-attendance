@@ -5,7 +5,8 @@ import { useDesignationStore } from '@/stores/designation'
 import { useLeaveApprovalStore } from '@/stores/leave-approval'
 import { useShiftStore } from '@/stores/shift'
 import { useUserStore } from '@/stores/user'
-import { onMounted, reactive, ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useToast } from 'vue-toastification'
 
 const toast = useToast()
@@ -15,7 +16,9 @@ const companyStore = useCompanyStore()
 const departmentStore = useDepartmentStore()
 const designationStore = useDesignationStore()
 const leaveApprovalStore = useLeaveApprovalStore()
-
+const { shifts } = storeToRefs(shiftStore)
+const { designations } = storeToRefs(designationStore)
+const { companies } = storeToRefs(companyStore)
 const showPassword = ref(false)
 
 const form = reactive({
@@ -95,6 +98,15 @@ const saveUser = async () => {
     console.error(errorMessage)
   }
 }
+
+const computedShifts = computed(() => {
+  const indexName = companyStore.companies.find((company) => company.id === form.company_id)?.name
+  return indexName ? shifts.value[indexName] || [] : []
+})
+const computedDesignations = computed(() => {
+  const indexName = companyStore.companies.find((company) => company.id === form.company_id)?.name
+  return indexName ? designations.value[indexName] || [] : []
+})
 </script>
 
 <template>
@@ -155,7 +167,7 @@ const saveUser = async () => {
                   required
                 >
                   <option value="" disabled>Select a company</option>
-                  <template v-for="company in companyStore.companies" :key="company?.id">
+                  <template v-for="company in companies" :key="company?.id">
                     <option :value="company?.id">
                       {{ company?.name }}
                     </option>
@@ -176,13 +188,12 @@ const saveUser = async () => {
                   </option>
                 </select>
               </div>
-
               <div>
                 <label>Designation</label>
                 <select v-model="form.designation_id" class="w-full p-2 border rounded">
                   <option value="" disabled>Select a designation</option>
                   <option
-                    v-for="designation in designationStore.designations"
+                    v-for="designation in computedDesignations"
                     :key="designation?.id"
                     :value="designation?.id"
                   >
@@ -190,12 +201,11 @@ const saveUser = async () => {
                   </option>
                 </select>
               </div>
-
               <div>
                 <label>Shift</label>
                 <select v-model="form.shift_id" class="w-full p-2 border rounded">
                   <option value="" disabled>Select a shift</option>
-                  <option v-for="shift in shiftStore.shifts" :key="shift?.id" :value="shift?.id">
+                  <option v-for="shift in computedShifts" :key="shift?.id" :value="shift?.id">
                     {{ shift?.name }}
                   </option>
                 </select>
@@ -217,9 +227,10 @@ const saveUser = async () => {
                 <label>Line Type</label>
                 <select v-model="form.type" class="w-full p-2 border rounded" required>
                   <option value="Executive">Executive</option>
-                  <option value="Staff">Staff</option>
+                  <option value="SupportStaff">Support Staff</option>
                   <option value="Engineer">Engineer</option>
                   <option value="Doctor">Doctor</option>
+                  <option value="AcademyBody">Academy Body</option>
                 </select>
               </div>
 

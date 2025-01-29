@@ -143,6 +143,18 @@ const router = createRouter({
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
         },
         {
+          path: '/reports',
+          name: 'ReportView',
+          component: () => import('@/views/admin-pages/ReportView.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+        },
+        {
+          path: '/reports/today-attendance-report',
+          name: 'TodayAttendanceReport',
+          component: () => import('@/views/admin-pages/TodayAttendanceReport.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+        },
+        {
           path: '/hrd',
           name: 'HrdView',
           component: () => import('@/views/admin-pages/HrdView.vue'),

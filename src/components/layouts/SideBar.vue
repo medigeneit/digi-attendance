@@ -1,7 +1,6 @@
 <script setup>
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { useRoute } from 'vue-router'
+import { computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const props = defineProps({
   user: Object,
@@ -72,6 +71,16 @@ const logout = () => {
       >
         <i class="fad fa-list-alt py-2"></i>
         <h4 v-if="open">My Applications</h4>
+      </RouterLink>
+
+      <RouterLink
+        v-if="['admin', 'super_admin', 'developer'].includes(user?.role)"
+        to="/reports"
+        class="side-menu"
+        :class="{ 'side-menu-active': currentRoute.includes('/reports') }"
+      >
+        <i class="fas fa-file-chart-line py-2"></i>
+        <h4 v-if="open">Reports</h4>
       </RouterLink>
 
       <RouterLink

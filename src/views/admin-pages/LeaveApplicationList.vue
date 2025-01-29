@@ -1,14 +1,16 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import LoaderView from '@/components/common/LoaderView.vue'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
 import { useUserStore } from '@/stores/user'
-import LoaderView from '@/components/common/LoaderView.vue'
+import { storeToRefs } from 'pinia'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
 const leaveApplicationStore = useLeaveApplicationStore()
 const userStore = useUserStore()
-
+const { leaveApplications } = storeToRefs(leaveApplicationStore)
 const selectedUserId = ref('')
 
 onMounted(() => {
@@ -27,6 +29,10 @@ const fetchApplicationsByUser = async () => {
 
 const filteredLeaveApplications = computed(() => {
   return leaveApplicationStore.leaveApplications
+})
+
+onMounted(async () => {
+  await leaveApplicationStore.fetchLeaveApplications({ query: route.query?.search })
 })
 </script>
 

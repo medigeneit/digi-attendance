@@ -1,11 +1,12 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { computed, ref } from 'vue';
 import apiClient from '../axios';
 
 export const useUserStore = defineStore('user', () => {
   // State
   const users = ref([]);
   const user = ref({});
+  const dashboardInfo = ref({});
   const error = ref(null);
   const isLoading = ref(false); // লোডিং স্টেট
 
@@ -35,6 +36,23 @@ export const useUserStore = defineStore('user', () => {
       const data = response.data;
       if(data) {
         user.value = data;
+      }
+      error.value = null;
+      return data;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Something went wrong';
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const fetchUserDashboardData = async () => {
+    try {
+      isLoading.value = true;
+      const response = await apiClient.get('/dashboard');
+      const data = response.data;
+      if(data) {
+        dashboardInfo.value = data;
       }
       error.value = null;
       return data;
@@ -96,10 +114,12 @@ export const useUserStore = defineStore('user', () => {
     allUsers,
     singleUser,
     errorMessage,
+    dashboardInfo,
     fetchUsers,
     fetchUser,
     createUser,
     updateUser,
     deleteUser,
+    fetchUserDashboardData
   };
 });

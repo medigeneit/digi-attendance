@@ -1,5 +1,5 @@
-import { ref } from 'vue';
 import { defineStore } from 'pinia';
+import { ref } from 'vue';
 import apiClient from '../axios';
 
 export const useAttendanceStore = defineStore('attendance', () => {
@@ -27,6 +27,21 @@ export const useAttendanceStore = defineStore('attendance', () => {
       isLoading.value = false;
     }
   };
+  const getTodayAttendanceReport = async (companyId, month) => {
+    isLoading.value = true;
+    try {
+      const params = {companyId, month}
+      const response = await apiClient.get("/attendance/today", { params });
+      monthlyLogs.value = response.data.monthly_logs; // শুধু logs
+      summary.value = response.data.summary; // শুধু summary
+      error.value = null;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Something went wrong';
+      console.error(error.value);
+    } finally {
+      isLoading.value = false;
+    }
+  };
 
   return {
     monthlyLogs,
@@ -35,6 +50,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     error,
     isLoading,
     getMonthlyAttendanceByShift,
+    getTodayAttendanceReport
   };
 });
 
