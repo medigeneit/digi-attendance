@@ -4,8 +4,10 @@ import apiClient from '../axios';
 
 export const useAttendanceStore = defineStore('attendance', () => {
   const monthlyLogs = ref([]);
+  const dailyLogs = ref([]);
   const summary = ref(null);
   const selectedMonth = ref(new Date().toISOString().substring(0, 7));
+  const selectedDate = ref(new Date().toISOString().substring(0, 10));
   const error = ref(null);
   const isLoading = ref(false);
 
@@ -32,8 +34,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     try {
       const params = {companyId, month}
       const response = await apiClient.get("/attendance/today", { params });
-      monthlyLogs.value = response.data.monthly_logs; // শুধু logs
-      summary.value = response.data.summary; // শুধু summary
+      dailyLogs.value = response.data; 
       error.value = null;
     } catch (err) {
       error.value = err.response?.data?.message || 'Something went wrong';
@@ -47,8 +48,10 @@ export const useAttendanceStore = defineStore('attendance', () => {
     monthlyLogs,
     summary,
     selectedMonth,
+    selectedDate,
     error,
     isLoading,
+    dailyLogs,
     getMonthlyAttendanceByShift,
     getTodayAttendanceReport
   };

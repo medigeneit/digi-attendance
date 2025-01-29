@@ -3,25 +3,22 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useCompanyStore } from '@/stores/company'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const companyStore = useCompanyStore()
 const attendanceStore = useAttendanceStore()
 const selectedCompanyId = ref('')
-const selectedMonth = ref('')
+const selectedDate = ref('')
 const { companies } = storeToRefs(companyStore)
-
-const selectedUser = computed(
-  () => companies.value.find((user) => user.id === selectedCompanyId.value) || null,
-)
+const { dailyLogs } = storeToRefs(attendanceStore)
 
 const fetchAttendance = async () => {
   if (selectedCompanyId.value) {
     await attendanceStore.getTodayAttendanceReport(
       selectedCompanyId.value,
-      attendanceStore.selectedMonth,
+      attendanceStore.selectedDate,
     )
   }
 }
@@ -30,11 +27,11 @@ onMounted(async () => {
   await companyStore.fetchCompanies()
   await attendanceStore.getTodayAttendanceReport(
     selectedCompanyId.value,
-    attendanceStore.selectedMonth,
+    attendanceStore.selectedDate,
   )
 })
 
-watch([selectedCompanyId, selectedMonth], fetchAttendance)
+watch([selectedCompanyId, selectedDate], fetchAttendance)
 
 const goBack = () => router.go(-1)
 </script>
@@ -66,9 +63,8 @@ const goBack = () => router.go(-1)
       </div>
       <div>
         <input
-          id="monthSelect"
-          type="month"
-          v-model="attendanceStore.selectedMonth"
+          type="date"
+          v-model="attendanceStore.selectedDate"
           @change="fetchAttendance"
           class="input-1"
         />
@@ -82,6 +78,7 @@ const goBack = () => router.go(-1)
         <table class="min-w-full table-auto border-collapse border border-gray-300 bg-white">
           <thead>
             <tr class="bg-gray-200 text-xs">
+              <th class="border p-1">Emp/Worker Name</th>
               <th class="border p-1">Date</th>
               <th class="border p-1">Day</th>
               <th class="border p-1">Shift</th>
@@ -94,7 +91,8 @@ const goBack = () => router.go(-1)
             </tr>
           </thead>
           <tbody class="text-center text-xs">
-            <tr v-for="log in attendanceStore?.monthlyLogs" :key="log?.date">
+            <tr v-for="log in dailyLogs" :key="log?.date">
+              <td class="border px-1 py-0.5">{{ log.user_name }}</td>
               <td class="border px-1 py-0.5">{{ log.date }}</td>
               <td class="border px-1 py-0.5">{{ log.weekday }}</td>
               <td
