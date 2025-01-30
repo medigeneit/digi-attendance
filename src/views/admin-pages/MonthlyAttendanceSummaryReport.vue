@@ -10,28 +10,24 @@ const router = useRouter()
 const companyStore = useCompanyStore()
 const attendanceStore = useAttendanceStore()
 const selectedCompanyId = ref('')
-const selectedDate = ref('')
+const selectedMonth = ref('')
 const { companies } = storeToRefs(companyStore)
 const { dailyLogs } = storeToRefs(attendanceStore)
 
 const fetchAttendance = async () => {
   if (selectedCompanyId.value) {
-    await attendanceStore.getTodayAttendanceReport(
+    await attendanceStore.getMonthlyAttendanceSummaryReport(
       selectedCompanyId.value,
-      attendanceStore.selectedDate,
+      attendanceStore.selectedMonth,
     )
   }
 }
 
 onMounted(async () => {
   await companyStore.fetchCompanies()
-  await attendanceStore.getTodayAttendanceReport(
-    selectedCompanyId.value,
-    attendanceStore.selectedDate,
-  )
 })
 
-watch([selectedCompanyId, selectedDate], fetchAttendance)
+watch([selectedCompanyId, selectedMonth], fetchAttendance)
 
 const goBack = () => router.go(-1)
 </script>
@@ -63,8 +59,8 @@ const goBack = () => router.go(-1)
       </div>
       <div>
         <input
-          type="date"
-          v-model="attendanceStore.selectedDate"
+          type="month"
+          v-model="attendanceStore.selectedMonth"
           @change="fetchAttendance"
           class="input-1"
         />

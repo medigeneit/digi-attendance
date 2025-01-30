@@ -7,9 +7,10 @@ import { useShiftStore } from '@/stores/shift'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
-
 const toast = useToast()
+const router = useRouter()
 const userStore = useUserStore()
 const shiftStore = useShiftStore()
 const companyStore = useCompanyStore()
@@ -92,6 +93,7 @@ const saveUser = async () => {
     await userStore.createUser(dataToSend)
     toast.success('User created successfully')
     await userStore.fetchUsers()
+    router.replace('/settings/user-list')
   } catch (error) {
     const errorMessage = error.response?.data?.message || 'Failed to save user'
     toast.error(errorMessage)

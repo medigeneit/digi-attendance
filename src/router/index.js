@@ -155,6 +155,24 @@ const router = createRouter({
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
         },
         {
+          path: '/reports/monthly-attendance-report',
+          name: 'MonthlyAttendanceReport',
+          component: () => import('@/views/admin-pages/MonthlyAttendanceReport.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+        },
+        {
+          path: '/reports/monthly-attendance-summary-report',
+          name: 'AttendanceSummaryReport',
+          component: () => import('@/views/admin-pages/MonthlyAttendanceSummaryReport.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+        },
+        {
+          path: '/reports/leave-attendance-list',
+          name: 'LateAttendanceReport',
+          component: () => import('@/views/admin-pages/LateAttendanceReport.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+        },
+        {
           path: '/hrd',
           name: 'HrdView',
           component: () => import('@/views/admin-pages/HrdView.vue'),
@@ -166,6 +184,8 @@ const router = createRouter({
           component: () => import('@/views/admin-pages/EmployeeAttendance.vue'),
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
         },
+        
+
         {
           path: '/hrd/leave-application-list',
           name: 'LeaveApplicationList',

@@ -19,7 +19,7 @@
       class="grid gap-4 md:grid-cols-3 mt-4"
       v-if="['admin', 'super_admin', 'developer'].includes(user?.role)"
     >
-      <RouterLink :to="{ name: '' }" class="main-button">
+      <RouterLink :to="{ name: 'TodayAttendanceReport' }" class="main-button">
         <!-- LeaveReport -->
         <!-- <i class="fas fa-calendar-alt text-3xl"></i> -->
         <span class="text-3xl">
@@ -27,15 +27,19 @@
         </span>
         Total Employees
       </RouterLink>
-      <RouterLink :to="{ name: 'LeaveApplicationList' }" class="main-button">
-        <!-- <i class="fas fa-leaf text-3xl"></i> -->
+      <RouterLink
+        :to="{ name: 'TodayAttendanceReport', query: { search: 'present' } }"
+        class="main-button"
+      >
         <span class="text-3xl">
           {{ dashboardInfo?.todayPresents }}
         </span>
         Today Present
       </RouterLink>
-      <RouterLink :to="{ name: 'ShortLeaveList' }" class="main-button">
-        <!-- <i class="fab fa-pagelines text-3xl"></i> -->
+      <RouterLink
+        :to="{ name: 'TodayAttendanceReport', query: { search: 'absent' } }"
+        class="main-button"
+      >
         <span class="text-3xl">
           {{ dashboardInfo?.todayAbsents }}
         </span>
@@ -60,7 +64,7 @@
         </span>
         Tomorrow Leave
       </RouterLink>
-      <RouterLink :to="{ name: 'MyNotificationList' }" class="main-button">
+      <RouterLink :to="{ name: 'ShortLeaveList' }" class="main-button">
         <span class="text-3xl">
           {{ dashboardInfo?.todayShortLeaves }}
         </span>

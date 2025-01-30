@@ -5,7 +5,9 @@ import apiClient from '../axios';
 export const useAttendanceStore = defineStore('attendance', () => {
   const monthlyLogs = ref([]);
   const dailyLogs = ref([]);
+  const dailyLateLogs = ref([]);
   const summary = ref(null);
+  const monthly_company_summary = ref(null);
   const selectedMonth = ref(new Date().toISOString().substring(0, 7));
   const selectedDate = ref(new Date().toISOString().substring(0, 10));
   const error = ref(null);
@@ -29,6 +31,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
       isLoading.value = false;
     }
   };
+
   const getTodayAttendanceReport = async (companyId, month) => {
     isLoading.value = true;
     try {
@@ -44,16 +47,53 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   };
 
+  const getAttendanceLateReport = async (company_id, month) => {
+    isLoading.value = true;
+    try {
+      const params = {company_id, month}
+      const response = await apiClient.get("/attendance/late-reports", { params });
+      dailyLateLogs.value = response.data; 
+      error.value = null;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Something went wrong';
+      console.error(error.value);
+    } finally {
+      isLoading.value = false;
+    }
+  };
+  const getMonthlyAttendanceSummaryReport = async (company_id, month) => {
+    if (!company_id || !month) {
+      error.value = 'Invalid user ID or month';
+      return;
+    }
+    isLoading.value = true;
+    try {
+      const params = {company_id, month}
+      const response = await apiClient.get("/attendance/monthly-summary-reports", { params });
+      monthly_company_summary.value = response.data; 
+      error.value = null;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Something went wrong';
+      console.error(error.value);
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
   return {
     monthlyLogs,
+    dailyLateLogs,
     summary,
+    monthly_company_summary,
     selectedMonth,
     selectedDate,
     error,
     isLoading,
     dailyLogs,
     getMonthlyAttendanceByShift,
-    getTodayAttendanceReport
+    getTodayAttendanceReport,
+    getAttendanceLateReport,
+    getMonthlyAttendanceSummaryReport
   };
 });
 

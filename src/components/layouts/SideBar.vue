@@ -1,15 +1,16 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps({
   user: Object,
 })
-
 const open = ref(true)
 const route = useRoute()
 const router = useRouter()
 
+const authStore = useAuthStore()
 const currentRoute = computed(() => route.path)
 
 const logout = () => {
