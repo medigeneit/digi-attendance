@@ -18,7 +18,15 @@ const formatDate = (date) => {
 <template>
   <div class="my-container space-y-6">
     <div class="card-bg p-6">
-      <h2 class="title-lg text-center">My Profile</h2>
+      <div class="flex justify-between">
+        <div></div>
+
+        <h2 class="title-lg text-center">My Profile</h2>
+
+        <RouterLink to="/my-profile/edit" class="btn-2">
+          <i class="far fa-edit"></i> Edit
+        </RouterLink>
+      </div>
       <LoaderView v-if="isLoading" class="shadow-none" />
       <div v-else class="grid gap-2">
         <div class="bg-gray-100 p-4 rounded-lg">

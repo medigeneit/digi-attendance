@@ -209,6 +209,13 @@ const router = createRouter({
         },
 
         {
+          path: '/my-profile/edit',
+          name: 'EditProfile',
+          component: () => import('@/views/private-pages/ProfileEdit.vue'),
+          meta: { requiresAuth: true }
+        },
+
+        {
           path: '/my-notifications',
           name: 'MyNotificationList',
           component: () => import('@/views/private-pages/MyNotificationList.vue'),
