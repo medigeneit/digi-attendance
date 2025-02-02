@@ -12,7 +12,7 @@ const attendanceStore = useAttendanceStore()
 const selectedCompanyId = ref('')
 const selectedMonth = ref('')
 const { companies } = storeToRefs(companyStore)
-const { dailyLogs } = storeToRefs(attendanceStore)
+const { monthly_company_summary } = storeToRefs(attendanceStore)
 
 const fetchAttendance = async () => {
   if (selectedCompanyId.value) {
@@ -39,9 +39,10 @@ const goBack = () => router.go(-1)
         <i class="far fa-arrow-left"></i>
         <span class="hidden md:flex">Back</span>
       </button>
-      <h1 class="title-md md:title-lg flex-wrap text-center">Today Attendance Report</h1>
+      <h1 class="title-md md:title-lg flex-wrap text-center">Today Attendance Report Summary</h1>
       <div></div>
     </div>
+    
 
     <div class="flex gap-4">
       <div>
@@ -75,7 +76,8 @@ const goBack = () => router.go(-1)
           <thead>
             <tr class="bg-gray-200 text-xs">
               <th class="border p-1">Emp/Worker Name</th>
-              <th class="border p-1">Date</th>
+              <th class="border p-1">Actual Late Day</th>
+              <th class="border p-1">Actual Late Hour</th>
               <th class="border p-1">Day</th>
               <th class="border p-1">Shift</th>
               <th class="border p-1">Entry Time</th>
@@ -87,10 +89,10 @@ const goBack = () => router.go(-1)
             </tr>
           </thead>
           <tbody class="text-center text-xs">
-            <tr v-for="log in dailyLogs" :key="log?.date">
-              <td class="border px-1 py-0.5">{{ log.user_name }}</td>
-              <td class="border px-1 py-0.5">{{ log.date }}</td>
-              <td class="border px-1 py-0.5">{{ log.weekday }}</td>
+            <tr v-for="log in monthly_company_summary" :key="log?.date">
+              <td class="border px-1 py-0.5">{{ log?.user }}</td>
+              <td class="border px-1 py-0.5">{{ log?.actual_late_day }}</td>
+              <td class="border px-1 py-0.5">{{ log?.actual_late_hour }}</td>
               <td
                 class="border px-1 py-0.5"
                 :title="`${log.shift_start_time} to ${log.shift_end_time}`"
