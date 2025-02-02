@@ -164,7 +164,7 @@ const uploadPhoto = async () => {
               </div>
               <div>
                 <label>Address</label>
-                <input v-model="form.address" type="text" class="w-full p-2 border rounded" />
+                <textarea v-model="form.address" rows="2" class="w-full p-2 border rounded"></textarea>
               </div>
 
               <div>
