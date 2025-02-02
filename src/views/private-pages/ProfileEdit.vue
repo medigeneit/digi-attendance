@@ -182,7 +182,7 @@ const uploadPhoto = async () => {
 
         <div class="flex justify-center gap-4">
           <RouterLink
-            :to="{ name: 'UserList' }"
+            :to="{ name: 'MyProfile' }"
             type="button"
             class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
           >
