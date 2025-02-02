@@ -49,7 +49,7 @@ const markNotificationAndNavigate = async (notificationId, url) => {
         </button>
 
         <RouterLink
-          to="/profile"
+          to="/my-profile"
           class="menus font-bold bg-gray-100 hover:bg-teal-100 p-1 rounded-full border"
         >
           <div class="min-w-max rounded-full object-cover overflow-hidden border">

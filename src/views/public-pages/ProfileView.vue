@@ -187,11 +187,22 @@ const uploadPhoto = async () => {
           </div>
           <div class="grid grid-cols-4 items-center">
             <label for="date_of_birth">Date of Birth:</label>
-            <input id="date_of_birth" v-model="date_of_birth" type="date" class="input-1 col-span-3" />
+            <input
+              id="date_of_birth"
+              v-model="date_of_birth"
+              type="date"
+              class="input-1 col-span-3"
+            />
           </div>
           <div class="grid grid-cols-4 items-center">
             <label for="address">Address:</label>
-            <textarea id="address" rows="3" v-model="address" type="text" class="input-1 col-span-3" ></textarea>
+            <textarea
+              id="address"
+              rows="3"
+              v-model="address"
+              type="text"
+              class="input-1 col-span-3"
+            ></textarea>
           </div>
           <div class="flex justify-center gap-4 pt-4">
             <button class="btn-3" @click="cancelEditing">Cancel</button>
