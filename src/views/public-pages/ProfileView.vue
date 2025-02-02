@@ -193,7 +193,7 @@ const uploadPhoto = async () => {
             <label for="address">Address:</label>
             <textarea id="address" rows="3" v-model="address" type="text" class="input-1 col-span-3" ></textarea>
           </div>
-          <div class="flex justify-center gap-4">
+          <div class="flex justify-center gap-4 pt-4">
             <button class="btn-3" @click="cancelEditing">Cancel</button>
             <button class="btn-2" type="submit">Update</button>
           </div>
