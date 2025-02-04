@@ -42,7 +42,6 @@ const goBack = () => router.go(-1)
       <h1 class="title-md md:title-lg flex-wrap text-center">Today Attendance Report Summary</h1>
       <div></div>
     </div>
-    
 
     <div class="flex gap-4">
       <div>
@@ -76,55 +75,46 @@ const goBack = () => router.go(-1)
           <thead>
             <tr class="bg-gray-200 text-xs">
               <th class="border p-1">Emp/Worker Name</th>
+              <th class="border p-1">Day</th>
+              <th class="border p-1">Total Present</th>
+              <th class="border p-1">Total Absent</th>
+              <th class="border p-1">Remain Absent</th>
+              <th class="border p-1">Total Weekend</th>
               <th class="border p-1">Actual Late Day</th>
               <th class="border p-1">Actual Late Hour</th>
-              <th class="border p-1">Day</th>
-              <th class="border p-1">Shift</th>
-              <th class="border p-1">Entry Time</th>
-              <th class="border p-1">Exit Time</th>
-              <th class="border p-1">Working Hours</th>
-              <th class="border p-1">Late Entry</th>
-              <th class="border p-1">Early Leave</th>
-              <th class="border p-1">Status</th>
+              <th class="border p-1">Actual Early Day</th>
+              <th class="border p-1">Actual Early Hour</th>
+              <th class="border p-1">Shift Hour</th>
+              <th class="border p-1">Working Hour</th>
+              <th class="border p-1">OT Hour</th>
+              <th class="border p-1">Short Leave Day</th>
+              <th class="border p-1">Leave Day</th>
+              <th class="border p-1">Total Present In Weekend</th>
             </tr>
           </thead>
           <tbody class="text-center text-xs">
             <tr v-for="log in monthly_company_summary" :key="log?.date">
               <td class="border px-1 py-0.5">{{ log?.user }}</td>
+              <td class="border px-1 py-0.5">{{ log?.total_monthly_days }}</td>
+              <td class="border px-1 py-0.5">{{ log?.total_present }}</td>
+              <td class="border px-1 py-0.5">{{ log?.total_absent }}</td>
+              <td class="border px-1 py-0.5">{{ log?.remain_total_absent }}</td>
+              <td class="border px-1 py-0.5">{{ log?.total_weekend }}</td>
               <td class="border px-1 py-0.5">{{ log?.actual_late_day }}</td>
               <td class="border px-1 py-0.5">{{ log?.actual_late_hour }}</td>
-              <td
-                class="border px-1 py-0.5"
-                :title="`${log.shift_start_time} to ${log.shift_end_time}`"
-              >
-                {{ log.shift_name }}
+              <td class="border px-1 py-0.5">{{ log?.actual_early_day }}</td>
+              <td class="border px-1 py-0.5">{{ log?.actual_early_hour }}</td>
+              <td class="border px-1 py-0.5">{{ log?.total_shift_hour }}</td>
+              <td class="border px-1 py-0.5">{{ log?.total_working_hours }}</td>
+              <td class="border px-1 py-0.5">{{ log?.total_overtime_hours }}</td>
+              <td class="border px-1 py-0.5">{{ log?.total_short_leave }}</td>
+              <td class="border px-1 py-0.5">
+                <div v-if="log?.total_cl_leave">{{ log?.total_cl_leave }}CL</div>
+                <div v-if="log?.total_ml_leave">{{ log?.total_ml_leave }}ML</div>
+                <div v-if="log?.total_sl_leave">{{ log?.total_sl_leave }}SL</div>
+                <div v-if="log?.total_wpl_leave">{{ log?.total_wpl_leave }}WPL</div>
               </td>
-              <td
-                class="border px-1 py-0.5"
-                :class="{ 'bg-red-200': log.late_duration }"
-                :title="`Device: ${log.entry_device}`"
-              >
-                {{ log.entry_time }}
-              </td>
-              <td
-                class="border px-1 py-0.5"
-                :class="{ 'bg-red-200': log.early_leave_duration }"
-                :title="`Device: ${log.exit_device}`"
-              >
-                {{ log.exit_time }}
-              </td>
-              <td class="border px-1 py-0.5">{{ log.working_hours }}</td>
-              <td class="border px-1 py-0.5">{{ log.late_duration }}</td>
-              <td class="border px-1 py-0.5">{{ log.early_leave_duration }}</td>
-              <td
-                class="border px-1 py-0.5"
-                :class="{
-                  'text-red-600': log.status === 'Absent',
-                  'text-green-600': log.status === 'Present',
-                }"
-              >
-                {{ log.status }}
-              </td>
+              <td class="border px-1 py-0.5">{{ log.total_present_in_weekend }}</td>
             </tr>
           </tbody>
         </table>
