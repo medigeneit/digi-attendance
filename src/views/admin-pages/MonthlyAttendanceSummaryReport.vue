@@ -4,9 +4,10 @@ import { useAttendanceStore } from '@/stores/attendance'
 import { useCompanyStore } from '@/stores/company'
 import { storeToRefs } from 'pinia'
 import { onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
 const companyStore = useCompanyStore()
 const attendanceStore = useAttendanceStore()
 const selectedCompanyId = ref('')
@@ -20,6 +21,17 @@ const fetchAttendance = async () => {
       selectedCompanyId.value,
       attendanceStore.selectedMonth,
     )
+  }
+}
+
+const getExportExcel = async () => {
+  if (selectedCompanyId.value) {
+    await attendanceStore.downloadExcel(selectedCompanyId.value, attendanceStore.selectedMonth)
+  }
+}
+const getDownloadPDF = async () => {
+  if (selectedCompanyId.value) {
+    await attendanceStore.downloadPDF(selectedCompanyId.value, attendanceStore.selectedMonth)
   }
 }
 
@@ -40,7 +52,14 @@ const goBack = () => router.go(-1)
         <span class="hidden md:flex">Back</span>
       </button>
       <h1 class="title-md md:title-lg flex-wrap text-center">Today Attendance Report Summary</h1>
-      <div></div>
+      <div class="flex gap-4">
+        <button type="button" @click="getExportExcel">
+          <i class="far fa-file-excel text-2xl text-green-500"></i>
+        </button>
+        <button type="button" @click="getDownloadPDF">
+          <i class="fal fa-file-pdf text-2xl text-red-500"></i>
+        </button>
+      </div>
     </div>
 
     <div class="flex gap-4">
