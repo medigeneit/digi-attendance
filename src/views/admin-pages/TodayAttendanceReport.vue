@@ -11,14 +11,16 @@ const companyStore = useCompanyStore()
 const attendanceStore = useAttendanceStore()
 const selectedCompanyId = ref('')
 const selectedDate = ref('')
+const status = ref('')
 const { companies } = storeToRefs(companyStore)
 const { dailyLogs } = storeToRefs(attendanceStore)
 
 const fetchAttendance = async () => {
-  if (selectedCompanyId.value) {
+  if (selectedCompanyId.value || status.value) {
     await attendanceStore.getTodayAttendanceReport(
       selectedCompanyId.value,
       attendanceStore.selectedDate,
+      status.value,
     )
   }
 }
@@ -59,6 +61,16 @@ const goBack = () => router.go(-1)
           <option v-for="company in companies" :key="company?.id" :value="company?.id">
             {{ company?.name }}
           </option>
+        </select>
+      </div>
+      <div>
+        <select id="userSelect" v-model="status" @change="fetchAttendance" class="input-1">
+          <option value="">All Status</option>
+          <option value="Present">Present</option>
+          <option value="Absent">Absent</option>
+          <option value="Weekend">Weekend</option>
+          <option value="Holiday">Holiday</option>
+          <option value="Leave">Leave</option>
         </select>
       </div>
       <div>
