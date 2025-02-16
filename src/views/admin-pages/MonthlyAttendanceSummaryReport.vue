@@ -51,7 +51,7 @@ const goBack = () => router.go(-1)
         <i class="far fa-arrow-left"></i>
         <span class="hidden md:flex">Back</span>
       </button>
-      <h1 class="title-md md:title-lg flex-wrap text-center">Today Attendance Report Summary</h1>
+      <h1 class="title-md md:title-lg flex-wrap text-center">Monthly Attendance Summary Report</h1>
       <div class="flex gap-4">
         <button type="button" @click="getExportExcel">
           <i class="far fa-file-excel text-2xl text-green-500"></i>
@@ -109,7 +109,7 @@ const goBack = () => router.go(-1)
               <th rowspan="2" class="border px-1 py-0.5">OT Hour</th>
               <th colspan="4" class="border px-1 py-0.5">Leave Day</th>
               <th colspan="2" class="border px-1 py-0.5">Short Leave</th>
-              <th rowspan="2" class="border px-1 py-0.5">Duty in Weekend</th>
+              <th rowspan="2" class="border px-1 py-0.5">Weekend Duty</th>
               <th rowspan="2" class="border px-2 py-0.5">Comment</th>
             </tr>
             <tr class="bg-gray-100 text-xs">
@@ -137,7 +137,7 @@ const goBack = () => router.go(-1)
             <tr
               v-for="log in monthly_company_summary"
               :key="log?.date"
-              class="hover:bg-blue-500 hover:text-white"
+               class="border-b border-gray-200 hover:bg-gray-100"
             >
               <td class="border px-2 py-0.5">{{ log?.user }}</td>
               <td class="border px-2 py-0.5">{{ log?.designation }}</td>

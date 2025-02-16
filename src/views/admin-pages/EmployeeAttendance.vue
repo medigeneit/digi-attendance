@@ -84,7 +84,7 @@ const goBack = () => router.go(-1)
             </tr>
           </thead>
           <tbody class="text-center text-xs">
-            <tr v-for="log in attendanceStore?.monthlyLogs" :key="log?.date">
+            <tr v-for="log in attendanceStore?.monthlyLogs" :key="log?.date" class="hover:border-b-2 hover:border-gray-200 hover:bg-gray-100">
               <td class="border px-1 py-0.5">{{ log.date }}</td>
               <td class="border px-1 py-0.5">{{ log.weekday }}</td>
               <td

@@ -1,9 +1,9 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import LoaderView from '@/components/common/LoaderView.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useUserStore } from '@/stores/user'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import LoaderView from '@/components/common/LoaderView.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -84,7 +84,11 @@ const goBack = () => router.go(-1)
             </tr>
           </thead>
           <tbody class="text-center text-xs">
-            <tr v-for="log in attendanceStore?.monthlyLogs" :key="log?.date">
+            <tr
+              v-for="log in attendanceStore?.monthlyLogs"
+              :key="log?.date"
+              class="border-b border-gray-200 hover:bg-gray-100"
+            >
               <td class="border px-1 py-0.5">{{ log.date }}</td>
               <td class="border px-1 py-0.5">{{ log.weekday }}</td>
               <td

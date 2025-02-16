@@ -45,7 +45,7 @@ const goBack = () => router.go(-1)
         <i class="far fa-arrow-left"></i>
         <span class="hidden md:flex">Back</span>
       </button>
-      <h1 class="title-md md:title-lg flex-wrap text-center">Today Attendance Report</h1>
+      <h1 class="title-md md:title-lg flex-wrap text-center">Daily Attendance Report</h1>
       <div></div>
     </div>
 
@@ -103,7 +103,7 @@ const goBack = () => router.go(-1)
             </tr>
           </thead>
           <tbody class="text-center text-xs">
-            <tr v-for="log in dailyLogs" :key="log?.date">
+            <tr v-for="log in dailyLogs" :key="log?.date" class="border-b hover:bg-gray-100">
               <td class="border px-1 py-0.5">{{ log.user_name }}</td>
               <td class="border px-1 py-0.5">{{ log.date }}</td>
               <td class="border px-1 py-0.5">{{ log.weekday }}</td>

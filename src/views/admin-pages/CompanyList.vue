@@ -91,7 +91,7 @@ onMounted(async () => {
           </tr>
         </thead>
         <tbody class="text-gray-600 text-sm">
-          <tr v-if="companyStore.loading">
+          <tr v-if="companyStore.loading" class="hover:bg-gray-200">
             <td colspan="6">
               <LoaderView />
             </td>
