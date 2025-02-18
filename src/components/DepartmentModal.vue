@@ -1,7 +1,7 @@
 <script setup>
-import { ref, watch, reactive } from 'vue'
-import { useCompanyStore } from '@/stores/company' // Import the company store
+import { useCompanyStore } from '@/stores/company'
 import { storeToRefs } from 'pinia'
+import { reactive, ref, watch } from 'vue'
 
 const props = defineProps({
   show: { type: Boolean, required: true },
@@ -12,13 +12,14 @@ const emit = defineEmits(['close', 'save'])
 
 const companyStore = useCompanyStore()
 
-const { companies } = storeToRefs(companyStore)
+const { companies, employees } = storeToRefs(companyStore)
 
 const isEditMode = ref(false)
 const isCompaniesFetched = ref(false) // Track if companies are fetched
 const departmentForm = reactive({
   id: null,
   company_id: '',
+  incharge_id: '',
   name: '',
   short_name: '',
   description: '',
@@ -29,6 +30,7 @@ const resetForm = () => {
   isEditMode.value = false
   departmentForm.id = null
   departmentForm.company_id = ''
+  departmentForm.incharge_id = ''
   departmentForm.name = ''
   departmentForm.short_name = ''
   departmentForm.description = ''
@@ -46,6 +48,7 @@ watch(
       isEditMode.value = true
       departmentForm.id = newDepartment.id || null
       departmentForm.company_id = newDepartment.company_id || ''
+      departmentForm.incharge_id = newDepartment.in_charge?.id || ''
       departmentForm.name = newDepartment.name || ''
       departmentForm.short_name = newDepartment.short_name || ''
       departmentForm.description = newDepartment.description || ''
@@ -66,9 +69,18 @@ watch(
   },
 )
 
+watch(
+  () => departmentForm.company_id,
+  async (company_id) => {
+    if (company_id) {
+      await companyStore.fetchEmployee(company_id)
+    }
+  },
+)
+
 const handleSubmit = () => {
-  emit('save', { ...departmentForm }) 
-  resetForm() 
+  emit('save', { ...departmentForm })
+  resetForm()
   closeModal()
 }
 
@@ -80,7 +92,7 @@ const closeModal = () => {
 const fetchCompanies = async () => {
   try {
     await companyStore.fetchCompanies()
-    isCompaniesFetched.value = true 
+    isCompaniesFetched.value = true
   } catch (error) {
     console.error('Failed to fetch companies:', error)
   }
@@ -105,6 +117,21 @@ const fetchCompanies = async () => {
             <option value="" disabled>Select a company</option>
             <option v-for="company in companies" :key="company.id" :value="company.id">
               {{ company.name }}
+            </option>
+          </select>
+        </div>
+
+        <div class="mb-4">
+          <label for="incharge_id" class="block text-sm font-medium mb-2">In Chare</label>
+          <select
+            id="incharge_id"
+            v-model="departmentForm.incharge_id"
+            class="w-full border rounded px-3 py-2"
+            required
+          >
+            <option value="" disabled>Select Employee</option>
+            <option v-for="(employee, index) in employees" :key="index" :value="index">
+              {{ employee }}
             </option>
           </select>
         </div>

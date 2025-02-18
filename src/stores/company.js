@@ -1,9 +1,10 @@
-import { ref, computed } from 'vue';
 import { defineStore } from 'pinia';
+import { computed, ref } from 'vue';
 import apiClient from '../axios';
 
 export const useCompanyStore = defineStore('company', () => {
   const companies = ref([]); // Company লিস্ট
+  const employees = ref([]); // Company লিস্ট
   const company = ref(null); // একক Company ডিটেইল
   const loading = ref(false); // লোডিং স্টেট
   const error = ref(null); // এরর স্টেট
@@ -69,6 +70,20 @@ export const useCompanyStore = defineStore('company', () => {
     }
   };
 
+  const fetchEmployee = async (id) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await apiClient.get(`/companies/${id}/employees`);
+      employees.value = response.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || `কোম্পানি (ID: ${id}) এর এমপ্লয়ী লোড করতে ব্যর্থ হয়েছে।`;
+      console.error(`Error fetching department with id ${id}:`, err);
+    } finally {
+      loading.value = false;
+    }
+  };
+
   const deleteCompany = async (id) => {
     loading.value = true;
     error.value = null;
@@ -88,6 +103,8 @@ export const useCompanyStore = defineStore('company', () => {
     company: computed(() => company.value),
     loading: computed(() => loading.value),
     error: computed(() => error.value),
+    employees,
+    fetchEmployee,
     fetchCompanies,
     fetchCompany,
     createCompany,

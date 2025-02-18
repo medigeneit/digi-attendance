@@ -1,8 +1,9 @@
-import { ref, computed } from 'vue';
 import { defineStore } from 'pinia';
+import { computed, ref } from 'vue';
 import apiClient from '../axios';
 
 export const useDepartmentStore = defineStore('department', () => {
+  const employees = ref([]); // Department লিস্ট
   const departments = ref([]); // Department লিস্ট
   const department = ref(null); // একক Department ডিটেইল
   const loading = ref(false); // লোডিং স্টেট
@@ -37,6 +38,7 @@ export const useDepartmentStore = defineStore('department', () => {
       loading.value = false;
     }
   };
+  
 
   const createDepartment = async (data) => {
     loading.value = true;
@@ -95,5 +97,6 @@ export const useDepartmentStore = defineStore('department', () => {
     createDepartment,
     updateDepartment,
     deleteDepartment,
+    
   };
 });
