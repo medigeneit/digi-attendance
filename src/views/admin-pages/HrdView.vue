@@ -25,5 +25,9 @@
       <i class="fas fa-fingerprint text-3xl"></i>
       Manual Attendance List
     </RouterLink>
+    <RouterLink :to="{ name: 'NoticeList' }" class="main-button">
+      <i class="far fa-exclamation-circle text-3xl"></i>
+      Notice List
+    </RouterLink>
   </div>
 </template>

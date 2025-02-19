@@ -143,6 +143,32 @@ const router = createRouter({
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
         },
         {
+          path: '/hrd/notice',
+          name: 'NoticeList',
+          component: () => import('@/views/admin-pages/NoticeList.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+        },
+
+        {
+          path: '/hrd/notice-add',
+          name: 'NoticeAdd',
+          component: () => import('@/views/admin-pages/NoticeAdd.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+        },
+        {
+          path: '/hrd/notice-show/:id',
+          name: 'NoticeShow',
+          component: () => import('@/views/admin-pages/NoticeShow.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+        },
+        {
+          path: '/hrd/notice-edit/:id',
+          name: 'NoticeEdit',
+          component: () => import('@/views/admin-pages/NoticeEdit.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+        },
+
+        {
           path: '/reports',
           name: 'ReportView',
           component: () => import('@/views/admin-pages/ReportView.vue'),
@@ -172,19 +198,22 @@ const router = createRouter({
           component: () => import('@/views/admin-pages/LateAttendanceReport.vue'),
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
         },
+
         {
           path: '/hrd',
           name: 'HrdView',
           component: () => import('@/views/admin-pages/HrdView.vue'),
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
         },
+
+
         {
           path: '/hrd/em-attendance',
           name: 'EmployeeAttendance',
           component: () => import('@/views/admin-pages/EmployeeAttendance.vue'),
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
         },
-        
+  
 
         {
           path: '/hrd/leave-application-list',
