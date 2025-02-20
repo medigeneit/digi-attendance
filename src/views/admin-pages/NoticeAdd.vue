@@ -4,7 +4,8 @@ import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
 import { useNoticeStore } from '@/stores/notice'
 import { storeToRefs } from 'pinia'
-import { onMounted, reactive, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import Multiselect from 'vue-multiselect'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 
@@ -14,6 +15,7 @@ const noticeStore = useNoticeStore()
 const companyStore = useCompanyStore()
 const departmentStore = useDepartmentStore()
 const { companies } = storeToRefs(companyStore)
+const { employees } = storeToRefs(departmentStore)
 
 const form = reactive({
   title: '',
@@ -22,8 +24,17 @@ const form = reactive({
   expired_at: '',
   company_id: '',
   department_id: '',
+  department_ids: [],
   file: '',
 })
+
+const selectedDepartments = ref([])
+
+const department_ids = computed(() => selectedDepartments.value.map((dep) => dep.id))
+
+const selectedEmployees = ref([])
+
+const employee_ids = computed(() => selectedEmployees.value.map((dep) => dep.id))
 
 onMounted(async () => {
   await companyStore.fetchCompanies()
@@ -38,6 +49,11 @@ watch(
     }
   },
 )
+
+watch(selectedDepartments, (newSelection) => {
+  const newDepartmentIds = newSelection.map((dep) => dep.id)
+  departmentStore.fetchDepartmentEmployee(newDepartmentIds)
+})
 
 const fileUploadLink = async (event) => {
   const file = event.target.files[0]
@@ -60,6 +76,8 @@ const saveNotice = async () => {
       expired_at: form.expired_at,
       company_id: form.company_id,
       department_id: form.department_id,
+      department_ids: department_ids.value,
+      employee_ids: employee_ids.value,
       file: form.file,
     }
 
@@ -84,7 +102,7 @@ const saveNotice = async () => {
           <div class="border p-4 rounded-md bg-gray-100">
             <p class="title-md">Notice Info</p>
             <hr class="my-2" />
-            <div class="grid md:grid-cols-2 gap-4">
+            <div class="grid md:grid-cols-3 gap-4">
               <div>
                 <label>Company *</label>
                 <select
@@ -101,34 +119,62 @@ const saveNotice = async () => {
                   </template>
                 </select>
               </div>
-
-              <div>
-                <label>Department</label>
-                <select v-model="form.department_id" class="w-full p-2 border rounded">
-                  <option value="" disabled>Select a department</option>
-                  <option
-                    v-for="department in departmentStore.departments"
-                    :key="department?.id"
-                    :value="department?.id"
-                  >
-                    {{ department?.name }}
-                  </option>
-                </select>
-              </div>
-
               <div>
                 <label>Publish Date*</label>
-                <input v-model="form.published_at" type="date" class="w-full p-2 border rounded" />
+                <input
+                  v-model="form.published_at"
+                  type="date"
+                  class="w-full p-2 border rounded"
+                  required
+                />
               </div>
 
               <div>
                 <label>Expired Date*</label>
-                <input v-model="form.expired_at" type="date" class="w-full p-2 border rounded" />
+                <input
+                  v-model="form.expired_at"
+                  type="date"
+                  class="w-full p-2 border rounded"
+                  required
+                />
+              </div>
+              <div class="col-span-3 flex justify-between gap-8">
+                <div class="w-full">
+                  <label>Departments</label>
+                  <Multiselect
+                    v-model="selectedDepartments"
+                    :options="departmentStore.departments"
+                    :multiple="true"
+                    :searchable="true"
+                    placeholder="Select departments"
+                    track-by="id"
+                    label="name"
+                    class="w-full p-2 border rounded"
+                  />
+                </div>
+                <div class="w-full">
+                  <label>Employees</label>
+                  <Multiselect
+                    v-model="selectedEmployees"
+                    :options="employees"
+                    :multiple="true"
+                    :searchable="true"
+                    placeholder="Select Employee"
+                    track-by="id"
+                    label="name"
+                    class="w-full p-2 border rounded"
+                  />
+                </div>
               </div>
 
-              <div>
+              <div class="col-span-full">
                 <label>Title*</label>
-                <input v-model="form.title" type="text" class="w-full p-2 border rounded" />
+                <input
+                  v-model="form.title"
+                  type="text"
+                  class="w-full p-2 border rounded"
+                  required
+                />
               </div>
 
               <div>
@@ -165,3 +211,6 @@ const saveNotice = async () => {
     </div>
   </div>
 </template>
+<style>
+@import 'vue-multiselect/dist/vue-multiselect.css';
+</style>

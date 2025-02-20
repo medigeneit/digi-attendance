@@ -89,7 +89,12 @@ const groupedNotice = computed(() => {
                 <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
                 <td class="border border-gray-300 px-2">{{ notice?.title }}</td>
                 <td class="border border-gray-300 px-2">{{ notice?.company?.name }}</td>
-                <td class="border border-gray-300 px-2">{{ notice?.department?.name }}</td>
+                <td class="border border-gray-300 px-2">
+                  <span v-for="(department, index) in notice?.departments" :key="department.id">
+                    {{ department?.name }}
+                    {{ index < notice?.departments.length - 1 ? ', ' : '' }}
+                  </span>
+                </td>
                 <td class="border border-gray-300 px-2">{{ formatDate(notice?.published_at) }}</td>
                 <td class="border border-gray-300 px-2">
                   {{ formatDate(notice?.expired_at) || 'নেই' }}

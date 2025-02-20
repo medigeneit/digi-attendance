@@ -1,14 +1,15 @@
 <script setup>
-import { reactive, ref, onMounted, watch } from 'vue'
-import { useUserStore } from '@/stores/user'
+import LoaderView from '@/components/common/LoaderView.vue'
 import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
 import { useDesignationStore } from '@/stores/designation'
 import { useLeaveApprovalStore } from '@/stores/leave-approval'
 import { useShiftStore } from '@/stores/shift'
-import { useToast } from 'vue-toastification'
+import { useUserStore } from '@/stores/user'
+import { storeToRefs } from 'pinia'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import LoaderView from '@/components/common/LoaderView.vue'
+import { useToast } from 'vue-toastification'
 
 const leaveApprovalStore = useLeaveApprovalStore()
 
@@ -42,9 +43,10 @@ const shiftStore = useShiftStore()
 const toast = useToast()
 const route = useRoute()
 const router = useRouter()
-
+const { designations } = storeToRefs(designationStore)
 const showPassword = ref(false)
 const isLoading = ref(false)
+const { shifts } = storeToRefs(shiftStore)
 
 onMounted(async () => {
   isLoading.value = true
@@ -109,6 +111,16 @@ const updateUser = async () => {
     console.error(errorMessage)
   }
 }
+
+const computedShifts = computed(() => {
+  const indexName = companyStore.companies.find((company) => company.id === form.company_id)?.name
+  return indexName ? shifts.value[indexName] || [] : []
+})
+
+const computedDesignations = computed(() => {
+  const indexName = companyStore.companies.find((company) => company.id === form.company_id)?.name
+  return indexName ? designations.value[indexName] || [] : []
+})
 </script>
 
 <template>
@@ -197,7 +209,7 @@ const updateUser = async () => {
                 <select v-model="form.designation_id" class="w-full p-2 border rounded">
                   <option value="" disabled>Select a designation</option>
                   <option
-                    v-for="designation in designationStore.designations"
+                    v-for="designation in computedDesignations"
                     :key="designation?.id"
                     :value="designation?.id"
                   >
@@ -210,7 +222,7 @@ const updateUser = async () => {
                 <label>Shift</label>
                 <select v-model="form.shift_id" class="w-full p-2 border rounded">
                   <option value="" disabled>Select a shift</option>
-                  <option v-for="shift in shiftStore.shifts" :key="shift?.id" :value="shift?.id">
+                  <option v-for="shift in computedShifts" :key="shift?.id" :value="shift?.id">
                     {{ shift?.name }}
                   </option>
                 </select>
