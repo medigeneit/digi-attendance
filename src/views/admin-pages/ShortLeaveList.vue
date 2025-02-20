@@ -1,9 +1,9 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import LoaderView from '@/components/common/LoaderView.vue'
 import { useShortLeaveStore } from '@/stores/short-leave'
 import { useUserStore } from '@/stores/user'
-import LoaderView from '@/components/common/LoaderView.vue'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const shortLeaveStore = useShortLeaveStore()
@@ -32,6 +32,18 @@ const filteredShortLeaves = computed(() => {
 
 const goBack = () => {
   router.go(-1)
+}
+
+const formatTime = (timeString) => {
+  const [hour, minute] = timeString.split(':').map(Number) // Extract hour & minute
+  const date = new Date()
+  date.setHours(hour, minute)
+
+  return date.toLocaleString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true, // Ensures AM/PM format
+  })
 }
 </script>
 
@@ -90,8 +102,8 @@ const goBack = () => {
               <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
               <td class="border border-gray-300 px-2">{{ leave?.user?.name || 'Unknown' }}</td>
               <td class="border border-gray-300 px-2">{{ leave.date }}</td>
-              <td class="border border-gray-300 px-2">{{ leave.start_time }}</td>
-              <td class="border border-gray-300 px-2">{{ leave.end_time }}</td>
+              <td class="border border-gray-300 px-2">{{ formatTime(leave.start_time) }}</td>
+              <td class="border border-gray-300 px-2">{{ formatTime(leave.end_time) }}</td>
               <td class="border border-gray-300 px-2">{{ leave.total_minutes }}</td>
               <td class="border border-gray-300 px-2">{{ leave.status || 'N/A' }}</td>
               <td class="border border-gray-300 px-2">

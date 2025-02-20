@@ -89,6 +89,18 @@ onMounted(async () => {
     console.error('Error fetching shifts:', err)
   }
 })
+
+const formatTime = (timeString) => {
+  const [hour, minute] = timeString.split(':').map(Number) // Extract hour & minute
+  const date = new Date()
+  date.setHours(hour, minute)
+
+  return date.toLocaleString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true, // Ensures AM/PM format
+  })
+}
 </script>
 <template>
   <div class="my-container space-y-4">
@@ -106,6 +118,7 @@ onMounted(async () => {
                 <th class="py-3 px-2 text-left">Name</th>
                 <th class="py-3 px-2 text-left">Start Time</th>
                 <th class="py-3 px-2 text-left">End Time</th>
+                <th class="py-3 px-2 text-left">Grace Time</th>
                 <th class="py-3 px-2 text-center">Status</th>
                 <th class="py-3 px-2 text-center">Action</th>
               </tr>
@@ -117,8 +130,9 @@ onMounted(async () => {
                 class="border-b border-gray-200 hover:bg-gray-100"
               >
                 <td class="py-3 px-2 text-left">{{ shift.name }}</td>
-                <td class="py-3 px-2 text-left">{{ shift.start_time }}</td>
-                <td class="py-3 px-2 text-left">{{ shift.end_time }}</td>
+                <td class="py-3 px-2 text-left">{{ formatTime(shift.start_time) }}</td>
+                <td class="py-3 px-2 text-left">{{ formatTime(shift.end_time) }}</td>
+                <td class="py-3 px-2 text-center">{{ shift.grace_time || 0 }} Minutes</td>
                 <td class="py-3 px-2 text-center">{{ shift.status }}</td>
                 <td class="py-3 px-2 text-center">
                   <div class="flex item-center justify-center gap-4">

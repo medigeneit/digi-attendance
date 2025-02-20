@@ -1,6 +1,6 @@
 <script setup>
-import { ref, watch, reactive } from 'vue'
 import { useCompanyStore } from '@/stores/company' // Import the company store
+import { reactive, ref, watch } from 'vue'
 
 const props = defineProps({
   show: { type: Boolean, required: true },
@@ -21,6 +21,7 @@ const shiftForm = reactive({
   name: '',
   start_time: '',
   end_time: '',
+  grace_time: '',
   description: '',
   status: 'Active',
 })
@@ -32,6 +33,7 @@ const resetForm = () => {
   shiftForm.name = ''
   shiftForm.start_time = ''
   shiftForm.end_time = ''
+  shiftForm.grace_time = ''
   shiftForm.description = ''
   shiftForm.status = 'Active'
 }
@@ -46,6 +48,7 @@ watch(
       shiftForm.name = newShift.name || ''
       shiftForm.start_time = newShift.start_time || ''
       shiftForm.end_time = newShift.end_time || ''
+      shiftForm.grace_time = newShift.grace_time || ''
       shiftForm.description = newShift.description || ''
       shiftForm.status = newShift.status || 'Active'
     } else {
@@ -136,6 +139,17 @@ const fetchCompanies = async () => {
             id="end_time"
             v-model="shiftForm.end_time"
             type="time"
+            class="w-full border rounded px-3 py-2"
+            required
+          />
+        </div>
+
+        <div class="mb-4">
+          <label for="end_time" class="block text-sm font-medium mb-2">Grace Time (Minute)</label>
+          <input
+            id="end_time"
+            v-model="shiftForm.grace_time"
+            type="number"
             class="w-full border rounded px-3 py-2"
             required
           />

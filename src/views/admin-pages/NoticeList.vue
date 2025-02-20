@@ -19,6 +19,19 @@ const goBack = () => {
   router.go(-1)
 }
 
+const formatDate = (dateString) => {
+  const date = new Date(dateString)
+  return date.toLocaleString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  })
+}
+
 const groupedNotice = computed(() => {
   const grouped = {}
   notices.value.forEach((notice) => {
@@ -77,8 +90,10 @@ const groupedNotice = computed(() => {
                 <td class="border border-gray-300 px-2">{{ notice?.title }}</td>
                 <td class="border border-gray-300 px-2">{{ notice?.company?.name }}</td>
                 <td class="border border-gray-300 px-2">{{ notice?.department?.name }}</td>
-                <td class="border border-gray-300 px-2">{{ notice?.published_at }}</td>
-                <td class="border border-gray-300 px-2">{{ notice?.expired_at || 'নেই' }}</td>
+                <td class="border border-gray-300 px-2">{{ formatDate(notice?.published_at) }}</td>
+                <td class="border border-gray-300 px-2">
+                  {{ formatDate(notice?.expired_at) || 'নেই' }}
+                </td>
                 <td class="border border-gray-300 px-2">
                   <div class="flex gap-2">
                     <RouterLink

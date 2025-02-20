@@ -13,8 +13,17 @@ const notice = ref(null)
 const isLoading = ref(true)
 const error = ref(null)
 
-const formatDate = (date) => {
-  return date ? new Date(date).toLocaleDateString('en-GB') : 'N/A'
+const formatDate = (dateString) => {
+  const date = new Date(dateString)
+  return date.toLocaleString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  })
 }
 
 const fetchNotice = async () => {
