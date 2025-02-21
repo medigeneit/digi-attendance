@@ -109,7 +109,9 @@ const downloadFile = async (fileUrl) => {
 
             <div>
               <p class="text-sm font-bold text-gray-600">File:</p>
-              <button @click="downloadFile(notice?.file)" class="btn-2">Download File</button>
+              <button v-if="notice?.file" @click="downloadFile(notice?.file)" class="btn-2">
+                Download File
+              </button>
             </div>
 
             <div class="col-span-full">
