@@ -10,6 +10,19 @@ export const useNoticeStore = defineStore('notice', () => {
   const isLoading = ref(false); // লোডিং স্টেট
 
   // Actions
+  const fetchUserNotices = async () => {
+    try {
+      isLoading.value = true; // লোডিং শুরু
+      const response = await apiClient.get('/user/notices');
+      notices.value = response?.data?.notices;
+      error.value = null;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Something went wrong';
+    } finally {
+      isLoading.value = false; // লোডিং শেষ
+    }
+  };
+
   const fetchNotices = async () => {
     try {
       isLoading.value = true; // লোডিং শুরু
@@ -27,6 +40,22 @@ export const useNoticeStore = defineStore('notice', () => {
     try {
       isLoading.value = true;
       const response = await apiClient.get(`/notices/${id}`);
+      const data = response.data;
+      if(data) {
+        notice.value = data;
+      }
+      error.value = null;
+      return data;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Something went wrong';
+    } finally {
+      isLoading.value = false;
+    }
+  };
+  const fetchNoticeDetails = async (id) => {
+    try {
+      isLoading.value = true;
+      const response = await apiClient.get(`/notices/details/${id}`);
       const data = response.data;
       if(data) {
         notice.value = data;
@@ -69,9 +98,22 @@ export const useNoticeStore = defineStore('notice', () => {
     }
   };
 
+  const createNoticeFeedback = async (id, payload) => {
+    try {
+      isLoading.value = true;
+      return await apiClient.post(`/user/notice/feedback/${id}`, payload);
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Something went wrong';
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
   const updateNotice = async (id, payload) => {
     try {
       isLoading.value = true;
+      console.log({payload});
+      
       const response = await apiClient.put(`/notices/${id}`, payload);
       const index = users.value.findIndex((u) => u.id === id);
       if (index !== -1) {
@@ -92,9 +134,12 @@ export const useNoticeStore = defineStore('notice', () => {
     error,
     isLoading,
     fetchFileUpload,
+    createNoticeFeedback,
     fetchNotices,
     fetchNotice,
     createNotice,
     updateNotice,
+    fetchUserNotices,
+    fetchNoticeDetails
   };
 });

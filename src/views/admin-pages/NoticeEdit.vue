@@ -1,12 +1,14 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import TextEditor from '@/components/TextEditor.vue'
 import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
 import { useNoticeStore } from '@/stores/notice'
-import { onMounted, reactive, ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import Multiselect from 'vue-multiselect'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
-import TextEditor from '@/components/TextEditor.vue'
 const form = reactive({
   title: '',
   description: '',
@@ -24,6 +26,16 @@ const toast = useToast()
 const route = useRoute()
 const router = useRouter()
 const isLoading = ref(false)
+const { companies } = storeToRefs(companyStore)
+const { employees } = storeToRefs(departmentStore)
+
+const selectedDepartments = ref([])
+
+const department_ids = computed(() => selectedDepartments.value.map((dep) => dep.id))
+
+const selectedEmployees = ref([])
+
+const employee_ids = computed(() => selectedEmployees.value.map((dep) => dep.id))
 
 onMounted(async () => {
   isLoading.value = true
@@ -66,6 +78,8 @@ const loadNotice = async () => {
     form.description = notice.description
     form.company_id = notice.company_id
     form.department_id = notice.department_id
+    selectedDepartments.value = notice.departments
+    selectedEmployees.value = notice.employees
   } catch (error) {
     const errorMessage = error.response?.data?.message || 'Failed to load notice data'
     toast.error(errorMessage)
@@ -75,7 +89,13 @@ const loadNotice = async () => {
 
 const updateNotice = async () => {
   try {
-    const dataToSend = { ...form }
+    const dataToSend = {
+      ...form,
+      department_ids: department_ids.value,
+      employee_ids: employee_ids.value,
+    }
+    console.log({ dataToSend })
+
     await noticeStore.updateNotice(route.params.id, dataToSend)
     toast.success('Notice updated successfully')
     router.push({ name: 'NoticeShow', params: { id: route.params.id } })
@@ -84,6 +104,10 @@ const updateNotice = async () => {
     toast.error(errorMessage)
   }
 }
+watch(selectedDepartments, (newSelection) => {
+  const newDepartmentIds = newSelection.map((dep) => dep.id)
+  departmentStore.fetchDepartmentEmployee(newDepartmentIds)
+})
 </script>
 
 <template>
@@ -96,7 +120,7 @@ const updateNotice = async () => {
           <div class="border p-4 rounded-md bg-gray-100">
             <p class="title-md">Notice Info</p>
             <hr class="my-2" />
-            <div class="grid md:grid-cols-2 gap-4">
+            <div class="grid md:grid-cols-3 gap-4">
               <div>
                 <label>Company</label>
                 <select
@@ -115,19 +139,6 @@ const updateNotice = async () => {
               </div>
 
               <div>
-                <label>Department</label>
-                <select v-model="form.department_id" class="w-full p-2 border rounded">
-                  <option value="" disabled>Select a department</option>
-                  <option
-                    v-for="department in departmentStore.departments"
-                    :key="department?.id"
-                    :value="department?.id"
-                  >
-                    {{ department?.name }}
-                  </option>
-                </select>
-              </div>
-              <div>
                 <label>Publish Date</label>
                 <input v-model="form.published_at" type="date" class="w-full p-2 border rounded" />
               </div>
@@ -136,6 +147,36 @@ const updateNotice = async () => {
                 <label>Expire Date</label>
                 <input v-model="form.expired_at" type="date" class="w-full p-2 border rounded" />
               </div>
+
+              <div class="col-span-3 flex justify-between gap-8">
+                <div class="w-full">
+                  <label>Departments</label>
+                  <Multiselect
+                    v-model="selectedDepartments"
+                    :options="departmentStore.departments"
+                    :multiple="true"
+                    :searchable="true"
+                    placeholder="Select departments"
+                    track-by="id"
+                    label="name"
+                    class="w-full p-2 border rounded"
+                  />
+                </div>
+                <div class="w-full">
+                  <label>Employees</label>
+                  <Multiselect
+                    v-model="selectedEmployees"
+                    :options="employees"
+                    :multiple="true"
+                    :searchable="true"
+                    placeholder="Select Employee"
+                    track-by="id"
+                    label="name"
+                    class="w-full p-2 border rounded"
+                  />
+                </div>
+              </div>
+
               <div>
                 <label>Title*</label>
                 <input v-model="form.title" type="text" class="w-full p-2 border rounded" />
@@ -174,3 +215,6 @@ const updateNotice = async () => {
     </div>
   </div>
 </template>
+<style>
+@import 'vue-multiselect/dist/vue-multiselect.css';
+</style>

@@ -1,7 +1,7 @@
 <script setup>
+import { useAuthStore } from '@/stores/auth'
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps({
   user: Object,
@@ -54,6 +54,15 @@ const logout = () => {
       >
         <i class="fad fa-bells py-2"></i>
         <h4 v-if="open">My Notifications</h4>
+      </RouterLink>
+
+      <RouterLink
+        to="/notices"
+        class="side-menu"
+        :class="{ 'side-menu-active': currentRoute.includes('/notices') }"
+      >
+        <i class="fad fa-bells py-2"></i>
+        <h4 v-if="open">My Notices</h4>
       </RouterLink>
 
       <RouterLink

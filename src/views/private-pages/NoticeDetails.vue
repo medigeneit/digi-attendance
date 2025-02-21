@@ -9,6 +9,8 @@ const noticeStore = useNoticeStore()
 const toast = useToast()
 const route = useRoute()
 
+const feedback = ref('')
+
 const notice = ref(null)
 const isLoading = ref(true)
 const error = ref(null)
@@ -31,12 +33,30 @@ const fetchNotice = async () => {
     isLoading.value = true
     error.value = null
     const noticeId = route.params.id
-    notice.value = await noticeStore.fetchNotice(noticeId)
+    notice.value = await noticeStore.fetchNoticeDetails(noticeId)
+    feedback.value = notice.value.user_feedback?.feedback
   } catch (err) {
     error.value = err.response?.data?.message || 'Failed to load notice details'
     toast.error(error.value)
   } finally {
     isLoading.value = false
+  }
+}
+const createNoticeFeedback = async () => {
+  if (feedback.value) {
+    try {
+      const noticeId = route.params.id
+
+      const userFeedback = {
+        feedback: feedback.value,
+      }
+      await noticeStore.createNoticeFeedback(noticeId, userFeedback)
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to load notice details'
+      toast.error(error.value)
+    } finally {
+      isLoading.value = false
+    }
   }
 }
 
@@ -94,20 +114,14 @@ onMounted(async () => {
             </div>
           </div>
         </div>
-        <div class="flex justify-center mt-8 gap-4">
-          <RouterLink
-            :to="{ name: 'NoticeList' }"
-            type="button"
-            class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+        <div class="md:flex justify-center mt-8 gap-4">
+          <input v-model="feedback" type="text" class="w-full p-2 border rounded" />
+          <div
+            class="bg-blue-500 cursor-pointer text-white w-1/3 text-center px-4 py-2 rounded hover:bg-blue-600"
+            @click="createNoticeFeedback"
           >
-            Back to List
-          </RouterLink>
-          <RouterLink
-            :to="{ name: 'NoticeEdit', params: { id: notice?.id } }"
-            class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          >
-            Edit
-          </RouterLink>
+            {{ notice?.user_feedback ? 'Notice Feedback Updated' : 'Submit Notice Feedback' }}
+          </div>
         </div>
       </div>
     </div>
