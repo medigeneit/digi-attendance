@@ -43,6 +43,10 @@ const fetchNotice = async () => {
 onMounted(async () => {
   await fetchNotice()
 })
+
+const downloadFile = async (fileUrl) => {
+  window.open(fileUrl, '_blank') // Opens file in a new tab
+}
 </script>
 
 <template>
@@ -84,8 +88,8 @@ onMounted(async () => {
             </div>
 
             <div>
-              <p class="text-sm font-bold text-gray-600">File:</p>
-              <p class="text-lg text-gray-800">{{ notice?.file }}</p>
+              <p class="text-sm font-bold text-gray-600 mb-2">File:</p>
+              <button @click="downloadFile(notice?.file)" class="btn-2">Download File</button>
             </div>
 
             <div class="col-span-full">
