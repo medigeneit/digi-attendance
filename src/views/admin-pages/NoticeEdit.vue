@@ -54,6 +54,18 @@ watch(
   },
 )
 
+const fileUploadLink = async (event) => {
+  const file = event.target.files[0]
+
+  if (file) {
+    const formData = new FormData()
+    formData.append('file', file)
+    console.log({ file })
+    const response = await noticeStore.fetchFileUpload(formData)
+    form.file = response?.data?.url
+  }
+}
+
 const updateFormattedDate = (date) => {
   if (!date) {
     return
@@ -184,7 +196,7 @@ watch(selectedDepartments, (newSelection) => {
 
               <div>
                 <label>File</label>
-                <input type="file" class="w-full p-2 border rounded" />
+                <input @change="fileUploadLink" type="file" class="w-full p-2 border rounded" />
               </div>
               <div class="col-span-full">
                 <label>Description</label>
