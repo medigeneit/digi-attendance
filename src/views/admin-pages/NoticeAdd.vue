@@ -19,6 +19,7 @@ const { employees } = storeToRefs(departmentStore)
 
 const form = reactive({
   title: '',
+  type: 1,
   description: '',
   published_at: '',
   expired_at: '',
@@ -71,6 +72,7 @@ const saveNotice = async () => {
   try {
     const dataToSend = {
       title: form.title,
+      type: form.type,
       description: form.description,
       published_at: form.published_at,
       expired_at: form.expired_at,
@@ -102,7 +104,7 @@ const saveNotice = async () => {
           <div class="border p-4 rounded-md bg-gray-100">
             <p class="title-md">Notice Info</p>
             <hr class="my-2" />
-            <div class="grid md:grid-cols-3 gap-4">
+            <div class="grid md:grid-cols-2 gap-4">
               <div>
                 <label>Company *</label>
                 <select
@@ -120,6 +122,18 @@ const saveNotice = async () => {
                 </select>
               </div>
               <div>
+                <label>Type*</label>
+                <select
+                  id="type"
+                  v-model="form.type"
+                  class="w-full border rounded px-3 py-2"
+                  required
+                >
+                  <option value="1">General</option>
+                  <option value="2">Policy</option>
+                </select>
+              </div>
+              <div v-if="form.type !== '2'">
                 <label>Publish Date*</label>
                 <input
                   v-model="form.published_at"
@@ -129,7 +143,7 @@ const saveNotice = async () => {
                 />
               </div>
 
-              <div>
+              <div v-if="form.type !== '2'">
                 <label>Expired Date*</label>
                 <input
                   v-model="form.expired_at"
@@ -138,7 +152,7 @@ const saveNotice = async () => {
                   required
                 />
               </div>
-              <div class="col-span-3 flex justify-between gap-8">
+              <div class="col-span-2 flex justify-between gap-8">
                 <div class="w-full">
                   <label>Departments</label>
                   <Multiselect
@@ -152,7 +166,7 @@ const saveNotice = async () => {
                     class="w-full p-2 border rounded"
                   />
                 </div>
-                <div class="w-full">
+                <div class="w-full" v-if="form.type !== '2'">
                   <label>Employees</label>
                   <Multiselect
                     v-model="selectedEmployees"

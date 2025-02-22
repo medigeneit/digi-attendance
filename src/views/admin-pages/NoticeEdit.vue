@@ -11,6 +11,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 const form = reactive({
   title: '',
+  type: '',
   description: '',
   published_at: '',
   expired_at: '',
@@ -61,7 +62,7 @@ const fileUploadLink = async (event) => {
     const formData = new FormData()
     formData.append('file', file)
     const response = await noticeStore.fetchFileUpload(formData)
-    console.log({ response:response?.url })
+    console.log({ response: response?.url })
     form.file = response?.url
   }
 }
@@ -84,6 +85,7 @@ const loadNotice = async () => {
     const noticeId = route.params.id
     const notice = await noticeStore.fetchNotice(noticeId)
     form.title = notice.title
+    form.type = notice.type
     form.file = notice.file
     form.published_at = updateFormattedDate(notice.published_at)
     form.expired_at = updateFormattedDate(notice.expired_at)
@@ -132,7 +134,7 @@ watch(selectedDepartments, (newSelection) => {
           <div class="border p-4 rounded-md bg-gray-100">
             <p class="title-md">Notice Info</p>
             <hr class="my-2" />
-            <div class="grid md:grid-cols-3 gap-4">
+            <div class="grid md:grid-cols-2 gap-4">
               <div>
                 <label>Company</label>
                 <select
@@ -151,11 +153,24 @@ watch(selectedDepartments, (newSelection) => {
               </div>
 
               <div>
+                <label>Type*</label>
+                <select
+                  id="type"
+                  v-model="form.type"
+                  class="w-full border rounded px-3 py-2"
+                  required
+                >
+                  <option value="1">General</option>
+                  <option value="2">Policy</option>
+                </select>
+              </div>
+
+              <div v-if="form.type !== '2'">
                 <label>Publish Date</label>
                 <input v-model="form.published_at" type="date" class="w-full p-2 border rounded" />
               </div>
 
-              <div>
+              <div v-if="form.type !== '2'">
                 <label>Expire Date</label>
                 <input v-model="form.expired_at" type="date" class="w-full p-2 border rounded" />
               </div>
@@ -174,7 +189,7 @@ watch(selectedDepartments, (newSelection) => {
                     class="w-full p-2 border rounded"
                   />
                 </div>
-                <div class="w-full">
+                <div class="w-full" v-if="form.type !== '2'">
                   <label>Employees</label>
                   <Multiselect
                     v-model="selectedEmployees"
