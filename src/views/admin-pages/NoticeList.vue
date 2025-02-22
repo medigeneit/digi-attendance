@@ -72,10 +72,12 @@ const groupedNotice = computed(() => {
               <tr class="bg-gray-200">
                 <th class="border border-gray-300 px-2 text-left">#</th>
                 <th class="border border-gray-300 px-2 text-left">Title</th>
+                <th class="border border-gray-300 px-2 text-left">Type</th>
                 <th class="border border-gray-300 px-2 text-left">Company</th>
                 <th class="border border-gray-300 px-2 text-left">Department</th>
                 <th class="border border-gray-300 px-2 text-left">Published Date</th>
                 <th class="border border-gray-300 px-2 text-left">Expired Date</th>
+                <th class="border border-gray-300 px-2 text-left">Show Employee</th>
                 <th class="border border-gray-300 px-2 text-left">Action</th>
               </tr>
             </thead>
@@ -87,6 +89,9 @@ const groupedNotice = computed(() => {
               >
                 <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
                 <td class="border border-gray-300 px-2">{{ notice?.title }}</td>
+                <td class="border border-gray-300 px-2">
+                  {{ notice?.type === 1 ? 'General Notice' : 'Policy' }}
+                </td>
                 <td class="border border-gray-300 px-2">{{ notice?.company?.name }}</td>
                 <td class="border border-gray-300 px-2">
                   <span v-for="(department, index) in notice?.departments" :key="department.id">
@@ -97,6 +102,9 @@ const groupedNotice = computed(() => {
                 <td class="border border-gray-300 px-2">{{ formatDate(notice?.published_at) }}</td>
                 <td class="border border-gray-300 px-2">
                   {{ formatDate(notice?.expired_at) || 'নেই' }}
+                </td>
+                <td class="border border-gray-300 px-2 text-center">
+                  {{ notice?.user_feedback_count }}
                 </td>
                 <td class="border border-gray-300 px-2">
                   <div class="flex gap-2">
