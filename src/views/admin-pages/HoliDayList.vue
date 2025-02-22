@@ -1,12 +1,12 @@
 <script setup>
-import { onMounted, ref } from 'vue'
 import { useHolidayStore } from '@/stores/holiday'
+import { onMounted, ref } from 'vue'
 import { useToast } from 'vue-toastification'
 
 import HolidayModal from '@/components/HolidayModal.vue'
-import LoaderView from '@/components/common/LoaderView.vue'
 import DeleteModal from '@/components/common/DeleteModal.vue'
 import HeaderWithButtons from '@/components/common/HeaderWithButtons.vue'
+import LoaderView from '@/components/common/LoaderView.vue'
 
 const holidayStore = useHolidayStore()
 const toast = useToast()
@@ -102,7 +102,7 @@ onMounted(async () => {
             <tr
               v-for="holiday in holidayStore.holidays"
               :key="holiday.id"
-              class="border-b border-gray-200 hover:bg-gray-100"
+              class="border-b border-gray-200 hover:bg-blue-200"
             >
               <td class="py-3 px-2 text-left">
                 <p class="font-medium">{{ holiday.name }}</p>

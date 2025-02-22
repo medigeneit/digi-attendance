@@ -86,11 +86,11 @@ onMounted(async () => {
   <div class="my-container space-y-4">
     <!-- হেডার -->
     <HeaderWithButtons title="Designation List" @add="openAddModal" />
-    
+
     <div v-if="loading" class="text-center py-4">
       <LoaderView />
     </div>
-    
+
     <div v-else class="space-y-4">
       <div class="space-y-4" v-if="true">
         <div v-for="(designationArray, companyName) in designations" :key="companyName">
@@ -110,7 +110,7 @@ onMounted(async () => {
                 <tr
                   v-for="item in designationArray"
                   :key="item.id"
-                  class="border-b border-gray-200 hover:bg-gray-100"
+                  class="border-b border-gray-200 hover:bg-blue-200"
                 >
                   <td class="py-3 px-2 text-left">{{ item.title }}</td>
                   <td class="py-3 px-2 text-left whitespace-nowrap">{{ item.grade }}</td>

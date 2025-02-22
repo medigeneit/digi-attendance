@@ -47,11 +47,14 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   };
 
-  const getAttendanceLateReport = async (company_id, month) => {
+  const getAttendanceLateReport = async (company_id, employee_id, month) => {
     isLoading.value = true;
     try {
-      const params = {company_id, month}
-      const response = await apiClient.get("/attendance/late-reports", { params });
+      const params = {company_id,employee_id, month}
+
+      console.log({params});
+      
+      const response = await apiClient.get("/monthly/attendance/late-reports", { params });
       dailyLateLogs.value = response.data; 
       error.value = null;
     } catch (err) {
@@ -61,6 +64,25 @@ export const useAttendanceStore = defineStore('attendance', () => {
       isLoading.value = false;
     }
   };
+
+  // const getAttendanceLateReport = async (company_id, employee_id, month) => {
+  //   isLoading.value = true;
+  //   try {
+  //     const params = {company_id,employee_id, month}
+
+  //     console.log({params});
+      
+  //     const response = await apiClient.get("/attendance/late-reports", { params });
+  //     dailyLateLogs.value = response.data; 
+  //     error.value = null;
+  //   } catch (err) {
+  //     error.value = err.response?.data?.message || 'Something went wrong';
+  //     console.error(error.value);
+  //   } finally {
+  //     isLoading.value = false;
+  //   }
+  // };
+
   const getMonthlyAttendanceSummaryReport = async (company_id, month) => {
     if (!company_id || !month) {
       error.value = 'Invalid user ID or month';

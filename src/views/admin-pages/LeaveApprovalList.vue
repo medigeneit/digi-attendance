@@ -1,11 +1,11 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useLeaveApprovalStore } from '@/stores/leave-approval'
-import { useToast } from 'vue-toastification'
 import LeaveApprovalModal from '@/components/LeaveApprovalModal.vue'
 import DeleteModal from '@/components/common/DeleteModal.vue'
 import HeaderWithButtons from '@/components/common/HeaderWithButtons.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
+import { useLeaveApprovalStore } from '@/stores/leave-approval'
+import { onMounted, ref } from 'vue'
+import { useToast } from 'vue-toastification'
 
 const leaveApprovalStore = useLeaveApprovalStore()
 const toast = useToast()
@@ -104,7 +104,7 @@ onMounted(() => {
             <tr
               v-for="leaveApproval in leaveApprovalStore.leaveApprovals"
               :key="leaveApproval.id"
-              class="border-b border-gray-200 hover:bg-gray-100"
+              class="border-b border-gray-200 hover:bg-blue-200"
             >
               <td class="py-3 px-2 text-left">{{ leaveApproval.id }}</td>
               <td class="py-3 px-2 text-left">{{ leaveApproval.name }}</td>

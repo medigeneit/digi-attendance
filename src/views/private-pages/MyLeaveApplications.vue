@@ -1,9 +1,9 @@
 <script setup>
-import { onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { useLeaveApplicationStore } from '@/stores/leave-application'
-import { useAuthStore } from '@/stores/auth'
 import LoaderView from '@/components/common/LoaderView.vue'
+import { useAuthStore } from '@/stores/auth'
+import { useLeaveApplicationStore } from '@/stores/leave-application'
+import { computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const leaveApplicationStore = useLeaveApplicationStore()
@@ -60,7 +60,7 @@ const myLeaveApplications = computed(() => {
             <tr
               v-for="(application, index) in myLeaveApplications"
               :key="application?.id"
-              class="border-b border-gray-200 hover:bg-gray-100"
+              class="border-b border-gray-200 hover:bg-blue-200"
             >
               <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
               <td class="border border-gray-300 px-2">{{ application.start_date }}</td>

@@ -1,12 +1,12 @@
 <script setup>
-import { ref, onMounted } from 'vue'
 import { useCompanyStore } from '@/stores/company'
+import { onMounted, ref } from 'vue'
 import { useToast } from 'vue-toastification'
 
 import CompanyModal from '@/components/CompanyModal.vue'
 import DeleteModal from '@/components/common/DeleteModal.vue'
-import LoaderView from '@/components/common/LoaderView.vue'
 import HeaderWithButtons from '@/components/common/HeaderWithButtons.vue'
+import LoaderView from '@/components/common/LoaderView.vue'
 
 const companyStore = useCompanyStore()
 const toast = useToast()
@@ -100,7 +100,7 @@ onMounted(async () => {
             <tr
               v-for="company in companyStore.companies"
               :key="company.id"
-              class="border-b border-gray-200 hover:bg-gray-100"
+              class="border-b border-gray-200 hover:bg-blue-200"
             >
               <td class="py-3 px-2 text-left">
                 <p class="font-medium">{{ company.name }}</p>

@@ -1,9 +1,9 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import LoaderView from '@/components/common/LoaderView.vue'
 import { useExchangeStore } from '@/stores/exchange'
 import { useUserStore } from '@/stores/user'
-import LoaderView from '@/components/common/LoaderView.vue'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const exchangeStore = useExchangeStore()
@@ -84,7 +84,7 @@ const filteredShiftExchanges = computed(() => {
             <tr
               v-for="(exchange, index) in filteredShiftExchanges"
               :key="exchange?.id"
-              class="border-b border-gray-200 hover:bg-gray-100"
+              class="border-b border-gray-200 hover:bg-blue-200"
             >
               <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
               <td class="border border-gray-300 px-2">{{ exchange?.user?.name || 'Unknown' }}</td>

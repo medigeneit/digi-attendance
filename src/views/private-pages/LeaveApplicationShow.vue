@@ -1,11 +1,10 @@
 <script setup>
-import { onMounted, ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { useRoute } from 'vue-router'
-import { useLeaveApplicationStore } from '@/stores/leave-application'
-import { useAuthStore } from '@/stores/auth'
 import LoaderView from '@/components/common/LoaderView.vue'
 import ShareComponent from '@/components/common/ShareComponent.vue'
+import { useAuthStore } from '@/stores/auth'
+import { useLeaveApplicationStore } from '@/stores/leave-application'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
 const leaveApplicationStore = useLeaveApplicationStore()
@@ -243,7 +242,7 @@ const goBack = () => router.go(-1)
                 <tr
                   v-for="(balance, index) in leaveApplicationStore.leaveBalance"
                   :key="index"
-                  class="hover:bg-gray-100"
+                  class="hover:bg-blue-200"
                 >
                   <td class="border border-gray-500 px-4 py-0.5 text-left">
                     {{ balance.leave_type }}

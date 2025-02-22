@@ -127,7 +127,7 @@ const formatTime = (timeString) => {
               <tr
                 v-for="shift in shifts"
                 :key="shift.id"
-                class="border-b border-gray-200 hover:bg-gray-100"
+                class="border-b border-gray-200 hover:bg-blue-200"
               >
                 <td class="py-3 px-2 text-left">{{ shift.name }}</td>
                 <td class="py-3 px-2 text-left">{{ formatTime(shift.start_time) }}</td>

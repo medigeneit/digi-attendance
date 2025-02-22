@@ -85,7 +85,7 @@ const groupedNotice = computed(() => {
               <tr
                 v-for="(notice, index) in notices"
                 :key="notice.id"
-                class="border-b border-gray-200 hover:bg-gray-100"
+                class="border-b border-gray-200 hover:bg-blue-200"
               >
                 <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
                 <td class="border border-gray-300 px-2">{{ notice?.title }}</td>

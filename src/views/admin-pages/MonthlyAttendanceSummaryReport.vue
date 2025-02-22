@@ -95,7 +95,7 @@ const goBack = () => router.go(-1)
             <tr class="bg-gray-100 text-sm">
               <th rowspan="2" class="border px-1 py-0.5">Employee Name</th>
               <th rowspan="2" class="border px-1 py-0.5">Designation</th>
-              <th colspan="4" class="border px-1 py-0.5">Attendance Summary</th>
+              <th colspan="5" class="border px-1 py-0.5">Attendance Summary</th>
               <!-- <th rowspan="2" class="border px-1 py-0.5">Total Present</th>
               <th rowspan="2" class="border px-1 py-0.5">Total Absent</th>
               <th rowspan="2" class="border px-1 py-0.5">Remain Absent</th>
@@ -116,6 +116,7 @@ const goBack = () => router.go(-1)
               <th class="border px-2 py-0.5">TD</th>
               <th class="border px-2 py-0.5">TP</th>
               <th class="border px-2 py-0.5">TW</th>
+              <th class="border px-2 py-0.5">TL</th>
               <th class="border px-2 py-0.5">TA</th>
               <th class="border px-1 py-0.5">Day</th>
               <th class="border px-2 py-0.5">Hour</th>
@@ -137,13 +138,14 @@ const goBack = () => router.go(-1)
             <tr
               v-for="log in monthly_company_summary"
               :key="log?.date"
-               class="border-b border-gray-200 hover:bg-gray-100"
+              class="border-b border-gray-200 hover:bg-blue-200"
             >
               <td class="border px-2 py-0.5">{{ log?.user }}</td>
               <td class="border px-2 py-0.5">{{ log?.designation }}</td>
               <td class="border px-2 py-0.5">{{ log?.total_monthly_days }}</td>
               <td class="border px-2 py-0.5">{{ log?.total_present }}</td>
               <td class="border px-2 py-0.5">{{ log?.total_weekend }}</td>
+              <td class="border px-2 py-0.5">{{ log?.total_leave }}</td>
               <td class="border px-2 py-0.5">{{ log?.total_absent }}</td>
               <!-- <td class="border px-2 py-0.5">{{ log?.remain_total_absent }}</td> -->
               <td class="border px-2 py-0.5">{{ log?.actual_late_day }}</td>

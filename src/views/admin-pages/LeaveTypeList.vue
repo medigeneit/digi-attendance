@@ -1,81 +1,81 @@
 <script setup>
-import { onMounted, ref, computed } from 'vue';
-import { useLeaveTypeStore } from '@/stores/leave-type';
-import { useToast } from 'vue-toastification';
-import LeaveTypeModal from '@/components/LeaveTypeModal.vue';
-import DeleteModal from '@/components/common/DeleteModal.vue';
-import HeaderWithButtons from '@/components/common/HeaderWithButtons.vue';
-import LoaderView from '@/components/common/LoaderView.vue';
+import LeaveTypeModal from '@/components/LeaveTypeModal.vue'
+import DeleteModal from '@/components/common/DeleteModal.vue'
+import HeaderWithButtons from '@/components/common/HeaderWithButtons.vue'
+import LoaderView from '@/components/common/LoaderView.vue'
+import { useLeaveTypeStore } from '@/stores/leave-type'
+import { computed, onMounted, ref } from 'vue'
+import { useToast } from 'vue-toastification'
 
-const leaveTypeStore = useLeaveTypeStore();
-const toast = useToast();
+const leaveTypeStore = useLeaveTypeStore()
+const toast = useToast()
 
-const showLeaveTypeModal = ref(false);
-const showDeleteModal = ref(false);
-const selectedLeaveType = ref(null);
+const showLeaveTypeModal = ref(false)
+const showDeleteModal = ref(false)
+const selectedLeaveType = ref(null)
 
 const openAddModal = () => {
-  selectedLeaveType.value = null;
-  showLeaveTypeModal.value = true;
-};
+  selectedLeaveType.value = null
+  showLeaveTypeModal.value = true
+}
 
 const openEditModal = (leaveType) => {
-  selectedLeaveType.value = leaveType;
-  showLeaveTypeModal.value = true;
-};
+  selectedLeaveType.value = leaveType
+  showLeaveTypeModal.value = true
+}
 
 const closeLeaveTypeModal = () => {
-  showLeaveTypeModal.value = false;
-};
+  showLeaveTypeModal.value = false
+}
 
 const openDeleteModal = (leaveType) => {
-  selectedLeaveType.value = leaveType;
-  showDeleteModal.value = true;
-};
+  selectedLeaveType.value = leaveType
+  showDeleteModal.value = true
+}
 
 const closeDeleteModal = () => {
-  showDeleteModal.value = false;
-};
+  showDeleteModal.value = false
+}
 
 const handleDelete = async () => {
   if (!selectedLeaveType.value?.id) {
-    toast.error('Invalid leave type selected for deletion!');
-    return;
+    toast.error('Invalid leave type selected for deletion!')
+    return
   }
-  await leaveTypeStore.deleteLeaveType(selectedLeaveType.value.id);
-  toast.success('Leave Type deleted successfully!');
-  closeDeleteModal();
-};
+  await leaveTypeStore.deleteLeaveType(selectedLeaveType.value.id)
+  toast.success('Leave Type deleted successfully!')
+  closeDeleteModal()
+}
 
 const handleSave = async (leaveType) => {
-  const action = leaveType.id ? 'updateLeaveType' : 'createLeaveType';
+  const action = leaveType.id ? 'updateLeaveType' : 'createLeaveType'
   const successMessage = leaveType.id
     ? 'Leave Type updated successfully!'
-    : 'Leave Type added successfully!';
+    : 'Leave Type added successfully!'
 
   try {
-    await leaveTypeStore[action](leaveType.id || leaveType, leaveType);
-    toast.success(successMessage);
+    await leaveTypeStore[action](leaveType.id || leaveType, leaveType)
+    toast.success(successMessage)
   } finally {
-    closeLeaveTypeModal();
+    closeLeaveTypeModal()
   }
-};
+}
 
 const groupedLeaveTypes = computed(() => {
-  const grouped = {};
+  const grouped = {}
   leaveTypeStore.leaveTypes.forEach((leaveType) => {
-    const companyName = leaveType.company?.name || 'Unknown Company';
+    const companyName = leaveType.company?.name || 'Unknown Company'
     if (!grouped[companyName]) {
-      grouped[companyName] = [];
+      grouped[companyName] = []
     }
-    grouped[companyName].push(leaveType);
-  });
-  return grouped;
-});
+    grouped[companyName].push(leaveType)
+  })
+  return grouped
+})
 
 onMounted(() => {
-  leaveTypeStore.fetchLeaveTypes();
-});
+  leaveTypeStore.fetchLeaveTypes()
+})
 </script>
 
 <template>
@@ -88,7 +88,6 @@ onMounted(() => {
 
     <div v-else class="space-y-4">
       <div v-for="(leaveTypes, companyName) in groupedLeaveTypes" :key="companyName">
-
         <h2 class="title-md">{{ companyName }}</h2>
         <div class="overflow-x-auto">
           <table class="min-w-full table-auto bg-white shadow-md rounded-lg overflow-hidden">
@@ -105,7 +104,7 @@ onMounted(() => {
               <tr
                 v-for="leaveType in leaveTypes"
                 :key="leaveType.id"
-                class="border-b border-gray-200 hover:bg-gray-100"
+                class="border-b border-gray-200 hover:bg-blue-200"
               >
                 <td class="py-3 px-2 text-left">{{ leaveType?.name }}</td>
                 <td class="py-3 px-2 text-left">{{ leaveType?.annual_quota }}</td>
@@ -152,4 +151,3 @@ onMounted(() => {
     />
   </div>
 </template>
-
