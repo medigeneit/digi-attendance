@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref, watch, watchEffect } from 'vue'
+import { onMounted, ref, computed, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
 import { useLeaveTypeStore } from '@/stores/leave-type'
@@ -15,8 +15,8 @@ const authStore = useAuthStore()
 
 const form = ref({
   leave_type_id: '',
-  start_date: '',
-  end_date: '',
+  last_working_date: '',
+  resumption_date: '',
   reason: '',
   works_in_hand: '',
   handover_user_id: '',
@@ -24,6 +24,52 @@ const form = ref({
 
 const loading = ref(false)
 const error = ref(null)
+
+const leaveDays = computed(() => {
+  const startDateStr = form.value.last_working_date
+  const endDateStr = form.value.resumption_date
+
+  if (!startDateStr || !endDateStr) return []
+
+  const start = new Date(startDateStr)
+  const end = new Date(endDateStr)
+
+  if (end <= start) return []
+
+  const days = []
+  let current = new Date(start)
+  current.setDate(current.getDate() + 1)
+
+  while (current < end) {
+    const yyyy = current.getFullYear()
+    const mm = (current.getMonth() + 1).toString().padStart(2, '0')
+    const dd = current.getDate().toString().padStart(2, '0')
+    days.push(`${yyyy}-${mm}-${dd}`)
+    current.setDate(current.getDate() + 1)
+  }
+
+  return days
+})
+
+const leaveDaysMessage = computed(() => {
+  const startDateStr = form.value.last_working_date
+  const endDateStr = form.value.resumption_date
+
+  if (!startDateStr || !endDateStr) return ''
+
+  const start = new Date(startDateStr)
+  const end = new Date(endDateStr)
+
+  if (end <= start) {
+    return 'Resumption date must be after Last Working Date.'
+  }
+
+  if (leaveDays.value.length === 0) {
+    return 'No leave days between the selected dates.'
+  }
+
+  return `Total leave days: ${leaveDays.value.length}`
+})
 
 const submitLeaveApplication = async () => {
   loading.value = true
@@ -36,7 +82,6 @@ const submitLeaveApplication = async () => {
     }
 
     const newApplication = await leaveApplicationStore.storeLeaveApplication(payload)
-
     router.push({ name: 'LeaveApplicationShow', params: { id: newApplication.id } })
   } catch (err) {
     error.value = err.message || 'Failed to submit leave application'
@@ -45,15 +90,14 @@ const submitLeaveApplication = async () => {
   }
 }
 
-// WatchEffect to ensure companyId-based filtering
 onMounted(() => {
   watchEffect(() => {
     const companyId = authStore?.user?.company_id
     if (companyId) {
       leaveTypeStore.fetchLeaveTypes(companyId)
     }
-  }),
-    userStore.fetchUsers()
+  })
+  userStore.fetchUsers()
 })
 
 const goBack = () => {
@@ -68,7 +112,6 @@ const goBack = () => {
         <i class="far fa-arrow-left"></i>
         <span class="hidden md:flex">Back</span>
       </button>
-
       <h1 class="title-md md:title-lg flex-wrap text-center">Leave Application Form</h1>
       <div>
         <RouterLink to="/my-applications" class="btn-2">Home</RouterLink>
@@ -78,30 +121,54 @@ const goBack = () => {
     <LoaderView v-if="loading" />
 
     <form v-else @submit.prevent="submitLeaveApplication" class="space-y-4 card-bg p-4 md:p-8">
-      <div>
-        <label for="leave-type" class="block text-sm font-medium">Leave Type</label>
-        <select id="leave-type" v-model="form.leave_type_id" class="input-1 w-full" required>
-          <option value="">Select Leave Type</option>
-          <option v-for="type in leaveTypeStore.leaveTypes" :key="type.id" :value="type.id">
-            {{ type?.name }}
-          </option>
-        </select>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label for="last-working-date" class="block text-sm font-medium">Last Working Date</label>
+          <input
+            type="date"
+            id="last-working-date"
+            v-model="form.last_working_date"
+            class="input-1 w-full"
+            required
+          />
+        </div>
+
+        <div>
+          <label for="resumption-date" class="block text-sm font-medium">Resumption Date</label>
+          <input
+            type="date"
+            id="resumption-date"
+            v-model="form.resumption_date"
+            class="input-1 w-full"
+            required
+          />
+        </div>
+      </div>
+      <div v-if="form.last_working_date && form.resumption_date" class="">
+        <p class="text-blue-600 font-medium">{{ leaveDaysMessage }}</p>
       </div>
 
-      <div>
-        <label for="start-date" class="block text-sm font-medium">Start Date</label>
-        <input
-          type="date"
-          id="start-date"
-          v-model="form.start_date"
-          class="input-1 w-full"
-          required
-        />
-      </div>
-
-      <div>
-        <label for="end-date" class="block text-sm font-medium">End Date</label>
-        <input type="date" id="end-date" v-model="form.end_date" class="input-1 w-full" required />
+      <div v-if="leaveDays.length">
+        <h2 class="text-lg font-semibold">Leave Days</h2>
+        <div class="bg-gray-100 p-2 rounded-md">
+          <div
+            v-for="(day, index) in leaveDays"
+            :key="index"
+            class="flex gap-4 mb-2 bg-white p-2 rounded-md"
+          >
+            <div class="font-semibold">{{ day }}</div>
+            <div class="flex flex-wrap gap-2">
+              <label
+                v-for="type in leaveTypeStore.leaveTypes"
+                :key="type.id"
+                class="flex items-center space-x-1"
+              >
+                <input type="radio" :name="'leaveType-' + index" :value="type.id" />
+                <span>{{ type.name }}</span>
+              </label>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div>

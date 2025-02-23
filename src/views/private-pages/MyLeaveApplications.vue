@@ -63,9 +63,9 @@ const myLeaveApplications = computed(() => {
               class="border-b border-gray-200 hover:bg-blue-200"
             >
               <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
-              <td class="border border-gray-300 px-2">{{ application.start_date }}</td>
-              <td class="border border-gray-300 px-2">{{ application.end_date }}</td>
-              <td class="border border-gray-300 px-2">{{ application.total_days }}</td>
+              <td class="border border-gray-300 px-2">{{ application.last_working_date }}</td>
+              <td class="border border-gray-300 px-2">{{ application.resumption_date }}</td>
+              <td class="border border-gray-300 px-2">{{ application.total_leave_days }}</td>
               <td class="border border-gray-300 px-2">
                 {{ application?.handover_user?.name || 'N/A' }}
               </td>

@@ -61,7 +61,7 @@ const logout = () => {
         class="side-menu"
         :class="{ 'side-menu-active': currentRoute.includes('/notices') }"
       >
-        <i class="fad fa-bells py-2"></i>
+        <i class="fad fa-exclamation-triangle py-2"></i>
         <h4 v-if="open">My Notices</h4>
       </RouterLink>
 

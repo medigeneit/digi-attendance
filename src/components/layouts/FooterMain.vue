@@ -66,8 +66,8 @@ const currentYear = new Date().getFullYear()
           Developed by
           <strong><a href="https://medigneit.com" target="_blank">MedigneIT</a></strong>
         </p>
-        <a href="tel:+8801302685282" class="text-center"
-          >Helpline: <strong>01345 678 910</strong></a
+        <a href="tel:+8801404432575" class="text-center"
+          >Helpline: <strong>01404 432 575</strong></a
         >
       </div>
     </div>

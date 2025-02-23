@@ -158,9 +158,9 @@ const goBack = () => router.go(-1)
         <div>
           <h3 class="font-bold">Leave Details:</h3>
           <div class="grid print:grid-cols-2 md:grid-cols-2 text-sm">
-            <li><strong>Start Date:</strong> {{ leaveApplication?.start_date }}</li>
-            <li><strong>End Date:</strong> {{ leaveApplication?.end_date }}</li>
-            <li><strong>Total Days:</strong> {{ leaveApplication?.total_days }}</li>
+            <li><strong>Start Date:</strong> {{ leaveApplication?.last_working_date }}</li>
+            <li><strong>End Date:</strong> {{ leaveApplication?.resumption_date }}</li>
+            <li><strong>Total Days:</strong> {{ leaveApplication?.total_leave_days }}</li>
             <li><strong>Reason: </strong>{{ leaveApplication?.reason || 'No reason provided' }}</li>
             <li><strong>Weekends:</strong> {{ leaveApplication?.user.weekends.join(', ') }}</li>
             <li><strong>Resumption Date:</strong> {{ leaveApplication?.resumption_date }}</li>

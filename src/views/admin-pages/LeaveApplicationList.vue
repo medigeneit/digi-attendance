@@ -89,8 +89,8 @@ onMounted(async () => {
             >
               <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
               <td class="border border-gray-300 px-2">{{ application.user?.name || 'Unknown' }}</td>
-              <td class="border border-gray-300 px-2">{{ application.start_date }}</td>
-              <td class="border border-gray-300 px-2">{{ application.end_date }}</td>
+              <td class="border border-gray-300 px-2">{{ application.last_working_date }}</td>
+              <td class="border border-gray-300 px-2">{{ application.resumption_date }}</td>
               <td class="border border-gray-300 px-2">{{ application.total_days }}</td>
               <td class="border border-gray-300 px-2">
                 {{ application.status || 'N/A' }}
