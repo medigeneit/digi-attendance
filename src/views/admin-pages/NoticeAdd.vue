@@ -166,7 +166,7 @@ const saveNotice = async () => {
                     class="w-full p-2 border rounded"
                   />
                 </div>
-                <div class="w-full" v-if="form.type !== '2'">
+                <div class="w-full">
                   <label>Employees</label>
                   <Multiselect
                     v-model="selectedEmployees"

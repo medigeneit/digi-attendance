@@ -72,7 +72,7 @@ const downloadFile = async (fileUrl) => {
 <template>
   <div class="my-container space-y-6">
     <div class="card-bg p-6">
-      <h2 class="title-lg text-center">Notice Details</h2>
+      <h2 class="title-lg text-center">Policy Details</h2>
       <LoaderView v-if="isLoading" class="shadow-none" />
       <div v-else-if="error" class="text-center text-red-500">
         <p>{{ error }}</p>
@@ -85,6 +85,10 @@ const downloadFile = async (fileUrl) => {
             <div>
               <p class="text-sm font-bold text-gray-600">Company:</p>
               <p class="text-lg text-gray-800">{{ notice?.company?.name || 'N/A' }}</p>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-gray-600">Type</p>
+              <p class="text-lg text-gray-800">Policy</p>
             </div>
 
             <div>
@@ -103,11 +107,6 @@ const downloadFile = async (fileUrl) => {
             </div>
 
             <div>
-              <p class="text-sm font-bold text-gray-600">Expired Date:</p>
-              <p class="text-lg text-gray-800">{{ formatDate(notice?.expired_at) }}</p>
-            </div>
-
-            <div>
               <p class="text-sm font-bold text-gray-600">File:</p>
               <button v-if="notice?.file" @click="downloadFile(notice?.file)" class="btn-2">
                 Download File
@@ -121,17 +120,12 @@ const downloadFile = async (fileUrl) => {
           </div>
         </div>
         <div class="md:flex justify-center mt-8 gap-4">
-          <input
-            v-model="feedback"
-            type="text"
-            class="w-full p-2 border rounded"
-            placeholder="Please enter your feedback"
-          />
+          <input v-model="feedback" type="text" class="w-full p-2 border rounded" placeholder="Please enter your feedback" />
           <div
             class="bg-blue-500 cursor-pointer text-white w-1/3 text-center px-4 py-2 rounded hover:bg-blue-600"
             @click="createNoticeFeedback"
           >
-            {{ notice?.user_feedback ? 'Notice Feedback Updated' : 'Submit Notice Feedback' }}
+            {{ notice?.user_feedback ? 'Updated Policy Feedback' : 'Add Police Feedback' }}
           </div>
         </div>
       </div>

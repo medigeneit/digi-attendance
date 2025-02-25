@@ -44,7 +44,7 @@ const logout = () => {
         :class="{ 'side-menu-active': currentRoute.includes('/my-profile') }"
       >
         <i class="fad fa-user py-2"></i>
-        <h4 v-if="open">My Profile</h4>
+        <h4 v-if="open">Profile</h4>
       </RouterLink>
 
       <RouterLink
@@ -53,7 +53,7 @@ const logout = () => {
         :class="{ 'side-menu-active': currentRoute.includes('/my-notifications') }"
       >
         <i class="fad fa-bells py-2"></i>
-        <h4 v-if="open">My Notifications</h4>
+        <h4 v-if="open">Notifications</h4>
       </RouterLink>
 
       <RouterLink
@@ -62,7 +62,7 @@ const logout = () => {
         :class="{ 'side-menu-active': currentRoute.includes('/notices') }"
       >
         <i class="fad fa-exclamation-triangle py-2"></i>
-        <h4 v-if="open">My Notices</h4>
+        <h4 v-if="open">Notices</h4>
       </RouterLink>
 
       <RouterLink
@@ -71,7 +71,7 @@ const logout = () => {
         :class="{ 'side-menu-active': currentRoute.includes('/my-attendance') }"
       >
         <i class="fad fa-list py-2"></i>
-        <h4 v-if="open">My Attendance</h4>
+        <h4 v-if="open">Attendance</h4>
       </RouterLink>
 
       <RouterLink
@@ -80,7 +80,7 @@ const logout = () => {
         :class="{ 'side-menu-active': currentRoute.includes('/my-applications') }"
       >
         <i class="fad fa-list-alt py-2"></i>
-        <h4 v-if="open">My Applications</h4>
+        <h4 v-if="open">Applications</h4>
       </RouterLink>
 
       <RouterLink

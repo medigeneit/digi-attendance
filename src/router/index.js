@@ -273,10 +273,32 @@ const router = createRouter({
 
         {
           path: '/notices',
-          name: 'MyNoticeList',
-          component: () => import('@/views/private-pages/MyNoticeList.vue'),
+          name: 'NoticeView',
+          component: () => import('@/views/private-pages/NoticeView.vue'),
           meta: { requiresAuth: true }
         },
+
+        {
+          path: '/general-notices',
+          name: 'MyNoticeList',
+          component: () => import('@/views/private-pages/NoticeList.vue'),
+          meta: { requiresAuth: true }
+        },
+        {
+          path: '/policy',
+          name: 'PolicyList',
+          component: () => import('@/views/private-pages/PolicyList.vue'),
+          meta: { requiresAuth: true }
+        },
+
+        {
+          path: '/policy-details/:id',
+          name: 'PolicyDetails',
+          component: () => import('@/views/private-pages/PolicyDetails.vue'),
+          meta: { requiresAuth: true }
+        },
+
+        
         {
           path: '/notice-details/:id',
           name: 'MyNoticeDetails',

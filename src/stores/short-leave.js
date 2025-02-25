@@ -1,8 +1,9 @@
-import { ref, computed } from 'vue';
-import { defineStore } from 'pinia';
 import apiClient from '@/axios';
+import { defineStore } from 'pinia';
+import { computed, ref } from 'vue';
 
 export const useShortLeaveStore = defineStore('shortLeave', () => {
+  const shortLeaveCreateDate = ref(null);
   const shortLeaves = ref([]);
   const shortLeave = ref(null);
   const loading = ref(false);
@@ -14,6 +15,20 @@ export const useShortLeaveStore = defineStore('shortLeave', () => {
     try {
       const response = await apiClient.get('/short-leaves', { params: filters });
       shortLeaves.value = response.data.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to fetch short leaves';
+      console.error('Error fetching short leaves:', err);
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const fetchCreateShortLeaveData = async (filters = {}) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await apiClient.get('/short-leaves/create', { params: filters });
+      shortLeaveCreateDate.value = response.data;
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch short leaves';
       console.error('Error fetching short leaves:', err);
@@ -195,6 +210,7 @@ export const useShortLeaveStore = defineStore('shortLeave', () => {
     shortLeave: computed(() => shortLeave.value),
     loading: computed(() => loading.value),
     error: computed(() => error.value),
+    shortLeaveCreateDate,
     fetchShortLeaves,
     fetchShortLeaveById,
     createShortLeave,
@@ -205,5 +221,6 @@ export const useShortLeaveStore = defineStore('shortLeave', () => {
     recommendByAccept,
     approvedByAccept,
     rejectShortLeave,
+    fetchCreateShortLeaveData,
   };
 });

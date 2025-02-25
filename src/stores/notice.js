@@ -5,6 +5,7 @@ import apiClient from '../axios';
 export const useNoticeStore = defineStore('notice', () => {
   // State
   const notices = ref([]);
+  const policies = ref([]);
   const notice = ref({});
   const error = ref(null);
   const isLoading = ref(false); // লোডিং স্টেট
@@ -15,6 +16,19 @@ export const useNoticeStore = defineStore('notice', () => {
       isLoading.value = true; // লোডিং শুরু
       const response = await apiClient.get('/user/notices');
       notices.value = response?.data?.notices;
+      error.value = null;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Something went wrong';
+    } finally {
+      isLoading.value = false; // লোডিং শেষ
+    }
+  };
+
+  const fetchPolices = async () => {
+    try {
+      isLoading.value = true; // লোডিং শুরু
+      const response = await apiClient.get('/policies');
+      policies.value = response?.data?.polices;
       error.value = null;
     } catch (err) {
       error.value = err.response?.data?.message || 'Something went wrong';
@@ -133,6 +147,8 @@ export const useNoticeStore = defineStore('notice', () => {
     notice,
     error,
     isLoading,
+    policies,
+    fetchPolices,
     fetchFileUpload,
     createNoticeFeedback,
     fetchNotices,

@@ -1,11 +1,10 @@
 <script setup>
-import { onMounted, ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import LoaderView from '@/components/common/LoaderView.vue'
+import { useAuthStore } from '@/stores/auth'
 import { useShortLeaveStore } from '@/stores/short-leave'
 import { useUserStore } from '@/stores/user'
-import { useAuthStore } from '@/stores/auth'
-import { useRoute } from 'vue-router'
-import LoaderView from '@/components/common/LoaderView.vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
 const router = useRouter()
@@ -18,7 +17,8 @@ const { type, start_time, end_time } = route.query
 const todayDate = new Date().toISOString().split('T')[0]
 
 const form = ref({
-  date: '',
+  date: todayDate,
+  time: '22:30',
   start_time: '',
   end_time: '',
   reason: '',
@@ -28,7 +28,18 @@ const form = ref({
 })
 
 const loading = ref(false)
+
 const error = ref(null)
+
+watch(
+  () => form.value.end_time,
+  (newValue) => {
+    if (form.value.date && newValue) {
+      console.log('Form date:', newValue)
+      // Add your logic here
+    }
+  },
+)
 
 // Computed property to calculate duration in minutes
 const durationInMinutes = computed(() => {
@@ -53,7 +64,6 @@ const submitShortLeave = async () => {
       user_id: authStore?.user?.id,
       ...form.value,
     }
-
     const newShortLeave = await shortLeaveStore.createShortLeave(payload)
 
     router.push({ name: 'ShortLeaveShow', params: { id: newShortLeave.id } })
@@ -84,11 +94,13 @@ const formatTime = (timeStr) => {
 onMounted(() => {
   userStore.fetchUsers()
 
-  form.value.date = formatDate(
-    type === 'First' ? start_time : type === 'Last' ? end_time : todayDate,
-  )
+  form.value.date = formatDate(type === 'Delay' ? time : type === 'Early' ? time : todayDate)
+  // form.value.date = formatDate(
+  //   type === 'Delay' ? start_time : type === 'Early' ? end_time : todayDate,
+  // )
 
   form.value.type = type || ''
+  form.value.time = start_time ? formatTime(start_time) : '22:30'
   form.value.start_time = formatTime(start_time) || ''
   form.value.end_time = formatTime(end_time) || ''
 })
@@ -127,13 +139,24 @@ const goBack = () => {
         <label for="type" class="block text-sm font-medium">Type</label>
         <select id="type" v-model="form.type" class="input-1 w-full" required>
           <option value="">Select Type</option>
-          <option value="First">First</option>
-          <option value="Middle">Middle</option>
-          <option value="Last">Last</option>
+          <option value="Delay">Delay</option>
+          <option value="OfficeTime">Office Time</option>
+          <option value="Early">Early</option>
         </select>
       </div>
 
-      <div>
+      <div v-if="form.type !== 'OfficeTime'">
+        <label for="start-time" class="block text-sm font-medium">Time</label>
+        <input
+          type="time"
+          id="start-time"
+          v-model="form.start_time"
+          class="input-1 w-full"
+          required
+        />
+      </div>
+
+      <div v-if="form.type === 'OfficeTime'">
         <label for="start-time" class="block text-sm font-medium">Start Time</label>
         <input
           type="time"
@@ -144,7 +167,7 @@ const goBack = () => {
         />
       </div>
 
-      <div>
+      <div v-if="form.type === 'OfficeTime'">
         <label for="end-time" class="block text-sm font-medium">End Time</label>
         <input type="time" id="end-time" v-model="form.end_time" class="input-1 w-full" required />
       </div>
