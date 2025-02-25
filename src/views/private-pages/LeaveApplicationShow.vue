@@ -21,7 +21,7 @@ onMounted(async () => {
   const { id } = route.params
   try {
     await leaveApplicationStore.fetchLeaveApplicationById(id)
-    await leaveApplicationStore.fetchLeaveBalance(leaveApplicationStore?.leaveApplication?.user_id)
+    // await leaveApplicationStore.fetchLeaveBalance(leaveApplicationStore?.leaveApplication?.user_id)
   } catch (error) {
     console.error('Failed to load leave application:', error)
   } finally {
@@ -149,20 +149,35 @@ const goBack = () => router.go(-1)
             <p class="">{{ leaveApplication?.user?.company?.name }}</p>
             <p class="text-sm">{{ leaveApplication?.user?.company.address }}</p>
           </div>
+          <div class="flex justify-end items-center">
+            <table class="table-auto border border-black bg-white text-xs">
+              <thead>
+                <tr class="bg-gray-200 border border-black">
+                  <th class="border border-black px-2">Type</th>
+                  <th class="border border-black px-2">Days</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="border border-black">
+                  <td class="border border-black px-2">CL</td>
+                  <td class="border border-black px-2">1</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
         <div>
-          <p class="">
-            <b>Subject:</b> Application for <b>{{ leaveApplication?.leave_type?.name }}</b>
-          </p>
+          <p class=""><b>Subject:</b> Leave Application</p>
         </div>
+        <div></div>
         <div>
           <h3 class="font-bold">Leave Details:</h3>
           <div class="grid print:grid-cols-2 md:grid-cols-2 text-sm">
-            <li><strong>Start Date:</strong> {{ leaveApplication?.last_working_date }}</li>
-            <li><strong>End Date:</strong> {{ leaveApplication?.resumption_date }}</li>
-            <li><strong>Total Days:</strong> {{ leaveApplication?.total_leave_days }}</li>
             <li><strong>Reason: </strong>{{ leaveApplication?.reason || 'No reason provided' }}</li>
+            <li><strong>Leave Days:</strong> {{ leaveApplication?.leave_period }}</li>
+            <li><strong>Total Days:</strong> {{ leaveApplication?.total_leave_days }}</li>
             <li><strong>Weekends:</strong> {{ leaveApplication?.user.weekends.join(', ') }}</li>
+            <li><strong>Last Working Date:</strong> {{ leaveApplication?.last_working_date }}</li>
             <li><strong>Resumption Date:</strong> {{ leaveApplication?.resumption_date }}</li>
           </div>
         </div>

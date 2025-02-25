@@ -14,14 +14,15 @@ const userStore = useUserStore()
 const authStore = useAuthStore()
 
 const form = ref({
-  leave_type_id: '',
   last_working_date: '',
   resumption_date: '',
   reason: '',
   works_in_hand: '',
   handover_user_id: '',
+  leave_days: [],
 })
 
+const selectedLeaveTypes = ref([])
 const loading = ref(false)
 const error = ref(null)
 
@@ -71,14 +72,37 @@ const leaveDaysMessage = computed(() => {
   return `Total leave days: ${leaveDays.value.length}`
 })
 
+watchEffect(() => {
+  if (leaveDays.value.length && leaveTypeStore.leaveTypes.length) {
+    if (selectedLeaveTypes.value.length !== leaveDays.value.length) {
+      selectedLeaveTypes.value = leaveDays.value.map(() => leaveTypeStore.leaveTypes[0].id)
+    }
+  }
+})
+
 const submitLeaveApplication = async () => {
   loading.value = true
   error.value = null
 
   try {
+    const leaveDaysPayload = leaveDays.value
+      .map((day, index) => {
+        return {
+          date: day,
+          leave_type_id:
+            selectedLeaveTypes.value[index] !== 'weekend' ? selectedLeaveTypes.value[index] : null,
+        }
+      })
+      .filter((leaveDay) => leaveDay.leave_type_id !== null) // 'weekend' অপশন ফিল্টার করে সরিয়ে ফেলছে
+
     const payload = {
       user_id: authStore?.user?.id,
-      ...form.value,
+      last_working_date: form.value.last_working_date,
+      resumption_date: form.value.resumption_date,
+      reason: form.value.reason,
+      works_in_hand: form.value.works_in_hand,
+      handover_user_id: form.value.handover_user_id,
+      leave_days: leaveDaysPayload,
     }
 
     const newApplication = await leaveApplicationStore.storeLeaveApplication(payload)
@@ -148,9 +172,10 @@ const goBack = () => {
         <p class="text-blue-600 font-medium">{{ leaveDaysMessage }}</p>
       </div>
 
-      <div v-if="leaveDays.length">
+      <!-- Leave days with radio groups -->
+      <div v-if="leaveDays.length" class="bg-gray-100 p-2 rounded-md">
         <h2 class="text-lg font-semibold">Leave Days</h2>
-        <div class="bg-gray-100 p-2 rounded-md">
+        <div>
           <div
             v-for="(day, index) in leaveDays"
             :key="index"
@@ -163,8 +188,22 @@ const goBack = () => {
                 :key="type.id"
                 class="flex items-center space-x-1"
               >
-                <input type="radio" :name="'leaveType-' + index" :value="type.id" />
+                <input
+                  type="radio"
+                  :name="'leaveType-' + index"
+                  :value="type.id"
+                  v-model="selectedLeaveTypes[index]"
+                />
                 <span>{{ type.name }}</span>
+              </label>
+              <label class="flex items-center space-x-1">
+                <input
+                  type="radio"
+                  :name="'leaveType-' + index"
+                  value="weekend"
+                  v-model="selectedLeaveTypes[index]"
+                />
+                <span>Weekend</span>
               </label>
             </div>
           </div>
