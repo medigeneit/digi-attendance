@@ -20,6 +20,18 @@ const goBack = () => {
 const myShortLeaves = computed(() => {
   return shortLeaveStore.shortLeaves
 })
+
+const formatTime = (timeString) => {
+  const [hour, minute] = timeString.split(':').map(Number) // Extract hour & minute
+  const date = new Date()
+  date.setHours(hour, minute)
+
+  return date.toLocaleString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true, // Ensures AM/PM format
+  })
+}
 </script>
 
 <template>
@@ -49,8 +61,9 @@ const myShortLeaves = computed(() => {
             <tr class="bg-gray-200">
               <th class="border border-gray-300 px-2 text-left">#</th>
               <th class="border border-gray-300 px-2 text-left">Date</th>
-              <th class="border border-gray-300 px-2 text-left">Start Time</th>
-              <th class="border border-gray-300 px-2 text-left">End Time</th>
+              <th class="border border-gray-300 px-2 text-left">Type</th>
+              <th class="border border-gray-300 px-2 text-left">Time</th>
+              <!-- <th class="border border-gray-300 px-2 text-left">End Time</th> -->
               <th class="border border-gray-300 px-2 text-left">Total Minutes</th>
               <th class="border border-gray-300 px-2 text-left">Status</th>
               <th class="border border-gray-300 px-2 text-left">Action</th>
@@ -64,8 +77,9 @@ const myShortLeaves = computed(() => {
             >
               <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
               <td class="border border-gray-300 px-2">{{ leave.date }}</td>
-              <td class="border border-gray-300 px-2">{{ leave.start_time }}</td>
-              <td class="border border-gray-300 px-2">{{ leave.end_time }}</td>
+              <td class="border border-gray-300 px-2">{{ leave.type }}</td>
+              <td class="border border-gray-300 px-2">{{ formatTime(leave.start_time) }}</td>
+              <!-- <td class="border border-gray-300 px-2">{{ leave.end_time }}</td> -->
               <td class="border border-gray-300 px-2">{{ leave.total_minutes }}</td>
               <td class="border border-gray-300 px-2">{{ leave.status || 'N/A' }}</td>
               <td class="border border-gray-300 px-2">

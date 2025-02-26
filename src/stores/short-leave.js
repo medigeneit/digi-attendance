@@ -28,7 +28,7 @@ export const useShortLeaveStore = defineStore('shortLeave', () => {
     error.value = null;
     try {
       const response = await apiClient.get('/short-leaves/create', { params: filters });
-      shortLeaveCreateDate.value = response.data;
+      return response.data;
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch short leaves';
       console.error('Error fetching short leaves:', err);
