@@ -1,5 +1,6 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import ShareComponent from '@/components/common/ShareComponent.vue'
 import { useNoticeStore } from '@/stores/notice'
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
@@ -63,8 +64,14 @@ const downloadFile = async (fileUrl) => {
           <hr class="mb-2" />
           <div class="grid md:grid-cols-2 gap-4">
             <div>
+              <p class="text-sm font-bold text-gray-600">Title:</p>
+              <p class="text-lg text-gray-800">{{ notice?.title }}</p>
+            </div>
+            <div>
               <p class="text-sm font-bold text-gray-600">Company:</p>
-              <p class="text-lg text-gray-800">{{ notice?.company?.name || 'N/A' }}</p>
+              <p class="text-lg text-gray-800">
+                {{ notice?.company?.short_name || 'All Companies' }}
+              </p>
             </div>
 
             <div>
@@ -100,7 +107,8 @@ const downloadFile = async (fileUrl) => {
             </div>
           </div>
         </div>
-        <div class="flex justify-center mt-8 gap-4">
+        <ShareComponent />
+        <div class="flex justify-center mt-2 gap-4">
           <RouterLink
             :to="{ name: 'NoticeList' }"
             type="button"

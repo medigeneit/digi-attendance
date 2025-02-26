@@ -1,45 +1,99 @@
 <script setup>
-import { onMounted, ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import LoaderView from '@/components/common/LoaderView.vue'
+import { useAuthStore } from '@/stores/auth'
 import { useShortLeaveStore } from '@/stores/short-leave'
 import { useUserStore } from '@/stores/user'
-import { useAuthStore } from '@/stores/auth'
-import { useRoute } from 'vue-router'
-import LoaderView from '@/components/common/LoaderView.vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
 const router = useRouter()
 const shortLeaveStore = useShortLeaveStore()
 const userStore = useUserStore()
 const authStore = useAuthStore()
-
+const shift = ref(null)
 const { type, start_time, end_time } = route.query
+
+const entry_time = ref('')
+const exit_time = ref('')
 
 const todayDate = new Date().toISOString().split('T')[0]
 
 const form = ref({
-  date: '',
+  date: todayDate,
+  time: '22:30',
   start_time: '',
   end_time: '',
   reason: '',
   works_in_hand: '',
   handover_user_id: '',
+  total_minute: '',
   type: '',
 })
 
 const loading = ref(false)
+
 const error = ref(null)
+
+watch(
+  () => form.value.date,
+  async (newValue) => {
+    fetchAttendance()
+  },
+)
 
 // Computed property to calculate duration in minutes
 const durationInMinutes = computed(() => {
-  if (form.value.start_time && form.value.end_time) {
-    const startTime = new Date(`1970-01-01T${form.value.start_time}:00`)
-    const endTime = new Date(`1970-01-01T${form.value.end_time}:00`)
-    const diffInMs = endTime - startTime
-    return Math.round(diffInMs / (1000 * 60)) // Convert milliseconds to minutes
+  if (!form.value.start_time || !shift.value.start_time) return 0
+
+  // Convert HH:mm:ss to JavaScript Date Object
+  const parseTime = (time) => new Date(`1970-01-01T${time}`)
+
+  const startTime = parseTime(form.value.start_time)
+  const endTime = form.value.end_time ? parseTime(form.value.end_time) : null
+  const shiftStart = parseTime(shift.value.start_time)
+  const shiftEnd = parseTime(shift.value.end_time)
+
+  let duration = 0
+
+  if (form.value.type === 'Delay') {
+    duration = (startTime - shiftStart) / (1000 * 60) // Convert ms to minutes
+  } else if (form.value.type === 'Early') {
+    duration = (shiftEnd - startTime) / (1000 * 60) // Shift End - Start Time
+  } else if (endTime) {
+    duration = (endTime - startTime) / (1000 * 60) // End Time - Start Time
   }
-  return 0
+
+  return Math.round(duration)
 })
+
+watch(
+  () => form.value.type,
+  (newType) => {
+    if (!entry_time.value && !exit_time.value) return
+
+    console.log({ newType }, exit_time.value, entry_time.value)
+
+    const extractTime = (datetime) =>
+      datetime && datetime.includes(' ') ? datetime.split(' ')[1] : ''
+
+    if (newType === 'Delay' && entry_time.value) {
+      form.value.start_time = extractTime(entry_time.value) // Only assign time
+    } else if (newType === 'Early' && exit_time.value) {
+      // FIXED `elseif` to `else if`
+      form.value.start_time = extractTime(exit_time.value) // Only assign time
+    } else {
+      form.value.start_time = '' // Reset when type is changed to something else
+    }
+  },
+)
+
+watch(
+  () => [form.value.start_time, form.value.end_time, form.value.type],
+  () => {
+    form.value.total_minute = durationInMinutes.value
+  },
+)
 
 // Watch durationInMinutes to show/hide handover user selection
 const showHandoverUser = computed(() => durationInMinutes.value > 30)
@@ -53,10 +107,27 @@ const submitShortLeave = async () => {
       user_id: authStore?.user?.id,
       ...form.value,
     }
-
     const newShortLeave = await shortLeaveStore.createShortLeave(payload)
 
     router.push({ name: 'ShortLeaveShow', params: { id: newShortLeave.id } })
+  } catch (err) {
+    error.value = err.message || 'Failed to submit short leave application'
+  } finally {
+    loading.value = false
+  }
+}
+const fetchAttendance = async () => {
+  loading.value = true
+  error.value = null
+
+  try {
+    const payload = {
+      date: form.value.date,
+    }
+    const response = await shortLeaveStore.fetchCreateShortLeaveData(payload)
+    shift.value = response?.shift
+    entry_time.value = response?.entry_time
+    exit_time.value = response?.exit_time
   } catch (err) {
     error.value = err.message || 'Failed to submit short leave application'
   } finally {
@@ -82,13 +153,15 @@ const formatTime = (timeStr) => {
 }
 
 onMounted(() => {
+  fetchAttendance()
   userStore.fetchUsers()
-
+  form.value.date = formatDate(type === 'Delay' ? time : type === 'Early' ? time : todayDate)
   form.value.date = formatDate(
-    type === 'First' ? start_time : type === 'Last' ? end_time : todayDate,
+    type === 'Delay' ? start_time : type === 'Early' ? end_time : todayDate,
   )
 
   form.value.type = type || ''
+  form.value.time = start_time ? formatTime(start_time) : '22:30'
   form.value.start_time = formatTime(start_time) || ''
   form.value.end_time = formatTime(end_time) || ''
 })
@@ -127,13 +200,24 @@ const goBack = () => {
         <label for="type" class="block text-sm font-medium">Type</label>
         <select id="type" v-model="form.type" class="input-1 w-full" required>
           <option value="">Select Type</option>
-          <option value="First">First</option>
-          <option value="Middle">Middle</option>
-          <option value="Last">Last</option>
+          <option value="Delay">Delay</option>
+          <option value="OfficeTime">Office Time</option>
+          <option value="Early">Early</option>
         </select>
       </div>
 
-      <div>
+      <div v-if="form.type !== 'OfficeTime'">
+        <label for="start-time" class="block text-sm font-medium">Time</label>
+        <input
+          type="time"
+          id="start-time"
+          v-model="form.start_time"
+          class="input-1 w-full"
+          required
+        />
+      </div>
+
+      <div v-if="form.type === 'OfficeTime'">
         <label for="start-time" class="block text-sm font-medium">Start Time</label>
         <input
           type="time"
@@ -144,7 +228,7 @@ const goBack = () => {
         />
       </div>
 
-      <div>
+      <div v-if="form.type === 'OfficeTime'">
         <label for="end-time" class="block text-sm font-medium">End Time</label>
         <input type="time" id="end-time" v-model="form.end_time" class="input-1 w-full" required />
       </div>

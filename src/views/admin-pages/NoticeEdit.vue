@@ -15,7 +15,7 @@ const form = reactive({
   description: '',
   published_at: '',
   expired_at: '',
-  company_id: '',
+  company_id: 'all',
   department_id: '',
   file: '',
 })
@@ -90,7 +90,7 @@ const loadNotice = async () => {
     form.published_at = updateFormattedDate(notice.published_at)
     form.expired_at = updateFormattedDate(notice.expired_at)
     form.description = notice.description
-    form.company_id = notice.company_id
+    form.company_id = notice.company_id ?? 'all'
     form.department_id = notice.department_id
     selectedDepartments.value = notice.departments
     selectedEmployees.value = notice.employees
@@ -143,7 +143,7 @@ watch(selectedDepartments, (newSelection) => {
                   class="w-full border rounded px-3 py-2"
                   required
                 >
-                  <option value="" disabled>Select a company</option>
+                  <option value="all">All Company</option>
                   <template v-for="company in companyStore.companies" :key="company?.id">
                     <option :value="company?.id">
                       {{ company?.name }}
@@ -189,7 +189,7 @@ watch(selectedDepartments, (newSelection) => {
                     class="w-full p-2 border rounded"
                   />
                 </div>
-                <div class="w-full" v-if="form.type !== '2'">
+                <div class="w-full">
                   <label>Employees</label>
                   <Multiselect
                     v-model="selectedEmployees"

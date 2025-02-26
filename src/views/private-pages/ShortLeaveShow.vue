@@ -5,7 +5,7 @@ import { useShortLeaveStore } from '@/stores/short-leave'
 import { useAuthStore } from '@/stores/auth'
 import LoaderView from '@/components/common/LoaderView.vue'
 import ShareComponent from '@/components/common/ShareComponent.vue'
-
+import ScreenshotCapture from '@/components/common/ScreenshotCapture.vue'
 const router = useRouter()
 const route = useRoute()
 const shortLeaveStore = useShortLeaveStore()
@@ -86,7 +86,7 @@ function print() {
 
     <LoaderView v-if="loading" />
 
-    <div v-else class="card-bg p-4 md:p-8">
+    <div v-else class="bg-white rounded space-y-2 p-4 md:p-8" id="leave-application">
       <div>{{ shortLeave?.user.company.name }}</div>
       <h2 class="title-md">Short Leave Application</h2>
       <div class="">
@@ -128,7 +128,7 @@ function print() {
                 <button class="px-2">❌</button>
               </div>
             </div>
-            <hr class="w-44 border-black" />
+            <hr class="w-44 border-black mt-1" />
             <h4 class="font-bold">
               Handover
               <span
@@ -276,7 +276,9 @@ function print() {
         </p>
       </div>
     </div>
-    <ShareComponent />
+    <ShareComponent>
+      <ScreenshotCapture targetId="leave-application" platform="whatsapp" />
+    </ShareComponent>
   </div>
   <div v-if="rejectionModal" class="modal-bg">
     <div class="modal-card">

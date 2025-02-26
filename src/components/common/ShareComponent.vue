@@ -41,12 +41,13 @@ const copyLink = () => {
     <button @click="shareTelegram" class="btn-icon" title="Share on Telegram">
       <i class="fab fa-telegram text-blue-500 text-xl"></i>
     </button>
-    <button @click="shareMessenger" class="btn-icon" title="Share on Messenger (Mobile Only)">
+    <button @click="shareMessenger" class="btn-icon md:hidden flex" title="Share on Messenger (Mobile Only)">
       <i class="fab fa-facebook-messenger text-blue-600 text-xl"></i>
     </button>
     <button @click="copyLink" class="btn-icon" title="Copy Link">
       <i v-if="!copyStatus" class="fas fa-link text-gray-700 text-xl"></i>
       <i v-if="copyStatus" :class="copyStatus"></i>
     </button>
+    <slot></slot>
   </div>
 </template>
