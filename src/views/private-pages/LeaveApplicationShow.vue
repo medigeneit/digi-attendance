@@ -21,7 +21,7 @@ onMounted(async () => {
   const { id } = route.params
   try {
     await leaveApplicationStore.fetchLeaveApplicationById(id)
-    // await leaveApplicationStore.fetchLeaveBalance(leaveApplicationStore?.leaveApplication?.user_id)
+    await leaveApplicationStore.fetchLeaveBalance(leaveApplicationStore?.leaveApplication?.user_id)
   } catch (error) {
     console.error('Failed to load leave application:', error)
   } finally {
@@ -148,28 +148,86 @@ const goBack = () => router.go(-1)
             <p class="font-bold">Managing Director</p>
             <p class="">{{ leaveApplication?.user?.company?.name }}</p>
             <p class="text-sm">{{ leaveApplication?.user?.company.address }}</p>
+            <div>
+              <p class="pt-6"><b>Subject:</b> Leave Application</p>
+            </div>
           </div>
-          <div class="flex justify-end items-center">
-            <table class="table-auto border border-black bg-white text-xs">
-              <thead>
-                <tr class="bg-gray-200 border border-black">
-                  <th class="border border-black px-2">Type</th>
-                  <th class="border border-black px-2">Days</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr class="border border-black">
-                  <td class="border border-black px-2">CL</td>
-                  <td class="border border-black px-2">1</td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="flex justify-end gap-4">
+            <div>
+              <h1 class="font-bold">Summary</h1>
+              <table class="table-auto border border-black bg-white text-xs">
+                <thead>
+                  <tr class="bg-gray-200 border border-black">
+                    <th class="border border-black px-2">Type</th>
+                    <th class="border border-black px-2">Days</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="(leave, index) in leaveApplication?.leave_types"
+                    :key="index"
+                    class="border border-black"
+                  >
+                    <td class="border border-black px-2">{{ leave.type }}</td>
+                    <td class="border border-black px-2">{{ leave.days }}</td>
+                  </tr>
+                  <tr class="font-bold">
+                    <td class="border border-black px-2">Total</td>
+                    <td class="border border-black px-2">
+                      {{ leaveApplication?.total_leave_days }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <h1 class="font-bold">Last Leave</h1>
+              <div>
+                <table class="table-auto border border-black bg-white text-xs">
+                  <thead>
+                    <tr class="bg-gray-200 border border-black">
+                      <th colspan="2" class="border border-black px-2">Date</th>
+                    </tr>
+                    <tr class="border border-black">
+                      <td colspan="2" class="border border-black px-2 w-32">
+                        {{ leaveApplication?.last_leave.date || 'N/A' }}
+                      </td>
+                    </tr>
+                    <tr class="bg-gray-200 border border-black">
+                      <th class="border border-black px-2">Type</th>
+                      <th class="border border-black px-2">Days</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    <tr
+                      v-for="(leave, index) in leaveApplication?.last_leave?.types"
+                      :key="index"
+                      class="border border-black"
+                    >
+                      <td class="border border-black px-2">{{ leave?.type }}</td>
+                      <td class="border border-black px-2">{{ leave?.days }}</td>
+                    </tr>
+                    <tr class="font-bold">
+                      <td class="border border-black px-2">Total</td>
+                      <td class="border border-black px-2">
+                        {{
+                          leaveApplication?.last_leave?.types
+                            ? leaveApplication.last_leave.types.reduce(
+                                (sum, leave) => sum + leave.days,
+                                0,
+                              )
+                            : 0
+                        }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
-        <div>
-          <p class=""><b>Subject:</b> Leave Application</p>
-        </div>
-        <div></div>
+
         <div>
           <h3 class="font-bold">Leave Details:</h3>
           <div class="grid print:grid-cols-2 md:grid-cols-2 text-sm">
@@ -263,7 +321,7 @@ const goBack = () => router.go(-1)
                     {{ balance.leave_type }}
                   </td>
                   <td class="border border-gray-500 px-4 py-0.5 text-center">
-                    {{ balance.total_days }}
+                    {{ balance.total_leave_days }}
                   </td>
                   <td class="border border-gray-500 px-4 py-0.5 text-center">
                     {{ balance.used_days }}
