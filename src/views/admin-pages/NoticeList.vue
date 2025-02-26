@@ -92,7 +92,9 @@ const groupedNotice = computed(() => {
                 <td class="border border-gray-300 px-2">
                   {{ notice?.type === 1 ? 'General Notice' : 'Policy' }}
                 </td>
-                <td class="border border-gray-300 px-2">{{ notice?.company?.name }}</td>
+                <td class="border border-gray-300 px-2">
+                  {{ notice?.company?.short_name || 'All Companies' }}
+                </td>
                 <td class="border border-gray-300 px-2">
                   <span v-for="(department, index) in notice?.departments" :key="department.id">
                     {{ department?.name }}

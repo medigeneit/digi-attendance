@@ -64,8 +64,14 @@ const downloadFile = async (fileUrl) => {
           <hr class="mb-2" />
           <div class="grid md:grid-cols-2 gap-4">
             <div>
+              <p class="text-sm font-bold text-gray-600">Title:</p>
+              <p class="text-lg text-gray-800">{{ notice?.title }}</p>
+            </div>
+            <div>
               <p class="text-sm font-bold text-gray-600">Company:</p>
-              <p class="text-lg text-gray-800">{{ notice?.company?.name || 'N/A' }}</p>
+              <p class="text-lg text-gray-800">
+                {{ notice?.company?.short_name || 'All Companies' }}
+              </p>
             </div>
 
             <div>

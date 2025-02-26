@@ -3,8 +3,8 @@ import { computed, ref } from 'vue';
 import apiClient from '../axios';
 
 export const useDepartmentStore = defineStore('department', () => {
-  const employees = ref([]); // Department লিস্ট
-  const departments = ref([]); // Department লিস্ট
+  const employees = ref([{ id: 'all', name: 'All Employees' }]); // Department লিস্ট
+  const departments = ref([{ id: 'all', name: 'All Department' }]); // Department লিস্ট
   const department = ref(null); // একক Department ডিটেইল
   const loading = ref(false); // লোডিং স্টেট
   const error = ref(null); // এরর স্টেট
@@ -16,7 +16,8 @@ export const useDepartmentStore = defineStore('department', () => {
       const response = await apiClient.get('/departments', {
         params: { company_id: companyId },
       });
-      departments.value = response.data;
+      const defaultDepartment = [{ id: 'all', name: 'All Departments' }];
+      departments.value = [...defaultDepartment, ...response.data];
     } catch (err) {
       error.value = err.response?.data?.message || 'ডিপার্টমেন্ট লোড করতে ব্যর্থ হয়েছে।';
       console.error('Error fetching departments:', err);
@@ -46,11 +47,14 @@ export const useDepartmentStore = defineStore('department', () => {
       const response = await apiClient.get("department-employees", {
         params: payload,
       });
-      employees.value = response?.data.employees
+
+      const defaultCompany = [{ id: 'all', name: 'All Employees' }];
+
+      employees.value = [...defaultCompany, ...response?.data?.employees];
       
     } catch (err) {
-      error.value = err.response?.data?.message || `ডিপার্টমেন্ট (ID: ${id}) লোড করতে ব্যর্থ হয়েছে।`;
-      console.error(`Error fetching department with id ${id}:`, err);
+      error.value = err.response?.data?.message || `ডিপার্টমেন্ট লোড করতে ব্যর্থ হয়েছে।`;
+      console.error(`Error fetching department with id:`, err);
     } finally {
       loading.value = false;
     }

@@ -15,7 +15,6 @@ const noticeStore = useNoticeStore()
 const companyStore = useCompanyStore()
 const departmentStore = useDepartmentStore()
 const { companies } = storeToRefs(companyStore)
-const { employees } = storeToRefs(departmentStore)
 
 const form = reactive({
   title: '',
@@ -23,7 +22,7 @@ const form = reactive({
   description: '',
   published_at: '',
   expired_at: '',
-  company_id: '',
+  company_id: 'all',
   department_id: '',
   department_ids: [],
   file: '',
@@ -44,10 +43,7 @@ onMounted(async () => {
 watch(
   () => form.company_id,
   async (newCompanyId) => {
-    if (newCompanyId) {
-      await departmentStore.fetchDepartments(newCompanyId)
-      form.department_id = ''
-    }
+    await departmentStore.fetchDepartments(newCompanyId)
   },
 )
 
@@ -113,7 +109,7 @@ const saveNotice = async () => {
                   class="w-full border rounded px-3 py-2"
                   required
                 >
-                  <option value="" disabled>Select a company</option>
+                  <option value="all">All Company</option>
                   <template v-for="company in companies" :key="company?.id">
                     <option :value="company?.id">
                       {{ company?.name }}
@@ -170,7 +166,7 @@ const saveNotice = async () => {
                   <label>Employees</label>
                   <Multiselect
                     v-model="selectedEmployees"
-                    :options="employees"
+                    :options="departmentStore.employees"
                     :multiple="true"
                     :searchable="true"
                     placeholder="Select Employee"
