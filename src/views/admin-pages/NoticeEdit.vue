@@ -18,6 +18,8 @@ const form = reactive({
   company_id: 'all',
   department_id: '',
   file: '',
+  all_departments: false,
+  all_employees: false,
 })
 
 const noticeStore = useNoticeStore()
@@ -37,6 +39,19 @@ const department_ids = computed(() => selectedDepartments.value.map((dep) => dep
 const selectedEmployees = ref([])
 
 const employee_ids = computed(() => selectedEmployees.value.map((dep) => dep.id))
+
+const toggleAllDepartments = () => {
+  if (form.value.all_departments) {
+    department_ids.value = []
+  }
+}
+
+// Handle "Select All Employees"
+const toggleAllEmployees = () => {
+  if (form.value.all_employees) {
+    employee_ids.value = []
+  }
+}
 
 onMounted(async () => {
   isLoading.value = true
@@ -108,8 +123,6 @@ const updateNotice = async () => {
       department_ids: department_ids.value,
       employee_ids: employee_ids.value,
     }
-    console.log({ dataToSend })
-
     await noticeStore.updateNotice(route.params.id, dataToSend)
     toast.success('Notice updated successfully')
     router.push({ name: 'NoticeShow', params: { id: route.params.id } })
@@ -134,6 +147,7 @@ watch(selectedDepartments, (newSelection) => {
           <div class="border p-4 rounded-md bg-gray-100">
             <p class="title-md">Notice Info</p>
             <hr class="my-2" />
+
             <div class="grid md:grid-cols-2 gap-4">
               <div>
                 <label>Company</label>
@@ -177,7 +191,14 @@ watch(selectedDepartments, (newSelection) => {
 
               <div class="col-span-3 flex justify-between gap-8">
                 <div class="w-full">
-                  <label>Departments</label>
+                  <label>
+                    <input
+                      type="checkbox"
+                      v-model="form.all_departments"
+                      @change="toggleAllDepartments"
+                    />
+                    Select All Departments
+                  </label>
                   <Multiselect
                     v-model="selectedDepartments"
                     :options="departmentStore.departments"
@@ -187,10 +208,18 @@ watch(selectedDepartments, (newSelection) => {
                     track-by="id"
                     label="name"
                     class="w-full p-2 border rounded"
+                    :disabled="form.all_departments"
                   />
                 </div>
                 <div class="w-full">
-                  <label>Employees</label>
+                  <label>
+                    <input
+                      type="checkbox"
+                      v-model="form.all_employees"
+                      @change="toggleAllEmployees"
+                    />
+                    Select All Employees
+                  </label>
                   <Multiselect
                     v-model="selectedEmployees"
                     :options="employees"
@@ -200,6 +229,7 @@ watch(selectedDepartments, (newSelection) => {
                     track-by="id"
                     label="name"
                     class="w-full p-2 border rounded"
+                    :disabled="form.all_employees"
                   />
                 </div>
               </div>
@@ -211,8 +241,21 @@ watch(selectedDepartments, (newSelection) => {
 
               <div>
                 <label>File</label>
-                <input @change="fileUploadLink" type="file" class="w-full p-2 border rounded" />
+                <!-- Show existing file link if available -->
+                <div v-if="form.file && typeof form.file === 'string'" class="mb-2">
+                  <a :href="form.file" target="_blank" class="text-blue-500 underline">
+                    View Current File
+                  </a>
+                </div>
+                <!-- File Input -->
+                <input type="file" @change="fileUploadLink" class="w-full p-2 border rounded" />
+
+                <!-- Show Selected File Name -->
+                <p v-if="fileName" class="text-sm text-gray-600 mt-1">
+                  Selected File: {{ fileName }}
+                </p>
               </div>
+
               <div class="col-span-full">
                 <label>Description</label>
                 <TextEditor

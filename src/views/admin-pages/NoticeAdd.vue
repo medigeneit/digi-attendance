@@ -23,9 +23,9 @@ const form = reactive({
   published_at: '',
   expired_at: '',
   company_id: 'all',
-  department_id: '',
-  department_ids: [],
   file: '',
+  all_departments: false,
+  all_employees: false,
 })
 
 const selectedDepartments = ref([])
@@ -35,6 +35,19 @@ const department_ids = computed(() => selectedDepartments.value.map((dep) => dep
 const selectedEmployees = ref([])
 
 const employee_ids = computed(() => selectedEmployees.value.map((dep) => dep.id))
+
+const toggleAllDepartments = () => {
+  if (form.value.all_departments) {
+    department_ids.value = []
+  }
+}
+
+// Handle "Select All Employees"
+const toggleAllEmployees = () => {
+  if (form.value.all_employees) {
+    employee_ids.value = []
+  }
+}
 
 onMounted(async () => {
   await companyStore.fetchCompanies()
@@ -109,7 +122,7 @@ const saveNotice = async () => {
                   class="w-full border rounded px-3 py-2"
                   required
                 >
-                  <option value="all">All Company</option>
+                  <option value="">All Company</option>
                   <template v-for="company in companies" :key="company?.id">
                     <option :value="company?.id">
                       {{ company?.name }}
@@ -150,7 +163,14 @@ const saveNotice = async () => {
               </div>
               <div class="col-span-2 flex justify-between gap-8">
                 <div class="w-full">
-                  <label>Departments</label>
+                  <label>
+                    <input
+                      type="checkbox"
+                      v-model="form.all_departments"
+                      @change="toggleAllDepartments"
+                    />
+                    Select All Departments
+                  </label>
                   <Multiselect
                     v-model="selectedDepartments"
                     :options="departmentStore.departments"
@@ -160,19 +180,28 @@ const saveNotice = async () => {
                     track-by="id"
                     label="name"
                     class="w-full p-2 border rounded"
+                    :disabled="form.all_departments"
                   />
                 </div>
                 <div class="w-full">
-                  <label>Employees</label>
+                  <label>
+                    <input
+                      type="checkbox"
+                      v-model="form.all_employees"
+                      @change="toggleAllEmployees"
+                    />
+                    Select All Employees
+                  </label>
                   <Multiselect
                     v-model="selectedEmployees"
                     :options="departmentStore.employees"
                     :multiple="true"
                     :searchable="true"
-                    placeholder="Select Employee"
                     track-by="id"
                     label="name"
                     class="w-full p-2 border rounded"
+                    placeholder="Select Employees"
+                    :disabled="form.all_employees"
                   />
                 </div>
               </div>

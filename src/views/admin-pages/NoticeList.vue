@@ -34,7 +34,7 @@ const formatDate = (dateString) => {
 const groupedNotice = computed(() => {
   const grouped = {}
   notices.value.forEach((notice) => {
-    const companyName = notice.company?.name || 'Unknown Company'
+    const companyName = notice.company?.name || 'All Company'
     if (!grouped[companyName]) {
       grouped[companyName] = []
     }
