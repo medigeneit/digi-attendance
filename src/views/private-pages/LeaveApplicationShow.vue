@@ -111,6 +111,21 @@ function print() {
 }
 
 const goBack = () => router.go(-1)
+
+const totalWithWeekendDays = computed(() => {
+  if (!leaveApplication?.value.last_working_date || !leaveApplication?.value.resumption_date) {
+    return 0 // Return 0 if any date is missing
+  }
+
+  const lastWorkingDate = new Date(leaveApplication.value.last_working_date)
+  const resumptionDate = new Date(leaveApplication.value.resumption_date)
+
+  // Calculate the difference in milliseconds and convert to days
+  const diffTime = resumptionDate - lastWorkingDate
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) // Convert milliseconds to days
+
+  return diffDays - 1 // Exclude last working day itself
+})
 </script>
 
 <template>
@@ -170,15 +185,22 @@ const goBack = () => router.go(-1)
                     <td class="border border-black px-2">{{ leave.type }}</td>
                     <td class="border border-black px-2">{{ leave.days }}</td>
                   </tr>
+                  <tr>
+                    <td class="border-black px-2">WL/GHD</td>
+                    <td class="border border-black px-2">
+                      {{ totalWithWeekendDays - leaveApplication?.total_leave_days }}
+                    </td>
+                  </tr>
                   <tr class="font-bold">
                     <td class="border border-black px-2">Total</td>
                     <td class="border border-black px-2">
-                      {{ leaveApplication?.total_leave_days }}
+                      {{ totalWithWeekendDays }}
                     </td>
                   </tr>
                 </tbody>
               </table>
             </div>
+
             <div>
               <h1 class="font-bold">Last Leave</h1>
               <div>
