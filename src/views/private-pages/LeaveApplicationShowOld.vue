@@ -21,6 +21,7 @@ onMounted(async () => {
   const { id } = route.params
   try {
     await leaveApplicationStore.fetchLeaveApplicationById(id)
+    await leaveApplicationStore.fetchLeaveBalance(leaveApplicationStore?.leaveApplication?.user_id)
   } catch (error) {
     console.error('Failed to load leave application:', error)
   } finally {
@@ -145,8 +146,8 @@ const goBack = () => router.go(-1)
           <div>
             <p>To</p>
             <p class="font-bold">Managing Director</p>
-            <p class="">{{ leaveApplication?.company_name }}</p>
-            <p class="text-sm">{{ leaveApplication?.company_address }}</p>
+            <p class="">{{ leaveApplication?.user?.company?.name }}</p>
+            <p class="text-sm">{{ leaveApplication?.user?.company.address }}</p>
             <div>
               <p class="pt-6"><b>Subject:</b> Leave Application</p>
             </div>
@@ -189,7 +190,7 @@ const goBack = () => router.go(-1)
                     </tr>
                     <tr class="border border-black">
                       <td colspan="2" class="border border-black px-2 w-32">
-                        {{ leaveApplication?.last_leave?.date || 'N/A' }}
+                        {{ leaveApplication?.last_leave.date || 'N/A' }}
                       </td>
                     </tr>
                     <tr class="bg-gray-200 border border-black">
@@ -233,10 +234,7 @@ const goBack = () => router.go(-1)
             <li><strong>Reason: </strong>{{ leaveApplication?.reason || 'No reason provided' }}</li>
             <li><strong>Leave Days:</strong> {{ leaveApplication?.leave_period }}</li>
             <li><strong>Total Days:</strong> {{ leaveApplication?.total_leave_days }}</li>
-            <li>
-              <strong>Weekends:</strong>
-              {{ JSON.parse(leaveApplication?.weekends || '[]').join(', ') }}
-            </li>
+            <li><strong>Weekends:</strong> {{ leaveApplication?.user.weekends.join(', ') }}</li>
             <li><strong>Last Working Date:</strong> {{ leaveApplication?.last_working_date }}</li>
             <li><strong>Resumption Date:</strong> {{ leaveApplication?.resumption_date }}</li>
           </div>
@@ -251,16 +249,16 @@ const goBack = () => router.go(-1)
           <div>
             <div class="text-sm">
               <hr class="w-44 border-black hidden print:block" />
-              <p><strong>Applicant:</strong> {{ leaveApplication?.user_name }}</p>
-              <p><strong>Designation:</strong> {{ leaveApplication?.designation_title }}</p>
-              <p><strong>Department:</strong> {{ leaveApplication?.department_name }}</p>
+              <p><strong>Applicant:</strong> {{ leaveApplication?.user?.name }}</p>
+              <p><strong>Designation:</strong> {{ leaveApplication?.user?.designation?.title }}</p>
+              <p><strong>Department:</strong> {{ leaveApplication?.user?.department?.name }}</p>
               <!-- <p><strong>Email:</strong> {{ leaveApplication?.user?.email }}</p> -->
-              <p><strong>Phone:</strong> {{ leaveApplication?.user_phone }}</p>
+              <p><strong>Phone:</strong> {{ leaveApplication?.user?.phone }}</p>
             </div>
           </div>
 
           <div class="flex flex-col justify-center items-center text-sm">
-            <p>{{ leaveApplication?.handover_user_name || 'Not assigned' }}</p>
+            <p>{{ leaveApplication?.handover_user?.name || 'Not assigned' }}</p>
             <div
               v-if="
                 !leaveApplication?.status && leaveApplication.handover_user_id === authStore.user.id
@@ -268,7 +266,7 @@ const goBack = () => router.go(-1)
               class="print:hidden"
             >
               <p class="text-xs text-center">
-                {{ leaveApplication?.user_name }} has assigned you for his handover. <br />
+                {{ leaveApplication?.user?.name }} has assigned you for his handover. <br />
                 Do you agree?
               </p>
               <div class="flex justify-center gap-2">
@@ -315,7 +313,7 @@ const goBack = () => router.go(-1)
               </thead>
               <tbody>
                 <tr
-                  v-for="(balance, index) in leaveApplication.leave_balance"
+                  v-for="(balance, index) in leaveApplicationStore.leaveBalance"
                   :key="index"
                   class="hover:bg-blue-200"
                 >
