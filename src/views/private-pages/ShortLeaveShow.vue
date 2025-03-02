@@ -123,12 +123,14 @@ const formatTime = (timeString) => {
     <LoaderView v-if="loading" />
 
     <div v-else class="bg-white rounded space-y-2 p-4 md:p-8" id="leave-application">
-      <div>{{ shortLeave?.user.company.name }}</div>
+      <div>{{ shortLeave?.user?.company?.name }}</div>
       <h2 class="title-md">Short Leave Application</h2>
       <div class="">
         <div class="grid md:grid-cols-2">
           <div><b>Date:</b> {{ shortLeave?.date }}</div>
-          <div><b>Time:</b> {{ formatTime(shortLeave?.start_time) }}</div>
+          <div>
+            <b>Time:</b> {{ shortLeave?.start_time ? formatTime(shortLeave?.start_time) : '' }}
+          </div>
           <div>
             <b>Shift Time:</b>
             {{
@@ -154,7 +156,7 @@ const formatTime = (timeString) => {
           <div>
             <p>{{ shortLeave?.handover_user?.name || 'Not assigned' }}</p>
             <div
-              v-if="!shortLeave?.status && shortLeave.handover_user_id === authStore.user.id"
+              v-if="!shortLeave?.status && shortLeave?.handover_user_id === authStore?.user?.id"
               class="print:hidden"
             >
               <p class="text-xs">
@@ -216,10 +218,10 @@ const formatTime = (timeString) => {
         <div class="pt-10">
           <div
             v-if="
-              shortLeave.status !== 'Rejected' &&
-              shortLeave.status !== 'Approved' &&
+              shortLeave?.status !== 'Rejected' &&
+              shortLeave?.status !== 'Approved' &&
               !shortLeave?.in_charge_user_id &&
-              shortLeave?.user?.other_approval?.in_charge_user_id === authStore.user.id
+              shortLeave?.user?.other_approval?.in_charge_user_id === authStore?.user?.id
             "
             class="print:hidden"
           >
@@ -251,10 +253,10 @@ const formatTime = (timeString) => {
         <div class="pt-10">
           <div
             v-if="
-              shortLeave.status !== 'Rejected' &&
-              shortLeave.status !== 'Approved' &&
+              shortLeave?.status !== 'Rejected' &&
+              shortLeave?.status !== 'Approved' &&
               !shortLeave?.recommend_by_user_id &&
-              shortLeave?.user?.other_approval?.recommend_by_user_id === authStore.user.id
+              shortLeave?.user?.other_approval?.recommend_by_user_id === authStore?.user?.id
             "
             class="print:hidden"
           >
@@ -287,10 +289,10 @@ const formatTime = (timeString) => {
       <div class="flex flex-col pt-10">
         <div
           v-if="
-            shortLeave.status !== 'Rejected' &&
-            shortLeave.status !== 'Approved' &&
+            shortLeave?.status !== 'Rejected' &&
+            shortLeave?.status !== 'Approved' &&
             !shortLeave?.approved_by_user_id &&
-            shortLeave?.user?.other_approval?.approved_by_user_id === authStore.user.id
+            shortLeave?.user?.other_approval?.approved_by_user_id === authStore?.user?.id
           "
           class="print:hidden"
         >
