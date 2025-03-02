@@ -86,6 +86,25 @@ export const useShortLeaveStore = defineStore('shortLeave', () => {
     }
   };
 
+  const uploadShortLeaveAttachment = async (id, data) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await apiClient.put(`/attachment/short-leaves/${id}`, data);
+      const index = shortLeaves.value.findIndex((leave) => leave.id === id);
+      if (index !== -1) {
+        shortLeaves.value[index] = response.data.data;
+      }
+      return response.data.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || `Failed to update short leave (ID: ${id})`;
+      console.error(`Error updating short leave with id ${id}:`, err);
+      throw new Error(error.value);
+    } finally {
+      loading.value = false;
+    }
+  };
+
   // Delete a short leave
   const deleteShortLeave = async (id) => {
     loading.value = true;
@@ -204,6 +223,22 @@ export const useShortLeaveStore = defineStore('shortLeave', () => {
     }
   };
 
+  const fetchFileUpload = async (payload) => {
+    try {
+      loading.value = true;
+      const response = await apiClient.post('file-upload', payload, {
+        headers: {
+          'Content-Type': 'multipart/form-data'  // ✅ Content-Type ঠিক রাখা
+        }
+      })
+      return response.data
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Something went wrong'
+    } finally {
+      isLoading.value = false
+    }
+  };
+
   // Computed properties and return
   return {
     shortLeaves: computed(() => shortLeaves.value),
@@ -222,5 +257,7 @@ export const useShortLeaveStore = defineStore('shortLeave', () => {
     approvedByAccept,
     rejectShortLeave,
     fetchCreateShortLeaveData,
+    uploadShortLeaveAttachment,
+    fetchFileUpload
   };
 });

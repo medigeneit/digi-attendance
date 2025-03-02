@@ -10,7 +10,7 @@ const router = useRouter()
 const route = useRoute()
 const shortLeaveStore = useShortLeaveStore()
 const authStore = useAuthStore()
-const attachment = ref(null)
+const attachment = ref('attachment')
 const loading = ref(true)
 const rejectionModal = ref(false)
 const rejectionReason = ref('')
@@ -35,6 +35,19 @@ const rejectShortLeave = async () => {
     rejectionModal.value = false
     rejectionReason.value = ''
     await shortLeaveStore.fetchShortLeaveById(route.params.id)
+  } catch (err) {
+    console.error('Failed to reject short leave:', err)
+    alert('Failed to reject short leave.')
+  }
+}
+
+const uploadShortLeaveAttachment = async () => {
+  try {
+    const payload = {
+      attachment: attachment.value,
+    }
+    await shortLeaveStore.uploadShortLeaveAttachment(route.params.id, payload)
+    alert('Short leave rejected successfully!')
   } catch (err) {
     console.error('Failed to reject short leave:', err)
     alert('Failed to reject short leave.')
@@ -71,7 +84,7 @@ const fileUploadLink = async (event) => {
   if (file) {
     const formData = new FormData()
     formData.append('file', file)
-    const response = await noticeStore.fetchFileUpload(formData)
+    const response = await shortLeaveStore.fetchFileUpload(formData)
     console.log({ response: response?.url })
     attachment.value = response?.url
   }
@@ -288,18 +301,24 @@ const fileUploadLink = async (event) => {
       </div>
     </div>
     <div>
-      <label>Attachment</label>
-      <!-- Show existing file link if available -->
-      <div v-if="attachment && typeof attachment === 'string'" class="mb-2">
-        <a :href="shortLeave?.attachment" target="_blank" class="text-blue-500 underline">
-          View Current File
-        </a>
-      </div>
-      <!-- File Input -->
-      <input type="file" @change="fileUploadLink" class="w-full p-2 border rounded" />
+      <div>
+        <label>Attachment</label>
+        <!-- Show existing file link if available -->
+        <div
+          v-if="shortLeave?.attachment && typeof shortLeave?.attachment === 'string'"
+          class="mb-2"
+        >
+          <img :src="shortLeave?.attachment" alt="" />
+        </div>
+        <!-- File Input -->
+        <input type="file" @change="fileUploadLink" class="w-full p-2 border rounded" />
 
-      <!-- Show Selected File Name -->
-      <p v-if="fileName" class="text-sm text-gray-600 mt-1">Selected File: {{ fileName }}</p>
+        <!-- Show Selected File Name -->
+        <p v-if="fileName" class="text-sm text-gray-600 mt-1">Selected File: {{ fileName }}</p>
+      </div>
+      <button type="button" v-if="attachment" class="btn-2" @click="uploadShortLeaveAttachment">
+        Submit
+      </button>
     </div>
 
     <ShareComponent>
