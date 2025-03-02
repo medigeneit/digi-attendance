@@ -289,7 +289,7 @@ const totalWithWeekendDays = computed(() => {
             <p>{{ leaveApplication?.handover_user_name || 'Not assigned' }}</p>
             <div
               v-if="
-                !leaveApplication?.status && leaveApplication.handover_user_id === authStore.user.id
+                !leaveApplication?.status && leaveApplication?.handover_user_id === authStore.user.id
               "
               class="print:hidden"
             >
