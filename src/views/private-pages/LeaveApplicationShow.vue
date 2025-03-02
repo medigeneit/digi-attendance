@@ -113,8 +113,12 @@ function print() {
 const goBack = () => router.go(-1)
 
 const totalWithWeekendDays = computed(() => {
-  if (!leaveApplication?.value.last_working_date || !leaveApplication?.value.resumption_date) {
-    return 0 // Return 0 if any date is missing
+  if (
+    !leaveApplication.value ||
+    !leaveApplication.value.last_working_date ||
+    !leaveApplication.value.resumption_date
+  ) {
+    return 0 // Return 0 if leaveApplication is null or dates are missing
   }
 
   const lastWorkingDate = new Date(leaveApplication?.value.last_working_date)
