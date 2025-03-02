@@ -74,8 +74,8 @@ onMounted(async () => {
             <tr class="bg-gray-200">
               <th class="border border-gray-300 px-2 text-left">#</th>
               <th class="border border-gray-300 px-2 text-left">Employee Name</th>
-              <th class="border border-gray-300 px-2 text-left">Start Date</th>
-              <th class="border border-gray-300 px-2 text-left">End Date</th>
+              <th class="border border-gray-300 px-2 text-left">Last Working Day</th>
+              <th class="border border-gray-300 px-2 text-left">Resumption Date</th>
               <th class="border border-gray-300 px-2 text-left">Total Days</th>
               <th class="border border-gray-300 px-2 text-left">Status</th>
               <th class="border border-gray-300 px-2 text-left">Action</th>
@@ -88,10 +88,12 @@ onMounted(async () => {
               class="border-b border-gray-200 hover:bg-blue-200"
             >
               <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
-              <td class="border border-gray-300 px-2">{{ application.user?.name || 'Unknown' }}</td>
-              <td class="border border-gray-300 px-2">{{ application.last_working_date }}</td>
-              <td class="border border-gray-300 px-2">{{ application.resumption_date }}</td>
-              <td class="border border-gray-300 px-2">{{ application.total_days }}</td>
+              <td class="border border-gray-300 px-2">
+                {{ application?.user?.name || 'Unknown' }}
+              </td>
+              <td class="border border-gray-300 px-2">{{ application?.last_working_date }}</td>
+              <td class="border border-gray-300 px-2">{{ application?.resumption_date }}</td>
+              <td class="border border-gray-300 px-2">{{ application?.total_leave_days }}</td>
               <td class="border border-gray-300 px-2">
                 {{ application.status || 'N/A' }}
               </td>

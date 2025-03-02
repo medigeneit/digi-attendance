@@ -89,6 +89,7 @@ const formatTime = (timeString) => {
               <th class="border border-gray-300 px-2 text-left">Start Time</th>
               <th class="border border-gray-300 px-2 text-left">End Time</th>
               <th class="border border-gray-300 px-2 text-left">Total Minutes</th>
+              <th class="border border-gray-300 px-2 text-left">Attachment</th>
               <th class="border border-gray-300 px-2 text-left">Status</th>
               <th class="border border-gray-300 px-2 text-left">Action</th>
             </tr>
@@ -103,8 +104,20 @@ const formatTime = (timeString) => {
               <td class="border border-gray-300 px-2">{{ leave?.user?.name || 'Unknown' }}</td>
               <td class="border border-gray-300 px-2">{{ leave.date }}</td>
               <td class="border border-gray-300 px-2">{{ formatTime(leave.start_time) }}</td>
-              <td class="border border-gray-300 px-2">{{ formatTime(leave.end_time) }}</td>
+              <td class="border border-gray-300 px-2">
+                {{ leave.end_time ? formatTime(leave.end_time) : '' }}
+              </td>
               <td class="border border-gray-300 px-2">{{ leave.total_minutes }}</td>
+              <td class="border border-gray-300 px-2 text-center">
+                <a
+                  v-if="leave.attachment"
+                  :href="leave?.attachment"
+                  target="_blank"
+                  class="text-blue-500 underline"
+                >
+                  <i class="fad fa-link"></i>
+                </a>
+              </td>
               <td class="border border-gray-300 px-2">{{ leave.status || 'N/A' }}</td>
               <td class="border border-gray-300 px-2">
                 <div class="flex gap-2">

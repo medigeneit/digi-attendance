@@ -308,7 +308,9 @@ const fileUploadLink = async (event) => {
           v-if="shortLeave?.attachment && typeof shortLeave?.attachment === 'string'"
           class="mb-2"
         >
-          <img :src="shortLeave?.attachment" alt="" />
+          <a :href="shortLeave?.attachment" target="_blank" class="text-blue-500 underline">
+            View Current File
+          </a>
         </div>
         <!-- File Input -->
         <input type="file" @change="fileUploadLink" class="w-full p-2 border rounded" />

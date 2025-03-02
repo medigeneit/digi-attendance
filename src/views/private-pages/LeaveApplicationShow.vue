@@ -117,8 +117,8 @@ const totalWithWeekendDays = computed(() => {
     return 0 // Return 0 if any date is missing
   }
 
-  const lastWorkingDate = new Date(leaveApplication.value.last_working_date)
-  const resumptionDate = new Date(leaveApplication.value.resumption_date)
+  const lastWorkingDate = new Date(leaveApplication?.value.last_working_date)
+  const resumptionDate = new Date(leaveApplication?.value.resumption_date)
 
   // Calculate the difference in milliseconds and convert to days
   const diffTime = resumptionDate - lastWorkingDate
