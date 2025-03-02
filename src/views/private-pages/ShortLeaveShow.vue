@@ -91,6 +91,8 @@ const fileUploadLink = async (event) => {
 }
 
 const formatTime = (timeString) => {
+  if (!timeString) return 'N/A' // Return a fallback value if timeString is undefined
+
   const [hour, minute] = timeString.split(':').map(Number) // Extract hour & minute
   const date = new Date()
   date.setHours(hour, minute)
@@ -134,9 +136,13 @@ const formatTime = (timeString) => {
           <div>
             <b>Shift Time:</b>
             {{
-              shortLeave.type === 'Delay'
-                ? formatTime(shortLeave?.user?.shift?.start_time)
-                : formatTime(shortLeave?.user?.shift?.end_time)
+              shortLeave?.type === 'Delay'
+                ? shortLeave?.user?.shift?.start_time
+                  ? formatTime(shortLeave.user.shift.start_time)
+                  : 'N/A'
+                : shortLeave?.user?.shift?.end_time
+                  ? formatTime(shortLeave.user.shift.end_time)
+                  : 'N/A'
             }}
           </div>
           <div><b>Total Minutes:</b> {{ shortLeave?.total_minutes }}</div>
