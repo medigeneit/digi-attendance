@@ -317,7 +317,7 @@ const fileUploadLink = async (event) => {
         <p v-if="fileName" class="text-sm text-gray-600 mt-1">Selected File: {{ fileName }}</p>
       </div>
       <button type="button" v-if="attachment" class="btn-2" @click="uploadShortLeaveAttachment">
-        Submit
+        Upload Attachment
       </button>
     </div>
 
