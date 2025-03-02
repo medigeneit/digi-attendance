@@ -1,10 +1,10 @@
 <script setup>
-import { onMounted, ref, computed } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { useExchangeStore } from '@/stores/exchange'
-import { useAuthStore } from '@/stores/auth'
 import LoaderView from '@/components/common/LoaderView.vue'
 import ShareComponent from '@/components/common/ShareComponent.vue'
+import { useAuthStore } from '@/stores/auth'
+import { useExchangeStore } from '@/stores/exchange'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
 const route = useRoute()
@@ -14,6 +14,7 @@ const authStore = useAuthStore()
 const loading = ref(true)
 const rejectionModal = ref(false)
 const rejectionReason = ref('')
+const attachment = ref(null)
 
 const exchange = computed(() => exchangeStore.exchange)
 
@@ -56,6 +57,30 @@ const acceptExchangeAction = async (action) => {
   } catch (err) {
     console.error(`Failed to accept ${action}:`, err)
     alert(`Failed to accept ${action}.`)
+  }
+}
+// uploadAttachmentExchange
+
+const fileUploadLink = async (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    const formData = new FormData()
+    formData.append('file', file)
+    const response = await exchangeStore.fetchFileUpload(formData)
+    console.log({ response: response?.url })
+    attachment.value = response?.url
+  }
+}
+const uploadAttachment = async () => {
+  try {
+    const payload = {
+      attachment: attachment.value,
+    }
+    await exchangeStore.uploadAttachmentExchange(route.params.id, payload)
+    alert('Short leave rejected successfully!')
+  } catch (err) {
+    console.error('Failed to reject short leave:', err)
+    alert('Failed to reject short leave.')
   }
 }
 
@@ -266,6 +291,25 @@ const goBack = () => router.go(-1)
           <span v-if="exchange?.approved_by_user_id" class="text-green-600">(✔)</span>
         </p>
       </div>
+    </div>
+    <div>
+      <div>
+        <label>Attachment</label>
+        <!-- Show existing file link if available -->
+        <div v-if="exchange?.attachment && typeof exchange?.attachment === 'string'" class="mb-2">
+          <a :href="exchange?.attachment" target="_blank" class="text-blue-500 underline">
+            View Current File
+          </a>
+        </div>
+        <!-- File Input -->
+        <input type="file" @change="fileUploadLink" class="w-full p-2 border rounded" />
+
+        <!-- Show Selected File Name -->
+        <p v-if="fileName" class="text-sm text-gray-600 mt-1">Selected File: {{ fileName }}</p>
+      </div>
+      <button type="button" v-if="attachment" class="btn-2" @click="uploadAttachment">
+        Upload Attachment
+      </button>
     </div>
     <ShareComponent />
   </div>

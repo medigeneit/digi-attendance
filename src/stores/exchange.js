@@ -1,6 +1,6 @@
-import { ref } from 'vue';
-import { defineStore } from 'pinia';
 import apiClient from '@/axios'; // Ensure you have configured Axios as `apiClient`
+import { defineStore } from 'pinia';
+import { ref } from 'vue';
 
 export const useExchangeStore = defineStore('exchange', () => {
   const exchanges = ref([]);
@@ -55,6 +55,22 @@ export const useExchangeStore = defineStore('exchange', () => {
     error.value = null;
     try {
       const response = await apiClient.put(`/exchanges/${id}`, payload);
+      const index = exchanges.value.findIndex((ex) => ex.id === id);
+      if (index !== -1) {
+        exchanges.value[index] = response.data;
+      }
+    } catch (err) {
+      error.value = err.response?.data?.message || `Failed to update exchange with ID ${id}`;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function uploadAttachmentExchange(id, payload) {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await apiClient.put(`/attachment-upload/exchanges/${id}`, payload);
       const index = exchanges.value.findIndex((ex) => ex.id === id);
       if (index !== -1) {
         exchanges.value[index] = response.data;
@@ -152,6 +168,22 @@ export const useExchangeStore = defineStore('exchange', () => {
     }
   }
 
+  const fetchFileUpload = async (payload) => {
+    try {
+      loading.value = true;
+      const response = await apiClient.post('attachment-upload', payload, {
+        headers: {
+          'Content-Type': 'multipart/form-data'  // ✅ Content-Type ঠিক রাখা
+        }
+      })
+      return response.data
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Something went wrong'
+    } finally {
+      loading.value = false
+    }
+  };
+
   return {
     exchanges,
     exchange,
@@ -167,5 +199,7 @@ export const useExchangeStore = defineStore('exchange', () => {
     recommendByAccept,
     approveExchange,
     rejectExchange,
+    fetchFileUpload,
+    uploadAttachmentExchange
   };
 });
