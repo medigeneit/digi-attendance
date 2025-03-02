@@ -235,7 +235,7 @@ export const useShortLeaveStore = defineStore('shortLeave', () => {
     } catch (err) {
       error.value = err.response?.data?.message || 'Something went wrong'
     } finally {
-      isLoading.value = false
+      loading.value = false
     }
   };
 
