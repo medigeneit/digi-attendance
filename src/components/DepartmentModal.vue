@@ -126,9 +126,7 @@ const fetchCompanies = async () => {
           <select
             id="incharge_id"
             v-model="departmentForm.incharge_id"
-            class="w-full border rounded px-3 py-2"
-            required
-          >
+            class="w-full border rounded px-3 py-2" >
             <option value="" disabled>Select Employee</option>
             <option v-for="(employee, index) in employees" :key="index" :value="index">
               {{ employee }}

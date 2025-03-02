@@ -1,16 +1,16 @@
 <script setup>
-import { onMounted, ref, computed } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { useShortLeaveStore } from '@/stores/short-leave'
-import { useAuthStore } from '@/stores/auth'
 import LoaderView from '@/components/common/LoaderView.vue'
-import ShareComponent from '@/components/common/ShareComponent.vue'
 import ScreenshotCapture from '@/components/common/ScreenshotCapture.vue'
+import ShareComponent from '@/components/common/ShareComponent.vue'
+import { useAuthStore } from '@/stores/auth'
+import { useShortLeaveStore } from '@/stores/short-leave'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 const router = useRouter()
 const route = useRoute()
 const shortLeaveStore = useShortLeaveStore()
 const authStore = useAuthStore()
-
+const attachment = ref(null)
 const loading = ref(true)
 const rejectionModal = ref(false)
 const rejectionReason = ref('')
@@ -64,6 +64,17 @@ const goBack = () => router.go(-1)
 
 function print() {
   window.print()
+}
+
+const fileUploadLink = async (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    const formData = new FormData()
+    formData.append('file', file)
+    const response = await noticeStore.fetchFileUpload(formData)
+    console.log({ response: response?.url })
+    attachment.value = response?.url
+  }
 }
 </script>
 
@@ -276,6 +287,21 @@ function print() {
         </p>
       </div>
     </div>
+    <div>
+      <label>Attachment</label>
+      <!-- Show existing file link if available -->
+      <div v-if="attachment && typeof attachment === 'string'" class="mb-2">
+        <a :href="shortLeave?.attachment" target="_blank" class="text-blue-500 underline">
+          View Current File
+        </a>
+      </div>
+      <!-- File Input -->
+      <input type="file" @change="fileUploadLink" class="w-full p-2 border rounded" />
+
+      <!-- Show Selected File Name -->
+      <p v-if="fileName" class="text-sm text-gray-600 mt-1">Selected File: {{ fileName }}</p>
+    </div>
+
     <ShareComponent>
       <ScreenshotCapture targetId="leave-application" platform="whatsapp" />
     </ShareComponent>
