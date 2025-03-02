@@ -428,8 +428,8 @@ const totalWithWeekendDays = computed(() => {
           <div class="flex flex-col justify-center items-center">
             <div
               v-if="
-                leaveApplication.status !== 'Rejected' &&
-                leaveApplication.status !== 'Approved' &&
+                leaveApplication?.status !== 'Rejected' &&
+                leaveApplication?.status !== 'Approved' &&
                 !leaveApplication?.coordinator_user_id &&
                 leaveApplication?.user?.leave_approval?.coordinator_user_id === authStore?.user?.id
               "
@@ -464,8 +464,8 @@ const totalWithWeekendDays = computed(() => {
           <div class="flex flex-col justify-center items-center">
             <div
               v-if="
-                leaveApplication.status !== 'Rejected' &&
-                leaveApplication.status !== 'Approved' &&
+                leaveApplication?.status !== 'Rejected' &&
+                leaveApplication?.status !== 'Approved' &&
                 !leaveApplication?.operational_admin_user_id &&
                 leaveApplication?.user?.leave_approval?.operational_admin_user_id ===
                   authStore?.user?.id
@@ -506,8 +506,8 @@ const totalWithWeekendDays = computed(() => {
           <div class="flex flex-col justify-center items-center">
             <div
               v-if="
-                leaveApplication.status !== 'Rejected' &&
-                leaveApplication.status !== 'Approved' &&
+                leaveApplication?.status !== 'Rejected' &&
+                leaveApplication?.status !== 'Approved' &&
                 !leaveApplication?.recommend_by_user_id &&
                 leaveApplication?.user?.leave_approval?.recommend_by_user_id === authStore?.user?.id
               "
@@ -542,8 +542,8 @@ const totalWithWeekendDays = computed(() => {
           <div class="flex flex-col justify-center items-center">
             <div
               v-if="
-                leaveApplication.status !== 'Rejected' &&
-                leaveApplication.status !== 'Approved' &&
+                leaveApplication?.status !== 'Rejected' &&
+                leaveApplication?.status !== 'Approved' &&
                 !leaveApplication?.approved_by_user_id &&
                 leaveApplication?.user?.leave_approval?.approved_by_user_id === authStore?.user?.id
               "
