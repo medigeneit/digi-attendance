@@ -226,7 +226,7 @@ export const useShortLeaveStore = defineStore('shortLeave', () => {
   const fetchFileUpload = async (payload) => {
     try {
       loading.value = true;
-      const response = await apiClient.post('file-upload', payload, {
+      const response = await apiClient.post('attachment-upload', payload, {
         headers: {
           'Content-Type': 'multipart/form-data'  // ✅ Content-Type ঠিক রাখা
         }
