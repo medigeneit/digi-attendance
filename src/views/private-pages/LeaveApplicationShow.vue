@@ -289,7 +289,7 @@ const totalWithWeekendDays = computed(() => {
             <p>{{ leaveApplication?.handover_user_name || 'Not assigned' }}</p>
             <div
               v-if="
-                !leaveApplication?.status && leaveApplication?.handover_user_id === authStore.user.id
+                !leaveApplication?.status && leaveApplication?.handover_user_id === authStore?.user?.id
               "
               class="print:hidden"
             >
@@ -300,7 +300,7 @@ const totalWithWeekendDays = computed(() => {
               <div class="flex justify-center gap-2">
                 <button
                   class="font-bold text-lg text-green-600 px-2"
-                  @click="acceptHandoverApplication(leaveApplication.id)"
+                  @click="acceptHandoverApplication(leaveApplication?.id)"
                 >
                   ✔
                 </button>
@@ -341,7 +341,7 @@ const totalWithWeekendDays = computed(() => {
               </thead>
               <tbody>
                 <tr
-                  v-for="(balance, index) in leaveApplication.leave_balance"
+                  v-for="(balance, index) in leaveApplication?.leave_balance"
                   :key="index"
                   class="hover:bg-blue-200"
                 >
@@ -392,10 +392,10 @@ const totalWithWeekendDays = computed(() => {
           <div class="flex flex-col justify-center items-center">
             <div
               v-if="
-                leaveApplication.status !== 'Rejected' &&
-                leaveApplication.status !== 'Approved' &&
+                leaveApplication?.status !== 'Rejected' &&
+                leaveApplication?.status !== 'Approved' &&
                 !leaveApplication?.in_charge_user_id &&
-                leaveApplication?.user?.leave_approval?.in_charge_user_id === authStore.user.id
+                leaveApplication?.user?.leave_approval?.in_charge_user_id === authStore?.user?.id
               "
               class="print:hidden"
             >
@@ -409,7 +409,7 @@ const totalWithWeekendDays = computed(() => {
               <div class="flex justify-center gap-4">
                 <button
                   class="font-bold text-lg text-green-600"
-                  @click="acceptInChargeApplication(leaveApplication.id)"
+                  @click="acceptInChargeApplication(leaveApplication?.id)"
                 >
                   ✔
                 </button>
@@ -431,7 +431,7 @@ const totalWithWeekendDays = computed(() => {
                 leaveApplication.status !== 'Rejected' &&
                 leaveApplication.status !== 'Approved' &&
                 !leaveApplication?.coordinator_user_id &&
-                leaveApplication?.user?.leave_approval?.coordinator_user_id === authStore.user.id
+                leaveApplication?.user?.leave_approval?.coordinator_user_id === authStore?.user?.id
               "
               class="print:hidden"
             >
@@ -445,7 +445,7 @@ const totalWithWeekendDays = computed(() => {
               <div class="flex justify-center gap-4">
                 <button
                   class="font-bold text-lg text-green-600"
-                  @click="acceptCoordinatorApplication(leaveApplication.id)"
+                  @click="acceptCoordinatorApplication(leaveApplication?.id)"
                 >
                   ✔
                 </button>
@@ -468,7 +468,7 @@ const totalWithWeekendDays = computed(() => {
                 leaveApplication.status !== 'Approved' &&
                 !leaveApplication?.operational_admin_user_id &&
                 leaveApplication?.user?.leave_approval?.operational_admin_user_id ===
-                  authStore.user.id
+                  authStore?.user?.id
               "
               class="print:hidden"
             >
@@ -482,7 +482,7 @@ const totalWithWeekendDays = computed(() => {
               <div class="flex justify-center gap-4">
                 <button
                   class="font-bold text-lg text-green-600"
-                  @click="acceptOperationalAdminApplication(leaveApplication.id)"
+                  @click="acceptOperationalAdminApplication(leaveApplication?.id)"
                 >
                   ✔
                 </button>
@@ -509,7 +509,7 @@ const totalWithWeekendDays = computed(() => {
                 leaveApplication.status !== 'Rejected' &&
                 leaveApplication.status !== 'Approved' &&
                 !leaveApplication?.recommend_by_user_id &&
-                leaveApplication?.user?.leave_approval?.recommend_by_user_id === authStore.user.id
+                leaveApplication?.user?.leave_approval?.recommend_by_user_id === authStore?.user?.id
               "
               class="print:hidden"
             >
@@ -523,7 +523,7 @@ const totalWithWeekendDays = computed(() => {
               <div class="flex justify-center gap-4">
                 <button
                   class="font-bold text-lg text-green-600"
-                  @click="acceptRecommendByApplication(leaveApplication.id)"
+                  @click="acceptRecommendByApplication(leaveApplication?.id)"
                 >
                   ✔
                 </button>
@@ -545,7 +545,7 @@ const totalWithWeekendDays = computed(() => {
                 leaveApplication.status !== 'Rejected' &&
                 leaveApplication.status !== 'Approved' &&
                 !leaveApplication?.approved_by_user_id &&
-                leaveApplication?.user?.leave_approval?.approved_by_user_id === authStore.user.id
+                leaveApplication?.user?.leave_approval?.approved_by_user_id === authStore?.user?.id
               "
               class="print:hidden"
             >
@@ -559,7 +559,7 @@ const totalWithWeekendDays = computed(() => {
               <div class="flex justify-center gap-4">
                 <button
                   class="font-bold text-lg text-green-600"
-                  @click="acceptApprovedByApplication(leaveApplication.id)"
+                  @click="acceptApprovedByApplication(leaveApplication?.id)"
                 >
                   ✔
                 </button>
