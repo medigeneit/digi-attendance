@@ -85,6 +85,7 @@ const formatTime = (timeString) => {
             <tr class="bg-gray-200">
               <th class="border border-gray-300 px-2 text-left">#</th>
               <th class="border border-gray-300 px-2 text-left">Employee Name</th>
+              <th class="border border-gray-300 px-2 text-left">Type</th>
               <th class="border border-gray-300 px-2 text-left">Date</th>
               <th class="border border-gray-300 px-2 text-left">Start Time</th>
               <th class="border border-gray-300 px-2 text-left">End Time</th>
@@ -102,6 +103,7 @@ const formatTime = (timeString) => {
             >
               <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
               <td class="border border-gray-300 px-2">{{ leave?.user?.name || 'Unknown' }}</td>
+              <td class="border border-gray-300 px-2">{{ leave?.type || 'Unknown' }}</td>
               <td class="border border-gray-300 px-2">{{ leave.date }}</td>
               <td class="border border-gray-300 px-2">{{ formatTime(leave.start_time) }}</td>
               <td class="border border-gray-300 px-2">

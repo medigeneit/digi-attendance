@@ -89,6 +89,18 @@ const fileUploadLink = async (event) => {
     attachment.value = response?.url
   }
 }
+
+const formatTime = (timeString) => {
+  const [hour, minute] = timeString.split(':').map(Number) // Extract hour & minute
+  const date = new Date()
+  date.setHours(hour, minute)
+
+  return date.toLocaleString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true, // Ensures AM/PM format
+  })
+}
 </script>
 
 <template>
@@ -116,8 +128,15 @@ const fileUploadLink = async (event) => {
       <div class="">
         <div class="grid md:grid-cols-2">
           <div><b>Date:</b> {{ shortLeave?.date }}</div>
-          <div><b>Start Time:</b> {{ shortLeave?.start_time }}</div>
-          <div><b>End Time:</b> {{ shortLeave?.end_time }}</div>
+          <div><b>Time:</b> {{ formatTime(shortLeave?.start_time) }}</div>
+          <div>
+            <b>Shift Time:</b>
+            {{
+              shortLeave.type === 'Delay'
+                ? formatTime(shortLeave?.user?.shift?.start_time)
+                : formatTime(shortLeave?.user?.shift?.end_time)
+            }}
+          </div>
           <div><b>Total Minutes:</b> {{ shortLeave?.total_minutes }}</div>
           <div><b>Reason:</b> {{ shortLeave?.reason || 'N/A' }}</div>
         </div>
