@@ -6,6 +6,8 @@ import { useAuthStore } from '@/stores/auth'
 import { useShortLeaveStore } from '@/stores/short-leave'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useToast } from 'vue-toastification'
+const toast = useToast()
 const router = useRouter()
 const route = useRoute()
 const shortLeaveStore = useShortLeaveStore()
@@ -47,7 +49,7 @@ const uploadShortLeaveAttachment = async () => {
       attachment: attachment.value,
     }
     await shortLeaveStore.uploadShortLeaveAttachment(route.params.id, payload)
-    alert('Short leave rejected successfully!')
+    alert('Attachment upload successfully!')
   } catch (err) {
     console.error('Failed to reject short leave:', err)
     alert('Failed to reject short leave.')
@@ -87,6 +89,7 @@ const fileUploadLink = async (event) => {
     const response = await shortLeaveStore.fetchFileUpload(formData)
     console.log({ response: response?.url })
     attachment.value = response?.url
+    toast.success('Attachment upload successfully!')
   }
 }
 

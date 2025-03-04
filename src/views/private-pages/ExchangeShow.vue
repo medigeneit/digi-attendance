@@ -5,12 +5,13 @@ import { useAuthStore } from '@/stores/auth'
 import { useExchangeStore } from '@/stores/exchange'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useToast } from 'vue-toastification'
 
 const router = useRouter()
 const route = useRoute()
 const exchangeStore = useExchangeStore()
 const authStore = useAuthStore()
-
+const toast = useToast()
 const loading = ref(true)
 const rejectionModal = ref(false)
 const rejectionReason = ref('')
@@ -67,8 +68,8 @@ const fileUploadLink = async (event) => {
     const formData = new FormData()
     formData.append('file', file)
     const response = await exchangeStore.fetchFileUpload(formData)
-    console.log({ response: response?.url })
     attachment.value = response?.url
+    toast.success('Attachment upload successfully')
   }
 }
 const uploadAttachment = async () => {

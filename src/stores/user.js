@@ -29,6 +29,19 @@ export const useUserStore = defineStore('user', () => {
     }
   };
 
+  const fetchDepartmentWiseEmployees = async () => {
+    try {
+      isLoading.value = true; // লোডিং শুরু
+      const response = await apiClient.get('/department-wise-employees');
+      users.value = response.data;
+      error.value = null;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Something went wrong';
+    } finally {
+      isLoading.value = false; // লোডিং শেষ
+    }
+  };
+
   const fetchUser = async (id) => {
     try {
       isLoading.value = true;
@@ -120,6 +133,7 @@ export const useUserStore = defineStore('user', () => {
     createUser,
     updateUser,
     deleteUser,
-    fetchUserDashboardData
+    fetchUserDashboardData,
+    fetchDepartmentWiseEmployees
   };
 });

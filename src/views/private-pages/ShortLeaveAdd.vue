@@ -1,5 +1,6 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useShortLeaveStore } from '@/stores/short-leave'
 import { useUserStore } from '@/stores/user'
@@ -12,6 +13,7 @@ const shortLeaveStore = useShortLeaveStore()
 const userStore = useUserStore()
 const authStore = useAuthStore()
 const shift = ref(null)
+const selectUser = ref('')
 const { type, start_time, end_time } = route.query
 
 const entry_time = ref('')
@@ -39,6 +41,12 @@ watch(
   () => form.value.date,
   async (newValue) => {
     fetchAttendance()
+  },
+)
+watch(
+  () => selectUser.value,
+  (newValue) => {
+    form.value.handover_user_id = newValue?.id
   },
 )
 
@@ -72,10 +80,8 @@ watch(
   (newType) => {
     if (!entry_time.value && !exit_time.value) return
 
-    console.log({ newType }, exit_time.value, entry_time.value)
-
     const extractTime = (datetime) =>
-      datetime && datetime.includes(' ') ? datetime.split(' ')[1] : ''
+    datetime && datetime.includes(" ") ? datetime.split(" ")[1].substring(0, 5) : "";
 
     if (newType === 'Delay' && entry_time.value) {
       form.value.start_time = extractTime(entry_time.value) // Only assign time
@@ -154,7 +160,7 @@ const formatTime = (timeStr) => {
 
 onMounted(() => {
   fetchAttendance()
-  userStore.fetchUsers()
+  userStore.fetchDepartmentWiseEmployees()
   form.value.date = formatDate(type === 'Delay' ? time : type === 'Early' ? time : todayDate)
   form.value.date = formatDate(
     type === 'Delay' ? start_time : type === 'Early' ? end_time : todayDate,
@@ -256,12 +262,13 @@ const goBack = () => {
 
       <div v-if="showHandoverUser">
         <label for="handover-user" class="block text-sm font-medium">Handover User</label>
-        <select id="handover-user" v-model="form.handover_user_id" class="input-1 w-full" required>
-          <option value="">Select Handover User</option>
-          <option v-for="user in userStore.users" :key="user.id" :value="user.id">
-            {{ user.name }}
-          </option>
-        </select>
+        <MultiselectDropdown
+          v-model="selectUser"
+          :options="userStore.users"
+          :multiple="false"
+          label="Select User"
+          labelFor="user"
+        />
       </div>
 
       <div v-if="error" class="text-red-500 text-sm">{{ error }}</div>

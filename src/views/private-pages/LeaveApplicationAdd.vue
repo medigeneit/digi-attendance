@@ -1,18 +1,19 @@
 <script setup>
-import { onMounted, ref, computed, watchEffect } from 'vue'
-import { useRouter } from 'vue-router'
+import LoaderView from '@/components/common/LoaderView.vue'
+import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
+import { useAuthStore } from '@/stores/auth'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
 import { useLeaveTypeStore } from '@/stores/leave-type'
 import { useUserStore } from '@/stores/user'
-import { useAuthStore } from '@/stores/auth'
-import LoaderView from '@/components/common/LoaderView.vue'
+import { computed, onMounted, ref, watch, watchEffect } from 'vue'
+import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const leaveApplicationStore = useLeaveApplicationStore()
 const leaveTypeStore = useLeaveTypeStore()
 const userStore = useUserStore()
 const authStore = useAuthStore()
-
+const selectUser = ref('')
 const form = ref({
   last_working_date: '',
   resumption_date: '',
@@ -80,6 +81,13 @@ watchEffect(() => {
   }
 })
 
+watch(
+  () => selectUser.value,
+  (newValue) => {
+    form.value.handover_user_id = newValue?.id
+  },
+)
+
 const submitLeaveApplication = async () => {
   loading.value = true
   error.value = null
@@ -121,7 +129,7 @@ onMounted(() => {
       leaveTypeStore.fetchLeaveTypes(companyId)
     }
   })
-  userStore.fetchUsers()
+  userStore.fetchDepartmentWiseEmployees()
 })
 
 const goBack = () => {
@@ -229,15 +237,15 @@ const goBack = () => {
           placeholder="Enter details of works in hand"
         ></textarea>
       </div>
-
       <div>
         <label for="handover-user" class="block text-sm font-medium">Handover User</label>
-        <select id="handover-user" v-model="form.handover_user_id" class="input-1 w-full" required>
-          <option value="">Select Handover User</option>
-          <option v-for="user in userStore.users" :key="user.id" :value="user.id">
-            {{ user?.name }}
-          </option>
-        </select>
+        <MultiselectDropdown
+          v-model="selectUser"
+          :options="userStore.users"
+          :multiple="false"
+          label="Select User"
+          labelFor="user"
+        />
       </div>
 
       <div v-if="error" class="text-red-500 text-sm">{{ error }}</div>
