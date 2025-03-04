@@ -49,7 +49,7 @@ const submitShiftExchange = async () => {
 }
 
 onMounted(() => {
-  userStore.fetchUsers()
+  userStore.fetchDepartmentWiseEmployees()
   authStore.fetchUser()
 })
 

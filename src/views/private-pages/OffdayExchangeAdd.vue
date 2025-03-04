@@ -1,10 +1,10 @@
 <script setup>
-import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import LoaderView from '@/components/common/LoaderView.vue'
+import { useAuthStore } from '@/stores/auth'
 import { useExchangeStore } from '@/stores/exchange'
 import { useUserStore } from '@/stores/user'
-import { useAuthStore } from '@/stores/auth'
-import LoaderView from '@/components/common/LoaderView.vue'
+import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const exchangeStore = useExchangeStore()
@@ -42,7 +42,7 @@ const submitOffdayExchange = async () => {
 }
 
 onMounted(() => {
-  userStore.fetchUsers()
+  userStore.fetchDepartmentWiseEmployees()
   authStore.fetchUser()
 })
 
