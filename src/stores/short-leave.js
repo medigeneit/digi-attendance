@@ -22,6 +22,19 @@ export const useShortLeaveStore = defineStore('shortLeave', () => {
       loading.value = false;
     }
   };
+  const fetchMyShortLeaves = async (filters = {}) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await apiClient.get('/my-short-leaves', { params: filters });
+      shortLeaves.value = response.data.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to fetch short leaves';
+      console.error('Error fetching short leaves:', err);
+    } finally {
+      loading.value = false;
+    }
+  };
 
   const fetchCreateShortLeaveData = async (filters = {}) => {
     loading.value = true;
@@ -258,6 +271,7 @@ export const useShortLeaveStore = defineStore('shortLeave', () => {
     rejectShortLeave,
     fetchCreateShortLeaveData,
     uploadShortLeaveAttachment,
-    fetchFileUpload
+    fetchFileUpload,
+    fetchMyShortLeaves
   };
 });

@@ -1,16 +1,14 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
-import { useAuthStore } from '@/stores/auth'
 import { useShortLeaveStore } from '@/stores/short-leave'
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const shortLeaveStore = useShortLeaveStore()
-const authStore = useAuthStore()
 
 onMounted(() => {
-  shortLeaveStore.fetchShortLeaves({ user_id: authStore?.user?.id })
+  shortLeaveStore.fetchMyShortLeaves()
 })
 
 const goBack = () => {

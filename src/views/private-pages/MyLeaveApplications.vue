@@ -1,16 +1,14 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
-import { useAuthStore } from '@/stores/auth'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const leaveApplicationStore = useLeaveApplicationStore()
-const authStore = useAuthStore()
 
 onMounted(() => {
-  leaveApplicationStore.fetchLeaveApplications({ user_id: authStore?.user?.id })
+  leaveApplicationStore.fetchMyLeaveApplications()
 })
 
 const goBack = () => {

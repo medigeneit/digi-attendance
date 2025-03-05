@@ -21,6 +21,19 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
     }
   }
 
+  async function fetchMyLeaveApplications(filters = {}) {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await apiClient.get('/my-leave-applications', { params: filters });
+      leaveApplications.value = response.data.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to fetch leave applications';
+    } finally {
+      loading.value = false;
+    }
+  }
+
   async function storeLeaveApplication(payload) {
     loading.value = true;
     error.value = null;
@@ -215,5 +228,6 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
     acceptRecommendBy,
     acceptApprovedBy,
     rejectLeaveApplication,
+    fetchMyLeaveApplications
   };
 });
