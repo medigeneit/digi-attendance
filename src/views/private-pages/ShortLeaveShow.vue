@@ -134,19 +134,12 @@ const formatTime = (timeString) => {
         <div class="grid md:grid-cols-2">
           <div><b>Date:</b> {{ shortLeave?.date }}</div>
           <div>
-            <b>Time:</b> {{ shortLeave?.start_time ? formatTime(shortLeave?.start_time) : '' }}
+            <b>Start Time:</b>
+            {{ shortLeave?.start_time ? formatTime(shortLeave?.start_time) : '' }}
           </div>
           <div>
-            <b>Shift Time:</b>
-            {{
-              shortLeave?.type === 'Delay'
-                ? shortLeave?.user?.shift?.start_time
-                  ? formatTime(shortLeave.user.shift.start_time)
-                  : 'N/A'
-                : shortLeave?.user?.shift?.end_time
-                  ? formatTime(shortLeave.user.shift.end_time)
-                  : 'N/A'
-            }}
+            <b>End Time:</b>
+            {{ shortLeave?.end_time ? formatTime(shortLeave?.end_time) : '' }}
           </div>
           <div><b>Total Minutes:</b> {{ shortLeave?.total_minutes }}</div>
           <div><b>Reason:</b> {{ shortLeave?.reason || 'N/A' }}</div>

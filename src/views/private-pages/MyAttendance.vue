@@ -158,7 +158,7 @@ const goBack = () => router.go(-1)
                     :to="{
                       name: 'ShortLeaveAdd',
                       query: {
-                        type: 'First',
+                        type: 'Delay',
                         start_time: log.shift_start_time,
                         end_time: log.entry_time,
                       },
@@ -187,7 +187,7 @@ const goBack = () => router.go(-1)
                     :to="{
                       name: 'ShortLeaveAdd',
                       query: {
-                        type: 'Last',
+                        type: 'Early',
                         start_time: log.exit_time,
                         end_time: log.shift_end_time,
                       },
