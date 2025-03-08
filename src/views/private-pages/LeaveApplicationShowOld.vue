@@ -21,7 +21,7 @@ onMounted(async () => {
   const { id } = route.params
   try {
     await leaveApplicationStore.fetchLeaveApplicationById(id)
-    await leaveApplicationStore.fetchLeaveBalance(leaveApplicationStore?.leaveApplication?.user_id)
+    // await leaveApplicationStore.fetchLeaveBalance(leaveApplicationStore?.leaveApplication?.user_id)
   } catch (error) {
     console.error('Failed to load leave application:', error)
   } finally {
