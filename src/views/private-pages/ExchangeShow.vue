@@ -69,7 +69,12 @@ const fileUploadLink = async (event) => {
     formData.append('file', file)
     const response = await exchangeStore.fetchFileUpload(formData)
     attachment.value = response?.url
-    toast.success('Attachment upload successfully')
+    if (response?.url) {
+      uploadAttachment()
+      toast.success('File uploaded successfully')
+    } else {
+      toast.error('Failed to upload file')
+    }
   }
 }
 const uploadAttachment = async () => {
@@ -78,7 +83,6 @@ const uploadAttachment = async () => {
       attachment: attachment.value,
     }
     await exchangeStore.uploadAttachmentExchange(route.params.id, payload)
-    alert('Short leave rejected successfully!')
   } catch (err) {
     console.error('Failed to reject short leave:', err)
     alert('Failed to reject short leave.')
@@ -308,9 +312,9 @@ const goBack = () => router.go(-1)
         <!-- Show Selected File Name -->
         <p v-if="fileName" class="text-sm text-gray-600 mt-1">Selected File: {{ fileName }}</p>
       </div>
-      <button type="button" v-if="attachment" class="btn-2" @click="uploadAttachment">
+      <!-- <button type="button" v-if="attachment" class="btn-2" @click="uploadAttachment">
         Upload Attachment
-      </button>
+      </button> -->
     </div>
     <ShareComponent />
   </div>
