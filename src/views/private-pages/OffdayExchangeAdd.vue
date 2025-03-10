@@ -76,7 +76,7 @@ const goBack = () => {
       </div>
 
       <div>
-        <label for="current-date" class="block text-sm font-medium">Current Date</label>
+        <label for="current-date" class="block text-sm font-medium">Holiday/Weekend (Date)</label>
         <input
           type="date"
           id="current-date"

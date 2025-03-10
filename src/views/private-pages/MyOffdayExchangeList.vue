@@ -48,7 +48,7 @@ const offdayExchanges = computed(() => {
           <thead>
             <tr class="bg-gray-200">
               <th class="border border-gray-300 px-2 text-left">#</th>
-              <th class="border border-gray-300 px-2 text-left">Current Date</th>
+              <th class="border border-gray-300 px-2 text-left">Holiday/Weekend (Date)</th>
               <th class="border border-gray-300 px-2 text-left">Exchange Date</th>
               <th class="border border-gray-300 px-2 text-left">Status</th>
               <th class="border border-gray-300 px-2 text-left">Action</th>
