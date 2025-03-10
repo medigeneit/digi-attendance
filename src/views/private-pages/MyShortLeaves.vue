@@ -20,6 +20,7 @@ const myShortLeaves = computed(() => {
 })
 
 const formatTime = (timeString) => {
+  if (!timeString) return 'N/A'
   const [hour, minute] = timeString.split(':').map(Number) // Extract hour & minute
   const date = new Date()
   date.setHours(hour, minute)
@@ -60,8 +61,8 @@ const formatTime = (timeString) => {
               <th class="border border-gray-300 px-2 text-left">#</th>
               <th class="border border-gray-300 px-2 text-left">Date</th>
               <th class="border border-gray-300 px-2 text-left">Type</th>
-              <th class="border border-gray-300 px-2 text-left">Time</th>
-              <!-- <th class="border border-gray-300 px-2 text-left">End Time</th> -->
+              <th class="border border-gray-300 px-2 text-left">Start Time</th>
+              <th class="border border-gray-300 px-2 text-left">End Time</th>
               <th class="border border-gray-300 px-2 text-left">Total Minutes</th>
               <th class="border border-gray-300 px-2 text-left">Attachment</th>
               <th class="border border-gray-300 px-2 text-left">Status</th>
@@ -78,7 +79,7 @@ const formatTime = (timeString) => {
               <td class="border border-gray-300 px-2">{{ leave.date }}</td>
               <td class="border border-gray-300 px-2">{{ leave.type }}</td>
               <td class="border border-gray-300 px-2">{{ formatTime(leave.start_time) }}</td>
-              <!-- <td class="border border-gray-300 px-2">{{ leave.end_time }}</td> -->
+              <td class="border border-gray-300 px-2">{{ formatTime(leave.end_time) }}</td>
               <td class="border border-gray-300 px-2">{{ leave.total_minutes }}</td>
               <td class="border border-gray-300 px-2 text-center">
                 <a
