@@ -10,7 +10,7 @@ const manualAttendanceStore = useManualAttendanceStore()
 const authStore = useAuthStore()
 
 onMounted(() => {
-  manualAttendanceStore.fetchManualAttendances({ user_id: authStore?.user?.id })
+  manualAttendanceStore.fetchManualAttendances()
 })
 
 const goBack = () => {

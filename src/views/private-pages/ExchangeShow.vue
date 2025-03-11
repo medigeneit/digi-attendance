@@ -310,7 +310,7 @@ const goBack = () => router.go(-1)
         <input type="file" @change="fileUploadLink" class="w-full p-2 border rounded" />
 
         <!-- Show Selected File Name -->
-        <p v-if="fileName" class="text-sm text-gray-600 mt-1">Selected File: {{ fileName }}</p>
+        <p class="text-sm text-gray-600 mt-1">Selected File</p>
       </div>
       <!-- <button type="button" v-if="attachment" class="btn-2" @click="uploadAttachment">
         Upload Attachment

@@ -172,12 +172,15 @@ const goBack = () => router.go(-1)
               <td class="border px-1 py-0.5" :class="{ 'bg-red-100': log.early_leave_duration }">
                 <div v-if="log.early_leave_duration">
                   {{ log.early_leave_duration }}
-                  <span v-if="log.last_short_leave">
+                  <span v-if="log.last_short_leave" class="px-2">
                     <i
                       :class="{
-                        'fas fa-check-circle text-green-500': log.last_short_leave === 'Approved',
-                        'fas fa-hourglass-half text-yellow-500': log.last_short_leave === 'Pending',
-                        'fas fa-times-circle text-red-500': log.last_short_leave === 'Rejected',
+                        'fas fa-check-circle text-green-500 text-lg':
+                          log.last_short_leave === 'Approved',
+                        'fas fa-hourglass-half text-yellow-500 text-lg':
+                          log.last_short_leave === 'Pending',
+                        'fas fa-times-circle text-red-500 text-lg':
+                          log.last_short_leave === 'Rejected',
                       }"
                       :title="log.last_short_leave"
                     ></i>

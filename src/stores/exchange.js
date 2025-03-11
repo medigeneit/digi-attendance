@@ -139,7 +139,7 @@ export const useExchangeStore = defineStore('exchange', () => {
   }
 
   // Approve Exchange
-  async function approveExchange(id) {
+  async function approvedByAccept(id) {
     loading.value = true;
     error.value = null;
     try {
@@ -197,7 +197,7 @@ export const useExchangeStore = defineStore('exchange', () => {
     handoverAccept,
     inChargeAccept,
     recommendByAccept,
-    approveExchange,
+    approvedByAccept,
     rejectExchange,
     fetchFileUpload,
     uploadAttachmentExchange
