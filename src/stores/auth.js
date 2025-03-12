@@ -1,5 +1,5 @@
-import { ref, computed } from 'vue';
 import { defineStore } from 'pinia';
+import { computed, ref } from 'vue';
 import apiClient from '../axios';
 
 export const useAuthStore = defineStore('auth', () => {
@@ -22,9 +22,9 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function login(phone, password) {
+  async function login(email, password) {
     try {
-      const response = await apiClient.post('/login', { phone, password });
+      const response = await apiClient.post('/login', { email, password });
       user.value = response.data.user;
       token.value = response.data.token;
       localStorage.setItem('auth_token', token.value);

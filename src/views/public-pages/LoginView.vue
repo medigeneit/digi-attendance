@@ -1,9 +1,9 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
-const phone = ref('')
+const email = ref('')
 const password = ref('')
 const router = useRouter()
 const route = useRoute()
@@ -11,18 +11,18 @@ const authStore = useAuthStore()
 const error = ref('')
 
 onMounted(() => {
-  if (route.query.phone) {
-    phone.value = route.query.phone
+  if (route.query.email) {
+    email.value = route.query.email
   }
 })
 
 const login = async () => {
   try {
-    await authStore.login(phone.value, password.value)
+    await authStore.login(email.value, password.value)
     if (!authStore.error) {
       router.push('/dashboard')
     } else {
-      error.value = authStore.error 
+      error.value = authStore.error
     }
   } catch (err) {
     error.value = 'An unexpected error occurred. Please try again.'
@@ -36,14 +36,14 @@ const login = async () => {
       <h1 class="title-lg">Login Now</h1>
       <form class="space-y-4 w-full" @submit.prevent="login">
         <div>
-          <label for="phone" class="block font-medium text-gray-700">Phone Number</label>
+          <label for="email" class="block font-medium text-gray-700">Email Address</label>
           <input
-            v-model="phone"
-            type="text"
-            id="phone"
-            name="phone"
+            v-model="email"
+            type="email"
+            id="email"
+            name="email"
             class="input-1 w-full"
-            placeholder="Enter your phone number"
+            placeholder="Enter your email number"
             required
           />
         </div>
