@@ -1,6 +1,7 @@
 <script setup>
-import { ref, reactive, watch, onMounted } from 'vue';
+import { ref, reactive, watch, onMounted, computed } from 'vue';
 import { useUserStore } from '@/stores/user';
+import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 
 const props = defineProps({
   show: { type: Boolean, required: true },
@@ -8,9 +9,11 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['close', 'save']);
+
 const userStore = useUserStore();
 
 const isEditMode = ref(false);
+
 const form = reactive({
   id: null,
   name: '',
@@ -21,10 +24,43 @@ const form = reactive({
   approved_by_user_id: '',
 });
 
+const selectedUsers = reactive({
+  in_charge_user_id: null,
+  coordinator_user_id: null,
+  operational_admin_user_id: null,
+  recommend_by_user_id: null,
+  approved_by_user_id: null
+})
+
+const loadSelectedUsers = () => {
+  Object.keys(selectedUsers).forEach((field) => {
+    selectedUsers[field] = userStore.users.find(user => user.id === form[field]) || null
+  })
+}
+
+Object.keys(selectedUsers).forEach((field) => {
+  watch(() => selectedUsers[field], (newVal) => {
+    console.log(newVal);
+    
+    form[field] = newVal ? newVal.id : null
+  })
+})
+
 const resetForm = () => {
   Object.assign(form, {
     id: null,
     name: '',
+    in_charge_user_id: '',
+    coordinator_user_id: '',
+    operational_admin_user_id: '',
+    recommend_by_user_id: '',
+    approved_by_user_id: '',
+  });
+  isEditMode.value = false;
+};
+
+const selectvalueResetForm = () => {
+  Object.assign(selectedUsers, {
     in_charge_user_id: '',
     coordinator_user_id: '',
     operational_admin_user_id: '',
@@ -40,8 +76,10 @@ watch(
     if (newLeaveApproval) {
       isEditMode.value = true;
       Object.assign(form, newLeaveApproval);
+      loadSelectedUsers();
     } else {
       resetForm();
+      selectvalueResetForm();
     }
   },
   { immediate: true, deep: true },
@@ -97,22 +135,24 @@ onMounted(() => {
         }" :key="field">
           <div>
             <label :for="field" class="block text-sm font-medium">{{ label }}</label>
-            <select
-              :id="field"
-              v-model="form[field]"
-              class="w-full border rounded px-3 py-2"
-            >
-              <option value="">-- N/A --</option>
-              <option
-                v-for="user in userStore.users || []"
-                :key="user.id"
-                :value="user.id"
-              >
-                {{ user.name }}
-              </option>
-            </select>
+            <MultiselectDropdown v-model="selectedUsers[field]" :multiple="false" :options="userStore.users" />
           </div>
         </template>
+        
+        <!-- <select
+          :id="field"
+          v-model="form[field]"
+          class="w-full border rounded px-3 py-2"
+        >
+          <option value="">-- N/A --</option>
+          <option
+            v-for="user in userStore.users || []"
+            :key="user.id"
+            :value="user.id"
+          >
+            {{ user.name }}
+          </option>
+        </select> -->
 
         <div class="flex justify-end space-x-4">
           <button

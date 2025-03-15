@@ -28,7 +28,7 @@ const form = reactive({
   email: '',
   password: '',
   role: 'employee',
-  type: '',
+  type: 'Executive',
   address: '',
   device_user_id: null,
   is_active: true,
@@ -228,11 +228,10 @@ const computedDesignations = computed(() => {
               <div>
                 <label>Line Type</label>
                 <select v-model="form.type" class="w-full p-2 border rounded" required>
-                  <option value="Executive">Executive</option>
-                  <option value="SupportStaff">Support Staff</option>
-                  <option value="Engineer">Engineer</option>
-                  <option value="Doctor">Doctor</option>
-                  <option value="AcademyBody">Academy Body</option>
+                  <option value="executive">Executive</option>
+                  <option value="support_staff">Support Staff</option>
+                  <option value="doctor">Doctor</option>
+                  <option value="academy_body">Academy Body</option>
                 </select>
               </div>
 

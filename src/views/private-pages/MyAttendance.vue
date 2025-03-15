@@ -70,7 +70,7 @@ const goBack = () => router.go(-1)
         <hr />
         <div class="grid md:grid-cols-2">
           <p><strong>Name:</strong> {{ authStore.user?.name }}</p>
-          <p><strong>Designation:</strong> {{ authStore.user?.designation.title }}</p>
+          <p><strong>Designation:</strong> {{ authStore.user?.designation?.title }}</p>
           <p><strong>Department:</strong> {{ authStore.user?.department?.name }}</p>
           <p><strong>Company:</strong> {{ authStore.user?.company?.name }}</p>
           <p><strong>Phone:</strong> {{ authStore.user?.phone }}</p>

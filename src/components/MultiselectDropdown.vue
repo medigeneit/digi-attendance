@@ -1,43 +1,46 @@
 <template>
   <div>
     <Multiselect
-      :modelValue="modelValue"
-      @update:modelValue="updateValue"
+      v-model="selectedValue"
       :options="options"
       :multiple="multiple"
       :searchable="true"
       track-by="id"
       label="name"
-      class="w-full p-2 border border-gray-300 rounded focus:ring focus:ring-indigo-200 focus:outline-none"
-      :reduce="(user) => user.id"
-      placeholder="Select an option"
+      class="w-full border border-gray-300 rounded focus:ring focus:ring-indigo-200 focus:outline-none"
+      :placeholder="placeholder"
     />
   </div>
 </template>
 
 <script setup>
-import { defineEmits, defineProps } from 'vue'
+import { defineEmits, defineProps, ref, watch } from 'vue'
 import Multiselect from 'vue-multiselect'
 
 const props = defineProps({
-  modelValue: [Number, Array, Object, String, null], // Single ID (Number) or Multiple IDs (Array)
-  options: Object, // Object format: { "50": "Shahnewaz", "49": "Asif" }
-  multiple: Boolean, // Allows switching between single/multiple selection
-  label: String,
-  labelFor: String,
+  modelValue: [Number, Array, Object, String, null],
+  options: Array,
+  multiple: Boolean,
+  placeholder: String,
 })
 
-// const modelValueType = computed(() => {
-//   return typeof props.modelValue; // Detects the type of modelValue
-// });
-
 const emit = defineEmits(['update:modelValue'])
+const selectedValue = ref(props.modelValue)
+
+// Watcher to sync selected value with modelValue
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    selectedValue.value = newValue
+  },
+)
 
 // Emit updated value to parent
-const updateValue = (value) => {
+watch(selectedValue, (value) => {
   emit('update:modelValue', value)
-}
+})
 </script>
+
 <style>
 @import 'vue-multiselect/dist/vue-multiselect.css';
 </style>

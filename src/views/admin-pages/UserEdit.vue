@@ -19,6 +19,7 @@ const form = reactive({
   email: '',
   password: '',
   role: 'employee',
+  type: 'executive',
   address: '',
   device_user_id: null,
   is_active: true,
@@ -88,6 +89,7 @@ const loadUser = async () => {
     form.designation_id = user.designation_id
     form.shift_id = user.shift_id
     form.role = user.role
+    form.type = user.type
     form.device_user_id = user.device_user_id
     form.leave_approval_id = user.leave_approval_id
     form.other_approval_id = user.other_approval_id
@@ -238,6 +240,16 @@ const computedDesignations = computed(() => {
                   <option value="Contract">Contract</option>
                   <option value="Freelance">Freelance</option>
                   <option value="Intern">Intern</option>
+                </select>
+              </div>
+
+              <div>
+                <label>Line Type</label>
+                <select v-model="form.type" class="w-full p-2 border rounded" required>
+                  <option value="executive">Executive</option>
+                  <option value="support_staff">Support Staff</option>
+                  <option value="doctor">Doctor</option>
+                  <option value="academy_body">Academy Body</option>
                 </select>
               </div>
 

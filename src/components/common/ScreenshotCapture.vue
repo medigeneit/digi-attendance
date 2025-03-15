@@ -1,8 +1,6 @@
 <!-- src/components/ScreenshotCapture.vue -->
 <script setup>
 import html2canvas from 'html2canvas'
-import { defineProps } from 'vue'
-
 // Props to accept target section ID
 const props = defineProps({
   targetId: String,

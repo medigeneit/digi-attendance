@@ -1,5 +1,6 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import Multiselect from '@/components/MultiselectDropdown.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useCompanyStore } from '@/stores/company'
 import { storeToRefs } from 'pinia'
@@ -10,15 +11,19 @@ const router = useRouter()
 const companyStore = useCompanyStore()
 const attendanceStore = useAttendanceStore()
 const selectedCompanyId = ref('')
+const selectedEmployeeId = ref('')
 const selectedDate = ref('')
 const status = ref('')
-const { companies } = storeToRefs(companyStore)
+const category = ref('')
+const { companies, employees } = storeToRefs(companyStore)
 const { dailyLogs } = storeToRefs(attendanceStore)
 
 const fetchAttendance = async () => {
   if (selectedCompanyId.value || status.value) {
     await attendanceStore.getTodayAttendanceReport(
       selectedCompanyId.value,
+      selectedEmployeeId?.value.id,
+      category?.value,
       attendanceStore.selectedDate,
       status.value,
     )
@@ -29,11 +34,43 @@ onMounted(async () => {
   await companyStore.fetchCompanies()
   await attendanceStore.getTodayAttendanceReport(
     selectedCompanyId.value,
+    selectedEmployeeId?.value.id,
+    category?.value,
     attendanceStore.selectedDate,
+    status.value,
   )
 })
 
 watch([selectedCompanyId, selectedDate], fetchAttendance)
+
+watch(selectedCompanyId, (newCompanyId) => {
+  companyStore.fetchEmployee(newCompanyId)
+})
+
+watch(selectedEmployeeId, (newEmployee) => {
+  if (newEmployee?.id) {
+    fetchAttendance()
+  }
+})
+
+const getExportExcel = async () => {
+  await attendanceStore.attendanceDownloadExcel(
+    selectedCompanyId.value,
+    selectedEmployeeId?.value.id,
+    category?.value,
+    attendanceStore.selectedDate,
+    status.value,
+  )
+}
+const getDownloadPDF = async () => {
+  await attendanceStore.attendanceDownloadPdf(
+    selectedCompanyId.value,
+    selectedEmployeeId?.value.id,
+    category?.value,
+    attendanceStore.selectedDate,
+    status.value,
+  )
+}
 
 const goBack = () => router.go(-1)
 </script>
@@ -46,10 +83,17 @@ const goBack = () => router.go(-1)
         <span class="hidden md:flex">Back</span>
       </button>
       <h1 class="title-md md:title-lg flex-wrap text-center">Daily Attendance Report</h1>
-      <div></div>
+      <div class="flex gap-4">
+        <button type="button" @click="getExportExcel">
+          <i class="far fa-file-excel text-2xl text-green-500"></i>
+        </button>
+        <button type="button" @click="getDownloadPDF">
+          <i class="fal fa-file-pdf text-2xl text-red-500"></i>
+        </button>
+      </div>
     </div>
 
-    <div class="flex gap-4">
+    <div class="flex flex-wrap gap-4">
       <div>
         <select
           id="userSelect"
@@ -61,6 +105,23 @@ const goBack = () => router.go(-1)
           <option v-for="company in companies" :key="company?.id" :value="company?.id">
             {{ company?.name }}
           </option>
+        </select>
+      </div>
+      <div>
+        <Multiselect
+          v-model="selectedEmployeeId"
+          :options="employees"
+          :multiple="false"
+          placeholder="Select employee"
+        />
+      </div>
+      <div>
+        <select id="userSelect" v-model="category" @change="fetchAttendance" class="input-1">
+          <option value="">All Category</option>
+          <option value="executive">Executive</option>
+          <option value="support_staff">Support Staff</option>
+          <option value="doctor">Doctor</option>
+          <option value="academy_body">Academy Body</option>
         </select>
       </div>
       <div>

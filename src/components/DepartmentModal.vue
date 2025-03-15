@@ -1,7 +1,8 @@
 <script setup>
+import Multiselect from '@/components/MultiselectDropdown.vue'
 import { useCompanyStore } from '@/stores/company'
 import { storeToRefs } from 'pinia'
-import { reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 
 const props = defineProps({
   show: { type: Boolean, required: true },
@@ -14,6 +15,7 @@ const companyStore = useCompanyStore()
 
 const { companies, employees } = storeToRefs(companyStore)
 
+const selectIncharge = ref('')
 const isEditMode = ref(false)
 const isCompaniesFetched = ref(false) // Track if companies are fetched
 const departmentForm = reactive({
@@ -24,6 +26,13 @@ const departmentForm = reactive({
   short_name: '',
   description: '',
   status: 'Active',
+})
+
+const computedInchargeId = computed(() => (selectIncharge.value ? selectIncharge.value.id : null))
+
+// Watcher দিয়ে `computedInchargeId` কে `departmentForm.incharge_id`-এ আপডেট করা হচ্ছে
+watch(computedInchargeId, (newVal) => {
+  departmentForm.incharge_id = newVal
 })
 
 const resetForm = () => {
@@ -123,7 +132,8 @@ const fetchCompanies = async () => {
 
         <div class="mb-4">
           <label for="incharge_id" class="block text-sm font-medium mb-2">In Chare</label>
-          <select
+          <Multiselect :options="employees" v-model="selectIncharge" :multiple="false" />
+          <!-- <select
             id="incharge_id"
             v-model="departmentForm.incharge_id"
             class="w-full border rounded px-3 py-2" >
@@ -131,7 +141,7 @@ const fetchCompanies = async () => {
             <option v-for="(employee, index) in employees" :key="index" :value="index">
               {{ employee }}
             </option>
-          </select>
+          </select> -->
         </div>
 
         <div class="mb-4">

@@ -32,10 +32,11 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   };
 
-  const getTodayAttendanceReport = async (companyId, month, status) => {
+
+  const getTodayAttendanceReport = async (companyId, employee_id , category, month, status) => {
     isLoading.value = true;
     try {
-      const params = {companyId, month, status}
+      const params = {companyId, employee_id, category, month, status}
       const response = await apiClient.get("/attendance/today", { params });
       dailyLogs.value = response.data; 
       error.value = null;
@@ -83,14 +84,14 @@ export const useAttendanceStore = defineStore('attendance', () => {
   //   }
   // };
 
-  const getMonthlyAttendanceSummaryReport = async (company_id, month) => {
+  const getMonthlyAttendanceSummaryReport = async (company_id, employee_id, month) => {
     if (!company_id || !month) {
       error.value = 'Invalid user ID or month';
       return;
     }
     isLoading.value = true;
     try {
-      const params = { company_id, month}
+      const params = { company_id, employee_id, month}
       const response = await apiClient.get(`/attendance/monthly-summary-reports`, { params });
       monthly_company_summary.value = response.data; 
       error.value = null;
@@ -111,6 +112,33 @@ export const useAttendanceStore = defineStore('attendance', () => {
     try {
       const params = { company_id, month}
       const response = await apiClient.get(`/attendance/monthly-summary-reports?flag=pdf`, {
+          params,
+          responseType: 'blob', // Important for file downloads
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${month} attendance_summary.pdf`); // File name
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Something went wrong';
+      console.error(error.value);
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const attendanceDownloadPdf = async (companyId, employee_id , category, month, status) => {
+    // if (!company_id || !month) {
+    //   error.value = 'Invalid user ID or month';
+    //   return;
+    // }
+    isLoading.value = true;
+    try {
+      const params = { companyId, employee_id , category, month, status}
+      const response = await apiClient.get(`/attendance/today?flag=pdf`, {
           params,
           responseType: 'blob', // Important for file downloads
       });
@@ -159,6 +187,31 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
 };
 
+  const attendanceDownloadExcel = async (companyId, employee_id , category, month, status) => {
+    isLoading.value = true;
+    try {
+        const params = { companyId, employee_id , category, month, status };
+        const response = await apiClient.get(`/attendance/today?flag=excel`, {
+            params,
+            responseType: 'blob', // Important for file downloads
+        });
+
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `${month} attendance_summary.xlsx`); // File name
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+    } catch (err) {
+        error.value = err.response?.data?.message || 'Something went wrong';
+        console.error(error.value);
+    } finally {
+        isLoading.value = false;
+    }
+};
+
   return {
     monthlyLogs,
     dailyLateLogs,
@@ -174,7 +227,9 @@ export const useAttendanceStore = defineStore('attendance', () => {
     getAttendanceLateReport,
     getMonthlyAttendanceSummaryReport,
     downloadExcel,
-    downloadPDF
+    downloadPDF,
+    attendanceDownloadExcel,
+    attendanceDownloadPdf
   };
 });
 

@@ -1,5 +1,6 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import Multiselect from '@/components/MultiselectDropdown.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useCompanyStore } from '@/stores/company'
 import { storeToRefs } from 'pinia'
@@ -29,18 +30,32 @@ watch(
   },
 )
 
+watch(
+  () => selectedEmployeeId.value,
+  async (newEmployee) => {
+    if (newEmployee.id) {
+      await fetchApplicationsByUser()
+    }
+  },
+)
+
 const goBack = () => {
   router.go(-1)
 }
 
 const fetchApplicationsByUser = async () => {
-  if (selectedCompanyId.value && selectedEmployeeId && month.value) {
+  if (selectedCompanyId.value && selectedEmployeeId?.value.id) {
     await lateAttendanceStore.getAttendanceLateReport(
       selectedCompanyId.value,
-      selectedEmployeeId.value,
+      selectedEmployeeId?.value.id,
       month.value,
     )
   }
+}
+const statusClass = (status) => {
+  if (status === 'Pending') return 'text-yellow-700'
+  if (status === 'Approved') return 'text-green-700'
+  return 'text-red-500'
 }
 </script>
 
@@ -66,7 +81,8 @@ const fetchApplicationsByUser = async () => {
         </select>
       </div>
       <div>
-        <select
+        <Multiselect v-model="selectedEmployeeId" :options="employees" :multiple="false" />
+        <!-- <select
           id="user-filter"
           v-model="selectedEmployeeId"
           @change="fetchApplicationsByUser"
@@ -76,7 +92,7 @@ const fetchApplicationsByUser = async () => {
           <option v-for="(user, index) in employees" :key="index" :value="index">
             {{ user }}
           </option>
-        </select>
+        </select> -->
       </div>
       <div>
         <input
@@ -107,6 +123,7 @@ const fetchApplicationsByUser = async () => {
               <th class="border border-gray-300 px-2 text-left">Department</th>
               <th class="border border-gray-300 px-2 text-left">Entry Time</th>
               <th class="border border-gray-300 px-2 text-left">Late Duration</th>
+              <th class="border border-gray-300 px-2 text-left">Action</th>
               <th class="border border-gray-300 px-2 text-left">Shift</th>
             </tr>
           </thead>
@@ -125,6 +142,14 @@ const fetchApplicationsByUser = async () => {
               </td>
               <td class="border border-gray-300 px-2">{{ report.entry_time }}</td>
               <td class="border border-gray-300 px-2">{{ report.late_duration }}</td>
+              <td class="border border-gray-300 px-2">
+                <div v-if="report?.short_leave">
+                  <span :class="statusClass(report.short_leave.status)">
+                    {{ report.short_leave.status || 'Waiting' }}
+                  </span>
+                </div>
+                <div v-else class="text-gray-500 italic text-xs">No Application</div>
+              </td>
               <td class="border border-gray-300 px-2">{{ report.shift_name }}</td>
             </tr>
           </tbody>
