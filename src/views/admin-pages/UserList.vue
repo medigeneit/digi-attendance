@@ -73,8 +73,8 @@ const groupedUsers = computed(() => {
                 class="border-b border-gray-200 hover:bg-blue-200"
               >
                 <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
-                <td class="border border-gray-300 px-2">{{ user.name }}</td>
-                <td class="border border-gray-300 px-2">{{ user.designation.title }}</td>
+                <td class="border border-gray-300 px-2">{{ user?.name }}</td>
+                <td class="border border-gray-300 px-2">{{ user.designation?.title }}</td>
                 <td class="border border-gray-300 px-2">{{ user.role }}</td>
                 <td class="border border-gray-300 px-2">{{ user.device_user_id || 'নেই' }}</td>
                 <td class="border border-gray-300 px-2">{{ user.phone }}</td>
