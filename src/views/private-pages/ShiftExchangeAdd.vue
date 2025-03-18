@@ -1,16 +1,17 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useExchangeStore } from '@/stores/exchange'
 import { useUserStore } from '@/stores/user'
 import { useAuthStore } from '@/stores/auth'
 import LoaderView from '@/components/common/LoaderView.vue'
+import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 
 const router = useRouter()
 const exchangeStore = useExchangeStore()
 const userStore = useUserStore()
 const authStore = useAuthStore()
-
+const selectUser = ref('')
 const form = ref({
   shift_id: '',
   exchange_type: 'shift', // Fixed to "shift"
@@ -48,8 +49,15 @@ const submitShiftExchange = async () => {
   }
 }
 
+watch(
+  () => selectUser.value,
+  (newValue) => {
+    form.value.handover_user_id = newValue?.id
+  },
+)
+
 onMounted(() => {
-  userStore.fetchDepartmentWiseEmployees()
+  userStore.fetchHandoverDepartmentWiseEmployees()
   authStore.fetchUser()
 })
 
@@ -132,12 +140,14 @@ const goBack = () => {
 
       <div>
         <label for="handover-user" class="block text-sm font-medium">Handover User</label>
-        <select id="handover-user" v-model="form.handover_user_id" class="input-1 w-full" required>
-          <option value="">Select Handover User</option>
-          <option v-for="user in userStore.users" :key="user.id" :value="user.id">
-            {{ user.name }}
-          </option>
-        </select>
+        <MultiselectDropdown
+          v-model="selectUser"
+          :options="userStore.handoverUsers"
+          :multiple="false"
+          :required="false"
+          label="Select User"
+          labelFor="user"
+        />
       </div>
 
       <div v-if="error" class="text-red-500 text-sm">{{ error }}</div>

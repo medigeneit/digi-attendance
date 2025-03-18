@@ -1,15 +1,18 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useExchangeStore } from '@/stores/exchange'
 import { useUserStore } from '@/stores/user'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const exchangeStore = useExchangeStore()
 const userStore = useUserStore()
 const authStore = useAuthStore()
+const selectUser = ref(null)
+const checkUserRequired = ref(false)
 
 const form = ref({
   exchange_type: 'offday', // Fixed to "offday"
@@ -18,6 +21,14 @@ const form = ref({
   works_in_hand: '',
   handover_user_id: '',
 })
+
+watch(
+  () => selectUser.value,
+  (newValue) => {
+    form.value.handover_user_id = newValue?.id
+    checkUserRequired.value = false
+  },
+)
 
 const loading = ref(false)
 const error = ref(null)
@@ -31,6 +42,12 @@ const submitOffdayExchange = async () => {
       user_id: authStore?.user?.id,
       ...form.value,
     }
+
+    if(!form.value.handover_user_id)
+    {
+      checkUserRequired.value = true
+      return
+    }
     const newExchange = await exchangeStore.createExchange(payload)
 
     router.push({ name: 'ExchangeShow', params: { id: newExchange.id } })
@@ -42,7 +59,7 @@ const submitOffdayExchange = async () => {
 }
 
 onMounted(() => {
-  userStore.fetchDepartmentWiseEmployees()
+  userStore.fetchHandoverDepartmentWiseEmployees()
   authStore.fetchUser()
 })
 
@@ -121,12 +138,14 @@ const goBack = () => {
 
       <div>
         <label for="handover-user" class="block text-sm font-medium">Handover User</label>
-        <select id="handover-user" v-model="form.handover_user_id" class="input-1 w-full" required>
-          <option value="">Select Handover User</option>
-          <option v-for="user in userStore.users" :key="user.id" :value="user.id">
-            {{ user.name }}
-          </option>
-        </select>
+        <MultiselectDropdown
+          v-model="selectUser"
+          :options="userStore.handoverUsers"
+          :multiple="false"
+          :required="checkUserRequired"
+          label="Select User"
+          labelFor="user"
+        />
       </div>
 
       <div v-if="error" class="text-red-500 text-sm">{{ error }}</div>

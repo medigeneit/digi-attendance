@@ -3,10 +3,27 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 
 export const useExchangeStore = defineStore('exchange', () => {
+  const all_exchanges = ref([]);
   const exchanges = ref([]);
   const exchange = ref(null);
   const loading = ref(false);
   const error = ref(null);
+
+  // Fetch all exchanges
+  async function fetchAllExchanges(user_id = '') {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await apiClient.get(`/all-exchanges?user_id=${user_id}`);
+      console.log(response.data, user_id, 1);
+      
+      all_exchanges.value = response.data.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to fetch exchanges';
+    } finally {
+      loading.value = false;
+    }
+  }
 
   // Fetch all exchanges
   async function fetchExchanges() {
@@ -185,10 +202,12 @@ export const useExchangeStore = defineStore('exchange', () => {
   };
 
   return {
+    all_exchanges,
     exchanges,
     exchange,
     loading,
     error,
+    fetchAllExchanges,
     fetchExchanges,
     fetchExchange,
     createExchange,

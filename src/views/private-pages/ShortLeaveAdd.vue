@@ -86,7 +86,7 @@ const formatTime = (timeStr) => {
 }
 
 onMounted(() => {
-  userStore.fetchDepartmentWiseEmployees()
+  userStore.fetchHandoverDepartmentWiseEmployees()
 
   form.value.date = formatDate(
     type === 'Delay' ? start_time : type === 'Early' ? end_time : todayDate,
@@ -189,8 +189,9 @@ const goBack = () => {
         <label for="handover-user" class="block text-sm font-medium">Handover User</label>
         <MultiselectDropdown
           v-model="selectUser"
-          :options="userStore.users"
+          :options="userStore.handoverUsers"
           :multiple="false"
+          :required="false"
           label="Select User"
           labelFor="user"
         />

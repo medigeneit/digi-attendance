@@ -1,30 +1,33 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useExchangeStore } from '@/stores/exchange'
 import { useUserStore } from '@/stores/user'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const exchangeStore = useExchangeStore()
 const userStore = useUserStore()
 
-const selectedUserId = ref('')
+const selectedUser = ref('')
 
 // Fetch all users and exchanges
 onMounted(() => {
   userStore.fetchUsers()
-  exchangeStore.fetchExchanges()
+  exchangeStore.fetchAllExchanges()
 })
 
-// Fetch exchanges by selected user
-const fetchExchangesByUser = async () => {
-  if (selectedUserId.value) {
-    await exchangeStore.fetchExchanges({ user_id: selectedUserId.value })
-  } else {
-    await exchangeStore.fetchExchanges()
+watch(
+ () => selectedUser?.value,
+ async (newValue) => {
+    if (newValue?.id) {
+      await exchangeStore.fetchAllExchanges( newValue?.id )
+    } else {
+      await exchangeStore.fetchAllExchanges()
+    }
   }
-}
+)
 
 const goBack = () => {
   router.go(-1)
@@ -32,7 +35,7 @@ const goBack = () => {
 
 // Filtered shift exchanges based on selected user
 const filteredShiftExchanges = computed(() => {
-  return exchangeStore.exchanges.filter((exchange) => exchange.exchange_type === 'shift')
+  return exchangeStore.all_exchanges.filter((exchange) => exchange.exchange_type === 'shift')
 })
 </script>
 
@@ -46,18 +49,14 @@ const filteredShiftExchanges = computed(() => {
 
       <h1 class="title-md md:title-lg flex-wrap text-center">Shift Exchanges</h1>
 
-      <div>
-        <select
-          id="user-filter"
-          v-model="selectedUserId"
-          class="input-1"
-          @change="fetchExchangesByUser"
-        >
-          <option value="">All Users</option>
-          <option v-for="user in userStore.users" :key="user.id" :value="user.id">
-            {{ user.name }}
-          </option>
-        </select>
+      <div style="width: 300px;">
+        <MultiselectDropdown
+          v-model="selectedUser"
+          :options="userStore.users"
+          :multiple="false"
+          label="Select User"
+          labelFor="user"
+        />
       </div>
     </div>
 
