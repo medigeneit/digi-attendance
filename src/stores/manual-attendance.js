@@ -22,6 +22,20 @@ export const useManualAttendanceStore = defineStore('manualAttendance', () => {
     }
   };
 
+  const fetchUserManualAttendances = async (filters = {}) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await apiClient.get('/user-manual-attendances', { params: filters });
+      manualAttendances.value = response.data.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to fetch manual attendances';
+      console.error('Error fetching manual attendances:', err);
+    } finally {
+      loading.value = false;
+    }
+  };
+
   const fetchManualAttendanceById = async (id) => {
     loading.value = true;
     error.value = null;
@@ -178,5 +192,6 @@ export const useManualAttendanceStore = defineStore('manualAttendance', () => {
     recommendByAccept,
     approvedByAccept,
     rejectManualAttendance,
+    fetchUserManualAttendances
   };
 });
