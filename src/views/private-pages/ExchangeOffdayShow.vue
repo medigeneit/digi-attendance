@@ -89,7 +89,19 @@ const uploadAttachment = async () => {
   }
 }
 
+function print() {
+  window.print()
+}
+
 const goBack = () => router.go(-1)
+
+const formatDate = (dateString) => new Date(dateString).toISOString().slice(0, 10);
+
+const getDayName = (dateString) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { weekday: 'long' });
+};
+
 </script>
 
 <template>
@@ -111,26 +123,36 @@ const goBack = () => router.go(-1)
     <LoaderView v-if="loading" />
 
     <div v-else class="card-bg p-4 md:p-8">
-      <h2 class="title-md">Exchange Request</h2>
-      <div class="grid md:grid-cols-2">
-        <div><b>Type:</b> {{ exchange?.exchange_type }}</div>
-        <div><b>Current Date:</b> {{ exchange?.current_date }}</div>
-        <div><b>Exchange Date:</b> {{ exchange?.exchange_date }}</div>
-        <div><b>Status:</b> {{ exchange?.status || 'N/A' }}</div>
-        <div><b>Works in Hand:</b> {{ exchange?.works_in_hand || 'N/A' }}</div>
+      <div>
+        <h1 class="title-lg text-center">
+            Offday Exchange Application
+        </h1>
+      </div>
+      <div class="flex justify-end">
+        <div>Date: {{ formatDate(exchange?.created_at) }}</div>
+      </div>
+      <div>
+        <p class="font-medium">Name: <b>{{ exchange?.user?.name }}</b> </p>
+          <div class="gap-y-1">
+            <p>Designation: <b>{{ exchange?.user?.designation?.title }}</b></p>
+          </div>
+          <div class="gap-y-1">
+            <p>Department:  <b>{{ exchange?.user?.company?.name }}</b></p>
+          </div>
       </div>
 
-      <div class="grid md:grid-cols-2 gap-4 pt-10">
-        <div>
-          <hr class="w-44 border-black" />
-          <div><b>Applicant</b></div>
-          <p class="font-medium">{{ exchange?.user?.name }}</p>
-          <div class="text-sm">
-            <p>{{ exchange?.user?.department?.name }}</p>
-            <p>{{ exchange?.user?.designation?.title }}</p>
-          </div>
-        </div>
+      <div class="grid md:grid-cols-2 pt-3">
+        <div><b>Holiday Day:</b> {{ getDayName(exchange?.current_date) }}</div>
+        <div><b>Date:</b> {{ exchange?.current_date }}</div>
+        <div><b>Exchange Day:</b> {{ getDayName(exchange?.exchange_date) }}</div>
+        <div><b>Date:</b> {{ exchange?.exchange_date }}</div>
+        <div class="col-span-2 pt-2"><b>Reason:</b> {{ exchange?.reason || 'N/A' }}</div>
+      </div>
 
+      <div class="grid print:grid-cols-2 md:grid-cols-2 gap-4 pt-10">
+        <div>
+          <div><b>Works in Hand:</b> {{ exchange?.works_in_hand || 'N/A' }}</div>
+        </div>
         <div>
           <p>{{ exchange?.handover_user?.name || 'Not assigned' }}</p>
           <div
@@ -190,7 +212,7 @@ const goBack = () => router.go(-1)
         </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="grid print:grid-cols-3 md:grid-cols-3 gap-4">
         <div class="pt-10">
           <div
             v-if="
@@ -260,44 +282,44 @@ const goBack = () => router.go(-1)
             <span v-if="exchange?.recommend_by_user_id" class="text-green-600">(✔)</span>
           </p>
         </div>
+        <div class="pt-10">
+          <div
+            v-if="
+              exchange.status !== 'Rejected' &&
+              exchange.status !== 'Approved' &&
+              !exchange?.approved_by_user_id &&
+              exchange?.user?.other_approval?.approved_by_user_id === authStore.user.id
+            "
+            class="print:hidden"
+          >
+            <p class="">
+              {{ exchange?.user?.other_approval?.approved_by_user?.name || 'N/A' }}
+            </p>
+            <p class="text-xs text-blue-600">
+              {{ exchange?.user?.name }} has submitted an application.<br />
+              Will you accept it?
+            </p>
+            <div class="flex gap-4">
+              <button
+                class="font-bold text-lg text-green-600"
+                @click="acceptExchangeAction('approve')"
+              >
+                ✔
+              </button>
+              <button class="" @click="openRejectionModal">❌</button>
+            </div>
+          </div>
+          <p>{{ exchange?.approved_by_user?.name || '' }}</p>
+          <hr class="w-44 border-black" />
+          <p class="font-bold">
+            Approved By
+            <span v-if="exchange?.approved_by_user_id" class="text-green-600">(✔)</span>
+          </p>
+        </div>
       </div>
 
-      <div class="flex flex-col pt-10">
-        <div
-          v-if="
-            exchange.status !== 'Rejected' &&
-            exchange.status !== 'Approved' &&
-            !exchange?.approved_by_user_id &&
-            exchange?.user?.other_approval?.approved_by_user_id === authStore.user.id
-          "
-          class="print:hidden"
-        >
-          <p class="">
-            {{ exchange?.user?.other_approval?.approved_by_user?.name || 'N/A' }}
-          </p>
-          <p class="text-xs text-blue-600">
-            {{ exchange?.user?.name }} has submitted an application.<br />
-            Will you accept it?
-          </p>
-          <div class="flex gap-4">
-            <button
-              class="font-bold text-lg text-green-600"
-              @click="acceptExchangeAction('approve')"
-            >
-              ✔
-            </button>
-            <button class="" @click="openRejectionModal">❌</button>
-          </div>
-        </div>
-        <p>{{ exchange?.approved_by_user?.name || '' }}</p>
-        <hr class="w-44 border-black" />
-        <p class="font-bold">
-          Approved By
-          <span v-if="exchange?.approved_by_user_id" class="text-green-600">(✔)</span>
-        </p>
-      </div>
     </div>
-    <div>
+    <div class="print:hidden ">
       <div>
         <label>Attachment</label>
         <!-- Show existing file link if available -->

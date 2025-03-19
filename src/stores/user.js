@@ -5,6 +5,7 @@ import apiClient from '../axios';
 export const useUserStore = defineStore('user', () => {
   // State
   const users = ref([]);
+  const handoverUsers = ref([]);
   const user = ref({});
   const dashboardInfo = ref({});
   const error = ref(null);
@@ -34,6 +35,19 @@ export const useUserStore = defineStore('user', () => {
       isLoading.value = true; // লোডিং শুরু
       const response = await apiClient.get('/department-wise-employees');
       users.value = response.data;
+      error.value = null;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Something went wrong';
+    } finally {
+      isLoading.value = false; // লোডিং শেষ
+    }
+  };
+
+  const fetchHandoverDepartmentWiseEmployees = async () => {
+    try {
+      isLoading.value = true; // লোডিং শুরু
+      const response = await apiClient.get('/department-handover-wise-employees');
+      handoverUsers.value = response.data;
       error.value = null;
     } catch (err) {
       error.value = err.response?.data?.message || 'Something went wrong';
@@ -121,6 +135,7 @@ export const useUserStore = defineStore('user', () => {
   // Return state, getters, and actions
   return {
     users,
+    handoverUsers,
     user,
     error,
     isLoading, // লোডিং স্টেট রিটার্ন করা
@@ -134,6 +149,7 @@ export const useUserStore = defineStore('user', () => {
     updateUser,
     deleteUser,
     fetchUserDashboardData,
-    fetchDepartmentWiseEmployees
+    fetchDepartmentWiseEmployees,
+    fetchHandoverDepartmentWiseEmployees,
   };
 });

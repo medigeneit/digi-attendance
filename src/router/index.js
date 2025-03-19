@@ -387,9 +387,16 @@ const router = createRouter({
         },
 
         {
-          path: '/exchange-show/:id',
-          name: 'ExchangeShow',
-          component: () => import('@/views/private-pages/ExchangeShow.vue'),
+          path: '/exchange-shift-show/:id',
+          name: 'ExchangeShiftShow',
+          component: () => import('@/views/private-pages/ExchangeShiftShow.vue'),
+          meta: { requiresAuth: true }
+        },
+
+        {
+          path: '/exchange-offday-show/:id',
+          name: 'ExchangeOffdayShow',
+          component: () => import('@/views/private-pages/ExchangeOffdayShow.vue'),
           meta: { requiresAuth: true }
         },
 

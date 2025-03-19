@@ -86,7 +86,7 @@ const formatTime = (timeStr) => {
 }
 
 onMounted(() => {
-  userStore.fetchDepartmentWiseEmployees()
+  userStore.fetchHandoverDepartmentWiseEmployees()
 
   form.value.date = formatDate(
     type === 'Delay' ? start_time : type === 'Early' ? end_time : todayDate,
@@ -147,21 +147,22 @@ const goBack = () => {
           required
         />
       </div> -->
-
-      <div>
-        <label for="start-time" class="block text-sm font-medium">Start Time</label>
-        <input
-          type="time"
-          id="start-time"
-          v-model="form.start_time"
-          class="input-1 w-full"
-          required
-        />
-      </div>
-
-      <div>
-        <label for="end-time" class="block text-sm font-medium">End Time</label>
-        <input type="time" id="end-time" v-model="form.end_time" class="input-1 w-full" required />
+      <div class="col-span-2 grid grid-cols-2 gap-4">
+        <div>
+          <label for="start-time" class="block text-sm font-medium">From</label>
+          <input
+            type="time"
+            id="start-time"
+            v-model="form.start_time"
+            class="input-1 w-full"
+            required
+          />
+        </div>
+  
+        <div>
+          <label for="end-time" class="block text-sm font-medium">To</label>
+          <input type="time" id="end-time" v-model="form.end_time" class="input-1 w-full" required />
+        </div>
       </div>
 
       <div>
@@ -189,8 +190,9 @@ const goBack = () => {
         <label for="handover-user" class="block text-sm font-medium">Handover User</label>
         <MultiselectDropdown
           v-model="selectUser"
-          :options="userStore.users"
+          :options="userStore.handoverUsers"
           :multiple="false"
+          :required="false"
           label="Select User"
           labelFor="user"
         />

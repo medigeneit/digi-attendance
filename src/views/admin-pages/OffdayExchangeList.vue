@@ -2,35 +2,34 @@
 import LoaderView from '@/components/common/LoaderView.vue'
 import { useExchangeStore } from '@/stores/exchange'
 import { useUserStore } from '@/stores/user'
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const exchangeStore = useExchangeStore()
 const userStore = useUserStore()
-
-const selectedUserId = ref('')
+const type = 'offday'
+const selectedUser = ref('')
 
 onMounted(() => {
   userStore.fetchUsers()
-  exchangeStore.fetchExchanges()
+  exchangeStore.fetchAllExchanges(type)
 })
 
-const fetchExchangesByUser = async () => {
-  if (selectedUserId.value) {
-    await exchangeStore.fetchExchanges({ user_id: selectedUserId.value })
-  } else {
-    await exchangeStore.fetchExchanges()
+watch(
+ () => selectedUser?.value,
+ async (newValue) => {
+    if (newValue?.id) {
+      await exchangeStore.fetchAllExchanges( type, newValue?.id )
+    } else {
+      await exchangeStore.fetchAllExchanges(type)
+    }
   }
-}
+)
 
 const goBack = () => {
   router.go(-1)
 }
-
-const filteredExchanges = computed(() => {
-  return exchangeStore.exchanges.filter((exchange) => exchange.exchange_type === 'offday')
-})
 </script>
 
 <template>
@@ -43,18 +42,14 @@ const filteredExchanges = computed(() => {
 
       <h1 class="title-md md:title-lg flex-wrap text-center">Offday Exchanges</h1>
 
-      <div>
-        <select
-          id="user-filter"
-          v-model="selectedUserId"
-          class="input-1"
-          @change="fetchExchangesByUser"
-        >
-          <option value="">All Users</option>
-          <option v-for="user in userStore.users" :key="user.id" :value="user.id">
-            {{ user.name }}
-          </option>
-        </select>
+      <div style="width: 300px;">
+        <MultiselectDropdown
+          v-model="selectedUser"
+          :options="userStore.users"
+          :multiple="false"
+          label="Select User"
+          labelFor="user"
+        />
       </div>
     </div>
 
@@ -79,7 +74,7 @@ const filteredExchanges = computed(() => {
           </thead>
           <tbody>
             <tr
-              v-for="(exchange, index) in filteredExchanges"
+              v-for="(exchange, index) in exchangeStore?.exchanges"
               :key="exchange?.id"
               class="border-b border-gray-200 hover:bg-blue-200"
             >
@@ -91,7 +86,7 @@ const filteredExchanges = computed(() => {
               <td class="border border-gray-300 px-2">
                 <div class="flex gap-2">
                   <RouterLink
-                    :to="{ name: 'ExchangeShow', params: { id: exchange?.id } }"
+                    :to="{ name: 'ExchangeOffdayShow', params: { id: exchange?.id } }"
                     class="btn-icon"
                   >
                     <i class="far fa-eye"></i>

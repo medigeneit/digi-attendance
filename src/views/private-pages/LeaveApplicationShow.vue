@@ -252,7 +252,17 @@ const totalWithWeekendDays = computed(() => {
             </div>
           </div>
         </div>
-
+        <div class="py-2">
+            <div class="gap-y-1">
+              <p>Name: <b>{{ leaveApplication?.user_name }} </b></p>
+            </div>
+            <div class="gap-y-1">
+              <p>Designation: <b>{{ leaveApplication?.designation_title }}</b></p>
+            </div>
+            <div class="gap-y-1">
+              <p>Phone: <b>{{ leaveApplication?.user_phone }}</b></p>
+            </div>
+        </div>
         <div>
           <h3 class="font-bold">Leave Details:</h3>
           <div class="grid print:grid-cols-2 md:grid-cols-2 text-sm">
@@ -267,21 +277,12 @@ const totalWithWeekendDays = computed(() => {
             <li><strong>Resumption Date:</strong> {{ leaveApplication?.resumption_date }}</li>
           </div>
         </div>
-        <div class="text-sm">
-          <p>
-            <strong>Works in Hand: </strong
-            >{{ leaveApplication?.works_in_hand || 'No details provided' }}
-          </p>
-        </div>
         <div class="pt-8 grid grid-cols-2">
           <div>
             <div class="text-sm">
-              <hr class="w-44 border-black hidden print:block" />
-              <p><strong>Applicant:</strong> {{ leaveApplication?.user_name }}</p>
-              <p><strong>Designation:</strong> {{ leaveApplication?.designation_title }}</p>
-              <p><strong>Department:</strong> {{ leaveApplication?.department_name }}</p>
-              <!-- <p><strong>Email:</strong> {{ leaveApplication?.user?.email }}</p> -->
-              <p><strong>Phone:</strong> {{ leaveApplication?.user_phone }}</p>
+              <p>
+                <strong>Works in Hand: </strong>{{ leaveApplication?.works_in_hand || 'No details provided' }}
+              </p>
             </div>
           </div>
 
