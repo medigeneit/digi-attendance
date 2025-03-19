@@ -1,15 +1,17 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useManualAttendanceStore } from '@/stores/manual-attendance'
 import { useUserStore } from '@/stores/user'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const manualAttendanceStore = useManualAttendanceStore()
 const userStore = useUserStore()
 
-const selectedUserId = ref('')
+const selectedUser = ref('')
+const selectedUserId = computed(() => selectedUser.value?.id)
 
 onMounted(() => {
   userStore.fetchUsers()
@@ -23,6 +25,8 @@ const fetchManualAttendancesByUser = async () => {
     await manualAttendanceStore.fetchManualAttendances()
   }
 }
+
+watch([selectedUserId], fetchManualAttendancesByUser)
 
 const filteredManualAttendances = computed(() => {
   return manualAttendanceStore.manualAttendances
@@ -43,8 +47,16 @@ const goBack = () => {
 
       <h1 class="title-md md:title-lg flex-wrap text-center">My Manual Attendances</h1>
 
-      <div>
-        <select
+      <div class="md:w-1/4">
+        <MultiselectDropdown
+          v-model="selectedUser"
+          :options="userStore.users"
+          :multiple="false"
+          class="w-full mb-2"
+          placeholder="Select Employee"
+        />
+
+        <!-- <select
           id="user-filter"
           v-model="selectedUserId"
           class="input-1"
@@ -54,7 +66,7 @@ const goBack = () => {
           <option v-for="user in userStore.users" :key="user.id" :value="user.id">
             {{ user.name }}
           </option>
-        </select>
+        </select> -->
       </div>
     </div>
 
@@ -70,6 +82,8 @@ const goBack = () => {
           <thead>
             <tr class="bg-gray-200">
               <th class="border border-gray-300 px-2 text-left">#</th>
+              <th class="border border-gray-300 px-2 text-left">Employee Name</th>
+              <th class="border border-gray-300 px-2 text-left">Department</th>
               <th class="border border-gray-300 px-2 text-left">Date</th>
               <th class="border border-gray-300 px-2 text-left">Type</th>
               <th class="border border-gray-300 px-2 text-left">Check-In</th>
@@ -85,6 +99,8 @@ const goBack = () => {
               class="border-b border-gray-200 hover:bg-blue-200"
             >
               <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
+              <td class="border border-gray-300 px-2">{{ attendance?.user?.name }}</td>
+              <td class="border border-gray-300 px-2">{{ attendance?.user?.department?.name }}</td>
               <td class="border border-gray-300 px-2">
                 {{
                   new Date(attendance.created_at).toLocaleDateString('en-GB', {

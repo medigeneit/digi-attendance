@@ -7,16 +7,18 @@
       :searchable="true"
       track-by="id"
       label="name"
-      class="w-full border border-gray-300 rounded focus:ring focus:ring-indigo-200 focus:outline-none"
+      class="w-full border-2 border-gray-400 rounded focus:ring focus:ring-indigo-200 focus:outline-none"
       :placeholder="placeholder"
-      :class="{'border-red-500': props.required && isInvalid}"
     />
   </div>
-  <p v-if="props.required && isInvalid" class="text-red-500 text-sm mt-1">This field is required.</p>
+  <!-- // :class="{'border-red-500': props.required && isInvalid}" -->
+  <!-- <p v-if="props.required && isInvalid" class="text-red-500 text-sm mt-1">
+    This field is required.
+  </p> -->
 </template>
 
 <script setup>
-import { defineEmits, defineProps, ref, watch, computed } from 'vue'
+import { computed, defineEmits, defineProps, ref, watch } from 'vue'
 import Multiselect from 'vue-multiselect'
 
 const props = defineProps({
@@ -44,7 +46,11 @@ watch(selectedValue, (value) => {
 })
 
 const isInvalid = computed(() => {
-  return props.required && (!selectedValue.value || (Array.isArray(selectedValue.value) && selectedValue.value.length === 0))
+  return (
+    props.required &&
+    (!selectedValue.value ||
+      (Array.isArray(selectedValue.value) && selectedValue.value.length === 0))
+  )
 })
 </script>
 

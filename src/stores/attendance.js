@@ -18,6 +18,8 @@ export const useAttendanceStore = defineStore('attendance', () => {
       error.value = 'Invalid user ID or month';
       return;
     }
+    console.log('sdfsdf', userId);
+    
     isLoading.value = true;
     try {
       const response = await apiClient.get(`/user/${userId}/attendance/monthly/${month}`);

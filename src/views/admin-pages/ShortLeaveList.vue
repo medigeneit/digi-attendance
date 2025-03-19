@@ -1,15 +1,16 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useShortLeaveStore } from '@/stores/short-leave'
 import { useUserStore } from '@/stores/user'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const shortLeaveStore = useShortLeaveStore()
 const userStore = useUserStore()
-
-const selectedUserId = ref('')
+const selectedUser = ref('')
+const selectedUserId = computed(() => selectedUser.value?.id)
 
 onMounted(() => {
   userStore.fetchUsers()
@@ -33,6 +34,8 @@ const filteredShortLeaves = computed(() => {
 const goBack = () => {
   router.go(-1)
 }
+
+watch([selectedUserId], fetchShortLeavesByUser)
 
 const formatTime = (timeString) => {
   const [hour, minute] = timeString.split(':').map(Number) // Extract hour & minute
@@ -58,7 +61,14 @@ const formatTime = (timeString) => {
       <h1 class="title-md md:title-lg flex-wrap text-center">Short Leaves</h1>
 
       <div>
-        <select
+        <MultiselectDropdown
+          v-model="selectedUser"
+          :options="userStore.users"
+          :multiple="false"
+          class="w-full"
+          placeholder="Select Employee"
+        />
+        <!-- <select
           id="user-filter"
           v-model="selectedUserId"
           class="input-1"
@@ -68,7 +78,7 @@ const formatTime = (timeString) => {
           <option v-for="user in userStore.users" :key="user.id" :value="user.id">
             {{ user.name }}
           </option>
-        </select>
+        </select> -->
       </div>
     </div>
 

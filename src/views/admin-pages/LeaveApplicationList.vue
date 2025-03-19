@@ -1,9 +1,10 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -11,7 +12,8 @@ const route = useRoute()
 const leaveApplicationStore = useLeaveApplicationStore()
 const userStore = useUserStore()
 const { leaveApplications } = storeToRefs(leaveApplicationStore)
-const selectedUserId = ref('')
+const selectedUser = ref('')
+const selectedUserId = computed(() => selectedUser.value?.id)
 
 onMounted(() => {
   userStore.fetchUsers()
@@ -22,9 +24,7 @@ const goBack = () => {
 }
 
 const fetchApplicationsByUser = async () => {
-  if (selectedUserId.value) {
-    await leaveApplicationStore.fetchLeaveApplications({ user_id: selectedUserId.value })
-  }
+  await leaveApplicationStore.fetchLeaveApplications({ user_id: selectedUserId.value })
 }
 
 const filteredLeaveApplications = computed(() => {
@@ -34,6 +34,8 @@ const filteredLeaveApplications = computed(() => {
 onMounted(async () => {
   await leaveApplicationStore.fetchLeaveApplications({ query: route.query?.search })
 })
+
+watch([selectedUserId], fetchApplicationsByUser)
 </script>
 
 <template>
@@ -47,7 +49,14 @@ onMounted(async () => {
       <h1 class="title-md md:title-lg flex-wrap text-center">Leave Applications</h1>
 
       <div>
-        <select
+        <MultiselectDropdown
+          v-model="selectedUser"
+          :options="userStore.users"
+          :multiple="false"
+          class="w-full"
+          placeholder="Select Employee"
+        />
+        <!-- <select
           id="user-filter"
           v-model="selectedUserId"
           class="input-1"
@@ -57,7 +66,7 @@ onMounted(async () => {
           <option v-for="user in userStore.users" :key="user.id" :value="user.id">
             {{ user.name }}
           </option>
-        </select>
+        </select> -->
       </div>
     </div>
 

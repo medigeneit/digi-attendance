@@ -1,7 +1,7 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
-import { useAttendanceStore } from '@/stores/attendance'
 import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
+import { useAttendanceStore } from '@/stores/attendance'
 import { useUserStore } from '@/stores/user'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
@@ -10,19 +10,15 @@ const router = useRouter()
 const userStore = useUserStore()
 const attendanceStore = useAttendanceStore()
 
-const selectedUser = ref(null) 
-const selectedUserId = ref('') 
+const selectedUser = ref(null)
+const selectedUserId = ref('')
 const selectedMonth = ref('')
 
-
-selectedUserId.value = computed(() => selectedUser.value?.id)
+const userId = computed(() => selectedUser.value?.id)
 
 const fetchAttendance = async () => {
-  if (selectedUserId.value) {
-    await attendanceStore.getMonthlyAttendanceByShift(
-      selectedUserId.value,
-      attendanceStore.selectedMonth,
-    )
+  if (userId) {
+    await attendanceStore.getMonthlyAttendanceByShift(userId.value, attendanceStore.selectedMonth)
   }
 }
 
@@ -31,6 +27,16 @@ onMounted(async () => {
 })
 
 watch([selectedUserId, selectedMonth], fetchAttendance)
+
+watch(
+  userId,
+  (newValue, oldValue) => {
+    if (newValue !== null) {
+      fetchAttendance()
+    }
+  },
+  { immediate: false },
+)
 
 const goBack = () => router.go(-1)
 </script>
@@ -46,25 +52,17 @@ const goBack = () => router.go(-1)
       <div></div>
     </div>
 
-    <div class="flex gap-4">
-      <div>
-        <!-- <select id="userSelect" v-model="selectedUserId" @change="fetchAttendance" class="input-1">
-          <option value="" disabled>Select a user</option>
-          <option v-for="user in userStore.users" :key="user?.id" :value="user?.id">
-            {{ user?.name }}
-          </option>
-        </select> -->
-        <div style="width: 300px;">
+    <div class="w-1/2 flex gap-4">
+      <div class="w-full">
         <MultiselectDropdown
-            v-model="selectedUser"
-            :options="userStore.users"
-            :multiple="false"
-            label="Select User"
-            labelFor="user"
-          />
-        </div>
+          v-model="selectedUser"
+          :options="userStore.users"
+          :multiple="false"
+          class="w-full"
+          placeholder="Select Employee"
+        />
       </div>
-      <div>
+      <div class="w-full">
         <input
           id="monthSelect"
           type="month"
@@ -138,20 +136,17 @@ const goBack = () => router.go(-1)
         </table>
       </div>
     </div>
-    <div class="grid md:grid-cols-2 gap-4 text-sm">
+    <div v-if="selectedUser" class="grid md:grid-cols-2 gap-4 text-sm">
       <div class="card-bg p-4 gap-1">
         <h2 class="title-md">Selected Employee Info</h2>
         <hr />
-        <div v-if="selectedUser" class="grid md:grid-cols-2">
+        <div class="grid md:grid-cols-2">
           <p><strong>Name:</strong> {{ selectedUser.name }}</p>
           <p><strong>Designation:</strong> {{ selectedUser.designation?.title || 'N/A' }}</p>
           <p><strong>Department:</strong> {{ selectedUser.department?.name || 'N/A' }}</p>
           <p><strong>Company:</strong> {{ selectedUser.company?.name || 'N/A' }}</p>
           <p><strong>Phone:</strong> {{ selectedUser.phone }}</p>
           <p><strong>Email:</strong> {{ selectedUser.email || 'N/A' }}</p>
-        </div>
-        <div v-else>
-          <p class="text-red-500">No user selected.</p>
         </div>
       </div>
 
@@ -176,6 +171,9 @@ const goBack = () => router.go(-1)
           </p>
         </div>
       </div>
+    </div>
+    <div v-else>
+      <p class="text-gray-400 text-center text-2xl italic">Select an employee, please.</p>
     </div>
   </div>
 </template>
