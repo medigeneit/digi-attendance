@@ -146,7 +146,7 @@ const getDayName = (dateString) => {
         <div><b>Date:</b> {{ exchange?.current_date }}</div>
         <div><b>Exchange Day:</b> {{ getDayName(exchange?.exchange_date) }}</div>
         <div><b>Date:</b> {{ exchange?.exchange_date }}</div>
-        <div class="col-span-2"><b>Reason:</b> {{ exchange?.reason || 'N/A' }}</div>
+        <div class="col-span-2 pt-2"><b>Reason:</b> {{ exchange?.reason || 'N/A' }}</div>
       </div>
 
       <div class="grid print:grid-cols-2 md:grid-cols-2 gap-4 pt-10">

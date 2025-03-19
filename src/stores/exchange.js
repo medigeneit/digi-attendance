@@ -10,12 +10,11 @@ export const useExchangeStore = defineStore('exchange', () => {
   const error = ref(null);
 
   // Fetch all exchanges
-  async function fetchAllExchanges(user_id = '') {
+  async function fetchAllExchanges(type, user_id = '') {
     loading.value = true;
     error.value = null;
     try {
-      const response = await apiClient.get(`/all-exchanges?user_id=${user_id}`);
-      console.log(response.data, user_id, 1);
+      const response = await apiClient.get(`/all-exchanges?type=${type}&user_id=${user_id}`);
       
       all_exchanges.value = response.data.data;
     } catch (err) {

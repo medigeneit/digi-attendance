@@ -67,7 +67,7 @@ const offdayExchanges = computed(() => {
               <td class="border border-gray-300 px-2">
                 <div class="flex gap-2">
                   <RouterLink
-                    :to="{ name: 'ExchangeShow', params: { id: exchange?.id } }"
+                    :to="{ name: 'ExchangeOffdayShow', params: { id: exchange?.id } }"
                     class="btn-icon"
                   >
                     <i class="far fa-eye"></i>

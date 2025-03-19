@@ -96,6 +96,8 @@ const fileUploadLink = async (event) => {
   }
 }
 
+const formatDate = (dateString) => new Date(dateString).toISOString().slice(0, 10);
+
 const formatTime = (timeString) => {
   if (!timeString) return 'N/A' // Return a fallback value if timeString is undefined
 
@@ -131,31 +133,40 @@ const formatTime = (timeString) => {
     <LoaderView v-if="loading" />
 
     <div v-else class="bg-white rounded space-y-2 p-4 md:p-8" id="leave-application">
-      <div>{{ shortLeave?.user?.company?.name }}</div>
-      <h2 class="title-md">Short Leave Application</h2>
+      <div>
+        <h1 class="title-lg text-center">
+          Short Leave Application
+        </h1>
+      </div>
+      <div class="flex justify-end">
+        <div>Date: {{ formatDate(shortLeave?.created_at) }}</div>
+      </div>
+      <div>
+        <p class="font-medium">Name: <b>{{ shortLeave?.user?.name }}</b> </p>
+          <div class="gap-y-1">
+            <p>Designation: <b>{{ shortLeave?.user?.designation?.title }}</b></p>
+          </div>
+          <div class="gap-y-1">
+            <p>Department:  <b>{{ shortLeave?.user?.company?.name }}</b></p>
+          </div>
+      </div>
       <div class="">
         <div class="grid md:grid-cols-2">
-          <div><b>Date:</b> {{ shortLeave?.date }}</div>
           <div>
-            <b>Start Time:</b>
+            <b>From:</b>
             {{ shortLeave?.start_time ? formatTime(shortLeave?.start_time) : '' }}
           </div>
           <div>
-            <b>End Time:</b>
+            <b>To:</b>
             {{ shortLeave?.end_time ? formatTime(shortLeave?.end_time) : '' }}
           </div>
+          <div><b>Short Leave Date:</b> {{ shortLeave?.date }}</div>
           <div><b>Total Minutes:</b> {{ shortLeave?.total_minutes }}</div>
-          <div><b>Reason:</b> {{ shortLeave?.reason || 'N/A' }}</div>
+
+          <div class="col-span-2 pt-2"><b>Reason:</b> {{ shortLeave?.reason || 'N/A' }}</div>
         </div>
         <div class="grid md:grid-cols-2 gap-4 pt-10">
           <div class="">
-            <hr class="w-44 border-black" />
-            <div><b>Applicant</b></div>
-            <p class="font-medium">{{ shortLeave?.user.name }}</p>
-            <div class="text-sm">
-              <p>{{ shortLeave?.user?.department?.name }}</p>
-              <p>{{ shortLeave?.user?.designation?.title }}</p>
-            </div>
           </div>
 
           <div>

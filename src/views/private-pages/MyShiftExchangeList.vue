@@ -48,8 +48,8 @@ const shiftExchanges = computed(() => {
           <thead>
             <tr class="bg-gray-200">
               <th class="border border-gray-300 px-2 text-left">#</th>
-              <th class="border border-gray-300 px-2 text-left">Current Date</th>
               <th class="border border-gray-300 px-2 text-left">Exchange Date</th>
+              <th class="border border-gray-300 px-2 text-left">Exchange Shift</th>
               <th class="border border-gray-300 px-2 text-left">Attachment</th>
               <th class="border border-gray-300 px-2 text-left">Status</th>
               <th class="border border-gray-300 px-2 text-left">Action</th>
@@ -62,8 +62,8 @@ const shiftExchanges = computed(() => {
               class="border-b border-gray-200 hover:bg-blue-200"
             >
               <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
-              <td class="border border-gray-300 px-2">{{ exchange?.current_date }}</td>
               <td class="border border-gray-300 px-2">{{ exchange?.exchange_date }}</td>
+              <td class="border border-gray-300 px-2">{{ exchange?.shift?.name }}</td>
               <td class="border border-gray-300 px-2 text-center">
                 <a
                   v-if="exchange.attachment"
@@ -78,7 +78,7 @@ const shiftExchanges = computed(() => {
               <td class="border border-gray-300 px-2">
                 <div class="flex gap-2">
                   <RouterLink
-                    :to="{ name: 'ExchangeShow', params: { id: exchange?.id } }"
+                    :to="{ name: 'ExchangeShiftShow', params: { id: exchange?.id } }"
                     class="btn-icon"
                   >
                     <i class="far fa-eye"></i>

@@ -3,13 +3,13 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useExchangeStore } from '@/stores/exchange'
 import { useUserStore } from '@/stores/user'
-import { computed, onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const exchangeStore = useExchangeStore()
 const userStore = useUserStore()
-
+const type = 'shift'
 const selectedUser = ref('')
 
 // Fetch all users and exchanges
@@ -22,9 +22,9 @@ watch(
  () => selectedUser?.value,
  async (newValue) => {
     if (newValue?.id) {
-      await exchangeStore.fetchAllExchanges( newValue?.id )
+      await exchangeStore.fetchAllExchanges( type, newValue?.id )
     } else {
-      await exchangeStore.fetchAllExchanges()
+      await exchangeStore.fetchAllExchanges(type)
     }
   }
 )
@@ -33,10 +33,6 @@ const goBack = () => {
   router.go(-1)
 }
 
-// Filtered shift exchanges based on selected user
-const filteredShiftExchanges = computed(() => {
-  return exchangeStore.all_exchanges.filter((exchange) => exchange.exchange_type === 'shift')
-})
 </script>
 
 <template>
@@ -73,8 +69,8 @@ const filteredShiftExchanges = computed(() => {
             <tr class="bg-gray-200">
               <th class="border border-gray-300 px-2 text-left">#</th>
               <th class="border border-gray-300 px-2 text-left">Employee Name</th>
-              <th class="border border-gray-300 px-2 text-left">Current Date</th>
               <th class="border border-gray-300 px-2 text-left">Exchange Date</th>
+              <th class="border border-gray-300 px-2 text-left">Exchange Shift</th>
               <th class="border border-gray-300 px-2 text-left">Attachment</th>
               <th class="border border-gray-300 px-2 text-left">Status</th>
               <th class="border border-gray-300 px-2 text-left">Action</th>
@@ -82,14 +78,14 @@ const filteredShiftExchanges = computed(() => {
           </thead>
           <tbody>
             <tr
-              v-for="(exchange, index) in filteredShiftExchanges"
+              v-for="(exchange, index) in exchangeStore?.exchanges"
               :key="exchange?.id"
               class="border-b border-gray-200 hover:bg-blue-200"
             >
               <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
               <td class="border border-gray-300 px-2">{{ exchange?.user?.name || 'Unknown' }}</td>
-              <td class="border border-gray-300 px-2">{{ exchange?.current_date }}</td>
               <td class="border border-gray-300 px-2">{{ exchange?.exchange_date }}</td>
+              <td class="border border-gray-300 px-2">{{ exchange?.shift?.name }}</td>
               <td class="border border-gray-300 px-2 text-center">
                 <a
                   v-if="exchange.attachment"
@@ -104,7 +100,7 @@ const filteredShiftExchanges = computed(() => {
               <td class="border border-gray-300 px-2">
                 <div class="flex gap-2">
                   <RouterLink
-                    :to="{ name: 'ExchangeShow', params: { id: exchange?.id } }"
+                    :to="{ name: 'ExchangeShiftShow', params: { id: exchange?.id } }"
                     class="btn-icon"
                   >
                     <i class="far fa-eye"></i>
