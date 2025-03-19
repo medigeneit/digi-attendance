@@ -1,6 +1,7 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
 import { useAttendanceStore } from '@/stores/attendance'
+import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useUserStore } from '@/stores/user'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
@@ -9,12 +10,12 @@ const router = useRouter()
 const userStore = useUserStore()
 const attendanceStore = useAttendanceStore()
 
-const selectedUserId = ref('')
+const selectedUser = ref(null) 
+const selectedUserId = ref('') 
 const selectedMonth = ref('')
 
-const selectedUser = computed(
-  () => userStore.users.find((user) => user.id === selectedUserId.value) || null,
-)
+
+selectedUserId.value = computed(() => selectedUser.value?.id)
 
 const fetchAttendance = async () => {
   if (selectedUserId.value) {
@@ -47,12 +48,21 @@ const goBack = () => router.go(-1)
 
     <div class="flex gap-4">
       <div>
-        <select id="userSelect" v-model="selectedUserId" @change="fetchAttendance" class="input-1">
+        <!-- <select id="userSelect" v-model="selectedUserId" @change="fetchAttendance" class="input-1">
           <option value="" disabled>Select a user</option>
           <option v-for="user in userStore.users" :key="user?.id" :value="user?.id">
             {{ user?.name }}
           </option>
-        </select>
+        </select> -->
+        <div style="width: 300px;">
+        <MultiselectDropdown
+            v-model="selectedUser"
+            :options="userStore.users"
+            :multiple="false"
+            label="Select User"
+            labelFor="user"
+          />
+        </div>
       </div>
       <div>
         <input

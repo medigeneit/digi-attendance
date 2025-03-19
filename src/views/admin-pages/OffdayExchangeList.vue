@@ -1,5 +1,6 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useExchangeStore } from '@/stores/exchange'
 import { useUserStore } from '@/stores/user'
 import { onMounted, ref, watch } from 'vue'
@@ -74,7 +75,7 @@ const goBack = () => {
           </thead>
           <tbody>
             <tr
-              v-for="(exchange, index) in exchangeStore?.exchanges"
+              v-for="(exchange, index) in exchangeStore?.all_exchanges"
               :key="exchange?.id"
               class="border-b border-gray-200 hover:bg-blue-200"
             >
@@ -94,7 +95,7 @@ const goBack = () => {
                 </div>
               </td>
             </tr>
-            <tr v-if="filteredExchanges.length === 0">
+            <tr v-if="exchangeStore?.all_exchanges?.length === 0">
               <td colspan="6" class="p-2 text-center text-red-500">No exchanges found</td>
             </tr>
           </tbody>

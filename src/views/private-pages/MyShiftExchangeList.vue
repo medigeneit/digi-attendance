@@ -8,18 +8,15 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const exchangeStore = useExchangeStore()
 const authStore = useAuthStore()
-
+const type = 'shift'
 onMounted(() => {
-  exchangeStore.fetchExchanges({ user_id: authStore?.user?.id })
+  exchangeStore.fetchExchanges(type)
 })
 
 const goBack = () => {
   router.go(-1)
 }
 
-const shiftExchanges = computed(() => {
-  return exchangeStore.exchanges.filter((exchange) => exchange.exchange_type === 'shift')
-})
 </script>
 
 <template>
@@ -49,6 +46,7 @@ const shiftExchanges = computed(() => {
             <tr class="bg-gray-200">
               <th class="border border-gray-300 px-2 text-left">#</th>
               <th class="border border-gray-300 px-2 text-left">Exchange Date</th>
+              <th class="border border-gray-300 px-2 text-left">Current Shift</th>
               <th class="border border-gray-300 px-2 text-left">Exchange Shift</th>
               <th class="border border-gray-300 px-2 text-left">Attachment</th>
               <th class="border border-gray-300 px-2 text-left">Status</th>
@@ -57,12 +55,13 @@ const shiftExchanges = computed(() => {
           </thead>
           <tbody>
             <tr
-              v-for="(exchange, index) in shiftExchanges"
+              v-for="(exchange, index) in exchangeStore?.exchanges"
               :key="exchange?.id"
               class="border-b border-gray-200 hover:bg-blue-200"
             >
               <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
               <td class="border border-gray-300 px-2">{{ exchange?.exchange_date }}</td>
+              <td class="border border-gray-300 px-2">{{ exchange?.user?.shift?.name }}</td>
               <td class="border border-gray-300 px-2">{{ exchange?.shift?.name }}</td>
               <td class="border border-gray-300 px-2 text-center">
                 <a
@@ -86,7 +85,7 @@ const shiftExchanges = computed(() => {
                 </div>
               </td>
             </tr>
-            <tr v-if="shiftExchanges.length === 0">
+            <tr v-if="exchangeStore?.exchanges?.length === 0">
               <td colspan="5" class="p-2 text-center text-red-500">No shift exchanges found</td>
             </tr>
           </tbody>

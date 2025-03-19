@@ -15,7 +15,7 @@ const selectedUser = ref('')
 // Fetch all users and exchanges
 onMounted(() => {
   userStore.fetchUsers()
-  exchangeStore.fetchAllExchanges()
+  exchangeStore.fetchAllExchanges(type)
 })
 
 watch(
@@ -70,6 +70,7 @@ const goBack = () => {
               <th class="border border-gray-300 px-2 text-left">#</th>
               <th class="border border-gray-300 px-2 text-left">Employee Name</th>
               <th class="border border-gray-300 px-2 text-left">Exchange Date</th>
+              <th class="border border-gray-300 px-2 text-left">Current Shift</th>
               <th class="border border-gray-300 px-2 text-left">Exchange Shift</th>
               <th class="border border-gray-300 px-2 text-left">Attachment</th>
               <th class="border border-gray-300 px-2 text-left">Status</th>
@@ -78,13 +79,14 @@ const goBack = () => {
           </thead>
           <tbody>
             <tr
-              v-for="(exchange, index) in exchangeStore?.exchanges"
+              v-for="(exchange, index) in exchangeStore?.all_exchanges"
               :key="exchange?.id"
               class="border-b border-gray-200 hover:bg-blue-200"
             >
               <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
               <td class="border border-gray-300 px-2">{{ exchange?.user?.name || 'Unknown' }}</td>
               <td class="border border-gray-300 px-2">{{ exchange?.exchange_date }}</td>
+              <td class="border border-gray-300 px-2">{{ exchange?.user?.shift?.name }}</td>
               <td class="border border-gray-300 px-2">{{ exchange?.shift?.name }}</td>
               <td class="border border-gray-300 px-2 text-center">
                 <a
@@ -108,7 +110,7 @@ const goBack = () => {
                 </div>
               </td>
             </tr>
-            <tr v-if="filteredShiftExchanges.length === 0">
+            <tr v-if="exchangeStore?.all_exchanges?.length === 0">
               <td colspan="6" class="p-2 text-center text-red-500">No shift exchanges found</td>
             </tr>
           </tbody>

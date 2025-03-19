@@ -2,24 +2,21 @@
 import LoaderView from '@/components/common/LoaderView.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useExchangeStore } from '@/stores/exchange'
-import { computed, onMounted } from 'vue'
+import {  onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const exchangeStore = useExchangeStore()
 const authStore = useAuthStore()
-
+const type = 'offday'
 onMounted(() => {
-  exchangeStore.fetchExchanges({ user_id: authStore?.user?.id })
+  exchangeStore.fetchExchanges(type)
 })
 
 const goBack = () => {
   router.go(-1)
 }
 
-const offdayExchanges = computed(() => {
-  return exchangeStore.exchanges.filter((exchange) => exchange.exchange_type === 'offday')
-})
 </script>
 
 <template>
@@ -56,7 +53,7 @@ const offdayExchanges = computed(() => {
           </thead>
           <tbody>
             <tr
-              v-for="(exchange, index) in offdayExchanges"
+              v-for="(exchange, index) in exchangeStore?.exchanges"
               :key="exchange?.id"
               class="border-b border-gray-200 hover:bg-blue-200"
             >
@@ -75,7 +72,7 @@ const offdayExchanges = computed(() => {
                 </div>
               </td>
             </tr>
-            <tr v-if="offdayExchanges.length === 0">
+            <tr v-if="exchangeStore?.exchanges?.length === 0">
               <td colspan="5" class="p-2 text-center text-red-500">No offday exchanges found</td>
             </tr>
           </tbody>
