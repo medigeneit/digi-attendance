@@ -86,14 +86,14 @@ export const useAttendanceStore = defineStore('attendance', () => {
   //   }
   // };
 
-  const getMonthlyAttendanceSummaryReport = async (company_id, employee_id, month) => {
+  const getMonthlyAttendanceSummaryReport = async (company_id, employee_id, category, month) => {
     if (!company_id || !month) {
       error.value = 'Invalid user ID or month';
       return;
     }
     isLoading.value = true;
     try {
-      const params = { company_id, employee_id, month}
+      const params = { company_id, employee_id, category, month}
       const response = await apiClient.get(`/attendance/monthly-summary-reports`, { params });
       monthly_company_summary.value = response.data; 
       error.value = null;

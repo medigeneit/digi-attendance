@@ -151,6 +151,7 @@ const goBack = () => router.go(-1)
         <table class="min-w-full table-auto border-collapse border border-gray-300 bg-white">
           <thead>
             <tr class="bg-gray-200 text-xs">
+              <th class="border p-1">#</th>
               <th class="border p-1">Emp/Worker Name</th>
               <th class="border p-1">Date</th>
               <th class="border p-1">Day</th>
@@ -164,7 +165,12 @@ const goBack = () => router.go(-1)
             </tr>
           </thead>
           <tbody class="text-center text-xs">
-            <tr v-for="log in dailyLogs" :key="log?.date" class="border-b hover:bg-blue-100">
+            <tr
+              v-for="(log, index) in dailyLogs"
+              :key="log?.date"
+              class="border-b hover:bg-blue-100"
+            >
+              <td class="border px-1 py-0.5">{{ index += 1 }}</td>
               <td class="border px-1 py-0.5">{{ log.user_name }}</td>
               <td class="border px-1 py-0.5">{{ log.date }}</td>
               <td class="border px-1 py-0.5">{{ log.weekday }}</td>

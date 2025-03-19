@@ -1,5 +1,6 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import Multiselect from '@/components/MultiselectDropdown.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useCompanyStore } from '@/stores/company'
 import { storeToRefs } from 'pinia'
@@ -11,14 +12,17 @@ const route = useRoute()
 const companyStore = useCompanyStore()
 const attendanceStore = useAttendanceStore()
 const selectedCompanyId = ref('')
+const selectedEmployeeId = ref('')
 const selectedMonth = ref('')
-const { companies } = storeToRefs(companyStore)
+const { companies, employees } = storeToRefs(companyStore)
 const { monthly_company_summary } = storeToRefs(attendanceStore)
-
+const category = ref('')
 const fetchAttendance = async () => {
   if (selectedCompanyId.value) {
     await attendanceStore.getMonthlyAttendanceSummaryReport(
       selectedCompanyId.value,
+      selectedEmployeeId?.value.id,
+      category?.value,
       attendanceStore.selectedMonth,
     )
   }
@@ -26,12 +30,20 @@ const fetchAttendance = async () => {
 
 const getExportExcel = async () => {
   if (selectedCompanyId.value) {
-    await attendanceStore.downloadExcel(selectedCompanyId.value, attendanceStore.selectedMonth)
+    await attendanceStore.downloadExcel(
+      selectedCompanyId.value,
+      category?.value,
+      attendanceStore.selectedMonth,
+    )
   }
 }
 const getDownloadPDF = async () => {
   if (selectedCompanyId.value) {
-    await attendanceStore.downloadPDF(selectedCompanyId.value, attendanceStore.selectedMonth)
+    await attendanceStore.downloadPDF(
+      selectedCompanyId.value,
+      category?.value,
+      attendanceStore.selectedMonth,
+    )
   }
 }
 
@@ -39,7 +51,17 @@ onMounted(async () => {
   await companyStore.fetchCompanies()
 })
 
+watch(selectedCompanyId, (newCompanyId) => {
+  companyStore.fetchEmployee(newCompanyId)
+})
+
 watch([selectedCompanyId, selectedMonth], fetchAttendance)
+
+watch(selectedEmployeeId, (newEmployee) => {
+  if (newEmployee?.id) {
+    fetchAttendance()
+  }
+})
 
 const goBack = () => router.go(-1)
 </script>
@@ -77,6 +99,23 @@ const goBack = () => router.go(-1)
         </select>
       </div>
       <div>
+        <select v-model="category" @change="fetchAttendance" class="input-1">
+          <option value="">All Category</option>
+          <option value="executive">Executive</option>
+          <option value="support_staff">Support Staff</option>
+          <option value="doctor">Doctor</option>
+          <option value="academy_body">Academy Body</option>
+        </select>
+      </div>
+      <div>
+        <Multiselect
+          v-model="selectedEmployeeId"
+          :options="employees"
+          :multiple="false"
+          placeholder="Select employee"
+        />
+      </div>
+      <div>
         <input
           type="month"
           v-model="attendanceStore.selectedMonth"
@@ -89,10 +128,11 @@ const goBack = () => router.go(-1)
     <LoaderView v-if="attendanceStore.isLoading" />
 
     <div v-else class="space-y-4">
-      <div class="overflow-x-auto card-bg">
+      <div class="overflow-x-auto card-bg" v-if="selectedCompanyId">
         <table class="min-w-full table-auto border-collapse border border-gray-300 bg-white">
           <thead>
             <tr class="bg-gray-100 text-sm">
+              <th rowspan="2" class="border px-1 py-0.5">#</th>
               <th rowspan="2" class="border px-1 py-0.5">Employee Name</th>
               <th rowspan="2" class="border px-1 py-0.5">Designation</th>
               <th colspan="5" class="border px-1 py-0.5">Attendance Summary</th>
@@ -136,10 +176,11 @@ const goBack = () => router.go(-1)
           </thead>
           <tbody class="text-center text-sm">
             <tr
-              v-for="log in monthly_company_summary"
+              v-for="(log, index) in monthly_company_summary"
               :key="log?.date"
               class="border-b border-gray-200 hover:bg-blue-200"
             >
+              <td class="border px-2 py-0.5">{{ index += 1 }}</td>
               <td class="border px-2 py-0.5">{{ log?.user }}</td>
               <td class="border px-2 py-0.5">{{ log?.designation }}</td>
               <td class="border px-2 py-0.5">{{ log?.total_monthly_days }}</td>
@@ -172,6 +213,7 @@ const goBack = () => router.go(-1)
           </tbody>
         </table>
       </div>
+      <div v-else class="text-center text-red-500 text-xl italic mt-10">Please select company</div>
     </div>
   </div>
 </template>

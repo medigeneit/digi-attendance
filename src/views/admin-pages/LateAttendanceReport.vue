@@ -81,18 +81,12 @@ const statusClass = (status) => {
         </select>
       </div>
       <div>
-        <Multiselect v-model="selectedEmployeeId" :options="employees" :multiple="false" />
-        <!-- <select
-          id="user-filter"
+        <Multiselect
           v-model="selectedEmployeeId"
-          @change="fetchApplicationsByUser"
-          class="input-1"
-        >
-          <option value="" disabled>Select Employee</option>
-          <option v-for="(user, index) in employees" :key="index" :value="index">
-            {{ user }}
-          </option>
-        </select> -->
+          :options="employees"
+          :multiple="false"
+          placeholder="Please select employee..."
+        />
       </div>
       <div>
         <input
@@ -110,7 +104,7 @@ const statusClass = (status) => {
     </div>
 
     <div v-else class="space-y-4">
-      <div class="overflow-x-auto">
+      <div class="overflow-x-auto" v-if="selectedCompanyId && selectedEmployeeId">
         <table
           class="min-w-full table-auto border-collapse border border-gray-200 bg-white rounded-md text-sm"
         >
@@ -154,6 +148,9 @@ const statusClass = (status) => {
             </tr>
           </tbody>
         </table>
+      </div>
+      <div v-else class="text-center text-red-500 text-xl italic mt-10">
+        Please select company and employee
       </div>
     </div>
   </div>
