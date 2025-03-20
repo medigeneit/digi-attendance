@@ -103,12 +103,12 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function changePassword(currentPassword, newPassword, newPasswordConfirmation) {
+  async function changePassword(payload) {
     try {
       const response = await apiClient.post('/change-password', {
-        current_password: currentPassword,
-        new_password: newPassword,
-        new_password_confirmation: newPasswordConfirmation,
+        current_password: payload?.old_password,
+        new_password: payload?.new_password,
+        new_password_confirmation: payload?.confirm_password,
       });
       error.value = null;
       return response.data.message;

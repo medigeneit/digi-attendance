@@ -1,6 +1,7 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
 import PhotoModal from '@/components/common/PhotoModal.vue'
+import ChangePasswordModal from '@/components/user/ChangePasswordModal.vue'
 import { useAuthStore } from '@/stores/auth'
 import { storeToRefs } from 'pinia'
 import { onMounted, reactive, ref, watch } from 'vue'
@@ -21,6 +22,7 @@ const { user } = storeToRefs(authStore)
 const toast = useToast()
 const router = useRouter()
 const isLoading = ref(false)
+const changePasswordModal = ref(false)
 
 const isPhotoModalOpen = ref(false)
 const selectedPhoto = ref(null)
@@ -50,6 +52,9 @@ const openPhotoModal = () => {
 const closePhotoModal = () => {
   isPhotoModalOpen.value = false
   selectedFile.value = null
+}
+const CloseModal = () => {
+  changePasswordModal.value = false
 }
 
 const handleFileSelected = (file) => {
@@ -164,7 +169,11 @@ const uploadPhoto = async () => {
               </div>
               <div>
                 <label>Address</label>
-                <textarea v-model="form.address" rows="2" class="w-full p-2 border rounded"></textarea>
+                <textarea
+                  v-model="form.address"
+                  rows="2"
+                  class="w-full p-2 border rounded"
+                ></textarea>
               </div>
 
               <div>
@@ -191,11 +200,18 @@ const uploadPhoto = async () => {
           <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
             Save
           </button>
+          <button
+            type="button"
+            @click="changePasswordModal = !changePasswordModal"
+            class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+          >
+            Change Password
+          </button>
         </div>
       </form>
     </div>
   </div>
-
+  <ChangePasswordModal v-if="changePasswordModal" @close="CloseModal" :user="user" />
   <PhotoModal
     :imageSrc="selectedPhoto"
     :isOpen="isPhotoModalOpen"
