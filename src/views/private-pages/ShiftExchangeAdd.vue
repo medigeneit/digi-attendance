@@ -1,11 +1,11 @@
 <script setup>
-import { onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { useExchangeStore } from '@/stores/exchange'
-import { useUserStore } from '@/stores/user'
-import { useAuthStore } from '@/stores/auth'
 import LoaderView from '@/components/common/LoaderView.vue'
 import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
+import { useAuthStore } from '@/stores/auth'
+import { useExchangeStore } from '@/stores/exchange'
+import { useUserStore } from '@/stores/user'
+import { onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const exchangeStore = useExchangeStore()
@@ -40,8 +40,7 @@ const submitShiftExchange = async () => {
       reason: form.value.reason,
     }
     const newExchange = await exchangeStore.createExchange(payload)
-
-    router.push({ name: 'ExchangeShow', params: { id: newExchange.id } })
+    router.push({ name: 'ExchangeShiftShow', params: { id: newExchange.id } })
   } catch (err) {
     error.value = err.message || 'Failed to submit shift exchange request'
   } finally {
