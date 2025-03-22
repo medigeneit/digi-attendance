@@ -49,6 +49,21 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
     }
   }
 
+  async function deleteLeaveApplication(applicationId) {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await apiClient.delete(`/my-leave-application/destroy/${applicationId}`);
+      leaveApplications.value.push(response.data.data);
+      return response.data.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to store leave application';
+      throw new Error(error.value);
+    } finally {
+      loading.value = false;
+    }
+  }
+
   async function updateLeaveApplication(id, payload) {
     loading.value = true;
     error.value = null;
@@ -228,6 +243,7 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
     acceptRecommendBy,
     acceptApprovedBy,
     rejectLeaveApplication,
-    fetchMyLeaveApplications
+    fetchMyLeaveApplications,
+    deleteLeaveApplication
   };
 });

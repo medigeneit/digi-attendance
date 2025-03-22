@@ -18,6 +18,10 @@ const goBack = () => {
 const myLeaveApplications = computed(() => {
   return leaveApplicationStore.leaveApplications
 })
+
+function deleteApplication(applicationId) {
+  leaveApplicationStore.deleteLeaveApplication(applicationId)
+}
 </script>
 
 <template>
@@ -60,12 +64,12 @@ const myLeaveApplications = computed(() => {
               class="border-b border-gray-200 hover:bg-blue-200"
             >
               <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
-              <td class="border border-gray-300 px-2">{{ application.leave_period }}</td>
-              <td class="border border-gray-300 px-2">{{ application.total_leave_days }}</td>
+              <td class="border border-gray-300 px-2">{{ application?.leave_period }}</td>
+              <td class="border border-gray-300 px-2">{{ application?.total_leave_days }}</td>
               <td class="border border-gray-300 px-2">
                 {{ application?.handover_user?.name || 'N/A' }}
               </td>
-              <td class="border border-gray-300 px-2">{{ application.status || 'N/A' }}</td>
+              <td class="border border-gray-300 px-2">{{ application?.status || 'N/A' }}</td>
               <td class="border border-gray-300 px-2">
                 <div class="flex gap-2">
                   <RouterLink
@@ -74,6 +78,14 @@ const myLeaveApplications = computed(() => {
                   >
                     <i class="far fa-eye"></i>
                   </RouterLink>
+                  <button
+                    type="button"
+                    @click="deleteApplication(application?.id)"
+                    class="btn-icon"
+                    v-if="!application.status"
+                  >
+                    <i class="far fa-trash text-red-600"></i>
+                  </button>
                 </div>
               </td>
             </tr>
