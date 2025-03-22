@@ -2,7 +2,7 @@
 import LoaderView from '@/components/common/LoaderView.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useExchangeStore } from '@/stores/exchange'
-import { computed, onMounted } from 'vue'
+import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -13,10 +13,16 @@ onMounted(() => {
   exchangeStore.fetchExchanges(type)
 })
 
+function deleteApplication(id) {
+  const confirmed = confirm('Are you sure you want to delete this application?')
+  if (confirmed) {
+    exchangeStore.deleteExchange(id)
+  }
+}
+
 const goBack = () => {
   router.go(-1)
 }
-
 </script>
 
 <template>
@@ -82,6 +88,14 @@ const goBack = () => {
                   >
                     <i class="far fa-eye"></i>
                   </RouterLink>
+                  <button
+                    type="button"
+                    @click="deleteApplication(exchange?.id)"
+                    class="btn-icon"
+                    v-if="!exchange.status"
+                  >
+                    <i class="far fa-trash text-red-600"></i>
+                  </button>
                 </div>
               </td>
             </tr>

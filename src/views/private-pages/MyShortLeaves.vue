@@ -19,6 +19,13 @@ const myShortLeaves = computed(() => {
   return shortLeaveStore.shortLeaves
 })
 
+function deleteApplication(applicationId) {
+  const confirmed = confirm('Are you sure you want to delete this application?')
+  if (confirmed) {
+    shortLeaveStore.deleteShortLeave(applicationId)
+  }
+}
+
 const formatTime = (timeString) => {
   if (!timeString) return 'N/A'
   const [hour, minute] = timeString.split(':').map(Number) // Extract hour & minute
@@ -76,11 +83,11 @@ const formatTime = (timeString) => {
               class="border-b border-gray-200 hover:bg-blue-200"
             >
               <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
-              <td class="border border-gray-300 px-2">{{ leave.date }}</td>
-              <td class="border border-gray-300 px-2">{{ leave.type }}</td>
-              <td class="border border-gray-300 px-2">{{ formatTime(leave.start_time) }}</td>
-              <td class="border border-gray-300 px-2">{{ formatTime(leave.end_time) }}</td>
-              <td class="border border-gray-300 px-2">{{ leave.total_minutes }}</td>
+              <td class="border border-gray-300 px-2">{{ leave?.date }}</td>
+              <td class="border border-gray-300 px-2">{{ leave?.type }}</td>
+              <td class="border border-gray-300 px-2">{{ formatTime(leave?.start_time) }}</td>
+              <td class="border border-gray-300 px-2">{{ formatTime(leave?.end_time) }}</td>
+              <td class="border border-gray-300 px-2">{{ leave?.total_minutes }}</td>
               <td class="border border-gray-300 px-2 text-center">
                 <a
                   v-if="leave.attachment"
@@ -91,7 +98,7 @@ const formatTime = (timeString) => {
                   <i class="fad fa-link"></i>
                 </a>
               </td>
-              <td class="border border-gray-300 px-2">{{ leave.status || 'N/A' }}</td>
+              <td class="border border-gray-300 px-2">{{ leave?.status || 'N/A' }}</td>
               <td class="border border-gray-300 px-2">
                 <div class="flex gap-2">
                   <RouterLink
@@ -100,6 +107,15 @@ const formatTime = (timeString) => {
                   >
                     <i class="far fa-eye"></i>
                   </RouterLink>
+
+                  <button
+                    type="button"
+                    @click="deleteApplication(leave?.id)"
+                    class="btn-icon"
+                    v-if="!leave.status"
+                  >
+                    <i class="far fa-trash text-red-600"></i>
+                  </button>
                 </div>
               </td>
             </tr>
