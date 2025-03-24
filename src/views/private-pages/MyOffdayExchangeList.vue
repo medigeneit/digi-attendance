@@ -47,6 +47,7 @@ const goBack = () => {
               <th class="border border-gray-300 px-2 text-left">#</th>
               <th class="border border-gray-300 px-2 text-left">Holiday/Weekend (Date)</th>
               <th class="border border-gray-300 px-2 text-left">Exchange Date</th>
+              <th class="border border-gray-300 px-2 text-left">Attachment</th>
               <th class="border border-gray-300 px-2 text-left">Status</th>
               <th class="border border-gray-300 px-2 text-left">Action</th>
             </tr>
@@ -60,6 +61,16 @@ const goBack = () => {
               <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
               <td class="border border-gray-300 px-2">{{ exchange?.current_date }}</td>
               <td class="border border-gray-300 px-2">{{ exchange?.exchange_date }}</td>
+              <td class="border border-gray-300 px-2 text-center">
+                <a
+                  v-if="exchange.attachment"
+                  :href="exchange?.attachment"
+                  target="_blank"
+                  class="text-blue-500 underline"
+                >
+                  <i class="fad fa-link"></i>
+                </a>
+              </td>
               <td class="border border-gray-300 px-2">{{ exchange?.status || 'N/A' }}</td>
               <td class="border border-gray-300 px-2">
                 <div class="flex gap-2">
