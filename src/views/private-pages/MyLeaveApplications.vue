@@ -20,7 +20,10 @@ const myLeaveApplications = computed(() => {
 })
 
 function deleteApplication(applicationId) {
-  leaveApplicationStore.deleteLeaveApplication(applicationId)
+  const confirmed = confirm('Are you sure you want to delete this application?')
+  if (confirmed) {
+    leaveApplicationStore.deleteLeaveApplication(applicationId)
+  }
 }
 </script>
 
