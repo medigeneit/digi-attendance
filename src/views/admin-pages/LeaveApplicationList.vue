@@ -17,6 +17,10 @@ const selectedUserId = computed(() => selectedUser.value?.id)
 
 onMounted(() => {
   userStore.fetchUsers()
+  leaveApplicationStore.fetchLeaveApplications({ 
+       selectedMonth: leaveApplicationStore.selectedMonth,
+       selectedStatus: leaveApplicationStore.selectedStatus 
+      })
 })
 
 const goBack = () => {
@@ -24,7 +28,19 @@ const goBack = () => {
 }
 
 const fetchApplicationsByUser = async () => {
-  await leaveApplicationStore.fetchLeaveApplications({ user_id: selectedUserId.value })
+   if (selectedUserId.value) {
+    await leaveApplicationStore.fetchLeaveApplications({ 
+        user_id: selectedUserId.value,
+        selectedMonth: leaveApplicationStore.selectedMonth,
+        selectedStatus: leaveApplicationStore.selectedStatus
+      })
+  } else {
+    // Fetch all short leaves if no user is selected
+    await leaveApplicationStore.fetchLeaveApplications({ 
+      selectedMonth: leaveApplicationStore.selectedMonth,
+       selectedStatus: leaveApplicationStore.selectedStatus 
+      })
+  }
 }
 
 const filteredLeaveApplications = computed(() => {
@@ -48,25 +64,37 @@ watch([selectedUserId], fetchApplicationsByUser)
 
       <h1 class="title-md md:title-lg flex-wrap text-center">Leave Applications</h1>
 
-      <div>
-        <MultiselectDropdown
-          v-model="selectedUser"
-          :options="userStore.users"
-          :multiple="false"
-          class="w-full"
-          placeholder="Select Employee"
-        />
-        <!-- <select
-          id="user-filter"
-          v-model="selectedUserId"
-          class="input-1"
-          @change="fetchApplicationsByUser"
-        >
-          <option value="">Select User</option>
-          <option v-for="user in userStore.users" :key="user.id" :value="user.id">
-            {{ user.name }}
-          </option>
-        </select> -->
+      <div class="flex gap-2">
+        <div style="width: 300px;">
+          <MultiselectDropdown
+            v-model="selectedUser"
+            :options="userStore.users"
+            :multiple="false"
+            label="Select User"
+            labelFor="user"
+          />
+        </div>
+        <div>
+          <input
+            id="monthSelect"
+            type="month"
+            v-model="leaveApplicationStore.selectedMonth"
+            @change="fetchApplicationsByUser"
+            class="input-1"
+          />
+        </div>
+        <div>
+          <select 
+            v-model="leaveApplicationStore.selectedStatus" 
+            @change="fetchApplicationsByUser" 
+            class="input-1"
+          >
+              <option value="" selected>All</option>
+              <option value="Pending">Pending</option>
+              <option value="Approved">Approved</option>
+              <option value="Rejected">Rejected</option>
+          </select>
+        </div>
       </div>
     </div>
 

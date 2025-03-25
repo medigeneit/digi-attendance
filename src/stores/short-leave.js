@@ -8,13 +8,15 @@ export const useShortLeaveStore = defineStore('shortLeave', () => {
   const shortLeave = ref(null);
   const loading = ref(false);
   const error = ref(null);
+  const selectedMonth = ref(new Date().toISOString().substring(0, 7));
+  const selectedStatus = ref('');
 
   const fetchShortLeaves = async (filters = {}) => {
     loading.value = true;
     error.value = null;
     try {
       const response = await apiClient.get('/short-leaves', { params: filters });
-      shortLeaves.value = response.data.data;
+      shortLeaves.value = response?.data;
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch short leaves';
       console.error('Error fetching short leaves:', err);
@@ -259,6 +261,8 @@ export const useShortLeaveStore = defineStore('shortLeave', () => {
     loading: computed(() => loading.value),
     error: computed(() => error.value),
     shortLeaveCreateDate,
+    selectedMonth,
+    selectedStatus,
     fetchShortLeaves,
     fetchShortLeaveById,
     createShortLeave,
