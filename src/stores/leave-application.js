@@ -15,7 +15,11 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
     error.value = null;
     try {
       const response = await apiClient.get('/leave-applications', { params: filters });
-      leaveApplications.value = response.data;
+      if(response.data) {
+        leaveApplications.value = response.data;
+      }else {
+        leaveApplications.value = [];
+      }
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch leave applications';
     } finally {
