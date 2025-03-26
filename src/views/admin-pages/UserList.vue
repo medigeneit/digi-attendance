@@ -1,11 +1,15 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useUserStore } from '@/stores/user'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const userStore = useUserStore()
+const companyNames = ref([])
+const selectedCompany = ref('all')
+const selectedUser = ref('')
 
 onMounted(() => {
   userStore.fetchUsers()
@@ -17,14 +21,45 @@ const goBack = () => {
 
 const groupedUsers = computed(() => {
   const grouped = {}
+  const uniqueNames = new Set()
+
   userStore.users.forEach((user) => {
     const companyName = user.company?.name || 'Unknown Company'
+
     if (!grouped[companyName]) {
       grouped[companyName] = []
     }
     grouped[companyName].push(user)
+
+    uniqueNames.add(companyName)
   })
-  return grouped
+
+  companyNames.value = Array.from(uniqueNames)
+
+  let filteredGrouped = grouped
+
+  // Filter by company
+  if (selectedCompany.value !== 'all') {
+    filteredGrouped = {
+      [selectedCompany.value]: grouped[selectedCompany.value] || [],
+    }
+  }
+
+  // Filter by selectedUser (assumes user object with id)
+  if (selectedUser.value?.id) {
+    const filtered = {}
+
+    for (const [company, users] of Object.entries(filteredGrouped)) {
+      const matchedUsers = users.filter((u) => u.id === selectedUser.value.id)
+      if (matchedUsers.length) {
+        filtered[company] = matchedUsers
+      }
+    }
+
+    return filtered
+  }
+
+  return filteredGrouped
 })
 </script>
 
@@ -37,11 +72,23 @@ const groupedUsers = computed(() => {
       </button>
 
       <h1 class="title-md md:title-lg flex-wrap text-center">Employee List</h1>
-
       <RouterLink :to="{ name: 'UserAdd' }" class="btn-2">
         <span class="hidden md:flex">Add New</span>
         <i class="far fa-plus"></i>
       </RouterLink>
+    </div>
+    <div class="flex items-center justify-start gap-2">
+      <select v-model="selectedCompany" class="input-1">
+        <option value="all" selected>All Company</option>
+        <option v-for="(item, index) in companyNames" :key="index">{{ item }}</option>
+      </select>
+      <MultiselectDropdown
+        v-model="selectedUser"
+        :options="userStore.users"
+        :multiple="false"
+        class="w-full"
+        placeholder="Select Employee"
+      />
     </div>
 
     <div v-if="userStore.isLoading" class="text-center py-4">
