@@ -14,22 +14,21 @@ const selectedUserId = computed(() => selectedUser.value?.id)
 
 onMounted(() => {
   userStore.fetchUsers()
-  shortLeaveStore.fetchShortLeaves()
+  shortLeaveStore.fetchShortLeaves({ selectedMonth: shortLeaveStore.selectedMonth, selectedStatus: shortLeaveStore.selectedStatus })
 })
 
 const fetchShortLeavesByUser = async () => {
   if (selectedUserId.value) {
-    await shortLeaveStore.fetchShortLeaves({ user_id: selectedUserId.value })
+    await shortLeaveStore.fetchShortLeaves({ 
+        user_id: selectedUserId.value,
+        selectedMonth: shortLeaveStore.selectedMonth,
+        selectedStatus: shortLeaveStore.selectedStatus
+      })
   } else {
     // Fetch all short leaves if no user is selected
-    await shortLeaveStore.fetchShortLeaves()
+    await shortLeaveStore.fetchShortLeaves({ selectedMonth: shortLeaveStore.selectedMonth, selectedStatus: shortLeaveStore.selectedStatus })
   }
 }
-
-// Filtered short leaves based on selected user
-const filteredShortLeaves = computed(() => {
-  return shortLeaveStore.shortLeaves
-})
 
 const goBack = () => {
   router.go(-1)
@@ -60,25 +59,37 @@ const formatTime = (timeString) => {
 
       <h1 class="title-md md:title-lg flex-wrap text-center">Short Leaves</h1>
 
-      <div>
-        <MultiselectDropdown
-          v-model="selectedUser"
-          :options="userStore.users"
-          :multiple="false"
-          class="w-full"
-          placeholder="Select Employee"
-        />
-        <!-- <select
-          id="user-filter"
-          v-model="selectedUserId"
-          class="input-1"
-          @change="fetchShortLeavesByUser"
-        >
-          <option value="">All Users</option>
-          <option v-for="user in userStore.users" :key="user.id" :value="user.id">
-            {{ user.name }}
-          </option>
-        </select> -->
+      <div class="flex gap-2">
+        <div style="width: 300px;">
+          <MultiselectDropdown
+            v-model="selectedUser"
+            :options="userStore.users"
+            :multiple="false"
+            label="Select User"
+            labelFor="user"
+          />
+        </div>
+        <div>
+          <input
+            id="monthSelect"
+            type="month"
+            v-model="shortLeaveStore.selectedMonth"
+            @change="fetchShortLeavesByUser"
+            class="input-1"
+          />
+        </div>
+        <div>
+          <select 
+            v-model="shortLeaveStore.selectedStatus" 
+            @change="fetchShortLeavesByUser" 
+            class="input-1"
+          >
+              <option value="" selected>All</option>
+              <option value="Pending">Pending</option>
+              <option value="Approved">Approved</option>
+              <option value="Rejected">Rejected</option>
+          </select>
+        </div>
       </div>
     </div>
 
@@ -107,7 +118,7 @@ const formatTime = (timeString) => {
           </thead>
           <tbody>
             <tr
-              v-for="(leave, index) in filteredShortLeaves"
+              v-for="(leave, index) in shortLeaveStore?.shortLeaves"
               :key="leave?.id"
               class="border-b border-gray-200 hover:bg-blue-200"
             >
@@ -142,7 +153,7 @@ const formatTime = (timeString) => {
                 </div>
               </td>
             </tr>
-            <tr v-if="filteredShortLeaves.length === 0">
+            <tr v-if="shortLeaveStore?.shortLeaves?.length === 0">
               <td colspan="8" class="p-2 text-center text-red-500">No short leaves found</td>
             </tr>
           </tbody>

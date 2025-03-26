@@ -8,15 +8,17 @@ export const useExchangeStore = defineStore('exchange', () => {
   const exchange = ref(null);
   const loading = ref(false);
   const error = ref(null);
+  const selectedMonth = ref(new Date().toISOString().substring(0, 7));
+  const selectedStatus = ref('');
 
   // Fetch all exchanges
-  async function fetchAllExchanges(type, user_id = '') {
+  async function fetchAllExchanges(filters = {}) {
     loading.value = true;
     error.value = null;
     try {
-      const response = await apiClient.get(`/all-exchanges?type=${type}&user_id=${user_id}`);
+      const response = await apiClient.get(`/all-exchanges`, { params: filters });
       
-      all_exchanges.value = response.data.data;
+      all_exchanges.value = response?.data;
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch exchanges';
     } finally {
@@ -203,6 +205,8 @@ export const useExchangeStore = defineStore('exchange', () => {
   return {
     all_exchanges,
     exchanges,
+    selectedMonth,
+    selectedStatus,
     exchange,
     loading,
     error,

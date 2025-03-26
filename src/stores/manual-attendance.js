@@ -7,13 +7,15 @@ export const useManualAttendanceStore = defineStore('manualAttendance', () => {
   const manualAttendance = ref(null);
   const loading = ref(false);
   const error = ref(null);
+  const selectedMonth = ref(new Date().toISOString().substring(0, 7));
+  const selectedStatus = ref('');
 
   const fetchManualAttendances = async (filters = {}) => {
     loading.value = true;
     error.value = null;
     try {
       const response = await apiClient.get('/manual-attendances', { params: filters });
-      manualAttendances.value = response.data.data;
+      manualAttendances.value = response?.data;
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch manual attendances';
       console.error('Error fetching manual attendances:', err);
@@ -183,6 +185,8 @@ export const useManualAttendanceStore = defineStore('manualAttendance', () => {
     manualAttendance: computed(() => manualAttendance.value),
     loading: computed(() => loading.value),
     error: computed(() => error.value),
+    selectedMonth,
+    selectedStatus,
     fetchManualAttendances,
     fetchManualAttendanceById,
     createManualAttendance,

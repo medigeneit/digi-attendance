@@ -7,13 +7,15 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
   const leaveApplication = ref(null);
   const loading = ref(false);
   const error = ref(null);
+  const selectedMonth = ref(new Date().toISOString().substring(0, 7));
+  const selectedStatus = ref('');
 
   async function fetchLeaveApplications(filters = {}) {
     loading.value = true;
     error.value = null;
     try {
       const response = await apiClient.get('/leave-applications', { params: filters });
-      leaveApplications.value = response.data.data;
+      leaveApplications.value = response.data;
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch leave applications';
     } finally {
@@ -232,6 +234,8 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
     leaveApplication,
     loading,
     error,
+    selectedMonth,
+    selectedStatus,
     fetchLeaveApplications,
     storeLeaveApplication,
     updateLeaveApplication,

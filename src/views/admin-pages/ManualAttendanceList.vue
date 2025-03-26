@@ -15,14 +15,25 @@ const selectedUserId = computed(() => selectedUser.value?.id)
 
 onMounted(() => {
   userStore.fetchUsers()
-  manualAttendanceStore.fetchManualAttendances()
+  manualAttendanceStore.fetchManualAttendances({ 
+       selectedMonth: manualAttendanceStore.selectedMonth,
+       selectedStatus: manualAttendanceStore.selectedStatus 
+      })
 })
 
 const fetchManualAttendancesByUser = async () => {
   if (selectedUserId.value) {
-    await manualAttendanceStore.fetchManualAttendances({ user_id: selectedUserId.value })
+    await manualAttendanceStore.fetchManualAttendances({ 
+        user_id: selectedUserId.value,
+        selectedMonth: manualAttendanceStore.selectedMonth,
+        selectedStatus: manualAttendanceStore.selectedStatus
+      })
   } else {
-    await manualAttendanceStore.fetchManualAttendances()
+    // Fetch all short leaves if no user is selected
+    await manualAttendanceStore.fetchManualAttendances({ 
+      selectedMonth: manualAttendanceStore.selectedMonth,
+       selectedStatus: manualAttendanceStore.selectedStatus 
+      })
   }
 }
 
@@ -47,26 +58,37 @@ const goBack = () => {
 
       <h1 class="title-md md:title-lg flex-wrap text-center">My Manual Attendances</h1>
 
-      <div class="md:w-1/4">
-        <MultiselectDropdown
-          v-model="selectedUser"
-          :options="userStore.users"
-          :multiple="false"
-          class="w-full mb-2"
-          placeholder="Select Employee"
-        />
-
-        <!-- <select
-          id="user-filter"
-          v-model="selectedUserId"
-          class="input-1"
-          @change="fetchManualAttendancesByUser"
-        >
-          <option value="">All Users</option>
-          <option v-for="user in userStore.users" :key="user.id" :value="user.id">
-            {{ user.name }}
-          </option>
-        </select> -->
+      <div class="flex gap-2">
+        <div style="width: 300px;">
+          <MultiselectDropdown
+            v-model="selectedUser"
+            :options="userStore.users"
+            :multiple="false"
+            label="Select User"
+            labelFor="user"
+          />
+        </div>
+        <div>
+          <input
+            id="monthSelect"
+            type="month"
+            v-model="manualAttendanceStore.selectedMonth"
+            @change="fetchManualAttendancesByUser"
+            class="input-1"
+          />
+        </div>
+        <div>
+          <select 
+            v-model="manualAttendanceStore.selectedStatus" 
+            @change="fetchManualAttendancesByUser" 
+            class="input-1"
+          >
+              <option value="" selected>All</option>
+              <option value="Pending">Pending</option>
+              <option value="Approved">Approved</option>
+              <option value="Rejected">Rejected</option>
+          </select>
+        </div>
       </div>
     </div>
 

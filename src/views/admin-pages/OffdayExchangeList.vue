@@ -3,7 +3,7 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useExchangeStore } from '@/stores/exchange'
 import { useUserStore } from '@/stores/user'
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -11,22 +11,36 @@ const exchangeStore = useExchangeStore()
 const userStore = useUserStore()
 const type = 'offday'
 const selectedUser = ref('')
+const selectedUserId = computed(() => selectedUser.value?.id)
 
 onMounted(() => {
   userStore.fetchUsers()
-  exchangeStore.fetchAllExchanges(type)
+  exchangeStore.fetchAllExchanges({ 
+        type: type,
+        selectedMonth: exchangeStore.selectedMonth,
+        selectedStatus: exchangeStore.selectedStatus
+       })
 })
 
-watch(
- () => selectedUser?.value,
- async (newValue) => {
-    if (newValue?.id) {
-      await exchangeStore.fetchAllExchanges( type, newValue?.id )
-    } else {
-      await exchangeStore.fetchAllExchanges(type)
-    }
+const fetchOffDayExchangeByUser = async () => {
+  if (selectedUserId.value) {
+    await exchangeStore.fetchAllExchanges({ 
+        user_id: selectedUserId.value,
+        type: type,
+        selectedMonth: exchangeStore.selectedMonth,
+        selectedStatus: exchangeStore.selectedStatus
+      })
+  } else {
+    // Fetch all short leaves if no user is selected
+    await exchangeStore.fetchAllExchanges({ 
+        type: type,
+        selectedMonth: exchangeStore.selectedMonth,
+        selectedStatus: exchangeStore.selectedStatus
+       })
   }
-)
+}
+
+watch([selectedUserId], fetchOffDayExchangeByUser)
 
 const goBack = () => {
   router.go(-1)
@@ -43,14 +57,37 @@ const goBack = () => {
 
       <h1 class="title-md md:title-lg flex-wrap text-center">Offday Exchanges</h1>
 
-      <div style="width: 300px;">
-        <MultiselectDropdown
-          v-model="selectedUser"
-          :options="userStore.users"
-          :multiple="false"
-          label="Select User"
-          labelFor="user"
-        />
+      <div class="flex gap-2">
+        <div style="width: 300px;">
+          <MultiselectDropdown
+            v-model="selectedUser"
+            :options="userStore.users"
+            :multiple="false"
+            label="Select User"
+            labelFor="user"
+          />
+        </div>
+        <div>
+          <input
+            id="monthSelect"
+            type="month"
+            v-model="exchangeStore.selectedMonth"
+            @change="fetchOffDayExchangeByUser"
+            class="input-1"
+          />
+        </div>
+        <div>
+          <select 
+            v-model="exchangeStore.selectedStatus" 
+            @change="fetchOffDayExchangeByUser" 
+            class="input-1"
+          >
+              <option value="" selected>All</option>
+              <option value="Pending">Pending</option>
+              <option value="Approved">Approved</option>
+              <option value="Rejected">Rejected</option>
+          </select>
+        </div>
       </div>
     </div>
 
