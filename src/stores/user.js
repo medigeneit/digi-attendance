@@ -10,6 +10,7 @@ export const useUserStore = defineStore('user', () => {
   const dashboardInfo = ref({});
   const error = ref(null);
   const isLoading = ref(false); // লোডিং স্টেট
+  const selectedDate = ref(new Date().toISOString().substring(0, 10));
 
   // Getters
   const allUsers = computed(() => users.value);
@@ -143,6 +144,7 @@ export const useUserStore = defineStore('user', () => {
     singleUser,
     errorMessage,
     dashboardInfo,
+    selectedDate,
     fetchUsers,
     fetchUser,
     createUser,

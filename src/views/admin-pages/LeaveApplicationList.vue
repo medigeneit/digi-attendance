@@ -14,13 +14,15 @@ const userStore = useUserStore()
 const { leaveApplications } = storeToRefs(leaveApplicationStore)
 const selectedUser = ref('')
 const selectedUserId = computed(() => selectedUser.value?.id)
+const selectedDate = ref(route?.query?.search || null)
 
 onMounted(() => {
   userStore.fetchUsers()
-  leaveApplicationStore.fetchLeaveApplications({ 
-       selectedMonth: leaveApplicationStore.selectedMonth,
-       selectedStatus: leaveApplicationStore.selectedStatus 
-      })
+  leaveApplicationStore.fetchLeaveApplications({
+    selectedMonth: leaveApplicationStore.selectedMonth,
+    selectedStatus: leaveApplicationStore.selectedStatus,
+    selectedDate: selectedDate.value,
+  })
 })
 
 const goBack = () => {
@@ -28,18 +30,20 @@ const goBack = () => {
 }
 
 const fetchApplicationsByUser = async () => {
-   if (selectedUserId.value) {
-    await leaveApplicationStore.fetchLeaveApplications({ 
-        user_id: selectedUserId.value,
-        selectedMonth: leaveApplicationStore.selectedMonth,
-        selectedStatus: leaveApplicationStore.selectedStatus
-      })
+  if (selectedUserId.value) {
+    await leaveApplicationStore.fetchLeaveApplications({
+      user_id: selectedUserId.value,
+      selectedMonth: leaveApplicationStore.selectedMonth,
+      selectedStatus: leaveApplicationStore.selectedStatus,
+      selectedDate: selectedDate.value,
+    })
   } else {
     // Fetch all short leaves if no user is selected
-    await leaveApplicationStore.fetchLeaveApplications({ 
+    await leaveApplicationStore.fetchLeaveApplications({
       selectedMonth: leaveApplicationStore.selectedMonth,
-       selectedStatus: leaveApplicationStore.selectedStatus 
-      })
+      selectedStatus: leaveApplicationStore.selectedStatus,
+      selectedDate: selectedDate.value,
+    })
   }
 }
 
@@ -65,7 +69,7 @@ watch([selectedUserId], fetchApplicationsByUser)
       <h1 class="title-md md:title-lg flex-wrap text-center">Leave Applications</h1>
 
       <div class="flex gap-2">
-        <div style="width: 300px;">
+        <div style="width: 300px">
           <MultiselectDropdown
             v-model="selectedUser"
             :options="userStore.users"
@@ -84,15 +88,15 @@ watch([selectedUserId], fetchApplicationsByUser)
           />
         </div>
         <div>
-          <select 
-            v-model="leaveApplicationStore.selectedStatus" 
-            @change="fetchApplicationsByUser" 
+          <select
+            v-model="leaveApplicationStore.selectedStatus"
+            @change="fetchApplicationsByUser"
             class="input-1"
           >
-              <option value="" selected>All</option>
-              <option value="Pending">Pending</option>
-              <option value="Approved">Approved</option>
-              <option value="Rejected">Rejected</option>
+            <option value="" selected>All</option>
+            <option value="Pending">Pending</option>
+            <option value="Approved">Approved</option>
+            <option value="Rejected">Rejected</option>
           </select>
         </div>
       </div>

@@ -67,7 +67,10 @@
         </span>
         Tomorrow Leave
       </RouterLink>
-      <RouterLink :to="{ name: 'ShortLeaveList' }" class="main-button">
+      <RouterLink
+        :to="{ name: 'ShortLeaveList', query: { search: selectedDate } }"
+        class="main-button"
+      >
         <span class="text-3xl">
           {{ dashboardInfo?.todayShortLeaves }}
         </span>
@@ -85,7 +88,7 @@ import { onMounted } from 'vue'
 const authStore = useAuthStore()
 const userStore = useUserStore()
 // const user = ref(authStore.user)
-const { dashboardInfo } = storeToRefs(userStore)
+const { dashboardInfo, selectedDate } = storeToRefs(userStore)
 const { user } = storeToRefs(authStore)
 
 onMounted(async () => {

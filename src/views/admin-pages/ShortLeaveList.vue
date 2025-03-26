@@ -4,29 +4,40 @@ import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useShortLeaveStore } from '@/stores/short-leave'
 import { useUserStore } from '@/stores/user'
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
 const shortLeaveStore = useShortLeaveStore()
 const userStore = useUserStore()
 const selectedUser = ref('')
+const selectedDate = ref(route?.query?.search || null)
 const selectedUserId = computed(() => selectedUser.value?.id)
 
 onMounted(() => {
   userStore.fetchUsers()
-  shortLeaveStore.fetchShortLeaves({ selectedMonth: shortLeaveStore.selectedMonth, selectedStatus: shortLeaveStore.selectedStatus })
+  shortLeaveStore.fetchShortLeaves({
+    selectedMonth: shortLeaveStore.selectedMonth,
+    selectedStatus: shortLeaveStore.selectedStatus,
+    selectedDate: selectedDate.value,
+  })
 })
 
 const fetchShortLeavesByUser = async () => {
   if (selectedUserId.value) {
-    await shortLeaveStore.fetchShortLeaves({ 
-        user_id: selectedUserId.value,
-        selectedMonth: shortLeaveStore.selectedMonth,
-        selectedStatus: shortLeaveStore.selectedStatus
-      })
+    await shortLeaveStore.fetchShortLeaves({
+      user_id: selectedUserId.value,
+      selectedMonth: shortLeaveStore.selectedMonth,
+      selectedStatus: shortLeaveStore.selectedStatus,
+      selectedDate: selectedDate.value,
+    })
   } else {
     // Fetch all short leaves if no user is selected
-    await shortLeaveStore.fetchShortLeaves({ selectedMonth: shortLeaveStore.selectedMonth, selectedStatus: shortLeaveStore.selectedStatus })
+    await shortLeaveStore.fetchShortLeaves({
+      selectedMonth: shortLeaveStore.selectedMonth,
+      selectedStatus: shortLeaveStore.selectedStatus,
+      selectedDate: selectedDate.value,
+    })
   }
 }
 
@@ -60,7 +71,7 @@ const formatTime = (timeString) => {
       <h1 class="title-md md:title-lg flex-wrap text-center">Short Leaves</h1>
 
       <div class="flex gap-2">
-        <div style="width: 300px;">
+        <div style="width: 300px">
           <MultiselectDropdown
             v-model="selectedUser"
             :options="userStore.users"
@@ -79,15 +90,15 @@ const formatTime = (timeString) => {
           />
         </div>
         <div>
-          <select 
-            v-model="shortLeaveStore.selectedStatus" 
-            @change="fetchShortLeavesByUser" 
+          <select
+            v-model="shortLeaveStore.selectedStatus"
+            @change="fetchShortLeavesByUser"
             class="input-1"
           >
-              <option value="" selected>All</option>
-              <option value="Pending">Pending</option>
-              <option value="Approved">Approved</option>
-              <option value="Rejected">Rejected</option>
+            <option value="" selected>All</option>
+            <option value="Pending">Pending</option>
+            <option value="Approved">Approved</option>
+            <option value="Rejected">Rejected</option>
           </select>
         </div>
       </div>
