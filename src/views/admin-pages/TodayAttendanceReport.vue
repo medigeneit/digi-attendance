@@ -5,16 +5,17 @@ import { useAttendanceStore } from '@/stores/attendance'
 import { useCompanyStore } from '@/stores/company'
 import { storeToRefs } from 'pinia'
 import { onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
 const companyStore = useCompanyStore()
 const attendanceStore = useAttendanceStore()
 const selectedCompanyId = ref('')
 const selectedEmployeeId = ref('')
 const selectedDate = ref('')
-const status = ref('')
-const category = ref('')
+const status = ref(route?.query?.search || '')
+const category = ref('all')
 const { companies, employees } = storeToRefs(companyStore)
 const { dailyLogs } = storeToRefs(attendanceStore)
 
@@ -73,6 +74,15 @@ const getDownloadPDF = async () => {
 }
 
 const goBack = () => router.go(-1)
+
+watch(status, (newStatus) => {
+  router.push({
+    query: {
+      ...route.query,
+      search: newStatus,
+    },
+  })
+})
 </script>
 
 <template>
@@ -82,7 +92,9 @@ const goBack = () => router.go(-1)
         <i class="far fa-arrow-left"></i>
         <span class="hidden md:flex">Back</span>
       </button>
-      <h1 class="title-md md:title-lg flex-wrap text-center">Daily Attendance Report</h1>
+      <h1 class="title-md md:title-lg flex-wrap text-center">
+        Daily {{ route?.query?.search === 'all' ? 'Attendance' : route?.query?.search }} Report
+      </h1>
       <div class="flex gap-4">
         <button type="button" @click="getExportExcel">
           <i class="far fa-file-excel text-2xl text-green-500"></i>
@@ -117,7 +129,7 @@ const goBack = () => router.go(-1)
       </div>
       <div>
         <select id="userSelect" v-model="category" @change="fetchAttendance" class="input-1">
-          <option value="">All Category</option>
+          <option value="all">All Category</option>
           <option value="executive">Executive</option>
           <option value="support_staff">Support Staff</option>
           <option value="doctor">Doctor</option>
@@ -126,7 +138,7 @@ const goBack = () => router.go(-1)
       </div>
       <div>
         <select id="userSelect" v-model="status" @change="fetchAttendance" class="input-1">
-          <option value="">All Status</option>
+          <option value="all">All Status</option>
           <option value="Present">Present</option>
           <option value="Absent">Absent</option>
           <option value="Weekend">Weekend</option>

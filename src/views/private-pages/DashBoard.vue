@@ -19,7 +19,10 @@
       class="grid gap-4 md:grid-cols-3 mt-4"
       v-if="['admin', 'super_admin', 'developer'].includes(user?.role)"
     >
-      <RouterLink :to="{ name: 'TodayAttendanceReport' }" class="main-button">
+      <RouterLink
+        :to="{ name: 'TodayAttendanceReport', query: { search: 'all' } }"
+        class="main-button"
+      >
         <!-- LeaveReport -->
         <!-- <i class="fas fa-calendar-alt text-3xl"></i> -->
         <span class="text-3xl">
@@ -28,7 +31,7 @@
         Total Employees
       </RouterLink>
       <RouterLink
-        :to="{ name: 'TodayAttendanceReport', query: { search: 'present' } }"
+        :to="{ name: 'TodayAttendanceReport', query: { search: 'Present' } }"
         class="main-button"
       >
         <span class="text-3xl">
@@ -37,7 +40,7 @@
         Today Present
       </RouterLink>
       <RouterLink
-        :to="{ name: 'TodayAttendanceReport', query: { search: 'absent' } }"
+        :to="{ name: 'TodayAttendanceReport', query: { search: 'Absent' } }"
         class="main-button"
       >
         <span class="text-3xl">
