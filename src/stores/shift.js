@@ -56,9 +56,28 @@ export const useShiftStore = defineStore('shift', () => {
     }
   };
 
-  const updateShift = async (id, data) => {
+  const shiftAssign = async (data) => {
     loading.value = true;
     error.value = null;
+    try {
+      const response = await apiClient.post('/shift-assignments', data);
+      message.value = response.data.message;
+      shifts.value = response.data.shifts;
+      return response.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'শিফট তৈরি করতে ব্যর্থ হয়েছে।';
+      console.error('Error creating shift:', err);
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const updateShift = async (id, data) => {
+
+    loading.value = true;
+
+    error.value = null;
+    
     try {
       const response = await apiClient.put(`/shifts/${id}`, data);
       message.value = response.data.message;
@@ -94,6 +113,7 @@ export const useShiftStore = defineStore('shift', () => {
     loading: computed(() => loading.value),
     error: computed(() => error.value),
     message,
+    shiftAssign,
     fetchShifts,
     fetchShift,
     createShift,

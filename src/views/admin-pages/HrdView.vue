@@ -29,5 +29,9 @@
       <i class="far fa-exclamation-circle text-3xl"></i>
       Notice List
     </RouterLink>
+    <RouterLink :to="{ name: 'ShiftSchedule' }" class="main-button">
+      <i class="far fa-exclamation-circle text-3xl"></i>
+      Shift Schedules
+    </RouterLink>
   </div>
 </template>

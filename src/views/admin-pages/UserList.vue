@@ -1,15 +1,22 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import ShiftAssignmentModal from '@/components/common/ShiftAssignmentModal.vue'
 import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
+import { useShiftStore } from '@/stores/shift'
 import { useUserStore } from '@/stores/user'
+import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+const shiftStore = useShiftStore()
+const { shifts } = storeToRefs(shiftStore)
 const router = useRouter()
 const userStore = useUserStore()
 const companyNames = ref([])
 const selectedCompany = ref('all')
 const selectedUser = ref('')
+const selectedEmployee = ref('')
+const shiftAssignmentModal = ref(false)
 
 onMounted(() => {
   userStore.fetchUsers()
@@ -61,6 +68,22 @@ const groupedUsers = computed(() => {
 
   return filteredGrouped
 })
+
+const modalEmployeeId = ref('')
+
+function toggleModal(user) {
+  modalEmployeeId.value = user.id
+  selectedEmployee.value = user
+  if (user?.company_id === undefined) {
+    return
+  }
+  shiftStore.fetchShifts(user?.company_id)
+  shiftAssignmentModal.value = !shiftAssignmentModal.value
+}
+
+function modalClose() {
+  shiftAssignmentModal.value = false
+}
 </script>
 
 <template>
@@ -106,7 +129,7 @@ const groupedUsers = computed(() => {
                 <th class="border border-gray-300 px-2 text-left">Name</th>
                 <th class="border border-gray-300 px-2 text-left">Designation</th>
                 <th class="border border-gray-300 px-2 text-left">Role</th>
-                <th class="border border-gray-300 px-2 text-left">Device ID</th>
+                <th class="border border-gray-300 px-2 text-left">Shift</th>
                 <th class="border border-gray-300 px-2 text-left">Phone</th>
                 <th class="border border-gray-300 px-2 text-left">Email</th>
                 <th class="border border-gray-300 px-2 text-left">Status</th>
@@ -123,7 +146,29 @@ const groupedUsers = computed(() => {
                 <td class="border border-gray-300 px-2">{{ user?.name }}</td>
                 <td class="border border-gray-300 px-2">{{ user.designation?.title }}</td>
                 <td class="border border-gray-300 px-2">{{ user.role }}</td>
-                <td class="border border-gray-300 px-2">{{ user.device_user_id || 'নেই' }}</td>
+                <td class="border border-gray-300 px-2">
+                  <button
+                    type="button"
+                    @click="toggleModal(user)"
+                    class="btn-4 text-sm"
+                    :class="
+                      user?.assign_shift
+                        ? 'bg-yellow-500 hover:bg-yellow-600'
+                        : 'btn-4'
+                    "
+                  >
+                    {{ user?.assign_shift ? 'Change Shift' : 'Assign Shift' }}
+                  </button>
+                  <div v-if="modalEmployeeId === user.id && shiftAssignmentModal">
+                    <ShiftAssignmentModal
+                      :isOpen="shiftAssignmentModal"
+                      :shifts="shifts"
+                      :hasShift="user?.assign_shift"
+                      :employee="{ id: selectedEmployee.id, name: selectedEmployee.name }"
+                      @close="modalClose"
+                    />
+                  </div>
+                </td>
                 <td class="border border-gray-300 px-2">{{ user.phone }}</td>
                 <td class="border border-gray-300 px-2">{{ user.email || 'নেই' }}</td>
                 <td class="border border-gray-300 px-2">

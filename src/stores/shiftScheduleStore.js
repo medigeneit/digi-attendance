@@ -1,18 +1,18 @@
-import axios from 'axios';
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
+import apiClient from '../axios';
 
 export const useShiftScheduleStore = defineStore('shiftSchedule', () => {
   const schedules = ref([]);
-  const fetchSchedules = async (employeeId, month) => {
-    const res = await axios.get('/api/shift-schedules', {
-      params: { employee_id: employeeId, month }
-    });
+
+  const fetchSchedules = async (payload) => {
+    const res = await apiClient.get('/shift-schedules', payload);
     schedules.value = res.data;
+    return res.data;
   };
 
   const saveSchedules = async (schedulePayload) => {
-    await axios.post('/api/shift-schedules', { schedules: schedulePayload?.payload });
+    await apiClient.post('/shift-schedules', { schedules: schedulePayload?.payload });
   };
 
 

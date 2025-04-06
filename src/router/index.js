@@ -220,7 +220,6 @@ const router = createRouter({
           component: () => import('@/views/admin-pages/ShiftScheduleForm.vue'),
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
         },
-  
 
         {
           path: '/hrd/leave-application-list',

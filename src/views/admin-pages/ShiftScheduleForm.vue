@@ -112,14 +112,14 @@ const assignWeekends = () => {
   })
 }
 
-const loadGrid = async () => {
-  try {
-    const data = await shiftStore.fetchShifts({ companyId: selectedCompany.value })
-    assignColorsToShifts()
-  } catch (err) {
-    console.error('Error loading grid data:', err)
-  }
-}
+// const loadGrid = async () => {
+//   try {
+//     await shiftStore.fetchShifts({ companyId: selectedCompany.value })
+//     assignColorsToShifts()
+//   } catch (err) {
+//     console.error('Error loading grid data:', err)
+//   }
+// }
 
 const saveSchedule = async () => {
   const payload = Object.entries(scheduleMap.value).flatMap(([empId, schedule]) => {
@@ -143,12 +143,40 @@ const saveSchedule = async () => {
 watch(selectedCompany, async (companyId) => {
   if (companyId) {
     await companyStore.fetchEmployee(companyId)
+    await shiftStore.fetchShifts({ companyId: companyId })
+    assignColorsToShifts()
+    await loadScheduleData(companyId, selectedMonth.value)
   }
 })
 
 onMounted(async () => {
   await companyStore.fetchCompanies()
 })
+
+const loadScheduleData = async (companyId, month) => {
+  try {
+    const  data  = await store.fetchSchedules({
+      params: {
+        company_id: companyId,
+        month: month, // format: YYYY-MM
+      },
+    })
+
+    const mapped = {}
+
+    data.forEach((item) => {
+      selectedEmployeeIds.value.push(item.employee_id)
+      const empId = item.employee_id
+      const day = parseInt(item.date.split('-')[2])
+      if (!mapped[empId]) mapped[empId] = {}
+      mapped[empId][day] = item.shift_id ?? (item.is_holiday ? 'HOLIDAY' : "WEEKEND")
+    })
+
+    scheduleMap.value = mapped
+  } catch (err) {
+    console.error('Failed to load schedule data:', err)
+  }
+}
 </script>
 
 <template>
@@ -164,7 +192,7 @@ onMounted(async () => {
         <option v-for="s in allShifts" :key="s.id" :value="s.id">{{ s.name }}</option>
       </select>
 
-      <select v-model="selectedDepartment" class="p-2 border rounded">
+      <!-- <select v-model="selectedDepartment" class="p-2 border rounded">
         <option value="">- Department -</option>
         <option v-for="d in departments" :key="d.id" :value="d.id">{{ d.name }}</option>
       </select>
@@ -172,11 +200,13 @@ onMounted(async () => {
       <select v-model="selectedDesignation" class="p-2 border rounded">
         <option value="">- Designation -</option>
         <option v-for="des in designations" :key="des.id" :value="des.id">{{ des.name }}</option>
-      </select>
+      </select> -->
 
       <input type="month" v-model="selectedMonth" class="p-2 border rounded" />
 
-      <button @click="loadGrid" class="bg-blue-600 text-white px-4 py-2 rounded">Search</button>
+      <!-- <button @click="loadGrid" class="bg-blue-600 text-white px-4 py-2 rounded">
+        Search Shift
+      </button> -->
     </div>
 
     <!-- Color Legend with selectable shift -->
