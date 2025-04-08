@@ -1,11 +1,13 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import ShiftWeekendModal from '@/components/common/WeekendAssignModal.vue'
 import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
 import { useDesignationStore } from '@/stores/designation'
 import { useLeaveApprovalStore } from '@/stores/leave-approval'
 import { useShiftStore } from '@/stores/shift'
 import { useUserStore } from '@/stores/user'
+import dayjs from 'dayjs'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -48,6 +50,17 @@ const { designations } = storeToRefs(designationStore)
 const showPassword = ref(false)
 const isLoading = ref(false)
 const { shifts } = storeToRefs(shiftStore)
+const modalOpen = ref(false)
+
+const selectedWeekend = ref({
+  weekends: [],
+  start_month: '',
+  end_month: '',
+})
+
+const handleShiftUpdate = (data) => {
+  selectedWeekend.value = data
+}
 
 onMounted(async () => {
   isLoading.value = true
@@ -73,6 +86,20 @@ const loadUser = async () => {
   try {
     const userId = route.params.id
     const user = await userStore.fetchUser(userId)
+
+    if (user.assign_weekend) {
+      selectedWeekend.value = {
+        weekends: user.assign_weekend.weekends || [],
+        start_month: dayjs(user.assign_weekend.start_month).format('YYYY-MM') || '',
+        end_month: user.assign_weekend.end_month || '',
+      }
+    } else {
+      selectedWeekend.value = {
+        weekends: [],
+        start_month: '',
+        end_month: '',
+      }
+    }
 
     form.name = user.name
     form.phone = user.phone
@@ -103,7 +130,7 @@ const loadUser = async () => {
 
 const updateUser = async () => {
   try {
-    const dataToSend = { ...form }
+    const dataToSend = { ...form, selected_weekend: selectedWeekend.value }
     await userStore.updateUser(route.params.id, dataToSend)
     toast.success('User updated successfully')
     router.push({ name: 'UserShow', params: { id: route.params.id } })
@@ -220,7 +247,7 @@ const computedDesignations = computed(() => {
                 </select>
               </div>
 
-              <div>
+              <!-- <div>
                 <label>Shift</label>
                 <select v-model="form.shift_id" class="w-full p-2 border rounded">
                   <option value="" disabled>Select a shift</option>
@@ -228,7 +255,7 @@ const computedDesignations = computed(() => {
                     {{ shift?.name }}
                   </option>
                 </select>
-              </div>
+              </div> -->
 
               <div>
                 <label>Employment Type</label>
@@ -259,72 +286,22 @@ const computedDesignations = computed(() => {
               </div>
 
               <div class="">
-                <p class="">Select Weekends</p>
-                <div class="flex flex-wrap gap-2 md:gap-4 bg-white p-2 border rounded">
-                  <label class="flex items-center gap-1.5 md:gap-2">
-                    <input
-                      type="checkbox"
-                      value="Saturday"
-                      v-model="form.weekends"
-                      class="form-checkbox"
-                    />
-                    SAT
-                  </label>
-                  <label class="flex items-center gap-1.5 md:gap-2">
-                    <input
-                      type="checkbox"
-                      value="Sunday"
-                      v-model="form.weekends"
-                      class="form-checkbox"
-                    />
-                    SUN
-                  </label>
-                  <label class="flex items-center gap-1.5 md:gap-2">
-                    <input
-                      type="checkbox"
-                      value="Monday"
-                      v-model="form.weekends"
-                      class="form-checkbox"
-                    />
-                    MON
-                  </label>
-                  <label class="flex items-center gap-1.5 md:gap-2">
-                    <input
-                      type="checkbox"
-                      value="Tuesday"
-                      v-model="form.weekends"
-                      class="form-checkbox"
-                    />
-                    TUE
-                  </label>
-                  <label class="flex items-center gap-1.5 md:gap-2">
-                    <input
-                      type="checkbox"
-                      value="Wednesday"
-                      v-model="form.weekends"
-                      class="form-checkbox"
-                    />
-                    WED
-                  </label>
-                  <label class="flex items-center gap-1.5 md:gap-2">
-                    <input
-                      type="checkbox"
-                      value="Thursday"
-                      v-model="form.weekends"
-                      class="form-checkbox"
-                    />
-                    THU
-                  </label>
-                  <label class="flex items-center gap-1.5 md:gap-2">
-                    <input
-                      type="checkbox"
-                      value="Friday"
-                      v-model="form.weekends"
-                      class="form-checkbox"
-                    />
-                    FRI
-                  </label>
+                <button type="button" class="btn-2" @click="modalOpen = true">
+                  Select Weekends
+                </button>
+                <div
+                  v-if="selectedWeekend"
+                  class="flex flex-wrap gap-2 bg-white p-2 border rounded mt-1"
+                >
+                  <p><strong>Weekends:</strong> {{ selectedWeekend.weekends.join(', ') }}</p>
+                  <p><strong>Start Month:</strong> {{ selectedWeekend.start_month }}</p>
                 </div>
+                <ShiftWeekendModal
+                  :isOpen="modalOpen"
+                  :assign_weekend="selectedWeekend"
+                  @close="modalOpen = false"
+                  @update="handleShiftUpdate"
+                />
               </div>
               <div>
                 <label>Leave Approval Group</label>

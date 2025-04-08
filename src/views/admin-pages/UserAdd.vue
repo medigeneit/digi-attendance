@@ -1,9 +1,9 @@
 <script setup>
+import ShiftWeekendModal from '@/components/common/WeekendAssignModal.vue'
 import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
 import { useDesignationStore } from '@/stores/designation'
 import { useLeaveApprovalStore } from '@/stores/leave-approval'
-import { useShiftStore } from '@/stores/shift'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
@@ -12,15 +12,14 @@ import { useToast } from 'vue-toastification'
 const toast = useToast()
 const router = useRouter()
 const userStore = useUserStore()
-const shiftStore = useShiftStore()
 const companyStore = useCompanyStore()
 const departmentStore = useDepartmentStore()
 const designationStore = useDesignationStore()
 const leaveApprovalStore = useLeaveApprovalStore()
-const { shifts } = storeToRefs(shiftStore)
 const { designations } = storeToRefs(designationStore)
 const { companies } = storeToRefs(companyStore)
 const showPassword = ref(false)
+const modalOpen = ref(false)
 
 const form = reactive({
   name: '',
@@ -45,6 +44,12 @@ const form = reactive({
   other_approval_id: '',
 })
 
+const selectedWeekend = ref({
+  weekends: [],
+  start_date: '',
+  end_date: '',
+})
+
 onMounted(async () => {
   await companyStore.fetchCompanies()
   await leaveApprovalStore.fetchLeaveApprovals()
@@ -56,14 +61,16 @@ watch(
     if (newCompanyId) {
       await departmentStore.fetchDepartments(newCompanyId)
       await designationStore.fetchDesignations(newCompanyId)
-      await shiftStore.fetchShifts(newCompanyId)
-
       form.department_id = ''
       form.designation_id = ''
       form.shift_id = ''
     }
   },
 )
+
+const handleShiftUpdate = (data) => {
+  selectedWeekend.value = data
+}
 
 const saveUser = async () => {
   try {
@@ -80,12 +87,13 @@ const saveUser = async () => {
       company_id: form.company_id,
       department_id: form.department_id,
       designation_id: form.designation_id,
-      shift_id: form.shift_id,
+      // shift_id: form.shift_id,
       nid: form.nid,
       date_of_birth: form.date_of_birth,
       joining_date: form.joining_date,
       employment_type: form.employment_type,
       weekends: form.weekends,
+      selected_weekend: selectedWeekend.value,
       leave_approval_id: form.leave_approval_id,
       other_approval_id: form.other_approval_id,
     }
@@ -101,10 +109,6 @@ const saveUser = async () => {
   }
 }
 
-const computedShifts = computed(() => {
-  const indexName = companyStore.companies.find((company) => company.id === form.company_id)?.name
-  return indexName ? shifts.value[indexName] || [] : []
-})
 const computedDesignations = computed(() => {
   const indexName = companyStore.companies.find((company) => company.id === form.company_id)?.name
   return indexName ? designations.value[indexName] || [] : []
@@ -203,7 +207,8 @@ const computedDesignations = computed(() => {
                   </option>
                 </select>
               </div>
-              <div>
+
+              <!-- <div>
                 <label>Shift</label>
                 <select v-model="form.shift_id" class="w-full p-2 border rounded">
                   <option value="" disabled>Select a shift</option>
@@ -211,7 +216,7 @@ const computedDesignations = computed(() => {
                     {{ shift?.name }}
                   </option>
                 </select>
-              </div>
+              </div> -->
 
               <div>
                 <label>Employment Type</label>
@@ -241,8 +246,23 @@ const computedDesignations = computed(() => {
               </div>
 
               <div class="">
-                <p class="">Select Weekends</p>
-                <div class="flex flex-wrap gap-2 md:gap-4 bg-white p-2 border rounded">
+                <button type="button" class="btn-2" @click="modalOpen = true">
+                  Select Weekends
+                </button>
+                <div
+                  v-if="selectedWeekend"
+                  class="flex gap-2 md:gap-4 bg-white p-2 border rounded mt-1"
+                >
+                  <p><strong>Weekends:</strong> {{ selectedWeekend.weekends.join(', ') }}</p>
+                  <p><strong>Start Date:</strong> {{ selectedWeekend.start_date }}</p>
+                </div>
+                <ShiftWeekendModal
+                  :isOpen="modalOpen"
+                  :hasShift="selectedWeekend"
+                  @close="modalOpen = false"
+                  @update="handleShiftUpdate"
+                />
+                <!-- <div class="flex flex-wrap gap-2 md:gap-4 bg-white p-2 border rounded">
                   <label class="flex items-center gap-1.5 md:gap-2">
                     <input
                       type="checkbox"
@@ -306,7 +326,7 @@ const computedDesignations = computed(() => {
                     />
                     FRI
                   </label>
-                </div>
+                </div> -->
               </div>
 
               <div>

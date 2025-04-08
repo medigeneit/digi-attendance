@@ -197,8 +197,11 @@ const goBack = () => router.go(-1)
               <td class="border px-2 py-0.5">{{ log?.actual_early_hour }}</td>
               <td class="border px-2 py-0.5">{{ log?.total_remain_early_day }}</td>
               <td class="border px-2 py-0.5">{{ log?.total_remain_early_hour }}</td>
-              <td class="border px-2 py-0.5">
-                {{ log?.total_working_hours || 0 }} / {{ log?.total_shift_hour || 0 }}
+              <td class="border py-0.5">
+                <div class="border-b border-black font-semibold text-green-600">
+                  {{ log?.total_working_hours || 0 }}
+                </div>
+                <div class="text-gray-600">🕒{{ log?.total_shift_hour || 0 }}</div>
               </td>
               <td class="border px-2 py-0.5">{{ log?.total_overtime_hours }}</td>
               <td class="border px-2 py-0.5">{{ log?.total_cl_leave }}</td>
