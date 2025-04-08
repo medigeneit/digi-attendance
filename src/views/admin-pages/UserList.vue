@@ -5,15 +5,16 @@ import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useShiftStore } from '@/stores/shift'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const shiftStore = useShiftStore()
 const { shifts } = storeToRefs(shiftStore)
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
 const companyNames = ref([])
-const selectedCompany = ref('all')
+const selectedCompany = ref(route.query.company || 'all')
 const selectedUser = ref('')
 const selectedEmployee = ref('')
 const shiftAssignmentModal = ref(false)
@@ -25,6 +26,15 @@ onMounted(() => {
 const goBack = () => {
   router.go(-1)
 }
+
+watch(selectedCompany, (newVal) => {
+  router.push({
+    query: {
+      ...route.query,
+      company: newVal,
+    },
+  })
+})
 
 const groupedUsers = computed(() => {
   const grouped = {}
@@ -95,7 +105,7 @@ function modalClose() {
       </button>
 
       <h1 class="title-md md:title-lg flex-wrap text-center">Employee List</h1>
-      <RouterLink :to="{ name: 'UserAdd' }" class="btn-2">
+      <RouterLink :to="{ name: 'UserAdd', query: { company: route.query.company } }" class="btn-2">
         <span class="hidden md:flex">Add New</span>
         <i class="far fa-plus"></i>
       </RouterLink>
@@ -151,11 +161,7 @@ function modalClose() {
                     type="button"
                     @click="toggleModal(user)"
                     class="btn-4 text-sm"
-                    :class="
-                      user?.assign_shift
-                        ? 'bg-yellow-500 hover:bg-yellow-600'
-                        : 'btn-4'
-                    "
+                    :class="user?.assign_shift ? 'bg-yellow-500 hover:bg-yellow-600' : 'btn-4'"
                   >
                     {{ user?.assign_shift ? 'Change Shift' : 'Assign Shift' }}
                   </button>
@@ -178,13 +184,21 @@ function modalClose() {
                 <td class="border border-gray-300 px-2">
                   <div class="flex gap-2">
                     <RouterLink
-                      :to="{ name: 'UserShow', params: { id: user.id } }"
+                      :to="{
+                        name: 'UserShow',
+                        params: { id: user.id },
+                        query: { company: route.query.company },
+                      }"
                       class="btn-icon"
                     >
                       <i class="far fa-eye"></i>
                     </RouterLink>
                     <RouterLink
-                      :to="{ name: 'UserEdit', params: { id: user.id } }"
+                      :to="{
+                        name: 'UserEdit',
+                        params: { id: user.id },
+                        query: { company: route.query.company },
+                      }"
                       class="btn-icon"
                     >
                       <i class="far fa-edit"></i>

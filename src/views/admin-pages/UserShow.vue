@@ -1,9 +1,10 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import { useUserStore } from '@/stores/user'
-import { useToast } from 'vue-toastification'
 import LoaderView from '@/components/common/LoaderView.vue'
+import { useUserStore } from '@/stores/user'
+import dayjs from 'dayjs'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
+import { useToast } from 'vue-toastification'
 
 const userStore = useUserStore()
 const toast = useToast()
@@ -30,6 +31,11 @@ const fetchUser = async () => {
     isLoading.value = false
   }
 }
+
+const formattedMonth = computed(() => {
+  const rawDate = user.value?.assign_weekend?.start_month
+  return rawDate ? dayjs(rawDate).format('YYYY-MM') : ''
+})
 
 onMounted(async () => {
   await fetchUser()
@@ -93,7 +99,7 @@ onMounted(async () => {
             </div>
             <div>
               <p class="text-sm font-bold text-gray-600">Shift:</p>
-              <p class="text-lg text-gray-800">{{ user?.shift?.name || 'N/A' }}</p>
+              <p class="text-lg text-gray-800">{{ user?.assign_shift?.shift?.name || 'N/A' }}</p>
             </div>
             <div>
               <p class="text-sm font-bold text-gray-600">Joining Date:</p>
@@ -101,7 +107,9 @@ onMounted(async () => {
             </div>
             <div>
               <p class="text-sm font-bold text-gray-600">Weekends:</p>
-              <p class="text-lg text-gray-800">{{ user?.weekends.join(', ') }}</p>
+              <!-- <p class="text-lg text-gray-800">{{ user?.weekends.join(', ') }}</p> -->
+              <p class="text-lg text-gray-800">{{ user?.assign_weekend?.weekends.join(', ') }}</p>
+              <p class="text-sm text-gray-800">Start Month : {{ formattedMonth }}</p>
             </div>
             <div>
               <p class="text-sm font-bold text-gray-600">Leave Approval Group:</p>
@@ -137,7 +145,7 @@ onMounted(async () => {
         </div>
         <div class="flex justify-center mt-8 gap-4">
           <RouterLink
-            :to="{ name: 'UserList' }"
+            :to="{ name: 'UserList', query: { company: route.query.company } }"
             type="button"
             class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
           >
