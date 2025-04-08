@@ -90,7 +90,6 @@ const closeModal = () => {
           FRI
         </label>
       </div>
-      {{ form }}
       <div class="mb-4 mt-4">
         <label class="block text-sm mb-1">Start Month:</label>
         <input type="month" v-model="form.start_month" class="w-full border rounded p-2" />
