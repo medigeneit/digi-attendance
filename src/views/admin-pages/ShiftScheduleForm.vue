@@ -22,18 +22,15 @@ const designations = ref([])
 const scheduleMap = ref({})
 const selectedEmployeeIds = ref([])
 
-const shiftColorMap = ref({})
-
-// const shiftColorMap = ref({
-//   WEEKEND: 'bg-red-700',
-// })
-
+const shiftColorMap = ref({
+  WEEKEND: 'bg-red-700',
+})
 const colorPool = [
   'bg-green-700',
   'bg-pink-600',
   'bg-blue-800',
   'bg-cyan-600',
-  'bg-red-600',
+  'bg-red-300',
   'bg-purple-700',
   'bg-yellow-500',
   'bg-indigo-500',
@@ -49,7 +46,7 @@ function assignColorsToShifts() {
     shiftColorMap.value[shift.id] = colorPool[colorIndex % colorPool.length]
     colorIndex++
   })
-  // shiftColorMap.value['WEEKEND'] = 'bg-red-700'
+  shiftColorMap.value['WEEKEND'] = 'bg-red-700'
 }
 
 const daysInMonth = computed(() =>
@@ -64,9 +61,9 @@ const getDayName = (day) => {
 const getShiftColorClass = (empId, day) => {
   const shiftKey = scheduleMap.value?.[empId]?.[day]
   if (!shiftKey) return 'bg-gray-300'
-  // if (['WEEKEND'].includes(shiftKey)) {
-  //   return shiftColorMap.value[shiftKey] || 'bg-gray-300'
-  // }
+  if (['WEEKEND'].includes(shiftKey)) {
+    return shiftColorMap.value[shiftKey] || 'bg-gray-300'
+  }
   return shiftColorMap.value[parseInt(shiftKey)] || 'bg-gray-300'
 }
 
@@ -98,20 +95,20 @@ const assignAllDatesToSelectedEmployees = () => {
   })
 }
 
-// const assignWeekends = () => {
-//   selectedEmployeeIds.value.forEach((empId) => {
-//     const emp = employees.value.find((e) => e.id === parseInt(empId))
-//     const empWeekends = emp?.weekends?.map((day) => day.slice(0, 3)) || [] // Convert 'Friday' -> 'Fri'
+const assignWeekends = () => {
+  selectedEmployeeIds.value.forEach((empId) => {
+    const emp = employees.value.find((e) => e.id === parseInt(empId))
+    const empWeekends = emp?.weekends?.map((day) => day.slice(0, 3)) || [] // Convert 'Friday' -> 'Fri'
 
-//     if (!scheduleMap.value[empId]) scheduleMap.value[empId] = {}
-//     daysInMonth.value.forEach((day) => {
-//       const dayName = getDayName(day)
-//       if (empWeekends.includes(dayName)) {
-//         scheduleMap.value[empId][day] = 'WEEKEND'
-//       }
-//     })
-//   })
-// }
+    if (!scheduleMap.value[empId]) scheduleMap.value[empId] = {}
+    daysInMonth.value.forEach((day) => {
+      const dayName = getDayName(day)
+      if (empWeekends.includes(dayName)) {
+        scheduleMap.value[empId][day] = 'WEEKEND'
+      }
+    })
+  })
+}
 
 // const loadGrid = async () => {
 //   try {
@@ -170,7 +167,7 @@ const loadScheduleData = async (companyId, month) => {
       const empId = item.employee_id
       const day = parseInt(item.date.split('-')[2])
       if (!mapped[empId]) mapped[empId] = {}
-      mapped[empId][day] = item?.shift_id
+      mapped[empId][day] = item.shift_id || 'WEEKEND'
     })
 
     scheduleMap.value = mapped
@@ -236,14 +233,14 @@ const loadScheduleData = async (companyId, month) => {
       </div> -->
 
       <!-- Hardcoded Weekend -->
-      <!-- <div
+      <div
         class="flex items-center gap-2 cursor-pointer px-2 py-1 rounded"
         :class="{ 'ring-2 ring-blue-500': selectedShift === 'WEEKEND' }"
         @click="selectedShift = 'WEEKEND'"
       >
         <div class="w-5 h-5 rounded bg-red-700" />
         <span class="text-sm">Weekend</span>
-      </div> -->
+      </div>
     </div>
 
     <div class="mb-4 flex gap-4">
@@ -254,9 +251,9 @@ const loadScheduleData = async (companyId, month) => {
         Assign Selected Shift to Checked Employees
       </button>
 
-      <!-- <button @click="assignWeekends" class="bg-red-700 text-white px-4 py-2 rounded">
+      <button @click="assignWeekends" class="bg-red-700 text-white px-4 py-2 rounded">
         Assign Weekends to Checked Employees
-      </button> -->
+      </button>
     </div>
 
     <!-- Schedule Table -->
