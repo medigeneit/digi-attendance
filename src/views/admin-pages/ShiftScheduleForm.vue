@@ -146,6 +146,14 @@ watch(selectedCompany, async (companyId) => {
     await loadScheduleData(companyId, selectedMonth.value)
   }
 })
+watch(selectedMonth, async (month) => {
+  if (month) {
+    await companyStore.fetchEmployee(selectedCompany.value)
+    await shiftStore.fetchShifts({ companyId: selectedCompany.value })
+    assignColorsToShifts()
+    await loadScheduleData(selectedCompany.value, month)
+  }
+})
 
 onMounted(async () => {
   await companyStore.fetchCompanies()
@@ -164,11 +172,13 @@ const loadScheduleData = async (companyId, month) => {
 
     data.forEach((item) => {
       selectedEmployeeIds.value.push(item.employee_id)
+      selectedShift.value = item?.shift_id
       const empId = item.employee_id
       const day = parseInt(item.date.split('-')[2])
       if (!mapped[empId]) mapped[empId] = {}
       mapped[empId][day] = item.shift_id || 'WEEKEND'
     })
+    console.log({ mapped })
 
     scheduleMap.value = mapped
   } catch (err) {
