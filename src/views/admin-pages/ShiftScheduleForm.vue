@@ -1,5 +1,6 @@
 <script setup>
 import { useCompanyStore } from '@/stores/company'
+import { useDepartmentStore } from '@/stores/department'
 import { useShiftStore } from '@/stores/shift'
 import { useShiftScheduleStore } from '@/stores/shiftScheduleStore'
 import dayjs from 'dayjs'
@@ -8,17 +9,16 @@ import { computed, onMounted, ref, watch } from 'vue'
 const store = useShiftScheduleStore()
 const companyStore = useCompanyStore()
 const shiftStore = useShiftStore()
+const departmentStore = useDepartmentStore()
 
 const { companies, employees } = storeToRefs(companyStore)
+const { departments } = storeToRefs(departmentStore)
 const { shifts } = storeToRefs(shiftStore)
 
 const selectedMonth = ref(dayjs().format('YYYY-MM'))
 const selectedCompany = ref('')
 const selectedDepartment = ref('')
-const selectedDesignation = ref('')
 const selectedShift = ref('')
-const departments = ref([])
-const designations = ref([])
 const scheduleMap = ref({})
 const selectedEmployeeIds = ref([])
 
@@ -110,15 +110,6 @@ const assignWeekends = () => {
   })
 }
 
-// const loadGrid = async () => {
-//   try {
-//     await shiftStore.fetchShifts({ companyId: selectedCompany.value })
-//     assignColorsToShifts()
-//   } catch (err) {
-//     console.error('Error loading grid data:', err)
-//   }
-// }
-
 const saveSchedule = async () => {
   const payload = Object.entries(scheduleMap.value).flatMap(([empId, schedule]) => {
     if (!selectedEmployeeIds.value.includes(parseInt(empId))) return []
@@ -141,11 +132,27 @@ const saveSchedule = async () => {
 watch(selectedCompany, async (companyId) => {
   if (companyId) {
     await companyStore.fetchEmployee(companyId)
+    await departmentStore.fetchDepartments({ companyId: companyId })
     await shiftStore.fetchShifts({ companyId: companyId })
     assignColorsToShifts()
     await loadScheduleData(companyId, selectedMonth.value)
   }
 })
+
+watch(selectedDepartment, async (departmentId) => {
+  if (departmentId) {
+    const payload = {
+      companyId: selectedCompany.value,
+      departmentIds: departmentId ? [departmentId] : [],
+    }
+    const response = await departmentStore.fetchDepartmentEmployee(payload)
+    employees.value = response
+
+    selectedEmployeeIds.value = [] // Reset selected employees when department changes
+    await loadScheduleData(selectedCompany.value, selectedMonth.value)
+  }
+})
+
 watch(selectedMonth, async (month) => {
   if (month) {
     await companyStore.fetchEmployee(selectedCompany.value)
@@ -194,27 +201,16 @@ const loadScheduleData = async (companyId, month) => {
         <option value="">Select Company</option>
         <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
       </select>
-
+      <select v-model="selectedDepartment" class="p-2 border rounded">
+        <option value="">- Department -</option>
+        <option v-for="d in departments" :key="d.id" :value="d.id">{{ d.name }}</option>
+      </select>
       <select v-model="selectedShift" class="p-2 border rounded">
         <option value="">- Shift -</option>
         <option v-for="s in allShifts" :key="s.id" :value="s.id">{{ s.name }}</option>
       </select>
 
-      <!-- <select v-model="selectedDepartment" class="p-2 border rounded">
-        <option value="">- Department -</option>
-        <option v-for="d in departments" :key="d.id" :value="d.id">{{ d.name }}</option>
-      </select>
-
-      <select v-model="selectedDesignation" class="p-2 border rounded">
-        <option value="">- Designation -</option>
-        <option v-for="des in designations" :key="des.id" :value="des.id">{{ des.name }}</option>
-      </select> -->
-
       <input type="month" v-model="selectedMonth" class="p-2 border rounded" />
-
-      <!-- <button @click="loadGrid" class="bg-blue-600 text-white px-4 py-2 rounded">
-        Search Shift
-      </button> -->
     </div>
 
     <!-- Color Legend with selectable shift -->
