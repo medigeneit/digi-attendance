@@ -1,4 +1,9 @@
 <script setup>
+import { useNotificationStore } from '@/stores/notification'
+import { storeToRefs } from 'pinia'
+
+const notificationStore = useNotificationStore()
+
 const props = defineProps({
   notifications: {
     type: Array,
@@ -10,49 +15,65 @@ const props = defineProps({
   },
 })
 
-const getTargetUrl = (eventType) => {
-  const eventTypes = {
-    leaveApplication: '/leave-application-show/',
-    shortLeave: '/short-leave-show/',
-    exchange: '/exchange-show/',
-    manualAttendance: '/manual-attendance-show/',
-  }
-
-  return eventTypes[eventType] || '#'
-}
+const { grouped_counts, totalUnreadNotifications } = storeToRefs(notificationStore)
 
 const emits = defineEmits(['close'])
 </script>
 
 <template>
   <div
-    class="bg-teal-50 shadow-xl rounded-lg absolute md:right-10 md:top-20 top-16 w-80 max-h-96 overflow-y-auto"
+    class="bg-white shadow-2xl rounded-lg absolute md:right-10 md:top-20 top-16 w-80 max-h-96 overflow-y-auto border border-gray-200"
   >
-    <ul class="divide-y divide-gray-200">
-      <li
-        v-for="notification in notifications"
-        :key="notification.id"
-        :class="{
-          'p-4 bg-white': notification.read_at,
-          'p-4 bg-teal-100': !notification.read_at,
-        }"
-        @click="
-          markNotification(
-            notification.id,
-            getTargetUrl(notification.data.event_type) + notification.data.event_id,
-          )
-        "
-        class="cursor-pointer"
-      >
-        <p>{{ notification.data.message }}</p>
-        <span class="text-sm text-gray-500">{{
-          new Date(notification.created_at).toLocaleString('en-US')
-        }}</span>
-      </li>
+    <!-- Header -->
+    <div
+      class="flex justify-between items-center p-4 bg-gradient-to-r from-teal-100 to-teal-200 rounded-t-lg"
+    >
+      <RouterLink :to="{ name: 'MyNotificationList' }" class="text-base font-bold text-gray-700">
+        🔔 Notifications
+        <span class="ml-2 px-2 py-1 bg-red-500 text-white text-xs rounded-full">
+          {{ totalUnreadNotifications }}
+        </span>
+      </RouterLink>
+    </div>
 
-      <li v-if="notifications.length === 0" class="p-4 text-center">
-        <p class="text-gray-500">No notifications found.</p>
-      </li>
-    </ul>
+    <!-- Notification List -->
+    <div class="flex flex-col divide-y divide-gray-100">
+      <RouterLink
+        v-if="grouped_counts.leaveApplication"
+        :to="{ name: 'NotificationList', query: { type: 'leaveApplication' } }"
+        class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
+      >
+        <span class="text-sm text-gray-700">📄 Leave Applications</span>
+        <span class="text-xs bg-teal-500 text-white rounded-full px-2 py-0.5 font-semibold">
+          {{ grouped_counts.leaveApplication }}
+        </span>
+      </RouterLink>
+      <RouterLink
+        v-if="grouped_counts.shortLeave"
+        :to="{ name: 'NotificationList', query: { type: 'shortLeave' } }"
+        class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
+      >
+        <span class="text-sm text-gray-700">🕒 Short Leave</span>
+        <span class="text-xs bg-yellow-500 text-white rounded-full px-2 py-0.5 font-semibold">
+          {{ grouped_counts.shortLeave }}
+        </span>
+      </RouterLink>
+      <RouterLink
+        v-if="grouped_counts.exchange"
+        :to="{ name: 'NotificationList', query: { type: 'exchange' } }"
+        class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
+      >
+        <span class="text-sm text-gray-700">🔄 Exchange Request</span>
+        <span class="text-xs bg-purple-500 text-white rounded-full px-2 py-0.5 font-semibold">
+          {{ grouped_counts.exchange }}
+        </span>
+      </RouterLink>
+      <div
+        v-if="!Object.keys(grouped_counts).length"
+        class="px-4 py-3 text-center text-sm text-gray-400"
+      >
+        No new notifications.
+      </div>
+    </div>
   </div>
 </template>

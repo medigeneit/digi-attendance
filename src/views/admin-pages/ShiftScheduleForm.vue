@@ -185,7 +185,6 @@ const loadScheduleData = async (companyId, month) => {
       if (!mapped[empId]) mapped[empId] = {}
       mapped[empId][day] = item.shift_id || 'WEEKEND'
     })
-    console.log({ mapped })
 
     scheduleMap.value = mapped
   } catch (err) {

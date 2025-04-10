@@ -1,8 +1,9 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { RouterLink } from 'vue-router'
-import { useNotificationStore } from '@/stores/notification'
 import MyNotifications from '@/components/MyNotifications.vue'
+import { useNotificationStore } from '@/stores/notification'
+import { storeToRefs } from 'pinia'
+import { onMounted, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 
 const props = defineProps({
   user: Object,
@@ -10,6 +11,8 @@ const props = defineProps({
 })
 
 const notificationStore = useNotificationStore()
+
+const { grouped_counts, totalUnreadNotifications } = storeToRefs(notificationStore)
 
 const showNotice = ref(false)
 
