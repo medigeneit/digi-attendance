@@ -53,7 +53,7 @@ const getEventTitle = (eventModel, eventType) => {
     case 'leaveApplication':
       return `Leave: ${eventModel.last_working_date} → ${eventModel.resumption_date}`
     case 'shortLeave':
-      return `Short Leave on ${eventModel.leave_date ?? 'N/A'}`
+      return `Short Leave on ${formatTime(eventModel.start_time) ?? 'N/A'}`
     case 'exchange':
       return `Exchange (${eventModel.exchange_type}) on ${eventModel.exchange_date}`
     default:
@@ -81,6 +81,18 @@ const formatDate = (date) => {
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+  })
+}
+
+const formatTime = (timeString) => {
+  const [hour, minute] = timeString.split(':').map(Number) // Extract hour & minute
+  const date = new Date()
+  date.setHours(hour, minute)
+
+  return date.toLocaleString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true, // Ensures AM/PM format
   })
 }
 
@@ -113,18 +125,55 @@ const handleNotificationClick = (notification) => {
       <div
         v-for="(item, index) in notifications[route.query.type]"
         :key="item.id"
-        class="bg-white p-4 rounded-xl shadow border space-y-2"
+        class="bg-white p-4 rounded-xl shadow border"
       >
         <div class="flex items-start gap-4">
-          <div class="text-2xl text-blue-500 mt-1">
+          <div class="text-2xl text-blue-500">
             <i :class="getEventIcon(item.event_type)"></i>
           </div>
-          <div class="flex-1 space-y-1">
+          <div class="flex-1">
             <p class="text-gray-800 font-medium">{{ item.message }}</p>
+            <p class="text-gray-800 font-medium">{{ item.event_model?.user_name }}</p>
+            <p class="text-gray-800 font-medium">Reason: {{ item.event_model?.reason }}</p>
             <p class="text-gray-600 text-sm">
               {{ getEventTitle(item.event_model, item.event_type) }}
             </p>
+            <p class="text-xs text-gray-400" v-if="item?.event_model?.total_leave">
+              Total Leave: {{ item?.event_model.total_leave }} days
+            </p>
+            <p class="text-xs" v-if="item?.event_model?.type">
+              Type : {{ item?.event_model?.type }}
+            </p>
             <p class="text-xs text-gray-400">{{ formatDate(item.created_at) }}</p>
+          </div>
+          <div class="flex items-center justify-between" v-if="item?.event_model">
+            <RouterLink
+              v-if="route.query.type === 'leaveApplication'"
+              :to="{ name: 'LeaveApplicationShow', params: { id: item?.event_model?.id } }"
+              class="btn-icon"
+            >
+              <i class="far fa-eye"></i>
+            </RouterLink>
+            <RouterLink
+              v-if="route.query.type === 'shortLeave'"
+              :to="{ name: 'ShortLeaveShow', params: { id: item?.event_model?.id } }"
+              class="btn-icon"
+            >
+              <i class="far fa-eye"></i>
+            </RouterLink>
+            <RouterLink
+              v-if="route.query.type === 'exchange'"
+              :to="{
+                name:
+                  item?.event_model?.exchange_type == 'offday'
+                    ? 'ExchangeOffdayShow'
+                    : 'ExchangeShiftShow',
+                params: { id: item?.event_model?.id },
+              }"
+              class="btn-icon"
+            >
+              <i class="far fa-eye"></i>
+            </RouterLink>
           </div>
         </div>
 

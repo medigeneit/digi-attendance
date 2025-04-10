@@ -253,15 +253,21 @@ const totalWithWeekendDays = computed(() => {
           </div>
         </div>
         <div class="py-2">
-            <div class="gap-y-1">
-              <p>Name: <b>{{ leaveApplication?.user_name }} </b></p>
-            </div>
-            <div class="gap-y-1">
-              <p>Designation: <b>{{ leaveApplication?.designation_title }}</b></p>
-            </div>
-            <div class="gap-y-1">
-              <p>Phone: <b>{{ leaveApplication?.user_phone }}</b></p>
-            </div>
+          <div class="gap-y-1">
+            <p>
+              Name: <b>{{ leaveApplication?.user_name }} </b>
+            </p>
+          </div>
+          <div class="gap-y-1">
+            <p>
+              Designation: <b>{{ leaveApplication?.designation_title }}</b>
+            </p>
+          </div>
+          <div class="gap-y-1">
+            <p>
+              Phone: <b>{{ leaveApplication?.user_phone }}</b>
+            </p>
+          </div>
         </div>
         <div>
           <h3 class="font-bold">Leave Details:</h3>
@@ -281,7 +287,8 @@ const totalWithWeekendDays = computed(() => {
           <div>
             <div class="text-sm">
               <p>
-                <strong>Works in Hand: </strong>{{ leaveApplication?.works_in_hand || 'No details provided' }}
+                <strong>Works in Hand: </strong
+                >{{ leaveApplication?.works_in_hand || 'No details provided' }}
               </p>
             </div>
           </div>
@@ -402,7 +409,7 @@ const totalWithWeekendDays = computed(() => {
               class="print:hidden"
             >
               <p class="text-center">
-                {{ leaveApplication?.in_charge_user_name || 'N/A' }}
+                {{ leaveApplication?.in_charge_user_name }}
               </p>
               <p class="text-xs text-center text-blue-600">
                 {{ leaveApplication?.user_name }} has submitted an application. <br />
@@ -438,7 +445,7 @@ const totalWithWeekendDays = computed(() => {
               class="print:hidden"
             >
               <p class="text-center">
-                {{ leaveApplication?.approval_coordinator_user_name || 'N/A' }}
+                {{ leaveApplication?.approval_coordinator_user_name }}
               </p>
               <p class="text-xs text-center text-blue-600">
                 {{ leaveApplication?.user_name }} has submitted an application. <br />
@@ -474,7 +481,7 @@ const totalWithWeekendDays = computed(() => {
               class="print:hidden"
             >
               <p class="text-center">
-                {{ leaveApplication?.operational_admin_user_name || 'N/A' }}
+                {{ leaveApplication?.operational_admin_user_name }}
               </p>
               <p class="text-xs text-center text-blue-600">
                 {{ leaveApplication?.user_name }} has submitted an application.<br />
@@ -515,7 +522,7 @@ const totalWithWeekendDays = computed(() => {
               class="print:hidden"
             >
               <p class="text-center">
-                {{ leaveApplication?.recommend_by_user_name || 'N/A' }}
+                {{ leaveApplication?.recommend_by_user_name }}
               </p>
               <p class="text-xs text-center text-blue-600">
                 {{ leaveApplication?.user_name }} has submitted an application.<br />
@@ -551,7 +558,7 @@ const totalWithWeekendDays = computed(() => {
               class="print:hidden"
             >
               <p class="text-center">
-                {{ leaveApplication?.approved_by_user_name || 'N/A' }}
+                {{ leaveApplication?.approved_by_user_name }}
               </p>
               <p class="text-xs text-center text-blue-600">
                 {{ leaveApplication?.user_name }} has submitted an application.<br />

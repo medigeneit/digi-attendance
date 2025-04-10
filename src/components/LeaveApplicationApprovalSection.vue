@@ -10,18 +10,8 @@
     </div>
 
     <div class="flex justify-end gap-2 pt-2">
-      <button
-        class="bg-green-500 text-white text-sm px-4 py-1 rounded hover:bg-green-600"
-        @click="userApprovalRole.action(leaveApplication.id)"
-      >
-        Approve
-      </button>
-      <button
-        class="bg-red-500 text-white text-sm px-4 py-1 rounded hover:bg-red-600"
-        @click="toggleRejectNote"
-      >
-        Reject
-      </button>
+      <button class="btn-2" @click="userApprovalRole.action(leaveApplication.id)">Approve</button>
+      <button class="btn-1" @click="toggleRejectNote">Reject</button>
     </div>
   </div>
 </template>
