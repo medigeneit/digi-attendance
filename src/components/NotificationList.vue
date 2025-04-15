@@ -159,7 +159,15 @@ const handleNotificationClick = (notification) => {
             </p>
             <p class="text-xs text-gray-400">{{ formatDate(item.created_at) }}</p>
           </div>
-          <div class="flex items-center justify-between" v-if="item?.event_model">
+          <div class="flex items-center justify-between gap-4" v-if="item?.event_model">
+            <a
+              v-if="item?.event_model.attachment"
+              :href="item?.event_model?.attachment"
+              target="_blank"
+              class="text-blue-500 underline"
+            >
+              <i class="fad fa-link"></i>
+            </a>
             <RouterLink
               v-if="route.query.type === 'leaveApplication'"
               :to="{ name: 'LeaveApplicationShow', params: { id: item?.event_model?.id } }"
