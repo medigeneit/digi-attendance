@@ -28,7 +28,11 @@ const emits = defineEmits(['close'])
     <div
       class="flex justify-between items-center p-4 bg-gradient-to-r from-teal-100 to-teal-200 rounded-t-lg"
     >
-      <RouterLink :to="{ name: 'MyNotificationList' }" class="text-base font-bold text-gray-700">
+      <RouterLink
+        :to="{ name: 'MyNotificationList' }"
+        @click="emits('close')"
+        class="text-base font-bold text-gray-700"
+      >
         🔔 Notifications
         <span class="ml-2 px-2 py-1 bg-red-500 text-white text-xs rounded-full">
           {{ totalUnreadNotifications }}
@@ -41,6 +45,7 @@ const emits = defineEmits(['close'])
       <RouterLink
         v-if="grouped_counts.leaveApplication"
         :to="{ name: 'NotificationList', query: { type: 'leaveApplication' } }"
+        @click="emits('close')"
         class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
       >
         <span class="text-sm text-gray-700">📄 Leave Applications</span>
@@ -51,6 +56,7 @@ const emits = defineEmits(['close'])
       <RouterLink
         v-if="grouped_counts.shortLeave"
         :to="{ name: 'NotificationList', query: { type: 'shortLeave' } }"
+        @click="emits('close')"
         class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
       >
         <span class="text-sm text-gray-700">🕒 Short Leave</span>
@@ -61,6 +67,7 @@ const emits = defineEmits(['close'])
       <RouterLink
         v-if="grouped_counts.exchange"
         :to="{ name: 'NotificationList', query: { type: 'exchange' } }"
+        @click="emits('close')"
         class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
       >
         <span class="text-sm text-gray-700">🔄 Exchange Request</span>

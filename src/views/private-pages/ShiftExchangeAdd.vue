@@ -88,7 +88,7 @@ const goBack = () => {
         <h4 class="title-lg text-center">{{ authStore?.user?.company?.name }}</h4>
         <p class="text-center">Shift Change Application</p>
       </div>
-      <p class="block text-sm font-medium">Current Shift: {{ authStore?.user?.shift?.name }}</p>
+      <p class="block text-sm font-medium">Current Shift: {{ authStore?.user?.current_shift?.shift?.name }}</p>
 
       <div>
         <label for="shift_id" class="block text-sm font-medium">Exchange Shift</label>

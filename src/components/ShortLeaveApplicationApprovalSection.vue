@@ -10,10 +10,12 @@
     </div>
 
     <div class="flex justify-end gap-2 pt-2">
-      <button class="btn-2" @click="userApprovalRole.action(shortLeaveApplication.id)">
+      <button v-if="!showRejectNote" class="btn-2" @click="userApprovalRole.action(shortLeaveApplication.id)">
         Approve
       </button>
-      <button class="btn-1" @click="toggleRejectNote">Reject</button>
+      <button class="btn-1" @click="toggleRejectNote">
+        {{ showRejectNote ? 'Submit':'Reject' }}
+      </button>
     </div>
   </div>
 </template>
