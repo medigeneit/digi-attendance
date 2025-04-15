@@ -68,7 +68,7 @@ const goBack = () => {
               <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
               <td class="border border-gray-300 px-2">{{ exchange?.exchange_date }}</td>
               <td class="border border-gray-300 px-2">
-                {{ exchange?.user?.current_shift?.shift?.name }}
+                {{ exchange?.current_shift?.name || authStore?.user?.current_shift?.shift?.name }}
               </td>
               <td class="border border-gray-300 px-2">{{ exchange?.shift?.name }}</td>
               <td class="border border-gray-300 px-2 text-center">
