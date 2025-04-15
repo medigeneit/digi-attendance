@@ -31,6 +31,7 @@ const submitShiftExchange = async () => {
   try {
     const payload = {
       user_id: authStore?.user?.id,
+      current_shift_id: authStore?.user?.current_shift?.shift_id,
       shift_id: form.value.shift_id,
       exchange_type: form.value.exchange_type,
       current_date: form.value.selected_date,
