@@ -145,7 +145,7 @@ const handleNotificationClick = (notification) => {
           <div class="flex-1">
             <p class="text-gray-800 font-medium">{{ item.event_model?.user_name }}</p>
             <p class="text-gray-800 font-medium">Reason: {{ item.event_model?.reason }}</p>
-            <p class="text-red-600 text-sm">
+            <p class="text-red-600 text-sm font-semibold">
               {{ getEventTitle(item.event_model, item.event_type) }}
             </p>
             <p
@@ -155,27 +155,27 @@ const handleNotificationClick = (notification) => {
               Total Leave: {{ item?.event_model.total_leave_days_without_week }} days
             </p>
           </div>
-          <div class="grid gap-2" v-if="item?.event_model">
+          <div class="grid gap-1" v-if="item?.event_model">
             <div class="flex items-center gap-4">
               <a
                 v-if="item?.event_model.attachment"
                 :href="item?.event_model?.attachment"
                 target="_blank"
-                class="text-blue-500 underline"
+                class="btn-1"
               >
                 <i class="fad fa-link"></i>
               </a>
               <RouterLink
                 v-if="route.query.type === 'leaveApplication'"
                 :to="{ name: 'LeaveApplicationShow', params: { id: item?.event_model?.id } }"
-                class="btn-icon"
+                class="btn-4"
               >
                 <i class="far fa-eye"></i>
               </RouterLink>
               <RouterLink
                 v-if="route.query.type === 'shortLeave'"
                 :to="{ name: 'ShortLeaveShow', params: { id: item?.event_model?.id } }"
-                class="btn-icon"
+                class="btn-4"
               >
                 <i class="far fa-eye"></i>
               </RouterLink>
@@ -188,7 +188,7 @@ const handleNotificationClick = (notification) => {
                       : 'ExchangeShiftShow',
                   params: { id: item?.event_model?.id },
                 }"
-                class="btn-icon"
+                class="btn-4"
               >
                 <i class="far fa-eye"></i>
               </RouterLink>
