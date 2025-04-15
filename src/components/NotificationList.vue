@@ -55,7 +55,7 @@ const getEventTitle = (eventModel, eventType) => {
       return `Last Office ( ${eventModel.last_working_date} ) → Join Date ( ${eventModel.resumption_date} )`
 
     case 'shortLeave':
-      return `Short Leave on ${formatTime(eventModel.start_time) ?? 'N/A'} to ${
+      return `Short Leave on ${eventModel.date} form ${formatTime(eventModel.start_time) ?? 'N/A'} to ${
         eventModel.end_time ? formatTime(eventModel.end_time) : 'N/A'
       }`
 
@@ -154,47 +154,51 @@ const handleNotificationClick = (notification) => {
             >
               Total Leave: {{ item?.event_model.total_leave_days_without_week }} days
             </p>
-            <p class="text-xs" v-if="item?.event_model?.type">
-              Type : {{ item?.event_model?.type }}
-            </p>
-            <p class="text-xs text-gray-400">{{ formatDate(item.created_at) }}</p>
           </div>
-          <div class="flex items-center justify-between gap-4" v-if="item?.event_model">
-            <a
-              v-if="item?.event_model.attachment"
-              :href="item?.event_model?.attachment"
-              target="_blank"
-              class="text-blue-500 underline"
-            >
-              <i class="fad fa-link"></i>
-            </a>
-            <RouterLink
-              v-if="route.query.type === 'leaveApplication'"
-              :to="{ name: 'LeaveApplicationShow', params: { id: item?.event_model?.id } }"
-              class="btn-icon"
-            >
-              <i class="far fa-eye"></i>
-            </RouterLink>
-            <RouterLink
-              v-if="route.query.type === 'shortLeave'"
-              :to="{ name: 'ShortLeaveShow', params: { id: item?.event_model?.id } }"
-              class="btn-icon"
-            >
-              <i class="far fa-eye"></i>
-            </RouterLink>
-            <RouterLink
-              v-if="route.query.type === 'exchange'"
-              :to="{
-                name:
-                  item?.event_model?.exchange_type == 'offday'
-                    ? 'ExchangeOffdayShow'
-                    : 'ExchangeShiftShow',
-                params: { id: item?.event_model?.id },
-              }"
-              class="btn-icon"
-            >
-              <i class="far fa-eye"></i>
-            </RouterLink>
+          <div class="grid gap-2" v-if="item?.event_model">
+            <div class="flex items-center gap-4">
+              <a
+                v-if="item?.event_model.attachment"
+                :href="item?.event_model?.attachment"
+                target="_blank"
+                class="text-blue-500 underline"
+              >
+                <i class="fad fa-link"></i>
+              </a>
+              <RouterLink
+                v-if="route.query.type === 'leaveApplication'"
+                :to="{ name: 'LeaveApplicationShow', params: { id: item?.event_model?.id } }"
+                class="btn-icon"
+              >
+                <i class="far fa-eye"></i>
+              </RouterLink>
+              <RouterLink
+                v-if="route.query.type === 'shortLeave'"
+                :to="{ name: 'ShortLeaveShow', params: { id: item?.event_model?.id } }"
+                class="btn-icon"
+              >
+                <i class="far fa-eye"></i>
+              </RouterLink>
+              <RouterLink
+                v-if="route.query.type === 'exchange'"
+                :to="{
+                  name:
+                    item?.event_model?.exchange_type == 'offday'
+                      ? 'ExchangeOffdayShow'
+                      : 'ExchangeShiftShow',
+                  params: { id: item?.event_model?.id },
+                }"
+                class="btn-icon"
+              >
+                <i class="far fa-eye"></i>
+              </RouterLink>
+            </div>
+            <div class="grow-0 w-full">
+              <p class="text-xs font-semibold" v-if="item?.event_model?.type">
+                Type : {{ item?.event_model?.type }}
+              </p>
+              <p class="text-xs text-gray-400">{{ formatDate(item.created_at) }}</p>
+            </div>
           </div>
         </div>
 
