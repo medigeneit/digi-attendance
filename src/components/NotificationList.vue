@@ -49,14 +49,24 @@ const markNotification = async (notificationId, url) => {
 
 const getEventTitle = (eventModel, eventType) => {
   if (!eventModel) return 'No application details'
+
   switch (eventType) {
     case 'leaveApplication':
-      return `Leave: ${eventModel.last_working_date} → ${eventModel.resumption_date}`
+      return `Last Office ( ${eventModel.last_working_date} ) → Join Date ( ${eventModel.resumption_date} )`
+
     case 'shortLeave':
-      return `Short Leave on ${formatTime(eventModel.start_time) ?? 'N/A'} to 
-      ${eventModel.end_time ? formatTime(eventModel.end_time) : ('' ?? 'N/A')}`
+      return `Short Leave on ${formatTime(eventModel.start_time) ?? 'N/A'} to ${
+        eventModel.end_time ? formatTime(eventModel.end_time) : 'N/A'
+      }`
+
     case 'exchange':
-      return `Exchange (${eventModel.exchange_type}) on ${eventModel.exchange_date}`
+      if (eventModel.exchange_type === 'offday') {
+        return `Exchange (Offday): ${eventModel.exchange_date} → ${eventModel.current_date}`
+      } else if (eventModel.exchange_type === 'shift') {
+        return `Exchange (${eventModel.exchange_type}) on ${eventModel.current_date} (${eventModel?.shift_name ?? 'No Shift'})`
+      }
+      return `Exchange (${eventModel.exchange_type})`
+
     default:
       return 'Unknown Event'
   }
@@ -135,11 +145,14 @@ const handleNotificationClick = (notification) => {
           <div class="flex-1">
             <p class="text-gray-800 font-medium">{{ item.event_model?.user_name }}</p>
             <p class="text-gray-800 font-medium">Reason: {{ item.event_model?.reason }}</p>
-            <p class="text-gray-600 text-sm">
+            <p class="text-red-600 text-sm">
               {{ getEventTitle(item.event_model, item.event_type) }}
             </p>
-            <p class="text-xs text-gray-400" v-if="item?.event_model?.total_leave">
-              Total Leave: {{ item?.event_model.total_leave }} days
+            <p
+              class="text-xs text-gray-400"
+              v-if="item?.event_model?.total_leave_days_without_week"
+            >
+              Total Leave: {{ item?.event_model.total_leave_days_without_week }} days
             </p>
             <p class="text-xs" v-if="item?.event_model?.type">
               Type : {{ item?.event_model?.type }}

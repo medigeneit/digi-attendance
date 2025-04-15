@@ -1,5 +1,6 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import ScreenshotCapture from '@/components/common/ScreenshotCapture.vue'
 import ShareComponent from '@/components/common/ShareComponent.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useExchangeStore } from '@/stores/exchange'
@@ -23,8 +24,7 @@ onMounted(async () => {
   const { id } = route.params
   try {
     await exchangeStore.fetchExchange(id)
-    console.log();
-    
+    console.log()
   } catch (err) {
     console.error('Failed to fetch exchange details:', err)
   } finally {
@@ -97,13 +97,12 @@ function print() {
 
 const goBack = () => router.go(-1)
 
-const formatDate = (dateString) => new Date(dateString).toISOString().slice(0, 10);
+const formatDate = (dateString) => new Date(dateString).toISOString().slice(0, 10)
 
 const getDayName = (dateString) => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', { weekday: 'long' });
-};
-
+  const date = new Date(dateString)
+  return date.toLocaleDateString('en-US', { weekday: 'long' })
+}
 </script>
 
 <template>
@@ -124,23 +123,27 @@ const getDayName = (dateString) => {
 
     <LoaderView v-if="loading" />
 
-    <div v-else class="card-bg p-4 md:p-8">
+    <div v-else class="bg-white rounded p-4 md:p-8" id="leave-application">
       <div>
-        <h1 class="title-lg text-center">
-            Shift Exchange Application
-        </h1>
+        <h1 class="title-lg text-center">Shift Exchange Application</h1>
       </div>
       <div class="flex justify-end">
         <div>Date: {{ formatDate(exchange?.created_at) }}</div>
       </div>
       <div>
-        <p class="font-medium">Name: <b>{{ exchange?.user?.name }}</b> </p>
-          <div class="gap-y-1">
-            <p>Designation: <b>{{ exchange?.user?.designation?.title }}</b></p>
-          </div>
-          <div class="gap-y-1">
-            <p>Department:  <b>{{ exchange?.user?.company?.name }}</b></p>
-          </div>
+        <p class="font-medium">
+          Name: <b>{{ exchange?.user?.name }}</b>
+        </p>
+        <div class="gap-y-1">
+          <p>
+            Designation: <b>{{ exchange?.user?.designation?.title }}</b>
+          </p>
+        </div>
+        <div class="gap-y-1">
+          <p>
+            Department: <b>{{ exchange?.user?.company?.name }}</b>
+          </p>
+        </div>
       </div>
 
       <div class="grid md:grid-cols-2 pt-3">
@@ -175,7 +178,7 @@ const getDayName = (dateString) => {
               <button class="px-2">❌</button>
             </div>
           </div>
-          <hr class="w-44 border-black" />
+          <hr class="w-44 border-black mt-2" />
           <h4 class="font-bold">
             Handover
             <span
@@ -193,7 +196,7 @@ const getDayName = (dateString) => {
         </div>
       </div>
 
-      <hr />
+      <hr class="mt-2" />
 
       <div>
         <h3 class="title-md">
@@ -214,7 +217,7 @@ const getDayName = (dateString) => {
         </div>
       </div>
 
-      <div class="grid print:grid-cols-3 md:grid-cols-3 gap-4">
+      <div class="grid print:grid-cols-3 md:grid-cols-3 justify-center items-center gap-4">
         <div class="pt-10">
           <div
             v-if="
@@ -243,7 +246,7 @@ const getDayName = (dateString) => {
             </div>
           </div>
           <p>{{ exchange?.in_charge_user?.name || '' }}</p>
-          <hr class="w-44 border-black" />
+          <hr class="w-44 border-black mt-2" />
           <p class="font-bold">
             In-Charge
             <span v-if="exchange?.in_charge_user_id" class="text-green-600">(✔)</span>
@@ -278,7 +281,7 @@ const getDayName = (dateString) => {
             </div>
           </div>
           <p>{{ exchange?.recommend_by_user?.name || '' }}</p>
-          <hr class="w-44 border-black" />
+          <hr class="w-44 border-black mt-2" />
           <p class="font-bold">
             Recommend By
             <span v-if="exchange?.recommend_by_user_id" class="text-green-600">(✔)</span>
@@ -312,16 +315,16 @@ const getDayName = (dateString) => {
             </div>
           </div>
           <p>{{ exchange?.approved_by_user?.name || '' }}</p>
-          <hr class="w-44 border-black" />
+          <hr class="w-44 border-black mt-2" />
           <p class="font-bold">
             Approved By
             <span v-if="exchange?.approved_by_user_id" class="text-green-600">(✔)</span>
           </p>
         </div>
       </div>
-
     </div>
-    <div class="print:hidden ">
+
+    <div class="print:hidden">
       <div>
         <label>Attachment</label>
         <!-- Show existing file link if available -->
@@ -340,7 +343,9 @@ const getDayName = (dateString) => {
         Upload Attachment
       </button> -->
     </div>
-    <ShareComponent />
+    <ShareComponent>
+      <ScreenshotCapture targetId="leave-application" platform="whatsapp" />
+    </ShareComponent>
   </div>
 
   <div v-if="rejectionModal" class="modal-bg">
