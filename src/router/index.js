@@ -51,6 +51,137 @@ const router = createRouter({
           component: () => import('@/views/private-pages/DashBoard.vue'),
           meta: { requiresAuth: true }
         },
+
+        {
+          path: 'task-management',
+          name: 'TaskManagementView',
+          component: () => import('@/views/private-pages/TaskManagementView.vue'),
+          meta: { requiresAuth: true }
+        },
+        {
+          path: 'projects',
+          name: 'ProjectList',
+          component: () => import('@/views/private-pages/projects/ProjectList.vue'),
+          meta: { requiresAuth: true }
+        },
+        {
+          path: 'projects/add',
+          name: 'ProjectAdd',
+          component: () => import('@/views/private-pages/projects/ProjectAdd.vue'),
+          meta: { requiresAuth: true }
+        },
+        {
+          path: 'projects/edit/:id',
+          name: 'ProjectEdit',
+          component: () => import('@/views/private-pages/projects/ProjectEdit.vue'),
+          meta: { requiresAuth: true }
+        },
+
+        {
+          path: 'requirements',
+          name: 'RequirementList',
+          component: () => import('@/views/private-pages/requirements/RequirementList.vue'),
+          meta: { requiresAuth: true }
+        },
+        {
+          path: 'requirements/add',
+          name: 'RequirementAdd',
+          component: () => import('@/views/private-pages/requirements/RequirementAdd.vue'),
+          meta: { requiresAuth: true }
+        },
+        {
+          path: 'requirements/edit/:id',
+          name: 'RequirementEdit',
+          component: () => import('@/views/private-pages/requirements/RequirementEdit.vue'),
+          meta: { requiresAuth: true }
+        },
+
+        {
+          path: 'tasks',
+          name: 'TaskList',
+          component: () => import('@/views/private-pages/tasks/TaskList.vue'),
+          meta: { requiresAuth: true }
+        },
+
+        {
+          path: 'tasks/add',
+          name: 'TaskAdd',
+          component: () => import('@/views/private-pages/tasks/TaskAdd.vue'),
+          meta: { requiresAuth: true }
+        },
+
+        {
+          path: 'tasks/edit/:id',
+          name: 'TaskEdit',
+          component: () => import('@/views/private-pages/tasks/TaskEdit.vue'),
+          meta: { requiresAuth: true }
+        },
+
+        {
+          path: 'tasks/:id/assign-users',
+          name: 'TaskUserAssign',
+          component: () => import('@/views/private-pages/tasks/TaskUserAssign.vue'),
+          meta: { requiresAuth: true }
+        },
+
+        {
+          path: 'bugs',
+          name: 'BugList',
+          component: () => import('@/views/private-pages/bugs/BugList.vue'),
+          meta: { requiresAuth: true }
+        },
+        {
+          path: 'bugs/add',
+          name: 'BugAdd',
+          component: () => import('@/views/private-pages/bugs/BugAdd.vue'),
+          meta: { requiresAuth: true }
+        },
+        {
+          path: 'bugs/:id/edit',
+          name: 'BugEdit',
+          component: () => import('@/views/private-pages/bugs/BugEdit.vue'),
+          meta: { requiresAuth: true }
+        },
+        {
+          path: 'meetings',
+          name: 'MeetingList',
+          component: () => import('@/views/private-pages/meetings/MeetingList.vue'),
+          meta: { requiresAuth: true }
+        },
+        {
+          path: 'meetings/add',
+          name: 'MeetingAdd',
+          component: () => import('@/views/private-pages/meetings/MeetingAdd.vue'),
+          meta: { requiresAuth: true }
+        },
+        {
+          path: 'meetings/edit/:id',
+          name: 'MeetingEdit',
+          component: () => import('@/views/private-pages/meetings/MeetingEdit.vue'),
+          meta: { requiresAuth: true }
+        },
+        {
+          path: 'comments',
+          name: 'CommentList',
+          component: () => import('@/views/private-pages/comments/CommentList.vue'),
+          meta: { requiresAuth: true }
+        },
+        {
+          path: 'comments/add',
+          name: 'CommentAdd',
+          component: () => import('@/views/private-pages/comments/CommentAdd.vue'),
+          meta: { requiresAuth: true }
+        },
+        {
+          path: 'comments/edit/:id',
+          name: 'CommentEdit',
+          component: () => import('@/views/private-pages/comments/CommentEdit.vue'),
+          meta: { requiresAuth: true }
+        },
+
+
+
+
         {
           path: '/my-attendance',
           name: 'MyAttendance',
