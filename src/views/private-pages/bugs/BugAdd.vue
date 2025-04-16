@@ -1,23 +1,28 @@
 <script setup>
-import { useBugStore } from "@/stores/useBugStore";
-import { ref } from "vue";
-import { useRouter } from "vue-router";
+import { useBugStore } from '@/stores/useBugStore'
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
-const store = useBugStore();
-const router = useRouter();
-const title = ref("");
-const description = ref("");
-const loading = ref(false);
+const store = useBugStore()
+const router = useRouter()
+const title = ref('')
+const status = ref('OPEN')
+const description = ref('')
+const loading = ref(false)
 
 const submit = async () => {
-  loading.value = true;
-  await store.createBug({ title: title.value, description: description.value });
-  loading.value = false;
+  loading.value = true
+  await store.createBug({
+    title: title.value,
+    status: status.value,
+    description: description.value,
+  })
+  loading.value = false
 
   if (!store.error) {
-    router.push({ name: "BugList" });
+    router.push({ name: 'BugList' })
   }
-};
+}
 </script>
 
 <template>
@@ -36,10 +41,20 @@ const submit = async () => {
           />
         </div>
 
-        <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-2"
-            >Description (Optional)</label
+        <div>
+          <label class="block text-gray-700 font-medium mb-2">Status</label>
+          <select
+            v-model="status"
+            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
           >
+            <option value="OPEN">OPEN</option>
+            <option value="SOLVED">SOLVED</option>
+            <option value="CLOSED">CLOSED</option>
+          </select>
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-gray-700 font-medium mb-2">Description (Optional)</label>
           <textarea
             v-model="description"
             rows="4"
@@ -58,7 +73,7 @@ const submit = async () => {
             type="submit"
             class="bg-red-500 hover:bg-red-600 text-white font-semibold px-5 py-2 rounded transition"
           >
-            {{ loading ? "Saving..." : "Save Bug" }}
+            {{ loading ? 'Saving...' : 'Save Bug' }}
           </button>
 
           <button

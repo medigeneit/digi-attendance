@@ -1,44 +1,65 @@
 <script setup>
-import { ref } from "vue";
-import { useRouter } from "vue-router";
-import { useTaskStore } from "@/stores/useTaskStore";
+import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
+import { useUserStore } from '@/stores/user'
+import { useRequirementStore } from '@/stores/useRequirementStore'
+import { useTaskStore } from '@/stores/useTaskStore'
+import { storeToRefs } from 'pinia'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 
-const store = useTaskStore();
-const router = useRouter();
+const store = useTaskStore()
+const router = useRouter()
+const requirementStore = useRequirementStore()
+const userStore = useUserStore()
+const { requirements } = storeToRefs(requirementStore)
+const { users } = storeToRefs(userStore)
+const selectedUser = ref([])
+const user_ids = computed(() => selectedUser.value.map((u) => u.id))
+const selectedRequirement = ref('')
+const requirement_id = computed(() => selectedRequirement.value?.id)
 
 const form = ref({
-  title: "",
-  requirement_id: "",
-  user_ids: "",
-  priority: "MEDIUM",
-  status: "PENDING",
-  description: "",
-});
+  title: '',
+  requirement_id: null,
+  user_ids: [],
+  priority: 'MEDIUM',
+  status: 'PENDING',
+  description: '',
+})
 
-const loading = ref(false);
+watch(requirement_id, (val) => {
+  form.value.requirement_id = val
+})
+watch(user_ids, (val) => {
+  form.value.user_ids = val
+})
+
+onMounted(() => {
+  requirementStore.fetchRequirements()
+  userStore.fetchUsers()
+})
+
+const loading = ref(false)
 
 const submit = async () => {
-  loading.value = true;
+  loading.value = true
 
   const payload = {
     ...form.value,
-    user_ids: form.value.user_ids.split(",").map(Number),
-  };
-
-  await store.createTask(payload);
-  loading.value = false;
+  }
+  await store.createTask(payload)
+  loading.value = false
 
   if (!store.error) {
-    router.push({ name: "TaskList" });
+    router.push({ name: 'TaskList' })
   }
-};
+}
 </script>
 
 <template>
   <div class="container mx-auto p-6">
     <div class="max-w-xl mx-auto bg-white shadow-lg rounded-lg p-6">
       <h2 class="text-2xl font-semibold text-gray-800 mb-4">Add New Task</h2>
-
       <form @submit.prevent="submit">
         <div class="mb-4">
           <label class="block text-gray-700 font-medium mb-2">Task Title</label>
@@ -51,26 +72,34 @@ const submit = async () => {
         </div>
 
         <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-2"
-            >Requirement ID</label
-          >
-          <input
-            v-model="form.requirement_id"
-            type="number"
+          <label class="block text-gray-700 font-medium mb-2">Requirement ID</label>
+          <MultiselectDropdown
+            v-model="selectedRequirement"
+            :options="requirements"
+            :multiple="false"
+            track-by="id"
+            label="title"
+            placeholder="Select department"
             required
-            placeholder="Enter requirement ID"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
         <div class="mb-4">
           <label class="block text-gray-700 font-medium mb-2">User IDs</label>
-          <input
+          <MultiselectDropdown
+            v-model="selectedUser"
+            :options="users"
+            :multiple="true"
+            track-by="id"
+            label="name"
+            placeholder="Select users"
+          />
+          <!-- <input
             v-model="form.user_ids"
             required
             placeholder="e.g., 1,2,3"
             class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-          />
+          /> -->
           <small class="text-gray-500">Comma-separated user IDs.</small>
         </div>
 
@@ -103,9 +132,7 @@ const submit = async () => {
         </div>
 
         <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-2"
-            >Description</label
-          >
+          <label class="block text-gray-700 font-medium mb-2">Description</label>
           <textarea
             v-model="form.description"
             rows="4"
@@ -124,7 +151,7 @@ const submit = async () => {
             type="submit"
             class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-5 py-2 rounded transition"
           >
-            {{ loading ? "Saving..." : "Save Task" }}
+            {{ loading ? 'Saving...' : 'Save Task' }}
           </button>
 
           <button

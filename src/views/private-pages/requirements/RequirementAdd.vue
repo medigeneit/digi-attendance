@@ -1,43 +1,49 @@
 <script setup>
-import { ref } from "vue";
-import { useRouter } from "vue-router";
-import { useRequirementStore } from "@/stores/useRequirementStore";
-import TextEditor from "@/components/TextEditor.vue";
-const store = useRequirementStore();
-const router = useRouter();
+import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
+import TextEditor from '@/components/TextEditor.vue'
+import { useDepartmentStore } from '@/stores/department'
+import { useRequirementStore } from '@/stores/useRequirementStore'
+import { storeToRefs } from 'pinia'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+const store = useRequirementStore()
+const router = useRouter()
 
-const title = ref("");
-const department_id = ref("");
-const description = ref("");
-const loading = ref(false);
+const title = ref('')
+const description = ref('')
+const loading = ref(false)
+const departmentStore = useDepartmentStore()
+const { departments } = storeToRefs(departmentStore)
+const selectedDepartment = ref('')
+const department_id = computed(() => selectedDepartment.value?.id)
+
+onMounted(() => {
+  departmentStore.fetchDepartments()
+})
 
 const submit = async () => {
-  loading.value = true;
+  loading.value = true
   await store.createRequirement({
     title: title.value,
     department_id: department_id.value,
     description: [description.value],
-  });
-  loading.value = false;
+  })
+  loading.value = false
 
   if (!store.error) {
-    router.push({ name: "RequirementList" });
+    router.push({ name: 'RequirementList' })
   }
-};
+}
 </script>
 
 <template>
   <div class="container mx-auto p-6">
     <div class="max-w-xl mx-auto bg-white shadow-lg rounded-lg p-6">
-      <h2 class="text-2xl font-semibold text-gray-800 mb-4">
-        Add New Requirement
-      </h2>
+      <h2 class="text-2xl font-semibold text-gray-800 mb-4">Add New Requirement</h2>
 
       <form @submit.prevent="submit">
         <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-2">
-            Requirement Title
-          </label>
+          <label class="block text-gray-700 font-medium mb-2"> Requirement Title </label>
           <input
             v-model="title"
             type="text"
@@ -48,22 +54,20 @@ const submit = async () => {
         </div>
 
         <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-2">
-            Department ID
-          </label>
-          <input
-            v-model="department_id"
-            type="number"
+          <label class="block text-gray-700 font-medium mb-2"> Department </label>
+          <MultiselectDropdown
+            v-model="selectedDepartment"
+            :options="departments"
+            :multiple="false"
+            track-by="id"
+            label="name"
+            placeholder="Select department"
             required
-            placeholder="Enter department ID"
-            class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
         <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-2">
-            Description
-          </label>
+          <label class="block text-gray-700 font-medium mb-2"> Description </label>
           <TextEditor
             v-model="description"
             placeholder="Enter requirement description"
@@ -81,7 +85,7 @@ const submit = async () => {
             type="submit"
             class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-5 py-2 rounded transition"
           >
-            {{ loading ? "Saving..." : "Save Requirement" }}
+            {{ loading ? 'Saving...' : 'Save Requirement' }}
           </button>
 
           <button

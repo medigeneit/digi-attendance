@@ -1,40 +1,41 @@
 <script setup>
-import { onMounted, ref } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import { useTaskStore } from "@/stores/useTaskStore";
-import { useUserStore } from "@/stores/useUserStore";
+import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
+import { useTaskStore } from '@/stores/useTaskStore'
+import { useUserStore } from '@/stores/user'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
-const taskStore = useTaskStore();
-const userStore = useUserStore();
-const route = useRoute();
-const router = useRouter();
-
-const taskId = route.params.id;
-const selectedUsers = ref([]);
-const loading = ref(false);
-const error = ref(null);
+const taskStore = useTaskStore()
+const userStore = useUserStore()
+const route = useRoute()
+const router = useRouter()
+const selectedUsers = ref([])
+const user_ids = computed(() => selectedUsers.value.map((u) => u.id))
+const taskId = route.params.id
+const loading = ref(false)
+const error = ref(null)
 
 onMounted(async () => {
-  loading.value = true;
-  await taskStore.fetchTask(taskId);
-  await userStore.fetchUsers(); // all available users
-  selectedUsers.value = taskStore.task.users.map((u) => u.id);
-  loading.value = false;
-});
+  loading.value = true
+  await taskStore.fetchTask(taskId)
+  await userStore.fetchUsers() // all available users
+  selectedUsers.value = taskStore.task.users
+  loading.value = false
+})
 
 const submit = async () => {
-  loading.value = true;
-  error.value = null;
+  loading.value = true
+  error.value = null
 
   try {
-    await taskStore.assignUsers(taskId, selectedUsers.value);
-    router.push({ name: "TaskList" });
+    await taskStore.assignUsers(taskId, user_ids.value)
+    router.push({ name: 'TaskList' })
   } catch (err) {
-    error.value = err.message || "Assign users failed";
+    error.value = err.message || 'Assign users failed'
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-};
+}
 </script>
 
 <template>
@@ -44,31 +45,19 @@ const submit = async () => {
         Assign Users to Task: "{{ taskStore.task?.title }}"
       </h2>
 
-      <div v-if="loading" class="text-center text-gray-500 py-4">
-        Loading users...
-      </div>
+      <div v-if="loading" class="text-center text-gray-500 py-4">Loading users...</div>
 
       <form v-else @submit.prevent="submit">
         <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-2"
-            >Select Users</label
-          >
-          <select
+          <label class="block text-gray-700 font-medium mb-2">Select Users</label>
+          <MultiselectDropdown
             v-model="selectedUsers"
-            multiple
-            class="w-full px-4 py-2 border rounded-md h-40 focus:ring-2 focus:ring-blue-500"
-          >
-            <option
-              v-for="user in userStore.users"
-              :key="user.id"
-              :value="user.id"
-            >
-              {{ user.name }} ({{ user.email }})
-            </option>
-          </select>
-          <small class="text-gray-500"
-            >Hold Ctrl (Windows) or Cmd (Mac) to select multiple users.</small
-          >
+            :options="userStore.users"
+            :multiple="true"
+            track-by="id"
+            label="name"
+            placeholder="Select users"
+          />
         </div>
 
         <div v-if="error" class="mb-4 text-red-500 font-medium">
@@ -81,7 +70,7 @@ const submit = async () => {
             type="submit"
             class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-5 py-2 rounded transition"
           >
-            {{ loading ? "Assigning..." : "Assign Users" }}
+            {{ loading ? 'Assigning...' : 'Assign Users' }}
           </button>
 
           <button

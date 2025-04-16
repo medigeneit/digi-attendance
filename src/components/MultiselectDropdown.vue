@@ -6,7 +6,7 @@
       :multiple="multiple"
       :searchable="true"
       track-by="id"
-      label="name"
+      :label="label"
       class="w-full border-2 border-gray-400 rounded focus:ring focus:ring-indigo-200 focus:outline-none"
       :placeholder="placeholder"
     />
@@ -27,6 +27,7 @@ const props = defineProps({
   multiple: Boolean,
   required: Boolean,
   placeholder: String,
+  label: String,
 })
 
 const emit = defineEmits(['update:modelValue'])

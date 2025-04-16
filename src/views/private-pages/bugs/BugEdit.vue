@@ -1,47 +1,50 @@
 <script setup>
-import { useBugStore } from "@/stores/useBugStore";
-import { onMounted, ref } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useBugStore } from '@/stores/useBugStore'
+import { onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
-const store = useBugStore();
-const route = useRoute();
-const router = useRouter();
+const store = useBugStore()
+const route = useRoute()
+const router = useRouter()
 
-const bugId = route.params.id;
-const loading = ref(false);
+const bugId = route.params.id
+const loading = ref(false)
 
 const form = ref({
-  title: "",
-  description: "",
-});
+  title: '',
+  description: '',
+  status: '',
+})
 
 onMounted(async () => {
-  await store.fetchBug(bugId); // optional: API fallback
+  await store.fetchBug(bugId) // optional: API fallback
   form.value = {
-    title: store.bug?.title || "",
-    description: store.bug?.description || "",
-  };
+    title: store.bug?.title || '',
+    description: store.bug?.description || '',
+    status: store.bug?.status || '',
+  }
   // const bug = store.bugs.find((b) => b.id == bugId);
   // if (bug) {
   //   store.bug = bug;
   //   form.value = {
   //     title: bug.title,
   //     description: bug.description || "",
+  //     status: bug.status || "",
   //   };
   // } else {
 
   // }
-});
+})
 
 const update = async () => {
-  loading.value = true;
-  await store.updateBug(bugId, form.value);
-  loading.value = false;
+  loading.value = true
+  await store.updateBug(bugId, form.value)
+  loading.value = false
 
   if (!store.error) {
-    router.push({ name: "BugList" });
+    router.push({ name: 'BugList' })
   }
-};
+}
 </script>
 
 <template>
@@ -60,10 +63,20 @@ const update = async () => {
           />
         </div>
 
-        <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-2"
-            >Description (Optional)</label
+        <div>
+          <label class="block text-gray-700 font-medium mb-2">Status</label>
+          <select
+            v-model="form.status"
+            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
           >
+            <option value="OPEN">OPEN</option>
+            <option value="SOLVED">SOLVED</option>
+            <option value="CLOSED">CLOSED</option>
+          </select>
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-gray-700 font-medium mb-2">Description (Optional)</label>
           <textarea
             v-model="form.description"
             rows="4"
@@ -82,7 +95,7 @@ const update = async () => {
             type="submit"
             class="bg-red-500 hover:bg-red-600 text-white font-semibold px-5 py-2 rounded transition"
           >
-            {{ loading ? "Updating..." : "Update Bug" }}
+            {{ loading ? 'Updating...' : 'Update Bug' }}
           </button>
 
           <button
