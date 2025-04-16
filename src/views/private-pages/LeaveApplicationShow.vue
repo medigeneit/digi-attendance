@@ -388,6 +388,13 @@ const totalWithWeekendDays = computed(() => {
         <div class="grid md:grid-cols-3 print:grid-cols-3 gap-4 text-sm items-end">
           <!-- In-Charge Approval -->
           <div class="flex flex-col justify-center items-center">
+            <p v-if="leaveApplication?.in_charge_user">
+              {{ leaveApplication?.in_charge_user?.name || '' }}
+            </p>
+            <p v-else class="text-center">
+              {{ leaveApplication?.user?.leave_approval?.in_charge_user?.name || 'N/A' }}
+            </p>
+
             <div
               v-if="
                 leaveApplication.status !== 'Rejected' &&
@@ -397,9 +404,6 @@ const totalWithWeekendDays = computed(() => {
               "
               class="print:hidden"
             >
-              <p class="text-center">
-                {{ leaveApplication?.user?.leave_approval?.in_charge_user?.name || 'N/A' }}
-              </p>
               <p class="text-xs text-center text-blue-600">
                 {{ leaveApplication?.user?.name }} has submitted an application. <br />
                 Will you forward it?
@@ -414,7 +418,7 @@ const totalWithWeekendDays = computed(() => {
                 <button class="" @click="openRejectionModal">❌</button>
               </div>
             </div>
-            <p>{{ leaveApplication?.in_charge_user?.name || '' }}</p>
+
             <hr class="w-44 border-black" />
             <p class="font-bold">
               In-Charge
@@ -424,6 +428,12 @@ const totalWithWeekendDays = computed(() => {
 
           <!-- Coordinator Approval -->
           <div class="flex flex-col justify-center items-center">
+            <p v-if="leaveApplication?.coordinator_user">
+              {{ leaveApplication?.coordinator_user?.name || 'N/A' }}
+            </p>
+            <p class="text-center">
+              {{ leaveApplication?.user?.leave_approval?.coordinator_user?.name || 'N/A' }}
+            </p>
             <div
               v-if="
                 leaveApplication.status !== 'Rejected' &&
@@ -433,9 +443,6 @@ const totalWithWeekendDays = computed(() => {
               "
               class="print:hidden"
             >
-              <p class="text-center">
-                {{ leaveApplication?.user?.leave_approval?.coordinator_user?.name || 'N/A' }}
-              </p>
               <p class="text-xs text-center text-blue-600">
                 {{ leaveApplication?.user?.name }} has submitted an application. <br />
                 Will you recommend it?
@@ -460,6 +467,12 @@ const totalWithWeekendDays = computed(() => {
 
           <!-- Operational Admin Approval -->
           <div class="flex flex-col justify-center items-center">
+            <p v-if="leaveApplication?.operational_admin_user">
+              {{ leaveApplication?.operational_admin_user?.name || '' }}
+            </p>
+            <p v-else class="text-center">
+              {{ leaveApplication?.user?.leave_approval?.operational_admin_user?.name || 'N/A' }}
+            </p>
             <div
               v-if="
                 leaveApplication.status !== 'Rejected' &&
@@ -470,9 +483,6 @@ const totalWithWeekendDays = computed(() => {
               "
               class="print:hidden"
             >
-              <p class="text-center">
-                {{ leaveApplication?.user?.leave_approval?.operational_admin_user?.name || 'N/A' }}
-              </p>
               <p class="text-xs text-center text-blue-600">
                 {{ leaveApplication?.user?.name }} has submitted an application.<br />
                 Will you recommend it?
@@ -487,7 +497,6 @@ const totalWithWeekendDays = computed(() => {
                 <button class="" @click="openRejectionModal">❌</button>
               </div>
             </div>
-            <p>{{ leaveApplication?.operational_admin_user?.name || '' }}</p>
             <hr class="w-44 border-black" />
             <p class="font-bold">
               Operational Admin
@@ -502,6 +511,12 @@ const totalWithWeekendDays = computed(() => {
         <div class="flex justify-evenly text-sm items-end">
           <!-- Recommend By Approval -->
           <div class="flex flex-col justify-center items-center">
+            <p v-if="leaveApplication?.recommend_by_user">
+              {{ leaveApplication?.recommend_by_user?.name || 'N/A' }}
+            </p>
+            <p class="text-center">
+              {{ leaveApplication?.user?.leave_approval?.recommend_by_user?.name || 'N/A' }}
+            </p>
             <div
               v-if="
                 leaveApplication.status !== 'Rejected' &&
@@ -511,9 +526,6 @@ const totalWithWeekendDays = computed(() => {
               "
               class="print:hidden"
             >
-              <p class="text-center">
-                {{ leaveApplication?.user?.leave_approval?.recommend_by_user?.name || 'N/A' }}
-              </p>
               <p class="text-xs text-center text-blue-600">
                 {{ leaveApplication?.user?.name }} has submitted an application.<br />
                 Will you recommend it?
@@ -528,7 +540,6 @@ const totalWithWeekendDays = computed(() => {
                 <button class="" @click="openRejectionModal">❌</button>
               </div>
             </div>
-            <p>{{ leaveApplication?.recommend_by_user?.name || '' }}</p>
             <hr class="w-44 border-black" />
             <p class="font-bold">
               Recommend By
@@ -538,6 +549,13 @@ const totalWithWeekendDays = computed(() => {
 
           <!-- Approved By Approval -->
           <div class="flex flex-col justify-center items-center">
+            <p v-if="leaveApplication?.approved_by_user">
+              {{ leaveApplication?.approved_by_user?.name || 'N/A' }}
+            </p>
+            <p class="text-center">
+              {{ leaveApplication?.user?.leave_approval?.approved_by_user?.name || 'N/A' }}
+            </p>
+
             <div
               v-if="
                 leaveApplication.status !== 'Rejected' &&
@@ -547,9 +565,6 @@ const totalWithWeekendDays = computed(() => {
               "
               class="print:hidden"
             >
-              <p class="text-center">
-                {{ leaveApplication?.user?.leave_approval?.approved_by_user?.name || 'N/A' }}
-              </p>
               <p class="text-xs text-center text-blue-600">
                 {{ leaveApplication?.user?.name }} has submitted an application.<br />
                 Will you accept it?
@@ -564,7 +579,6 @@ const totalWithWeekendDays = computed(() => {
                 <button class="" @click="openRejectionModal">❌</button>
               </div>
             </div>
-            <p>{{ leaveApplication?.approved_by_user?.name || '' }}</p>
             <hr class="w-44 border-black" />
             <p class="font-bold">
               Approved By
