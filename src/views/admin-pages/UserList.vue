@@ -161,15 +161,15 @@ function modalClose() {
                     type="button"
                     @click="toggleModal(user)"
                     class="btn-4 text-sm"
-                    :class="user?.assign_shift ? 'bg-yellow-500 hover:bg-yellow-600' : 'btn-4'"
+                    :class="user?.current_shift ? 'bg-yellow-500 hover:bg-yellow-600' : 'btn-4'"
                   >
-                    {{ user?.assign_shift ? 'Change Shift' : 'Assign Shift' }}
+                    {{ user?.current_shift ? 'Change Shift' : 'Assign Shift' }}
                   </button>
                   <div v-if="modalEmployeeId === user.id && shiftAssignmentModal">
                     <ShiftAssignmentModal
                       :isOpen="shiftAssignmentModal"
                       :shifts="shifts"
-                      :hasShift="user?.assign_shift"
+                      :hasShift="user?.current_shift"
                       :employee="{ id: selectedEmployee.id, name: selectedEmployee.name }"
                       @close="modalClose"
                     />

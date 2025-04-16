@@ -99,7 +99,7 @@ onMounted(async () => {
             </div>
             <div>
               <p class="text-sm font-bold text-gray-600">Shift:</p>
-              <p class="text-lg text-gray-800">{{ user?.assign_shift?.shift?.name || 'N/A' }}</p>
+              <p class="text-lg text-gray-800">{{ user?.current_shift?.shift?.name || 'N/A' }}</p>
             </div>
             <div>
               <p class="text-sm font-bold text-gray-600">Joining Date:</p>
