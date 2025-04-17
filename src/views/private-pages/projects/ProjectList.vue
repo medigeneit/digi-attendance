@@ -1,22 +1,22 @@
 <script setup>
-import { useProjectStore } from "@/stores/useProjectStore";
-import { onMounted } from "vue";
-import { useRouter } from "vue-router";
+import { useProjectStore } from '@/stores/useProjectStore'
+import { onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 
-const store = useProjectStore();
-const router = useRouter();
+const store = useProjectStore()
+const router = useRouter()
 
 onMounted(() => {
-  store.fetchProjects();
-});
+  store.fetchProjects()
+})
 
 const goToAdd = () => {
-  router.push({ name: "ProjectAdd" });
-};
+  router.push({ name: 'ProjectAdd' })
+}
 
 const goToEdit = (id) => {
-  router.push({ name: "ProjectEdit", params: { id } });
-};
+  router.push({ name: 'ProjectEdit', params: { id } })
+}
 </script>
 
 <template>
@@ -26,9 +26,7 @@ const goToEdit = (id) => {
       <button @click="goToAdd" class="btn-1">Add Project</button>
     </div>
 
-    <div v-if="store.loading" class="text-center py-4 text-gray-500">
-      Loading projects...
-    </div>
+    <div v-if="store.loading" class="text-center py-4 text-gray-500">Loading projects...</div>
 
     <div v-else-if="store.error" class="text-center py-4 text-red-500">
       {{ store.error }}
@@ -39,6 +37,7 @@ const goToEdit = (id) => {
         <tr>
           <th class="px-4 py-2 text-left">#</th>
           <th class="px-4 py-2 text-left">Project Name</th>
+          <th class="px-4 py-2 text-left">Company</th>
           <th class="px-4 py-2 text-left">Actions</th>
         </tr>
       </thead>
@@ -52,8 +51,16 @@ const goToEdit = (id) => {
           <td class="px-4 py-2 font-medium text-gray-700">
             {{ project.name }}
           </td>
+          <td class="px-4 py-2 font-medium text-gray-700">
+            {{ project?.company?.name }}
+          </td>
           <td class="px-4 py-2">
-            <button @click="goToEdit(project.id)" class="btn-2">Edit</button>
+            <RouterLink
+              :to="{ name: 'ProjectEdit', params: { id: project?.id } }"
+              class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-3 py-1 rounded-full transition"
+            >
+              Edit
+            </RouterLink>
           </td>
         </tr>
       </tbody>

@@ -14,10 +14,10 @@
       <i class="fas fa-tasks text-3xl"></i>
       Tasks
     </RouterLink>
-    <!-- <RouterLink :to="{ name: 'ShiftExchangeList' }" class="main-button">
+    <RouterLink :to="{ name: 'MyTodoList' }" class="main-button">
       <i class="far fa-clipboard-list-check text-3xl"></i>
-      Todo List
-    </RouterLink> -->
+      My Todo List
+    </RouterLink>
     <RouterLink :to="{ name: 'BugList' }" class="main-button">
       <i class="far fa-bug text-3xl"></i>
       Bug

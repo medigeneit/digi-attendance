@@ -54,6 +54,7 @@ const closeComment = () => {
           <th class="px-4 py-2 text-left">Assign Users</th>
           <th class="px-4 py-2 text-left">Priority</th>
           <th class="px-4 py-2 text-left">Status</th>
+          <th class="px-4 py-2 text-left">Todo</th>
           <th class="px-4 py-2 text-left">Actions</th>
         </tr>
       </thead>
@@ -91,6 +92,17 @@ const closeComment = () => {
             >
               {{ task.status }}
             </span>
+          </td>
+          <td class="px-4 py-2">
+            <RouterLink
+              :to="{
+                name: 'TodoAdd',
+                params: { todoable_id: task?.id },
+                query: { todoable_type: 'task' },
+              }"
+              class="main-button py-1"
+              >Add Todo</RouterLink
+            >
           </td>
           <td class="px-4 py-2 flex gap-2">
             <button @click="goToEdit(task.id)" class="btn-2">Edit</button>

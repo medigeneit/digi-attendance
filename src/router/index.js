@@ -125,6 +125,34 @@ const router = createRouter({
         },
 
         {
+          path: 'my-todos',
+          name: 'MyTodoList',
+          component: () => import('@/views/private-pages/MyTodoList.vue'),
+          meta: { requiresAuth: true }
+        },
+
+        {
+          path: 'todos',
+          name: 'TodoList',
+          component: () => import('@/views/private-pages/todos/TodoList.vue'),
+          meta: { requiresAuth: true }
+        },
+
+        {
+          path: 'todos/add/:todoable_id',
+          name: 'TodoAdd',
+          component: () => import('@/views/private-pages/todos/TodoAdd.vue'),
+          meta: { requiresAuth: true }
+        },
+
+        {
+          path: 'todos/edit/:id',
+          name: 'TodoEdit',
+          component: () => import('@/views/private-pages/todos/TodoEdit.vue'),
+          meta: { requiresAuth: true }
+        },
+
+        {
           path: 'bugs',
           name: 'BugList',
           component: () => import('@/views/private-pages/bugs/BugList.vue'),

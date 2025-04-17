@@ -1,36 +1,36 @@
 <script setup>
-import CommentModal from "@/components/CommentModal.vue";
-import { useMeetingStore } from "@/stores/useMeetingStore";
-import { onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
+import CommentModal from '@/components/CommentModal.vue'
+import { useMeetingStore } from '@/stores/useMeetingStore'
+import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
-const store = useMeetingStore();
-const router = useRouter();
-const showCommentModal = ref(false);
-const selectedMeetingId = ref(null);
+const store = useMeetingStore()
+const router = useRouter()
+const showCommentModal = ref(false)
+const selectedMeetingId = ref(null)
 
-const userId = 1; // অ্যাকচুয়াল auth ইউজার আইডি
+const userId = 1 // অ্যাকচুয়াল auth ইউজার আইডি
 onMounted(() => {
-  store.fetchMeetings();
-});
+  store.fetchMeetings()
+})
 
 const goToAdd = () => {
-  router.push({ name: "MeetingAdd" });
-};
+  router.push({ name: 'MeetingAdd' })
+}
 
 const goToEdit = (id) => {
-  router.push({ name: "MeetingEdit", params: { id } });
-};
+  router.push({ name: 'MeetingEdit', params: { id } })
+}
 
 const openComment = (id) => {
-  selectedMeetingId.value = id;
-  showCommentModal.value = true;
-};
+  selectedMeetingId.value = id
+  showCommentModal.value = true
+}
 
 const closeComment = () => {
-  showCommentModal.value = false;
-  selectedMeetingId.value = null;
-};
+  showCommentModal.value = false
+  selectedMeetingId.value = null
+}
 </script>
 
 <template>
@@ -40,9 +40,7 @@ const closeComment = () => {
       <button @click="goToAdd" class="btn-1">Add Meeting</button>
     </div>
 
-    <div v-if="store.loading" class="text-center py-4 text-gray-500">
-      Loading meetings...
-    </div>
+    <div v-if="store.loading" class="text-center py-4 text-gray-500">Loading meetings...</div>
 
     <div v-else-if="store.error" class="text-center py-4 text-red-500">
       {{ store.error }}
@@ -54,6 +52,7 @@ const closeComment = () => {
           <th class="px-4 py-2 text-left">#</th>
           <th class="px-4 py-2 text-left">Title</th>
           <th class="px-4 py-2 text-left">Meeting Time</th>
+          <th class="px-4 py-2 text-left">Todo</th>
           <th class="px-4 py-2 text-left">Actions</th>
         </tr>
       </thead>
@@ -67,6 +66,17 @@ const closeComment = () => {
           <td class="px-4 py-2 font-medium">{{ meeting.title }}</td>
           <td class="px-4 py-2">
             {{ new Date(meeting.meeting_time).toLocaleString() }}
+          </td>
+          <td class="px-4 py-2">
+            <RouterLink
+              :to="{
+                name: 'TodoAdd',
+                params: { todoable_id: meeting?.id },
+                query: { todoable_type: 'meeting' },
+              }"
+              class="main-button py-1"
+              >Add Todo</RouterLink
+            >
           </td>
           <td class="px-4 py-2 flex gap-3">
             <button @click="goToEdit(meeting.id)" class="btn-2">Edit</button>
