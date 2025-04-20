@@ -3,10 +3,12 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import ScreenshotCapture from '@/components/common/ScreenshotCapture.vue'
 import ShareComponent from '@/components/common/ShareComponent.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useNotificationStore } from '@/stores/notification'
 import { useShortLeaveStore } from '@/stores/short-leave'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
+const notificationStore = useNotificationStore()
 const toast = useToast()
 const router = useRouter()
 const route = useRoute()
@@ -37,6 +39,7 @@ const rejectShortLeave = async () => {
     rejectionModal.value = false
     rejectionReason.value = ''
     await shortLeaveStore.fetchShortLeaveById(route.params.id)
+    refresh()
   } catch (err) {
     console.error('Failed to reject short leave:', err)
     alert('Failed to reject short leave.')
@@ -68,6 +71,7 @@ const acceptShortLeaveAction = async (action) => {
     if (action === 'approve') await shortLeaveStore.approvedByAccept(id)
     alert(`${action} accepted successfully!`)
     await shortLeaveStore.fetchShortLeaveById(id)
+    refresh()
   } catch (err) {
     console.error(`Failed to accept ${action}:`, err)
     alert(`Failed to accept ${action}.`)
@@ -110,6 +114,10 @@ const formatTime = (timeString) => {
     minute: '2-digit',
     hour12: true, // Ensures AM/PM format
   })
+}
+
+async function refresh() {
+  await notificationStore.markAsRead(route.query.notifyId)
 }
 </script>
 

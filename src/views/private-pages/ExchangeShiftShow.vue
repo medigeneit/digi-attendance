@@ -4,10 +4,11 @@ import ScreenshotCapture from '@/components/common/ScreenshotCapture.vue'
 import ShareComponent from '@/components/common/ShareComponent.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useExchangeStore } from '@/stores/exchange'
+import { useNotificationStore } from '@/stores/notification'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
-
+const notificationStore = useNotificationStore()
 const router = useRouter()
 const route = useRoute()
 const exchangeStore = useExchangeStore()
@@ -38,6 +39,7 @@ const rejectExchange = async () => {
     rejectionModal.value = false
     rejectionReason.value = ''
     await exchangeStore.fetchExchange(route.params.id)
+    refresh()
   } catch (err) {
     console.error('Failed to reject exchange request:', err)
     alert('Failed to reject exchange request.')
@@ -57,6 +59,7 @@ const acceptExchangeAction = async (action) => {
     if (action === 'approve') await exchangeStore.approvedByAccept(id)
     alert(`${action} accepted successfully!`)
     await exchangeStore.fetchExchange(id)
+    refresh()
   } catch (err) {
     console.error(`Failed to accept ${action}:`, err)
     alert(`Failed to accept ${action}.`)
@@ -102,6 +105,9 @@ const formatDate = (dateString) => new Date(dateString).toISOString().slice(0, 1
 const getDayName = (dateString) => {
   const date = new Date(dateString)
   return date.toLocaleDateString('en-US', { weekday: 'long' })
+}
+async function refresh() {
+  await notificationStore.markAsRead(route.query.notifyId)
 }
 </script>
 
