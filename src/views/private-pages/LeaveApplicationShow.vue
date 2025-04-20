@@ -420,10 +420,20 @@ const totalWithWeekendDays = computed(() => {
             </div>
 
             <hr class="w-44 border-black" />
-            <p class="font-bold">
-              In-Charge
-              <span v-if="leaveApplication?.in_charge_user_id" class="text-green-600">(✔)</span>
-            </p>
+            <h4 class="font-bold">
+              <p>
+                In-Charge
+                <span v-if="leaveApplication?.in_charge_user_id" class="text-green-600">(✔)</span>
+                <span
+                  v-if="
+                    !leaveApplication?.in_charge_user_id &&
+                    leaveApplication?.user?.leave_approval?.in_charge_user
+                  "
+                  class="pl-2 text-yellow-700"
+                  ><i class="fad fa-spinner"></i
+                ></span>
+              </p>
+            </h4>
           </div>
 
           <!-- Coordinator Approval -->
@@ -462,6 +472,14 @@ const totalWithWeekendDays = computed(() => {
             <p class="font-bold">
               Coordinator
               <span v-if="leaveApplication?.coordinator_user_id" class="text-green-600">(✔)</span>
+              <span
+                v-if="
+                  !leaveApplication?.coordinator_user_id &&
+                  leaveApplication?.user?.leave_approval?.coordinator_user
+                "
+                class="pl-2 text-yellow-700"
+                ><i class="fad fa-spinner"></i
+              ></span>
             </p>
           </div>
 
@@ -503,6 +521,14 @@ const totalWithWeekendDays = computed(() => {
               <span v-if="leaveApplication?.operational_admin_user_id" class="text-green-600"
                 >(✔)</span
               >
+              <span
+                v-if="
+                  !leaveApplication?.operational_admin_user_id &&
+                  leaveApplication?.user?.leave_approval?.operational_admin_user
+                "
+                class="pl-2 text-yellow-700"
+                ><i class="fad fa-spinner"></i
+              ></span>
             </p>
           </div>
         </div>
@@ -544,6 +570,14 @@ const totalWithWeekendDays = computed(() => {
             <p class="font-bold">
               Recommend By
               <span v-if="leaveApplication?.recommend_by_user_id" class="text-green-600">(✔)</span>
+              <span
+                v-if="
+                  !leaveApplication?.recommend_by_user_id &&
+                  leaveApplication?.user?.leave_approval?.recommend_by_user
+                "
+                class="pl-2 text-yellow-700"
+                ><i class="fad fa-spinner"></i
+              ></span>
             </p>
           </div>
 
@@ -583,6 +617,14 @@ const totalWithWeekendDays = computed(() => {
             <p class="font-bold">
               Approved By
               <span v-if="leaveApplication?.approved_by_user_id" class="text-green-600">(✔)</span>
+              <span
+                v-if="
+                  !leaveApplication?.approved_by_user_id &&
+                  leaveApplication?.user?.leave_approval?.approved_by_user
+                "
+                class="pl-2 text-yellow-700"
+                ><i class="fad fa-spinner"></i
+              ></span>
             </p>
           </div>
         </div>
