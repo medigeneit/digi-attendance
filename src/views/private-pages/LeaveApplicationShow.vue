@@ -305,7 +305,7 @@ const totalWithWeekendDays = computed(() => {
                 <button class="px-2">❌</button>
               </div>
             </div>
-            <hr class="w-44 border-black" />
+            <hr class="w-44 border-black mt-2" />
             <h4 class="font-bold">
               Handover
               <span
@@ -419,7 +419,7 @@ const totalWithWeekendDays = computed(() => {
               </div>
             </div>
 
-            <hr class="w-44 border-black" />
+            <hr class="w-44 border-black mt-2" />
             <h4 class="font-bold">
               <p>
                 In-Charge
@@ -441,7 +441,7 @@ const totalWithWeekendDays = computed(() => {
             <p v-if="leaveApplication?.coordinator_user">
               {{ leaveApplication?.coordinator_user?.name || 'N/A' }}
             </p>
-            <p class="text-center">
+            <p v-else class="text-center">
               {{ leaveApplication?.user?.leave_approval?.coordinator_user?.name || 'N/A' }}
             </p>
             <div
@@ -467,8 +467,7 @@ const totalWithWeekendDays = computed(() => {
                 <button class="" @click="openRejectionModal">❌</button>
               </div>
             </div>
-            <p>{{ leaveApplication?.coordinator_user?.name || '' }}</p>
-            <hr class="w-44 border-black" />
+            <hr class="w-44 border-black mt-2" />
             <p class="font-bold">
               Coordinator
               <span v-if="leaveApplication?.coordinator_user_id" class="text-green-600">(✔)</span>
@@ -515,7 +514,7 @@ const totalWithWeekendDays = computed(() => {
                 <button class="" @click="openRejectionModal">❌</button>
               </div>
             </div>
-            <hr class="w-44 border-black" />
+            <hr class="w-44 border-black mt-2" />
             <p class="font-bold">
               Operational Admin
               <span v-if="leaveApplication?.operational_admin_user_id" class="text-green-600"
@@ -540,7 +539,7 @@ const totalWithWeekendDays = computed(() => {
             <p v-if="leaveApplication?.recommend_by_user">
               {{ leaveApplication?.recommend_by_user?.name || 'N/A' }}
             </p>
-            <p class="text-center">
+            <p v-else class="text-center">
               {{ leaveApplication?.user?.leave_approval?.recommend_by_user?.name || 'N/A' }}
             </p>
             <div
@@ -566,7 +565,7 @@ const totalWithWeekendDays = computed(() => {
                 <button class="" @click="openRejectionModal">❌</button>
               </div>
             </div>
-            <hr class="w-44 border-black" />
+            <hr class="w-44 border-black mt-2" />
             <p class="font-bold">
               Recommend By
               <span v-if="leaveApplication?.recommend_by_user_id" class="text-green-600">(✔)</span>
@@ -586,7 +585,7 @@ const totalWithWeekendDays = computed(() => {
             <p v-if="leaveApplication?.approved_by_user">
               {{ leaveApplication?.approved_by_user?.name || 'N/A' }}
             </p>
-            <p class="text-center">
+            <p v-else class="text-center">
               {{ leaveApplication?.user?.leave_approval?.approved_by_user?.name || 'N/A' }}
             </p>
 
@@ -613,7 +612,7 @@ const totalWithWeekendDays = computed(() => {
                 <button class="" @click="openRejectionModal">❌</button>
               </div>
             </div>
-            <hr class="w-44 border-black" />
+            <hr class="w-44 border-black mt-2" />
             <p class="font-bold">
               Approved By
               <span v-if="leaveApplication?.approved_by_user_id" class="text-green-600">(✔)</span>
