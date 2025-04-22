@@ -3,6 +3,7 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import Multiselect from '@/components/MultiselectDropdown.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useCompanyStore } from '@/stores/company'
+import { useDepartmentStore } from '@/stores/department'
 import { storeToRefs } from 'pinia'
 import { onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -10,19 +11,23 @@ import { useRoute, useRouter } from 'vue-router'
 const router = useRouter()
 const route = useRoute()
 const companyStore = useCompanyStore()
+const departmentStore = useDepartmentStore()
 const attendanceStore = useAttendanceStore()
 const selectedCompanyId = ref('')
+const selectedDepartment = ref('')
 const selectedEmployeeId = ref('')
 const selectedDate = ref('')
 const status = ref(route?.query?.search || '')
 const category = ref('all')
 const { companies, employees } = storeToRefs(companyStore)
+const { departments } = storeToRefs(departmentStore)
 const { dailyLogs } = storeToRefs(attendanceStore)
 
 const fetchAttendance = async () => {
   if (selectedCompanyId.value || status.value) {
     await attendanceStore.getTodayAttendanceReport(
       selectedCompanyId.value,
+      selectedDepartment?.value.id,
       selectedEmployeeId?.value.id,
       category?.value,
       attendanceStore.selectedDate,
@@ -35,6 +40,7 @@ onMounted(async () => {
   await companyStore.fetchCompanies()
   await attendanceStore.getTodayAttendanceReport(
     selectedCompanyId.value,
+    selectedDepartment?.value.id,
     selectedEmployeeId?.value.id,
     category?.value,
     attendanceStore.selectedDate,
@@ -46,6 +52,13 @@ watch([selectedCompanyId, selectedDate], fetchAttendance)
 
 watch(selectedCompanyId, (newCompanyId) => {
   companyStore.fetchEmployee(newCompanyId)
+  departmentStore.fetchDepartments(newCompanyId)
+})
+
+watch(selectedDepartment, (newDepartment) => {
+  if (newDepartment?.id) {
+    fetchAttendance()
+  }
 })
 
 watch(selectedEmployeeId, (newEmployee) => {
@@ -118,6 +131,14 @@ watch(status, (newStatus) => {
             {{ company?.name }}
           </option>
         </select>
+      </div>
+      <div>
+        <Multiselect
+          v-model="selectedDepartment"
+          :options="departments"
+          :multiple="false"
+          placeholder="Select department"
+        />
       </div>
       <div>
         <Multiselect

@@ -18,6 +18,7 @@ const form = reactive({
   company_id: 'all',
   department_id: '',
   file: '',
+  all_companies: false,
   all_departments: false,
   all_employees: false,
 })
@@ -39,6 +40,10 @@ const department_ids = computed(() => selectedDepartments.value.map((dep) => dep
 const selectedEmployees = ref([])
 
 const employee_ids = computed(() => selectedEmployees.value.map((dep) => dep.id))
+
+const selectedCompanies = ref([])
+
+const company_ids = computed(() => selectedCompanies.value.map((comp) => comp.id))
 
 const toggleAllDepartments = () => {
   if (form.value.all_departments) {
@@ -107,8 +112,22 @@ const loadNotice = async () => {
     form.description = notice.description
     form.company_id = notice.company_id ?? 'all'
     form.department_id = notice.department_id
+    selectedCompanies.value = notice.companies_notice
     selectedDepartments.value = notice.departments
     selectedEmployees.value = notice.employees
+
+    if (notice.companies_notice.length == 0) {
+      form.all_companies = true
+    }
+
+    if (notice.departments.length == 0) {
+      form.all_departments = true
+    }
+
+    if (notice.employees.length == 0) {
+      form.all_employees = true
+    }
+    
   } catch (error) {
     const errorMessage = error.response?.data?.message || 'Failed to load notice data'
     toast.error(errorMessage)
@@ -120,6 +139,7 @@ const updateNotice = async () => {
   try {
     const dataToSend = {
       ...form,
+      company_ids: company_ids.value,
       department_ids: department_ids.value,
       employee_ids: employee_ids.value,
     }
@@ -133,7 +153,9 @@ const updateNotice = async () => {
 }
 watch(selectedDepartments, (newSelection) => {
   const newDepartmentIds = newSelection.map((dep) => dep.id)
-  departmentStore.fetchDepartmentEmployee(newDepartmentIds)
+  if (newDepartmentIds.length > 0) {
+    departmentStore.fetchDepartmentEmployee(newDepartmentIds)
+  }
 })
 </script>
 
@@ -149,21 +171,21 @@ watch(selectedDepartments, (newSelection) => {
             <hr class="my-2" />
 
             <div class="grid md:grid-cols-2 gap-4">
-              <div>
-                <label>Company</label>
-                <select
-                  id="company_id"
-                  v-model="form.company_id"
-                  class="w-full border rounded px-3 py-2"
-                  required
-                >
-                  <option value="all">All Company</option>
-                  <template v-for="company in companyStore.companies" :key="company?.id">
-                    <option :value="company?.id">
-                      {{ company?.name }}
-                    </option>
-                  </template>
-                </select>
+              <div class="w-full">
+                <label>
+                  <input type="checkbox" v-model="form.all_companies" @change="toggleAllCompany" />
+                  Select All Companies
+                </label>
+                <Multiselect
+                  v-model="selectedCompanies"
+                  :options="companies"
+                  :multiple="true"
+                  :searchable="true"
+                  placeholder="Select companies"
+                  track-by="id"
+                  label="name"
+                  :disabled="form.all_companies"
+                />
               </div>
 
               <div>

@@ -174,12 +174,9 @@ async function refresh() {
           </div>
           <div><b>Short Leave Date:</b> {{ shortLeave?.date }}</div>
           <div><b>Total Minutes:</b> {{ shortLeave?.total_minutes }}</div>
-
-          <div class="col-span-2 pt-2"><b>Reason:</b> {{ shortLeave?.reason || 'N/A' }}</div>
         </div>
-        <div class="grid md:grid-cols-2 gap-4 pt-10">
-          <div class=""></div>
-
+        <div class="grid md:grid-cols-2 gap-4 pt-10 items-center">
+          <div><b>Reason:</b> {{ shortLeave?.reason || 'N/A' }}</div>
           <div>
             <p>{{ shortLeave?.handover_user?.name || 'Not assigned' }}</p>
             <div
@@ -201,7 +198,7 @@ async function refresh() {
               </div>
             </div>
             <hr class="w-44 border-black mt-1" />
-            <h4 class="font-bold">
+            <h4 class="font-semibold text-sm">
               Handover
               <span
                 v-if="shortLeave?.handover_user_id && shortLeave?.status"
@@ -241,7 +238,7 @@ async function refresh() {
         </div>
       </div>
 
-      <div class="grid grid-cols-2 text-sm md:text-base md:grid-cols-2 md:gap-4">
+      <div class="grid grid-cols-2 text-sm md:text-base md:grid-cols-3 md:gap-4">
         <div class="pt-10">
           <p v-if="shortLeave?.in_charge_user">
             {{ shortLeave?.in_charge_user?.name || '' }}
@@ -272,8 +269,8 @@ async function refresh() {
               <button class="" @click="openRejectionModal">❌</button>
             </div>
           </div>
-          <hr class="w-28 md:w-44 border-black mt-2" />
-          <p class="font-semibold md:font-bold">
+          <hr class="w-28 md:w-36 border-black mt-2" />
+          <p class="font-semibold text-sm">
             In-Charge
             <span v-if="shortLeave?.in_charge_user_id" class="text-green-600">(✔)</span>
             <span
@@ -317,8 +314,8 @@ async function refresh() {
             </div>
           </div>
 
-          <hr class="w-28 md:w-44 border-black mt-2" />
-          <p class="font-semibold md:font-bold">
+          <hr class="w-28 md:w-36 border-black mt-2" />
+          <p class="font-semibold text-sm">
             Recommend By
             <span v-if="shortLeave?.recommend_by_user_id" class="text-green-600">(✔)</span>
             <span
@@ -331,48 +328,48 @@ async function refresh() {
             ></span>
           </p>
         </div>
-      </div>
-
-      <div class="flex flex-col pt-10">
-        <p v-if="shortLeave?.approved_by_user">{{ shortLeave?.approved_by_user?.name || '' }}</p>
-        <p v-else>
-          {{ shortLeave?.user?.other_approval?.approved_by_user?.name || 'N/A' }}
-        </p>
-        <div
-          v-if="
-            shortLeave?.status !== 'Rejected' &&
-            shortLeave?.status !== 'Approved' &&
-            !shortLeave?.approved_by_user_id &&
-            shortLeave?.user?.other_approval?.approved_by_user_id === authStore?.user?.id
-          "
-          class="print:hidden"
-        >
-          <p class="text-xs text-blue-600">
-            {{ shortLeave?.user?.name }} has submitted an application.<br />
-            Will you accept it?
+        <div class="pt-10">
+          <p v-if="shortLeave?.approved_by_user">{{ shortLeave?.approved_by_user?.name || '' }}</p>
+          <p v-else>
+            {{ shortLeave?.user?.other_approval?.approved_by_user?.name || 'N/A' }}
           </p>
-          <div class="flex gap-4">
-            <button
-              class="font-bold text-lg text-green-600"
-              @click="acceptShortLeaveAction('approve')"
-            >
-              ✔
-            </button>
-            <button class="" @click="openRejectionModal">❌</button>
-          </div>
-        </div>
-        <hr class="w-44 border-black mt-2" />
-        <p class="font-semibold md:font-bold">
-          Approved By
-          <span v-if="shortLeave?.approved_by_user_id" class="text-green-600">(✔)</span>
-          <span
+          <div
             v-if="
-              !shortLeave?.approved_by_user_id && shortLeave?.user?.other_approval?.approved_by_user
+              shortLeave?.status !== 'Rejected' &&
+              shortLeave?.status !== 'Approved' &&
+              !shortLeave?.approved_by_user_id &&
+              shortLeave?.user?.other_approval?.approved_by_user_id === authStore?.user?.id
             "
-            class="pl-2 text-yellow-700"
-            ><i class="fad fa-spinner"></i
-          ></span>
-        </p>
+            class="print:hidden"
+          >
+            <p class="text-xs text-blue-600">
+              {{ shortLeave?.user?.name }} has submitted an application.<br />
+              Will you accept it?
+            </p>
+            <div class="flex gap-4">
+              <button
+                class="font-bold text-lg text-green-600"
+                @click="acceptShortLeaveAction('approve')"
+              >
+                ✔
+              </button>
+              <button class="" @click="openRejectionModal">❌</button>
+            </div>
+          </div>
+          <hr class="w-28 md:w-36 border-black mt-2" />
+          <p class="font-semibold text-sm">
+            Approved By
+            <span v-if="shortLeave?.approved_by_user_id" class="text-green-600">(✔)</span>
+            <span
+              v-if="
+                !shortLeave?.approved_by_user_id &&
+                shortLeave?.user?.other_approval?.approved_by_user
+              "
+              class="pl-2 text-yellow-700"
+              ><i class="fad fa-spinner"></i
+            ></span>
+          </p>
+        </div>
       </div>
     </div>
     <div>
