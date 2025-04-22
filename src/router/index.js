@@ -83,6 +83,14 @@ const router = createRouter({
           component: () => import('@/views/private-pages/requirements/RequirementList.vue'),
           meta: { requiresAuth: true }
         },
+
+        {
+          path: 'requirements/:id',
+          name: 'RequirementList',
+          component: () => import('@/views/private-pages/requirements/RequirmentDetails.vue'),
+          meta: { requiresAuth: true }
+        },
+
         {
           path: 'requirements/add',
           name: 'RequirementAdd',
