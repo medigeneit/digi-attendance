@@ -44,7 +44,7 @@ export const useDepartmentStore = defineStore('department', () => {
     error.value = null;
     try {   
       const response = await apiClient.get("department-employees", {
-        params: payload,
+        params: { department_ids: payload },
       });
       employees.value = response?.data?.employees;
       return response?.data?.employees;

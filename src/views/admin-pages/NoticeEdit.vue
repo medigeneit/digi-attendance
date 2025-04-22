@@ -46,14 +46,14 @@ const selectedCompanies = ref([])
 const company_ids = computed(() => selectedCompanies.value.map((comp) => comp.id))
 
 const toggleAllDepartments = () => {
-  if (form.value.all_departments) {
+  if (form.all_departments) {
     department_ids.value = []
   }
 }
 
 // Handle "Select All Employees"
 const toggleAllEmployees = () => {
-  if (form.value.all_employees) {
+  if (form.all_employees) {
     employee_ids.value = []
   }
 }
@@ -66,13 +66,14 @@ onMounted(async () => {
 })
 
 watch(
-  () => form.company_id,
-  async (newCompanyId) => {
-    if (newCompanyId) {
-      await departmentStore.fetchDepartments(newCompanyId)
+  () => company_ids.value,
+  async (newCompanyIds) => {
+    if (newCompanyIds.length) {
+      await departmentStore.fetchDepartments(newCompanyIds)
       isLoading.value = false
     }
   },
+  { deep: true }, // important for array contents
 )
 
 const fileUploadLink = async (event) => {
@@ -127,7 +128,6 @@ const loadNotice = async () => {
     if (notice.employees.length == 0) {
       form.all_employees = true
     }
-    
   } catch (error) {
     const errorMessage = error.response?.data?.message || 'Failed to load notice data'
     toast.error(errorMessage)
@@ -229,7 +229,6 @@ watch(selectedDepartments, (newSelection) => {
                     placeholder="Select departments"
                     track-by="id"
                     label="name"
-                    class="w-full p-2 border rounded"
                     :disabled="form.all_departments"
                   />
                 </div>
@@ -250,7 +249,6 @@ watch(selectedDepartments, (newSelection) => {
                     placeholder="Select Employee"
                     track-by="id"
                     label="name"
-                    class="w-full p-2 border rounded"
                     :disabled="form.all_employees"
                   />
                 </div>
@@ -273,9 +271,9 @@ watch(selectedDepartments, (newSelection) => {
                 <input type="file" @change="fileUploadLink" class="w-full p-2 border rounded" />
 
                 <!-- Show Selected File Name -->
-                <p v-if="fileName" class="text-sm text-gray-600 mt-1">
+                <!-- <p v-if="fileName" class="text-sm text-gray-600 mt-1">
                   Selected File: {{ fileName }}
-                </p>
+                </p> -->
               </div>
 
               <div class="col-span-full">
