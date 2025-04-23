@@ -67,6 +67,12 @@ const getEventTitle = (eventModel, eventType) => {
       }
       return `Exchange (${eventModel.exchange_type})`
 
+    case 'offday':
+      if (eventModel.exchange_type === 'offday') {
+        return `Exchange (Offday): ${eventModel.exchange_date} → ${eventModel.current_date}`
+      }
+      return `Exchange (${eventModel.exchange_type})`
+
     default:
       return 'Unknown Event'
   }
@@ -79,6 +85,8 @@ const getEventIcon = (eventType) => {
     case 'shortLeave':
       return 'fas fa-clock'
     case 'exchange':
+      return 'fas fa-random'
+    case 'offday':
       return 'fas fa-random'
     default:
       return 'fas fa-bell'
@@ -201,6 +209,17 @@ const handleNotificationClick = (notification) => {
               >
                 <i class="far fa-eye"></i>
               </RouterLink>
+              <RouterLink
+                v-if="route.query.type === 'offday'"
+                :to="{
+                  name: 'ExchangeOffdayShow',
+                  params: { id: item?.event_model?.id },
+                  query: { notifyId: item?.id },
+                }"
+                class="btn-4"
+              >
+                <i class="far fa-eye"></i>
+              </RouterLink>
             </div>
             <div class="grow-0 w-full">
               <p class="text-xs font-semibold" v-if="item?.event_model?.type">
@@ -224,7 +243,7 @@ const handleNotificationClick = (notification) => {
           :notification-id="item.id"
         />
         <ExchangeApplicationApprovalSection
-          v-if="item?.event_model && item.event_type === 'exchange'"
+          v-if="item?.event_model && (item.event_type === 'offday' || item.event_type === 'offday')"
           :application="item.event_model"
           :notificationId="item.id"
         />
