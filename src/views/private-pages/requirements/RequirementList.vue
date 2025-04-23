@@ -17,6 +17,19 @@ const goToAdd = () => {
 const goToEdit = (id) => {
   router.push({ name: 'RequirementEdit', params: { id } })
 }
+
+const priorityColor = (priority) => {
+  switch (priority) {
+    case 'CRITICAL':
+      return 'border-red-700 text-red-700 font-semibold'
+    case 'HIGH':
+      return 'border-red-500 text-red-500'
+    case 'MEDIUM':
+      return 'border-yellow-500 text-yellow-500'
+    default:
+      return 'border-gray-300 text-gray-500'
+  }
+}
 </script>
 
 <template>
@@ -38,6 +51,7 @@ const goToEdit = (id) => {
           <th class="px-4 py-2 text-left">#</th>
           <th class="px-4 py-2 text-left">Title</th>
           <th class="px-4 py-2 text-left">Department</th>
+          <th class="px-4 py-2 text-left">Priority</th>
           <th class="px-4 py-2 text-left">Description</th>
           <th class="px-4 py-2 text-left">Actions</th>
         </tr>
@@ -47,6 +61,11 @@ const goToEdit = (id) => {
           <td class="px-4 py-2">{{ req.id }}</td>
           <td class="px-4 py-2 font-medium">{{ req?.title }}</td>
           <td class="px-4 py-2">{{ req?.department?.name }}</td>
+          <td class="px-4 py-2">
+            <span class="text-xs px-2 py-1 rounded border" :class="priorityColor(req.priority)">
+              {{ req.priority }}
+            </span>
+          </td>
           <td class="px-4 py-2">
             <div v-if="req?.description.length">
               <div v-html="req?.description"></div>

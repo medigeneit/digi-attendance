@@ -2,18 +2,23 @@
 import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import TextEditor from '@/components/TextEditor.vue'
 import { useDepartmentStore } from '@/stores/department'
+import { useProjectStore } from '@/stores/useProjectStore'
 import { useRequirementStore } from '@/stores/useRequirementStore'
+
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-
+const projectStore = useProjectStore()
 const store = useRequirementStore()
 const route = useRoute()
 const router = useRouter()
 const departmentStore = useDepartmentStore()
 const { departments } = storeToRefs(departmentStore)
+const { projects } = storeToRefs(projectStore)
 const requirementId = route.params.id
+const project_id = ref('')
 const description = ref('')
+const priority = ref('HIGH')
 const selectedDepartment = ref(null)
 const department_id = computed(() => selectedDepartment.value?.id)
 const loading = ref(false)
@@ -21,7 +26,10 @@ const loading = ref(false)
 onMounted(async () => {
   await store.fetchRequirement(requirementId)
   departmentStore.fetchDepartments()
+  projectStore.fetchProjects()
   description.value = store.requirement.description[0] || ''
+  priority.value = store.requirement.priority
+  project_id.value = store.requirement.project_id
 })
 
 watch(
@@ -45,8 +53,10 @@ watch(
 const update = async () => {
   loading.value = true
   await store.updateRequirement(requirementId, {
+    project_id: project_id.value,
     title: store.requirement.title,
     department_id: department_id.value,
+    priority: priority.value,
     description: [description.value],
   })
   loading.value = false
@@ -67,6 +77,19 @@ const update = async () => {
       </div>
 
       <form v-else-if="store.requirement" @submit.prevent="update">
+        <div class="mb-4">
+          <label class="block text-gray-700 font-medium mb-2">Priority</label>
+          <select
+            v-model="project_id"
+            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Select Project</option>
+            <option v-for="project in projects" :key="project.id" :value="project.id">
+              {{ project.name }}
+            </option>
+          </select>
+        </div>
+
         <div class="mb-4">
           <label class="block text-gray-700 font-medium mb-2"> Requirement Title </label>
           <input
@@ -89,6 +112,19 @@ const update = async () => {
             placeholder="Select department"
             required
           />
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-gray-700 font-medium mb-2">Priority</label>
+          <select
+            v-model="priority"
+            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="LOW">LOW</option>
+            <option value="MEDIUM">MEDIUM</option>
+            <option value="HIGH">HIGH</option>
+            <option value="CRITICAL">CRITICAL</option>
+          </select>
         </div>
 
         <div class="mb-4">

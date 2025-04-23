@@ -13,44 +13,52 @@
             {{ project.priority }}
           </span>
         </div>
-        <p class="text-sm text-gray-500 mb-1">Due: {{ project.dueDate }}</p>
-        <div class="text-sm">Tasks: {{ project.completed }} / {{ project.total }}</div>
-        <div class="mt-2 h-2 w-full bg-gray-200 rounded">
-          <div
-            class="h-full bg-blue-600 rounded"
-            :style="{ width: (project.completed / project.total) * 100 + '%' }"
-          ></div>
-        </div>
+        <p class="text-sm text-gray-500 mb-1">Company: {{ project?.company?.name }}</p>
+        <p class="text-sm text-gray-500 mb-1">
+          Total Requirements: {{ project?.requirements_count }}
+        </p>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-const projects = [
-  {
-    name: 'E-commerce Platform',
-    total: 18,
-    completed: 12,
-    dueDate: 'May 15, 2025',
-    priority: 'High',
-    priorityClass: 'bg-red-500',
-  },
-  {
-    name: 'CRM Integration',
-    total: 15,
-    completed: 13,
-    dueDate: 'Apr 30, 2025',
-    priority: 'High',
-    priorityClass: 'bg-red-500',
-  },
-  {
-    name: 'Analytics Dashboard',
-    total: 20,
-    completed: 6,
-    dueDate: 'Jul 5, 2025',
-    priority: 'Medium',
-    priorityClass: 'bg-yellow-500',
-  },
-]
+import { useProjectStore } from '@/stores/useProjectStore'
+import { storeToRefs } from 'pinia'
+import { onMounted } from 'vue'
+
+const projectStore = useProjectStore()
+
+const { projects } = storeToRefs(projectStore)
+
+onMounted(() => {
+  projectStore.fetchProjects()
+})
+
+// const projects = [
+//   {
+//     name: 'E-commerce Platform',
+//     total: 18,
+//     completed: 12,
+//     dueDate: 'May 15, 2025',
+//     priority: 'High',
+//     priorityClass: 'bg-red-500',
+//   },
+//   {
+//     name: 'CRM Integration',
+//     total: 15,
+//     completed: 13,
+//     dueDate: 'Apr 30, 2025',
+//     priority: 'High',
+//     priorityClass: 'bg-red-500',
+//   },
+//   {
+//     name: 'Analytics Dashboard',
+//     total: 20,
+//     completed: 6,
+//     dueDate: 'Jul 5, 2025',
+//     priority: 'Medium',
+//     priorityClass: 'bg-yellow-500',
+//   },
+// ]
 </script>

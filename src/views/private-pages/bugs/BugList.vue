@@ -1,9 +1,9 @@
 <script setup>
 import CommentModal from '@/components/CommentModal.vue'
-import { useBugStore } from '@/stores/useBugStore'
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import { useBugStore } from '@/stores/useBugStore'
 const store = useBugStore()
 const router = useRouter()
 const showCommentModal = ref(false)

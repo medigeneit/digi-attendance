@@ -2,31 +2,41 @@
 import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import TextEditor from '@/components/TextEditor.vue'
 import { useDepartmentStore } from '@/stores/department'
+import { useProjectStore } from '@/stores/useProjectStore'
 import { useRequirementStore } from '@/stores/useRequirementStore'
+
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 const store = useRequirementStore()
 const router = useRouter()
 
+const projectStore = useProjectStore()
+
+const project_id = ref('')
 const title = ref('')
 const description = ref('')
+const priority = ref('HIGH')
 const loading = ref(false)
 const departmentStore = useDepartmentStore()
 const { departments } = storeToRefs(departmentStore)
+const { projects } = storeToRefs(projectStore)
 const selectedDepartment = ref('')
 const department_id = computed(() => selectedDepartment.value?.id)
 
 onMounted(() => {
   departmentStore.fetchDepartments()
+  projectStore.fetchProjects()
 })
 
 const submit = async () => {
   loading.value = true
   await store.createRequirement({
+    project_id: project_id.value,
     title: title.value,
     department_id: department_id.value,
     description: [description.value],
+    priority: priority.value,
   })
   loading.value = false
 
@@ -42,6 +52,19 @@ const submit = async () => {
       <h2 class="text-2xl font-semibold text-gray-800 mb-4">Add New Requirement</h2>
 
       <form @submit.prevent="submit">
+        <div class="mb-4">
+          <label class="block text-gray-700 font-medium mb-2">Priority</label>
+          <select
+            v-model="project_id"
+            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Select Project</option>
+            <option v-for="project in projects" :key="project.id" :value="project.id">
+              {{ project.name }}
+            </option>
+          </select>
+        </div>
+
         <div class="mb-4">
           <label class="block text-gray-700 font-medium mb-2"> Requirement Title </label>
           <input
@@ -64,6 +87,19 @@ const submit = async () => {
             placeholder="Select department"
             required
           />
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-gray-700 font-medium mb-2">Priority</label>
+          <select
+            v-model="priority"
+            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="LOW">LOW</option>
+            <option value="MEDIUM">MEDIUM</option>
+            <option value="HIGH">HIGH</option>
+            <option value="CRITICAL">CRITICAL</option>
+          </select>
         </div>
 
         <div class="mb-4">

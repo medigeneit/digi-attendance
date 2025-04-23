@@ -11,12 +11,12 @@
           <div class="space-y-1">
             <div class="flex items-center gap-2">
               <span class="text-xs font-medium text-gray-500">{{ requirement.id }}</span>
-              <span
+              <!-- <span
                 class="text-xs font-semibold px-2 py-1 rounded text-white"
                 :class="statusColor(requirement.status)"
               >
                 {{ requirement.status }}
-              </span>
+              </span> -->
               <span
                 class="text-xs px-2 py-1 rounded border"
                 :class="priorityColor(requirement.priority)"
@@ -25,17 +25,19 @@
               </span>
             </div>
             <h3 class="font-medium text-gray-800">{{ requirement.title }}</h3>
-            <p class="text-sm text-gray-500">Project: {{ requirement.project }}</p>
+            <p class="text-sm text-gray-500">Project: {{ requirement.project?.name }}</p>
           </div>
           <div class="text-right">
             <div class="text-sm">
-              <span class="font-medium">{{ requirement.completedTasks }}</span>
-              <span class="text-gray-500">/{{ requirement.tasks }} tasks</span>
+              <span class="font-medium">{{ requirement.completed_tasks_count }}</span>
+              <span class="text-gray-500">/{{ requirement.tasks_count }} tasks</span>
             </div>
-            <div class="mt-1 h-1 w-24 bg-gray-200 rounded">
+            <div class="mt-1 h-2 w-24 bg-gray-200 rounded">
               <div
                 class="h-full bg-blue-500 rounded"
-                :style="{ width: (requirement.completedTasks / requirement.tasks) * 100 + '%' }"
+                :style="{
+                  width: (requirement.completed_tasks_count / requirement.tasks_count) * 100 + '%',
+                }"
               ></div>
             </div>
           </div>
@@ -46,35 +48,47 @@
 </template>
 
 <script setup>
-const requirements = [
-  {
-    id: 'REQ-001',
-    title: 'User Authentication System',
-    project: 'E-commerce Platform',
-    status: 'Completed',
-    priority: 'High',
-    tasks: 5,
-    completedTasks: 5,
-  },
-  {
-    id: 'REQ-002',
-    title: 'Product Catalog Management',
-    project: 'E-commerce Platform',
-    status: 'In Progress',
-    priority: 'High',
-    tasks: 8,
-    completedTasks: 5,
-  },
-  {
-    id: 'REQ-003',
-    title: 'Shopping Cart Functionality',
-    project: 'E-commerce Platform',
-    status: 'Not Started',
-    priority: 'Medium',
-    tasks: 6,
-    completedTasks: 0,
-  },
-]
+import { useRequirementStore } from '@/stores/useRequirementStore'
+import { storeToRefs } from 'pinia'
+import { onMounted } from 'vue'
+
+const requirementStore = useRequirementStore()
+
+const { requirements } = storeToRefs(requirementStore)
+
+onMounted(() => {
+  requirementStore.fetchRequirements()
+})
+
+// const requirements = [
+//   {
+//     id: 'REQ-001',
+//     title: 'User Authentication System',
+//     project: 'E-commerce Platform',
+//     status: 'Completed',
+//     priority: 'High',
+//     tasks: 5,
+//     completedTasks: 5,
+//   },
+//   {
+//     id: 'REQ-002',
+//     title: 'Product Catalog Management',
+//     project: 'E-commerce Platform',
+//     status: 'In Progress',
+//     priority: 'High',
+//     tasks: 8,
+//     completedTasks: 5,
+//   },
+//   {
+//     id: 'REQ-003',
+//     title: 'Shopping Cart Functionality',
+//     project: 'E-commerce Platform',
+//     status: 'Not Started',
+//     priority: 'Medium',
+//     tasks: 6,
+//     completedTasks: 0,
+//   },
+// ]
 
 const statusColor = (status) => {
   switch (status) {
@@ -98,5 +112,3 @@ const priorityColor = (priority) => {
   }
 }
 </script>
-
-<style scoped></style>

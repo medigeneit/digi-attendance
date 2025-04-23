@@ -26,12 +26,12 @@
             </div>
             <h3 class="font-medium text-gray-800">{{ bug.title }}</h3>
             <p class="text-sm text-gray-500">Project: {{ bug.project }}</p>
-            <p class="text-xs text-gray-500">
+            <!-- <p class="text-xs text-gray-500">
               Reported by: <strong>{{ bug.reportedBy }}</strong>
               <span v-if="bug.assignedTo !== 'Unassigned'">
                 | Assigned to: <strong>{{ bug.assignedTo }}</strong></span
               >
-            </p>
+            </p> -->
           </div>
           <div class="text-right">
             <div class="text-xs text-gray-400">Reported: {{ bug.reportedDate }}</div>
@@ -44,38 +44,48 @@
 </template>
 
 <script setup>
-const bugs = [
-  {
-    id: 'BUG-001',
-    title: 'Login form validation error',
-    project: 'E-commerce Platform',
-    severity: 'Critical',
-    status: 'Open',
-    reportedBy: 'John Doe',
-    assignedTo: 'Sarah Johnson',
-    reportedDate: 'Apr 20, 2025',
-  },
-  {
-    id: 'BUG-002',
-    title: 'Product images not loading',
-    project: 'E-commerce Platform',
-    severity: 'High',
-    status: 'In Progress',
-    reportedBy: 'Emily Taylor',
-    assignedTo: 'Mike Chen',
-    reportedDate: 'Apr 19, 2025',
-  },
-  {
-    id: 'BUG-003',
-    title: 'Cart calculation error',
-    project: 'E-commerce Platform',
-    severity: 'Critical',
-    status: 'Open',
-    reportedBy: 'Alex Wong',
-    assignedTo: 'Unassigned',
-    reportedDate: 'Apr 21, 2025',
-  },
-]
+import { useBugStore } from '@/stores/useBugStore'
+import { storeToRefs } from 'pinia'
+import { onMounted } from 'vue'
+const bugStore = useBugStore()
+const { bugs } = storeToRefs(bugStore)
+
+onMounted(() => {
+  bugStore.fetchBugs()
+})
+
+// const bugs = [
+//   {
+//     id: 'BUG-001',
+//     title: 'Login form validation error',
+//     project: 'E-commerce Platform',
+//     severity: 'Critical',
+//     status: 'Open',
+//     reportedBy: 'John Doe',
+//     assignedTo: 'Sarah Johnson',
+//     reportedDate: 'Apr 20, 2025',
+//   },
+//   {
+//     id: 'BUG-002',
+//     title: 'Product images not loading',
+//     project: 'E-commerce Platform',
+//     severity: 'High',
+//     status: 'In Progress',
+//     reportedBy: 'Emily Taylor',
+//     assignedTo: 'Mike Chen',
+//     reportedDate: 'Apr 19, 2025',
+//   },
+//   {
+//     id: 'BUG-003',
+//     title: 'Cart calculation error',
+//     project: 'E-commerce Platform',
+//     severity: 'Critical',
+//     status: 'Open',
+//     reportedBy: 'Alex Wong',
+//     assignedTo: 'Unassigned',
+//     reportedDate: 'Apr 21, 2025',
+//   },
+// ]
 
 const severityClass = (severity) => {
   switch (severity) {

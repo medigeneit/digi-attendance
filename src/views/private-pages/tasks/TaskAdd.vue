@@ -72,7 +72,7 @@ const submit = async () => {
         </div>
 
         <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-2">Requirement ID</label>
+          <label class="block text-gray-700 font-medium mb-2">Requirement</label>
           <MultiselectDropdown
             v-model="selectedRequirement"
             :options="requirements"
@@ -80,12 +80,11 @@ const submit = async () => {
             track-by="id"
             label="title"
             placeholder="Select department"
-            required
           />
         </div>
 
         <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-2">User IDs</label>
+          <label class="block text-gray-700 font-medium mb-2">User</label>
           <MultiselectDropdown
             v-model="selectedUser"
             :options="users"
@@ -94,13 +93,6 @@ const submit = async () => {
             label="name"
             placeholder="Select users"
           />
-          <!-- <input
-            v-model="form.user_ids"
-            required
-            placeholder="e.g., 1,2,3"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-          /> -->
-          <small class="text-gray-500">Comma-separated user IDs.</small>
         </div>
 
         <div class="grid grid-cols-2 gap-4 mb-4">
@@ -110,10 +102,10 @@ const submit = async () => {
               v-model="form.priority"
               class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
             >
-              <option>LOW</option>
-              <option>MEDIUM</option>
-              <option>HIGH</option>
-              <option>CRITICAL</option>
+              <option value="LOW">LOW</option>
+              <option value="MEDIUM">MEDIUM</option>
+              <option value="HIGH">HIGH</option>
+              <option value="CRITICAL">CRITICAL</option>
             </select>
           </div>
 
