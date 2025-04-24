@@ -40,7 +40,7 @@
             Manage your projects, requirements, tasks, bugs, and meetings.
           </p>
         </div>
-        <div class="flex items-center gap-2">
+        <!-- <div class="flex items-center gap-2">
           <button class="rounded-md border px-3 py-2 text-sm flex items-center gap-1">
             <i class="fas fa-calendar-alt text-sm" /> Calendar View
           </button>
@@ -49,7 +49,7 @@
           >
             <i class="fas fa-plus text-sm" /> New Task
           </button>
-        </div>
+        </div> -->
       </div>
 
       <!-- Dashboard Cards -->
