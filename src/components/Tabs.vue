@@ -34,8 +34,9 @@ const route = useRoute()
 import BugsTab from '@/components/BugsTab.vue'
 import MeetingsTab from '@/components/MeetingsTab.vue'
 import ProjectsTab from '@/components/ProjectsTab.vue'
-import { default as ReportTab, default as TasksTab } from '@/components/ReportTab.vue'
+import ReportTab from '@/components/ReportTab.vue'
 import RequirementsTab from '@/components/RequirementsTab.vue'
+import TasksTab from '@/components/TasksTab.vue'
 
 const tabs = [
   { label: 'Projects', value: 'projects', icon: 'fa-folder' },
