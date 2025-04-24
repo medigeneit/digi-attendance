@@ -55,9 +55,10 @@ const approvalRoles = [
     approved_by_field: null,
     label: 'Handover',
     action: async (id) => {
-      await leaveApplicationStore.acceptHandover(id)
-      alert('Handover approved!')
-      await refresh(id)
+      if (confirm('Are you sure you want to approve?')) {
+        await leaveApplicationStore.acceptHandover(id)
+        await refresh(id)
+      }
     },
     condition: () =>
       !leaveApplication.value?.status && leaveApplication.value?.handover_user_id === user.value.id,
@@ -68,9 +69,10 @@ const approvalRoles = [
     approved_by_field: 'approval_in_charge_user_id',
     label: 'In-Charge',
     action: async (id) => {
-      await leaveApplicationStore.acceptInCharge(id)
-      alert('In-Charge approved!')
-      await refresh(id)
+      if (confirm('Are you sure you want to approve?')) {
+        await leaveApplicationStore.acceptInCharge(id)
+        await refresh(id)
+      }
     },
   },
   {
@@ -79,9 +81,10 @@ const approvalRoles = [
     approved_by_field: 'approval_coordinator_user_id',
     label: 'Coordinator',
     action: async (id) => {
-      await leaveApplicationStore.acceptCoordinator(id)
-      alert('Coordinator approved!')
-      await refresh(id)
+      if (confirm('Are you sure you want to approve?')) {
+        await leaveApplicationStore.acceptCoordinator(id)
+        await refresh(id)
+      }
     },
   },
   {
@@ -90,9 +93,10 @@ const approvalRoles = [
     approved_by_field: 'approval_operational_admin_user_id',
     label: 'Operational Admin',
     action: async (id) => {
-      await leaveApplicationStore.acceptOperationalAdmin(id)
-      alert('Operational Admin approved!')
-      await refresh(id)
+      if (confirm('Are you sure you want to approve?')) {
+        await leaveApplicationStore.acceptOperationalAdmin(id)
+        await refresh(id)
+      }
     },
   },
   {
@@ -101,9 +105,10 @@ const approvalRoles = [
     approved_by_field: 'approval_recommend_by_user_id',
     label: 'Recommend By',
     action: async (id) => {
-      await leaveApplicationStore.acceptRecommendBy(id)
-      alert('Recommendation approved!')
-      await refresh(id)
+      if (confirm('Are you sure you want to approve?')) {
+        await leaveApplicationStore.acceptRecommendBy(id)
+        await refresh(id)
+      }
     },
   },
   {
@@ -112,9 +117,10 @@ const approvalRoles = [
     approved_by_field: 'approval_approved_by_user_id',
     label: 'Approved By',
     action: async (id) => {
-      await leaveApplicationStore.acceptApprovedBy(id)
-      alert('Final approval successful!')
-      await refresh(id)
+      if (confirm('Are you sure you want to approve?')) {
+        await leaveApplicationStore.acceptApprovedBy(id)
+        await refresh(id)
+      }
     },
   },
 ]

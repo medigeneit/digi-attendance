@@ -48,7 +48,7 @@ const markNotification = async (notificationId, url) => {
 }
 
 const getEventTitle = (eventModel, eventType) => {
-  if (!eventModel) return 'No application details'
+  if (!eventModel) return 'application not found'
 
   switch (eventType) {
     case 'leaveApplication':
@@ -67,6 +67,12 @@ const getEventTitle = (eventModel, eventType) => {
       }
       return `Exchange (${eventModel.exchange_type})`
 
+    case 'offday':
+      if (eventModel.exchange_type === 'offday') {
+        return `Exchange (Offday): ${eventModel.exchange_date} → ${eventModel.current_date}`
+      }
+      return `Exchange (${eventModel.exchange_type})`
+
     default:
       return 'Unknown Event'
   }
@@ -79,6 +85,8 @@ const getEventIcon = (eventType) => {
     case 'shortLeave':
       return 'fas fa-clock'
     case 'exchange':
+      return 'fas fa-random'
+    case 'offday':
       return 'fas fa-random'
     default:
       return 'fas fa-bell'
@@ -167,14 +175,22 @@ const handleNotificationClick = (notification) => {
               </a>
               <RouterLink
                 v-if="route.query.type === 'leaveApplication'"
-                :to="{ name: 'LeaveApplicationShow', params: { id: item?.event_model?.id } }"
+                :to="{
+                  name: 'LeaveApplicationShow',
+                  params: { id: item?.event_model?.id },
+                  query: { notifyId: item?.id },
+                }"
                 class="btn-4"
               >
                 <i class="far fa-eye"></i>
               </RouterLink>
               <RouterLink
                 v-if="route.query.type === 'shortLeave'"
-                :to="{ name: 'ShortLeaveShow', params: { id: item?.event_model?.id } }"
+                :to="{
+                  name: 'ShortLeaveShow',
+                  params: { id: item?.event_model?.id },
+                  query: { notifyId: item?.id },
+                }"
                 class="btn-4"
               >
                 <i class="far fa-eye"></i>
@@ -187,6 +203,18 @@ const handleNotificationClick = (notification) => {
                       ? 'ExchangeOffdayShow'
                       : 'ExchangeShiftShow',
                   params: { id: item?.event_model?.id },
+                  query: { notifyId: item?.id },
+                }"
+                class="btn-4"
+              >
+                <i class="far fa-eye"></i>
+              </RouterLink>
+              <RouterLink
+                v-if="route.query.type === 'offday'"
+                :to="{
+                  name: 'ExchangeOffdayShow',
+                  params: { id: item?.event_model?.id },
+                  query: { notifyId: item?.id },
                 }"
                 class="btn-4"
               >
@@ -215,7 +243,7 @@ const handleNotificationClick = (notification) => {
           :notification-id="item.id"
         />
         <ExchangeApplicationApprovalSection
-          v-if="item?.event_model && item.event_type === 'exchange'"
+          v-if="item?.event_model && (item.event_type === 'offday' || item.event_type === 'offday')"
           :application="item.event_model"
           :notificationId="item.id"
         />

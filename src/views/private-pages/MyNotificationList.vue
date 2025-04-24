@@ -76,7 +76,7 @@ const getTargetUrl = (eventType) => {
         :to="{ name: 'NotificationList', query: { type: 'shortLeave' } }"
         class="main-button"
       >
-        <div class="flex gap-2">
+        <div class="flex justify-between items-center gap-2">
           <span>🕒 Short Leave</span>
           <span
             v-if="grouped_counts.shortLeave"
@@ -90,13 +90,24 @@ const getTargetUrl = (eventType) => {
         :to="{ name: 'NotificationList', query: { type: 'exchange' } }"
         class="main-button"
       >
-        <div class="flex gap-2">
+        <div class="flex justify-between items-center gap-2">
           <span>🔄 Exchange Request</span>
           <span
             v-if="grouped_counts.exchange"
             class="text-xs bg-purple-500 text-white rounded-full px-2 py-0.5 font-semibold"
           >
             {{ grouped_counts.exchange }}
+          </span>
+        </div>
+      </RouterLink>
+      <RouterLink :to="{ name: 'NotificationList', query: { type: 'offday' } }" class="main-button">
+        <div class="flex justify-between items-center gap-2">
+          <span>🔄 Offday Request</span>
+          <span
+            v-if="grouped_counts?.offday"
+            class="text-xs bg-purple-700 text-white rounded-full px-2 py-0.5 font-semibold"
+          >
+            {{ grouped_counts?.offday }}
           </span>
         </div>
       </RouterLink>

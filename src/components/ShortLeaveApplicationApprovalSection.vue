@@ -10,11 +10,15 @@
     </div>
 
     <div class="flex justify-end gap-2 pt-2">
-      <button v-if="!showRejectNote" class="btn-2" @click="userApprovalRole.action(shortLeaveApplication.id)">
+      <button
+        v-if="!showRejectNote"
+        class="btn-2"
+        @click="userApprovalRole.action(shortLeaveApplication.id)"
+      >
         Approve
       </button>
       <button class="btn-1" @click="toggleRejectNote">
-        {{ showRejectNote ? 'Submit':'Reject' }}
+        {{ showRejectNote ? 'Submit' : 'Reject' }}
       </button>
     </div>
   </div>
@@ -59,9 +63,10 @@ const approvalRoles = [
     approved_by_field: null,
     label: 'Handover',
     action: async (id) => {
-      await shortLeaveStore.handoverAccept(id)
-      alert('Handover approved!')
-      await refresh(id)
+      if (confirm('Are you sure you want to approve?')) {
+        await shortLeaveStore.handoverAccept(id)
+        await refresh(id)
+      }
     },
     condition: () =>
       !shortLeaveApplication.value?.status &&
@@ -73,9 +78,10 @@ const approvalRoles = [
     approved_by_field: 'approval_in_charge_user_id',
     label: 'In-Charge',
     action: async (id) => {
-      await shortLeaveStore.inChargeAccept(id)
-      alert('In-Charge approved!')
-      await refresh(id)
+      if (confirm('Are you sure you want to approve?')) {
+        await shortLeaveStore.inChargeAccept(id)
+        await refresh(id)
+      }
     },
   },
   {
@@ -84,9 +90,10 @@ const approvalRoles = [
     approved_by_field: 'approval_recommend_by_user_id',
     label: 'Recommend By',
     action: async (id) => {
-      await shortLeaveStore.recommendByAccept(id)
-      alert('Recommendation approved!')
-      await refresh(id)
+      if (confirm('Are you sure you want to approve?')) {
+        await shortLeaveStore.recommendByAccept(id)
+        await refresh(id)
+      }
     },
   },
   {
@@ -95,9 +102,10 @@ const approvalRoles = [
     approved_by_field: 'approval_approved_by_user_id',
     label: 'Approved By',
     action: async (id) => {
-      await shortLeaveStore.approvedByAccept(id)
-      alert('Final approval successful!')
-      await refresh(id)
+      if (confirm('Are you sure you want to approve?')) {
+        await shortLeaveStore.approvedByAccept(id)
+        await refresh(id)
+      }
     },
   },
 ]

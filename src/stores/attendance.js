@@ -35,10 +35,10 @@ export const useAttendanceStore = defineStore('attendance', () => {
   };
 
 
-  const getTodayAttendanceReport = async (companyId, employee_id , category, month, status) => {
+  const getTodayAttendanceReport = async (companyId, departmentId, employee_id , category, month, status) => {
     isLoading.value = true;
     try {
-      const params = {companyId, employee_id, category, month, status}
+      const params = {companyId, departmentId, employee_id, category, month, status}
       const response = await apiClient.get("/attendance/today", { params });
       dailyLogs.value = response.data; 
       error.value = null;

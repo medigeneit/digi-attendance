@@ -4,10 +4,11 @@ import ScreenshotCapture from '@/components/common/ScreenshotCapture.vue'
 import ShareComponent from '@/components/common/ShareComponent.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useExchangeStore } from '@/stores/exchange'
+import { useNotificationStore } from '@/stores/notification'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
-
+const notificationStore = useNotificationStore()
 const router = useRouter()
 const route = useRoute()
 const exchangeStore = useExchangeStore()
@@ -38,6 +39,7 @@ const rejectExchange = async () => {
     rejectionModal.value = false
     rejectionReason.value = ''
     await exchangeStore.fetchExchange(route.params.id)
+    refresh()
   } catch (err) {
     console.error('Failed to reject exchange request:', err)
     alert('Failed to reject exchange request.')
@@ -57,6 +59,7 @@ const acceptExchangeAction = async (action) => {
     if (action === 'approve') await exchangeStore.approvedByAccept(id)
     alert(`${action} accepted successfully!`)
     await exchangeStore.fetchExchange(id)
+    refresh()
   } catch (err) {
     console.error(`Failed to accept ${action}:`, err)
     alert(`Failed to accept ${action}.`)
@@ -102,6 +105,9 @@ const formatDate = (dateString) => new Date(dateString).toISOString().slice(0, 1
 const getDayName = (dateString) => {
   const date = new Date(dateString)
   return date.toLocaleDateString('en-US', { weekday: 'long' })
+}
+async function refresh() {
+  await notificationStore.markAsRead(route.query.notifyId)
 }
 </script>
 
@@ -217,8 +223,14 @@ const getDayName = (dateString) => {
         </div>
       </div>
 
-      <div class="grid print:grid-cols-3 md:grid-cols-3 justify-center items-center gap-4">
+      <div
+        class="grid grid-cols-2 print:grid-cols-3 md:grid-cols-3 justify-center items-center gap-4"
+      >
         <div class="pt-10">
+          <p v-if="exchange?.in_charge_user">{{ exchange?.in_charge_user?.name || '' }}</p>
+          <p v-else>
+            {{ exchange?.user?.other_approval?.in_charge_user?.name || 'N/A' }}
+          </p>
           <div
             v-if="
               exchange.status !== 'Rejected' &&
@@ -228,9 +240,6 @@ const getDayName = (dateString) => {
             "
             class="print:hidden"
           >
-            <p class="">
-              {{ exchange?.user?.other_approval?.in_charge_user?.name || 'N/A' }}
-            </p>
             <p class="text-xs text-blue-600">
               {{ exchange?.user?.name }} has submitted an application. <br />
               Will you forward it?
@@ -245,15 +254,24 @@ const getDayName = (dateString) => {
               <button class="" @click="openRejectionModal">❌</button>
             </div>
           </div>
-          <p>{{ exchange?.in_charge_user?.name || '' }}</p>
-          <hr class="w-44 border-black mt-2" />
+
+          <hr class="w-28 md:w-44 border-black mt-2" />
           <p class="font-bold">
             In-Charge
             <span v-if="exchange?.in_charge_user_id" class="text-green-600">(✔)</span>
+            <span
+              v-if="!exchange?.in_charge_user_id && exchange?.user?.other_approval?.in_charge_user"
+              class="pl-2 text-yellow-700"
+              ><i class="fad fa-spinner"></i
+            ></span>
           </p>
         </div>
 
         <div class="pt-10">
+          <p v-if="exchange?.recommend_by_user">{{ exchange?.recommend_by_user?.name || '' }}</p>
+          <p v-else>
+            {{ exchange?.user?.other_approval?.recommend_by_user?.name || 'N/A' }}
+          </p>
           <div
             v-if="
               exchange.status !== 'Rejected' &&
@@ -263,9 +281,6 @@ const getDayName = (dateString) => {
             "
             class="print:hidden"
           >
-            <p class="">
-              {{ exchange?.user?.other_approval?.recommend_by_user?.name || 'N/A' }}
-            </p>
             <p class="text-xs text-blue-600">
               {{ exchange?.user?.name }} has submitted an application.<br />
               Will you recommend it?
@@ -280,14 +295,25 @@ const getDayName = (dateString) => {
               <button class="" @click="openRejectionModal">❌</button>
             </div>
           </div>
-          <p>{{ exchange?.recommend_by_user?.name || '' }}</p>
-          <hr class="w-44 border-black mt-2" />
+
+          <hr class="w-28 md:w-44 border-black mt-2" />
           <p class="font-bold">
             Recommend By
             <span v-if="exchange?.recommend_by_user_id" class="text-green-600">(✔)</span>
+            <span
+              v-if="
+                !exchange?.recommend_by_user_id && exchange?.user?.other_approval?.recommend_by_user
+              "
+              class="pl-2 text-yellow-700"
+              ><i class="fad fa-spinner"></i
+            ></span>
           </p>
         </div>
         <div class="pt-10">
+          <p v-if="exchange?.approved_by_user">{{ exchange?.approved_by_user?.name || '' }}</p>
+          <p v-else>
+            {{ exchange?.user?.other_approval?.approved_by_user?.name || 'N/A' }}
+          </p>
           <div
             v-if="
               exchange.status !== 'Rejected' &&
@@ -297,9 +323,6 @@ const getDayName = (dateString) => {
             "
             class="print:hidden"
           >
-            <p class="">
-              {{ exchange?.user?.other_approval?.approved_by_user?.name || 'N/A' }}
-            </p>
             <p class="text-xs text-blue-600">
               {{ exchange?.user?.name }} has submitted an application.<br />
               Will you accept it?
@@ -314,11 +337,18 @@ const getDayName = (dateString) => {
               <button class="" @click="openRejectionModal">❌</button>
             </div>
           </div>
-          <p>{{ exchange?.approved_by_user?.name || '' }}</p>
+
           <hr class="w-44 border-black mt-2" />
           <p class="font-bold">
             Approved By
             <span v-if="exchange?.approved_by_user_id" class="text-green-600">(✔)</span>
+            <span
+              v-if="
+                !exchange?.approved_by_user_id && exchange?.user?.other_approval?.approved_by_user
+              "
+              class="pl-2 text-yellow-700"
+              ><i class="fad fa-spinner"></i
+            ></span>
           </p>
         </div>
       </div>

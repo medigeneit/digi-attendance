@@ -3,10 +3,12 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import ScreenshotCapture from '@/components/common/ScreenshotCapture.vue'
 import ShareComponent from '@/components/common/ShareComponent.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useNotificationStore } from '@/stores/notification'
 import { useShortLeaveStore } from '@/stores/short-leave'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
+const notificationStore = useNotificationStore()
 const toast = useToast()
 const router = useRouter()
 const route = useRoute()
@@ -37,6 +39,7 @@ const rejectShortLeave = async () => {
     rejectionModal.value = false
     rejectionReason.value = ''
     await shortLeaveStore.fetchShortLeaveById(route.params.id)
+    refresh()
   } catch (err) {
     console.error('Failed to reject short leave:', err)
     alert('Failed to reject short leave.')
@@ -68,6 +71,7 @@ const acceptShortLeaveAction = async (action) => {
     if (action === 'approve') await shortLeaveStore.approvedByAccept(id)
     alert(`${action} accepted successfully!`)
     await shortLeaveStore.fetchShortLeaveById(id)
+    refresh()
   } catch (err) {
     console.error(`Failed to accept ${action}:`, err)
     alert(`Failed to accept ${action}.`)
@@ -96,7 +100,7 @@ const fileUploadLink = async (event) => {
   }
 }
 
-const formatDate = (dateString) => new Date(dateString).toISOString().slice(0, 10);
+const formatDate = (dateString) => new Date(dateString).toISOString().slice(0, 10)
 
 const formatTime = (timeString) => {
   if (!timeString) return 'N/A' // Return a fallback value if timeString is undefined
@@ -110,6 +114,10 @@ const formatTime = (timeString) => {
     minute: '2-digit',
     hour12: true, // Ensures AM/PM format
   })
+}
+
+async function refresh() {
+  await notificationStore.markAsRead(route.query.notifyId)
 }
 </script>
 
@@ -134,21 +142,25 @@ const formatTime = (timeString) => {
 
     <div v-else class="bg-white rounded space-y-2 p-4 md:p-8" id="leave-application">
       <div>
-        <h1 class="title-lg text-center">
-          Short Leave Application
-        </h1>
+        <h1 class="title-lg text-center">Short Leave Application</h1>
       </div>
       <div class="flex justify-end">
         <div>Date: {{ formatDate(shortLeave?.created_at) }}</div>
       </div>
       <div>
-        <p class="font-medium">Name: <b>{{ shortLeave?.user?.name }}</b> </p>
-          <div class="gap-y-1">
-            <p>Designation: <b>{{ shortLeave?.user?.designation?.title }}</b></p>
-          </div>
-          <div class="gap-y-1">
-            <p>Department:  <b>{{ shortLeave?.user?.company?.name }}</b></p>
-          </div>
+        <p class="font-medium">
+          Name: <b>{{ shortLeave?.user?.name }}</b>
+        </p>
+        <div class="gap-y-1">
+          <p>
+            Designation: <b>{{ shortLeave?.user?.designation?.title }}</b>
+          </p>
+        </div>
+        <div class="gap-y-1">
+          <p>
+            Department: <b>{{ shortLeave?.user?.company?.name }}</b>
+          </p>
+        </div>
       </div>
       <div class="">
         <div class="grid md:grid-cols-2">
@@ -162,13 +174,9 @@ const formatTime = (timeString) => {
           </div>
           <div><b>Short Leave Date:</b> {{ shortLeave?.date }}</div>
           <div><b>Total Minutes:</b> {{ shortLeave?.total_minutes }}</div>
-
-          <div class="col-span-2 pt-2"><b>Reason:</b> {{ shortLeave?.reason || 'N/A' }}</div>
         </div>
-        <div class="grid md:grid-cols-2 gap-4 pt-10">
-          <div class="">
-          </div>
-
+        <div class="grid md:grid-cols-2 gap-4 pt-10 items-center">
+          <div><b>Reason:</b> {{ shortLeave?.reason || 'N/A' }}</div>
           <div>
             <p>{{ shortLeave?.handover_user?.name || 'Not assigned' }}</p>
             <div
@@ -190,7 +198,7 @@ const formatTime = (timeString) => {
               </div>
             </div>
             <hr class="w-44 border-black mt-1" />
-            <h4 class="font-bold">
+            <h4 class="font-semibold text-sm">
               Handover
               <span
                 v-if="shortLeave?.handover_user_id && shortLeave?.status"
@@ -211,7 +219,7 @@ const formatTime = (timeString) => {
       <hr />
 
       <!-- Approval Details -->
-      <div>
+      <div class="text-center">
         <h3 class="title-md">
           Approvals
           <span
@@ -230,8 +238,14 @@ const formatTime = (timeString) => {
         </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="grid grid-cols-2 text-sm md:text-base md:grid-cols-3 md:gap-4">
         <div class="pt-10">
+          <p v-if="shortLeave?.in_charge_user">
+            {{ shortLeave?.in_charge_user?.name || '' }}
+          </p>
+          <p>
+            {{ shortLeave?.user?.other_approval?.in_charge_user?.name || 'N/A' }}
+          </p>
           <div
             v-if="
               shortLeave?.status !== 'Rejected' &&
@@ -241,9 +255,6 @@ const formatTime = (timeString) => {
             "
             class="print:hidden"
           >
-            <p class="">
-              {{ shortLeave?.user?.other_approval?.in_charge_user?.name || 'N/A' }}
-            </p>
             <p class="text-xs text-blue-600">
               {{ shortLeave?.user?.name }} has submitted an application. <br />
               Will you forward it?
@@ -258,15 +269,27 @@ const formatTime = (timeString) => {
               <button class="" @click="openRejectionModal">❌</button>
             </div>
           </div>
-          <p>{{ shortLeave?.in_charge_user?.name || '' }}</p>
-          <hr class="w-44 border-black" />
-          <p class="font-bold">
+          <hr class="w-28 md:w-36 border-black mt-2" />
+          <p class="font-semibold text-sm">
             In-Charge
             <span v-if="shortLeave?.in_charge_user_id" class="text-green-600">(✔)</span>
+            <span
+              v-if="
+                !shortLeave?.in_charge_user_id && shortLeave?.user?.other_approval?.in_charge_user
+              "
+              class="pl-2 text-yellow-700"
+              ><i class="fad fa-spinner"></i
+            ></span>
           </p>
         </div>
 
         <div class="pt-10">
+          <p v-if="shortLeave?.recommend_by_user">
+            {{ shortLeave?.recommend_by_user?.name || '' }}
+          </p>
+          <p>
+            {{ shortLeave?.user?.other_approval?.recommend_by_user?.name || 'N/A' }}
+          </p>
           <div
             v-if="
               shortLeave?.status !== 'Rejected' &&
@@ -276,9 +299,6 @@ const formatTime = (timeString) => {
             "
             class="print:hidden"
           >
-            <p class="">
-              {{ shortLeave?.user?.other_approval?.recommend_by_user?.name || 'N/A' }}
-            </p>
             <p class="text-xs text-blue-600">
               {{ shortLeave?.user?.name }} has submitted an application.<br />
               Will you recommend it?
@@ -293,48 +313,63 @@ const formatTime = (timeString) => {
               <button class="" @click="openRejectionModal">❌</button>
             </div>
           </div>
-          <p>{{ shortLeave?.recommend_by_user?.name || '' }}</p>
-          <hr class="w-44 border-black" />
-          <p class="font-bold">
+
+          <hr class="w-28 md:w-36 border-black mt-2" />
+          <p class="font-semibold text-sm">
             Recommend By
             <span v-if="shortLeave?.recommend_by_user_id" class="text-green-600">(✔)</span>
+            <span
+              v-if="
+                !shortLeave?.recommend_by_user_id &&
+                shortLeave?.user?.other_approval?.recommend_by_user
+              "
+              class="pl-2 text-yellow-700"
+              ><i class="fad fa-spinner"></i
+            ></span>
           </p>
         </div>
-      </div>
-
-      <div class="flex flex-col pt-10">
-        <div
-          v-if="
-            shortLeave?.status !== 'Rejected' &&
-            shortLeave?.status !== 'Approved' &&
-            !shortLeave?.approved_by_user_id &&
-            shortLeave?.user?.other_approval?.approved_by_user_id === authStore?.user?.id
-          "
-          class="print:hidden"
-        >
-          <p class="">
+        <div class="pt-10">
+          <p v-if="shortLeave?.approved_by_user">{{ shortLeave?.approved_by_user?.name || '' }}</p>
+          <p v-else>
             {{ shortLeave?.user?.other_approval?.approved_by_user?.name || 'N/A' }}
           </p>
-          <p class="text-xs text-blue-600">
-            {{ shortLeave?.user?.name }} has submitted an application.<br />
-            Will you accept it?
-          </p>
-          <div class="flex gap-4">
-            <button
-              class="font-bold text-lg text-green-600"
-              @click="acceptShortLeaveAction('approve')"
-            >
-              ✔
-            </button>
-            <button class="" @click="openRejectionModal">❌</button>
+          <div
+            v-if="
+              shortLeave?.status !== 'Rejected' &&
+              shortLeave?.status !== 'Approved' &&
+              !shortLeave?.approved_by_user_id &&
+              shortLeave?.user?.other_approval?.approved_by_user_id === authStore?.user?.id
+            "
+            class="print:hidden"
+          >
+            <p class="text-xs text-blue-600">
+              {{ shortLeave?.user?.name }} has submitted an application.<br />
+              Will you accept it?
+            </p>
+            <div class="flex gap-4">
+              <button
+                class="font-bold text-lg text-green-600"
+                @click="acceptShortLeaveAction('approve')"
+              >
+                ✔
+              </button>
+              <button class="" @click="openRejectionModal">❌</button>
+            </div>
           </div>
+          <hr class="w-28 md:w-36 border-black mt-2" />
+          <p class="font-semibold text-sm">
+            Approved By
+            <span v-if="shortLeave?.approved_by_user_id" class="text-green-600">(✔)</span>
+            <span
+              v-if="
+                !shortLeave?.approved_by_user_id &&
+                shortLeave?.user?.other_approval?.approved_by_user
+              "
+              class="pl-2 text-yellow-700"
+              ><i class="fad fa-spinner"></i
+            ></span>
+          </p>
         </div>
-        <p>{{ shortLeave?.approved_by_user?.name || '' }}</p>
-        <hr class="w-44 border-black" />
-        <p class="font-bold">
-          Approved By
-          <span v-if="shortLeave?.approved_by_user_id" class="text-green-600">(✔)</span>
-        </p>
       </div>
     </div>
     <div>

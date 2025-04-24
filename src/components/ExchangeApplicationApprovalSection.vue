@@ -63,9 +63,10 @@ const approvalRoles = [
     approved_by_field: null,
     label: 'Handover',
     action: async (id) => {
-      await exchangeStore.handoverAccept(id)
-      alert('Handover approved!')
-      await refresh(id)
+      if (confirm('Are you sure you want to approve?')) {
+        await exchangeStore.handoverAccept(id)
+        await refresh(id)
+      }
     },
     condition: () => !exchange.value?.status && exchange.value?.handover_user_id === user.value.id,
   },
@@ -75,9 +76,11 @@ const approvalRoles = [
     approved_by_field: 'approval_in_charge_user_id',
     label: 'In-Charge',
     action: async (id) => {
-      await exchangeStore.inChargeAccept(id)
+      if (confirm('Are you sure you want to approve?')) {
+        await exchangeStore.inChargeAccept(id)
+        await refresh(id)
+      }
       alert('In-Charge approved!')
-      await refresh(id)
     },
   },
   {
@@ -86,9 +89,10 @@ const approvalRoles = [
     approved_by_field: 'approval_recommend_by_user_id',
     label: 'Recommend By',
     action: async (id) => {
-      await exchangeStore.recommendByAccept(id)
-      alert('Recommendation approved!')
-      await refresh(id)
+      if (confirm('Are you sure you want to approve?')) {
+        await exchangeStore.recommendByAccept(id)
+        await refresh(id)
+      }
     },
   },
   {
@@ -97,9 +101,10 @@ const approvalRoles = [
     approved_by_field: 'approval_approved_by_user_id',
     label: 'Approved By',
     action: async (id) => {
-      await exchangeStore.approvedByAccept(id)
-      alert('Final approval successful!')
-      await refresh(id)
+      if (confirm('Are you sure to final approval?')) {
+        await exchangeStore.approvedByAccept(id)
+        await refresh(id)
+      }
     },
   },
 ]

@@ -3,10 +3,12 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import ShareComponent from '@/components/common/ShareComponent.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
+import { useNotificationStore } from '@/stores/notification'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
+const notificationStore = useNotificationStore()
 const leaveApplicationStore = useLeaveApplicationStore()
 const router = useRouter()
 const route = useRoute()
@@ -38,6 +40,7 @@ async function rejectApplication() {
     rejectionModal.value = false
     rejectionReason.value = ''
     await leaveApplicationStore.fetchLeaveApplicationById(route.params.id)
+    refresh()
   } catch (err) {
     alert(err.message)
   }
@@ -52,6 +55,7 @@ async function acceptHandoverApplication(id) {
     await leaveApplicationStore.acceptHandover(id)
     alert('Handover accepted successfully!')
     await leaveApplicationStore.fetchLeaveApplicationById(id)
+    refresh()
   } catch (err) {
     alert(err.message)
   }
@@ -62,6 +66,7 @@ async function acceptInChargeApplication(id) {
     await leaveApplicationStore.acceptInCharge(id)
     alert('Leave Application Successfully Accepted!')
     await leaveApplicationStore.fetchLeaveApplicationById(id)
+    refresh()
   } catch (err) {
     alert(err.message)
   }
@@ -72,6 +77,7 @@ async function acceptCoordinatorApplication(id) {
     await leaveApplicationStore.acceptCoordinator(id)
     alert('Coordinator accepted successfully!')
     await leaveApplicationStore.fetchLeaveApplicationById(id)
+    refresh()
   } catch (err) {
     alert(err.message)
   }
@@ -82,6 +88,7 @@ async function acceptOperationalAdminApplication(id) {
     await leaveApplicationStore.acceptOperationalAdmin(id)
     alert('Operational Admin accepted successfully!')
     await leaveApplicationStore.fetchLeaveApplicationById(id)
+    refresh()
   } catch (err) {
     alert(err.message)
   }
@@ -92,6 +99,7 @@ async function acceptRecommendByApplication(id) {
     await leaveApplicationStore.acceptRecommendBy(id)
     alert('Recommendation accepted successfully!')
     await leaveApplicationStore.fetchLeaveApplicationById(id)
+    refresh()
   } catch (err) {
     alert(err.message)
   }
@@ -101,10 +109,15 @@ async function acceptApprovedByApplication(id) {
   try {
     await leaveApplicationStore.acceptApprovedBy(id)
     alert('Leave Application approved successfully!')
+    refresh()
     await leaveApplicationStore.fetchLeaveApplicationById(id)
   } catch (err) {
     alert(err.message)
   }
+}
+
+async function refresh() {
+  await notificationStore.markAsRead(route.query.notifyId)
 }
 
 function print() {
@@ -305,7 +318,7 @@ const totalWithWeekendDays = computed(() => {
                 <button class="px-2">❌</button>
               </div>
             </div>
-            <hr class="w-44 border-black" />
+            <hr class="w-44 border-black mt-2" />
             <h4 class="font-bold">
               Handover
               <span
@@ -419,11 +432,21 @@ const totalWithWeekendDays = computed(() => {
               </div>
             </div>
 
-            <hr class="w-44 border-black" />
-            <p class="font-bold">
-              In-Charge
-              <span v-if="leaveApplication?.in_charge_user_id" class="text-green-600">(✔)</span>
-            </p>
+            <hr class="w-44 border-black mt-2" />
+            <h4 class="font-bold">
+              <p>
+                In-Charge
+                <span v-if="leaveApplication?.in_charge_user_id" class="text-green-600">(✔)</span>
+                <span
+                  v-if="
+                    !leaveApplication?.in_charge_user_id &&
+                    leaveApplication?.user?.leave_approval?.in_charge_user
+                  "
+                  class="pl-2 text-yellow-700"
+                  ><i class="fad fa-spinner"></i
+                ></span>
+              </p>
+            </h4>
           </div>
 
           <!-- Coordinator Approval -->
@@ -431,7 +454,7 @@ const totalWithWeekendDays = computed(() => {
             <p v-if="leaveApplication?.coordinator_user">
               {{ leaveApplication?.coordinator_user?.name || 'N/A' }}
             </p>
-            <p class="text-center">
+            <p v-else class="text-center">
               {{ leaveApplication?.user?.leave_approval?.coordinator_user?.name || 'N/A' }}
             </p>
             <div
@@ -457,11 +480,18 @@ const totalWithWeekendDays = computed(() => {
                 <button class="" @click="openRejectionModal">❌</button>
               </div>
             </div>
-            <p>{{ leaveApplication?.coordinator_user?.name || '' }}</p>
-            <hr class="w-44 border-black" />
+            <hr class="w-44 border-black mt-2" />
             <p class="font-bold">
               Coordinator
               <span v-if="leaveApplication?.coordinator_user_id" class="text-green-600">(✔)</span>
+              <span
+                v-if="
+                  !leaveApplication?.coordinator_user_id &&
+                  leaveApplication?.user?.leave_approval?.coordinator_user
+                "
+                class="pl-2 text-yellow-700"
+                ><i class="fad fa-spinner"></i
+              ></span>
             </p>
           </div>
 
@@ -497,12 +527,20 @@ const totalWithWeekendDays = computed(() => {
                 <button class="" @click="openRejectionModal">❌</button>
               </div>
             </div>
-            <hr class="w-44 border-black" />
+            <hr class="w-44 border-black mt-2" />
             <p class="font-bold">
               Operational Admin
               <span v-if="leaveApplication?.operational_admin_user_id" class="text-green-600"
                 >(✔)</span
               >
+              <span
+                v-if="
+                  !leaveApplication?.operational_admin_user_id &&
+                  leaveApplication?.user?.leave_approval?.operational_admin_user
+                "
+                class="pl-2 text-yellow-700"
+                ><i class="fad fa-spinner"></i
+              ></span>
             </p>
           </div>
         </div>
@@ -514,7 +552,7 @@ const totalWithWeekendDays = computed(() => {
             <p v-if="leaveApplication?.recommend_by_user">
               {{ leaveApplication?.recommend_by_user?.name || 'N/A' }}
             </p>
-            <p class="text-center">
+            <p v-else class="text-center">
               {{ leaveApplication?.user?.leave_approval?.recommend_by_user?.name || 'N/A' }}
             </p>
             <div
@@ -540,10 +578,18 @@ const totalWithWeekendDays = computed(() => {
                 <button class="" @click="openRejectionModal">❌</button>
               </div>
             </div>
-            <hr class="w-44 border-black" />
+            <hr class="w-44 border-black mt-2" />
             <p class="font-bold">
               Recommend By
               <span v-if="leaveApplication?.recommend_by_user_id" class="text-green-600">(✔)</span>
+              <span
+                v-if="
+                  !leaveApplication?.recommend_by_user_id &&
+                  leaveApplication?.user?.leave_approval?.recommend_by_user
+                "
+                class="pl-2 text-yellow-700"
+                ><i class="fad fa-spinner"></i
+              ></span>
             </p>
           </div>
 
@@ -552,7 +598,7 @@ const totalWithWeekendDays = computed(() => {
             <p v-if="leaveApplication?.approved_by_user">
               {{ leaveApplication?.approved_by_user?.name || 'N/A' }}
             </p>
-            <p class="text-center">
+            <p v-else class="text-center">
               {{ leaveApplication?.user?.leave_approval?.approved_by_user?.name || 'N/A' }}
             </p>
 
@@ -579,10 +625,18 @@ const totalWithWeekendDays = computed(() => {
                 <button class="" @click="openRejectionModal">❌</button>
               </div>
             </div>
-            <hr class="w-44 border-black" />
+            <hr class="w-44 border-black mt-2" />
             <p class="font-bold">
               Approved By
               <span v-if="leaveApplication?.approved_by_user_id" class="text-green-600">(✔)</span>
+              <span
+                v-if="
+                  !leaveApplication?.approved_by_user_id &&
+                  leaveApplication?.user?.leave_approval?.approved_by_user
+                "
+                class="pl-2 text-yellow-700"
+                ><i class="fad fa-spinner"></i
+              ></span>
             </p>
           </div>
         </div>

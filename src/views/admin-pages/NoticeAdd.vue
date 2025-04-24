@@ -24,11 +24,16 @@ const form = reactive({
   expired_at: '',
   company_id: 'all',
   file: '',
+  all_companies: false,
   all_departments: false,
   all_employees: false,
 })
 
 const selectedDepartments = ref([])
+
+const selectedCompanies = ref([])
+
+const company_ids = computed(() => selectedCompanies.value.map((comp) => comp.id))
 
 const department_ids = computed(() => selectedDepartments.value.map((dep) => dep.id))
 
@@ -39,6 +44,12 @@ const employee_ids = computed(() => selectedEmployees.value.map((dep) => dep.id)
 const toggleAllDepartments = () => {
   if (form.value.all_departments) {
     department_ids.value = []
+  }
+}
+
+const toggleAllCompany = () => {
+  if (form.value.all_company) {
+    company_ids.value = []
   }
 }
 
@@ -86,6 +97,7 @@ const saveNotice = async () => {
       published_at: form.published_at,
       expired_at: form.expired_at,
       company_id: form.company_id,
+      company_ids: company_ids.value,
       department_id: form.department_id,
       department_ids: department_ids.value,
       employee_ids: employee_ids.value,
@@ -114,22 +126,23 @@ const saveNotice = async () => {
             <p class="title-md">Notice Info</p>
             <hr class="my-2" />
             <div class="grid md:grid-cols-2 gap-4">
-              <div>
-                <label>Company *</label>
-                <select
-                  id="company_id"
-                  v-model="form.company_id"
-                  class="w-full border rounded px-3 py-2"
-                  required
-                >
-                  <option value="">All Company</option>
-                  <template v-for="company in companies" :key="company?.id">
-                    <option :value="company?.id">
-                      {{ company?.name }}
-                    </option>
-                  </template>
-                </select>
+              <div class="w-full">
+                <label>
+                  <input type="checkbox" v-model="form.all_companies" @change="toggleAllCompany" />
+                  Select All Companies
+                </label>
+                <Multiselect
+                  v-model="selectedCompanies"
+                  :options="companies"
+                  :multiple="true"
+                  :searchable="true"
+                  placeholder="Select companies"
+                  track-by="id"
+                  label="name"
+                  :disabled="form.all_companies"
+                />
               </div>
+
               <div>
                 <label>Type*</label>
                 <select
@@ -142,7 +155,7 @@ const saveNotice = async () => {
                   <option value="2">Policy</option>
                 </select>
               </div>
-              <div v-if="form.type !== '2'">
+              <div>
                 <label>Publish Date*</label>
                 <input
                   v-model="form.published_at"
@@ -152,7 +165,7 @@ const saveNotice = async () => {
                 />
               </div>
 
-              <div v-if="form.type !== '2'">
+              <div>
                 <label>Expired Date*</label>
                 <input
                   v-model="form.expired_at"
@@ -179,7 +192,6 @@ const saveNotice = async () => {
                     placeholder="Select departments"
                     track-by="id"
                     label="name"
-                    class="w-full p-2 border rounded"
                     :disabled="form.all_departments"
                   />
                 </div>
@@ -199,7 +211,6 @@ const saveNotice = async () => {
                     :searchable="true"
                     track-by="id"
                     label="name"
-                    class="w-full p-2 border rounded"
                     placeholder="Select Employees"
                     :disabled="form.all_employees"
                   />
