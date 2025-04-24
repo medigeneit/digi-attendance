@@ -12,12 +12,6 @@
             <div class="flex items-center gap-2">
               <span class="text-xs font-medium text-gray-500">{{ bug.id }}</span>
               <span
-                class="text-xs font-semibold px-2 py-1 rounded text-white"
-                :class="severityClass(bug.severity)"
-              >
-                {{ bug.severity }}
-              </span>
-              <span
                 class="text-xs font-medium px-2 py-1 rounded border"
                 :class="statusClass(bug.status)"
               >
@@ -25,18 +19,19 @@
               </span>
             </div>
             <h3 class="font-medium text-gray-800">{{ bug.title }}</h3>
-            <p class="text-sm text-gray-500">Project: {{ bug.project }}</p>
-            <!-- <p class="text-xs text-gray-500">
-              Reported by: <strong>{{ bug.reportedBy }}</strong>
-              <span v-if="bug.assignedTo !== 'Unassigned'">
-                | Assigned to: <strong>{{ bug.assignedTo }}</strong></span
-              >
-            </p> -->
+            <p class="text-sm text-gray-500">Project: {{ bug.project?.name }}</p>
+            <p class="text-xs text-gray-500">
+              <span v-if="bug.users.length">
+                Assigned to:
+                <strong>{{ bug.users.map((u) => u.name).join(', ') }}</strong>
+              </span>
+              <span v-else>Not assign</span>
+            </p>
           </div>
-          <div class="text-right">
+          <!-- <div class="text-right">
             <div class="text-xs text-gray-400">Reported: {{ bug.reportedDate }}</div>
             <button class="mt-2 px-3 py-1 text-xs border rounded hover:bg-gray-100">View</button>
-          </div>
+          </div> -->
         </div>
       </div>
     </div>

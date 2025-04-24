@@ -1,18 +1,27 @@
 <script setup>
 import { useBugStore } from '@/stores/useBugStore'
-import { ref } from 'vue'
+import { useProjectStore } from '@/stores/useProjectStore'
+import { storeToRefs } from 'pinia'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-
+const storeProject = useProjectStore()
 const store = useBugStore()
 const router = useRouter()
 const title = ref('')
+const project_id = ref('')
 const status = ref('OPEN')
 const description = ref('')
 const loading = ref(false)
+const { projects } = storeToRefs(storeProject)
+
+onMounted(() => {
+  storeProject.fetchProjects()
+})
 
 const submit = async () => {
   loading.value = true
   await store.createBug({
+    project_id: project_id.value,
     title: title.value,
     status: status.value,
     description: description.value,
@@ -30,7 +39,19 @@ const submit = async () => {
     <div class="max-w-xl mx-auto bg-white shadow-lg rounded-lg p-6">
       <h2 class="text-2xl font-semibold text-gray-800 mb-4">Add New Bug</h2>
 
-      <form @submit.prevent="submit">
+      <form @submit.prevent="submit" class="space-y-6">
+        <div class="mb-4">
+          <label class="block text-gray-700 font-medium mb-2">Project</label>
+          <select
+            v-model="project_id"
+            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Select Project</option>
+            <option v-for="project in projects" :key="project.id" :value="project.id">
+              {{ project.name }}
+            </option>
+          </select>
+        </div>
         <div class="mb-4">
           <label class="block text-gray-700 font-medium mb-2">Bug Title</label>
           <input
@@ -40,6 +61,8 @@ const submit = async () => {
             class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-red-500"
           />
         </div>
+
+    
 
         <div>
           <label class="block text-gray-700 font-medium mb-2">Status</label>

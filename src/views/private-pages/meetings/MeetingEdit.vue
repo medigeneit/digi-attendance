@@ -1,40 +1,42 @@
 <script setup>
-import { useMeetingStore } from "@/stores/useMeetingStore";
-import { onMounted, ref } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useMeetingStore } from '@/stores/useMeetingStore'
+import { onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
-const store = useMeetingStore();
-const route = useRoute();
-const router = useRouter();
+const store = useMeetingStore()
+const route = useRoute()
+const router = useRouter()
 
-const meetingId = route.params.id;
-const loading = ref(false);
+const meetingId = route.params.id
+const loading = ref(false)
 
 const form = ref({
-  title: "",
-  meeting_time: "",
-  notes: "",
-});
+  title: '',
+  start_time: '',
+  end_time: '',
+  notes: '',
+})
 
 onMounted(async () => {
-  await store.fetchEditMeeting(meetingId);
+  await store.fetchEditMeeting(meetingId)
   form.value = {
-    title: store.meeting.title,
-    meeting_time: store.meeting.meeting_time.slice(0, 16), // format for datetime-local
-    notes: store.meeting.notes || "",
-  };
-});
+    title: store.meeting?.title || '',
+    start_time: store.meeting?.start_time ? store.meeting.start_time.slice(0, 16) : '',
+    end_time: store.meeting?.end_time ? store.meeting.end_time.slice(0, 16) : '',
+    notes: store.meeting?.notes || '',
+  }
+})
 
 const update = async () => {
-  loading.value = true;
+  loading.value = true
 
-  await store.updateMeeting(meetingId, form.value);
-  loading.value = false;
+  await store.updateMeeting(meetingId, form.value)
+  loading.value = false
 
   if (!store.error) {
-    router.push({ name: "MeetingList" });
+    router.push({ name: 'MeetingList' })
   }
-};
+}
 </script>
 
 <template>
@@ -48,9 +50,7 @@ const update = async () => {
 
       <form v-else-if="store.meeting" @submit.prevent="update">
         <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-2"
-            >Meeting Title</label
-          >
+          <label class="block text-gray-700 font-medium mb-2">Meeting Title</label>
           <input
             v-model="form.title"
             required
@@ -60,11 +60,18 @@ const update = async () => {
         </div>
 
         <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-2"
-            >Meeting Time</label
-          >
+          <label class="block text-gray-700 font-medium mb-2">Start Time</label>
           <input
-            v-model="form.meeting_time"
+            v-model="form.start_time"
+            required
+            type="datetime-local"
+            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div class="mb-4">
+          <label class="block text-gray-700 font-medium mb-2">End Time</label>
+          <input
+            v-model="form.end_time"
             required
             type="datetime-local"
             class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
@@ -72,9 +79,7 @@ const update = async () => {
         </div>
 
         <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-2"
-            >Notes (Optional)</label
-          >
+          <label class="block text-gray-700 font-medium mb-2">Notes (Optional)</label>
           <textarea
             v-model="form.notes"
             rows="4"
@@ -93,7 +98,7 @@ const update = async () => {
             type="submit"
             class="bg-green-500 hover:bg-green-600 text-white font-semibold px-5 py-2 rounded transition"
           >
-            {{ loading ? "Updating..." : "Update Meeting" }}
+            {{ loading ? 'Updating...' : 'Update Meeting' }}
           </button>
 
           <button
@@ -107,7 +112,7 @@ const update = async () => {
       </form>
 
       <div v-else class="text-center py-4 text-red-500">
-        {{ store.error || "Meeting not found." }}
+        {{ store.error || 'Meeting not found.' }}
       </div>
     </div>
   </div>

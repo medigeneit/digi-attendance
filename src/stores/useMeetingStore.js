@@ -8,6 +8,21 @@ export const useMeetingStore = defineStore('meeting', () => {
   const loading = ref(false);
   const error = ref(null);
 
+  const assignUsers = async (meetingId, user_ids) => {
+    loading.value = true;
+    error.value = null;
+
+    try {
+      await apiClient.post(`/meetings/${meetingId}/assign-users`, { user_ids });
+      await fetchEditMeeting(meetingId); // refresh meeting details
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Assign users failed';
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
   const fetchMeetings = async () => {
     loading.value = true;
     error.value = null;
@@ -90,5 +105,6 @@ export const useMeetingStore = defineStore('meeting', () => {
     createMeeting,
     updateMeeting,    // newly added
     deleteMeeting,
+    assignUsers,
   };
 });

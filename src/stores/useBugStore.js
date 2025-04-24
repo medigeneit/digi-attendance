@@ -8,6 +8,24 @@ export const useBugStore = defineStore('bug', () => {
   const loading = ref(false);
   const error = ref(null);
 
+  const assignUsers = async (bugId, user_ids) => {
+    loading.value = true;
+    error.value = null;
+
+    console.log('ss', bugId, user_ids);
+    try {
+      
+      await apiClient.post(`/bugs/${bugId}/assign-users`, { user_ids });
+      await fetchBug(bugId); // refresh bug details
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Assign users failed';
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+
   const fetchBugs = async () => {
     loading.value = true;
     error.value = null;
@@ -91,5 +109,6 @@ export const useBugStore = defineStore('bug', () => {
     createBug,
     updateBug,     // ✅ added
     deleteBug,
+    assignUsers
   };
 });

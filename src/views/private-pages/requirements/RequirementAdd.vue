@@ -53,7 +53,7 @@ const submit = async () => {
 
       <form @submit.prevent="submit">
         <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-2">Priority</label>
+          <label class="block text-gray-700 font-medium mb-2">Project</label>
           <select
             v-model="project_id"
             class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"

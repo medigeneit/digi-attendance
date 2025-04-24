@@ -1,29 +1,31 @@
 <script setup>
-import { useMeetingStore } from "@/stores/useMeetingStore";
-import { ref } from "vue";
-import { useRouter } from "vue-router";
+import { useMeetingStore } from '@/stores/useMeetingStore'
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
-const store = useMeetingStore();
-const router = useRouter();
+const store = useMeetingStore()
+const router = useRouter()
 
-const title = ref("");
-const meeting_time = ref("");
-const notes = ref("");
-const loading = ref(false);
+const title = ref('')
+const start_time = ref('')
+const end_time = ref('')
+const notes = ref('')
+const loading = ref(false)
 
 const submit = async () => {
-  loading.value = true;
+  loading.value = true
   await store.createMeeting({
     title: title.value,
-    meeting_time: meeting_time.value,
+    start_time: start_time.value,
+    end_time: end_time.value,
     notes: notes.value,
-  });
-  loading.value = false;
+  })
+  loading.value = false
 
   if (!store.error) {
-    router.push({ name: "MeetingList" });
+    router.push({ name: 'MeetingList' })
   }
-};
+}
 </script>
 
 <template>
@@ -33,9 +35,7 @@ const submit = async () => {
 
       <form @submit.prevent="submit">
         <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-2"
-            >Meeting Title</label
-          >
+          <label class="block text-gray-700 font-medium mb-2">Meeting Title</label>
           <input
             v-model="title"
             required
@@ -45,11 +45,18 @@ const submit = async () => {
         </div>
 
         <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-2"
-            >Meeting Time</label
-          >
+          <label class="block text-gray-700 font-medium mb-2">Start Time</label>
           <input
-            v-model="meeting_time"
+            v-model="start_time"
+            required
+            type="datetime-local"
+            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div class="mb-4">
+          <label class="block text-gray-700 font-medium mb-2">End Time</label>
+          <input
+            v-model="end_time"
             required
             type="datetime-local"
             class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
@@ -57,9 +64,7 @@ const submit = async () => {
         </div>
 
         <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-2"
-            >Notes (Optional)</label
-          >
+          <label class="block text-gray-700 font-medium mb-2">Notes (Optional)</label>
           <textarea
             v-model="notes"
             rows="4"
@@ -78,7 +83,7 @@ const submit = async () => {
             type="submit"
             class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-5 py-2 rounded transition"
           >
-            {{ loading ? "Saving..." : "Save Meeting" }}
+            {{ loading ? 'Saving...' : 'Save Meeting' }}
           </button>
 
           <button

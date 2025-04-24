@@ -1,16 +1,19 @@
 <script setup>
 import { useBugStore } from '@/stores/useBugStore'
+import { useProjectStore } from '@/stores/useProjectStore'
+import { storeToRefs } from 'pinia'
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-
+const storeProject = useProjectStore()
 const store = useBugStore()
 const route = useRoute()
 const router = useRouter()
-
+const { projects } = storeToRefs(storeProject)
 const bugId = route.params.id
 const loading = ref(false)
 
 const form = ref({
+  project_id: '',
   title: '',
   description: '',
   status: '',
@@ -18,7 +21,9 @@ const form = ref({
 
 onMounted(async () => {
   await store.fetchBug(bugId) // optional: API fallback
+  storeProject.fetchProjects()
   form.value = {
+    project_id: store.bug?.project_id,
     title: store.bug?.title || '',
     description: store.bug?.description || '',
     status: store.bug?.status || '',
@@ -52,7 +57,20 @@ const update = async () => {
     <div class="max-w-xl mx-auto bg-white shadow-lg rounded-lg p-6">
       <h2 class="text-2xl font-semibold text-gray-800 mb-4">Edit Bug</h2>
 
-      <form v-if="store.bug" @submit.prevent="update">
+      <form v-if="store.bug" @submit.prevent="update" class="space-y-6">
+        <div class="mb-4">
+          <label class="block text-gray-700 font-medium mb-2">Project</label>
+          <select
+            v-model="form.project_id"
+            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Select Project</option>
+            <option v-for="project in projects" :key="project.id" :value="project.id">
+              {{ project.name }}
+            </option>
+          </select>
+        </div>
+
         <div class="mb-4">
           <label class="block text-gray-700 font-medium mb-2">Bug Title</label>
           <input
@@ -63,7 +81,7 @@ const update = async () => {
           />
         </div>
 
-        <div>
+        <div class="mb-4">
           <label class="block text-gray-700 font-medium mb-2">Status</label>
           <select
             v-model="form.status"
@@ -72,6 +90,20 @@ const update = async () => {
             <option value="OPEN">OPEN</option>
             <option value="SOLVED">SOLVED</option>
             <option value="CLOSED">CLOSED</option>
+          </select>
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-gray-700 font-medium mb-2">Priority</label>
+          <select
+            v-model="priority"
+            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Select priority</option>
+            <option value="LOW">LOW</option>
+            <option value="MEDIUM">MEDIUM</option>
+            <option value="HIGH">HIGH</option>
+            <option value="CRITICAL">CRITICAL</option>
           </select>
         </div>
 

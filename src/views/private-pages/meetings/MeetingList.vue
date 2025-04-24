@@ -51,7 +51,8 @@ const closeComment = () => {
         <tr>
           <th class="px-4 py-2 text-left">#</th>
           <th class="px-4 py-2 text-left">Title</th>
-          <th class="px-4 py-2 text-left">Meeting Time</th>
+          <th class="px-4 py-2 text-left">Start Time</th>
+          <th class="px-4 py-2 text-left">End Time</th>
           <th class="px-4 py-2 text-left">Todo</th>
           <th class="px-4 py-2 text-left">Actions</th>
         </tr>
@@ -65,7 +66,24 @@ const closeComment = () => {
           <td class="px-4 py-2">{{ index + 1 }}</td>
           <td class="px-4 py-2 font-medium">{{ meeting.title }}</td>
           <td class="px-4 py-2">
-            {{ new Date(meeting.meeting_time).toLocaleString() }}
+            {{
+              meeting?.start_time
+                ? new Date(meeting?.start_time).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : ''
+            }}
+          </td>
+          <td class="px-4 py-2">
+            {{
+              meeting?.end_time
+                ? new Date(meeting?.end_time).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : ''
+            }}
           </td>
           <td class="px-4 py-2">
             <RouterLink
@@ -75,11 +93,19 @@ const closeComment = () => {
                 query: { todoable_type: 'meeting' },
               }"
               class="main-button py-1"
-              >Add Todo</RouterLink
-            >
+              ><i class="fas fa-plus-circle"></i
+            ></RouterLink>
           </td>
           <td class="px-4 py-2 flex gap-3">
-            <button @click="goToEdit(meeting.id)" class="btn-2">Edit</button>
+            <button @click="goToEdit(meeting.id)" class="btn-3 !px-2">
+              <i class="far fa-edit"></i>
+            </button>
+            <RouterLink
+              :to="{ name: 'MeetingUserAssign', params: { id: meeting?.id } }"
+              class="btn-3 md:text-base text-xs"
+            >
+              Assign Users
+            </RouterLink>
             <button
               @click="openComment(meeting.id)"
               class="bg-indigo-500 text-white px-3 py-1 rounded-full"

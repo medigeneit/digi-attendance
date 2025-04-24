@@ -51,49 +51,54 @@ const closeComment = () => {
       {{ store.error }}
     </div>
 
-    <table v-else class="min-w-full bg-white shadow rounded-lg overflow-hidden">
-      <thead class="bg-gray-100">
-        <tr>
-          <th class="px-4 py-2 text-left">#</th>
-          <th class="px-4 py-2 text-left">Title</th>
-          <th class="px-4 py-2 text-left">Description</th>
-          <th class="px-4 py-2 text-left">Todo</th>
-          <th class="px-4 py-2 text-left">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="(bug, index) in store.bugs" :key="bug.id" class="border-t hover:bg-gray-50">
-          <td class="px-4 py-2">{{ index + 1 }}</td>
-          <td class="px-4 py-2 font-medium">{{ bug.title }}</td>
+    <div v-else class="overflow-auto">
+      <table class="min-w-full bg-white shadow rounded-lg overflow-hidden">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="px-4 py-2 text-left">#</th>
+            <th class="px-4 py-2 text-left">Title</th>
+            <th class="px-4 py-2 text-left">Project</th>
+            <!-- <th class="px-4 py-2 text-left">Description</th> -->
+            <th class="px-4 py-2 text-left">Todo</th>
+            <th class="px-4 py-2 text-left">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(bug, index) in store.bugs" :key="bug.id" class="border-t hover:bg-gray-50">
+            <td class="px-4 py-2">{{ index + 1 }}</td>
+            <td class="px-4 py-2 font-medium">{{ bug.title }}</td>
+            <td class="px-4 py-2 font-medium">{{ bug?.project?.name }}</td>
+            <!-- <td class="px-4 py-2 text-sm text-gray-600">
+              {{ bug.description ? bug.description.slice(0, 50) + '...' : 'No description' }}
+            </td> -->
 
-          <td class="px-4 py-2 text-sm text-gray-600">
-            {{ bug.description ? bug.description.slice(0, 50) + '...' : 'No description' }}
-          </td>
+            <td class="px-4 py-2">
+              <RouterLink
+                :to="{
+                  name: 'TodoAdd',
+                  params: { todoable_id: bug?.id },
+                  query: { todoable_type: 'bug' },
+                }"
+                class="btn-3"
+              >
+                <i class="fas fa-plus-circle"></i>
+              </RouterLink>
+            </td>
 
-          <td class="px-4 py-2">
-            <RouterLink
-              :to="{
-                name: 'TodoAdd',
-                params: { todoable_id: bug?.id },
-                query: { todoable_type: 'bug' },
-              }"
-              class="main-button py-1"
-              >Add Todo</RouterLink
-            >
-          </td>
-
-          <td class="px-4 py-2 flex gap-4">
-            <button @click="goToEdit(bug.id)" class="btn-2">Edit</button>
-            <button
-              @click="openComment(bug.id)"
-              class="bg-indigo-500 text-white px-3 py-1 rounded-full"
-            >
-              + Comment
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+            <td class="px-4 py-2 flex gap-4">
+              <button @click="goToEdit(bug.id)" class="btn-1"><i class="far fa-edit"></i></button>
+              <RouterLink
+                :to="{ name: 'BugUserAssign', params: { id: bug?.id } }"
+                class="btn-3 md:text-base text-xs"
+              >
+                Assign Users
+              </RouterLink>
+              <button @click="openComment(bug.id)" class="btn-4">+ Comment</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
     <!-- Comment Modal -->
     <CommentModal

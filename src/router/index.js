@@ -178,6 +178,14 @@ const router = createRouter({
           component: () => import('@/views/private-pages/bugs/BugEdit.vue'),
           meta: { requiresAuth: true }
         },
+
+        {
+          path: 'bugs/:id/assign-users',
+          name: 'BugUserAssign',
+          component: () => import('@/views/private-pages/bugs/BugUserAssign.vue'),
+          meta: { requiresAuth: true }
+        },
+
         {
           path: 'meetings',
           name: 'MeetingList',
@@ -196,6 +204,14 @@ const router = createRouter({
           component: () => import('@/views/private-pages/meetings/MeetingEdit.vue'),
           meta: { requiresAuth: true }
         },
+
+        {
+          path: 'meeting/:id/assign-users',
+          name: 'MeetingUserAssign',
+          component: () => import('@/views/private-pages/meetings/MeetingUserAssign.vue'),
+          meta: { requiresAuth: true }
+        },
+
         {
           path: 'comments',
           name: 'CommentList',
