@@ -77,7 +77,7 @@
           <DashboardCard
             title="Tasks"
             :value="summary?.tasks?.total"
-            :subtext="`${summary?.tasks?.in_progress} in progress`"
+            :subtext="`${summary?.tasks?.completed} in completed`"
             icon="tasks"
             color="text-purple-500"
           />
@@ -87,7 +87,7 @@
           <DashboardCard
             title="Bugs"
             :value="summary?.bugs?.total"
-            :subtext="`${summary?.bugs?.critical} critical`"
+            :subtext="`${summary?.bugs?.solved} solved`"
             icon="bug"
             color="text-red-500"
           />
