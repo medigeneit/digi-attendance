@@ -1,12 +1,26 @@
-import apiClient from '../axios';
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
+import apiClient from '../axios';
 
 export const useProjectStore = defineStore('project', () => {
   const projects = ref([]);         // সকল প্রজেক্ট
   const project = ref(null);        // একক প্রজেক্ট
   const loading = ref(false);       // লোডিং স্টেট
   const error = ref(null);          // এরর স্টেট
+
+  const fetchTaskManagementSummary = async () => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await apiClient.get('/task-management-summaries');
+      return response.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || '';
+      console.error('Error fetching:', err);
+    } finally {
+      loading.value = false;
+    }
+  };
 
   const fetchProjects = async () => {
     loading.value = true;
@@ -93,5 +107,6 @@ export const useProjectStore = defineStore('project', () => {
     createProject,
     updateProject,
     deleteProject,
+    fetchTaskManagementSummary
   };
 });

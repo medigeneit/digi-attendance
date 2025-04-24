@@ -24,14 +24,18 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
+const router = useRouter()
+const route = useRoute()
 
 // ✅ Import actual tab components
 import BugsTab from '@/components/BugsTab.vue'
 import MeetingsTab from '@/components/MeetingsTab.vue'
 import ProjectsTab from '@/components/ProjectsTab.vue'
+import { default as ReportTab, default as TasksTab } from '@/components/ReportTab.vue'
 import RequirementsTab from '@/components/RequirementsTab.vue'
-import TasksTab from '@/components/TasksTab.vue'
 
 const tabs = [
   { label: 'Projects', value: 'projects', icon: 'fa-folder' },
@@ -39,14 +43,24 @@ const tabs = [
   { label: 'Tasks', value: 'tasks', icon: 'fa-tasks' },
   { label: 'Bugs', value: 'bugs', icon: 'fa-bug' },
   { label: 'Meetings', value: 'meetings', icon: 'fa-users' },
+  { label: 'Reports', value: 'reports', icon: 'fa-file-chart-line' },
 ]
 
-const activeTab = ref('projects')
+const activeTab = ref(route.query.tab || 'projects')
+
+watch(activeTab, (newTab) => {
+  router.push({
+    query: {
+      tab: newTab,
+    },
+  })
+})
 
 const tabComponents = {
   projects: ProjectsTab,
   requirements: RequirementsTab,
   tasks: TasksTab,
+  reports: ReportTab,
   bugs: BugsTab,
   meetings: MeetingsTab,
 }

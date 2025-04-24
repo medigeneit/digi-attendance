@@ -4,7 +4,9 @@
     <main class="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 class="text-2xl font-bold tracking-tight">Task Management</h1>
+          <h1 class="text-2xl font-bold tracking-tight">
+            Task Management
+          </h1>
           <p class="text-sm text-gray-500">
             Manage your projects, requirements, tasks, bugs, and meetings.
           </p>
@@ -59,9 +61,6 @@
           color="text-teal-500"
         />
       </div>
-
-      <!-- You can continue adding tabbed sections here similar to the original setup -->
-      <!-- Projects / Requirements / Tasks / Bugs / Meetings with Tab Structure -->
       <Tabs />
     </main>
   </div>
