@@ -59,6 +59,7 @@ const goBack = () => router.go(-1)
           :options="userStore.users"
           :multiple="false"
           class="w-full"
+          label="name"
           placeholder="Select Employee"
         />
       </div>
