@@ -76,8 +76,8 @@ const formatTime = (timeString) => {
             v-model="selectedUser"
             :options="userStore.users"
             :multiple="false"
-            label="Select User"
-            labelFor="user"
+            label="name"
+            placeholder="Select user"
           />
         </div>
         <div>

@@ -168,13 +168,21 @@ const handleNotificationClick = (notification) => {
             <i :class="getEventIcon(item.event_type)"></i>
           </div>
           <div class="flex-1">
-            <p class="text-gray-800 font-medium">{{ item.event_model?.user_name }}</p>
+            <div class="flex gap-8">
+              <p class="text-gray-800 font-medium">{{ item.event_model?.user_name }}</p>
+              <p v-if="item?.monthly_short_leave_count" class="flex gap-2 text-sm">
+                <strong>Pending: {{ item?.monthly_short_leave_count.Pending || 0 }}</strong
+                >/
+                <strong>Approved: {{ item?.monthly_short_leave_count.Approved }}</strong>
+              </p>
+            </div>
             <p class="text-gray-800 font-medium" v-if="item.event_model?.reason">
               Reason: {{ item.event_model?.reason }}
             </p>
             <p class="text-red-600 text-sm font-semibold">
               {{ getEventTitle(item.event_model, item.event_type) }}
             </p>
+
             <p
               class="text-xs text-gray-400"
               v-if="item?.event_model?.total_leave_days_without_week"
