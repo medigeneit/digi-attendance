@@ -112,6 +112,7 @@ const goBack = () => router.go(-1)
               <th class="border p-1">Entry Time</th>
               <th class="border p-1">Exit Time</th>
               <th class="border p-1">Working Hours</th>
+              <th class="border p-1">OT Hours</th>
               <th class="border p-1">Late Entry</th>
               <th class="border p-1">Early Leave</th>
               <th class="border p-1">Status</th>
@@ -134,24 +135,44 @@ const goBack = () => router.go(-1)
               <td class="border px-1 py-0.5" :title="`Device: ${log.entry_device}`">
                 {{ log.entry_time }}
               </td>
-              <td class="border px-1 py-0.5" :title="`Device: ${log.exit_device}`">
+              <td 
+                class="border px-1 py-0.5" 
+                :title="`Device: ${log.exit_device}`"
+              >
                 {{ log.exit_time }}
+                <div v-if=" log.exit_time == '' &&  new Date(log.exit_time) > new Date()">
+                  <router-link
+                    :to="{
+                      name: 'ManualAttendanceAdd',
+                      query: {
+                        date: log.shift_end_time,
+                        check_in: log.entry_time,
+                        check_out: log.exit_time,
+                      },
+                    }"
+                    class="btn-link"
+                  >
+                    (Check Out Apply)
+                  </router-link>
+                </div>
               </td>
               <td class="border px-1 py-0.5">{{ log.working_hours }}</td>
 
-              <td class="border px-1 py-0.5" :class="{ 'bg-red-100': log.late_duration }">
+              <td class="border px-1 py-0.5">
+                {{ log.overtime_hours }}
+              </td>
+
+              <td class="border px-1 py-0.5">
                 <div v-if="log.late_duration">
                   {{ log.late_duration }}
-                  <span v-if="log.first_short_leave">
-                    <i
+                  <span v-if="log.first_short_leave"
                       :class="{
-                        'fas fa-check-circle text-green-500': log.first_short_leave === 'Approved',
-                        'fas fa-hourglass-half text-yellow-500':
+                        'text-green-500': log.first_short_leave === 'Approved',
+                        'text-yellow-500':
                           log.first_short_leave === 'Pending',
-                        'fas fa-times-circle text-red-500': log.first_short_leave === 'Rejected',
-                      }"
-                      :title="log.first_short_leave"
-                    ></i>
+                        'text-red-500': log.first_short_leave === 'Rejected',
+                      }">
+                    ({{log.first_short_leave}})
                   </span>
                   <router-link
                     v-if="log.late_duration && !log.first_short_leave"
@@ -169,21 +190,19 @@ const goBack = () => router.go(-1)
                   </router-link>
                 </div>
               </td>
-              <td class="border px-1 py-0.5" :class="{ 'bg-red-100': log.early_leave_duration }">
+              <td class="border px-1 py-0.5">
                 <div v-if="log.early_leave_duration">
                   {{ log.early_leave_duration }}
-                  <span v-if="log.last_short_leave" class="px-2">
-                    <i
-                      :class="{
-                        'fas fa-check-circle text-green-500 text-lg':
+                  <span v-if="log.last_short_leave" class="px-1":class="{
+                        'text-green-500':
                           log.last_short_leave === 'Approved',
-                        'fas fa-hourglass-half text-yellow-500 text-lg':
+                        'text-yellow-500':
                           log.last_short_leave === 'Pending',
-                        'fas fa-times-circle text-red-500 text-lg':
+                        'text-red-500':
                           log.last_short_leave === 'Rejected',
                       }"
-                      :title="log.last_short_leave"
-                    ></i>
+                    >
+                    ({{log.last_short_leave}})
                   </span>
                   <router-link
                     v-if="log.early_leave_duration && !log.last_short_leave"
@@ -202,10 +221,11 @@ const goBack = () => router.go(-1)
                 </div>
               </td>
               <td
-                class="border px-1 py-0.5"
+                class="border px-1 py-0.5 font-semibold"
                 :class="{
                   'text-red-600': log.status === 'Absent',
                   'text-green-600': log.status === 'Present',
+                  'text-yellow-600': log.is_overtime_applicable,
                 }"
               >
                 {{ log.status }}

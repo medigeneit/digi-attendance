@@ -87,6 +87,7 @@ const goBack = () => router.go(-1)
               <th class="border p-1">Entry Time</th>
               <th class="border p-1">Exit Time</th>
               <th class="border p-1">Working Hours</th>
+              <th class="border p-1">OT Hours</th>
               <th class="border p-1">Late Entry</th>
               <th class="border p-1">Early Leave</th>
               <th class="border p-1">Status</th>
@@ -121,13 +122,43 @@ const goBack = () => router.go(-1)
                 {{ log.exit_time }}
               </td>
               <td class="border px-1 py-0.5">{{ log.working_hours }}</td>
-              <td class="border px-1 py-0.5">{{ log.late_duration }}</td>
-              <td class="border px-1 py-0.5">{{ log.early_leave_duration }}</td>
+              <td class="border px-1 py-0.5">{{ log.overtime_hours }}</td>
+              <td class="border px-1 py-0.5">
+                <div v-if="log.late_duration">
+                  {{ log.late_duration }}
+                  <span v-if="log.first_short_leave"
+                      :class="{
+                        'text-green-500': log.first_short_leave === 'Approved',
+                        'text-yellow-500':
+                          log.first_short_leave === 'Pending',
+                        'text-red-500': log.first_short_leave === 'Rejected',
+                      }">
+                    ({{log.first_short_leave}})
+                  </span>
+                </div>
+              </td>
+              <td class="border px-1 py-0.5">
+                <div v-if="log.early_leave_duration">
+                  {{ log.early_leave_duration }}
+                  <span v-if="log.last_short_leave" class="px-1":class="{
+                        'text-green-500':
+                          log.last_short_leave === 'Approved',
+                        'text-yellow-500':
+                          log.last_short_leave === 'Pending',
+                        'text-red-500':
+                          log.last_short_leave === 'Rejected',
+                      }"
+                    >
+                    ({{log.last_short_leave}})
+                  </span>
+                </div>
+              </td>
               <td
-                class="border px-1 py-0.5"
+                class="border px-1 py-0.5 font-semibold"
                 :class="{
                   'text-red-600': log.status === 'Absent',
                   'text-green-600': log.status === 'Present',
+                  'text-yellow-600': log.is_overtime_applicable,
                 }"
               >
                 {{ log.status }}
