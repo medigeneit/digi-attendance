@@ -64,6 +64,7 @@ const emits = defineEmits(['close'])
           {{ grouped_counts.shortLeave }}
         </span>
       </RouterLink>
+
       <RouterLink
         v-if="grouped_counts.exchange"
         :to="{ name: 'NotificationList', query: { type: 'exchange' } }"
@@ -75,6 +76,19 @@ const emits = defineEmits(['close'])
           {{ grouped_counts.exchange }}
         </span>
       </RouterLink>
+
+      <RouterLink
+        v-if="grouped_counts.shift"
+        :to="{ name: 'NotificationList', query: { type: 'shift' } }"
+        @click="emits('close')"
+        class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
+      >
+        <span class="text-sm text-gray-700">🔄 Shift Exchange Request</span>
+        <span class="text-xs bg-purple-500 text-white rounded-full px-2 py-0.5 font-semibold">
+          {{ grouped_counts.shift }}
+        </span>
+      </RouterLink>
+
       <RouterLink
         v-if="grouped_counts.offday"
         :to="{ name: 'NotificationList', query: { type: 'offday' } }"
@@ -84,6 +98,19 @@ const emits = defineEmits(['close'])
         <span class="text-sm text-gray-700">🔄 Offday Exchange Request</span>
         <span class="text-xs bg-purple-500 text-white rounded-full px-2 py-0.5 font-semibold">
           {{ grouped_counts.offday }}
+        </span>
+      </RouterLink>
+      <RouterLink
+        v-if="grouped_counts.manualAttendance"
+        :to="{ name: 'NotificationList', query: { type: 'manualAttendance' } }"
+        @click="emits('close')"
+        class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
+      >
+        <span class="text-sm text-gray-700"
+          ><i class="fal fa-clipboard-user text-lg"></i> Manual Attendance Request</span
+        >
+        <span class="text-xs bg-sky-500 text-white rounded-full px-2 py-0.5 font-semibold">
+          {{ grouped_counts.manualAttendance }}
         </span>
       </RouterLink>
       <div

@@ -10,7 +10,12 @@ const exchangeStore = useExchangeStore()
 const authStore = useAuthStore()
 const type = 'shift'
 onMounted(() => {
-  exchangeStore.fetchExchanges(type)
+  exchangeStore.fetchExchanges({
+    payload: {
+      type,
+      date: exchangeStore.selectedMonth,
+    },
+  })
 })
 
 function deleteApplication(id) {
@@ -35,7 +40,9 @@ const goBack = () => {
 
       <h1 class="title-md md:title-lg flex-wrap text-center">My Shift Exchanges</h1>
       <div>
-        <RouterLink :to="{ name: 'ShiftExchangeAdd' }" class="btn-2">Request Exchange</RouterLink>
+        <RouterLink :to="{ name: 'ShiftExchangeAdd' }" class="btn-2"
+          >Request Shift Exchange</RouterLink
+        >
       </div>
     </div>
 

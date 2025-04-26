@@ -1,10 +1,10 @@
 <script setup>
-import { onMounted, ref, computed } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { useManualAttendanceStore } from '@/stores/manual-attendance'
-import { useAuthStore } from '@/stores/auth'
 import LoaderView from '@/components/common/LoaderView.vue'
 import ShareComponent from '@/components/common/ShareComponent.vue'
+import { useAuthStore } from '@/stores/auth'
+import { useManualAttendanceStore } from '@/stores/manual-attendance'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
 const route = useRoute()
@@ -159,6 +159,13 @@ function print() {
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="pt-10">
+          <p v-if="manualAttendance?.in_charge_user">
+            {{ manualAttendance?.in_charge_user?.name || '' }}
+          </p>
+          <p v-else>
+            {{ manualAttendance?.user?.other_approval?.in_charge_user?.name || 'N/A' }}
+          </p>
+
           <div
             v-if="
               manualAttendance?.status !== 'Rejected' &&
@@ -168,9 +175,6 @@ function print() {
             "
             class="print:hidden"
           >
-            <p class="">
-              {{ manualAttendance?.user?.other_approval?.in_charge_user?.name || 'N/A' }}
-            </p>
             <p class="text-xs text-blue-600">
               {{ manualAttendance?.user?.name }} has submitted an "attendance request". <br />
               Will you forward it?
@@ -185,15 +189,26 @@ function print() {
               <button class="" @click="openRejectionModal">❌</button>
             </div>
           </div>
-          <p>{{ manualAttendance?.in_charge_user?.name || '' }}</p>
+
           <hr class="w-44 border-black" />
           <p class="font-bold">
             In-Charge
             <span v-if="manualAttendance?.in_charge_user_id" class="text-green-600">(✔)</span>
+            <span
+              v-if="manualAttendance?.user?.other_approval?.in_charge_user"
+              class="pl-2 text-yellow-700"
+              ><i class="fad fa-spinner"></i
+            ></span>
           </p>
         </div>
 
         <div class="pt-10">
+          <p v-if="manualAttendance?.recommend_by_user">
+            {{ manualAttendance?.recommend_by_user?.name || '' }}
+          </p>
+          <p v-else>
+            {{ manualAttendance?.user?.other_approval?.recommend_by_user?.name || 'N/A' }}
+          </p>
           <div
             v-if="
               manualAttendance?.status !== 'Rejected' &&
@@ -203,9 +218,6 @@ function print() {
             "
             class="print:hidden"
           >
-            <p class="">
-              {{ manualAttendance?.user?.other_approval?.recommend_by_user?.name || 'N/A' }}
-            </p>
             <p class="text-xs text-blue-600">
               {{ manualAttendance?.user?.name }} has submitted an "attendance request".<br />
               Will you recommend it?
@@ -220,16 +232,27 @@ function print() {
               <button class="" @click="openRejectionModal">❌</button>
             </div>
           </div>
-          <p>{{ manualAttendance?.recommend_by_user?.name || '' }}</p>
           <hr class="w-44 border-black" />
           <p class="font-bold">
             Recommend By
             <span v-if="manualAttendance?.recommend_by_user_id" class="text-green-600">(✔)</span>
+            <span
+              v-if="manualAttendance?.user?.other_approval?.recommend_by_user"
+              class="pl-2 text-yellow-700"
+              ><i class="fad fa-spinner"></i
+            ></span>
           </p>
         </div>
       </div>
 
       <div class="flex flex-col pt-10">
+        <p v-if="manualAttendance?.approved_by_user">
+          {{ manualAttendance?.approved_by_user?.name || '' }}
+        </p>
+        <p v-else>
+          {{ manualAttendance?.user?.other_approval?.approved_by_user?.name || 'N/A' }}
+        </p>
+
         <div
           v-if="
             manualAttendance?.status !== 'Rejected' &&
@@ -239,9 +262,6 @@ function print() {
           "
           class="print:hidden"
         >
-          <p class="">
-            {{ manualAttendance?.user?.other_approval?.approved_by_user?.name || 'N/A' }}
-          </p>
           <p class="text-xs text-blue-600">
             {{ manualAttendance?.user?.name }} has submitted an "attendance request".<br />
             Will you accept it?
@@ -256,11 +276,16 @@ function print() {
             <button class="" @click="openRejectionModal">❌</button>
           </div>
         </div>
-        <p>{{ manualAttendance?.approved_by_user?.name || '' }}</p>
+
         <hr class="w-44 border-black" />
         <p class="font-bold">
           Approved By
           <span v-if="manualAttendance?.approved_by_user_id" class="text-green-600">(✔)</span>
+          <span
+            v-if="manualAttendance?.user?.other_approval?.approved_by_user"
+            class="pl-2 text-yellow-700"
+            ><i class="fad fa-spinner"></i
+          ></span>
         </p>
       </div>
     </div>

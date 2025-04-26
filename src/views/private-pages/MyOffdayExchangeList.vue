@@ -8,10 +8,26 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const exchangeStore = useExchangeStore()
 const authStore = useAuthStore()
+
 const type = 'offday'
+
 onMounted(() => {
-  exchangeStore.fetchExchanges(type)
+  exchangeStore.fetchExchanges({
+    payload: {
+      type,
+      date: exchangeStore.selectedMonth,
+    },
+  })
 })
+
+const fetchOffdayExchange = async () => {
+  exchangeStore.fetchExchanges({
+    payload: {
+      type,
+      date: exchangeStore.selectedMonth,
+    },
+  })
+}
 
 const goBack = () => {
   router.go(-1)
@@ -35,8 +51,20 @@ function deleteApplication(id) {
 
       <h1 class="title-md md:title-lg flex-wrap text-center">My Offday Exchanges</h1>
       <div>
-        <RouterLink :to="{ name: 'OffdayExchangeAdd' }" class="btn-2">Request Exchange</RouterLink>
+        <RouterLink :to="{ name: 'OffdayExchangeAdd' }" class="btn-2"
+          >Request Offday Exchange</RouterLink
+        >
       </div>
+    </div>
+
+    <div class="grid grid-cols-3 gap-2">
+      <input
+        id="monthSelect"
+        type="month"
+        v-model="exchangeStore.selectedMonth"
+        @change="fetchOffdayExchange"
+        class="input-1"
+      />
     </div>
 
     <div v-if="exchangeStore?.loading" class="text-center py-4">

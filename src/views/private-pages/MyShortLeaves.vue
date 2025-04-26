@@ -19,6 +19,10 @@ const myShortLeaves = computed(() => {
   return shortLeaveStore.shortLeaves
 })
 
+const fetchShortLeaves = async () => {
+  shortLeaveStore.fetchMyShortLeaves({ date: shortLeaveStore.selectedMonth })
+}
+
 function deleteApplication(applicationId) {
   const confirmed = confirm('Are you sure you want to delete this application?')
   if (confirmed) {
@@ -52,6 +56,16 @@ const formatTime = (timeString) => {
       <div>
         <RouterLink :to="{ name: 'ShortLeaveAdd' }" class="btn-2">New Short Leave</RouterLink>
       </div>
+    </div>
+
+    <div class="grid grid-cols-3 gap-2">
+      <input
+        id="monthSelect"
+        type="month"
+        v-model="shortLeaveStore.selectedMonth"
+        @change="fetchShortLeaves"
+        class="input-1"
+      />
     </div>
 
     <div v-if="shortLeaveStore?.loading" class="text-center py-4">
