@@ -59,10 +59,8 @@ const getEventTitle = (eventModel, eventType) => {
         eventModel.end_time ? formatTime(eventModel.end_time) : 'N/A'
       }`
 
-    case 'exchange':
-      if (eventModel.exchange_type === 'offday') {
-        return `Exchange (Offday): ${eventModel.exchange_date} → ${eventModel.current_date}`
-      } else if (eventModel.exchange_type === 'shift') {
+    case 'shift':
+      if (eventModel.exchange_type === 'shift') {
         return `Exchange (${eventModel.exchange_type}) on ${eventModel.current_date} (${eventModel?.shift_name ?? 'No Shift'})`
       }
       return `Exchange (${eventModel.exchange_type})`
@@ -72,6 +70,11 @@ const getEventTitle = (eventModel, eventType) => {
         return `Exchange (Offday): ${eventModel.exchange_date} → ${eventModel.current_date}`
       }
       return `Exchange (${eventModel.exchange_type})`
+
+    case 'manualAttendance':
+      const formattedCheckIn = eventModel.check_in ? formatDateTime(eventModel.check_in) : 'N/A'
+      const formattedCheckOut = eventModel.check_out ? formatDateTime(eventModel.check_out) : 'N/A'
+      return `Checked in (${formattedCheckIn}) → Checked out (${formattedCheckOut})`
 
     default:
       return 'Unknown Event'
@@ -83,6 +86,8 @@ const getEventIcon = (eventType) => {
     case 'leaveApplication':
       return 'fas fa-calendar-alt'
     case 'shortLeave':
+      return 'fas fa-clock'
+    case 'manualAttendance':
       return 'fas fa-clock'
     case 'exchange':
       return 'fas fa-random'
@@ -101,6 +106,18 @@ const formatDate = (date) => {
     hour: '2-digit',
     minute: '2-digit',
   })
+}
+
+function formatDateTime(datetime) {
+  const options = {
+    year: 'numeric',
+    month: 'short', // Mar
+    day: '2-digit',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }
+  return new Date(datetime).toLocaleString('en-US', options)
 }
 
 const formatTime = (timeString) => {
@@ -152,7 +169,9 @@ const handleNotificationClick = (notification) => {
           </div>
           <div class="flex-1">
             <p class="text-gray-800 font-medium">{{ item.event_model?.user_name }}</p>
-            <p class="text-gray-800 font-medium">Reason: {{ item.event_model?.reason }}</p>
+            <p class="text-gray-800 font-medium" v-if="item.event_model?.reason">
+              Reason: {{ item.event_model?.reason }}
+            </p>
             <p class="text-red-600 text-sm font-semibold">
               {{ getEventTitle(item.event_model, item.event_type) }}
             </p>
@@ -220,6 +239,28 @@ const handleNotificationClick = (notification) => {
               >
                 <i class="far fa-eye"></i>
               </RouterLink>
+              <RouterLink
+                v-if="route.query.type === 'shift'"
+                :to="{
+                  name: 'ExchangeShiftShow',
+                  params: { id: item?.event_model?.id },
+                  query: { notifyId: item?.id },
+                }"
+                class="btn-4"
+              >
+                <i class="far fa-eye"></i>
+              </RouterLink>
+              <RouterLink
+                v-if="route.query.type === 'manualAttendance'"
+                :to="{
+                  name: 'ExchangeShiftShow',
+                  params: { id: item?.event_model?.id },
+                  query: { notifyId: item?.id },
+                }"
+                class="btn-4"
+              >
+                <i class="far fa-eye"></i>
+              </RouterLink>
             </div>
             <div class="grow-0 w-full">
               <p class="text-xs font-semibold" v-if="item?.event_model?.type">
@@ -237,13 +278,19 @@ const handleNotificationClick = (notification) => {
           :notification-id="item.id"
         />
 
+        <LeaveApplicationApprovalSection
+          v-if="item?.event_model && item.event_type === 'manualAttendance'"
+          :application="item.event_model"
+          :notification-id="item.id"
+        />
+
         <ShortLeaveApplicationApprovalSection
           v-if="item?.event_model && item.event_type === 'shortLeave'"
           :application="item.event_model"
           :notification-id="item.id"
         />
         <ExchangeApplicationApprovalSection
-          v-if="item?.event_model && (item.event_type === 'offday' || item.event_type === 'offday')"
+          v-if="item?.event_model && (item.event_type === 'offday' || item.event_type === 'shift')"
           :application="item.event_model"
           :notificationId="item.id"
         />

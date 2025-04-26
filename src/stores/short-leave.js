@@ -28,6 +28,8 @@ export const useShortLeaveStore = defineStore('shortLeave', () => {
     loading.value = true;
     error.value = null;
     try {
+      console.log({filters});
+      
       const response = await apiClient.get('/my-short-leaves', { params: filters });
       shortLeaves.value = response.data.data;
     } catch (err) {

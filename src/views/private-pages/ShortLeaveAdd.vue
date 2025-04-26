@@ -13,7 +13,7 @@ const shortLeaveStore = useShortLeaveStore()
 const userStore = useUserStore()
 const authStore = useAuthStore()
 const selectUser = ref(null)
-
+const today = new Date().toISOString().split('T')[0]
 const { type, start_time, end_time } = route.query
 
 const todayDate = new Date().toISOString().split('T')[0]
@@ -123,7 +123,14 @@ const goBack = () => {
     <form v-else @submit.prevent="submitShortLeave" class="space-y-4 card-bg md:p-8 p-4">
       <div>
         <label for="date" class="block text-sm font-medium">Date</label>
-        <input type="date" id="date" v-model="form.date" class="input-1 w-full" required />
+        <input
+          type="date"
+          id="date"
+          v-model="form.date"
+          :max="today"
+          class="input-1 w-full"
+          required
+        />
       </div>
 
       <!-- Type Field -->
@@ -158,10 +165,16 @@ const goBack = () => {
             required
           />
         </div>
-  
+
         <div>
           <label for="end-time" class="block text-sm font-medium">To</label>
-          <input type="time" id="end-time" v-model="form.end_time" class="input-1 w-full" required />
+          <input
+            type="time"
+            id="end-time"
+            v-model="form.end_time"
+            class="input-1 w-full"
+            required
+          />
         </div>
       </div>
 
@@ -193,7 +206,7 @@ const goBack = () => {
           :options="userStore.handoverUsers"
           :multiple="false"
           :required="false"
-          label="Select User"
+          label="name"
           labelFor="user"
         />
       </div>

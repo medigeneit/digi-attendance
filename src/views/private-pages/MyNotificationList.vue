@@ -86,23 +86,20 @@ const getTargetUrl = (eventType) => {
           </span>
         </div>
       </RouterLink>
-      <RouterLink
-        :to="{ name: 'NotificationList', query: { type: 'exchange' } }"
-        class="main-button"
-      >
+      <RouterLink :to="{ name: 'NotificationList', query: { type: 'shift' } }" class="main-button">
         <div class="flex justify-between items-center gap-2">
-          <span>🔄 Exchange Request</span>
+          <span>🔄Shift Exchange Request</span>
           <span
-            v-if="grouped_counts.exchange"
+            v-if="grouped_counts.shift"
             class="text-xs bg-purple-500 text-white rounded-full px-2 py-0.5 font-semibold"
           >
-            {{ grouped_counts.exchange }}
+            {{ grouped_counts.shift }}
           </span>
         </div>
       </RouterLink>
       <RouterLink :to="{ name: 'NotificationList', query: { type: 'offday' } }" class="main-button">
         <div class="flex justify-between items-center gap-2">
-          <span>🔄 Offday Request</span>
+          <span>🔄 Offday Exchange Request</span>
           <span
             v-if="grouped_counts?.offday"
             class="text-xs bg-purple-700 text-white rounded-full px-2 py-0.5 font-semibold"
@@ -111,8 +108,17 @@ const getTargetUrl = (eventType) => {
           </span>
         </div>
       </RouterLink>
-      <RouterLink :to="{ name: 'MyNoticeList' }" class="main-button">
-        Manual Attendance Applications
+      <RouterLink
+        :to="{ name: 'NotificationList', query: { type: 'manualAttendance' } }"
+        class="main-button"
+      >
+        <span><i class="fal fa-clipboard-user text-lg"></i> Manual Attendance Applications</span>
+        <span
+          v-if="grouped_counts?.manualAttendance"
+          class="text-xs bg-purple-700 text-white rounded-full px-2 py-0.5 font-semibold"
+        >
+          {{ grouped_counts?.manualAttendance }}
+        </span>
       </RouterLink>
     </div>
   </div>
