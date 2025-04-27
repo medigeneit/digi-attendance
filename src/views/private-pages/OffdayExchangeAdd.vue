@@ -4,6 +4,7 @@ import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useExchangeStore } from '@/stores/exchange'
 import { useUserStore } from '@/stores/user'
+import { storeToRefs } from 'pinia'
 import { onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -13,6 +14,7 @@ const userStore = useUserStore()
 const authStore = useAuthStore()
 const selectUser = ref(null)
 const checkUserRequired = ref(false)
+const { error } = storeToRefs(exchangeStore)
 
 const form = ref({
   exchange_type: 'offday', // Fixed to "offday"
@@ -31,7 +33,6 @@ watch(
 )
 
 const loading = ref(false)
-const error = ref(null)
 
 const submitOffdayExchange = async () => {
   loading.value = true
@@ -48,9 +49,10 @@ const submitOffdayExchange = async () => {
     }
 
     const newExchange = await exchangeStore.createExchange(payload)
+
     router.push({ name: 'ExchangeOffdayShow', params: { id: newExchange?.id } })
   } catch (err) {
-    error.value = err.message || 'Failed to submit offday exchange request'
+    // error.value = err.message || 'Failed to submit offday exchange request'
   } finally {
     loading.value = false
   }

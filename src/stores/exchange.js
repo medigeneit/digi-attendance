@@ -59,7 +59,9 @@ export const useExchangeStore = defineStore('exchange', () => {
     error.value = null;
     try {
       const response = await apiClient.post('/exchanges', payload);
-      return response.data;
+      exchanges.value.push(response?.data?.data);
+      return response?.data?.data;
+
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to create exchange';
     } finally {

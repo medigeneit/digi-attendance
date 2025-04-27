@@ -45,8 +45,8 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
     error.value = null;
     try {
       const response = await apiClient.post('/leave-applications/store', payload);
-      // leaveApplications.value.push(response.data);
-      return response.data;
+      leaveApplications.value.push(response?.data?.data);
+      return response?.data?.data;
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to store leave application';
       throw new Error(error.value);
