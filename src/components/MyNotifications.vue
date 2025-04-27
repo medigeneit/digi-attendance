@@ -76,7 +76,6 @@ const emits = defineEmits(['close'])
           {{ grouped_counts.exchange }}
         </span>
       </RouterLink>
-
       <RouterLink
         v-if="grouped_counts.shift"
         :to="{ name: 'NotificationList', query: { type: 'shift' } }"
@@ -85,7 +84,7 @@ const emits = defineEmits(['close'])
       >
         <span class="text-sm text-gray-700">🔄 Shift Exchange Request</span>
         <span class="text-xs bg-purple-500 text-white rounded-full px-2 py-0.5 font-semibold">
-          {{ grouped_counts.shift }}
+          {{ grouped_counts?.shift }}
         </span>
       </RouterLink>
 

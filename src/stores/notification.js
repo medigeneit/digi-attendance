@@ -7,7 +7,7 @@ export const useNotificationStore = defineStore('notification', () => {
   const loading = ref(false);
   const error = ref(null);
   const totalUnreadNotifications = ref(0);
-  const grouped_counts = ref({});
+  const grouped_counts = ref(null);
 
   async function fetchNotifications() {
     loading.value = true;

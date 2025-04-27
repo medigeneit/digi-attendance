@@ -110,11 +110,13 @@ function modalClose() {
         <i class="far fa-plus"></i>
       </RouterLink>
     </div>
-    <div class="flex items-center justify-start gap-2">
-      <select v-model="selectedCompany" class="input-1">
-        <option value="all" selected>All Company</option>
-        <option v-for="(item, index) in companyNames" :key="index">{{ item }}</option>
-      </select>
+    <div class="flex flex-wrap items-center justify-start gap-2">
+      <div>
+        <select v-model="selectedCompany" class="input-1">
+          <option value="all" selected>All Company</option>
+          <option v-for="(item, index) in companyNames" :key="index">{{ item }}</option>
+        </select>
+      </div>
       <MultiselectDropdown
         v-model="selectedUser"
         :options="userStore.users"

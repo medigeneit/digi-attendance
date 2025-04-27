@@ -1,6 +1,6 @@
 <script setup></script>
 <template>
-  <div class="grid gap-4 md:grid-cols-4 px-4">
+  <div class="grid gap-4 md:grid-cols-3 lg:grid-cols-4 px-4">
     <RouterLink :to="{ name: 'TodayAttendanceReport' }" class="main-button">
       <i class="fas fa-calendar-alt text-3xl"></i>
       Daily Attendance Report

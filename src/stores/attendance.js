@@ -136,10 +136,6 @@ export const useAttendanceStore = defineStore('attendance', () => {
   };
 
   const attendanceDownloadPdf = async (companyId, employee_id , category, month, status) => {
-    // if (!company_id || !month) {
-    //   error.value = 'Invalid user ID or month';
-    //   return;
-    // }
     isLoading.value = true;
     try {
       const params = { companyId, employee_id , category, month, status}
@@ -222,6 +218,39 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
 };
 
+const lateReportDownloadExcel = async (company_id, employee_id, month) => {
+  
+  if (!company_id || !month) {
+    error.value = 'Invalid company ID or month';
+    return;
+  }
+  isLoading.value = true;
+  
+  try {
+    
+    const params = { company_id, employee_id, month };
+
+      const response = await apiClient.get(`/monthly/attendance/late-reports?flag=excel`, {
+          params,
+          responseType: 'blob', // Important for file downloads
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${month} attendance_summary.xlsx`); // File name
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+  } catch (err) {
+      error.value = err.response?.data?.message || 'Something went wrong';
+      console.error(error.value);
+  } finally {
+      isLoading.value = false;
+  }
+};
+
   return {
     monthlyLogs,
     dailyLateLogs,
@@ -239,7 +268,8 @@ export const useAttendanceStore = defineStore('attendance', () => {
     downloadExcel,
     downloadPDF,
     attendanceDownloadExcel,
-    attendanceDownloadPdf
+    attendanceDownloadPdf,
+    lateReportDownloadExcel
   };
 });
 

@@ -4,6 +4,7 @@ import Multiselect from '@/components/MultiselectDropdown.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useCompanyStore } from '@/stores/company'
 import { storeToRefs } from 'pinia'
+import Swal from 'sweetalert2'
 import { onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -43,6 +44,23 @@ const goBack = () => {
   router.go(-1)
 }
 
+const getExportExcel = async () => {
+  if (selectedCompanyId.value && selectedEmployeeId?.value.id) {
+    await lateAttendanceStore.lateReportDownloadExcel(
+      selectedCompanyId.value,
+      selectedEmployeeId?.value.id,
+      month.value,
+    )
+  } else {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Missing Selection!',
+      text: 'Please select Company and Employee first!',
+      confirmButtonText: 'OK',
+    })
+  }
+}
+
 const fetchApplicationsByUser = async () => {
   if (selectedCompanyId.value && selectedEmployeeId?.value.id) {
     await lateAttendanceStore.getAttendanceLateReport(
@@ -68,7 +86,11 @@ const statusClass = (status) => {
       </button>
 
       <h1 class="title-md md:title-lg flex-wrap text-center">Late Reports</h1>
-      <div></div>
+      <div class="flex gap-4">
+        <button type="button" @click="getExportExcel" class="btn-3">
+          <i class="far fa-file-excel text-2xl text-green-500"></i>
+        </button>
+      </div>
     </div>
 
     <div class="flex flex-wrap items-center gap-2">

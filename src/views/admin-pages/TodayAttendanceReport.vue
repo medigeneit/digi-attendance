@@ -109,10 +109,10 @@ watch(status, (newStatus) => {
         Daily {{ route?.query?.search === 'all' ? 'Attendance' : route?.query?.search }} Report
       </h1>
       <div class="flex gap-4">
-        <button type="button" @click="getExportExcel">
+        <button type="button" @click="getExportExcel" class="btn-1">
           <i class="far fa-file-excel text-2xl text-green-500"></i>
         </button>
-        <button type="button" @click="getDownloadPDF">
+        <button type="button" @click="getDownloadPDF" class="btn-1">
           <i class="fal fa-file-pdf text-2xl text-red-500"></i>
         </button>
       </div>
