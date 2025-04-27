@@ -7,6 +7,7 @@ import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ExchangeApplicationApprovalSection from './ExchangeApplicationApprovalSection.vue'
 import LeaveApplicationApprovalSection from './LeaveApplicationApprovalSection.vue'
+import ManualAttendanceApprovalSection from './ManualAttendanceApprovalSection.vue'
 import ShortLeaveApplicationApprovalSection from './ShortLeaveApplicationApprovalSection.vue'
 
 const router = useRouter()
@@ -286,7 +287,7 @@ const handleNotificationClick = (notification) => {
           :notification-id="item.id"
         />
 
-        <LeaveApplicationApprovalSection
+        <ManualAttendanceApprovalSection
           v-if="item?.event_model && item.event_type === 'manualAttendance'"
           :application="item.event_model"
           :notification-id="item.id"
