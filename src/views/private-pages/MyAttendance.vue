@@ -39,6 +39,14 @@ watch(selectedMonth, async (newMonth) => {
 })
 
 const goBack = () => router.go(-1)
+
+const getInitials = (name) => {
+  return name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+}
 </script>
 
 <template>
@@ -133,14 +141,18 @@ const goBack = () => router.go(-1)
                 {{ log.shift_name }}
               </td>
               <td class="border px-1 py-0.5" :title="`Device: ${log.entry_device}`">
-                {{ log.entry_time }}
+                <span :class="{ 'text-yellow-600': log.is_overtime_applicable }">
+                  {{ log.is_overtime_applicable && log.entry_time ? getInitials(log.status) : '' }}
+                  {{ log.entry_time }}
+                </span>
               </td>
-              <td 
-                class="border px-1 py-0.5" 
-                :title="`Device: ${log.exit_device}`"
-              >
+              <td class="border px-1 py-0.5" :title="`Device: ${log.exit_device}`">
                 {{ log.exit_time }}
-                <div v-if="!log.exit_time &&  new Date(log.date) < new Date() && log.status === 'Present'">
+                <div
+                  v-if="
+                    !log.exit_time && new Date(log.date) < new Date() && log.status === 'Present'
+                  "
+                >
                   <router-link
                     :to="{
                       name: 'ManualAttendanceAdd',
@@ -166,14 +178,15 @@ const goBack = () => router.go(-1)
               <td class="border px-1 py-0.5">
                 <div v-if="log.late_duration">
                   {{ log.late_duration }}
-                  <span v-if="log.first_short_leave"
-                      :class="{
-                        'text-green-500': log.first_short_leave === 'Approved',
-                        'text-yellow-500':
-                          log.first_short_leave === 'Pending',
-                        'text-red-500': log.first_short_leave === 'Rejected',
-                      }">
-                    ({{log.first_short_leave}})
+                  <span
+                    v-if="log.first_short_leave"
+                    :class="{
+                      'text-green-500': log.first_short_leave === 'Approved',
+                      'text-yellow-500': log.first_short_leave === 'Pending',
+                      'text-red-500': log.first_short_leave === 'Rejected',
+                    }"
+                  >
+                    ({{ log.first_short_leave }})
                   </span>
                   <router-link
                     v-if="log.late_duration && !log.first_short_leave"
@@ -194,16 +207,16 @@ const goBack = () => router.go(-1)
               <td class="border px-1 py-0.5">
                 <div v-if="log.early_leave_duration">
                   {{ log.early_leave_duration }}
-                  <span v-if="log.last_short_leave" class="px-1":class="{
-                        'text-green-500':
-                          log.last_short_leave === 'Approved',
-                        'text-yellow-500':
-                          log.last_short_leave === 'Pending',
-                        'text-red-500':
-                          log.last_short_leave === 'Rejected',
-                      }"
-                    >
-                    ({{log.last_short_leave}})
+                  <span
+                    v-if="log.last_short_leave"
+                    class="px-1"
+                    :class="{
+                      'text-green-500': log.last_short_leave === 'Approved',
+                      'text-yellow-500': log.last_short_leave === 'Pending',
+                      'text-red-500': log.last_short_leave === 'Rejected',
+                    }"
+                  >
+                    ({{ log.last_short_leave }})
                   </span>
                   <router-link
                     v-if="log.early_leave_duration && !log.last_short_leave"
