@@ -84,7 +84,7 @@ const goBack = () => router.go(-1)
       </div>
     </div>
 
-    <div class="flex gap-4">
+    <div class="flex flex-wrap gap-4">
       <div>
         <select
           id="userSelect"
@@ -112,6 +112,7 @@ const goBack = () => router.go(-1)
           v-model="selectedEmployeeId"
           :options="employees"
           :multiple="false"
+          label="name"
           placeholder="Select employee"
         />
       </div>
@@ -136,21 +137,16 @@ const goBack = () => router.go(-1)
               <th rowspan="2" class="border px-1 py-0.5">Employee Name</th>
               <th rowspan="2" class="border px-1 py-0.5">Designation</th>
               <th colspan="5" class="border px-1 py-0.5">Attendance Summary</th>
-              <!-- <th rowspan="2" class="border px-1 py-0.5">Total Present</th>
-              <th rowspan="2" class="border px-1 py-0.5">Total Absent</th>
-              <th rowspan="2" class="border px-1 py-0.5">Remain Absent</th>
-              <th rowspan="2" class="border px-1 py-0.5">Total Weekend</th> -->
               <th colspan="2" class="border px-1 py-0.5">Actual Late</th>
               <th colspan="2" class="border px-1 py-0.5">Remaining Late</th>
               <th colspan="2" class="border px-1 py-0.5">Actual Early</th>
               <th colspan="2" class="border px-1 py-0.5">Remaining Early</th>
-              <!-- <th rowspan="2" class="border px-1 py-0.5">Shift Hour</th> -->
               <th rowspan="2" class="border px-1 py-0.5">Working Hour</th>
               <th rowspan="2" class="border px-1 py-0.5">OT Hour</th>
               <th colspan="4" class="border px-1 py-0.5">Leave Day</th>
               <th colspan="2" class="border px-1 py-0.5">Short Leave</th>
               <th rowspan="2" class="border px-1 py-0.5">Weekend Duty</th>
-              <th rowspan="2" class="border px-2 py-0.5">Comment</th>
+              <!-- <th rowspan="2" class="border px-2 py-0.5">Comment</th> -->
             </tr>
             <tr class="bg-gray-100 text-xs">
               <th class="border px-2 py-0.5">TD</th>
@@ -170,8 +166,8 @@ const goBack = () => router.go(-1)
               <th class="border px-2 py-0.5">ML</th>
               <th class="border px-2 py-0.5">SL</th>
               <th class="border px-2 py-0.5">WPL</th>
-              <th class="border px-2 py-0.5">Entry</th>
-              <th class="border px-2 py-0.5">Exist</th>
+              <th class="border px-2 py-0.5">Delay</th>
+              <th class="border px-2 py-0.5">Early</th>
             </tr>
           </thead>
           <tbody class="text-center text-sm">
@@ -188,7 +184,6 @@ const goBack = () => router.go(-1)
               <td class="border px-2 py-0.5">{{ log?.total_weekend }}</td>
               <td class="border px-2 py-0.5">{{ log?.total_leave }}</td>
               <td class="border px-2 py-0.5">{{ log?.total_absent }}</td>
-              <!-- <td class="border px-2 py-0.5">{{ log?.remain_total_absent }}</td> -->
               <td class="border px-2 py-0.5">{{ log?.actual_late_day }}</td>
               <td class="border px-2 py-0.5">{{ log?.actual_late_hour }}</td>
               <td class="border px-2 py-0.5">{{ log?.total_remain_late_day }}</td>
@@ -201,7 +196,7 @@ const goBack = () => router.go(-1)
                 <div class="border-b border-black font-semibold text-green-600">
                   {{ log?.total_working_hours || 0 }}
                 </div>
-                <div class="text-gray-600">🕒{{ log?.total_shift_hour || 0 }}</div>
+                <div class="text-gray-600">{{ log?.total_shift_hour || 0 }}</div>
               </td>
               <td class="border px-2 py-0.5">{{ log?.total_overtime_hours }}</td>
               <td class="border px-2 py-0.5">{{ log?.total_cl_leave }}</td>
@@ -211,7 +206,7 @@ const goBack = () => router.go(-1)
               <td class="border px-2 py-0.5">{{ log?.total_first_short_leave }}</td>
               <td class="border px-2 py-0.5">{{ log?.total_last_short_leave }}</td>
               <td class="border px-2 py-0.5">{{ log.total_present_in_weekend }}</td>
-              <td class="border px-2 py-0.5"></td>
+              <!-- <td class="border px-2 py-0.5"></td> -->
             </tr>
           </tbody>
         </table>

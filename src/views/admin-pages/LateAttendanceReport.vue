@@ -71,7 +71,7 @@ const statusClass = (status) => {
       <div></div>
     </div>
 
-    <div class="flex items-center gap-2">
+    <div class="flex flex-wrap items-center gap-2">
       <div>
         <select id="user-filter" v-model="selectedCompanyId" class="input-1">
           <option value="">Select Company</option>
@@ -85,6 +85,7 @@ const statusClass = (status) => {
           v-model="selectedEmployeeId"
           :options="employees"
           :multiple="false"
+          label="name"
           placeholder="Please select employee..."
         />
       </div>

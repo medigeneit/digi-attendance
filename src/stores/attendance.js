@@ -105,14 +105,17 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   };
 
-  const downloadPDF = async (company_id, month, flag = 0) => {
+  const downloadPDF = async (company_id, category, month, flag = 0) => {
+    
     if (!company_id || !month) {
       error.value = 'Invalid user ID or month';
       return;
     }
+
     isLoading.value = true;
+
     try {
-      const params = { company_id, month}
+      const params = { company_id, category, month}
       const response = await apiClient.get(`/attendance/monthly-summary-reports?flag=pdf`, {
           params,
           responseType: 'blob', // Important for file downloads
@@ -159,15 +162,20 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   };
 
-  const downloadExcel = async (company_id, month) => {
+  const downloadExcel = async (company_id, category, month) => {
+    
     if (!company_id || !month) {
-        error.value = 'Invalid company ID or month';
-        return;
+      error.value = 'Invalid company ID or month';
+      return;
     }
     isLoading.value = true;
-
+    
     try {
-        const params = { company_id, month };
+      
+      const params = { company_id, category, month };
+
+      console.log({params});
+
         const response = await apiClient.get(`/attendance/monthly-summary-reports?flag=excel`, {
             params,
             responseType: 'blob', // Important for file downloads
