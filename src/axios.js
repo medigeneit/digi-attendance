@@ -61,6 +61,16 @@ apiClient.interceptors.response.use((response) => {
     window.location = '/dashboard'; 
     return; 
   }
+
+  if (error.response && error.response.status === 401) {
+    console.log('401 Unauthorized response received, redirecting to login...');
+    
+    const authStore = useAuthStore();
+    authStore.logout(); // Clear the token from the store
+    window.location = '/login'; 
+    return;
+  }
+
   return Promise.reject(error);
 });
 
