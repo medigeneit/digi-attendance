@@ -9,13 +9,26 @@ const router = useRouter()
 const manualAttendanceStore = useManualAttendanceStore()
 const authStore = useAuthStore()
 
-const todayDate = new Date().toISOString().split('T')[0]
+const formatTime = (timeStr) => {
+  if (!timeStr) return null
+  const timeParts = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i)
+  if (!timeParts) return null
+  let [_, hours, minutes, period] = timeParts
+  hours = parseInt(hours, 10)
+  if (period.toUpperCase() === 'PM' && hours < 12) hours += 12
+  if (period.toUpperCase() === 'AM' && hours === 12) hours = 0
+  return `${hours.toString().padStart(2, '0')}:${minutes}`
+}
 
+const { date, type, entry_time, exit_time } = router.currentRoute.value.query
+const todayDate = date ? date : new Date().toISOString().split('T')[0]
+const check_in = entry_time ? formatTime(entry_time) : ''
+const check_out = exit_time ? formatTime(exit_time) : ''
 const form = ref({
   date: todayDate,
-  type: '',
-  check_in: '',
-  check_out: '',
+  type: type ||'',
+  check_in: check_in || '',
+  check_out: check_out || '',
   description: '',
 })
 

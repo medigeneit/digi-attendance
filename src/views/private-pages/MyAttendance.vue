@@ -140,17 +140,18 @@ const goBack = () => router.go(-1)
                 :title="`Device: ${log.exit_device}`"
               >
                 {{ log.exit_time }}
-                <div v-if=" log.exit_time == '' &&  new Date(log.exit_time) > new Date()">
+                <div v-if="!log.exit_time &&  new Date(log.date) < new Date() && log.status === 'Present'">
                   <router-link
                     :to="{
                       name: 'ManualAttendanceAdd',
                       query: {
-                        date: log.shift_end_time,
-                        check_in: log.entry_time,
-                        check_out: log.exit_time,
+                        type: 'Forget Punch',
+                        date: new Date(log.date).toISOString().split('T')[0],
+                        entry_time: log.entry_time,
+                        exit_time: log.exit_time,
                       },
                     }"
-                    class="btn-link"
+                    class="btn-link text-red-600"
                   >
                     (Check Out Apply)
                   </router-link>
@@ -184,7 +185,7 @@ const goBack = () => router.go(-1)
                         end_time: log.entry_time,
                       },
                     }"
-                    class="btn-link"
+                    class="btn-link text-red-600"
                   >
                     (Apply)
                   </router-link>
@@ -214,7 +215,7 @@ const goBack = () => router.go(-1)
                         end_time: log.shift_end_time,
                       },
                     }"
-                    class="btn-link"
+                    class="btn-link text-red-600"
                   >
                     (Apply)
                   </router-link>
