@@ -66,7 +66,7 @@ const goBack = () => {
             v-model="selectedUser"
             :options="userStore.users"
             :multiple="false"
-            label="user"
+            label="name"
             placeholder="Select user"
           />
         </div>
