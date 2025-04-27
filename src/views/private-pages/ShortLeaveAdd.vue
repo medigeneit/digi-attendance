@@ -207,7 +207,7 @@ const goBack = () => {
           :multiple="false"
           :required="false"
           label="name"
-          labelFor="user"
+          placeholder="Select user"
         />
       </div>
 

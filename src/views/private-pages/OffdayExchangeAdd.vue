@@ -142,8 +142,8 @@ const goBack = () => {
           :options="userStore.handoverUsers"
           :multiple="false"
           :required="checkUserRequired"
-          label="Select User"
-          labelFor="user"
+          label="user"
+          placeholder="Select user"
         />
       </div>
 

@@ -3,7 +3,7 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useExchangeStore } from '@/stores/exchange'
 import { useUserStore } from '@/stores/user'
-import { onMounted, ref, watch, computed } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -15,28 +15,28 @@ const selectedUserId = computed(() => selectedUser.value?.id)
 
 onMounted(() => {
   userStore.fetchUsers()
-  exchangeStore.fetchAllExchanges({ 
-        type: type,
-        selectedMonth: exchangeStore.selectedMonth,
-        selectedStatus: exchangeStore.selectedStatus
-       })
+  exchangeStore.fetchAllExchanges({
+    type: type,
+    selectedMonth: exchangeStore.selectedMonth,
+    selectedStatus: exchangeStore.selectedStatus,
+  })
 })
 
 const fetchOffDayExchangeByUser = async () => {
   if (selectedUserId.value) {
-    await exchangeStore.fetchAllExchanges({ 
-        user_id: selectedUserId.value,
-        type: type,
-        selectedMonth: exchangeStore.selectedMonth,
-        selectedStatus: exchangeStore.selectedStatus
-      })
+    await exchangeStore.fetchAllExchanges({
+      user_id: selectedUserId.value,
+      type: type,
+      selectedMonth: exchangeStore.selectedMonth,
+      selectedStatus: exchangeStore.selectedStatus,
+    })
   } else {
     // Fetch all short leaves if no user is selected
-    await exchangeStore.fetchAllExchanges({ 
-        type: type,
-        selectedMonth: exchangeStore.selectedMonth,
-        selectedStatus: exchangeStore.selectedStatus
-       })
+    await exchangeStore.fetchAllExchanges({
+      type: type,
+      selectedMonth: exchangeStore.selectedMonth,
+      selectedStatus: exchangeStore.selectedStatus,
+    })
   }
 }
 
@@ -58,13 +58,13 @@ const goBack = () => {
       <h1 class="title-md md:title-lg flex-wrap text-center">Offday Exchanges</h1>
 
       <div class="flex gap-2">
-        <div style="width: 300px;">
+        <div style="width: 300px">
           <MultiselectDropdown
             v-model="selectedUser"
             :options="userStore.users"
             :multiple="false"
-            label="Select User"
-            labelFor="user"
+            label="user"
+            placeholder="Select user"
           />
         </div>
         <div>
@@ -77,15 +77,15 @@ const goBack = () => {
           />
         </div>
         <div>
-          <select 
-            v-model="exchangeStore.selectedStatus" 
-            @change="fetchOffDayExchangeByUser" 
+          <select
+            v-model="exchangeStore.selectedStatus"
+            @change="fetchOffDayExchangeByUser"
             class="input-1"
           >
-              <option value="" selected>All</option>
-              <option value="Pending">Pending</option>
-              <option value="Approved">Approved</option>
-              <option value="Rejected">Rejected</option>
+            <option value="" selected>All</option>
+            <option value="Pending">Pending</option>
+            <option value="Approved">Approved</option>
+            <option value="Rejected">Rejected</option>
           </select>
         </div>
       </div>

@@ -15,25 +15,25 @@ const selectedUserId = computed(() => selectedUser.value?.id)
 
 onMounted(() => {
   userStore.fetchUsers()
-  manualAttendanceStore.fetchManualAttendances({ 
-       selectedMonth: manualAttendanceStore.selectedMonth,
-       selectedStatus: manualAttendanceStore.selectedStatus 
-      })
+  manualAttendanceStore.fetchManualAttendances({
+    selectedMonth: manualAttendanceStore.selectedMonth,
+    selectedStatus: manualAttendanceStore.selectedStatus,
+  })
 })
 
 const fetchManualAttendancesByUser = async () => {
   if (selectedUserId.value) {
-    await manualAttendanceStore.fetchManualAttendances({ 
-        user_id: selectedUserId.value,
-        selectedMonth: manualAttendanceStore.selectedMonth,
-        selectedStatus: manualAttendanceStore.selectedStatus
-      })
+    await manualAttendanceStore.fetchManualAttendances({
+      user_id: selectedUserId.value,
+      selectedMonth: manualAttendanceStore.selectedMonth,
+      selectedStatus: manualAttendanceStore.selectedStatus,
+    })
   } else {
     // Fetch all short leaves if no user is selected
-    await manualAttendanceStore.fetchManualAttendances({ 
+    await manualAttendanceStore.fetchManualAttendances({
       selectedMonth: manualAttendanceStore.selectedMonth,
-       selectedStatus: manualAttendanceStore.selectedStatus 
-      })
+      selectedStatus: manualAttendanceStore.selectedStatus,
+    })
   }
 }
 
@@ -59,13 +59,13 @@ const goBack = () => {
       <h1 class="title-md md:title-lg flex-wrap text-center">My Manual Attendances</h1>
 
       <div class="flex gap-2">
-        <div style="width: 300px;">
+        <div style="width: 300px">
           <MultiselectDropdown
             v-model="selectedUser"
             :options="userStore.users"
             :multiple="false"
-            label="Select User"
-            labelFor="user"
+            label="name"
+            placeholder="Select user"
           />
         </div>
         <div>
@@ -78,15 +78,15 @@ const goBack = () => {
           />
         </div>
         <div>
-          <select 
-            v-model="manualAttendanceStore.selectedStatus" 
-            @change="fetchManualAttendancesByUser" 
+          <select
+            v-model="manualAttendanceStore.selectedStatus"
+            @change="fetchManualAttendancesByUser"
             class="input-1"
           >
-              <option value="" selected>All</option>
-              <option value="Pending">Pending</option>
-              <option value="Approved">Approved</option>
-              <option value="Rejected">Rejected</option>
+            <option value="" selected>All</option>
+            <option value="Pending">Pending</option>
+            <option value="Approved">Approved</option>
+            <option value="Rejected">Rejected</option>
           </select>
         </div>
       </div>

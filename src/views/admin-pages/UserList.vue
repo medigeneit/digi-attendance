@@ -119,8 +119,8 @@ function modalClose() {
         v-model="selectedUser"
         :options="userStore.users"
         :multiple="false"
-        class="w-full"
-        placeholder="Select Employee"
+        label="user"
+        placeholder="Select user"
       />
     </div>
 

@@ -1,18 +1,18 @@
 <script setup>
-import { ref, reactive, watch, onMounted, computed } from 'vue';
-import { useUserStore } from '@/stores/user';
 import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
+import { useUserStore } from '@/stores/user'
+import { onMounted, reactive, ref, watch } from 'vue'
 
 const props = defineProps({
   show: { type: Boolean, required: true },
   leaveApproval: { type: Object, default: null },
-});
+})
 
-const emit = defineEmits(['close', 'save']);
+const emit = defineEmits(['close', 'save'])
 
-const userStore = useUserStore();
+const userStore = useUserStore()
 
-const isEditMode = ref(false);
+const isEditMode = ref(false)
 
 const form = reactive({
   id: null,
@@ -22,28 +22,31 @@ const form = reactive({
   operational_admin_user_id: '',
   recommend_by_user_id: '',
   approved_by_user_id: '',
-});
+})
 
 const selectedUsers = reactive({
   in_charge_user_id: null,
   coordinator_user_id: null,
   operational_admin_user_id: null,
   recommend_by_user_id: null,
-  approved_by_user_id: null
+  approved_by_user_id: null,
 })
 
 const loadSelectedUsers = () => {
   Object.keys(selectedUsers).forEach((field) => {
-    selectedUsers[field] = userStore.users.find(user => user.id === form[field]) || null
+    selectedUsers[field] = userStore.users.find((user) => user.id === form[field]) || null
   })
 }
 
 Object.keys(selectedUsers).forEach((field) => {
-  watch(() => selectedUsers[field], (newVal) => {
-    console.log(newVal);
-    
-    form[field] = newVal ? newVal.id : null
-  })
+  watch(
+    () => selectedUsers[field],
+    (newVal) => {
+      console.log(newVal)
+
+      form[field] = newVal ? newVal.id : null
+    },
+  )
 })
 
 const resetForm = () => {
@@ -55,9 +58,9 @@ const resetForm = () => {
     operational_admin_user_id: '',
     recommend_by_user_id: '',
     approved_by_user_id: '',
-  });
-  isEditMode.value = false;
-};
+  })
+  isEditMode.value = false
+}
 
 const selectvalueResetForm = () => {
   Object.assign(selectedUsers, {
@@ -66,46 +69,49 @@ const selectvalueResetForm = () => {
     operational_admin_user_id: '',
     recommend_by_user_id: '',
     approved_by_user_id: '',
-  });
-  isEditMode.value = false;
-};
+  })
+  isEditMode.value = false
+}
 
 watch(
   () => props.leaveApproval,
   (newLeaveApproval) => {
     if (newLeaveApproval) {
-      isEditMode.value = true;
-      Object.assign(form, newLeaveApproval);
-      loadSelectedUsers();
+      isEditMode.value = true
+      Object.assign(form, newLeaveApproval)
+      loadSelectedUsers()
     } else {
-      resetForm();
-      selectvalueResetForm();
+      resetForm()
+      selectvalueResetForm()
     }
   },
   { immediate: true, deep: true },
-);
+)
 
 const handleSubmit = () => {
   if (!form.name || !form.approved_by_user_id) {
-    alert('Name and Approved By are required!');
-    return;
+    alert('Name and Approved By are required!')
+    return
   }
-  emit('save', { ...form });
-  closeModal();
-};
+  emit('save', { ...form })
+  closeModal()
+}
 
 const closeModal = () => {
-  resetForm();
-  emit('close');
-};
+  resetForm()
+  emit('close')
+}
 
 onMounted(() => {
-  userStore.fetchUsers();
-});
+  userStore.fetchUsers()
+})
 </script>
 
 <template>
-  <div v-if="show" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+  <div
+    v-if="show"
+    class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50"
+  >
     <div class="bg-white rounded-lg shadow-lg w-full max-w-lg">
       <div class="px-6 py-4 border-b">
         <h3 class="text-lg font-bold">
@@ -126,19 +132,27 @@ onMounted(() => {
           />
         </div>
 
-        <template v-for="(label, field) in {
-          in_charge_user_id: 'In-Charge',
-          coordinator_user_id: 'Coordinator',
-          operational_admin_user_id: 'Operational Admin',
-          recommend_by_user_id: 'Recommend By',
-          approved_by_user_id: 'Approved By'
-        }" :key="field">
+        <template
+          v-for="(label, field) in {
+            in_charge_user_id: 'In-Charge',
+            coordinator_user_id: 'Coordinator',
+            operational_admin_user_id: 'Operational Admin',
+            recommend_by_user_id: 'Recommend By',
+            approved_by_user_id: 'Approved By',
+          }"
+          :key="field"
+        >
           <div>
             <label :for="field" class="block text-sm font-medium">{{ label }}</label>
-            <MultiselectDropdown v-model="selectedUsers[field]" :multiple="false" :options="userStore.users" />
+            <MultiselectDropdown
+              v-model="selectedUsers[field]"
+              :multiple="false"
+              label="name"
+              :options="userStore.users"
+            />
           </div>
         </template>
-        
+
         <!-- <select
           :id="field"
           v-model="form[field]"
@@ -162,10 +176,7 @@ onMounted(() => {
           >
             Cancel
           </button>
-          <button
-            type="submit"
-            class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          >
+          <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
             {{ isEditMode ? 'Update' : 'Create' }}
           </button>
         </div>
