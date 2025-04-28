@@ -364,7 +364,7 @@ const computedDesignations = computed(() => {
 
               <div>
                 <label>Employee ID</label>
-                <input v-model="form.employee_id" type="number" class="w-full p-2 border rounded" />
+                <input v-model="form.employee_id" type="text" class="w-full p-2 border rounded" />
               </div>
 
               <div>
