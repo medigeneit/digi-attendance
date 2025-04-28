@@ -346,7 +346,6 @@ const computedDesignations = computed(() => {
                   </template>
                 </select>
               </div>
-
               <div>
                 <label>Active Status</label>
                 <select v-model="form.is_active" class="w-full p-2 border rounded">

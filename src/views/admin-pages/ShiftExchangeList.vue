@@ -3,7 +3,7 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useExchangeStore } from '@/stores/exchange'
 import { useUserStore } from '@/stores/user'
-import { onMounted, ref, watch, computed } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -16,29 +16,28 @@ const selectedUserId = computed(() => selectedUser.value?.id)
 // Fetch all users and exchanges
 onMounted(() => {
   userStore.fetchUsers()
-  exchangeStore.fetchAllExchanges({ 
-        type: type,
-        selectedMonth: exchangeStore.selectedMonth,
-        selectedStatus: exchangeStore.selectedStatus
+  exchangeStore.fetchAllExchanges({
+    type: type,
+    selectedMonth: exchangeStore.selectedMonth,
+    selectedStatus: exchangeStore.selectedStatus,
   })
 })
 
-
 const fetchOffDayExchangeByUser = async () => {
   if (selectedUserId.value) {
-    await exchangeStore.fetchAllExchanges({ 
-        user_id: selectedUserId.value,
-        type: type,
-        selectedMonth: exchangeStore.selectedMonth,
-        selectedStatus: exchangeStore.selectedStatus
-      })
+    await exchangeStore.fetchAllExchanges({
+      user_id: selectedUserId.value,
+      type: type,
+      selectedMonth: exchangeStore.selectedMonth,
+      selectedStatus: exchangeStore.selectedStatus,
+    })
   } else {
     // Fetch all short leaves if no user is selected
-    await exchangeStore.fetchAllExchanges({ 
-        type: type,
-        selectedMonth: exchangeStore.selectedMonth,
-        selectedStatus: exchangeStore.selectedStatus
-       })
+    await exchangeStore.fetchAllExchanges({
+      type: type,
+      selectedMonth: exchangeStore.selectedMonth,
+      selectedStatus: exchangeStore.selectedStatus,
+    })
   }
 }
 
@@ -48,6 +47,11 @@ const goBack = () => {
   router.go(-1)
 }
 
+const deleteApplication = async (applicationId) => {
+  if (confirm('Are you sure to delete this application?')) {
+    exchangeStore.deleteExchange(applicationId)
+  }
+}
 </script>
 
 <template>
@@ -59,38 +63,38 @@ const goBack = () => {
       </button>
 
       <h1 class="title-md md:title-lg flex-wrap text-center">Shift Exchanges</h1>
-
-      <div class="flex gap-2">
-        <div style="width: 300px;">
-          <MultiselectDropdown
-            v-model="selectedUser"
-            :options="userStore.users"
-            :multiple="false"
-            label="name"
-            placeholder="Select user"
-          />
-        </div>
-        <div>
-          <input
-            id="monthSelect"
-            type="month"
-            v-model="exchangeStore.selectedMonth"
-            @change="fetchOffDayExchangeByUser"
-            class="input-1"
-          />
-        </div>
-        <div>
-          <select 
-            v-model="exchangeStore.selectedStatus" 
-            @change="fetchOffDayExchangeByUser" 
-            class="input-1"
-          >
-              <option value="" selected>All</option>
-              <option value="Pending">Pending</option>
-              <option value="Approved">Approved</option>
-              <option value="Rejected">Rejected</option>
-          </select>
-        </div>
+      <div></div>
+    </div>
+    <div class="flex gap-4">
+      <div style="width: 300px">
+        <MultiselectDropdown
+          v-model="selectedUser"
+          :options="userStore.users"
+          :multiple="false"
+          label="name"
+          placeholder="Select user"
+        />
+      </div>
+      <div>
+        <input
+          id="monthSelect"
+          type="month"
+          v-model="exchangeStore.selectedMonth"
+          @change="fetchOffDayExchangeByUser"
+          class="input-1"
+        />
+      </div>
+      <div>
+        <select
+          v-model="exchangeStore.selectedStatus"
+          @change="fetchOffDayExchangeByUser"
+          class="input-1"
+        >
+          <option value="" selected>All</option>
+          <option value="Pending">Pending</option>
+          <option value="Approved">Approved</option>
+          <option value="Rejected">Rejected</option>
+        </select>
       </div>
     </div>
 
@@ -145,6 +149,9 @@ const goBack = () => {
                   >
                     <i class="far fa-eye"></i>
                   </RouterLink>
+                  <button @click="deleteApplication(exchange?.id)" class="btn-icon text-red-500">
+                    <i class="far fa-trash"></i>
+                  </button>
                 </div>
               </td>
             </tr>

@@ -46,6 +46,11 @@ const filteredManualAttendances = computed(() => {
 const goBack = () => {
   router.go(-1)
 }
+const deleteApplication = async (applicationId) => {
+  if (confirm('Are you sure to delete this application?')) {
+    manualAttendanceStore.deleteManualAttendance(applicationId)
+  }
+}
 </script>
 
 <template>
@@ -57,38 +62,38 @@ const goBack = () => {
       </button>
 
       <h1 class="title-md md:title-lg flex-wrap text-center">My Manual Attendances</h1>
-
-      <div class="flex gap-2">
-        <div style="width: 300px">
-          <MultiselectDropdown
-            v-model="selectedUser"
-            :options="userStore.users"
-            :multiple="false"
-            label="name"
-            placeholder="Select user"
-          />
-        </div>
-        <div>
-          <input
-            id="monthSelect"
-            type="month"
-            v-model="manualAttendanceStore.selectedMonth"
-            @change="fetchManualAttendancesByUser"
-            class="input-1"
-          />
-        </div>
-        <div>
-          <select
-            v-model="manualAttendanceStore.selectedStatus"
-            @change="fetchManualAttendancesByUser"
-            class="input-1"
-          >
-            <option value="" selected>All</option>
-            <option value="Pending">Pending</option>
-            <option value="Approved">Approved</option>
-            <option value="Rejected">Rejected</option>
-          </select>
-        </div>
+      <div></div>
+    </div>
+    <div class="flex gap-4">
+      <div style="width: 300px">
+        <MultiselectDropdown
+          v-model="selectedUser"
+          :options="userStore.users"
+          :multiple="false"
+          label="name"
+          placeholder="Select user"
+        />
+      </div>
+      <div>
+        <input
+          id="monthSelect"
+          type="month"
+          v-model="manualAttendanceStore.selectedMonth"
+          @change="fetchManualAttendancesByUser"
+          class="input-1"
+        />
+      </div>
+      <div>
+        <select
+          v-model="manualAttendanceStore.selectedStatus"
+          @change="fetchManualAttendancesByUser"
+          class="input-1"
+        >
+          <option value="" selected>All</option>
+          <option value="Pending">Pending</option>
+          <option value="Approved">Approved</option>
+          <option value="Rejected">Rejected</option>
+        </select>
       </div>
     </div>
 
@@ -144,6 +149,10 @@ const goBack = () => {
                   >
                     <i class="far fa-eye"></i>
                   </RouterLink>
+
+                  <button @click="deleteApplication(attendance?.id)" class="btn-icon text-red-500">
+                    <i class="far fa-trash"></i>
+                  </button>
                 </div>
               </td>
             </tr>

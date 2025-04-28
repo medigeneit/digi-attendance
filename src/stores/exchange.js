@@ -106,8 +106,11 @@ export const useExchangeStore = defineStore('exchange', () => {
     loading.value = true;
     error.value = null;
     try {
+      
       await apiClient.delete(`/exchanges/${id}`);
+
       exchanges.value = exchanges.value.filter((ex) => ex.id !== id);
+
     } catch (err) {
       error.value = err.response?.data?.message || `Failed to delete exchange with ID ${id}`;
     } finally {

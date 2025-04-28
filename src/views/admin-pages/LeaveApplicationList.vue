@@ -56,6 +56,12 @@ onMounted(async () => {
 })
 
 watch([selectedUserId], fetchApplicationsByUser)
+
+const deleteApplication = async (applicationId) => {
+  if (confirm('Are you sure to delete this application?')) {
+    leaveApplicationStore.deleteLeaveApplication(applicationId)
+  }
+}
 </script>
 
 <template>
@@ -125,7 +131,7 @@ watch([selectedUserId], fetchApplicationsByUser)
           <tbody>
             <tr
               v-for="(application, index) in filteredLeaveApplications"
-              :key="application.id"
+              :key="index"
               class="border-b border-gray-200 hover:bg-blue-200"
             >
               <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
@@ -136,16 +142,19 @@ watch([selectedUserId], fetchApplicationsByUser)
               <td class="border border-gray-300 px-2">{{ application?.resumption_date }}</td>
               <td class="border border-gray-300 px-2">{{ application?.total_leave_days }}</td>
               <td class="border border-gray-300 px-2">
-                {{ application.status || 'N/A' }}
+                {{ application?.status || 'N/A' }}
               </td>
               <td class="border border-gray-300 px-2">
                 <div class="flex gap-2">
                   <RouterLink
-                    :to="{ name: 'LeaveApplicationShow', params: { id: application.id } }"
+                    :to="{ name: 'LeaveApplicationShow', params: { id: application?.id } }"
                     class="btn-icon"
                   >
                     <i class="far fa-eye"></i>
                   </RouterLink>
+                  <button @click="deleteApplication(application?.id)" class="btn-icon text-red-500">
+                    <i class="far fa-trash"></i>
+                  </button>
                 </div>
               </td>
             </tr>

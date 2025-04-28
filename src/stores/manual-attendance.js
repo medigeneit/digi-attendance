@@ -1,6 +1,6 @@
-import { ref, computed } from 'vue';
-import { defineStore } from 'pinia';
 import apiClient from '@/axios';
+import { defineStore } from 'pinia';
+import { computed, ref } from 'vue';
 
 export const useManualAttendanceStore = defineStore('manualAttendance', () => {
   const manualAttendances = ref([]);

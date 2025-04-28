@@ -58,6 +58,12 @@ const formatTime = (timeString) => {
     hour12: true, // Ensures AM/PM format
   })
 }
+
+const deleteApplication = async (applicationId) => {
+  if (confirm('Are you sure to delete this application?')) {
+    shortLeaveStore.deleteShortLeave(applicationId)
+  }
+}
 </script>
 
 <template>
@@ -70,37 +76,38 @@ const formatTime = (timeString) => {
 
       <h1 class="title-md md:title-lg flex-wrap text-center">Short Leaves</h1>
 
-      <div class="flex gap-2">
-        <div style="width: 300px">
-          <MultiselectDropdown
-            v-model="selectedUser"
-            :options="userStore.users"
-            :multiple="false"
-            label="name"
-            placeholder="Select user"
-          />
-        </div>
-        <div>
-          <input
-            id="monthSelect"
-            type="month"
-            v-model="shortLeaveStore.selectedMonth"
-            @change="fetchShortLeavesByUser"
-            class="input-1"
-          />
-        </div>
-        <div>
-          <select
-            v-model="shortLeaveStore.selectedStatus"
-            @change="fetchShortLeavesByUser"
-            class="input-1"
-          >
-            <option value="" selected>All</option>
-            <option value="Pending">Pending</option>
-            <option value="Approved">Approved</option>
-            <option value="Rejected">Rejected</option>
-          </select>
-        </div>
+      <div></div>
+    </div>
+    <div class="flex gap-4">
+      <div style="width: 300px">
+        <MultiselectDropdown
+          v-model="selectedUser"
+          :options="userStore.users"
+          :multiple="false"
+          label="name"
+          placeholder="Select user"
+        />
+      </div>
+      <div>
+        <input
+          id="monthSelect"
+          type="month"
+          v-model="shortLeaveStore.selectedMonth"
+          @change="fetchShortLeavesByUser"
+          class="input-1"
+        />
+      </div>
+      <div>
+        <select
+          v-model="shortLeaveStore.selectedStatus"
+          @change="fetchShortLeavesByUser"
+          class="input-1"
+        >
+          <option value="" selected>All</option>
+          <option value="Pending">Pending</option>
+          <option value="Approved">Approved</option>
+          <option value="Rejected">Rejected</option>
+        </select>
       </div>
     </div>
 
@@ -161,6 +168,9 @@ const formatTime = (timeString) => {
                   >
                     <i class="far fa-eye"></i>
                   </RouterLink>
+                  <button @click="deleteApplication(leave?.id)" class="btn-icon text-red-500">
+                    <i class="far fa-trash"></i>
+                  </button>
                 </div>
               </td>
             </tr>
