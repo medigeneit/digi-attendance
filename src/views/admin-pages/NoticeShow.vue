@@ -104,6 +104,7 @@ const downloadFile = async (fileUrl) => {
               >
                 All employees
               </p>
+              <p v-else>Multiple employees</p>
             </div>
 
             <div>
