@@ -97,6 +97,16 @@ const downloadFile = async (fileUrl) => {
             </div>
 
             <div>
+              <p class="font-bold text-gray-600">Employee:</p>
+              <p
+                v-if="Array.isArray(notice?.employees) && !notice?.employees?.length"
+                class="text-gray-800"
+              >
+                All employees
+              </p>
+            </div>
+
+            <div>
               <p class="font-bold text-gray-600">Published Date:</p>
               <p class="text-gray-800">{{ formatDate(notice?.published_at) }}</p>
             </div>
@@ -120,6 +130,30 @@ const downloadFile = async (fileUrl) => {
           </div>
         </div>
         <NoticeFeedbackList :noticeId="notice.id" />
+
+        <div>
+          <div v-if="Array.isArray(notice?.employees) && notice?.employees.length" class="divide-y">
+            <div
+              v-for="employee in notice?.employees"
+              :key="employee.id"
+              class="py-4 flex items-center gap-4"
+            >
+              <div class="flex-shrink-0">
+                <div
+                  class="h-10 w-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold"
+                >
+                  {{ employee?.name?.charAt(0) }}
+                </div>
+              </div>
+              <div class="flex-1">
+                <p class="text-gray-800 font-semibold">
+                  {{ employee?.name }}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div v-else class="text-center text-gray-400 italic">Assign all employees.</div>
+        </div>
         <ShareComponent />
         <div class="flex justify-center mt-2 gap-4">
           <RouterLink
