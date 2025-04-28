@@ -15,6 +15,7 @@ const notificationStore = useNotificationStore()
 const { grouped_counts, totalUnreadNotifications } = storeToRefs(notificationStore)
 
 const showNotice = ref(false)
+const showUserPhoto = ref(true)
 
 const toggleNotice = () => {
   showNotice.value = !showNotice.value
@@ -61,8 +62,13 @@ const markNotificationAndNavigate = async (notificationId, url) => {
             <div
               class="flex rounded-full overflow-hidden h-full aspect-square max-h-8 bg-teal-600 items-center justify-center"
             >
-              <img v-if="user && user.photo" :src="user.photo" alt="User Photo" />
-              <span v-else class="text-white font-bold text-xl pt-3 p-2">{{ userInitial }}</span>
+              <img
+                v-if="user && user.photo && showUserPhoto"
+                @error="showUserPhoto = false"
+                :src="user.photo"
+                alt="User Photo"
+              />
+              <span v-else class="text-white font-bold text-xl pt-2 p-2">{{ userInitial }}</span>
             </div>
           </div>
           <h4 class="hidden md:flex overflow-hidden">
