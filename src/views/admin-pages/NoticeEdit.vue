@@ -76,6 +76,25 @@ watch(
   { deep: true }, // important for array contents
 )
 
+watch(
+  () => form.all_companies,
+  async (allCompany) => {
+    if (allCompany) {
+      await departmentStore.fetchDepartments()
+    }
+  },
+)
+
+watch(
+  () => form.all_departments,
+  async (allDepartment) => {
+    if (allDepartment) {
+      const all_departments = 'all'
+      await departmentStore.fetchDepartmentEmployee(all_departments)
+    }
+  },
+)
+
 const fileUploadLink = async (event) => {
   const file = event.target.files[0]
 

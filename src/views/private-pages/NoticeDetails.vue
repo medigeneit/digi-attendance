@@ -1,6 +1,7 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
 import { useNoticeStore } from '@/stores/notice'
+import Swal from 'sweetalert2'
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useToast } from 'vue-toastification'
@@ -50,7 +51,16 @@ const createNoticeFeedback = async () => {
       const userFeedback = {
         feedback: feedback.value,
       }
+
       await noticeStore.createNoticeFeedback(noticeId, userFeedback)
+
+      Swal.fire({
+        position: 'top-end',
+        icon: 'success',
+        title: 'Your feedback has been saved',
+        showConfirmButton: false,
+        timer: 1500,
+      })
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to load notice details'
       toast.error(error.value)

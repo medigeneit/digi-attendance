@@ -34,7 +34,7 @@ const formatDate = (dateString) => {
 const groupedNotice = computed(() => {
   const grouped = {}
   notices.value.forEach((notice) => {
-    const companyName = notice.company?.name || 'All Company'
+    const companyName = notice.company?.name || 'Multiple Companies'
     if (!grouped[companyName]) {
       grouped[companyName] = []
     }
@@ -73,8 +73,6 @@ const groupedNotice = computed(() => {
                 <th class="border border-gray-300 px-2 text-left">#</th>
                 <th class="border border-gray-300 px-2 text-left">Title</th>
                 <th class="border border-gray-300 px-2 text-left">Type</th>
-                <th class="border border-gray-300 px-2 text-left">Company</th>
-                <th class="border border-gray-300 px-2 text-left">Department</th>
                 <th class="border border-gray-300 px-2 text-left">Published Date</th>
                 <th class="border border-gray-300 px-2 text-left">Expired Date</th>
                 <th class="border border-gray-300 px-2 text-left">Show Employee</th>
@@ -91,15 +89,6 @@ const groupedNotice = computed(() => {
                 <td class="border border-gray-300 px-2">{{ notice?.title }}</td>
                 <td class="border border-gray-300 px-2">
                   {{ notice?.type === 1 ? 'General Notice' : 'Policy' }}
-                </td>
-                <td class="border border-gray-300 px-2">
-                  {{ notice?.company?.short_name || 'All Companies' }}
-                </td>
-                <td class="border border-gray-300 px-2">
-                  <span v-for="(department, index) in notice?.departments" :key="department.id">
-                    {{ department?.name }}
-                    {{ index < notice?.departments.length - 1 ? ', ' : '' }}
-                  </span>
                 </td>
                 <td class="border border-gray-300 px-2">{{ formatDate(notice?.published_at) }}</td>
                 <td class="border border-gray-300 px-2">

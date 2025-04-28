@@ -5,6 +5,7 @@ import { useNoticeStore } from '@/stores/notice'
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useToast } from 'vue-toastification'
+import NoticeFeedbackList from './NoticeFeedbackList.vue'
 
 const noticeStore = useNoticeStore()
 const toast = useToast()
@@ -64,34 +65,45 @@ const downloadFile = async (fileUrl) => {
           <hr class="mb-2" />
           <div class="grid md:grid-cols-2 gap-4">
             <div>
-              <p class="text-sm font-bold text-gray-600">Title:</p>
-              <p class="text-lg text-gray-800">{{ notice?.title }}</p>
+              <p class="font-bold text-gray-600">Title:</p>
+              <p class="text-sm text-gray-800">{{ notice?.title }}</p>
             </div>
             <div>
-              <p class="text-sm font-bold text-gray-600">Company:</p>
-              <p class="text-lg text-gray-800">
-                {{ notice?.company?.short_name || 'All Companies' }}
+              <p class="font-bold text-gray-600">Company:</p>
+              <p
+                class="text-gray-800 text-sm"
+                v-if="Array.isArray(notice?.companies_notice) && notice?.companies_notice?.length"
+              >
+                <span v-for="(company, index) in notice?.companies_notice" :key="company.id">
+                  {{ company?.name }}
+                  {{ index < notice?.companies_notice.length - 1 ? ', ' : '' }}
+                </span>
               </p>
+              <p v-else class="text-lg text-gray-800">All department</p>
             </div>
 
             <div>
-              <p class="text-sm font-bold text-gray-600">Department:</p>
-              <p class="text-lg text-gray-800">
+              <p class="font-bold text-gray-600">Department:</p>
+              <p
+                class="text-gray-800"
+                v-if="Array.isArray(notice?.departments) && notice?.departments?.length"
+              >
                 <span v-for="(department, index) in notice?.departments" :key="department.id">
                   {{ department?.name }}
                   {{ index < notice?.departments.length - 1 ? ', ' : '' }}
                 </span>
               </p>
+              <p v-else class="text-gray-800">All department</p>
             </div>
 
             <div>
-              <p class="text-sm font-bold text-gray-600">Published Date:</p>
-              <p class="text-lg text-gray-800">{{ formatDate(notice?.published_at) }}</p>
+              <p class="font-bold text-gray-600">Published Date:</p>
+              <p class="text-gray-800">{{ formatDate(notice?.published_at) }}</p>
             </div>
 
             <div>
-              <p class="text-sm font-bold text-gray-600">Expired Date:</p>
-              <p class="text-lg text-gray-800">{{ formatDate(notice?.expired_at) }}</p>
+              <p class="font-bold text-gray-600">Expired Date:</p>
+              <p class="text-gray-800">{{ formatDate(notice?.expired_at) }}</p>
             </div>
 
             <div>
@@ -102,11 +114,12 @@ const downloadFile = async (fileUrl) => {
             </div>
 
             <div class="col-span-full">
-              <p class="text-sm font-bold text-gray-600">Description / Body:</p>
-              <p class="text-lg text-gray-800" v-html="notice?.description"></p>
+              <p class="font-bold text-gray-600">Description / Body:</p>
+              <p class="text-gray-800" v-html="notice?.description"></p>
             </div>
           </div>
         </div>
+        <NoticeFeedbackList :noticeId="notice.id" />
         <ShareComponent />
         <div class="flex justify-center mt-2 gap-4">
           <RouterLink

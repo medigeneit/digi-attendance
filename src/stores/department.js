@@ -42,12 +42,15 @@ export const useDepartmentStore = defineStore('department', () => {
   const fetchDepartmentEmployee = async (payload) => {
     loading.value = true;
     error.value = null;
-    try {   
+    try {  
       const response = await apiClient.get("department-employees", {
         params: { department_ids: payload },
       });
+
       employees.value = response?.data?.employees;
+
       return response?.data?.employees;
+
     } catch (err) {
       error.value = err.response?.data?.message || `ডিপার্টমেন্ট লোড করতে ব্যর্থ হয়েছে।`;
       console.error(`Error fetching department with id:`, err);

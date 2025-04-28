@@ -22,7 +22,7 @@ const form = reactive({
   description: '',
   published_at: '',
   expired_at: '',
-  company_id: 'all',
+  company_id: '',
   file: '',
   all_companies: false,
   all_departments: false,
@@ -42,20 +42,20 @@ const selectedEmployees = ref([])
 const employee_ids = computed(() => selectedEmployees.value.map((dep) => dep.id))
 
 const toggleAllDepartments = () => {
-  if (form.value.all_departments) {
+  if (form.all_departments) {
     department_ids.value = []
   }
 }
 
 const toggleAllCompany = () => {
-  if (form.value.all_company) {
+  if (form.all_companies) {
     company_ids.value = []
   }
 }
 
 // Handle "Select All Employees"
 const toggleAllEmployees = () => {
-  if (form.value.all_employees) {
+  if (form.all_employees) {
     employee_ids.value = []
   }
 }
@@ -65,16 +65,37 @@ onMounted(async () => {
 })
 
 watch(
-  () => form.company_id,
+  () => form.all_companies,
+  async (allCompany) => {
+    console.log({ allCompany })
+
+    await departmentStore.fetchDepartments()
+  },
+)
+
+watch(
+  () => form.all_departments,
+  async (allDepartment) => {
+    if (allDepartment) {
+      const all_departments = 'all'
+      await departmentStore.fetchDepartmentEmployee(all_departments)
+    }
+  },
+)
+
+watch(
+  () => company_ids.value,
   async (newCompanyId) => {
     await departmentStore.fetchDepartments(newCompanyId)
   },
 )
 
-watch(selectedDepartments, (newSelection) => {
-  const newDepartmentIds = newSelection.map((dep) => dep.id)
-  departmentStore.fetchDepartmentEmployee(newDepartmentIds)
-})
+watch(
+  () => department_ids.value,
+  async (newDepartmentIds) => {
+    await departmentStore.fetchDepartmentEmployee(newDepartmentIds)
+  },
+)
 
 const fileUploadLink = async (event) => {
   const file = event.target.files[0]

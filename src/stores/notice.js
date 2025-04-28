@@ -9,8 +9,17 @@ export const useNoticeStore = defineStore('notice', () => {
   const notice = ref({});
   const error = ref(null);
   const isLoading = ref(false); // লোডিং স্টেট
-
+  const feedbacks = ref([])
+  const totalFeedbacks = ref(0)
   // Actions
+
+
+  const fetchFeedbacks = async (noticeId, payload = {}) => {
+    const res = await apiClient.get(`/notice/feedbacks/${noticeId}`, payload)
+    feedbacks.value = res.data.data.data
+    totalFeedbacks.value = res.data.data.total
+  }
+
   const fetchUserNotices = async () => {
     try {
       isLoading.value = true; // লোডিং শুরু
@@ -148,6 +157,8 @@ export const useNoticeStore = defineStore('notice', () => {
     error,
     isLoading,
     policies,
+    feedbacks,
+    totalFeedbacks,
     fetchPolices,
     fetchFileUpload,
     createNoticeFeedback,
@@ -156,6 +167,7 @@ export const useNoticeStore = defineStore('notice', () => {
     createNotice,
     updateNotice,
     fetchUserNotices,
-    fetchNoticeDetails
+    fetchNoticeDetails,
+    fetchFeedbacks
   };
 });
