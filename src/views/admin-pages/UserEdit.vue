@@ -33,6 +33,7 @@ const form = reactive({
   date_of_birth: '',
   joining_date: '',
   employment_type: 'Provisional',
+  employee_id: '',
   weekends: [],
   leave_approval_id: '',
   other_approval_id: '',
@@ -341,7 +342,7 @@ const computedDesignations = computed(() => {
           <div class="border p-4 rounded-md bg-gray-100">
             <p class="title-md">Technical Info</p>
             <hr class="my-2" />
-            <div class="grid md:grid-cols-3 gap-4">
+            <div class="grid md:grid-cols-4 gap-4">
               <div>
                 <label>Role</label>
                 <select v-model="form.role" class="w-full p-2 border rounded" required>
@@ -359,6 +360,11 @@ const computedDesignations = computed(() => {
                   type="number"
                   class="w-full p-2 border rounded"
                 />
+              </div>
+
+              <div>
+                <label>Employee ID</label>
+                <input v-model="form.employee_id" type="number" class="w-full p-2 border rounded" />
               </div>
 
               <div>

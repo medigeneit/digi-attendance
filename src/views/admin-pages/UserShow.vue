@@ -141,6 +141,10 @@ onMounted(async () => {
               <p class="text-sm font-bold text-gray-600">Biometric Device ID:</p>
               <p class="text-lg text-gray-800">{{ user?.device_user_id }}</p>
             </div>
+            <div>
+              <p class="text-sm font-bold text-gray-600">Employee ID:</p>
+              <p class="text-lg text-gray-800">{{ user?.employee_id }}</p>
+            </div>
           </div>
         </div>
         <div class="flex justify-center mt-8 gap-4">
