@@ -18,6 +18,7 @@ const designationStore = useDesignationStore()
 const leaveApprovalStore = useLeaveApprovalStore()
 const { designations } = storeToRefs(designationStore)
 const { companies } = storeToRefs(companyStore)
+const { error } = storeToRefs(userStore)
 const showPassword = ref(false)
 const modalOpen = ref(false)
 
@@ -27,7 +28,7 @@ const form = reactive({
   email: '',
   password: '',
   role: 'employee',
-  type: 'Executive',
+  type: '',
   address: '',
   device_user_id: null,
   is_active: true,
@@ -100,9 +101,14 @@ const saveUser = async () => {
     }
 
     await userStore.createUser(dataToSend)
-    toast.success('User created successfully')
-    await userStore.fetchUsers()
-    router.replace('/settings/user-list')
+
+    if (!error.value) {
+      toast.success('User created successfully')
+      await userStore.fetchUsers()
+      router.replace('/settings/user-list')
+    } else {
+      toast.error(error.value)
+    }
   } catch (error) {
     const errorMessage = error.response?.data?.message || 'Failed to save user'
     toast.error(errorMessage)
@@ -234,6 +240,7 @@ const computedDesignations = computed(() => {
               <div>
                 <label>Line Type</label>
                 <select v-model="form.type" class="w-full p-2 border rounded" required>
+                  <option value="">Select Line Type</option>
                   <option value="executive">Executive</option>
                   <option value="support_staff">Support Staff</option>
                   <option value="doctor">Doctor</option>
@@ -381,14 +388,21 @@ const computedDesignations = computed(() => {
 
               <div>
                 <label>Employee ID</label>
-                <input v-model="form.employee_id" type="text" class="w-full p-2 border rounded" />
+                <input
+                  v-model="form.employee_id"
+                  type="text"
+                  class="w-full p-2 border rounded"
+                  placeholder="Enter employee id : M123567"
+                  required
+                />
               </div>
 
               <div>
-                <label>Biometric Device User ID</label>
+                <label>Device User ID</label>
                 <input
                   v-model="form.device_user_id"
                   type="number"
+                  placeholder="1353"
                   class="w-full p-2 border rounded"
                 />
               </div>

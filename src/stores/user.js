@@ -113,6 +113,7 @@ export const useUserStore = defineStore('user', () => {
         users.value[index] = response.data.user;
       }
       error.value = null;
+      return response.data.user;
     } catch (err) {
       error.value = err.response?.data?.message || 'Something went wrong';
     } finally {

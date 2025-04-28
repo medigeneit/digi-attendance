@@ -21,7 +21,7 @@ const form = reactive({
   email: '',
   password: '',
   role: 'employee',
-  type: 'executive',
+  type: '',
   address: '',
   device_user_id: null,
   is_active: true,
@@ -48,6 +48,7 @@ const toast = useToast()
 const route = useRoute()
 const router = useRouter()
 const { designations } = storeToRefs(designationStore)
+const { error } = storeToRefs(userStore)
 const showPassword = ref(false)
 const isLoading = ref(false)
 const { shifts } = storeToRefs(shiftStore)
@@ -103,24 +104,25 @@ const loadUser = async () => {
     }
 
     form.name = user.name
-    form.phone = user.phone
-    form.email = user.email
-    form.address = user.address
-    form.nid = user.nid
+    form.phone = user.phone || ''
+    form.email = user.email || ''
+    form.address = user.address || ''
+    form.nid = user.nid || ''
     form.date_of_birth = user.date_of_birth
     form.joining_date = user.joining_date
     form.employment_type = user.employment_type
+    form.employee_id = user.employee_id || ''
     form.weekends = user.weekends || []
     form.is_active = user.is_active
     form.company_id = user.company_id
-    form.department_id = user.department_id
-    form.designation_id = user.designation_id
+    form.department_id = user.department_id || ''
+    form.designation_id = user.designation_id || ''
     form.shift_id = user.shift_id
-    form.role = user.role
-    form.type = user.type
-    form.device_user_id = user.device_user_id
-    form.leave_approval_id = user.leave_approval_id
-    form.other_approval_id = user.other_approval_id
+    form.role = user.role || ''
+    form.type = user.type || ''
+    ;(form.device_user_id = user.device_user_id || ''),
+      (form.leave_approval_id = user.leave_approval_id || '')
+    form.other_approval_id = user.other_approval_id || ''
   } catch (error) {
     const errorMessage = error.response?.data?.message || 'Failed to load user data'
     toast.error(errorMessage)
@@ -133,8 +135,12 @@ const updateUser = async () => {
   try {
     const dataToSend = { ...form, selected_weekend: selectedWeekend.value }
     await userStore.updateUser(route.params.id, dataToSend)
-    toast.success('User updated successfully')
-    router.push({ name: 'UserShow', params: { id: route.params.id } })
+    if (!error.value) {
+      toast.success('User updated successfully')
+      router.push({ name: 'UserShow', params: { id: route.params.id } })
+    } else {
+      toast.error(error.value)
+    }
   } catch (error) {
     const errorMessage = error.response?.data?.message || 'Failed to update user'
     toast.error(errorMessage)
@@ -158,6 +164,7 @@ const computedDesignations = computed(() => {
     <div class="card-bg md:p-8 p-4 mx-4">
       <h2 class="title-lg text-center">Edit Employee</h2>
       <LoaderView v-if="isLoading" class="bg-gray-100 border shadow-none" />
+
       <form v-else @submit.prevent="updateUser" class="space-y-4">
         <div class="grid gap-4">
           <div class="border p-4 rounded-md bg-gray-100">
@@ -185,12 +192,22 @@ const computedDesignations = computed(() => {
               </div>
               <div>
                 <label>Address</label>
-                <input v-model="form.address" type="text" class="w-full p-2 border rounded" />
+                <input
+                  v-model="form.address"
+                  type="text"
+                  class="w-full p-2 border rounded"
+                  placeholder="Enter your address"
+                />
               </div>
 
               <div>
                 <label>NID</label>
-                <input v-model="form.nid" type="text" class="w-full p-2 border rounded" />
+                <input
+                  v-model="form.nid"
+                  type="text"
+                  class="w-full p-2 border rounded"
+                  placeholder="Enter NID number"
+                />
               </div>
 
               <div>
@@ -274,6 +291,7 @@ const computedDesignations = computed(() => {
               <div>
                 <label>Line Type</label>
                 <select v-model="form.type" class="w-full p-2 border rounded" required>
+                  <option value="" disabled>Select Line Type</option>
                   <option value="executive">Executive</option>
                   <option value="support_staff">Support Staff</option>
                   <option value="doctor">Doctor</option>
@@ -354,17 +372,24 @@ const computedDesignations = computed(() => {
               </div>
 
               <div>
-                <label>Biometric Device User ID</label>
+                <label>Device User ID</label>
                 <input
                   v-model="form.device_user_id"
                   type="number"
+                  placeholder="3456"
                   class="w-full p-2 border rounded"
                 />
               </div>
 
               <div>
                 <label>Employee ID</label>
-                <input v-model="form.employee_id" type="text" class="w-full p-2 border rounded" />
+                <input
+                  v-model="form.employee_id"
+                  type="text"
+                  class="w-full p-2 border rounded"
+                  placeholder="M123456"
+                  required
+                />
               </div>
 
               <div>
