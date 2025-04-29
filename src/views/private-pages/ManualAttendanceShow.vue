@@ -89,7 +89,7 @@ function print() {
           <div>
             <b>Date:</b>
             {{
-              new Date(manualAttendance?.created_at).toLocaleDateString('en-GB', {
+              new Date(manualAttendance?.check_in).toLocaleDateString('en-GB', {
                 day: '2-digit',
                 month: '2-digit',
                 year: 'numeric',
