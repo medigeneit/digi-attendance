@@ -397,6 +397,13 @@ const router = createRouter({
           component: () => import('@/views/admin-pages/EmployeeAttendance.vue'),
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
         },
+        
+        {
+          path: '/hrd/em-attendance-log',
+          name: 'EmployeeAttendanceLog',
+          component: () => import('@/views/admin-pages/EmployeeAttendanceLog.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
+        },
 
         {
           path: '/hrd/shift-schedules',

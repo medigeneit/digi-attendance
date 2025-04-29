@@ -4,6 +4,7 @@ import apiClient from '../axios';
 
 export const useAttendanceStore = defineStore('attendance', () => {
   const monthlyLogs = ref([]);
+  const attendanceLogs = ref([]);
   const dailyLogs = ref([]);
   const dailyLateLogs = ref([]);
   const summary = ref(null);
@@ -13,13 +14,30 @@ export const useAttendanceStore = defineStore('attendance', () => {
   const error = ref(null);
   const isLoading = ref(false);
 
+  const getMonthlyAttendanceLog = async (userId, month) => {
+    if (!userId || !month) {
+      error.value = 'Invalid user ID or month';
+      return;
+    }
+  
+    isLoading.value = true;
+    try {
+      const response = await apiClient.get(`/user/${userId}/attendance/monthly/${month}/log`);
+      attendanceLogs.value = response.data.attendance_logs
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Something went wrong';
+      console.error(error.value);
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
   const getMonthlyAttendanceByShift = async (userId, month) => {
     if (!userId || !month) {
       error.value = 'Invalid user ID or month';
       return;
     }
-    console.log('sdfsdf', userId);
-    
+  
     isLoading.value = true;
     try {
       const response = await apiClient.get(`/user/${userId}/attendance/monthly/${month}`);
@@ -261,6 +279,7 @@ const lateReportDownloadExcel = async (company_id, employee_id, month) => {
     error,
     isLoading,
     dailyLogs,
+    attendanceLogs,
     getMonthlyAttendanceByShift,
     getTodayAttendanceReport,
     getAttendanceLateReport,
@@ -269,7 +288,8 @@ const lateReportDownloadExcel = async (company_id, employee_id, month) => {
     downloadPDF,
     attendanceDownloadExcel,
     attendanceDownloadPdf,
-    lateReportDownloadExcel
+    lateReportDownloadExcel,
+    getMonthlyAttendanceLog,
   };
 });
 
