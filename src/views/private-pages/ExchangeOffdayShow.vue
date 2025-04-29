@@ -1,5 +1,6 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import ScreenshotCapture from '@/components/common/ScreenshotCapture.vue'
 import ShareComponent from '@/components/common/ShareComponent.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useExchangeStore } from '@/stores/exchange'
@@ -376,7 +377,9 @@ async function refresh() {
         Upload Attachment
       </button> -->
     </div>
-    <ShareComponent />
+    <ShareComponent>
+      <ScreenshotCapture targetId="leave-application" platform="whatsapp" />
+    </ShareComponent>
   </div>
 
   <div v-if="rejectionModal" class="modal-bg">

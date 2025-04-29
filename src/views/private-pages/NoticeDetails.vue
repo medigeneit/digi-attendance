@@ -1,5 +1,6 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import ShareComponent from '@/components/common/ShareComponent.vue'
 import { useNoticeStore } from '@/stores/notice'
 import Swal from 'sweetalert2'
 import { onMounted, ref } from 'vue'
@@ -130,7 +131,7 @@ const downloadFile = async (fileUrl) => {
             </div>
           </div>
         </div>
-        <div class="md:flex justify-center mt-8 gap-4" v-if="notice?.user_feedback">
+        <div class="md:flex justify-center mt-8 gap-4" v-if="!notice?.user_feedback">
           <div class="w-1/2">
             <input
               v-model="feedback"
@@ -151,6 +152,7 @@ const downloadFile = async (fileUrl) => {
           {{ notice?.user_feedback?.feedback }}
         </div>
       </div>
+      <ShareComponent />
     </div>
   </div>
 </template>
