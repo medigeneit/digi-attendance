@@ -139,7 +139,7 @@ const exportToExcel = async () => {
                   :key="user.id"
                   class="hover:bg-blue-50 transition"
                 >
-                  <td class="px-6 py-4 whitespace-nowrap font-medium">{{ user?.id }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap font-medium">{{ index + 1 }}</td>
                   <td class="px-6 py-4 whitespace-nowrap">{{ user?.name }}</td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     {{ user?.company?.name || 'N/A' }}

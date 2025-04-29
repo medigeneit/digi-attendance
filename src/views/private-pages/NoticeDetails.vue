@@ -130,19 +130,25 @@ const downloadFile = async (fileUrl) => {
             </div>
           </div>
         </div>
-        <div class="md:flex justify-center mt-8 gap-4">
-          <input
-            v-model="feedback"
-            type="text"
-            class="w-full p-2 border rounded"
-            placeholder="Please enter your feedback"
-          />
+        <div class="md:flex justify-center mt-8 gap-4" v-if="notice?.user_feedback">
+          <div class="w-1/2">
+            <input
+              v-model="feedback"
+              type="text"
+              class="input-1"
+              placeholder="Please enter your feedback"
+            />
+          </div>
           <div
-            class="bg-blue-500 cursor-pointer text-white w-1/3 text-center px-4 py-2 rounded hover:bg-blue-600"
             @click="createNoticeFeedback"
+            :class="{ 'btn-2': notice?.user_feedback, 'btn-3': !notice?.user_feedback }"
           >
             {{ notice?.user_feedback ? 'Notice Feedback Updated' : 'Submit Notice Feedback' }}
           </div>
+        </div>
+        <div v-else class="colored-bg-light text-center">
+          My Feedback:
+          {{ notice?.user_feedback?.feedback }}
         </div>
       </div>
     </div>
