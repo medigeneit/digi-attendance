@@ -126,7 +126,13 @@ const goBack = () => router.go(-1)
               <td class="border px-1 py-0.5">
                 <div v-if="log.late_duration">
                   {{ log.late_duration }}
-                  <span v-if="log.first_short_leave"
+                  <router-link v-if="log.first_short_leave"
+                      :to="{
+                        name: 'ShortLeaveShow',
+                        params: {
+                          id: log.first_short_leave_id,
+                        },
+                      }"
                       :class="{
                         'text-green-500': log.first_short_leave === 'Approved',
                         'text-yellow-500':
@@ -134,13 +140,21 @@ const goBack = () => router.go(-1)
                         'text-red-500': log.first_short_leave === 'Rejected',
                       }">
                     ({{log.first_short_leave}})
-                  </span>
+                  </router-link>
                 </div>
               </td>
               <td class="border px-1 py-0.5">
                 <div v-if="log.early_leave_duration">
                   {{ log.early_leave_duration }}
-                  <span v-if="log.last_short_leave" class="px-1":class="{
+                  <router-link v-if="log.last_short_leave"
+                      :to="{
+                        name: 'ShortLeaveShow',
+                        params: {
+                          id: log.last_short_leave_id,
+                        },
+                      }"
+                      class="px-1"
+                      :class="{
                         'text-green-500':
                           log.last_short_leave === 'Approved',
                         'text-yellow-500':
@@ -150,7 +164,7 @@ const goBack = () => router.go(-1)
                       }"
                     >
                     ({{log.last_short_leave}})
-                  </span>
+                  </router-link>
                 </div>
               </td>
               <td
