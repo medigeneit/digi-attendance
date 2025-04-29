@@ -16,9 +16,32 @@ export const useNoticeStore = defineStore('notice', () => {
 
   const fetchFeedbacks = async (noticeId, payload = {}) => {
     const res = await apiClient.get(`/notice/feedbacks/${noticeId}`, payload)
-    feedbacks.value = res.data.data.data
-    totalFeedbacks.value = res.data.data.total
+    feedbacks.value = res?.data?.data
+    totalFeedbacks.value = res?.data?.meta?.total
   }
+
+  const downloadFeedbackUserExcel = async (noticeId, queryParams = {}) => {
+    isLoading.value = true;
+    try {
+      const response = await apiClient.get(`/notice/feedbacks/${noticeId}?flag=excel`, {
+        params: queryParams,
+        responseType: 'blob', // Important for downloading binary data
+      });
+  
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `notice_feedback_users_${noticeId}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Something went wrong';
+      console.error(error.value);
+    } finally {
+      isLoading.value = false;
+    }
+  };
 
   const fetchUserNotices = async () => {
     try {
@@ -168,6 +191,7 @@ export const useNoticeStore = defineStore('notice', () => {
     updateNotice,
     fetchUserNotices,
     fetchNoticeDetails,
-    fetchFeedbacks
+    fetchFeedbacks,
+    downloadFeedbackUserExcel
   };
 });

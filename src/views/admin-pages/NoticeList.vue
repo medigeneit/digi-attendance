@@ -3,9 +3,11 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import { useNoticeStore } from '@/stores/notice'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
+
+const route = useRoute()
 
 const noticeStore = useNoticeStore()
 
@@ -94,8 +96,14 @@ const groupedNotice = computed(() => {
                 <td class="border border-gray-300 px-2">
                   {{ formatDate(notice?.expired_at) || 'নেই' }}
                 </td>
-                <td class="border border-gray-300 px-2 text-center">
-                  {{ notice?.user_feedback_count }}
+                <td class="px-2 flex justify-center text-center">
+                  <RouterLink
+                    :to="{ name: 'NoticeFeedbackShow', params: { id: notice.id } }"
+                    class="btn-4 gap-2"
+                  >
+                    <i class="far fa-eye"></i>
+                    <span>{{ notice?.user_feedback_count }}</span>
+                  </RouterLink>
                 </td>
                 <td class="border border-gray-300 px-2">
                   <div class="flex gap-2">
