@@ -195,7 +195,10 @@ function print() {
             In-Charge
             <span v-if="manualAttendance?.in_charge_user_id" class="text-green-600">(✔)</span>
             <span
-              v-if="manualAttendance?.user?.other_approval?.in_charge_user"
+              v-if="
+                manualAttendance?.user?.other_approval?.in_charge_user &&
+                !manualAttendance?.in_charge_user_id
+              "
               class="pl-2 text-yellow-700"
               ><i class="fad fa-spinner"></i
             ></span>
@@ -237,7 +240,10 @@ function print() {
             Recommend By
             <span v-if="manualAttendance?.recommend_by_user_id" class="text-green-600">(✔)</span>
             <span
-              v-if="manualAttendance?.user?.other_approval?.recommend_by_user"
+              v-if="
+                manualAttendance?.user?.other_approval?.recommend_by_user &&
+                !manualAttendance?.recommend_by_user_id
+              "
               class="pl-2 text-yellow-700"
               ><i class="fad fa-spinner"></i
             ></span>
@@ -282,7 +288,10 @@ function print() {
           Approved By
           <span v-if="manualAttendance?.approved_by_user_id" class="text-green-600">(✔)</span>
           <span
-            v-if="manualAttendance?.user?.other_approval?.approved_by_user"
+            v-if="
+              manualAttendance?.user?.other_approval?.approved_by_user &&
+              !manualAttendance?.approved_by_user_id
+            "
             class="pl-2 text-yellow-700"
             ><i class="fad fa-spinner"></i
           ></span>

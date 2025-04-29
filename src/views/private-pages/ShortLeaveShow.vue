@@ -243,7 +243,7 @@ async function refresh() {
           <p v-if="shortLeave?.in_charge_user">
             {{ shortLeave?.in_charge_user?.name || '' }}
           </p>
-          <p>
+          <p v-else>
             {{ shortLeave?.user?.other_approval?.in_charge_user?.name || 'N/A' }}
           </p>
           <div
