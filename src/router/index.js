@@ -374,15 +374,12 @@ const router = createRouter({
           component: () => import('@/views/admin-pages/LateAttendanceReport.vue'),
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
         },
-
         {
           path: '/hrd',
           name: 'HrdView',
           component: () => import('@/views/admin-pages/HrdView.vue'),
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] }
         },
-
-
         {
           path: '/hrd/em-attendance',
           name: 'EmployeeAttendance',

@@ -48,7 +48,7 @@ const myManualAttendances = computed(() => {
           <thead>
             <tr class="bg-gray-200">
               <th class="border border-gray-300 px-2 text-left">#</th>
-              <th class="border border-gray-300 px-2 text-left">Date</th>
+              <th class="border border-gray-300 px-2 text-left">Create Date</th>
               <th class="border border-gray-300 px-2 text-left">Type</th>
               <th class="border border-gray-300 px-2 text-left">Check-In</th>
               <th class="border border-gray-300 px-2 text-left">Check-Out</th>
