@@ -4,33 +4,50 @@ import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useUserStore } from '@/stores/user'
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
-
+import { useRoute, useRouter } from 'vue-router'
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
 const attendanceStore = useAttendanceStore()
-
 const selectedUser = ref(null)
-const selectedUserId = ref('')
-const selectedMonth = ref('')
-
+const selectedMonth = ref(route?.query?.date || attendanceStore.selectedMonth)
 const userId = computed(() => selectedUser.value?.id)
-
 const fetchAttendance = async () => {
   if (userId) {
-    await attendanceStore.getMonthlyAttendanceByShift(userId.value, attendanceStore.selectedMonth)
+    await attendanceStore.getMonthlyAttendanceByShift(userId.value, selectedMonth.value)
   }
 }
 
 onMounted(async () => {
   await userStore.fetchUsers()
+  selectedUser.value = userStore.users.find((user) => user.id == route.query.user_id)
 })
 
-watch([selectedUserId, selectedMonth], fetchAttendance)
+watch([selectedMonth], fetchAttendance)
+
+watch(userId, (user) => {
+  router.replace({
+    query: {
+      ...route.query,
+      user_id: user,
+    },
+  })
+})
+
+watch(selectedMonth, (date) => {
+  router.replace({
+    query: {
+      ...route.query,
+      date: date,
+    },
+  })
+})
 
 watch(
   userId,
   (newValue, oldValue) => {
+    console.log('sdf')
+
     if (newValue !== null) {
       fetchAttendance()
     }
@@ -51,7 +68,6 @@ const goBack = () => router.go(-1)
       <h1 class="title-md md:title-lg flex-wrap text-center">Monthly Attendance</h1>
       <div></div>
     </div>
-
     <div class="w-1/2 flex gap-4">
       <div class="w-full">
         <MultiselectDropdown
@@ -67,7 +83,7 @@ const goBack = () => router.go(-1)
         <input
           id="monthSelect"
           type="month"
-          v-model="attendanceStore.selectedMonth"
+          v-model="selectedMonth"
           @change="fetchAttendance"
           class="input-1"
         />
@@ -126,30 +142,31 @@ const goBack = () => router.go(-1)
               <td class="border px-1 py-0.5">
                 <div v-if="log.late_duration">
                   {{ log.late_duration }}
-                  <span v-if="log.first_short_leave"
-                      :class="{
-                        'text-green-500': log.first_short_leave === 'Approved',
-                        'text-yellow-500':
-                          log.first_short_leave === 'Pending',
-                        'text-red-500': log.first_short_leave === 'Rejected',
-                      }">
-                    ({{log.first_short_leave}})
+                  <span
+                    v-if="log.first_short_leave"
+                    :class="{
+                      'text-green-500': log.first_short_leave === 'Approved',
+                      'text-yellow-500': log.first_short_leave === 'Pending',
+                      'text-red-500': log.first_short_leave === 'Rejected',
+                    }"
+                  >
+                    ({{ log.first_short_leave }})
                   </span>
                 </div>
               </td>
               <td class="border px-1 py-0.5">
                 <div v-if="log.early_leave_duration">
                   {{ log.early_leave_duration }}
-                  <span v-if="log.last_short_leave" class="px-1":class="{
-                        'text-green-500':
-                          log.last_short_leave === 'Approved',
-                        'text-yellow-500':
-                          log.last_short_leave === 'Pending',
-                        'text-red-500':
-                          log.last_short_leave === 'Rejected',
-                      }"
-                    >
-                    ({{log.last_short_leave}})
+                  <span
+                    v-if="log.last_short_leave"
+                    class="px-1"
+                    :class="{
+                      'text-green-500': log.last_short_leave === 'Approved',
+                      'text-yellow-500': log.last_short_leave === 'Pending',
+                      'text-red-500': log.last_short_leave === 'Rejected',
+                    }"
+                  >
+                    ({{ log.last_short_leave }})
                   </span>
                 </div>
               </td>

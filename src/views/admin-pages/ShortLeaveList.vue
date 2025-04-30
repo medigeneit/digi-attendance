@@ -11,32 +11,30 @@ const route = useRoute()
 const shortLeaveStore = useShortLeaveStore()
 const userStore = useUserStore()
 const selectedUser = ref('')
-const selectedDate = ref(route?.query?.search || null)
+const selectedMonth = ref(route?.query?.date || shortLeaveStore.selectedMonth)
 const selectedUserId = computed(() => selectedUser.value?.id)
 
 onMounted(() => {
   userStore.fetchUsers()
   shortLeaveStore.fetchShortLeaves({
-    selectedMonth: shortLeaveStore.selectedMonth,
+    selectedMonth: selectedMonth.value,
     selectedStatus: shortLeaveStore.selectedStatus,
-    selectedDate: selectedDate.value,
   })
+  selectedUser.value = userStore.users.find((user) => user.id == route?.query?.user_id)
 })
 
 const fetchShortLeavesByUser = async () => {
   if (selectedUserId.value) {
     await shortLeaveStore.fetchShortLeaves({
       user_id: selectedUserId.value,
-      selectedMonth: shortLeaveStore.selectedMonth,
+      selectedMonth: selectedMonth.value,
       selectedStatus: shortLeaveStore.selectedStatus,
-      selectedDate: selectedDate.value,
     })
   } else {
     // Fetch all short leaves if no user is selected
     await shortLeaveStore.fetchShortLeaves({
-      selectedMonth: shortLeaveStore.selectedMonth,
+      selectedMonth: selectedMonth.value,
       selectedStatus: shortLeaveStore.selectedStatus,
-      selectedDate: selectedDate.value,
     })
   }
 }
@@ -46,6 +44,24 @@ const goBack = () => {
 }
 
 watch([selectedUserId], fetchShortLeavesByUser)
+
+watch(selectedUserId, (user) => {
+  router.replace({
+    query: {
+      ...route.query,
+      user_id: user,
+    },
+  })
+})
+
+watch(selectedMonth, (date) => {
+  router.replace({
+    query: {
+      ...route.query,
+      date: date,
+    },
+  })
+})
 
 const formatTime = (timeString) => {
   const [hour, minute] = timeString.split(':').map(Number) // Extract hour & minute
@@ -92,7 +108,7 @@ const deleteApplication = async (applicationId) => {
         <input
           id="monthSelect"
           type="month"
-          v-model="shortLeaveStore.selectedMonth"
+          v-model="selectedMonth"
           @change="fetchShortLeavesByUser"
           class="input-1"
         />

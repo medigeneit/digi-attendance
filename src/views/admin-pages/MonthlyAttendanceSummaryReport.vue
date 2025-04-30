@@ -11,19 +11,20 @@ const router = useRouter()
 const route = useRoute()
 const companyStore = useCompanyStore()
 const attendanceStore = useAttendanceStore()
-const selectedCompanyId = ref('')
-const selectedEmployeeId = ref('')
-const selectedMonth = ref('')
+const selectedCompanyId = ref(route.query.company_id || '')
+const selectedEmployee = ref(null)
+const selectedMonth = ref(route.query.date || attendanceStore.selectedMonth)
 const { companies, employees } = storeToRefs(companyStore)
 const { monthly_company_summary } = storeToRefs(attendanceStore)
 const category = ref('')
+
 const fetchAttendance = async () => {
   if (selectedCompanyId.value) {
     await attendanceStore.getMonthlyAttendanceSummaryReport(
       selectedCompanyId.value,
-      selectedEmployeeId?.value.id,
+      selectedEmployee?.value?.id,
       category?.value,
-      attendanceStore.selectedMonth,
+      selectedMonth.value,
     )
   }
 }
@@ -33,22 +34,21 @@ const getExportExcel = async () => {
     await attendanceStore.downloadExcel(
       selectedCompanyId.value,
       category?.value,
-      attendanceStore.selectedMonth,
+      selectedMonth.value,
     )
   }
 }
+
 const getDownloadPDF = async () => {
   if (selectedCompanyId.value) {
-    await attendanceStore.downloadPDF(
-      selectedCompanyId.value,
-      category?.value,
-      attendanceStore.selectedMonth,
-    )
+    await attendanceStore.downloadPDF(selectedCompanyId.value, category?.value, selectedMonth.value)
   }
 }
 
 onMounted(async () => {
   await companyStore.fetchCompanies()
+  await fetchAttendance()
+  selectedEmployee.value = employees.value.find((em) => em.id == route.query.employee_id)
 })
 
 watch(selectedCompanyId, (newCompanyId) => {
@@ -57,7 +57,34 @@ watch(selectedCompanyId, (newCompanyId) => {
 
 watch([selectedCompanyId, selectedMonth], fetchAttendance)
 
-watch(selectedEmployeeId, (newEmployee) => {
+watch(selectedCompanyId, (newSelectedCompanyId) => {
+  router.replace({
+    query: {
+      ...route.query,
+      company_id: newSelectedCompanyId,
+    },
+  })
+})
+
+watch(selectedMonth, (date) => {
+  router.replace({
+    query: {
+      ...route.query,
+      date: date,
+    },
+  })
+})
+
+watch(selectedEmployee, (newEmployee) => {
+  router.replace({
+    query: {
+      ...route.query,
+      employee_id: newEmployee?.id,
+    },
+  })
+})
+
+watch(selectedEmployee, (newEmployee) => {
   if (newEmployee?.id) {
     fetchAttendance()
   }
@@ -109,7 +136,7 @@ const goBack = () => router.go(-1)
       </div>
       <div>
         <Multiselect
-          v-model="selectedEmployeeId"
+          v-model="selectedEmployee"
           :options="employees"
           :multiple="false"
           label="name"
@@ -117,12 +144,7 @@ const goBack = () => router.go(-1)
         />
       </div>
       <div>
-        <input
-          type="month"
-          v-model="attendanceStore.selectedMonth"
-          @change="fetchAttendance"
-          class="input-1"
-        />
+        <input type="month" v-model="selectedMonth" @change="fetchAttendance" class="input-1" />
       </div>
     </div>
 

@@ -4,22 +4,25 @@ import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useExchangeStore } from '@/stores/exchange'
 import { useUserStore } from '@/stores/user'
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
 const exchangeStore = useExchangeStore()
 const userStore = useUserStore()
 const type = 'offday'
-const selectedUser = ref('')
+const selectedUser = ref(null)
 const selectedUserId = computed(() => selectedUser.value?.id)
+const selectedMonth = ref(route.query.date || exchangeStore.selectedMonth)
 
 onMounted(() => {
   userStore.fetchUsers()
   exchangeStore.fetchAllExchanges({
     type: type,
-    selectedMonth: exchangeStore.selectedMonth,
+    selectedMonth: selectedMonth.value,
     selectedStatus: exchangeStore.selectedStatus,
   })
+  selectedUser.value = userStore.users.find((user) => user.id == route?.query?.user_id)
 })
 
 const fetchOffDayExchangeByUser = async () => {
@@ -27,20 +30,38 @@ const fetchOffDayExchangeByUser = async () => {
     await exchangeStore.fetchAllExchanges({
       user_id: selectedUserId.value,
       type: type,
-      selectedMonth: exchangeStore.selectedMonth,
+      selectedMonth: selectedMonth.value,
       selectedStatus: exchangeStore.selectedStatus,
     })
   } else {
     // Fetch all short leaves if no user is selected
     await exchangeStore.fetchAllExchanges({
       type: type,
-      selectedMonth: exchangeStore.selectedMonth,
+      selectedMonth: selectedMonth.value,
       selectedStatus: exchangeStore.selectedStatus,
     })
   }
 }
 
 watch([selectedUserId], fetchOffDayExchangeByUser)
+
+watch(selectedUserId, (user) => {
+  router.replace({
+    query: {
+      ...route.query,
+      user_id: user,
+    },
+  })
+})
+
+watch(selectedMonth, (date) => {
+  router.replace({
+    query: {
+      ...route.query,
+      date: date,
+    },
+  })
+})
 
 const goBack = () => {
   router.go(-1)
@@ -77,7 +98,7 @@ const deleteApplication = async (applicationId) => {
         <input
           id="monthSelect"
           type="month"
-          v-model="exchangeStore.selectedMonth"
+          v-model="selectedMonth"
           @change="fetchOffDayExchangeByUser"
           class="input-1"
         />

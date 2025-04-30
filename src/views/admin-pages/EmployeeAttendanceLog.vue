@@ -4,29 +4,49 @@ import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useUserStore } from '@/stores/user'
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
 const attendanceStore = useAttendanceStore()
 
 const selectedUser = ref(null)
 const selectedUserId = ref('')
-const selectedMonth = ref('')
+const selectedMonth = ref(route.query.date || attendanceStore.selectedMonth)
 
 const userId = computed(() => selectedUser.value?.id)
 
 const fetchAttendance = async () => {
   if (userId) {
-    await attendanceStore.getMonthlyAttendanceLog(userId.value, attendanceStore.selectedMonth)
+    await attendanceStore.getMonthlyAttendanceLog(userId.value, selectedMonth.value)
   }
 }
 
 onMounted(async () => {
   await userStore.fetchUsers()
+  selectedUser.value = userStore.users.find((user) => user.id == route.query.user_id)
 })
 
 watch([selectedUserId, selectedMonth], fetchAttendance)
+
+watch(userId, (user) => {
+  router.replace({
+    query: {
+      ...route.query,
+      user_id: user,
+    },
+  })
+})
+
+watch(selectedMonth, (date) => {
+  router.replace({
+    query: {
+      ...route.query,
+      date: date,
+    },
+  })
+})
 
 watch(
   userId,
@@ -70,7 +90,7 @@ const formatTime = (timestamp) => {
         <input
           id="monthSelect"
           type="month"
-          v-model="attendanceStore.selectedMonth"
+          v-model="selectedMonth"
           @change="fetchAttendance"
           class="input-1"
         />

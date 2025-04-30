@@ -86,7 +86,7 @@ function print() {
       <h2 class="title-md">Manual Attendance Request</h2>
       <div>
         <div class="grid md:grid-cols-2">
-          <div>
+          <div v-if="manualAttendance?.check_in">
             <b>Date:</b>
             {{
               new Date(manualAttendance?.check_in).toLocaleDateString('en-GB', {
@@ -96,6 +96,18 @@ function print() {
               })
             }}
           </div>
+
+          <div v-if="manualAttendance?.check_out">
+            <b>Date:</b>
+            {{
+              new Date(manualAttendance?.check_out).toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+              })
+            }}
+          </div>
+
           <div v-if="manualAttendance?.check_in">
             <b>Check-In:</b>
             {{

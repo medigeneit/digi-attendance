@@ -14,15 +14,15 @@ const userStore = useUserStore()
 const { leaveApplications } = storeToRefs(leaveApplicationStore)
 const selectedUser = ref('')
 const selectedUserId = computed(() => selectedUser.value?.id)
-const selectedDate = ref(route?.query?.search || null)
+const selectedDate = ref(route?.query?.date || leaveApplicationStore.selectedMonth)
 
 onMounted(() => {
   userStore.fetchUsers()
   leaveApplicationStore.fetchLeaveApplications({
-    selectedMonth: leaveApplicationStore.selectedMonth,
-    selectedStatus: leaveApplicationStore.selectedStatus,
     selectedDate: selectedDate.value,
+    selectedStatus: leaveApplicationStore.selectedStatus,
   })
+  selectedUser.value = userStore.users.find((user) => user.id == route?.query?.user_id)
 })
 
 const goBack = () => {
@@ -33,14 +33,12 @@ const fetchApplicationsByUser = async () => {
   if (selectedUserId.value) {
     await leaveApplicationStore.fetchLeaveApplications({
       user_id: selectedUserId.value,
-      selectedMonth: leaveApplicationStore.selectedMonth,
-      selectedStatus: leaveApplicationStore.selectedStatus,
       selectedDate: selectedDate.value,
+      selectedStatus: leaveApplicationStore.selectedStatus,
     })
   } else {
     // Fetch all short leaves if no user is selected
     await leaveApplicationStore.fetchLeaveApplications({
-      selectedMonth: leaveApplicationStore.selectedMonth,
       selectedStatus: leaveApplicationStore.selectedStatus,
       selectedDate: selectedDate.value,
     })
@@ -51,11 +49,25 @@ const filteredLeaveApplications = computed(() => {
   return leaveApplicationStore.leaveApplications
 })
 
-onMounted(async () => {
-  await leaveApplicationStore.fetchLeaveApplications({ query: route.query?.search })
+watch([selectedUserId], fetchApplicationsByUser)
+
+watch(selectedUserId, (user) => {
+  router.replace({
+    query: {
+      ...route.query,
+      user_id: user,
+    },
+  })
 })
 
-watch([selectedUserId], fetchApplicationsByUser)
+watch(selectedDate, (date) => {
+  router.replace({
+    query: {
+      ...route.query,
+      date: date,
+    },
+  })
+})
 
 const deleteApplication = async (applicationId) => {
   if (confirm('Are you sure to delete this application?')) {
@@ -73,38 +85,38 @@ const deleteApplication = async (applicationId) => {
       </button>
 
       <h1 class="title-md md:title-lg flex-wrap text-center">Leave Applications</h1>
-
-      <div class="flex gap-2">
-        <div style="width: 300px">
-          <MultiselectDropdown
-            v-model="selectedUser"
-            :options="userStore.users"
-            :multiple="false"
-            label="name"
-            placeholder="Select user"
-          />
-        </div>
-        <div>
-          <input
-            id="monthSelect"
-            type="month"
-            v-model="leaveApplicationStore.selectedMonth"
-            @change="fetchApplicationsByUser"
-            class="input-1"
-          />
-        </div>
-        <div>
-          <select
-            v-model="leaveApplicationStore.selectedStatus"
-            @change="fetchApplicationsByUser"
-            class="input-1"
-          >
-            <option value="" selected>All</option>
-            <option value="Pending">Pending</option>
-            <option value="Approved">Approved</option>
-            <option value="Rejected">Rejected</option>
-          </select>
-        </div>
+      <div></div>
+    </div>
+    <div class="flex gap-2">
+      <div style="width: 300px">
+        <MultiselectDropdown
+          v-model="selectedUser"
+          :options="userStore.users"
+          :multiple="false"
+          label="name"
+          placeholder="Select user"
+        />
+      </div>
+      <div>
+        <input
+          id="monthSelect"
+          type="month"
+          v-model="selectedDate"
+          @change="fetchApplicationsByUser"
+          class="input-1"
+        />
+      </div>
+      <div>
+        <select
+          v-model="leaveApplicationStore.selectedStatus"
+          @change="fetchApplicationsByUser"
+          class="input-1"
+        >
+          <option value="" selected>All</option>
+          <option value="Pending">Pending</option>
+          <option value="Approved">Approved</option>
+          <option value="Rejected">Rejected</option>
+        </select>
       </div>
     </div>
 
