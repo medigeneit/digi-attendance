@@ -142,6 +142,7 @@ const goBack = () => router.go(-1)
               <td class="border px-1 py-0.5">
                 <div v-if="log.late_duration">
                   {{ log.late_duration }}
+<<<<<<< HEAD
                   <span
                     v-if="log.first_short_leave"
                     :class="{
@@ -152,11 +153,29 @@ const goBack = () => router.go(-1)
                   >
                     ({{ log.first_short_leave }})
                   </span>
+=======
+                  <router-link v-if="log.first_short_leave"
+                      :to="{
+                        name: 'ShortLeaveShow',
+                        params: {
+                          id: log.first_short_leave_id,
+                        },
+                      }"
+                      :class="{
+                        'text-green-500': log.first_short_leave === 'Approved',
+                        'text-yellow-500':
+                          log.first_short_leave === 'Pending',
+                        'text-red-500': log.first_short_leave === 'Rejected',
+                      }">
+                    ({{log.first_short_leave}})
+                  </router-link>
+>>>>>>> 5dbfec57d6c0c08142cb96001f90fb4cfe2fd64f
                 </div>
               </td>
               <td class="border px-1 py-0.5">
                 <div v-if="log.early_leave_duration">
                   {{ log.early_leave_duration }}
+<<<<<<< HEAD
                   <span
                     v-if="log.last_short_leave"
                     class="px-1"
@@ -168,6 +187,27 @@ const goBack = () => router.go(-1)
                   >
                     ({{ log.last_short_leave }})
                   </span>
+=======
+                  <router-link v-if="log.last_short_leave"
+                      :to="{
+                        name: 'ShortLeaveShow',
+                        params: {
+                          id: log.last_short_leave_id,
+                        },
+                      }"
+                      class="px-1"
+                      :class="{
+                        'text-green-500':
+                          log.last_short_leave === 'Approved',
+                        'text-yellow-500':
+                          log.last_short_leave === 'Pending',
+                        'text-red-500':
+                          log.last_short_leave === 'Rejected',
+                      }"
+                    >
+                    ({{log.last_short_leave}})
+                  </router-link>
+>>>>>>> 5dbfec57d6c0c08142cb96001f90fb4cfe2fd64f
                 </div>
               </td>
               <td
