@@ -100,12 +100,12 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
     }
   }
 
-  async function acceptHandover(id) {
+  async function acceptHandover(payload) {
     loading.value = true;
     error.value = null;
 
     try {
-      const response = await apiClient.post(`/leave-applications/${id}/handover-accept`);
+      const response = await apiClient.post(`/leave-applications/${payload.id}/handover-accept`, payload);
       const index = leaveApplications.value.findIndex((app) => app.id === id);
       if (index !== -1) {
         leaveApplications.value[index] = response.data.data;
@@ -119,12 +119,12 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
     }
   }
 
-  async function acceptInCharge(id) {
+  async function acceptInCharge(payload) {
     loading.value = true;
     error.value = null;
 
     try {
-      const response = await apiClient.post(`/leave-applications/${id}/incharge-accept`);
+      const response = await apiClient.post(`/leave-applications/${payload.id}/incharge-accept`, payload);
       const index = leaveApplications.value.findIndex((app) => app.id === id);
       if (index !== -1) {
         leaveApplications.value[index] = response.data.data;
@@ -138,12 +138,12 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
     }
   }
 
-  async function acceptCoordinator(id) {
+  async function acceptCoordinator(payload) {
     loading.value = true;
     error.value = null;
 
     try {
-      const response = await apiClient.post(`/leave-applications/${id}/coordinator-accept`);
+      const response = await apiClient.post(`/leave-applications/${payload.id}/coordinator-accept`, payload);
       const index = leaveApplications.value.findIndex((app) => app.id === id);
       if (index !== -1) {
         leaveApplications.value[index] = response.data.data;
@@ -157,12 +157,12 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
     }
   }
 
-  async function acceptOperationalAdmin(id) {
+  async function acceptOperationalAdmin(payload) {
     loading.value = true;
     error.value = null;
 
     try {
-      const response = await apiClient.post(`/leave-applications/${id}/operational-admin-accept`);
+      const response = await apiClient.post(`/leave-applications/${payload.id}/operational-admin-accept`, payload);
       const index = leaveApplications.value.findIndex((app) => app.id === id);
       if (index !== -1) {
         leaveApplications.value[index] = response.data.data;
@@ -176,12 +176,12 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
     }
   }
 
-  async function acceptRecommendBy(id) {
+  async function acceptRecommendBy(payload) {
     loading.value = true;
     error.value = null;
 
     try {
-      const response = await apiClient.post(`/leave-applications/${id}/recommend-by-accept`);
+      const response = await apiClient.post(`/leave-applications/${payload.id}/recommend-by-accept`, payload);
       const index = leaveApplications.value.findIndex((app) => app.id === id);
       if (index !== -1) {
         leaveApplications.value[index] = response.data.data;
@@ -195,12 +195,12 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
     }
   }
 
-  async function acceptApprovedBy(id) {
+  async function acceptApprovedBy(payload) {
     loading.value = true;
     error.value = null;
-
+    
     try {
-      const response = await apiClient.post(`/leave-applications/${id}/approved-by-accept`);
+      const response = await apiClient.post(`/leave-applications/${payload?.id}/approved-by-accept`,payload);
       const index = leaveApplications.value.findIndex((app) => app.id === id);
       if (index !== -1) {
         leaveApplications.value[index] = response.data.data;

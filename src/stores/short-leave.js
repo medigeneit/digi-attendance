@@ -139,11 +139,11 @@ export const useShortLeaveStore = defineStore('shortLeave', () => {
   };
 
   // Handover Accept
-  const handoverAccept = async (id) => {
+  const handoverAccept = async (payload) => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await apiClient.post(`/short-leaves/${id}/handover-accept`);
+      const response = await apiClient.post(`/short-leaves/${payload.id}/handover-accept`, payload);
       const index = shortLeaves.value.findIndex((leave) => leave.id === id);
       if (index !== -1) {
         shortLeaves.value[index] = response.data.data;
@@ -159,11 +159,11 @@ export const useShortLeaveStore = defineStore('shortLeave', () => {
   };
 
   // In-Charge Accept
-  const inChargeAccept = async (id) => {
+  const inChargeAccept = async (payload) => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await apiClient.post(`/short-leaves/${id}/in-charge-accept`);
+      const response = await apiClient.post(`/short-leaves/${payload.id}/in-charge-accept`, payload);
       const index = shortLeaves.value.findIndex((leave) => leave.id === id);
       if (index !== -1) {
         shortLeaves.value[index] = response.data.data;
@@ -179,11 +179,11 @@ export const useShortLeaveStore = defineStore('shortLeave', () => {
   };
 
   // Recommend By Accept
-  const recommendByAccept = async (id) => {
+  const recommendByAccept = async (payload) => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await apiClient.post(`/short-leaves/${id}/recommend-by-accept`);
+      const response = await apiClient.post(`/short-leaves/${payload.id}/recommend-by-accept`, payload);
       const index = shortLeaves.value.findIndex((leave) => leave.id === id);
       if (index !== -1) {
         shortLeaves.value[index] = response.data.data;
@@ -199,11 +199,12 @@ export const useShortLeaveStore = defineStore('shortLeave', () => {
   };
 
   // Approved By Accept
-  const approvedByAccept = async (id) => {
+  const approvedByAccept = async (payload) => {
     loading.value = true;
     error.value = null;
+    console.log({payload});
     try {
-      const response = await apiClient.post(`/short-leaves/${id}/approved-by-accept`);
+      const response = await apiClient.post(`/short-leaves/${payload?.id}/approved-by-accept`, payload);
       const index = shortLeaves.value.findIndex((leave) => leave.id === id);
       if (index !== -1) {
         shortLeaves.value[index] = response.data.data;

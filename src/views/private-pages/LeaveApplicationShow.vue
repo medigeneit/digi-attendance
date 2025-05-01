@@ -15,7 +15,12 @@ const route = useRoute()
 const loading = ref(true)
 
 const rejectionModal = ref(false)
+
 const rejectionReason = ref('')
+
+const approvalModal = ref(false)
+
+const approvalNote = ref('')
 
 const leaveApplication = computed(() => leaveApplicationStore.leaveApplication)
 
@@ -50,14 +55,35 @@ function openRejectionModal() {
   rejectionModal.value = true
 }
 
+let approvalUrl = ''
+
+function openApprovalModal(url) {
+  approvalModal.value = true
+  approvalUrl = url
+}
+
+async function submitApproval() {
+  if (approvalUrl === 'acceptApprovedByApplication') {
+    acceptApprovedByApplication(route.params.id)
+  }
+  if (approvalUrl === 'acceptHandoverApplication') {
+    acceptHandoverApplication(route.params.id)
+  }
+  if (approvalUrl === 'acceptInChargeApplication') {
+    acceptInChargeApplication(route.params.id)
+  }
+  if (approvalUrl === 'acceptRecommendByApplication') {
+    acceptRecommendByApplication(route.params.id)
+  }
+  approvalModal.value = false
+}
+
 async function acceptHandoverApplication(id) {
   try {
-    if (confirm('Are you sure you want to approve?')) {
-      await leaveApplicationStore.acceptHandover(id)
-      // alert('Handover accepted successfully!')
-      await leaveApplicationStore.fetchLeaveApplicationById(id)
-      refresh()
-    }
+    await leaveApplicationStore.acceptHandover({ id, note: approvalNote.value })
+    alert('Handover accepted successfully!')
+    await leaveApplicationStore.fetchLeaveApplicationById(id)
+    refresh()
   } catch (err) {
     alert(err.message)
   }
@@ -65,12 +91,10 @@ async function acceptHandoverApplication(id) {
 
 async function acceptInChargeApplication(id) {
   try {
-    if (confirm('Are you sure you want to approve?')) {
-      await leaveApplicationStore.acceptInCharge(id)
-      // alert('Leave Application Successfully Accepted!')
-      await leaveApplicationStore.fetchLeaveApplicationById(id)
-      refresh()
-    }
+    await leaveApplicationStore.acceptInCharge({ id, note: approvalNote.value })
+    alert('Leave Application Successfully Accepted!')
+    await leaveApplicationStore.fetchLeaveApplicationById(id)
+    refresh()
   } catch (err) {
     alert(err.message)
   }
@@ -78,12 +102,10 @@ async function acceptInChargeApplication(id) {
 
 async function acceptCoordinatorApplication(id) {
   try {
-    if (confirm('Are you sure you want to approve?')) {
-      await leaveApplicationStore.acceptCoordinator(id)
-      // alert('Coordinator accepted successfully!')
-      await leaveApplicationStore.fetchLeaveApplicationById(id)
-      refresh()
-    }
+    await leaveApplicationStore.acceptCoordinator({ id, note: approvalNote.value })
+    alert('Coordinator accepted successfully!')
+    await leaveApplicationStore.fetchLeaveApplicationById(id)
+    refresh()
   } catch (err) {
     alert(err.message)
   }
@@ -91,12 +113,10 @@ async function acceptCoordinatorApplication(id) {
 
 async function acceptOperationalAdminApplication(id) {
   try {
-    if (confirm('Are you sure you want to approve?')) {
-      await leaveApplicationStore.acceptOperationalAdmin(id)
-      // alert('Operational Admin accepted successfully!')
-      await leaveApplicationStore.fetchLeaveApplicationById(id)
-      refresh()
-    }
+    await leaveApplicationStore.acceptOperationalAdmin({ id, note: approvalNote.value })
+    alert('Operational Admin accepted successfully!')
+    await leaveApplicationStore.fetchLeaveApplicationById(id)
+    refresh()
   } catch (err) {
     alert(err.message)
   }
@@ -104,32 +124,31 @@ async function acceptOperationalAdminApplication(id) {
 
 async function acceptRecommendByApplication(id) {
   try {
-    if (confirm('Are you sure you want to approve?')) {
-      await leaveApplicationStore.acceptRecommendBy(id)
-      // alert('Recommendation accepted successfully!')
-      await leaveApplicationStore.fetchLeaveApplicationById(id)
-      refresh()
-    }
+    await leaveApplicationStore.acceptRecommendBy({ id, note: approvalNote.value })
+    alert('Recommendation accepted successfully!')
+    await leaveApplicationStore.fetchLeaveApplicationById(id)
+    refresh()
   } catch (err) {
     alert(err.message)
   }
 }
 
 async function acceptApprovedByApplication(id) {
+  console.log(approvalNote.value)
   try {
-    if (confirm('Are you sure you want to approve?')) {
-      await leaveApplicationStore.acceptApprovedBy(id)
-      // alert('Leave Application approved successfully!')
-      refresh()
-      await leaveApplicationStore.fetchLeaveApplicationById(id)
-    }
+    await leaveApplicationStore.acceptApprovedBy({ id, note: approvalNote.value })
+    alert('Leave Application approved successfully!')
+    refresh()
+    await leaveApplicationStore.fetchLeaveApplicationById(id)
   } catch (err) {
     alert(err.message)
   }
 }
 
 async function refresh() {
-  await notificationStore.markAsRead(route.query.notifyId)
+  if (route?.query?.notifyId) {
+    await notificationStore.markAsRead(route?.query?.notifyId)
+  }
 }
 
 function print() {
@@ -323,7 +342,7 @@ const totalWithWeekendDays = computed(() => {
               <div class="flex justify-center gap-2">
                 <button
                   class="font-bold text-lg text-green-600 px-2"
-                  @click="acceptHandoverApplication(leaveApplication.id)"
+                  @click="openApprovalModal('acceptHandoverApplication')"
                 >
                   ✔
                 </button>
@@ -345,6 +364,9 @@ const totalWithWeekendDays = computed(() => {
                 ><i class="fad fa-spinner"></i
               ></span>
             </h4>
+            <p class="text-xs text-gray-500">
+              {{ leaveApplication?.handover_note }}
+            </p>
           </div>
         </div>
 
@@ -436,7 +458,7 @@ const totalWithWeekendDays = computed(() => {
               <div class="flex justify-center gap-4">
                 <button
                   class="font-bold text-lg text-green-600"
-                  @click="acceptInChargeApplication(leaveApplication.id)"
+                  @click="openApprovalModal('acceptInChargeApplication')"
                 >
                   ✔
                 </button>
@@ -459,6 +481,9 @@ const totalWithWeekendDays = computed(() => {
                 ></span>
               </p>
             </h4>
+            <p class="text-xs text-gray-500">
+              {{ leaveApplication?.in_charge_note }}
+            </p>
           </div>
 
           <!-- Coordinator Approval -->
@@ -583,7 +608,7 @@ const totalWithWeekendDays = computed(() => {
               <div class="flex justify-center gap-4">
                 <button
                   class="font-bold text-lg text-green-600"
-                  @click="acceptRecommendByApplication(leaveApplication.id)"
+                  @click="openApprovalModal('acceptRecommendByApplication')"
                 >
                   ✔
                 </button>
@@ -602,6 +627,9 @@ const totalWithWeekendDays = computed(() => {
                 class="pl-2 text-yellow-700"
                 ><i class="fad fa-spinner"></i
               ></span>
+            </p>
+            <p class="text-xs text-gray-500">
+              {{ leaveApplication?.recommend_note }}
             </p>
           </div>
 
@@ -630,7 +658,7 @@ const totalWithWeekendDays = computed(() => {
               <div class="flex justify-center gap-4">
                 <button
                   class="font-bold text-lg text-green-600"
-                  @click="acceptApprovedByApplication(leaveApplication.id)"
+                  @click="openApprovalModal('acceptApprovedByApplication')"
                 >
                   ✔
                 </button>
@@ -650,12 +678,30 @@ const totalWithWeekendDays = computed(() => {
                 ><i class="fad fa-spinner"></i
               ></span>
             </p>
+            <p class="text-xs text-gray-500">
+              {{ leaveApplication?.approval_note }}
+            </p>
           </div>
         </div>
       </div>
     </div>
 
     <ShareComponent />
+  </div>
+  <div v-if="approvalModal" class="modal-bg">
+    <div class="modal-card">
+      <h3 class="title-lg">Accept Application</h3>
+      <input
+        v-model="approvalNote"
+        rows="4"
+        placeholder="Enter rejection reason..."
+        class="w-full border rounded-lg p-2 text-gray-700"
+      />
+      <div class="flex justify-end gap-2 mt-4">
+        <button class="btn-3" @click="approvalModal = false">Cancel</button>
+        <button class="btn-2 bg-red-500 text-white" @click="submitApproval">Confirm</button>
+      </div>
+    </div>
   </div>
   <div v-if="rejectionModal" class="modal-bg">
     <div class="modal-card">

@@ -18,6 +18,8 @@ const attachment = ref(null)
 const loading = ref(true)
 const rejectionModal = ref(false)
 const rejectionReason = ref('')
+const approvalModal = ref(false)
+const approvalNote = ref('')
 
 const shortLeave = computed(() => shortLeaveStore.shortLeave)
 
@@ -31,6 +33,18 @@ onMounted(async () => {
     loading.value = false
   }
 })
+
+let action = ref('')
+
+function openApprovalModal(url) {
+  action.value = url
+  approvalModal.value = true
+}
+
+async function submitApproval() {
+  acceptShortLeaveAction(action.value)
+  approvalModal.value = false
+}
 
 const rejectShortLeave = async () => {
   try {
@@ -65,10 +79,15 @@ const openRejectionModal = () => {
 const acceptShortLeaveAction = async (action) => {
   try {
     const { id } = route.params
-    if (action === 'handover') await shortLeaveStore.handoverAccept(id)
-    if (action === 'inCharge') await shortLeaveStore.inChargeAccept(id)
-    if (action === 'recommend') await shortLeaveStore.recommendByAccept(id)
-    if (action === 'approve') await shortLeaveStore.approvedByAccept(id)
+    console.log(action, id, approvalNote.value)
+    if (action === 'handover')
+      await shortLeaveStore.handoverAccept({ id, note: approvalNote.value })
+    if (action === 'inCharge')
+      await shortLeaveStore.inChargeAccept({ id, note: approvalNote.value })
+    if (action === 'recommend')
+      await shortLeaveStore.recommendByAccept({ id, note: approvalNote.value })
+    if (action === 'approve')
+      await shortLeaveStore.approvedByAccept({ id, note: approvalNote.value })
     alert(`${action} accepted successfully!`)
     await shortLeaveStore.fetchShortLeaveById(id)
     refresh()
@@ -117,7 +136,9 @@ const formatTime = (timeString) => {
 }
 
 async function refresh() {
-  await notificationStore.markAsRead(route.query.notifyId)
+  if (route.query.notifyId) {
+    await notificationStore.markAsRead(route.query.notifyId)
+  }
 }
 </script>
 
@@ -190,7 +211,7 @@ async function refresh() {
               <div class="flex gap-2">
                 <button
                   class="font-bold text-lg text-green-600 px-2"
-                  @click="acceptShortLeaveAction('handover')"
+                  @click="openApprovalModal('handover')"
                 >
                   ✔
                 </button>
@@ -212,6 +233,9 @@ async function refresh() {
                 ><i class="fad fa-spinner"></i
               ></span>
             </h4>
+            <p class="text-xs text-gray-500">
+              {{ shortLeave?.handover_note }}
+            </p>
           </div>
         </div>
       </div>
@@ -262,7 +286,7 @@ async function refresh() {
             <div class="flex gap-4">
               <button
                 class="font-bold text-lg text-green-600"
-                @click="acceptShortLeaveAction('inCharge')"
+                @click="openApprovalModal('inCharge')"
               >
                 ✔
               </button>
@@ -280,6 +304,9 @@ async function refresh() {
               class="pl-2 text-yellow-700"
               ><i class="fad fa-spinner"></i
             ></span>
+          </p>
+          <p class="text-xs text-gray-500">
+            {{ shortLeave?.in_charge_note }}
           </p>
         </div>
 
@@ -306,7 +333,7 @@ async function refresh() {
             <div class="flex gap-4">
               <button
                 class="font-bold text-lg text-green-600"
-                @click="acceptShortLeaveAction('recommend')"
+                @click="openApprovalModal('recommend')"
               >
                 ✔
               </button>
@@ -326,6 +353,9 @@ async function refresh() {
               class="pl-2 text-yellow-700"
               ><i class="fad fa-spinner"></i
             ></span>
+          </p>
+          <p class="text-xs text-gray-500">
+            {{ shortLeave?.recommend_note }}
           </p>
         </div>
         <div class="pt-10">
@@ -349,7 +379,7 @@ async function refresh() {
             <div class="flex gap-4">
               <button
                 class="font-bold text-lg text-green-600"
-                @click="acceptShortLeaveAction('approve')"
+                @click="openApprovalModal('approve')"
               >
                 ✔
               </button>
@@ -368,6 +398,9 @@ async function refresh() {
               class="pl-2 text-yellow-700"
               ><i class="fad fa-spinner"></i
             ></span>
+          </p>
+          <p class="text-xs text-gray-500">
+            {{ shortLeave?.approval_note }}
           </p>
         </div>
       </div>
@@ -388,7 +421,7 @@ async function refresh() {
         <input type="file" @change="fileUploadLink" class="w-full p-2 border rounded" />
 
         <!-- Show Selected File Name -->
-        <p v-if="fileName" class="text-sm text-gray-600 mt-1">Selected File: {{ fileName }}</p>
+        <!-- <p v-if="fileName" class="text-sm text-gray-600 mt-1">Selected File: {{ fileName }}</p> -->
       </div>
       <!-- <button type="button" v-if="attachment" class="btn-2" @click="uploadShortLeaveAttachment">
         Upload Attachment
@@ -399,6 +432,23 @@ async function refresh() {
       <ScreenshotCapture targetId="leave-application" platform="whatsapp" />
     </ShareComponent>
   </div>
+
+  <div v-if="approvalModal" class="modal-bg">
+    <div class="modal-card">
+      <h3 class="title-lg">Accept Application</h3>
+      <input
+        v-model="approvalNote"
+        rows="4"
+        placeholder="Enter rejection reason..."
+        class="w-full border rounded-lg p-2 text-gray-700"
+      />
+      <div class="flex justify-end gap-2 mt-4">
+        <button class="btn-3" @click="approvalModal = false">Cancel</button>
+        <button class="btn-2 bg-red-500 text-white" @click="submitApproval">Confirm</button>
+      </div>
+    </div>
+  </div>
+
   <div v-if="rejectionModal" class="modal-bg">
     <div class="modal-card">
       <h3 class="title-lg">Reject Short Leave</h3>
