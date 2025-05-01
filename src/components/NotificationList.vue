@@ -262,7 +262,7 @@ const handleNotificationClick = (notification) => {
               <RouterLink
                 v-if="route.query.type === 'manualAttendance'"
                 :to="{
-                  name: 'ExchangeShiftShow',
+                  name: 'ManualAttendanceShow',
                   params: { id: item?.event_model?.id },
                   query: { notifyId: item?.id },
                 }"

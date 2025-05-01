@@ -102,11 +102,11 @@ export const useManualAttendanceStore = defineStore('manualAttendance', () => {
     }
   };
 
-  const inChargeAccept = async (id) => {
+  const inChargeAccept = async (payload) => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await apiClient.post(`/manual-attendances/${id}/in-charge-accept`);
+      const response = await apiClient.post(`/manual-attendances/${payload?.id}/in-charge-accept`, payload);
       const index = manualAttendances.value.findIndex((attendance) => attendance.id === id);
       if (index !== -1) {
         manualAttendances.value[index] = response.data.data;
@@ -121,11 +121,11 @@ export const useManualAttendanceStore = defineStore('manualAttendance', () => {
     }
   };
 
-  const recommendByAccept = async (id) => {
+  const recommendByAccept = async (payload) => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await apiClient.post(`/manual-attendances/${id}/recommend-by-accept`);
+      const response = await apiClient.post(`/manual-attendances/${payload?.id}/recommend-by-accept`, payload);
       const index = manualAttendances.value.findIndex((attendance) => attendance.id === id);
       if (index !== -1) {
         manualAttendances.value[index] = response.data.data;
@@ -140,11 +140,11 @@ export const useManualAttendanceStore = defineStore('manualAttendance', () => {
     }
   };
 
-  const approvedByAccept = async (id) => {
+  const approvedByAccept = async (payload) => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await apiClient.post(`/manual-attendances/${id}/approved-by-accept`);
+      const response = await apiClient.post(`/manual-attendances/${payload?.id}/approved-by-accept`, payload);
       const index = manualAttendances.value.findIndex((attendance) => attendance.id === id);
       if (index !== -1) {
         manualAttendances.value[index] = response.data.data;

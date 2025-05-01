@@ -10,7 +10,8 @@ const router = useRouter()
 const route = useRoute()
 const manualAttendanceStore = useManualAttendanceStore()
 const authStore = useAuthStore()
-
+const approvalModal = ref(false)
+const approvalNote = ref('')
 const rejectionModal = ref(false)
 const rejectionReason = ref('')
 
@@ -25,6 +26,18 @@ onMounted(async () => {
     console.error('Failed to fetch manual attendance details:', err)
   }
 })
+
+let action = ref('')
+
+function openApprovalModal(url) {
+  action.value = url
+  approvalModal.value = true
+}
+
+async function submitApproval() {
+  acceptManualAttendanceAction(action.value)
+  approvalModal.value = false
+}
 
 const rejectManualAttendance = async () => {
   try {
@@ -46,9 +59,12 @@ const openRejectionModal = () => {
 const acceptManualAttendanceAction = async (action) => {
   try {
     const { id } = route.params
-    if (action === 'inCharge') await manualAttendanceStore.inChargeAccept(id)
-    if (action === 'recommend') await manualAttendanceStore.recommendByAccept(id)
-    if (action === 'approve') await manualAttendanceStore.approvedByAccept(id)
+    if (action === 'inCharge')
+      await manualAttendanceStore.inChargeAccept({ id, note: approvalNote.value })
+    if (action === 'recommend')
+      await manualAttendanceStore.recommendByAccept({ id, note: approvalNote.value })
+    if (action === 'approve')
+      await manualAttendanceStore.approvedByAccept({ id, note: approvalNote.value })
     if (confirm('Are you sure you want to approve?')) {
       // alert(`${action} accepted successfully!`)
       await manualAttendanceStore.fetchManualAttendanceById(id)
@@ -196,7 +212,7 @@ function print() {
             <div class="flex gap-4">
               <button
                 class="font-bold text-lg text-green-600"
-                @click="acceptManualAttendanceAction('inCharge')"
+                @click="openApprovalModal('inCharge')"
               >
                 ✔
               </button>
@@ -216,6 +232,9 @@ function print() {
               class="pl-2 text-yellow-700"
               ><i class="fad fa-spinner"></i
             ></span>
+          </p>
+          <p class="text-xs text-gray-500">
+            {{ manualAttendance?.in_charge_note }}
           </p>
         </div>
 
@@ -242,7 +261,7 @@ function print() {
             <div class="flex gap-4">
               <button
                 class="font-bold text-lg text-green-600"
-                @click="acceptManualAttendanceAction('recommend')"
+                @click="openApprovalModal('recommend')"
               >
                 ✔
               </button>
@@ -261,6 +280,9 @@ function print() {
               class="pl-2 text-yellow-700"
               ><i class="fad fa-spinner"></i
             ></span>
+          </p>
+          <p class="text-xs text-gray-500">
+            {{ manualAttendance?.recommend_note }}
           </p>
         </div>
       </div>
@@ -287,10 +309,7 @@ function print() {
             Will you accept it?
           </p>
           <div class="flex gap-4">
-            <button
-              class="font-bold text-lg text-green-600"
-              @click="acceptManualAttendanceAction('approve')"
-            >
+            <button class="font-bold text-lg text-green-600" @click="openApprovalModal('approve')">
               ✔
             </button>
             <button class="" @click="openRejectionModal">❌</button>
@@ -310,9 +329,28 @@ function print() {
             ><i class="fad fa-spinner"></i
           ></span>
         </p>
+        <p class="text-xs text-gray-500">
+          {{ manualAttendance?.approval_note }}
+        </p>
       </div>
     </div>
     <ShareComponent />
+  </div>
+
+  <div v-if="approvalModal" class="modal-bg">
+    <div class="modal-card">
+      <h3 class="title-lg">Accept Application</h3>
+      <input
+        v-model="approvalNote"
+        rows="4"
+        placeholder="Enter rejection reason..."
+        class="w-full border rounded-lg p-2 text-gray-700"
+      />
+      <div class="flex justify-end gap-2 mt-4">
+        <button class="btn-3" @click="approvalModal = false">Cancel</button>
+        <button class="btn-2 bg-red-500 text-white" @click="submitApproval">Confirm</button>
+      </div>
+    </div>
   </div>
 
   <!-- Rejection Modal -->
