@@ -1,6 +1,7 @@
 <script setup>
-import { ref, reactive, watch, onMounted } from 'vue'
+import Multiselect from '@/components/MultiselectDropdown.vue'
 import { useCompanyStore } from '@/stores/company'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 
 const props = defineProps({
   show: { type: Boolean, required: true },
@@ -9,7 +10,10 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'save'])
 
+const selectedCompanies = ref([])
+
 const isEditMode = ref(false)
+
 const holidayForm = reactive({
   id: null,
   year: new Date().getFullYear(),
@@ -19,7 +23,12 @@ const holidayForm = reactive({
   type: 'government',
   description: '',
   company_id: null,
+  company_ids: [],
 })
+
+holidayForm.company_ids = computed(() =>
+  selectedCompanies.value.filter((item) => item?.id).map((item) => item.id),
+)
 
 const companyStore = useCompanyStore()
 const companies = ref([])
@@ -42,6 +51,7 @@ watch(
     if (newHoliday) {
       isEditMode.value = true
       Object.assign(holidayForm, newHoliday)
+      selectedCompanies.value = companies.value.find((com) => com.id == newHoliday.company_id)
     } else {
       resetForm()
     }
@@ -126,7 +136,21 @@ onMounted(async () => {
             <option value="organizational">Organizational</option>
           </select>
         </div>
-        <div class="">
+
+        <div>
+          <label for="company_id" class="block text-sm font-medium">Company</label>
+          <Multiselect
+            v-model="selectedCompanies"
+            :options="companies"
+            :multiple="isEditMode ? false : true"
+            :searchable="true"
+            placeholder="Select companies"
+            track-by="id"
+            label="name"
+          />
+        </div>
+
+        <!-- <div class="">
           <label for="company_id" class="block text-sm font-medium">Company</label>
           <select
             id="company_id"
@@ -137,7 +161,7 @@ onMounted(async () => {
               {{ company.name }}
             </option>
           </select>
-        </div>
+        </div> -->
         <div class="">
           <label for="description" class="block text-sm font-medium">Description</label>
           <textarea
