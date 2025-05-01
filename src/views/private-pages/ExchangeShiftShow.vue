@@ -17,6 +17,8 @@ const toast = useToast()
 const loading = ref(true)
 const rejectionModal = ref(false)
 const rejectionReason = ref('')
+const approvalModal = ref(false)
+const approvalNote = ref('')
 const attachment = ref(null)
 
 const exchange = computed(() => exchangeStore.exchange)
@@ -31,6 +33,18 @@ onMounted(async () => {
     loading.value = false
   }
 })
+
+let action = ref('')
+
+function openApprovalModal(url) {
+  action.value = url
+  approvalModal.value = true
+}
+
+async function submitApproval() {
+  acceptExchangeAction(action.value)
+  approvalModal.value = false
+}
 
 const rejectExchange = async () => {
   try {
@@ -52,10 +66,11 @@ const openRejectionModal = () => {
 const acceptExchangeAction = async (action) => {
   try {
     const { id } = route.params
-    if (action === 'handover') await exchangeStore.handoverAccept(id)
-    if (action === 'inCharge') await exchangeStore.inChargeAccept(id)
-    if (action === 'recommend') await exchangeStore.recommendByAccept(id)
-    if (action === 'approve') await exchangeStore.approvedByAccept(id)
+    if (action === 'handover') await exchangeStore.handoverAccept({ id, note: approvalNote.value })
+    if (action === 'inCharge') await exchangeStore.inChargeAccept({ id, note: approvalNote.value })
+    if (action === 'recommend')
+      await exchangeStore.recommendByAccept({ id, note: approvalNote.value })
+    if (action === 'approve') await exchangeStore.approvedByAccept({ id, note: approvalNote.value })
     if (confirm('Are you sure you want to approve?')) {
       await exchangeStore.fetchExchange(id)
       refresh()
@@ -178,7 +193,7 @@ async function refresh() {
             <div class="flex gap-2">
               <button
                 class="font-bold text-lg text-green-600 px-2"
-                @click="acceptExchangeAction('handover')"
+                @click="openApprovalModal('handover')"
               >
                 ✔
               </button>
@@ -200,6 +215,9 @@ async function refresh() {
               ><i class="fad fa-spinner"></i
             ></span>
           </h4>
+          <p class="text-xs text-gray-500">
+            {{ exchange?.handover_note }}
+          </p>
         </div>
       </div>
 
@@ -248,7 +266,7 @@ async function refresh() {
             <div class="flex gap-4">
               <button
                 class="font-bold text-lg text-green-600"
-                @click="acceptExchangeAction('inCharge')"
+                @click="openApprovalModal('inCharge')"
               >
                 ✔
               </button>
@@ -265,6 +283,9 @@ async function refresh() {
               class="pl-2 text-yellow-700"
               ><i class="fad fa-spinner"></i
             ></span>
+          </p>
+          <p class="text-xs text-gray-500">
+            {{ exchange?.in_charge_note }}
           </p>
         </div>
 
@@ -289,7 +310,7 @@ async function refresh() {
             <div class="flex gap-4">
               <button
                 class="font-bold text-lg text-green-600"
-                @click="acceptExchangeAction('recommend')"
+                @click="openApprovalModal('recommend')"
               >
                 ✔
               </button>
@@ -308,6 +329,9 @@ async function refresh() {
               class="pl-2 text-yellow-700"
               ><i class="fad fa-spinner"></i
             ></span>
+          </p>
+          <p class="text-xs text-gray-500">
+            {{ exchange?.recommend_note }}
           </p>
         </div>
         <div class="pt-10">
@@ -331,7 +355,7 @@ async function refresh() {
             <div class="flex gap-4">
               <button
                 class="font-bold text-lg text-green-600"
-                @click="acceptExchangeAction('approve')"
+                @click="openApprovalModal('approve')"
               >
                 ✔
               </button>
@@ -350,6 +374,9 @@ async function refresh() {
               class="pl-2 text-yellow-700"
               ><i class="fad fa-spinner"></i
             ></span>
+          </p>
+          <p class="text-xs text-gray-500">
+            {{ exchange?.approval_note }}
           </p>
         </div>
       </div>
@@ -377,6 +404,22 @@ async function refresh() {
     <ShareComponent>
       <ScreenshotCapture targetId="leave-application" platform="whatsapp" />
     </ShareComponent>
+  </div>
+
+  <div v-if="approvalModal" class="modal-bg">
+    <div class="modal-card">
+      <h3 class="title-lg">Accept Application</h3>
+      <input
+        v-model="approvalNote"
+        rows="4"
+        placeholder="Enter rejection reason..."
+        class="w-full border rounded-lg p-2 text-gray-700"
+      />
+      <div class="flex justify-end gap-2 mt-4">
+        <button class="btn-3" @click="approvalModal = false">Cancel</button>
+        <button class="btn-2 bg-red-500 text-white" @click="submitApproval">Confirm</button>
+      </div>
+    </div>
   </div>
 
   <div v-if="rejectionModal" class="modal-bg">

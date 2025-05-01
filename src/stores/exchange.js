@@ -119,11 +119,11 @@ export const useExchangeStore = defineStore('exchange', () => {
   }
 
   // Accept Exchange by Handover
-  async function handoverAccept(id) {
+  async function handoverAccept(payload) {
     loading.value = true;
     error.value = null;
     try {
-      const response = await apiClient.post(`/exchanges/${id}/handover-accept`);
+      const response = await apiClient.post(`/exchanges/${payload.id}/handover-accept`, payload);
       exchange.value = response.data;
     } catch (err) {
       error.value = err.response?.data?.message || `Failed to accept handover for exchange ID ${id}`;
@@ -133,11 +133,11 @@ export const useExchangeStore = defineStore('exchange', () => {
   }
 
   // Accept Exchange by In-Charge
-  async function inChargeAccept(id) {
+  async function inChargeAccept(payload) {
     loading.value = true;
     error.value = null;
     try {
-      const response = await apiClient.post(`/exchanges/${id}/in-charge-accept`);
+      const response = await apiClient.post(`/exchanges/${payload?.id}/in-charge-accept`, payload);
       exchange.value = response.data;
     } catch (err) {
       error.value = err.response?.data?.message || `Failed to accept in-charge for exchange ID ${id}`;
@@ -147,11 +147,11 @@ export const useExchangeStore = defineStore('exchange', () => {
   }
 
   // Accept Exchange by Recommend
-  async function recommendByAccept(id) {
+  async function recommendByAccept(payload) {
     loading.value = true;
     error.value = null;
     try {
-      const response = await apiClient.post(`/exchanges/${id}/recommend-accept`);
+      const response = await apiClient.post(`/exchanges/${payload?.id}/recommend-accept`, payload);
       exchange.value = response.data;
     } catch (err) {
       error.value = err.response?.data?.message || `Failed to recommend exchange ID ${id}`;
@@ -161,11 +161,11 @@ export const useExchangeStore = defineStore('exchange', () => {
   }
 
   // Approve Exchange
-  async function approvedByAccept(id) {
+  async function approvedByAccept(payload) {
     loading.value = true;
     error.value = null;
     try {
-      const response = await apiClient.post(`/exchanges/${id}/approve`);
+      const response = await apiClient.post(`/exchanges/${payload?.id}/approve`, payload);
       exchange.value = response.data;
     } catch (err) {
       error.value = err.response?.data?.message || `Failed to approve exchange ID ${id}`;
