@@ -52,10 +52,12 @@ function openRejectionModal() {
 
 async function acceptHandoverApplication(id) {
   try {
-    await leaveApplicationStore.acceptHandover(id)
-    alert('Handover accepted successfully!')
-    await leaveApplicationStore.fetchLeaveApplicationById(id)
-    refresh()
+    if (confirm('Are you sure you want to approve?')) {
+      await leaveApplicationStore.acceptHandover(id)
+      // alert('Handover accepted successfully!')
+      await leaveApplicationStore.fetchLeaveApplicationById(id)
+      refresh()
+    }
   } catch (err) {
     alert(err.message)
   }
@@ -63,10 +65,12 @@ async function acceptHandoverApplication(id) {
 
 async function acceptInChargeApplication(id) {
   try {
-    await leaveApplicationStore.acceptInCharge(id)
-    alert('Leave Application Successfully Accepted!')
-    await leaveApplicationStore.fetchLeaveApplicationById(id)
-    refresh()
+    if (confirm('Are you sure you want to approve?')) {
+      await leaveApplicationStore.acceptInCharge(id)
+      // alert('Leave Application Successfully Accepted!')
+      await leaveApplicationStore.fetchLeaveApplicationById(id)
+      refresh()
+    }
   } catch (err) {
     alert(err.message)
   }
@@ -74,10 +78,12 @@ async function acceptInChargeApplication(id) {
 
 async function acceptCoordinatorApplication(id) {
   try {
-    await leaveApplicationStore.acceptCoordinator(id)
-    alert('Coordinator accepted successfully!')
-    await leaveApplicationStore.fetchLeaveApplicationById(id)
-    refresh()
+    if (confirm('Are you sure you want to approve?')) {
+      await leaveApplicationStore.acceptCoordinator(id)
+      // alert('Coordinator accepted successfully!')
+      await leaveApplicationStore.fetchLeaveApplicationById(id)
+      refresh()
+    }
   } catch (err) {
     alert(err.message)
   }
@@ -85,10 +91,12 @@ async function acceptCoordinatorApplication(id) {
 
 async function acceptOperationalAdminApplication(id) {
   try {
-    await leaveApplicationStore.acceptOperationalAdmin(id)
-    alert('Operational Admin accepted successfully!')
-    await leaveApplicationStore.fetchLeaveApplicationById(id)
-    refresh()
+    if (confirm('Are you sure you want to approve?')) {
+      await leaveApplicationStore.acceptOperationalAdmin(id)
+      // alert('Operational Admin accepted successfully!')
+      await leaveApplicationStore.fetchLeaveApplicationById(id)
+      refresh()
+    }
   } catch (err) {
     alert(err.message)
   }
@@ -96,10 +104,12 @@ async function acceptOperationalAdminApplication(id) {
 
 async function acceptRecommendByApplication(id) {
   try {
-    await leaveApplicationStore.acceptRecommendBy(id)
-    alert('Recommendation accepted successfully!')
-    await leaveApplicationStore.fetchLeaveApplicationById(id)
-    refresh()
+    if (confirm('Are you sure you want to approve?')) {
+      await leaveApplicationStore.acceptRecommendBy(id)
+      // alert('Recommendation accepted successfully!')
+      await leaveApplicationStore.fetchLeaveApplicationById(id)
+      refresh()
+    }
   } catch (err) {
     alert(err.message)
   }
@@ -107,10 +117,12 @@ async function acceptRecommendByApplication(id) {
 
 async function acceptApprovedByApplication(id) {
   try {
-    await leaveApplicationStore.acceptApprovedBy(id)
-    alert('Leave Application approved successfully!')
-    refresh()
-    await leaveApplicationStore.fetchLeaveApplicationById(id)
+    if (confirm('Are you sure you want to approve?')) {
+      await leaveApplicationStore.acceptApprovedBy(id)
+      // alert('Leave Application approved successfully!')
+      refresh()
+      await leaveApplicationStore.fetchLeaveApplicationById(id)
+    }
   } catch (err) {
     alert(err.message)
   }

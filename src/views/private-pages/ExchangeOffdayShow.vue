@@ -57,9 +57,11 @@ const acceptExchangeAction = async (action) => {
     if (action === 'inCharge') await exchangeStore.inChargeAccept(id)
     if (action === 'recommend') await exchangeStore.recommendByAccept(id)
     if (action === 'approve') await exchangeStore.approvedByAccept(id)
-    alert(`${action} accepted successfully!`)
-    await exchangeStore.fetchExchange(id)
-    refresh()
+    // alert(`${action} accepted successfully!`)
+    if (confirm('Are you sure you want to approve?')) {
+      await exchangeStore.fetchExchange(id)
+      refresh()
+    }
   } catch (err) {
     console.error(`Failed to accept ${action}:`, err)
     alert(`Failed to accept ${action}.`)
