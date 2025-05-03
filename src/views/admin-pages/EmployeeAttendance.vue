@@ -142,7 +142,7 @@ const goBack = () => router.go(-1)
               <td class="border px-1 py-0.5">
                 <div v-if="log.late_duration">
                   {{ log.late_duration }}
-                  <span
+                  <!-- <span
                     v-if="log.first_short_leave"
                     :class="{
                       'text-green-500': log.first_short_leave === 'Approved',
@@ -151,7 +151,7 @@ const goBack = () => router.go(-1)
                     }"
                   >
                     ({{ log.first_short_leave }})
-                  </span>
+                  </span> -->
                   <router-link v-if="log.first_short_leave"
                       :to="{
                         name: 'ShortLeaveShow',

@@ -3,13 +3,14 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useAuthStore } from '@/stores/auth'
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 const attendanceStore = useAttendanceStore()
 
-const selectedMonth = ref(attendanceStore.selectedMonth)
+const selectedMonth = ref(route.query.date || attendanceStore.selectedMonth)
 
 const formattedMonthName = computed(() => {
   if (!selectedMonth.value) return ''
@@ -36,6 +37,15 @@ onMounted(async () => {
 watch(selectedMonth, async (newMonth) => {
   attendanceStore.selectedMonth = newMonth
   await fetchAttendance()
+})
+
+watch(selectedMonth, (date) => {
+  router.replace({
+    query: {
+      ...route.query,
+      date: date,
+    },
+  })
 })
 
 const goBack = () => router.go(-1)
