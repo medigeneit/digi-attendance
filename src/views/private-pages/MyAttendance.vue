@@ -90,11 +90,16 @@ const getInitials = (name) => {
         <hr />
         <div class="grid md:grid-cols-2">
           <p>
-            <strong>Total Working Days:</strong> {{ attendanceStore?.summary?.total_working_days }}
+            <strong>Total Working Days:</strong>
+            {{ attendanceStore?.summary?.total_working_days || 0 }}
           </p>
-          <p><strong>Present Days:</strong> {{ attendanceStore?.summary?.total_present_days }}</p>
-          <p><strong>Absent Days:</strong> {{ attendanceStore?.summary?.total_absent_days }}</p>
-          <p><strong>Late Days:</strong> {{ attendanceStore?.summary?.total_late_days }}</p>
+          <p>
+            <strong>Present Days:</strong> {{ attendanceStore?.summary?.total_present_days || 0 }}
+          </p>
+          <p>
+            <strong>Absent Days:</strong> {{ attendanceStore?.summary?.total_absent_days || 0 }}
+          </p>
+          <p><strong>Late Days:</strong> {{ attendanceStore?.summary?.actual_late_day || 0 }}</p>
           <p>
             <strong>Total Working Hours:</strong>
             {{ attendanceStore?.summary?.total_working_hours }}
