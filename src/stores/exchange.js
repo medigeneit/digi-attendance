@@ -31,7 +31,7 @@ export const useExchangeStore = defineStore('exchange', () => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await apiClient.get(`/exchanges?type=${payload.type}`,{ params: payload });
+      const response = await apiClient.get(`/exchanges?type=${payload.type}`,payload);
       exchanges.value = response.data.data;
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch exchanges';
