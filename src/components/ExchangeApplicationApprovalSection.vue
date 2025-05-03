@@ -1,6 +1,25 @@
 <template>
   <div v-if="userApprovalRole && exchange" class="text-center space-y-2 print:hidden">
     <!-- Note Input (conditionally shown) -->
+
+    <div v-if="approvalModal" class="modal-bg">
+      <div class="modal-card">
+        <h3 class="title-lg">Accept Application</h3>
+        <input
+          v-model="approvalNote"
+          rows="4"
+          placeholder="Enter accept note..."
+          class="w-full border rounded-lg p-2 text-gray-700"
+        />
+        <div class="flex justify-end gap-2 mt-4">
+          <button class="btn-3" @click="approvalModal = false">Cancel</button>
+          <button class="btn-2 bg-red-500 text-white" @click="userApprovalRole.action(exchange.id)">
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div v-if="showRejectNote" class="mt-2">
       <textarea
         v-model="rejectionReason"
@@ -10,18 +29,8 @@
     </div>
 
     <div class="flex justify-end gap-2 pt-2">
-      <button
-        class="bg-green-500 text-white text-sm px-4 py-1 rounded hover:bg-green-600"
-        @click="userApprovalRole.action(exchange.id)"
-      >
-        Approve
-      </button>
-      <button
-        class="bg-red-500 text-white text-sm px-4 py-1 rounded hover:bg-red-600"
-        @click="toggleRejectNote"
-      >
-        Reject
-      </button>
+      <button class="btn-2" v-if="!showRejectNote" @click="openApprovalModal">Approve</button>
+      <button class="btn-4 bg-red-500 text-white" @click="toggleRejectNote">Reject</button>
     </div>
   </div>
 </template>
@@ -54,6 +63,13 @@ onMounted(() => {
 
 const showRejectNote = ref(false)
 const rejectionReason = ref('')
+const approvalModal = ref(false)
+const approvalNote = ref('')
+
+function openApprovalModal() {
+  approvalModal.value = true
+  showRejectNote.value = false
+}
 
 // Approval Roles Config
 const approvalRoles = [
@@ -63,10 +79,9 @@ const approvalRoles = [
     approved_by_field: null,
     label: 'Handover',
     action: async (id) => {
-      if (confirm('Are you sure you want to approve?')) {
-        await exchangeStore.handoverAccept(id)
-        await refresh(id)
-      }
+      await exchangeStore.handoverAccept({ id, note: approvalNote.value })
+      await refresh()
+      approvalModal.value = false
     },
     condition: () => !exchange.value?.status && exchange.value?.handover_user_id === user.value.id,
   },
@@ -76,11 +91,9 @@ const approvalRoles = [
     approved_by_field: 'approval_in_charge_user_id',
     label: 'In-Charge',
     action: async (id) => {
-      if (confirm('Are you sure you want to approve?')) {
-        await exchangeStore.inChargeAccept(id)
-        await refresh(id)
-      }
-      alert('In-Charge approved!')
+      await exchangeStore.inChargeAccept({ id, note: approvalNote.value })
+      await refresh()
+      approvalModal.value = false
     },
   },
   {
@@ -89,10 +102,9 @@ const approvalRoles = [
     approved_by_field: 'approval_recommend_by_user_id',
     label: 'Recommend By',
     action: async (id) => {
-      if (confirm('Are you sure you want to approve?')) {
-        await exchangeStore.recommendByAccept(id)
-        await refresh(id)
-      }
+      await exchangeStore.recommendByAccept({ id, note: approvalNote.value })
+      await refresh()
+      approvalModal.value = false
     },
   },
   {
@@ -101,10 +113,9 @@ const approvalRoles = [
     approved_by_field: 'approval_approved_by_user_id',
     label: 'Approved By',
     action: async (id) => {
-      if (confirm('Are you sure to final approval?')) {
-        await exchangeStore.approvedByAccept(id)
-        await refresh(id)
-      }
+      await exchangeStore.approvedByAccept({ id, note: approvalNote.value })
+      await refresh()
+      approvalModal.value = false
     },
   },
 ]
@@ -149,7 +160,7 @@ async function rejectApplication() {
 }
 
 // Refresh and mark as read
-async function refresh(id) {
+async function refresh() {
   await notificationStore.markAsRead(props.notificationId)
 }
 </script>

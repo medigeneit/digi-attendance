@@ -1,6 +1,27 @@
 <template>
   <div v-if="userApprovalRole && shortLeaveApplication" class="text-center space-y-2 print:hidden">
     <!-- Note Input (conditionally shown) -->
+
+    <div v-if="approvalModal" class="modal-bg">
+      <div class="modal-card">
+        <h3 class="title-lg">Accept Application Note</h3>
+        <input
+          v-model="approvalNote"
+          rows="4"
+          placeholder="Enter rejection reason..."
+          class="w-full border rounded-lg p-2 text-gray-700"
+        />
+        <div class="flex justify-end gap-2 mt-4">
+          <button class="btn-3" @click="approvalModal = false">Cancel</button>
+          <button
+            class="btn-2 bg-red-500 text-white"
+            @click="userApprovalRole.action(shortLeaveApplication.id)"
+          >
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
     <div v-if="showRejectNote" class="mt-2">
       <textarea
         v-model="rejectionReason"
@@ -10,13 +31,7 @@
     </div>
 
     <div class="flex justify-end gap-2 pt-2">
-      <button
-        v-if="!showRejectNote"
-        class="btn-2"
-        @click="userApprovalRole.action(shortLeaveApplication.id)"
-      >
-        Approve
-      </button>
+      <button v-if="!showRejectNote" class="btn-2" @click="openApprovalModal">Approve</button>
       <button class="btn-1" @click="toggleRejectNote">
         {{ showRejectNote ? 'Submit' : 'Reject' }}
       </button>
@@ -55,6 +70,13 @@ onMounted(() => {
 
 const showRejectNote = ref(false)
 const rejectionReason = ref('')
+const approvalModal = ref(false)
+const approvalNote = ref('')
+
+function openApprovalModal() {
+  approvalModal.value = true
+  showRejectNote.value = false
+}
 
 const approvalRoles = [
   {
@@ -63,10 +85,9 @@ const approvalRoles = [
     approved_by_field: null,
     label: 'Handover',
     action: async (id) => {
-      if (confirm('Are you sure you want to approve?')) {
-        await shortLeaveStore.handoverAccept(id)
-        await refresh(id)
-      }
+      await shortLeaveStore.handoverAccept({ id, note: approvalNote.value })
+      await refresh(id)
+      approvalModal.value = false
     },
     condition: () =>
       !shortLeaveApplication.value?.status &&
@@ -78,10 +99,9 @@ const approvalRoles = [
     approved_by_field: 'approval_in_charge_user_id',
     label: 'In-Charge',
     action: async (id) => {
-      if (confirm('Are you sure you want to approve?')) {
-        await shortLeaveStore.inChargeAccept(id)
-        await refresh(id)
-      }
+      await shortLeaveStore.inChargeAccept({ id, note: approvalNote.value })
+      await refresh(id)
+      approvalModal.value = false
     },
   },
   {
@@ -90,10 +110,9 @@ const approvalRoles = [
     approved_by_field: 'approval_recommend_by_user_id',
     label: 'Recommend By',
     action: async (id) => {
-      if (confirm('Are you sure you want to approve?')) {
-        await shortLeaveStore.recommendByAccept(id)
-        await refresh(id)
-      }
+      await shortLeaveStore.recommendByAccept({ id, note: approvalNote.value })
+      await refresh(id)
+      approvalModal.value = false
     },
   },
   {
@@ -102,10 +121,9 @@ const approvalRoles = [
     approved_by_field: 'approval_approved_by_user_id',
     label: 'Approved By',
     action: async (id) => {
-      if (confirm('Are you sure you want to approve?')) {
-        await shortLeaveStore.approvedByAccept(id)
-        await refresh(id)
-      }
+      await shortLeaveStore.approvedByAccept({ id, note: approvalNote.value })
+      await refresh(id)
+      approvalModal.value = false
     },
   },
 ]
@@ -148,7 +166,7 @@ async function rejectApplication() {
 }
 
 // Refresh + mark read
-async function refresh(id) {
+async function refresh() {
   await notificationStore.markAsRead(props.notificationId)
 }
 </script>

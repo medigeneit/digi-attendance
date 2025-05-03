@@ -343,7 +343,7 @@ function print() {
       <input
         v-model="approvalNote"
         rows="4"
-        placeholder="Enter rejection reason..."
+        placeholder="Enter accept note..."
         class="w-full border rounded-lg p-2 text-gray-700"
       />
       <div class="flex justify-end gap-2 mt-4">

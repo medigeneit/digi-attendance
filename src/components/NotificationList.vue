@@ -66,6 +66,9 @@ const getEventTitle = (eventModel, eventType) => {
       }
       return `Exchange (${eventModel.exchange_type})`
 
+    case 'exchange':
+      return `Exchange (${eventModel.exchange_type}) on ${eventModel.current_date} (${eventModel?.shift_name ?? 'No Shift'})`
+
     case 'offday':
       if (eventModel.exchange_type === 'offday') {
         return `Exchange (Offday): ${eventModel.exchange_date} → ${eventModel.current_date}`
@@ -132,24 +135,6 @@ const formatTime = (timeString) => {
     hour12: true, // Ensures AM/PM format
   })
 }
-
-const getTargetUrl = (eventType, id) => {
-  const eventTypes = {
-    leaveApplication: '/leave-application-show/',
-    shortLeave: '/short-leave-show/',
-    offday: '/exchange-offday-show/',
-    shift: '/exchange-shift-show/',
-    manualAttendance: '/manual-attendance-show/',
-  }
-  return eventTypes[eventType] ? `${eventTypes[eventType]}${id}` : '#'
-}
-
-const handleNotificationClick = (notification) => {
-  const eventType = notification?.data?.event_type
-  const targetId = notification?.data?.event_id
-  const url = getTargetUrl(eventType, targetId)
-  // markNotification(notification.id, url)
-}
 </script>
 
 <template>
@@ -158,7 +143,12 @@ const handleNotificationClick = (notification) => {
       {{ route.query.type.replace(/([A-Z])/g, ' $1') }}
     </h2>
 
-    <div v-if="notifications[route.query.type]" class="space-y-4">
+    <div
+      v-if="
+        Array.isArray(notifications[route.query.type]) && notifications[route.query.type].length
+      "
+      class="space-y-4"
+    >
       <div
         v-for="(item, index) in notifications[route.query.type]"
         :key="item.id"
@@ -169,12 +159,12 @@ const handleNotificationClick = (notification) => {
             <i :class="getEventIcon(item.event_type)"></i>
           </div>
           <div class="flex-1">
-            <div class="flex gap-8">
+            <div class="flex items-center gap-8">
               <p class="text-gray-800 font-medium">{{ item.event_model?.user_name }}</p>
-              <p v-if="item?.monthly_short_leave_count" class="flex gap-2 text-sm">
+              <p v-if="item?.monthly_short_leave_count" class="flex gap-2 text-sm btn-4">
                 <strong>Pending: {{ item?.monthly_short_leave_count.Pending || 0 }}</strong
                 >/
-                <strong>Approved: {{ item?.monthly_short_leave_count.Approved }}</strong>
+                <strong>Approved: {{ item?.monthly_short_leave_count.Approved || 0 }}</strong>
               </p>
             </div>
             <p class="text-gray-800 font-medium" v-if="item.event_model?.reason">
@@ -299,13 +289,17 @@ const handleNotificationClick = (notification) => {
           :notification-id="item.id"
         />
         <ExchangeApplicationApprovalSection
-          v-if="item?.event_model && (item.event_type === 'offday' || item.event_type === 'shift')"
+          v-if="
+            item?.event_model &&
+            (item.event_type === 'offday' ||
+              item.event_type === 'shift' ||
+              item.event_type === 'exchange')
+          "
           :application="item.event_model"
           :notificationId="item.id"
         />
       </div>
     </div>
-
-    <div v-else class="text-center text-red-500 py-10">No notifications found.</div>
+    <div v-else class="text-center text-red-500 py-10 text-xl italic">notifications not found.</div>
   </div>
 </template>

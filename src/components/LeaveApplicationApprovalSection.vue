@@ -1,6 +1,28 @@
 <template>
   <div v-if="userApprovalRole && leaveApplication" class="text-center space-y-2 print:hidden">
     <!-- Note Input (conditionally shown) -->
+
+    <div v-if="approvalModal" class="modal-bg">
+      <div class="modal-card">
+        <h3 class="title-lg">Accept Application</h3>
+        <input
+          v-model="approvalNote"
+          rows="4"
+          placeholder="Enter accept note..."
+          class="w-full border rounded-lg p-2 text-gray-700"
+        />
+        <div class="flex justify-end gap-2 mt-4">
+          <button class="btn-3" @click="approvalModal = false">Cancel</button>
+          <button
+            class="btn-2 bg-red-500 text-white"
+            @click="userApprovalRole.action(leaveApplication.id)"
+          >
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div v-if="showRejectNote" class="mt-2">
       <textarea
         v-model="rejectionReason"
@@ -10,7 +32,7 @@
     </div>
 
     <div class="flex justify-end gap-2 pt-2">
-      <button class="btn-2" @click="userApprovalRole.action(leaveApplication.id)">Approve</button>
+      <button class="btn-2" v-if="!showRejectNote" @click="openApprovalModal">Approve</button>
       <button class="btn-1" @click="toggleRejectNote">Reject</button>
     </div>
   </div>
@@ -44,8 +66,15 @@ onMounted(() => {
   leaveApplication.value = JSON.parse(JSON.stringify(props.application)) // isolate clone
 })
 
+const approvalModal = ref(false)
+const approvalNote = ref('')
 const showRejectNote = ref(false)
 const rejectionReason = ref('')
+
+function openApprovalModal() {
+  approvalModal.value = true
+  showRejectNote.value = false
+}
 
 // Approval Role Config
 const approvalRoles = [
@@ -56,8 +85,9 @@ const approvalRoles = [
     label: 'Handover',
     action: async (id) => {
       if (confirm('Are you sure you want to approve?')) {
-        await leaveApplicationStore.acceptHandover(id)
+        await leaveApplicationStore.acceptHandover({ id, note: approvalNote.value })
         await refresh(id)
+        approvalModal.value = false
       }
     },
     condition: () =>
@@ -70,8 +100,9 @@ const approvalRoles = [
     label: 'In-Charge',
     action: async (id) => {
       if (confirm('Are you sure you want to approve?')) {
-        await leaveApplicationStore.acceptInCharge(id)
+        await leaveApplicationStore.acceptInCharge({ id, note: approvalNote.value })
         await refresh(id)
+        approvalModal.value = false
       }
     },
   },
@@ -82,8 +113,9 @@ const approvalRoles = [
     label: 'Coordinator',
     action: async (id) => {
       if (confirm('Are you sure you want to approve?')) {
-        await leaveApplicationStore.acceptCoordinator(id)
+        await leaveApplicationStore.acceptCoordinator({ id, note: approvalNote.value })
         await refresh(id)
+        approvalModal.value = false
       }
     },
   },
@@ -94,8 +126,9 @@ const approvalRoles = [
     label: 'Operational Admin',
     action: async (id) => {
       if (confirm('Are you sure you want to approve?')) {
-        await leaveApplicationStore.acceptOperationalAdmin(id)
+        await leaveApplicationStore.acceptOperationalAdmin({ id, note: approvalNote.value })
         await refresh(id)
+        approvalModal.value = false
       }
     },
   },
@@ -106,8 +139,9 @@ const approvalRoles = [
     label: 'Recommend By',
     action: async (id) => {
       if (confirm('Are you sure you want to approve?')) {
-        await leaveApplicationStore.acceptRecommendBy(id)
+        await leaveApplicationStore.acceptRecommendBy({ id, note: approvalNote.value })
         await refresh(id)
+        approvalModal.value = false
       }
     },
   },
@@ -118,8 +152,9 @@ const approvalRoles = [
     label: 'Approved By',
     action: async (id) => {
       if (confirm('Are you sure you want to approve?')) {
-        await leaveApplicationStore.acceptApprovedBy(id)
-        await refresh(id)
+        await leaveApplicationStore.acceptApprovedBy({ id, note: approvalNote.value })
+        await refresh()
+        approvalModal.value = false
       }
     },
   },
@@ -162,14 +197,14 @@ async function rejectApplication() {
     })
     alert('Application rejected!')
     rejectionReason.value = ''
-    await refresh(leaveApplication.value.id)
+    await refresh()
   } catch (err) {
     alert(err.message || 'Something went wrong!')
   }
 }
 
 // Refresh and mark notification read
-async function refresh(id) {
+async function refresh() {
   await notificationStore.markAsRead(props.notificationId)
 }
 </script>
