@@ -59,17 +59,20 @@ const openRejectionModal = () => {
 const acceptManualAttendanceAction = async (action) => {
   try {
     const { id } = route.params
-    if (action === 'inCharge')
+    if (action === 'inCharge') {
       await manualAttendanceStore.inChargeAccept({ id, note: approvalNote.value })
-    if (action === 'recommend')
+    }
+    if (action === 'recommend') {
       await manualAttendanceStore.recommendByAccept({ id, note: approvalNote.value })
-    if (action === 'approve')
+    }
+    if (action === 'approve') {
       await manualAttendanceStore.approvedByAccept({ id, note: approvalNote.value })
+    }
 
     await manualAttendanceStore.fetchManualAttendanceById(id)
+    
   } catch (err) {
     console.error(`Failed to accept ${action}:`, err)
-    alert(`Failed to accept ${action}.`)
   }
 }
 

@@ -151,8 +151,8 @@ export const useManualAttendanceStore = defineStore('manualAttendance', () => {
       }
       return response.data.data;
     } catch (err) {
-      error.value = err.response?.data?.message || `Failed to approve manual attendance (ID: ${id})`;
-      console.error(`Error approving manual attendance with id ${id}:`, err);
+      error.value = err.response?.data?.message || `Failed to approve manual attendance (ID: ${payload?.id})`;
+      console.error(`Error approving manual attendance with id ${payload?.id}:`, err);
       throw new Error(error.value);
     } finally {
       loading.value = false;
