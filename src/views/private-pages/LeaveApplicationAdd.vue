@@ -211,7 +211,7 @@ const goBack = () => {
                   value="weekend"
                   v-model="selectedLeaveTypes[index]"
                 />
-                <span>Weekend</span>
+                <span>Weekend / Holiday</span>
               </label>
             </div>
           </div>
