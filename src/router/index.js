@@ -224,9 +224,6 @@ const router = createRouter({
           meta: { requiresAuth: true }
         },
 
-
-
-
         {
           path: '/my-attendance',
           name: 'MyAttendance',

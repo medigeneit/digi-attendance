@@ -173,7 +173,7 @@ const getInitials = (name) => {
                       name: 'ManualAttendanceAdd',
                       query: {
                         type: 'Forget Punch',
-                        date: new Date(log.date).toISOString().split('T')[0],
+                        date: new Date(log.date + ' UTC').toISOString().split('T')[0],
                         entry_time: log.entry_time,
                         exit_time: log.exit_time,
                       },

@@ -65,10 +65,8 @@ const acceptManualAttendanceAction = async (action) => {
       await manualAttendanceStore.recommendByAccept({ id, note: approvalNote.value })
     if (action === 'approve')
       await manualAttendanceStore.approvedByAccept({ id, note: approvalNote.value })
-    if (confirm('Are you sure you want to approve?')) {
-      // alert(`${action} accepted successfully!`)
-      await manualAttendanceStore.fetchManualAttendanceById(id)
-    }
+
+    await manualAttendanceStore.fetchManualAttendanceById(id)
   } catch (err) {
     console.error(`Failed to accept ${action}:`, err)
     alert(`Failed to accept ${action}.`)
