@@ -1,9 +1,9 @@
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useManualAttendanceStore } from '@/stores/manual-attendance'
-import { useAuthStore } from '@/stores/auth'
 import LoaderView from '@/components/common/LoaderView.vue'
+import { useAuthStore } from '@/stores/auth'
+import { useManualAttendanceStore } from '@/stores/manual-attendance'
+import { reactive, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const manualAttendanceStore = useManualAttendanceStore()
@@ -21,16 +21,28 @@ const formatTime = (timeStr) => {
 }
 
 const { date, type, entry_time, exit_time } = router.currentRoute.value.query
+
 const todayDate = date ? date : new Date().toISOString().split('T')[0]
-const check_in = entry_time ? formatTime(entry_time) : ''
-const check_out = exit_time ? formatTime(exit_time) : ''
-const form = ref({
+
+const form = reactive({
   date: todayDate,
-  type: type ||'',
-  check_in: check_in || '',
-  check_out: check_out || '',
+  type: type || '',
+  check_in: entry_time ? formatTime(entry_time) : '',
+  check_out: exit_time ? formatTime(exit_time) : '',
   description: '',
+  punch_type: '',
 })
+
+watch(
+  () => form.type,
+  (newType) => {
+    console.log(newType)
+
+    if (newType !== 'Forget Punch') {
+      form.punch_type = ''
+    }
+  },
+)
 
 const loading = ref(false)
 const error = ref(null)
@@ -42,9 +54,9 @@ const submitManualAttendance = async () => {
   try {
     const payload = {
       user_id: authStore?.user?.id,
-      ...form.value,
-      check_in: form.value.check_in ? `${form.value.date} ${form.value.check_in}:00` : null,
-      check_out: form.value.check_out ? `${form.value.date} ${form.value.check_out}:00` : null,
+      ...form,
+      check_in: form.check_in ? `${form.date} ${form.check_in}:00` : null,
+      check_out: form.check_out ? `${form.date} ${form.check_out}:00` : null,
     }
     const newAttendance = await manualAttendanceStore.createManualAttendance(payload)
 
@@ -95,12 +107,32 @@ const goBack = () => {
         </select>
       </div>
 
-      <div>
+      <div v-if="form.type === 'Forget Punch'">
+        <label for="type" class="block text-sm font-medium">Forget Punch Type</label>
+        <select id="type" v-model="form.punch_type" class="input-1 w-full" required>
+          <option value="">Select One</option>
+          <option value="entry">Entry</option>
+          <option value="exit">Exit</option>
+          <option value="both">Both</option>
+        </select>
+      </div>
+
+      <div v-if="form.type !== 'Forget Punch' || form.punch_type === 'both'">
         <label for="check-in" class="block text-sm font-medium">Check-In</label>
         <input type="time" id="check-in" v-model="form.check_in" class="input-1 w-full" />
       </div>
 
-      <div>
+      <div v-if="form.type !== 'Forget Punch' || form.punch_type === 'both'">
+        <label for="check-out" class="block text-sm font-medium">Check-Out</label>
+        <input type="time" id="check-out" v-model="form.check_out" class="input-1 w-full" />
+      </div>
+
+      <div v-if="form.type === 'Forget Punch' && form.punch_type === 'entry'">
+        <label for="check-in" class="block text-sm font-medium">Check-In</label>
+        <input type="time" id="check-in" v-model="form.check_in" class="input-1 w-full" />
+      </div>
+
+      <div v-if="form.type === 'Forget Punch' && form.punch_type === 'exit'">
         <label for="check-out" class="block text-sm font-medium">Check-Out</label>
         <input type="time" id="check-out" v-model="form.check_out" class="input-1 w-full" />
       </div>

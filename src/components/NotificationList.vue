@@ -76,9 +76,22 @@ const getEventTitle = (eventModel, eventType) => {
       return `Exchange (${eventModel.exchange_type})`
 
     case 'manualAttendance':
-      const formattedCheckIn = eventModel.check_in ? formatDateTime(eventModel.check_in) : 'N/A'
-      const formattedCheckOut = eventModel.check_out ? formatDateTime(eventModel.check_out) : 'N/A'
-      return `Checked in (${formattedCheckIn}) → Checked out (${formattedCheckOut})`
+      const formattedCheckIn = eventModel.check_in ? formatDateTime(eventModel.check_in) : null
+      const formattedCheckOut = eventModel.check_out ? formatDateTime(eventModel.check_out) : null
+
+      if (formattedCheckIn && formattedCheckOut) {
+        return `${eventModel?.reason} Checked in (${formattedCheckIn}) → Checked out (${formattedCheckOut})`
+      }
+
+      if (formattedCheckIn) {
+        return `${eventModel?.reason} Checked in (${formattedCheckIn})`
+      }
+
+      if (formattedCheckOut) {
+        return `${eventModel?.reason} Checked out (${formattedCheckOut})`
+      }
+
+      return `${eventModel?.reason} No check-in or check-out data`
 
     default:
       return 'Unknown Event'

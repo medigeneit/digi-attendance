@@ -51,11 +51,13 @@ watch(selectedMonth, (date) => {
 const goBack = () => router.go(-1)
 
 const getInitials = (name) => {
-  return name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
+  if (name) {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+  }
 }
 </script>
 
