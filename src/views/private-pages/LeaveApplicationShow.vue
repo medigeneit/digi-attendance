@@ -304,7 +304,7 @@ const totalWithWeekendDays = computed(() => {
             <li><strong>Reason: </strong>{{ leaveApplication?.reason || 'No reason provided' }}</li>
             <li><strong>Leave Days:</strong> {{ leaveApplication?.leave_period }}</li>
             <li><strong>Total Days:</strong> {{ leaveApplication?.total_leave_days }}</li>
-            <li><strong>Weekends:</strong> {{ leaveApplication?.user.weekends.join(', ') }}</li>
+            <li><strong>Weekends:</strong> {{ leaveApplication?.user?.weekends?.join(', ') }}</li>
             <li><strong>Last Working Date:</strong> {{ leaveApplication?.last_working_date }}</li>
             <li><strong>Resumption Date:</strong> {{ leaveApplication?.resumption_date }}</li>
           </div>
