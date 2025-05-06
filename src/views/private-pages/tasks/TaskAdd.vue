@@ -11,8 +11,13 @@ const store = useTaskStore()
 const router = useRouter()
 const requirementStore = useRequirementStore()
 const userStore = useUserStore()
+
 const { requirements } = storeToRefs(requirementStore)
 const { users } = storeToRefs(userStore)
+const { tasks } = storeToRefs(store)
+const { taskListTree } = storeToRefs(store)
+const { flattenedTasks } = storeToRefs(store)
+
 const selectedUser = ref([])
 const user_ids = computed(() => selectedUser.value.map((u) => u.id))
 const selectedRequirement = ref('')
@@ -21,14 +26,19 @@ const requirement_id = computed(() => selectedRequirement.value?.id)
 const form = ref({
   title: '',
   requirement_id: null,
+  parent_id: '0',
   user_ids: [],
   priority: 'MEDIUM',
   status: 'PENDING',
   description: '',
 })
 
-watch(requirement_id, (val) => {
+watch(requirement_id, async (val) => {
   form.value.requirement_id = val
+  if (val === null) {
+    return
+  }
+  await store.fetchTasks({ requirement_id: val })
 })
 watch(user_ids, (val) => {
   form.value.user_ids = val
@@ -54,6 +64,14 @@ const submit = async () => {
     router.push({ name: 'TaskList' })
   }
 }
+
+function repeatSymbol(symbol, times) {
+  let result = ''
+  for (let i = 0; i < times; i++) {
+    result += symbol
+  }
+  return result
+}
 </script>
 
 <template>
@@ -61,16 +79,6 @@ const submit = async () => {
     <div class="max-w-xl mx-auto bg-white shadow-lg rounded-lg p-6">
       <h2 class="text-2xl font-semibold text-gray-800 mb-4">Add New Task</h2>
       <form @submit.prevent="submit">
-        <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-2">Task Title</label>
-          <input
-            v-model="form.title"
-            required
-            placeholder="Enter task title"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
         <div class="mb-4">
           <label class="block text-gray-700 font-medium mb-2">Requirement</label>
           <MultiselectDropdown
@@ -82,6 +90,41 @@ const submit = async () => {
             placeholder="Select department"
           />
         </div>
+
+        <div class="mb-4">
+          <label for="parent-task">Parent Task:</label>
+          <select
+            id="parent-task"
+            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+            v-model="form.parent_id"
+          >
+            <option value="0" class="text-gray-500 font-medium text-sm">--NO PARENT---</option>
+            <option
+              v-for="task in flattenedTasks"
+              :key="task.idPath"
+              :value="task.id"
+              class="text-sm"
+            >
+              <span v-if="task.depth > 0" class="mr-1">
+                {{ '&nbsp;&nbsp;&nbsp;'.repeat(task.depth) }} ↳
+              </span>
+              <span> {{ task.title }}</span>
+            </option>
+          </select>
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-gray-700 font-medium mb-2">Task Title</label>
+          <input
+            v-model="form.title"
+            required
+            placeholder="Enter task title"
+            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <!-- <div>{{ tasks.map((t) => ({ id: t.id, title: t.title, parent_id: t.parent_id })) }}</div> -->
+        <!-- <pre>{{ taskListTree }}</pre> -->
 
         <div class="mb-4">
           <label class="block text-gray-700 font-medium mb-2">User</label>
