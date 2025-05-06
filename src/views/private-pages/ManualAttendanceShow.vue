@@ -70,7 +70,6 @@ const acceptManualAttendanceAction = async (action) => {
     }
 
     await manualAttendanceStore.fetchManualAttendanceById(id)
-    
   } catch (err) {
     console.error(`Failed to accept ${action}:`, err)
   }
@@ -194,7 +193,7 @@ function print() {
             {{ manualAttendance?.in_charge_user?.name || '' }}
           </p>
           <p v-else>
-            {{ manualAttendance?.user?.other_approval?.in_charge_user?.name || 'N/A' }}
+            {{ manualAttendance?.user?.other_approval?.in_charge_user?.name || '' }}
           </p>
 
           <div
@@ -293,7 +292,7 @@ function print() {
           {{ manualAttendance?.approved_by_user?.name || '' }}
         </p>
         <p v-else>
-          {{ manualAttendance?.user?.other_approval?.approved_by_user?.name || 'N/A' }}
+          {{ manualAttendance?.user?.other_approval?.approved_by_user?.name || '' }}
         </p>
 
         <div

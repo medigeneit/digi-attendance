@@ -246,7 +246,7 @@ async function refresh() {
         <div class="pt-10">
           <p v-if="exchange?.in_charge_user">{{ exchange?.in_charge_user?.name || '' }}</p>
           <p v-else>
-            {{ exchange?.user?.other_approval?.in_charge_user?.name || 'N/A' }}
+            {{ exchange?.user?.other_approval?.in_charge_user?.name || '' }}
           </p>
           <div
             v-if="
@@ -335,7 +335,7 @@ async function refresh() {
         <div class="pt-10">
           <p v-if="exchange?.approved_by_user">{{ exchange?.approved_by_user?.name || '' }}</p>
           <p v-else>
-            {{ exchange?.user?.other_approval?.approved_by_user?.name || 'N/A' }}
+            {{ exchange?.user?.other_approval?.approved_by_user?.name || '' }}
           </p>
           <div
             v-if="

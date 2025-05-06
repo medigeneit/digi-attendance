@@ -304,7 +304,7 @@ const totalWithWeekendDays = computed(() => {
             <li><strong>Reason: </strong>{{ leaveApplication?.reason || 'No reason provided' }}</li>
             <li><strong>Leave Days:</strong> {{ leaveApplication?.leave_period }}</li>
             <li><strong>Total Days:</strong> {{ leaveApplication?.total_leave_days }}</li>
-            <li><strong>Weekends:</strong> {{ leaveApplication?.user?.weekends?.join(', ') }}</li>
+            <li><strong>Weekends:</strong> {{ leaveApplication?.user.weekends.join(', ') }}</li>
             <li><strong>Last Working Date:</strong> {{ leaveApplication?.last_working_date }}</li>
             <li><strong>Resumption Date:</strong> {{ leaveApplication?.resumption_date }}</li>
           </div>
@@ -439,7 +439,7 @@ const totalWithWeekendDays = computed(() => {
               {{ leaveApplication?.in_charge_user?.name || '' }}
             </p>
             <p v-else class="text-center">
-              {{ leaveApplication?.user?.leave_approval?.in_charge_user?.name || 'N/A' }}
+              {{ leaveApplication?.user?.leave_approval?.in_charge_user?.name || '' }}
             </p>
 
             <div
@@ -636,10 +636,10 @@ const totalWithWeekendDays = computed(() => {
           <!-- Approved By Approval -->
           <div class="flex flex-col justify-center items-center">
             <p v-if="leaveApplication?.approved_by_user">
-              {{ leaveApplication?.approved_by_user?.name || 'N/A' }}
+              {{ leaveApplication?.approved_by_user?.name || '' }}
             </p>
             <p v-else class="text-center">
-              {{ leaveApplication?.user?.leave_approval?.approved_by_user?.name || 'N/A' }}
+              {{ leaveApplication?.user?.leave_approval?.approved_by_user?.name || '' }}
             </p>
 
             <div
