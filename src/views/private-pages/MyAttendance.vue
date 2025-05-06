@@ -193,7 +193,7 @@ const getInitials = (name) => {
               </td>
 
               <td class="border px-1 py-0.5">
-                <div v-if="log.late_duration">
+                <div v-if="log.late_duration && log.status !== 'Weekend'">
                   {{ log.late_duration }}
                   <router-link
                     v-if="log.first_short_leave"
@@ -228,7 +228,7 @@ const getInitials = (name) => {
                 </div>
               </td>
               <td class="border px-1 py-0.5">
-                <div v-if="log.early_leave_duration">
+                <div v-if="log.early_leave_duration && log.status !== 'Weekend'">
                   {{ log.early_leave_duration }}
                   <router-link
                     v-if="log.last_short_leave"

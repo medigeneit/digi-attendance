@@ -65,10 +65,10 @@ const getTargetUrl = (eventType) => {
         <div class="flex justify-between items-center gap-2">
           <span>📄 Leave Applications</span>
           <span
-            v-if="grouped_counts.leaveApplication"
+            v-if="grouped_counts?.leaveApplication"
             class="text-xs bg-teal-500 text-white rounded-full px-2 py-0.5 font-semibold"
           >
-            {{ grouped_counts.leaveApplication }}
+            {{ grouped_counts?.leaveApplication }}
           </span>
         </div>
       </RouterLink>
@@ -79,10 +79,10 @@ const getTargetUrl = (eventType) => {
         <div class="flex justify-between items-center gap-2">
           <span>🕒 Short Leave</span>
           <span
-            v-if="grouped_counts.shortLeave"
+            v-if="grouped_counts?.shortLeave"
             class="text-xs bg-yellow-500 text-white rounded-full px-2 py-0.5 font-semibold"
           >
-            {{ grouped_counts.shortLeave }}
+            {{ grouped_counts?.shortLeave }}
           </span>
         </div>
       </RouterLink>
@@ -90,10 +90,10 @@ const getTargetUrl = (eventType) => {
         <div class="flex justify-between items-center gap-2">
           <span>🔄Shift Exchange Request</span>
           <span
-            v-if="grouped_counts.shift"
+            v-if="grouped_counts?.shift"
             class="text-xs bg-purple-500 text-white rounded-full px-2 py-0.5 font-semibold"
           >
-            {{ grouped_counts.shift }}
+            {{ grouped_counts?.shift }}
           </span>
         </div>
       </RouterLink>
