@@ -79,6 +79,10 @@ onMounted(async () => {
               <p class="text-sm font-bold text-gray-600">Date of Birth:</p>
               <p class="text-lg text-gray-800">{{ formatDate(user?.date_of_birth) }}</p>
             </div>
+            <div>
+              <p class="text-sm font-bold text-gray-600">Blood Group:</p>
+              <p class="text-lg text-gray-800">{{ user?.blood }}</p>
+            </div>
           </div>
         </div>
         <div class="bg-gray-100 p-4 rounded-lg">

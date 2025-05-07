@@ -1,7 +1,7 @@
 <script setup>
-import { ref, computed } from 'vue'
-import { useAuthStore } from '@/stores/auth'
 import LoaderView from '@/components/common/LoaderView.vue'
+import { useAuthStore } from '@/stores/auth'
+import { computed, ref } from 'vue'
 
 const authStore = useAuthStore()
 const isLoading = ref(false)
@@ -44,6 +44,10 @@ const formatDate = (date) => {
             <div>
               <p class="text-sm font-bold text-gray-600">Email:</p>
               <p class="text-lg text-gray-800">{{ user?.email || 'N/A' }}</p>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-gray-600">Blood Group:</p>
+              <p class="text-lg text-gray-800">{{ user?.blood || 'N/A' }}</p>
             </div>
             <div>
               <p class="text-sm font-bold text-gray-600">Address:</p>

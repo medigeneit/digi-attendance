@@ -37,6 +37,7 @@ const form = reactive({
   weekends: [],
   leave_approval_id: '',
   other_approval_id: '',
+  blood: '',
 })
 
 const userStore = useUserStore()
@@ -53,7 +54,7 @@ const showPassword = ref(false)
 const isLoading = ref(false)
 const { shifts } = storeToRefs(shiftStore)
 const modalOpen = ref(false)
-
+const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
 const selectedWeekend = ref({
   weekends: [],
   start_month: '',
@@ -109,6 +110,7 @@ const loadUser = async () => {
     form.address = user.address || ''
     form.nid = user.nid || ''
     form.date_of_birth = user.date_of_birth
+    form.blood = user.blood || ''
     form.joining_date = user.joining_date
     form.employment_type = user.employment_type
     form.employee_id = user.employee_id || ''
@@ -164,7 +166,6 @@ const computedDesignations = computed(() => {
     <div class="card-bg md:p-8 p-4 mx-4">
       <h2 class="title-lg text-center">Edit Employee</h2>
       <LoaderView v-if="isLoading" class="bg-gray-100 border shadow-none" />
-
       <form v-else @submit.prevent="updateUser" class="space-y-4">
         <div class="grid gap-4">
           <div class="border p-4 rounded-md bg-gray-100">
@@ -209,10 +210,24 @@ const computedDesignations = computed(() => {
                   placeholder="Enter NID number"
                 />
               </div>
-
               <div>
                 <label>Date of Birth</label>
                 <input v-model="form.date_of_birth" type="date" class="w-full p-2 border rounded" />
+              </div>
+              <div class="space-y-2">
+                <label for="bloodGroup" class="text-gray-700 flex items-center gap-2">
+                  Blood Group
+                </label>
+                <select
+                  id="bloodGroup"
+                  v-model="form.blood"
+                  class="py-2 px-4 border rounded w-full"
+                >
+                  <option disabled value="">Select blood group</option>
+                  <option v-for="group in bloodGroups" :key="group" :value="group">
+                    {{ group }}
+                  </option>
+                </select>
               </div>
             </div>
           </div>

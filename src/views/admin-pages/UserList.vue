@@ -40,8 +40,8 @@ const groupedUsers = computed(() => {
   const grouped = {}
   const uniqueNames = new Set()
 
-  userStore.users.forEach((user) => {
-    const companyName = user.company?.name || 'Unknown Company'
+  userStore?.users.forEach((user) => {
+    const companyName = user?.company?.name || 'Unknown Company'
 
     if (!grouped[companyName]) {
       grouped[companyName] = []
@@ -94,6 +94,14 @@ function toggleModal(user) {
 function modalClose() {
   shiftAssignmentModal.value = false
 }
+
+async function excelDownload() {
+  await userStore.fetchUsersExcelExport({
+    data: {
+      companyName: selectedCompany.value,
+    },
+  })
+}
 </script>
 
 <template>
@@ -110,7 +118,7 @@ function modalClose() {
         <i class="far fa-plus"></i>
       </RouterLink>
     </div>
-    <div class="flex flex-wrap items-center justify-start gap-2">
+    <div class="flex items-center gap-4">
       <div>
         <select v-model="selectedCompany" class="input-1">
           <option value="all" selected>All Company</option>
@@ -122,8 +130,12 @@ function modalClose() {
         :options="userStore.users"
         :multiple="false"
         label="name"
+        class="w-1/3"
         placeholder="Select user"
       />
+      <button type="button" @click="excelDownload" class="btn-3">
+        <i class="far fa-file-excel text-2xl text-green-500"></i>Excel
+      </button>
     </div>
 
     <div v-if="userStore.isLoading" class="text-center py-4">

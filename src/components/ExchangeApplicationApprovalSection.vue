@@ -24,7 +24,7 @@
       <textarea
         v-model="rejectionReason"
         class="w-full border rounded-md p-2 text-sm"
-        placeholder="Enter rejection note"
+        placeholder="Enter accept note"
       ></textarea>
     </div>
 
