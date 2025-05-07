@@ -19,7 +19,10 @@ onMounted(() => {
 
 const submit = async () => {
   loading.value = true
-  await store.createProject({ name: name.value })
+  await store.createProject({
+    name: name.value,
+    company_id: company_id.value,
+  })
   loading.value = false
 
   if (!store.error) {

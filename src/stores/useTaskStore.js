@@ -24,11 +24,11 @@ export const useTaskStore = defineStore('task', () => {
     }
   };
 
-  const fetchTasks = async () => {
+  const fetchTasks = async (params) => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await apiClient.get('/tasks');
+      const response = await apiClient.get('/tasks', {params});
       tasks.value = response.data;
     } catch (err) {
       error.value = err.response?.data?.message || 'টাস্ক লোড করতে ব্যর্থ হয়েছে।';
@@ -37,6 +37,48 @@ export const useTaskStore = defineStore('task', () => {
       loading.value = false;
     }
   };
+
+  function buildTree(list, parentId = 0) {
+    if( Array.isArray(list) === false || list.length === 0) {
+      return []
+    }
+
+    return list
+      .filter(item => item.parent_id === parentId)
+      .map(item => ({
+        ...item,
+        children_tasks: buildTree(list, item.id)
+      }));
+  }
+
+  function getTaskListTree(){
+    return buildTree(tasks.value, 0);
+  }
+
+  function getFlattenedTasks() {
+    const result = [];
+
+    const traverse = (nodes, depth = 0, path = '') => {
+      nodes.forEach(node => {
+        
+        result.push({
+          id: node.id,
+          title: node.title,
+          depth,
+          idPath: path + node.id
+        });
+
+        if (node.children_tasks && node.children_tasks.length) {
+          traverse(node.children_tasks, depth + 1, path + node.id + '-');
+        }
+
+      });
+    };
+
+    traverse(getTaskListTree());
+    return result;
+  }
+
 
   const fetchTask = async (id) => {
     loading.value = true;
@@ -99,11 +141,15 @@ export const useTaskStore = defineStore('task', () => {
     }
   };
 
+
+
   return {
     tasks: computed(() => tasks.value),
     task: computed(() => task.value),
     loading: computed(() => loading.value),
     error: computed(() => error.value),
+    taskListTree: computed(getTaskListTree),
+    flattenedTasks: computed(getFlattenedTasks),
     fetchTasks,
     fetchTask,
     createTask,
