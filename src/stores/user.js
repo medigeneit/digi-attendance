@@ -31,6 +31,34 @@ export const useUserStore = defineStore('user', () => {
     }
   };
 
+  const fetchUsersExcelExport = async (payload) => {
+    try {
+      isLoading.value = true;
+      const response = await apiClient.get('/users', {
+        params: {
+          flag: 'excel',
+          companyName: payload.data.companyName,
+        },
+        responseType: 'blob', // This is important for file download
+      });
+  
+      // Create a download link and trigger download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'users.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+  
+      error.value = null;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Something went wrong';
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
   const fetchDepartmentWiseEmployees = async () => {
     try {
       isLoading.value = true; // লোডিং শুরু
@@ -154,5 +182,6 @@ export const useUserStore = defineStore('user', () => {
     fetchUserDashboardData,
     fetchDepartmentWiseEmployees,
     fetchHandoverDepartmentWiseEmployees,
+    fetchUsersExcelExport
   };
 });

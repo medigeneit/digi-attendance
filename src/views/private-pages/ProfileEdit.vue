@@ -15,8 +15,9 @@ const form = reactive({
   nid: '',
   date_of_birth: '',
   address: '',
+  blood: '',
 })
-
+const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
 const authStore = useAuthStore()
 const { user } = storeToRefs(authStore)
 const toast = useToast()
@@ -67,6 +68,7 @@ const loadUser = () => {
   form.email = user.value?.email || ''
   form.address = user.value?.address || ''
   form.nid = user.value?.nid || ''
+  form.blood = user.value?.blood || ''
   form.date_of_birth = user.value?.date_of_birth || ''
 }
 
@@ -167,15 +169,22 @@ const uploadPhoto = async () => {
                 <label>Email</label>
                 <input v-model="form.email" type="email" class="w-full p-2 border rounded" />
               </div>
-              <div>
-                <label>Address</label>
-                <textarea
-                  v-model="form.address"
-                  rows="2"
-                  class="w-full p-2 border rounded"
-                ></textarea>
-              </div>
 
+              <div class="space-y-2">
+                <label for="bloodGroup" class="text-gray-700 flex items-center gap-2">
+                  Blood Group
+                </label>
+                <select
+                  id="bloodGroup"
+                  v-model="form.blood"
+                  class="py-2 px-4 border rounded w-full"
+                >
+                  <option disabled value="">Select blood group</option>
+                  <option v-for="group in bloodGroups" :key="group" :value="group">
+                    {{ group }}
+                  </option>
+                </select>
+              </div>
               <div>
                 <label>NID</label>
                 <input v-model="form.nid" type="text" class="w-full p-2 border rounded" />
@@ -184,6 +193,14 @@ const uploadPhoto = async () => {
               <div>
                 <label>Date of Birth</label>
                 <input v-model="form.date_of_birth" type="date" class="w-full p-2 border rounded" />
+              </div>
+              <div>
+                <label>Address</label>
+                <textarea
+                  v-model="form.address"
+                  rows="2"
+                  class="w-full p-2 border rounded"
+                ></textarea>
               </div>
             </div>
           </div>

@@ -84,11 +84,11 @@ const approvalRoles = [
     approved_by_field: null,
     label: 'Handover',
     action: async (id) => {
-      if (confirm('Are you sure you want to approve?')) {
-        await leaveApplicationStore.acceptHandover({ id, note: approvalNote.value })
-        await refresh(id)
-        approvalModal.value = false
-      }
+      await leaveApplicationStore.acceptHandover({ id, note: approvalNote.value })
+      await refresh(id)
+      approvalModal.value = false
+      // if (confirm('Are you sure you want to approve?')) {
+      // }
     },
     condition: () =>
       !leaveApplication.value?.status && leaveApplication.value?.handover_user_id === user.value.id,
@@ -99,11 +99,11 @@ const approvalRoles = [
     approved_by_field: 'approval_in_charge_user_id',
     label: 'In-Charge',
     action: async (id) => {
-      if (confirm('Are you sure you want to approve?')) {
-        await leaveApplicationStore.acceptInCharge({ id, note: approvalNote.value })
-        await refresh(id)
-        approvalModal.value = false
-      }
+      await leaveApplicationStore.acceptInCharge({ id, note: approvalNote.value })
+      await refresh(id)
+      approvalModal.value = false
+      // if (confirm('Are you sure you want to approve?')) {
+      // }
     },
   },
   {
@@ -112,11 +112,11 @@ const approvalRoles = [
     approved_by_field: 'approval_coordinator_user_id',
     label: 'Coordinator',
     action: async (id) => {
-      if (confirm('Are you sure you want to approve?')) {
-        await leaveApplicationStore.acceptCoordinator({ id, note: approvalNote.value })
-        await refresh(id)
-        approvalModal.value = false
-      }
+      await leaveApplicationStore.acceptCoordinator({ id, note: approvalNote.value })
+      await refresh(id)
+      approvalModal.value = false
+      // if (confirm('Are you sure you want to approve?')) {
+      // }
     },
   },
   {
@@ -125,11 +125,11 @@ const approvalRoles = [
     approved_by_field: 'approval_operational_admin_user_id',
     label: 'Operational Admin',
     action: async (id) => {
-      if (confirm('Are you sure you want to approve?')) {
-        await leaveApplicationStore.acceptOperationalAdmin({ id, note: approvalNote.value })
-        await refresh(id)
-        approvalModal.value = false
-      }
+      await leaveApplicationStore.acceptOperationalAdmin({ id, note: approvalNote.value })
+      await refresh(id)
+      approvalModal.value = false
+      // if (confirm('Are you sure you want to approve?')) {
+      // }
     },
   },
   {
@@ -138,11 +138,11 @@ const approvalRoles = [
     approved_by_field: 'approval_recommend_by_user_id',
     label: 'Recommend By',
     action: async (id) => {
-      if (confirm('Are you sure you want to approve?')) {
-        await leaveApplicationStore.acceptRecommendBy({ id, note: approvalNote.value })
-        await refresh(id)
-        approvalModal.value = false
-      }
+      await leaveApplicationStore.acceptRecommendBy({ id, note: approvalNote.value })
+      await refresh(id)
+      approvalModal.value = false
+      // if (confirm('Are you sure you want to approve?')) {
+      // }
     },
   },
   {
@@ -151,11 +151,11 @@ const approvalRoles = [
     approved_by_field: 'approval_approved_by_user_id',
     label: 'Approved By',
     action: async (id) => {
-      if (confirm('Are you sure you want to approve?')) {
-        await leaveApplicationStore.acceptApprovedBy({ id, note: approvalNote.value })
-        await refresh()
-        approvalModal.value = false
-      }
+      await leaveApplicationStore.acceptApprovedBy({ id, note: approvalNote.value })
+      await refresh()
+      approvalModal.value = false
+      // if (confirm('Are you sure you want to approve?')) {
+      // }
     },
   },
 ]

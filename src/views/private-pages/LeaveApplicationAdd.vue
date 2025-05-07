@@ -114,7 +114,9 @@ const submitLeaveApplication = async () => {
     }
 
     const newApplication = await leaveApplicationStore.storeLeaveApplication(payload)
-    router.push({ name: 'LeaveApplicationShow', params: { id: newApplication.id } })
+    if (newApplication) {
+      router.push({ name: 'LeaveApplicationShow', params: { id: newApplication?.id } })
+    }
   } catch (err) {
     error.value = err.message || 'Failed to submit leave application'
   } finally {

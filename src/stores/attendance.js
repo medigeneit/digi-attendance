@@ -188,8 +188,6 @@ export const useAttendanceStore = defineStore('attendance', () => {
       
       const params = { company_id, category, month };
 
-      console.log({params});
-
         const response = await apiClient.get(`/attendance/monthly-summary-reports?flag=excel`, {
             params,
             responseType: 'blob', // Important for file downloads
