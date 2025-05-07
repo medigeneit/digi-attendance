@@ -1,13 +1,18 @@
 <template>
   <div class="space-y-4">
     <h2 class="text-xl font-semibold">Requirement Tasks</h2>
+    <!-- <pre>
+      {{ taskListTree }}
+    </pre> -->
+
     <div class="space-y-4">
       <div
-        v-for="task in tasks"
+        v-for="task in taskListTree"
         :key="task.id"
         class="rounded-lg border bg-white p-4 shadow hover:bg-gray-50 transition-colors"
       >
-        <div class="flex items-start justify-between">
+        <TaskTreeView :task="task" />
+        <!-- <div class="flex items-start justify-between">
           <div class="space-y-1">
             <div class="flex items-center gap-2 text-xs text-gray-500">
               <span class="font-medium">{{ task.id }}</span>
@@ -33,20 +38,21 @@
               {{ task.priority }}
             </span>
           </div>
-        </div>
+        </div> -->
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
+import TaskTreeView from '@/components/TaskTreeView.vue'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { storeToRefs } from 'pinia'
 import { onMounted } from 'vue'
 
 const taskStore = useTaskStore()
 
-const { tasks } = storeToRefs(taskStore)
+const { tasks, taskListTree } = storeToRefs(taskStore)
 
 onMounted(() => {
   taskStore.fetchTasks()

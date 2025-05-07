@@ -6,16 +6,17 @@ import { useRequirementStore } from '@/stores/useRequirementStore'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 const store = useTaskStore()
 const router = useRouter()
+const route = useRoute()
 const requirementStore = useRequirementStore()
 const userStore = useUserStore()
 
-const { requirements } = storeToRefs(requirementStore)
+const { requirements, requirement } = storeToRefs(requirementStore)
 const { users } = storeToRefs(userStore)
-const { tasks } = storeToRefs(store)
+const { tasks, task } = storeToRefs(store)
 const { taskListTree } = storeToRefs(store)
 const { flattenedTasks } = storeToRefs(store)
 
@@ -26,21 +27,12 @@ const requirement_id = computed(() => selectedRequirement.value?.id)
 
 const form = ref({
   title: '',
-  requirement_id: null,
-  parent_id: '0',
   user_ids: [],
   priority: 'MEDIUM',
   status: 'PENDING',
   description: '',
 })
 
-watch(requirement_id, async (val) => {
-  form.value.requirement_id = val
-  if (!val) {
-    return
-  }
-  await store.fetchTasks({ requirement_id: val })
-})
 watch(user_ids, (val) => {
   form.value.user_ids = val
 })
@@ -48,6 +40,13 @@ watch(user_ids, (val) => {
 onMounted(() => {
   requirementStore.fetchRequirements()
   userStore.fetchUsers()
+  if (route.query?.parent_id > 0) {
+    store.fetchTask(route.query?.parent_id)
+  }
+
+  if (route.query?.requirement_id > 0) {
+    requirementStore.fetchRequirement(route.query?.requirement_id)
+  }
 })
 
 const loading = ref(false)
@@ -57,7 +56,12 @@ const submit = async () => {
 
   const payload = {
     ...form.value,
+    parent_id: task?.value?.id || 0,
+    requirement_id: requirement?.value?.id || null,
   }
+
+  console.log({ payload })
+
   await store.createTask(payload)
   loading.value = false
 
@@ -79,11 +83,18 @@ function repeatSymbol(symbol, times) {
   <div class="container mx-auto p-6">
     <div class="max-w-2xl mx-auto bg-white shadow-lg rounded-lg p-6">
       <h2 class="text-2xl font-semibold text-gray-800">Add New Task</h2>
+
       <hr class="mb-4" />
       <div class="text-purple-600/60 mb-4 text-xs">
         Fields that must be filled in will be marked with an asterisk.
       </div>
       <form @submit.prevent="submit">
+        <p class="text-center mt-2 mb-6" v-if="route.query?.requirement_id && requirement?.title">
+          Task under requirement <span class="text-sky-600">{{ requirement.title }}</span>
+        </p>
+        <p class="text-center mt-2 mb-6" v-if="route.query?.parent_id && task?.title">
+          Sub task on <span class="text-sky-600">{{ task.title }}</span>
+        </p>
         <div class="mb-4">
           <label class="block text-gray-600 text-sm mb-1 font-medium"
             >Task Title <RequiredIcon />
@@ -96,7 +107,7 @@ function repeatSymbol(symbol, times) {
           />
         </div>
 
-        <div class="mb-4">
+        <!-- <div class="mb-4">
           <label class="block text-gray-600 text-sm mb-1 font-medium">Parent Task: </label>
           <select
             id="parent-task"
@@ -116,9 +127,9 @@ function repeatSymbol(symbol, times) {
               {{ task.title }}
             </option>
           </select>
-        </div>
+        </div> -->
 
-        <div class="mb-4">
+        <!-- <div class="mb-4">
           <label class="block text-gray-600 text-sm mb-1 font-medium">Requirement </label>
           <MultiselectDropdown
             v-model="selectedRequirement"
@@ -128,13 +139,13 @@ function repeatSymbol(symbol, times) {
             label="title"
             placeholder="Select department"
           />
-        </div>
+        </div> -->
 
         <!-- <div>{{ tasks.map((t) => ({ id: t.id, title: t.title, parent_id: t.parent_id })) }}</div> -->
         <!-- <pre>{{ taskListTree }}</pre> -->
 
         <div class="mb-4">
-          <label class="block text-gray-600 text-sm mb-1 font-medium">User <RequiredIcon /></label>
+          <label class="block text-gray-600 text-sm mb-1 font-medium">User</label>
           <MultiselectDropdown
             v-model="selectedUser"
             :options="users"
@@ -169,6 +180,7 @@ function repeatSymbol(symbol, times) {
               v-model="form.status"
               class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
             >
+              <option value="">--select---</option>
               <option>PENDING</option>
               <option>IN_PROGRESS</option>
               <option>COMPLETED</option>

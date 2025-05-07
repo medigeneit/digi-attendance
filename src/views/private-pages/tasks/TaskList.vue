@@ -60,7 +60,7 @@ const closeComment = () => {
           <th class="px-4 py-2 text-left">Assign Users</th>
           <th class="px-4 py-2 text-left">Priority</th>
           <th class="px-4 py-2 text-left">Status</th>
-          <th class="px-4 py-2 text-left">Todo</th>
+          <!-- <th class="px-4 py-2 text-left">Todo</th> -->
           <th class="px-4 py-2 text-left">Actions</th>
         </tr>
       </thead>
@@ -73,7 +73,9 @@ const closeComment = () => {
           role="button"
         >
           <td class="px-4 py-2">{{ index + 1 }}</td>
+
           <td class="px-4 py-2 font-medium">{{ task.title }}</td>
+
           <td class="px-4 py-2 font-medium grid gap-1">
             <RouterLink
               :to="`/settings/user-show/${user.id}`"
@@ -85,6 +87,7 @@ const closeComment = () => {
               {{ user?.name }}
             </RouterLink>
           </td>
+
           <td class="px-4 py-2">
             <span
               :class="{
@@ -98,6 +101,7 @@ const closeComment = () => {
               {{ task.priority }}
             </span>
           </td>
+
           <td class="px-4 py-2">
             <span
               :class="{
@@ -111,7 +115,8 @@ const closeComment = () => {
               {{ task.status }}
             </span>
           </td>
-          <td class="px-4 py-2">
+
+          <!-- <td class="px-4 py-2">
             <RouterLink
               :to="{
                 name: 'TodoAdd',
@@ -122,7 +127,8 @@ const closeComment = () => {
               class="main-button py-1"
               >Add Todo</RouterLink
             >
-          </td>
+          </td> -->
+
           <td class="px-4 py-2 flex gap-2">
             <button @click="goToEdit($event, task.id)" class="btn-2">Edit</button>
 
@@ -132,6 +138,14 @@ const closeComment = () => {
               @click="$event.stopPropagation()"
             >
               Assign Users
+            </RouterLink>
+
+            <RouterLink
+              :to="{ name: 'TaskAdd', query: { parent_id: task?.id } }"
+              class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-3 py-1 rounded-full transition"
+              @click="$event.stopPropagation()"
+            >
+              + Sub Task
             </RouterLink>
 
             <button

@@ -73,7 +73,16 @@ const priorityColor = (priority) => {
             <span v-else class="text-gray-400">No description</span>
           </td>
           <td class="px-4 py-2">
-            <button @click="goToEdit(req.id)" class="btn-2">Edit</button>
+            <div class="flex gap-4 items-center">
+              <button @click="goToEdit(req.id)" class="btn-2">Edit</button>
+              <RouterLink
+                :to="{ name: 'TaskAdd', query: { requirement_id: req?.id } }"
+                class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-3 py-1 rounded-full transition flex-shrink-0"
+                @click="$event.stopPropagation()"
+              >
+                + Add Task
+              </RouterLink>
+            </div>
           </td>
         </tr>
       </tbody>
