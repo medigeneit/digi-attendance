@@ -26,7 +26,7 @@ const requirement_id = computed(() => selectedRequirement.value?.id)
 const form = ref({
   title: '',
   requirement_id: null,
-  parent_id: '0',
+  parent_id: '033344',
   user_ids: [],
   priority: 'MEDIUM',
   status: 'PENDING',
@@ -35,7 +35,7 @@ const form = ref({
 
 watch(requirement_id, async (val) => {
   form.value.requirement_id = val
-  if (val === null) {
+  if (!val) {
     return
   }
   await store.fetchTasks({ requirement_id: val })
