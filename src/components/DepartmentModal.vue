@@ -132,7 +132,7 @@ const fetchCompanies = async () => {
 
         <div class="mb-4">
           <label for="incharge_id" class="block text-sm font-medium mb-2">In Chare</label>
-          <Multiselect :options="employees" v-model="selectIncharge" :multiple="false" />
+          <Multiselect :options="employees" v-model="selectIncharge" label="name" :multiple="false" />
           <!-- <select
             id="incharge_id"
             v-model="departmentForm.incharge_id"
