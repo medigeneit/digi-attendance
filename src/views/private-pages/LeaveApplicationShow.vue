@@ -81,7 +81,7 @@ async function submitApproval() {
 async function acceptHandoverApplication(id) {
   try {
     await leaveApplicationStore.acceptHandover({ id, note: approvalNote.value })
-    alert('Handover accepted successfully!')
+    // alert('Handover accepted successfully!')
     await leaveApplicationStore.fetchLeaveApplicationById(id)
     refresh()
   } catch (err) {
@@ -92,7 +92,7 @@ async function acceptHandoverApplication(id) {
 async function acceptInChargeApplication(id) {
   try {
     await leaveApplicationStore.acceptInCharge({ id, note: approvalNote.value })
-    alert('Leave Application Successfully Accepted!')
+    // alert('Leave Application Successfully Accepted!')
     await leaveApplicationStore.fetchLeaveApplicationById(id)
     refresh()
   } catch (err) {
@@ -103,7 +103,7 @@ async function acceptInChargeApplication(id) {
 async function acceptCoordinatorApplication(id) {
   try {
     await leaveApplicationStore.acceptCoordinator({ id, note: approvalNote.value })
-    alert('Coordinator accepted successfully!')
+    // alert('Coordinator accepted successfully!')
     await leaveApplicationStore.fetchLeaveApplicationById(id)
     refresh()
   } catch (err) {
@@ -114,7 +114,7 @@ async function acceptCoordinatorApplication(id) {
 async function acceptOperationalAdminApplication(id) {
   try {
     await leaveApplicationStore.acceptOperationalAdmin({ id, note: approvalNote.value })
-    alert('Operational Admin accepted successfully!')
+    // alert('Operational Admin accepted successfully!')
     await leaveApplicationStore.fetchLeaveApplicationById(id)
     refresh()
   } catch (err) {
@@ -125,7 +125,7 @@ async function acceptOperationalAdminApplication(id) {
 async function acceptRecommendByApplication(id) {
   try {
     await leaveApplicationStore.acceptRecommendBy({ id, note: approvalNote.value })
-    alert('Recommendation accepted successfully!')
+    // alert('Recommendation accepted successfully!')
     await leaveApplicationStore.fetchLeaveApplicationById(id)
     refresh()
   } catch (err) {
@@ -137,7 +137,7 @@ async function acceptApprovedByApplication(id) {
   console.log(approvalNote.value)
   try {
     await leaveApplicationStore.acceptApprovedBy({ id, note: approvalNote.value })
-    alert('Leave Application approved successfully!')
+    // alert('Leave Application approved successfully!')
     refresh()
     await leaveApplicationStore.fetchLeaveApplicationById(id)
   } catch (err) {
