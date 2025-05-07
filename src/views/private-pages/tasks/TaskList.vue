@@ -22,7 +22,12 @@ const goToEdit = (id) => {
   router.push({ name: 'TaskEdit', params: { id } })
 }
 
-const openComment = (id) => {
+const goToShow = (id) => {
+  router.push({ name: 'TaskShow', params: { id } })
+}
+
+const openComment = (event, id) => {
+  event.stopPropagation()
   selectedTaskId.value = id
   showCommentModal.value = true
 }
@@ -59,13 +64,25 @@ const closeComment = () => {
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(task, index) in store.tasks" :key="task.id" class="border-t hover:bg-gray-50">
+        <tr
+          v-for="(task, index) in store.tasks"
+          :key="task.id"
+          class="border-t hover:bg-gray-50 cursor-pointer"
+          @click.prevent="goToShow(task.id)"
+          role="button"
+        >
           <td class="px-4 py-2">{{ index + 1 }}</td>
           <td class="px-4 py-2 font-medium">{{ task.title }}</td>
           <td class="px-4 py-2 font-medium grid gap-1">
-            <div v-for="user in task.users" :key="user.id" class="btn-1">
+            <RouterLink
+              :to="`/settings/user-show/${user.id}`"
+              @click="$event.stopPropagation()"
+              v-for="user in task.users"
+              :key="user.id"
+              class="btn-1"
+            >
               {{ user?.name }}
-            </div>
+            </RouterLink>
           </td>
           <td class="px-4 py-2">
             <span
@@ -100,6 +117,7 @@ const closeComment = () => {
                 params: { todoable_id: task?.id },
                 query: { todoable_type: 'task' },
               }"
+              @click="$event.stopPropagation()"
               class="main-button py-1"
               >Add Todo</RouterLink
             >
@@ -110,12 +128,13 @@ const closeComment = () => {
             <RouterLink
               :to="{ name: 'TaskUserAssign', params: { id: task?.id } }"
               class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-3 py-1 rounded-full transition"
+              @click="$event.stopPropagation()"
             >
               Assign Users
             </RouterLink>
 
             <button
-              @click="openComment(task.id)"
+              @click="openComment($event, task.id)"
               class="bg-indigo-500 text-white px-3 py-1 rounded-full"
             >
               + Comment

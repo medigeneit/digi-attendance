@@ -80,11 +80,11 @@ export const useTaskStore = defineStore('task', () => {
   }
 
 
-  const fetchTask = async (id) => {
+  const fetchTask = async (id, params = {}) => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await apiClient.get(`/tasks/${id}`);
+      const response = await apiClient.get(`/tasks/${id}`, {params});
       task.value = response.data;
     } catch (err) {
       error.value = err.response?.data?.message || `টাস্ক (ID: ${id}) লোড করতে ব্যর্থ হয়েছে।`;

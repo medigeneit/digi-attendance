@@ -119,6 +119,27 @@ const router = createRouter({
         },
 
         {
+          path: 'tasks/:id',
+          name: 'TaskShow',
+          component: () => import('@/views/private-pages/tasks/TaskShow.vue'),
+          meta: { requiresAuth: true },
+          children: [
+            {
+              path: 'reports',
+              name: 'TaskReports',
+              component: () => import('@/views/private-pages/tasks/TaskReports.vue'),
+              meta: { requiresAuth: true }
+            },
+            {
+              path: 'add-report',
+              name: 'TaskReportAdd',
+              component: () => import('@/views/private-pages/tasks/AddTaskReport.vue'),
+              meta: { requiresAuth: true }
+            },
+          ]
+        },
+
+        {
           path: 'tasks/:id/assign-users',
           name: 'TaskUserAssign',
           component: () => import('@/views/private-pages/tasks/TaskUserAssign.vue'),
@@ -630,7 +651,7 @@ const router = createRouter({
   }
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore()
   const isAuthenticated = !!authStore.token || localStorage.getItem('auth_token')
 
