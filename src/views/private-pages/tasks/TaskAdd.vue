@@ -1,5 +1,6 @@
 <script setup>
 import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
+import RequiredIcon from '@/components/RequiredIcon.vue'
 import { useUserStore } from '@/stores/user'
 import { useRequirementStore } from '@/stores/useRequirementStore'
 import { useTaskStore } from '@/stores/useTaskStore'
@@ -26,7 +27,7 @@ const requirement_id = computed(() => selectedRequirement.value?.id)
 const form = ref({
   title: '',
   requirement_id: null,
-  parent_id: '033344',
+  parent_id: '0',
   user_ids: [],
   priority: 'MEDIUM',
   status: 'PENDING',
@@ -76,11 +77,49 @@ function repeatSymbol(symbol, times) {
 
 <template>
   <div class="container mx-auto p-6">
-    <div class="max-w-xl mx-auto bg-white shadow-lg rounded-lg p-6">
-      <h2 class="text-2xl font-semibold text-gray-800 mb-4">Add New Task</h2>
+    <div class="max-w-2xl mx-auto bg-white shadow-lg rounded-lg p-6">
+      <h2 class="text-2xl font-semibold text-gray-800">Add New Task</h2>
+      <hr class="mb-4" />
+      <div class="text-purple-600/60 mb-4 text-xs">
+        Fields that must be filled in will be marked with an asterisk.
+      </div>
       <form @submit.prevent="submit">
         <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-2">Requirement</label>
+          <label class="block text-gray-600 text-sm mb-1 font-medium"
+            >Task Title <RequiredIcon />
+          </label>
+          <input
+            v-model="form.title"
+            required
+            placeholder="Enter task title"
+            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-gray-600 text-sm mb-1 font-medium">Parent Task: </label>
+          <select
+            id="parent-task"
+            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+            v-model="form.parent_id"
+          >
+            <option value="0" class="font-medium text-sm text-red-200">--- NO PARENT---</option>
+            <option
+              v-for="task in flattenedTasks"
+              :key="task.idPath"
+              :value="task.id"
+              class="text-sm"
+            >
+              <template v-if="task.depth > 0">
+                {{ '&nbsp;&nbsp;&nbsp;'.repeat(task.depth) }} ↳
+              </template>
+              {{ task.title }}
+            </option>
+          </select>
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-gray-600 text-sm mb-1 font-medium">Requirement </label>
           <MultiselectDropdown
             v-model="selectedRequirement"
             :options="requirements"
@@ -91,43 +130,11 @@ function repeatSymbol(symbol, times) {
           />
         </div>
 
-        <div class="mb-4">
-          <label for="parent-task">Parent Task:</label>
-          <select
-            id="parent-task"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-            v-model="form.parent_id"
-          >
-            <option value="0" class="text-gray-500 font-medium text-sm">--NO PARENT---</option>
-            <option
-              v-for="task in flattenedTasks"
-              :key="task.idPath"
-              :value="task.id"
-              class="text-sm"
-            >
-              <span v-if="task.depth > 0" class="mr-1">
-                {{ '&nbsp;&nbsp;&nbsp;'.repeat(task.depth) }} ↳
-              </span>
-              <span> {{ task.title }}</span>
-            </option>
-          </select>
-        </div>
-
-        <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-2">Task Title</label>
-          <input
-            v-model="form.title"
-            required
-            placeholder="Enter task title"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
         <!-- <div>{{ tasks.map((t) => ({ id: t.id, title: t.title, parent_id: t.parent_id })) }}</div> -->
         <!-- <pre>{{ taskListTree }}</pre> -->
 
         <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-2">User</label>
+          <label class="block text-gray-600 text-sm mb-1 font-medium">User <RequiredIcon /></label>
           <MultiselectDropdown
             v-model="selectedUser"
             :options="users"
@@ -140,7 +147,9 @@ function repeatSymbol(symbol, times) {
 
         <div class="grid grid-cols-2 gap-4 mb-4">
           <div>
-            <label class="block text-gray-700 font-medium mb-2">Priority</label>
+            <label class="block text-gray-600 text-sm mb-1 font-medium"
+              >Priority <RequiredIcon
+            /></label>
             <select
               v-model="form.priority"
               class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
@@ -153,7 +162,9 @@ function repeatSymbol(symbol, times) {
           </div>
 
           <div>
-            <label class="block text-gray-700 font-medium mb-2">Status</label>
+            <label class="block text-gray-600 text-sm mb-1 font-medium"
+              >Status <RequiredIcon
+            /></label>
             <select
               v-model="form.status"
               class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
@@ -162,12 +173,14 @@ function repeatSymbol(symbol, times) {
               <option>IN_PROGRESS</option>
               <option>COMPLETED</option>
               <option>BLOCKED</option>
+              <option>CANCELLED</option>
+              <option>BACK_LOG</option>
             </select>
           </div>
         </div>
 
         <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-2">Description</label>
+          <label class="block text-gray-600 text-sm mb-1 font-medium">Description</label>
           <textarea
             v-model="form.description"
             rows="4"
@@ -176,6 +189,7 @@ function repeatSymbol(symbol, times) {
           ></textarea>
         </div>
 
+        <hr class="mb-4" />
         <div v-if="store.error" class="mb-4 text-red-500 font-medium">
           {{ store.error }}
         </div>

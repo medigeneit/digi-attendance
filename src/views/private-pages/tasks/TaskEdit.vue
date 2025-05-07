@@ -1,35 +1,41 @@
 <script setup>
-import { onMounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import { useTaskStore } from "@/stores/useTaskStore";
+import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
+import { onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useTaskStore } from '@/stores/useTaskStore'
+import { useUserStore } from '@/stores/user'
 
-const store = useTaskStore();
-const route = useRoute();
-const router = useRouter();
+const store = useTaskStore()
+const userStore = useUserStore()
+const route = useRoute()
+const router = useRouter()
 
-const taskId = route.params.id;
-const loading = ref(false);
+const taskId = route.params.id
+const loading = ref(false)
+const selectedUsers = ref([])
 
 const form = ref({
-  title: "",
-  requirement_id: "",
-  user_ids: "",
-  priority: "MEDIUM",
-  status: "PENDING",
-  description: "",
-});
+  title: '',
+  requirement_id: '',
+  user_ids: '',
+  priority: 'MEDIUM',
+  status: 'PENDING',
+  description: '',
+})
 
 onMounted(async () => {
-  await store.fetchTask(taskId);
+  userStore.fetchUsers()
+  await store.fetchTask(taskId)
+  selectedUsers.value = store.task.users
   form.value = {
     title: store.task.title,
     requirement_id: store.task.requirement_id,
-    user_ids: store.task.users.map((u) => u.id).join(","),
+    user_ids: store.task.users.map((u) => u.id).join(','),
     priority: store.task.priority,
     status: store.task.status,
     description: store.task.description,
-  };
-});
+  }
+})
 
 watch(
   () => store.task,
@@ -37,29 +43,29 @@ watch(
     form.value = {
       title: newTask.title,
       requirement_id: newTask.requirement_id,
-      user_ids: newTask.users.map((u) => u.id).join(","),
+      user_ids: newTask.users.map((u) => u.id).join(','),
       priority: newTask.priority,
       status: newTask.status,
       description: newTask.description,
-    };
-  }
-);
+    }
+  },
+)
 
 const update = async () => {
-  loading.value = true;
+  loading.value = true
 
   const payload = {
     ...form.value,
-    user_ids: form.value.user_ids.split(",").map(Number),
-  };
+    user_ids: selectedUsers.value?.map((u) => Number(u.id)) || [],
+  }
 
-  await store.updateTask(taskId, payload);
-  loading.value = false;
+  await store.updateTask(taskId, payload)
+  loading.value = false
 
   if (!store.error) {
-    router.push({ name: "TaskList" });
+    router.push({ name: 'TaskList' })
   }
-};
+}
 </script>
 
 <template>
@@ -67,9 +73,7 @@ const update = async () => {
     <div class="max-w-xl mx-auto bg-white shadow-lg rounded-lg p-6">
       <h2 class="text-2xl font-semibold text-gray-800 mb-4">Edit Task</h2>
 
-      <div v-if="store.loading" class="text-center py-4 text-gray-500">
-        Loading task details...
-      </div>
+      <div v-if="store.loading" class="text-center py-4 text-gray-500">Loading task details...</div>
 
       <form v-else-if="store.task" @submit.prevent="update">
         <div class="mb-4">
@@ -82,28 +86,23 @@ const update = async () => {
           />
         </div>
 
-        <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-2"
-            >Requirement ID</label
-          >
-          <input
-            v-model="form.requirement_id"
-            type="number"
-            required
-            placeholder="Enter requirement ID"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-          />
+        <div class="mb-4" v-if="store.task.requirement">
+          <label class="block text-gray-700 font-medium mb-2">Requirement</label>
+          <div>
+            <p>{{ store.task?.requirement?.title }}</p>
+          </div>
         </div>
 
         <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-2">User IDs</label>
-          <input
-            v-model="form.user_ids"
-            required
-            placeholder="1,2,3"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+          <label class="block text-gray-600 text-sm mb-1 font-medium">User <RequiredIcon /></label>
+          <MultiselectDropdown
+            v-model="selectedUsers"
+            :options="userStore.users"
+            :multiple="true"
+            track-by="id"
+            label="name"
+            placeholder="Select users"
           />
-          <small class="text-gray-500">Comma-separated user IDs.</small>
         </div>
 
         <div class="grid grid-cols-2 gap-4 mb-4">
@@ -135,9 +134,7 @@ const update = async () => {
         </div>
 
         <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-2"
-            >Description</label
-          >
+          <label class="block text-gray-700 font-medium mb-2">Description</label>
           <textarea
             v-model="form.description"
             rows="4"
@@ -156,7 +153,7 @@ const update = async () => {
             type="submit"
             class="bg-green-500 hover:bg-green-600 text-white font-semibold px-5 py-2 rounded transition"
           >
-            {{ loading ? "Updating..." : "Update Task" }}
+            {{ loading ? 'Updating...' : 'Update Task' }}
           </button>
 
           <button
@@ -170,7 +167,7 @@ const update = async () => {
       </form>
 
       <div v-else class="text-center py-4 text-red-500">
-        {{ store.error || "Task not found." }}
+        {{ store.error || 'Task not found.' }}
       </div>
     </div>
   </div>

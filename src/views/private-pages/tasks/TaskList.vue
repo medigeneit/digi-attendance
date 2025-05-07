@@ -18,7 +18,8 @@ const goToAdd = () => {
   router.push({ name: 'TaskAdd' })
 }
 
-const goToEdit = (id) => {
+const goToEdit = (event, id) => {
+  event.stopPropagation()
   router.push({ name: 'TaskEdit', params: { id } })
 }
 
@@ -123,7 +124,7 @@ const closeComment = () => {
             >
           </td>
           <td class="px-4 py-2 flex gap-2">
-            <button @click="goToEdit(task.id)" class="btn-2">Edit</button>
+            <button @click="goToEdit($event, task.id)" class="btn-2">Edit</button>
 
             <RouterLink
               :to="{ name: 'TaskUserAssign', params: { id: task?.id } }"
