@@ -18,7 +18,7 @@ const error = computed(() => noticeStore.error)
 <template>
   <div class="my-container">
     <!-- Loading State -->
-    <p v-if="loading" class="text-center text-gray-500">Loading notifications...</p>
+    <p v-if="loading" class="text-center text-gray-500">Loading notices...</p>
 
     <!-- Error State -->
     <p v-if="error" class="text-center text-red-500">{{ error }}</p>
@@ -54,7 +54,7 @@ const error = computed(() => noticeStore.error)
 
       <!-- No Notifications -->
       <li v-if="notices.length === 0" class="p-4 text-center">
-        <p class="text-gray-500">No notifications found.</p>
+        <p class="text-gray-500">No notices found.</p>
       </li>
     </ul>
   </div>
