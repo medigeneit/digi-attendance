@@ -9,7 +9,25 @@
       :label="label"
       class="w-full border-2 border-gray-400 rounded focus:ring focus:ring-indigo-200 focus:outline-none"
       :placeholder="placeholder"
-    />
+    >
+      <!-- Customize the option label -->
+      <template #option="{ option }">
+        <div>
+          <span>{{ option[label] }}</span>
+          <span>{{ labelTwo ? option[labelTwo] : '' }}</span>
+          <!-- Combine first and last name -->
+        </div>
+      </template>
+
+      <!-- Customize the selected label -->
+      <template #selected="{ option }">
+        <div>
+          <span>{{ option[label] }}</span>
+          <span>{{ labelTwo ? option[labelTwo] : '' }}</span>
+          <!-- Combine first and last name -->
+        </div>
+      </template>
+    </Multiselect>
   </div>
   <!-- // :class="{'border-red-500': props.required && isInvalid}" -->
   <!-- <p v-if="props.required && isInvalid" class="text-red-500 text-sm mt-1">
@@ -28,6 +46,7 @@ const props = defineProps({
   required: Boolean,
   placeholder: String,
   label: String,
+  labelTwo: String,
 })
 
 const emit = defineEmits(['update:modelValue'])

@@ -86,6 +86,7 @@ onMounted(() => {
           <tr class="bg-gray-200 text-gray-700 text-sm leading-normal">
             <th class="py-3 px-2 text-left">#</th>
             <th class="py-3 px-2 text-left">Name</th>
+            <th class="py-3 px-2 text-left">Department</th>
             <th class="py-3 px-2 text-left">In-Charge</th>
             <th class="py-3 px-2 text-left">Coordinator</th>
             <th class="py-3 px-2 text-left">Operational Admin</th>
@@ -106,20 +107,23 @@ onMounted(() => {
               :key="leaveApproval.id"
               class="border-b border-gray-200 hover:bg-blue-200"
             >
-              <td class="py-3 px-2 text-left">{{ leaveApproval.id }}</td>
-              <td class="py-3 px-2 text-left">{{ leaveApproval.name }}</td>
-              <td class="py-3 px-2 text-left">{{ leaveApproval.in_charge_user?.name || 'N/A' }}</td>
+              <td class="py-3 px-2 text-left">{{ leaveApproval?.id }}</td>
+              <td class="py-3 px-2 text-left">{{ leaveApproval?.name }}</td>
+              <td class="py-3 px-2 text-left">{{ leaveApproval?.department?.name }}</td>
               <td class="py-3 px-2 text-left">
-                {{ leaveApproval.coordinator_user?.name || 'N/A' }}
+                {{ leaveApproval?.in_charge_user?.name || 'N/A' }}
               </td>
               <td class="py-3 px-2 text-left">
-                {{ leaveApproval.operational_admin_user?.name || 'N/A' }}
+                {{ leaveApproval?.coordinator_user?.name || 'N/A' }}
               </td>
               <td class="py-3 px-2 text-left">
-                {{ leaveApproval.recommend_by_user?.name || 'N/A' }}
+                {{ leaveApproval?.operational_admin_user?.name || 'N/A' }}
               </td>
               <td class="py-3 px-2 text-left">
-                {{ leaveApproval.approved_by_user?.name || 'N/A' }}
+                {{ leaveApproval?.recommend_by_user?.name || 'N/A' }}
+              </td>
+              <td class="py-3 px-2 text-left">
+                {{ leaveApproval?.approved_by_user?.name || 'N/A' }}
               </td>
               <td class="py-3 px-2 text-center">
                 <div class="flex justify-center gap-4">
