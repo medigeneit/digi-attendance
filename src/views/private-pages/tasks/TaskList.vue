@@ -1,10 +1,12 @@
 <script setup>
 import CommentModal from '@/components/CommentModal.vue'
 import { useTaskStore } from '@/stores/useTaskStore'
+import { storeToRefs } from 'pinia'
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const store = useTaskStore()
+const { flattenedTasks } = storeToRefs(store)
 const router = useRouter()
 const showCommentModal = ref(false)
 const userId = 1 // অ্যাকচুয়াল auth ইউজার আইডি
@@ -66,7 +68,7 @@ const closeComment = () => {
       </thead>
       <tbody>
         <tr
-          v-for="(task, index) in store.tasks"
+          v-for="(task, index) in flattenedTasks"
           :key="task.id"
           class="border-t hover:bg-gray-50 cursor-pointer"
           @click.prevent="goToShow(task.id)"
@@ -74,7 +76,9 @@ const closeComment = () => {
         >
           <td class="px-4 py-2">{{ index + 1 }}</td>
 
-          <td class="px-4 py-2 font-medium">{{ task.title }}</td>
+          <td class="px-4 py-2 font-medium">
+            <span class="text-gray-300">{{ '&mdash;'.repeat(task.depth) }}</span> {{ task.title }}
+          </td>
 
           <td class="px-4 py-2 font-medium grid gap-1">
             <RouterLink
