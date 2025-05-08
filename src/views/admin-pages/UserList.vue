@@ -144,7 +144,7 @@ async function excelDownload() {
 
     <div v-else class="space-y-4">
       <div v-for="(users, companyName) in groupedUsers" :key="companyName">
-        <h2 class="title-md">{{ companyName }}</h2>
+        <h2 class="title-md">{{ companyName }} ({{ users.length }})</h2>
         <div class="overflow-x-auto">
           <table class="min-w-full table-auto bg-white shadow-md rounded-lg overflow-hidden">
             <thead>

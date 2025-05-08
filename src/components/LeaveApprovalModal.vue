@@ -1,6 +1,8 @@
 <script setup>
 import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
+import { useDepartmentStore } from '@/stores/department'
 import { useUserStore } from '@/stores/user'
+import { storeToRefs } from 'pinia'
 import { onMounted, reactive, ref, watch } from 'vue'
 
 const props = defineProps({
@@ -9,14 +11,17 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'save'])
-
+const selectedDepartment = ref(null)
 const userStore = useUserStore()
+const departmentStore = useDepartmentStore()
+const { departments } = storeToRefs(departmentStore)
 
 const isEditMode = ref(false)
 
 const form = reactive({
   id: null,
   name: '',
+  department_id: '',
   in_charge_user_id: '',
   coordinator_user_id: '',
   operational_admin_user_id: '',
@@ -53,6 +58,7 @@ const resetForm = () => {
   Object.assign(form, {
     id: null,
     name: '',
+    department_id: '',
     in_charge_user_id: '',
     coordinator_user_id: '',
     operational_admin_user_id: '',
@@ -88,6 +94,13 @@ watch(
   { immediate: true, deep: true },
 )
 
+watch(
+  () => selectedDepartment.value,
+  (newDepartment) => {
+    form.department_id = newDepartment?.id || null
+  },
+)
+
 const handleSubmit = () => {
   if (!form.name || !form.approved_by_user_id) {
     alert('Name and Approved By are required!')
@@ -104,6 +117,7 @@ const closeModal = () => {
 
 onMounted(() => {
   userStore.fetchUsers()
+  departmentStore.fetchDepartments()
 })
 </script>
 
@@ -118,7 +132,6 @@ onMounted(() => {
           {{ isEditMode ? 'Edit Leave Approval' : 'Add Leave Approval' }}
         </h3>
       </div>
-
       <form @submit.prevent="handleSubmit" class="p-6 space-y-4">
         <div>
           <label for="name" class="block text-sm font-medium">Approval Name</label>
@@ -131,6 +144,13 @@ onMounted(() => {
             required
           />
         </div>
+        <MultiselectDropdown
+          v-model="selectedDepartment"
+          :multiple="false"
+          label="name"
+          :options="departments"
+          placeholder="Choose department"
+        />
 
         <template
           v-for="(label, field) in {

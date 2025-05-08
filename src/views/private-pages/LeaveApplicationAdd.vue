@@ -27,6 +27,10 @@ const selectedLeaveTypes = ref([])
 const loading = ref(false)
 const error = ref(null)
 
+const weekends = computed(() => {
+  return authStore?.user?.assign_weekend?.weekends || authStore?.user?.weekends
+})
+
 const leaveDays = computed(() => {
   const startDateStr = form.value.last_working_date
   const endDateStr = form.value.resumption_date
@@ -78,6 +82,19 @@ watchEffect(() => {
     if (selectedLeaveTypes.value.length !== leaveDays.value.length) {
       selectedLeaveTypes.value = leaveDays.value.map(() => leaveTypeStore.leaveTypes[0].id)
     }
+
+    // Check each leave day and select "weekend" for weekends based on the weekends array
+    leaveDays.value.forEach((day, index) => {
+      const weekdayName = new Date(day).toLocaleString('en-us', { weekday: 'long' }).toLowerCase()
+
+      // Capitalize weekdayName for comparison (e.g., "friday" -> "Friday")
+      const capitalizedWeekday = weekdayName.charAt(0).toUpperCase() + weekdayName.slice(1)
+
+      // Check if the current day matches any of the user's weekends
+      if (weekends.value.includes(capitalizedWeekday)) {
+        selectedLeaveTypes.value[index] = 'weekend' // Auto-select "weekend" for matching days
+      }
+    })
   }
 })
 
@@ -103,6 +120,24 @@ const submitLeaveApplication = async () => {
       })
       .filter((leaveDay) => leaveDay.leave_type_id !== null) // 'weekend' অপশন ফিল্টার করে সরিয়ে ফেলছে
 
+    const leaveDaysJson = leaveDays.value
+      .map((day, index) => {
+        return {
+          date: day,
+          leave_type_id:
+            (selectedLeaveTypes.value[index] == 1
+              ? 'CL'
+              : selectedLeaveTypes.value[index] === 2
+                ? 'ML'
+                : selectedLeaveTypes.value[index] == 3
+                  ? 'SL'
+                  : selectedLeaveTypes.value[index] == 3
+                    ? 'WPL'
+                    : selectedLeaveTypes.value[index]) || '',
+        }
+      })
+      .filter((leaveDay) => leaveDay.leave_type_id !== null) // 'weekend' অপশন ফিল্টার করে সরিয়ে ফেলছে
+
     const payload = {
       user_id: authStore?.user?.id,
       last_working_date: form.value.last_working_date,
@@ -111,6 +146,7 @@ const submitLeaveApplication = async () => {
       works_in_hand: form.value.works_in_hand,
       handover_user_id: form.value.handover_user_id,
       leave_days: leaveDaysPayload,
+      json_data: leaveDaysJson,
     }
 
     const newApplication = await leaveApplicationStore.storeLeaveApplication(payload)

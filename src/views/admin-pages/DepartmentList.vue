@@ -115,6 +115,7 @@ onMounted(async () => {
               <tr class="bg-gray-200 text-gray-700 text-sm leading-normal">
                 <th class="py-3 px-2 text-left">Name</th>
                 <th class="py-3 px-2 text-left">Short Name</th>
+                <th class="py-3 px-2 text-center">Employee Number</th>
                 <th class="py-3 px-2 text-center">Status</th>
                 <th class="py-3 px-2 text-center">Action</th>
               </tr>
@@ -127,6 +128,7 @@ onMounted(async () => {
               >
                 <td class="py-3 px-2 text-left">{{ department.name }}</td>
                 <td class="py-3 px-2 text-left whitespace-nowrap">{{ department.short_name }}</td>
+                <td class="py-3 px-2 text-center">{{ department?.users_count }}</td>
                 <td class="py-3 px-2 text-center">{{ department.status }}</td>
                 <td class="py-3 px-2 text-center">
                   <div class="flex item-center justify-center gap-4">
