@@ -107,23 +107,24 @@ const closeComment = () => {
               class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-3 py-1 rounded-full transition"
               @click="$event.stopPropagation()"
             >
-              Assign Users
+              <i class="fas fa-user-plus"></i> Assign Users
             </RouterLink>
 
             <button
               @click="openComment($event, store.task?.id)"
               class="bg-indigo-500 text-white px-3 py-1 rounded-full"
             >
-              + Comment
+              <i class="fas fa-plus"></i> Comment
             </button>
             <RouterLink
               :to="{
-                name: 'TodoAdd',
-                params: { todoable_id: store.task?.id },
+                name: 'TaskAdd',
+                query: { parent_id: store.task?.id },
               }"
               @click="$event.stopPropagation()"
               class="py-1 btn-3 ml-auto"
-              >Add Todo</RouterLink
+            >
+              <i class="fas fa-plus"></i> Sub Task</RouterLink
             >
             <RouterLink
               :to="{
@@ -132,7 +133,7 @@ const closeComment = () => {
               }"
               @click="$event.stopPropagation()"
               class="py-1 btn-3"
-              >Reports</RouterLink
+              ><i class="fal fa-file-alt"></i> Reports</RouterLink
             >
           </div>
         </section>

@@ -12,33 +12,6 @@
         class="rounded-lg border bg-white p-4 shadow hover:bg-gray-50 transition-colors"
       >
         <TaskTreeView :task="task" />
-        <!-- <div class="flex items-start justify-between">
-          <div class="space-y-1">
-            <div class="flex items-center gap-2 text-xs text-gray-500">
-              <span class="font-medium">{{ task.id }}</span>
-              <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-800">{{ task.status }}</span>
-            </div>
-            <h3 class="font-medium text-gray-800">{{ task.title }}</h3>
-            <p class="text-sm text-gray-500">Requirement: {{ task?.requirement?.title }}</p>
-            <div
-              class="mt-2 flex items-center gap-2"
-              v-for="(item, index) in task.users"
-              :key="index"
-            >
-              <div
-                class="w-10 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-medium text-gray-600"
-              >
-                {{ getInitials(item?.name) }}
-              </div>
-              <span class="text-sm text-gray-600">{{ item?.name }}</span>
-            </div>
-          </div>
-          <div class="text-right">
-            <span class="text-xs px-2 py-1 rounded border" :class="priorityColor(task.priority)">
-              {{ task.priority }}
-            </span>
-          </div>
-        </div> -->
       </div>
     </div>
   </div>
