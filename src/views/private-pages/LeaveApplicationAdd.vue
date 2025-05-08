@@ -2,6 +2,7 @@
 import LoaderView from '@/components/common/LoaderView.vue'
 import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useHolidayStore } from '@/stores/holiday'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
 import { useLeaveTypeStore } from '@/stores/leave-type'
 import { useUserStore } from '@/stores/user'
@@ -13,6 +14,7 @@ const leaveApplicationStore = useLeaveApplicationStore()
 const leaveTypeStore = useLeaveTypeStore()
 const userStore = useUserStore()
 const authStore = useAuthStore()
+const holidayStore = useHolidayStore()
 const selectUser = ref('')
 const form = ref({
   last_working_date: '',
@@ -84,7 +86,7 @@ watchEffect(() => {
     }
 
     // Check each leave day and select "weekend" for weekends based on the weekends array
-    leaveDays.value.forEach((day, index) => {
+    leaveDays.value.forEach(async (day, index) => {
       const weekdayName = new Date(day).toLocaleString('en-us', { weekday: 'long' }).toLowerCase()
 
       // Capitalize weekdayName for comparison (e.g., "friday" -> "Friday")
@@ -93,6 +95,12 @@ watchEffect(() => {
       // Check if the current day matches any of the user's weekends
       if (weekends.value.includes(capitalizedWeekday)) {
         selectedLeaveTypes.value[index] = 'weekend' // Auto-select "weekend" for matching days
+      }
+
+      const holidayStatus = await isHoliday(day) // Check if the day is a holiday
+
+      if (holidayStatus) {
+        selectedLeaveTypes.value[index] = 'holiday' // Auto-select "holiday" for holiday days
       }
     })
   }
@@ -115,7 +123,10 @@ const submitLeaveApplication = async () => {
         return {
           date: day,
           leave_type_id:
-            selectedLeaveTypes.value[index] !== 'weekend' ? selectedLeaveTypes.value[index] : null,
+            selectedLeaveTypes.value[index] !== 'weekend' &&
+            selectedLeaveTypes.value[index] !== 'holiday'
+              ? selectedLeaveTypes.value[index]
+              : null,
         }
       })
       .filter((leaveDay) => leaveDay.leave_type_id !== null) // 'weekend' অপশন ফিল্টার করে সরিয়ে ফেলছে
@@ -124,16 +135,7 @@ const submitLeaveApplication = async () => {
       .map((day, index) => {
         return {
           date: day,
-          leave_type_id:
-            (selectedLeaveTypes.value[index] == 1
-              ? 'CL'
-              : selectedLeaveTypes.value[index] === 2
-                ? 'ML'
-                : selectedLeaveTypes.value[index] == 3
-                  ? 'SL'
-                  : selectedLeaveTypes.value[index] == 3
-                    ? 'WPL'
-                    : selectedLeaveTypes.value[index]) || '',
+          leave_type_id: selectedLeaveTypes.value[index] || '',
         }
       })
       .filter((leaveDay) => leaveDay.leave_type_id !== null) // 'weekend' অপশন ফিল্টার করে সরিয়ে ফেলছে
@@ -172,6 +174,21 @@ onMounted(() => {
 
 const goBack = () => {
   router.go(-1)
+}
+
+// Helper function to check if the day is a holiday
+const isHoliday = async (day) => {
+  try {
+    // Make API call to check holidays for the specific day
+    const response = await holidayStore.fetchHolidays({
+      start_date: day,
+    })
+    const holidayDates = response[0]?.start_date || [] // Example: response could have dates
+    return holidayDates.includes(day) // Check if the day is a holiday
+  } catch (error) {
+    console.error('Error fetching holidays:', error)
+    return false // Return false if an error occurs
+  }
 }
 </script>
 
@@ -249,7 +266,16 @@ const goBack = () => {
                   value="weekend"
                   v-model="selectedLeaveTypes[index]"
                 />
-                <span>Weekend / Holiday</span>
+                <span>Weekend</span>
+              </label>
+              <label class="flex items-center space-x-1">
+                <input
+                  type="radio"
+                  :name="'leaveType-' + index"
+                  value="holiday"
+                  v-model="selectedLeaveTypes[index]"
+                />
+                <span> Holiday</span>
               </label>
             </div>
           </div>
