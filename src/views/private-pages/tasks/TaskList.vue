@@ -1,10 +1,12 @@
 <script setup>
 import CommentModal from '@/components/CommentModal.vue'
 import { useTaskStore } from '@/stores/useTaskStore'
+import { storeToRefs } from 'pinia'
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const store = useTaskStore()
+const { flattenedTasks } = storeToRefs(store)
 const router = useRouter()
 const showCommentModal = ref(false)
 const userId = 1 // অ্যাকচুয়াল auth ইউজার আইডি
@@ -18,7 +20,8 @@ const goToAdd = () => {
   router.push({ name: 'TaskAdd' })
 }
 
-const goToEdit = (id) => {
+const goToEdit = (event, id) => {
+  event.stopPropagation()
   router.push({ name: 'TaskEdit', params: { id } })
 }
 
@@ -59,20 +62,24 @@ const closeComment = () => {
           <th class="px-4 py-2 text-left">Assign Users</th>
           <th class="px-4 py-2 text-left">Priority</th>
           <th class="px-4 py-2 text-left">Status</th>
-          <th class="px-4 py-2 text-left">Todo</th>
+          <!-- <th class="px-4 py-2 text-left">Todo</th> -->
           <th class="px-4 py-2 text-left">Actions</th>
         </tr>
       </thead>
       <tbody>
         <tr
-          v-for="(task, index) in store.tasks"
+          v-for="(task, index) in flattenedTasks"
           :key="task.id"
           class="border-t hover:bg-gray-50 cursor-pointer"
           @click.prevent="goToShow(task.id)"
           role="button"
         >
           <td class="px-4 py-2">{{ index + 1 }}</td>
-          <td class="px-4 py-2 font-medium">{{ task.title }}</td>
+
+          <td class="px-4 py-2 font-medium">
+            <span class="text-gray-300">{{ '&mdash;'.repeat(task.depth) }}</span> {{ task.title }}
+          </td>
+
           <td class="px-4 py-2 font-medium grid gap-1">
             <RouterLink
               :to="`/settings/user-show/${user.id}`"
@@ -84,6 +91,7 @@ const closeComment = () => {
               {{ user?.name }}
             </RouterLink>
           </td>
+
           <td class="px-4 py-2">
             <span
               :class="{
@@ -97,6 +105,7 @@ const closeComment = () => {
               {{ task.priority }}
             </span>
           </td>
+
           <td class="px-4 py-2">
             <span
               :class="{
@@ -110,7 +119,8 @@ const closeComment = () => {
               {{ task.status }}
             </span>
           </td>
-          <td class="px-4 py-2">
+
+          <!-- <td class="px-4 py-2">
             <RouterLink
               :to="{
                 name: 'TodoAdd',
@@ -121,9 +131,10 @@ const closeComment = () => {
               class="main-button py-1"
               >Add Todo</RouterLink
             >
-          </td>
+          </td> -->
+
           <td class="px-4 py-2 flex gap-2">
-            <button @click="goToEdit(task.id)" class="btn-2">Edit</button>
+            <button @click="goToEdit($event, task.id)" class="btn-2">Edit</button>
 
             <RouterLink
               :to="{ name: 'TaskUserAssign', params: { id: task?.id } }"
@@ -131,6 +142,14 @@ const closeComment = () => {
               @click="$event.stopPropagation()"
             >
               Assign Users
+            </RouterLink>
+
+            <RouterLink
+              :to="{ name: 'TaskAdd', query: { parent_id: task?.id } }"
+              class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-3 py-1 rounded-full transition"
+              @click="$event.stopPropagation()"
+            >
+              + Sub Task
             </RouterLink>
 
             <button

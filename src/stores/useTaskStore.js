@@ -62,8 +62,7 @@ export const useTaskStore = defineStore('task', () => {
       nodes.forEach(node => {
         
         result.push({
-          id: node.id,
-          title: node.title,
+          ...node,
           depth,
           idPath: path + node.id
         });

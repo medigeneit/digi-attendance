@@ -2,10 +2,13 @@
 import { onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTaskStore } from '@/stores/useTaskStore'
+import CommentModal from '@/components/CommentModal.vue'
 
 const store = useTaskStore()
 const route = useRoute()
 const router = useRouter()
+const selectedTaskId = ref(null)
+const showCommentModal = ref(false)
 
 const taskId = route.params.id
 const loading = ref(false)
@@ -13,6 +16,30 @@ const loading = ref(false)
 onMounted(async () => {
   await store.fetchTask(taskId)
 })
+
+const goToAdd = () => {
+  router.push({ name: 'TaskAdd' })
+}
+
+const goToEdit = (id) => {
+  event.stopPropagation()
+  router.push({ name: 'TaskEdit', params: { id } })
+}
+
+const goToShow = (id) => {
+  router.push({ name: 'TaskShow', params: { id } })
+}
+
+const openComment = (id) => {
+  event.stopPropagation()
+  selectedTaskId.value = id
+  showCommentModal.value = true
+}
+
+const closeComment = () => {
+  showCommentModal.value = false
+  selectedTaskId.value = null
+}
 </script>
 
 <template>
@@ -27,16 +54,18 @@ onMounted(async () => {
           <div class="py-2 font-medium col-span-full text-xl">{{ store.task.title }}</div>
 
           <div class="py-2 font-medium mb-4 col-span-full">
-            <div class="text-xs mb-0.5 text-gray-600 uppercase">Assign Persons</div>
-            <span
-              @click="$event.stopPropagation()"
-              v-for="user in store.task.users"
-              :key="user.id"
-              class="btn-1 !inline-flex"
-            >
-              <i class="fad fa-user"></i>
-              {{ user?.name }}
-            </span>
+            <div class="text-xs mb-0.5 text-gray-600 uppercase">Assigns</div>
+            <div class="flex gap-2 flex-wrap">
+              <span
+                @click="$event.stopPropagation()"
+                v-for="user in store.task.users"
+                :key="user.id"
+                class="btn-1 !inline-flex flex-shrink-0"
+              >
+                <i class="fad fa-user"></i>
+                {{ user?.name }}
+              </span>
+            </div>
           </div>
 
           <div class="py-2">
@@ -78,23 +107,24 @@ onMounted(async () => {
               class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-3 py-1 rounded-full transition"
               @click="$event.stopPropagation()"
             >
-              Assign Users
+              <i class="fas fa-user-plus"></i> Assign Users
             </RouterLink>
 
             <button
               @click="openComment($event, store.task?.id)"
               class="bg-indigo-500 text-white px-3 py-1 rounded-full"
             >
-              + Comment
+              <i class="fas fa-plus"></i> Comment
             </button>
             <RouterLink
               :to="{
-                name: 'TodoAdd',
-                params: { todoable_id: store.task?.id },
+                name: 'TaskAdd',
+                query: { parent_id: store.task?.id },
               }"
               @click="$event.stopPropagation()"
               class="py-1 btn-3 ml-auto"
-              >Add Todo</RouterLink
+            >
+              <i class="fas fa-plus"></i> Sub Task</RouterLink
             >
             <RouterLink
               :to="{
@@ -103,7 +133,7 @@ onMounted(async () => {
               }"
               @click="$event.stopPropagation()"
               class="py-1 btn-3"
-              >Reports</RouterLink
+              ><i class="fal fa-file-alt"></i> Reports</RouterLink
             >
           </div>
         </section>
@@ -114,5 +144,14 @@ onMounted(async () => {
         {{ store.error || 'Task not found.' }}
       </div>
     </div>
+
+    <CommentModal
+      :show="showCommentModal"
+      :commentable-id="selectedTaskId"
+      commentable-type="task"
+      :user-id="userId"
+      :on-close="closeComment"
+      @submitted="store.fetchTasks"
+    />
   </div>
 </template>
