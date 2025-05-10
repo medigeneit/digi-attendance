@@ -98,8 +98,8 @@ onMounted(() => {
             <th class="py-3 px-2 text-left">Name</th>
             <th class="py-3 px-2 text-left">Department</th>
             <th class="py-3 px-2 text-left">In-Charge</th>
-            <th class="py-3 px-2 text-left">Coordinator</th>
-            <th class="py-3 px-2 text-left">Operational Admin</th>
+            <th v-if="approvalType === 'leave'" class="py-3 px-2 text-left">Coordinator</th>
+            <th v-if="approvalType === 'leave'" class="py-3 px-2 text-left">Operational Admin</th>
             <th class="py-3 px-2 text-left">Recommend By</th>
             <th class="py-3 px-2 text-left">Approved By</th>
             <th class="py-3 px-2 text-center">Actions</th>
@@ -123,10 +123,10 @@ onMounted(() => {
               <td class="py-3 px-2 text-left">
                 {{ leaveApproval?.in_charge_user?.name || 'N/A' }}
               </td>
-              <td class="py-3 px-2 text-left">
+              <td v-if="approvalType === 'leave'" class="py-3 px-2 text-left">
                 {{ leaveApproval?.coordinator_user?.name || 'N/A' }}
               </td>
-              <td class="py-3 px-2 text-left">
+              <td v-if="approvalType === 'leave'" class="py-3 px-2 text-left">
                 {{ leaveApproval?.operational_admin_user?.name || 'N/A' }}
               </td>
               <td class="py-3 px-2 text-left">
@@ -163,6 +163,7 @@ onMounted(() => {
     <LeaveApprovalModal
       :show="showLeaveApprovalModal"
       :leaveApproval="selectedLeaveApproval"
+      :approvalType="approvalType"
       @close="closeLeaveApprovalModal"
       @save="handleSave"
     />

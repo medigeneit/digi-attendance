@@ -8,6 +8,7 @@ import { onMounted, reactive, ref, watch } from 'vue'
 const props = defineProps({
   show: { type: Boolean, required: true },
   leaveApproval: { type: Object, default: null },
+  approvalType: { type: String, default: 'leave' },
 })
 
 const emit = defineEmits(['close', 'save'])
@@ -162,7 +163,12 @@ onMounted(() => {
           }"
           :key="field"
         >
-          <div>
+          <div
+            v-if="
+              approvalType === 'leave' ||
+              !['coordinator_user_id', 'operational_admin_user_id'].includes(field)
+            "
+          >
             <label :for="field" class="block text-sm font-medium">{{ label }}</label>
             <MultiselectDropdown
               v-model="selectedUsers[field]"
