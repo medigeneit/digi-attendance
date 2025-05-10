@@ -110,12 +110,12 @@ const closeComment = () => {
               <i class="fas fa-user-plus"></i> Assign Users
             </RouterLink>
 
-            <button
+            <!-- <button
               @click="openComment($event, store.task?.id)"
               class="bg-indigo-500 text-white px-3 py-1 rounded-full"
             >
               <i class="fas fa-plus"></i> Comment
-            </button>
+            </button> -->
             <RouterLink
               :to="{
                 name: 'TaskAdd',
