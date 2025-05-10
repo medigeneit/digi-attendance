@@ -94,7 +94,7 @@ onMounted(() => {
       <table class="min-w-full table-auto bg-white shadow-md rounded-lg overflow-hidden">
         <thead>
           <tr class="bg-gray-200 text-gray-700 text-sm leading-normal">
-            <th class="py-3 px-2 text-left">#</th>
+            <!-- <th class="py-3 px-2 text-left">#</th> -->
             <th class="py-3 px-2 text-left">Name</th>
             <th class="py-3 px-2 text-left">Department</th>
             <th class="py-3 px-2 text-left">In-Charge</th>
@@ -117,7 +117,7 @@ onMounted(() => {
               :key="leaveApproval.id"
               class="border-b border-gray-200 hover:bg-blue-200"
             >
-              <td class="py-3 px-2 text-left">{{ leaveApproval?.id }}</td>
+              <!-- <td class="py-3 px-2 text-left">{{ leaveApproval?.id }}</td> -->
               <td class="py-3 px-2 text-left">{{ leaveApproval?.name }}</td>
               <td class="py-3 px-2 text-left">{{ leaveApproval?.department?.name }}</td>
               <td class="py-3 px-2 text-left">

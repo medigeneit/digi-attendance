@@ -6,7 +6,6 @@ const notificationStore = useNotificationStore()
 
 const props = defineProps({
   notifications: {
-    type: Array,
     required: true,
   },
   markNotification: {
