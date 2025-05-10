@@ -107,7 +107,7 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
 
     try {
       const response = await apiClient.post(`/leave-applications/${payload.id}/handover-accept`, payload);
-      const index = leaveApplications.value.findIndex((app) => app.id === id);
+      const index = leaveApplications.value.findIndex((app) => app.id === payload?.id);
       if (index !== -1) {
         leaveApplications.value[index] = response.data.data;
       }
@@ -126,11 +126,11 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
 
     try {
       const response = await apiClient.post(`/leave-applications/${payload.id}/incharge-accept`, payload);
-      const index = leaveApplications.value.findIndex((app) => app.id === id);
+      const index = leaveApplications.value.findIndex((app) => app.id === payload?.id);
       if (index !== -1) {
         leaveApplications.value[index] = response.data.data;
       }
-      return response.data.data;
+      return response?.data?.data;
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to accept in-charge approval';
       throw new Error(error.value);
@@ -145,11 +145,11 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
 
     try {
       const response = await apiClient.post(`/leave-applications/${payload.id}/coordinator-accept`, payload);
-      const index = leaveApplications.value.findIndex((app) => app.id === id);
+      const index = leaveApplications.value.findIndex((app) => app.id === payload?.id);
       if (index !== -1) {
         leaveApplications.value[index] = response.data.data;
       }
-      return response.data.data;
+      return response?.data?.data;
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to accept coordinator approval';
       throw new Error(error.value);
@@ -164,11 +164,11 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
 
     try {
       const response = await apiClient.post(`/leave-applications/${payload.id}/operational-admin-accept`, payload);
-      const index = leaveApplications.value.findIndex((app) => app.id === id);
+      const index = leaveApplications.value.findIndex((app) => app.id === payload?.id);
       if (index !== -1) {
         leaveApplications.value[index] = response.data.data;
       }
-      return response.data.data;
+      return response?.data?.data;
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to accept operational admin approval';
       throw new Error(error.value);
@@ -183,11 +183,14 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
 
     try {
       const response = await apiClient.post(`/leave-applications/${payload.id}/recommend-by-accept`, payload);
-      const index = leaveApplications.value.findIndex((app) => app.id === id);
+
+      const index = leaveApplications.value.findIndex((app) => app.id === payload?.id);
+
       if (index !== -1) {
         leaveApplications.value[index] = response.data.data;
       }
-      return response.data.data;
+      return response?.data?.data;
+
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to accept recommend by approval';
       throw new Error(error.value);
@@ -202,11 +205,11 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
     
     try {
       const response = await apiClient.post(`/leave-applications/${payload?.id}/approved-by-accept`,payload);
-      const index = leaveApplications.value.findIndex((app) => app.id === id);
+      const index = leaveApplications.value.findIndex((app) => app.id === payload?.id);
       if (index !== -1) {
         leaveApplications.value[index] = response.data.data;
       }
-      return response.data.data;
+      return response?.data?.data;
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to accept approval by admin';
       throw new Error(error.value);

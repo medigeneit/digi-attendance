@@ -345,7 +345,9 @@ const computedDesignations = computed(() => {
                     v-for="leaveApproval in leaveApprovalStore.leaveApprovals"
                     :key="leaveApproval.id"
                   >
-                    <option :value="leaveApproval.id">{{ leaveApproval.name }}</option>
+                    <option v-if="leaveApproval.type === 'leave'" :value="leaveApproval.id">
+                      {{ leaveApproval.name }}
+                    </option>
                   </template>
                 </select>
               </div>
@@ -357,7 +359,9 @@ const computedDesignations = computed(() => {
                     v-for="leaveApproval in leaveApprovalStore.leaveApprovals"
                     :key="leaveApproval.id"
                   >
-                    <option :value="leaveApproval.id">{{ leaveApproval.name }}</option>
+                    <option v-if="leaveApproval.type === 'other'" :value="leaveApproval.id">
+                      {{ leaveApproval.name }}
+                    </option>
                   </template>
                 </select>
               </div>

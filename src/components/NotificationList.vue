@@ -71,7 +71,7 @@ const getEventTitle = (eventModel, eventType) => {
 
     case 'offday':
       if (eventModel.exchange_type === 'offday') {
-        return `Exchange (Offday): ${eventModel.exchange_date} → ${eventModel.current_date}`
+        return `Exchange (Offday): ${eventModel.current_date} → ${eventModel.exchange_date}`
       }
       return `Exchange (${eventModel.exchange_type})`
 

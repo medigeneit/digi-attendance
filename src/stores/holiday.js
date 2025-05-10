@@ -1,6 +1,6 @@
-import { ref } from 'vue'
+import apiClient from '@/axios'; // Ensure Axios is properly configured
 import { defineStore } from 'pinia'
-import apiClient from '@/axios' // Ensure Axios is properly configured
+import { ref } from 'vue'
 
 export const useHolidayStore = defineStore('holiday', () => {
   const holidays = ref([])
@@ -14,7 +14,8 @@ export const useHolidayStore = defineStore('holiday', () => {
     error.value = null
     try {
       const response = await apiClient.get('/holidays', { params })
-      holidays.value = response.data
+      holidays.value = response?.data
+      return response?.data;
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch holidays'
     } finally {

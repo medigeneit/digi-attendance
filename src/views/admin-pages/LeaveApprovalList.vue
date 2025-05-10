@@ -4,8 +4,12 @@ import DeleteModal from '@/components/common/DeleteModal.vue'
 import HeaderWithButtons from '@/components/common/HeaderWithButtons.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import { useLeaveApprovalStore } from '@/stores/leave-approval'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
+
+const router = useRouter()
+const approvalType = computed(() => router.currentRoute.value.name === 'LeaveApprovalList' ? 'leave' : 'other')
 
 const leaveApprovalStore = useLeaveApprovalStore()
 const toast = useToast()
@@ -55,6 +59,10 @@ const handleDelete = async () => {
 }
 
 const handleSave = async (leaveApproval) => {
+  if (!leaveApproval.id) {
+    leaveApproval = { ...leaveApproval, type: approvalType.value }
+  }
+
   const action = leaveApproval.id ? 'updateLeaveApproval' : 'createLeaveApproval'
   const successMessage = leaveApproval.id
     ? 'Leave approval updated successfully!'
@@ -72,7 +80,9 @@ const handleSave = async (leaveApproval) => {
 }
 
 onMounted(() => {
-  leaveApprovalStore.fetchLeaveApprovals()
+  leaveApprovalStore.fetchLeaveApprovals({
+    type: approvalType.value,
+  })
 })
 </script>
 
@@ -84,12 +94,12 @@ onMounted(() => {
       <table class="min-w-full table-auto bg-white shadow-md rounded-lg overflow-hidden">
         <thead>
           <tr class="bg-gray-200 text-gray-700 text-sm leading-normal">
-            <th class="py-3 px-2 text-left">#</th>
+            <!-- <th class="py-3 px-2 text-left">#</th> -->
             <th class="py-3 px-2 text-left">Name</th>
             <th class="py-3 px-2 text-left">Department</th>
             <th class="py-3 px-2 text-left">In-Charge</th>
-            <th class="py-3 px-2 text-left">Coordinator</th>
-            <th class="py-3 px-2 text-left">Operational Admin</th>
+            <th v-if="approvalType === 'leave'" class="py-3 px-2 text-left">Coordinator</th>
+            <th v-if="approvalType === 'leave'" class="py-3 px-2 text-left">Operational Admin</th>
             <th class="py-3 px-2 text-left">Recommend By</th>
             <th class="py-3 px-2 text-left">Approved By</th>
             <th class="py-3 px-2 text-center">Actions</th>
@@ -107,16 +117,16 @@ onMounted(() => {
               :key="leaveApproval.id"
               class="border-b border-gray-200 hover:bg-blue-200"
             >
-              <td class="py-3 px-2 text-left">{{ leaveApproval?.id }}</td>
+              <!-- <td class="py-3 px-2 text-left">{{ leaveApproval?.id }}</td> -->
               <td class="py-3 px-2 text-left">{{ leaveApproval?.name }}</td>
               <td class="py-3 px-2 text-left">{{ leaveApproval?.department?.name }}</td>
               <td class="py-3 px-2 text-left">
                 {{ leaveApproval?.in_charge_user?.name || 'N/A' }}
               </td>
-              <td class="py-3 px-2 text-left">
+              <td v-if="approvalType === 'leave'" class="py-3 px-2 text-left">
                 {{ leaveApproval?.coordinator_user?.name || 'N/A' }}
               </td>
-              <td class="py-3 px-2 text-left">
+              <td v-if="approvalType === 'leave'" class="py-3 px-2 text-left">
                 {{ leaveApproval?.operational_admin_user?.name || 'N/A' }}
               </td>
               <td class="py-3 px-2 text-left">
@@ -153,6 +163,7 @@ onMounted(() => {
     <LeaveApprovalModal
       :show="showLeaveApprovalModal"
       :leaveApproval="selectedLeaveApproval"
+      :approvalType="approvalType"
       @close="closeLeaveApprovalModal"
       @save="handleSave"
     />

@@ -102,6 +102,16 @@ async function excelDownload() {
     },
   })
 }
+
+const formattedName = (name) => {
+  if (name) {
+    const nameParts = name.split(' ')
+    const firstTwoWords = nameParts.slice(0, 2).join(' ')
+    const remainingWords = nameParts.length > 2 ? `<br>${nameParts.slice(2).join(' ')}` : ''
+    return firstTwoWords + remainingWords
+  }
+  return ''
+}
 </script>
 
 <template>
@@ -167,8 +177,12 @@ async function excelDownload() {
                 class="border-b border-gray-200 hover:bg-blue-200"
               >
                 <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
-                <td class="border border-gray-300 px-2">{{ user?.name }}</td>
-                <td class="border border-gray-300 px-2">{{ user.designation?.title }}</td>
+                <td class="border border-gray-300 px-2" v-html="formattedName(user?.name)"></td>
+                <td
+                  class="border border-gray-300 px-2"
+                  v-html="formattedName(user?.designation?.title)"
+                ></td>
+                <!-- <td class="border border-gray-300 px-2">{{ user.designation?.title }}</td> -->
                 <td class="border border-gray-300 px-2">{{ user.role }}</td>
                 <td class="border border-gray-300 px-2">
                   <button

@@ -126,7 +126,7 @@ export const useExchangeStore = defineStore('exchange', () => {
       const response = await apiClient.post(`/exchanges/${payload.id}/handover-accept`, payload);
       exchange.value = response.data;
     } catch (err) {
-      error.value = err.response?.data?.message || `Failed to accept handover for exchange ID ${id}`;
+      error.value = err.response?.data?.message || `Failed to accept handover for exchange ID ${payload.id}`;
     } finally {
       loading.value = false;
     }
@@ -140,7 +140,7 @@ export const useExchangeStore = defineStore('exchange', () => {
       const response = await apiClient.post(`/exchanges/${payload?.id}/in-charge-accept`, payload);
       exchange.value = response.data;
     } catch (err) {
-      error.value = err.response?.data?.message || `Failed to accept in-charge for exchange ID ${id}`;
+      error.value = err.response?.data?.message || `Failed to accept in-charge for exchange ID ${payload.id}`;
     } finally {
       loading.value = false;
     }
@@ -154,7 +154,7 @@ export const useExchangeStore = defineStore('exchange', () => {
       const response = await apiClient.post(`/exchanges/${payload?.id}/recommend-accept`, payload);
       exchange.value = response.data;
     } catch (err) {
-      error.value = err.response?.data?.message || `Failed to recommend exchange ID ${id}`;
+      error.value = err.response?.data?.message || `Failed to recommend exchange ID ${payload.id}`;
     } finally {
       loading.value = false;
     }
@@ -168,7 +168,7 @@ export const useExchangeStore = defineStore('exchange', () => {
       const response = await apiClient.post(`/exchanges/${payload?.id}/approve`, payload);
       exchange.value = response.data;
     } catch (err) {
-      error.value = err.response?.data?.message || `Failed to approve exchange ID ${id}`;
+      error.value = err.response?.data?.message || `Failed to approve exchange ID ${payload.id}`;
     } finally {
       loading.value = false;
     }

@@ -5,6 +5,7 @@ import { useDepartmentStore } from '@/stores/department'
 import { useDesignationStore } from '@/stores/designation'
 import { useLeaveApprovalStore } from '@/stores/leave-approval'
 import { useUserStore } from '@/stores/user'
+import dayjs from 'dayjs'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
@@ -48,8 +49,8 @@ const form = reactive({
 
 const selectedWeekend = ref({
   weekends: [],
-  start_date: '',
-  end_date: '',
+  start_month: dayjs(new Date()).format('YYYY-MM') || '',
+  end_month: '',
 })
 
 onMounted(async () => {
@@ -262,7 +263,7 @@ const computedDesignations = computed(() => {
                   class="flex gap-2 md:gap-4 bg-white p-2 border rounded mt-1"
                 >
                   <p><strong>Weekends:</strong> {{ selectedWeekend.weekends.join(', ') }}</p>
-                  <p><strong>Start Date:</strong> {{ selectedWeekend.start_date }}</p>
+                  <p><strong>Start Date:</strong> {{ selectedWeekend.start_month }}</p>
                 </div>
                 <ShiftWeekendModal
                   :isOpen="modalOpen"
@@ -345,7 +346,9 @@ const computedDesignations = computed(() => {
                     v-for="leaveApproval in leaveApprovalStore.leaveApprovals"
                     :key="leaveApproval.id"
                   >
-                    <option :value="leaveApproval.id">{{ leaveApproval.name }}</option>
+                    <option v-if="leaveApproval.type === 'leave'" :value="leaveApproval.id">
+                      {{ leaveApproval.name }}
+                    </option>
                   </template>
                 </select>
               </div>
@@ -357,7 +360,9 @@ const computedDesignations = computed(() => {
                     v-for="leaveApproval in leaveApprovalStore.leaveApprovals"
                     :key="leaveApproval.id"
                   >
-                    <option :value="leaveApproval.id">{{ leaveApproval.name }}</option>
+                    <option v-if="leaveApproval.type === 'other'" :value="leaveApproval.id">
+                      {{ leaveApproval.name }}
+                    </option>
                   </template>
                 </select>
               </div>
@@ -387,23 +392,23 @@ const computedDesignations = computed(() => {
               </div>
 
               <div>
-                <label>Employee ID</label>
-                <input
-                  v-model="form.employee_id"
-                  type="text"
-                  class="w-full p-2 border rounded"
-                  placeholder="Enter employee id : M123567"
-                  required
-                />
-              </div>
-
-              <div>
                 <label>Device User ID</label>
                 <input
                   v-model="form.device_user_id"
                   type="number"
                   placeholder="1353"
                   class="w-full p-2 border rounded"
+                />
+              </div>
+
+              <div>
+                <label>Employee ID</label>
+                <input
+                  v-model="form.employee_id"
+                  type="text"
+                  class="w-full p-2 border rounded"
+                  placeholder="Employee ID : M123567"
+                  required
                 />
               </div>
 

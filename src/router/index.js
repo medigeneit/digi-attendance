@@ -338,6 +338,12 @@ const router = createRouter({
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] },
         },
         {
+          path: '/settings/other-approval-list',
+          name: 'OtherApprovalList',
+          component: () => import('@/views/admin-pages/LeaveApprovalList.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] },
+        },
+        {
           path: '/settings/holiday-list',
           name: 'HoliDayList',
           component: () => import('@/views/admin-pages/HoliDayList.vue'),

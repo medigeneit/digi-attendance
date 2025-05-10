@@ -164,13 +164,13 @@ export const useShortLeaveStore = defineStore('shortLeave', () => {
     error.value = null;
     try {
       const response = await apiClient.post(`/short-leaves/${payload.id}/in-charge-accept`, payload);
-      const index = shortLeaves.value.findIndex((leave) => leave.id === id);
+      const index = shortLeaves.value.findIndex((leave) => leave.id === payload.id);
       if (index !== -1) {
         shortLeaves.value[index] = response.data.data;
       }
       return response.data.data;
     } catch (err) {
-      error.value = err.response?.data?.message || `Failed to accept In-Charge for short leave (ID: ${id})`;
+      error.value = err.response?.data?.message || `Failed to accept In-Charge for short leave (ID: ${payload.id})`;
       console.error(`Error accepting In-Charge for short leave with id ${id}:`, err);
       throw new Error(error.value);
     } finally {
@@ -184,13 +184,13 @@ export const useShortLeaveStore = defineStore('shortLeave', () => {
     error.value = null;
     try {
       const response = await apiClient.post(`/short-leaves/${payload.id}/recommend-by-accept`, payload);
-      const index = shortLeaves.value.findIndex((leave) => leave.id === id);
+      const index = shortLeaves.value.findIndex((leave) => leave.id === payload.id);
       if (index !== -1) {
         shortLeaves.value[index] = response.data.data;
       }
       return response.data.data;
     } catch (err) {
-      error.value = err.response?.data?.message || `Failed to accept recommend by for short leave (ID: ${id})`;
+      error.value = err.response?.data?.message || `Failed to accept recommend by for short leave (ID: ${payload.id})`;
       console.error(`Error accepting recommend by for short leave with id ${id}:`, err);
       throw new Error(error.value);
     } finally {
@@ -205,13 +205,13 @@ export const useShortLeaveStore = defineStore('shortLeave', () => {
     console.log({payload});
     try {
       const response = await apiClient.post(`/short-leaves/${payload?.id}/approved-by-accept`, payload);
-      const index = shortLeaves.value.findIndex((leave) => leave.id === id);
+      const index = shortLeaves.value.findIndex((leave) => leave.id === payload.id);
       if (index !== -1) {
         shortLeaves.value[index] = response.data.data;
       }
       return response.data.data;
     } catch (err) {
-      error.value = err.response?.data?.message || `Failed to accept approval for short leave (ID: ${id})`;
+      error.value = err.response?.data?.message || `Failed to accept approval for short leave (ID: ${payload.id})`;
       console.error(`Error accepting approval for short leave with id ${id}:`, err);
       throw new Error(error.value);
     } finally {
