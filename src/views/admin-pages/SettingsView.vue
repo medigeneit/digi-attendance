@@ -13,6 +13,10 @@
       <i class="fas fa-users-class text-3xl"></i>
       Leave Approval List
     </RouterLink>
+    <RouterLink :to="{ name: 'OtherApprovalList' }" class="main-button">
+      <i class="fas fa-users-class text-3xl"></i>
+      Other Approval List
+    </RouterLink>
     <RouterLink :to="{ name: 'LeaveTypeList' }" class="main-button">
       <i class="fas fa-list text-3xl"></i>
       Leave Type List

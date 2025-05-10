@@ -4,8 +4,12 @@ import DeleteModal from '@/components/common/DeleteModal.vue'
 import HeaderWithButtons from '@/components/common/HeaderWithButtons.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import { useLeaveApprovalStore } from '@/stores/leave-approval'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
+
+const router = useRouter()
+const approvalType = computed(() => router.currentRoute.value.name === 'LeaveApprovalList' ? 'leave' : 'other')
 
 const leaveApprovalStore = useLeaveApprovalStore()
 const toast = useToast()
@@ -55,6 +59,10 @@ const handleDelete = async () => {
 }
 
 const handleSave = async (leaveApproval) => {
+  if (!leaveApproval.id) {
+    leaveApproval = { ...leaveApproval, type: approvalType.value }
+  }
+
   const action = leaveApproval.id ? 'updateLeaveApproval' : 'createLeaveApproval'
   const successMessage = leaveApproval.id
     ? 'Leave approval updated successfully!'
@@ -72,7 +80,9 @@ const handleSave = async (leaveApproval) => {
 }
 
 onMounted(() => {
-  leaveApprovalStore.fetchLeaveApprovals()
+  leaveApprovalStore.fetchLeaveApprovals({
+    type: approvalType.value,
+  })
 })
 </script>
 

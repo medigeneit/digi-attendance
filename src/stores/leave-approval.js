@@ -8,11 +8,11 @@ export const useLeaveApprovalStore = defineStore('leaveApproval', () => {
   const loading = ref(false);
   const error = ref(null);
 
-  const fetchLeaveApprovals = async () => {
+  const fetchLeaveApprovals = async (params = {}) => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await apiClient.get('/leave-approvals');
+      const response = await apiClient.get('/leave-approvals', { params });
       leaveApprovals.value = response.data;
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch leave approvals.';
