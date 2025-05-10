@@ -570,7 +570,12 @@ const router = createRouter({
           component: () => import('@/views/private-pages/LeaveApplicationShow.vue'),
           meta: { requiresAuth: true },
         },
-
+        {
+          path: '/leave-application-edit/:id',
+          name: 'LeaveApplicationEdit',
+          component: () => import('@/views/private-pages/LeaveApplicationEdit.vue'),
+          meta: { requiresAuth: true, roles: ['super_admin', 'developer'] },
+        },
         {
           path: '/my-applications/short-leaves',
           name: 'MyShortLeaves',
