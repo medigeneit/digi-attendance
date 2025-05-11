@@ -164,12 +164,12 @@ const deleteApplication = async (applicationId) => {
                   >
                     <i class="far fa-eye"></i>
                   </RouterLink>
-                  <!-- <RouterLink
+                  <RouterLink
                     :to="{ name: 'LeaveApplicationEdit', params: { id: application?.id } }"
                     class="btn-icon"
                   >
                     <i class="far fa-edit text-orange-600"></i>
-                  </RouterLink> -->
+                  </RouterLink>
                   <button @click="deleteApplication(application?.id)" class="btn-icon text-red-500">
                     <i class="far fa-trash"></i>
                   </button>

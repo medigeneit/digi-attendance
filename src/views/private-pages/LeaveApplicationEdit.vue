@@ -193,8 +193,10 @@ const submitLeaveApplication = async () => {
       leave_days: leaveDaysPayload,
       json_data: leaveDaysJson,
     }
-
-    const newApplication = await leaveApplicationStore.storeLeaveApplication(payload)
+    if(payload.id)
+    {
+      const newApplication = await leaveApplicationStore.updateLeaveApplication(payload.id, payload)
+    }
     if (newApplication) {
       router.push({ name: 'LeaveApplicationShow', params: { id: newApplication?.id } })
     }
