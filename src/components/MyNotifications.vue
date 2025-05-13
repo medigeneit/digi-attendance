@@ -5,23 +5,20 @@ import { storeToRefs } from 'pinia'
 const notificationStore = useNotificationStore()
 
 const props = defineProps({
-  notifications: {
-    required: true,
-  },
   markNotification: {
     type: Function,
     required: true,
   },
 })
 
-const { grouped_counts, totalUnreadNotifications } = storeToRefs(notificationStore)
+const { count_notifications, total_notifications } = storeToRefs(notificationStore)
 
 const emits = defineEmits(['close'])
 </script>
 
 <template>
   <div
-    class="bg-white shadow-2xl rounded-lg absolute md:right-10 md:top-20 top-16 w-80 max-h-96 overflow-y-auto border border-gray-200"
+    class="bg-white shadow-2xl rounded-lg absolute right-4 md:right-10 md:top-14 top-16 w-60 max-h-96 overflow-y-auto border border-gray-200"
   >
     <!-- Header -->
     <div
@@ -33,8 +30,8 @@ const emits = defineEmits(['close'])
         class="text-base font-bold text-gray-700"
       >
         🔔 Notifications
-        <span class="ml-2 px-2 py-1 bg-red-500 text-white text-xs rounded-full">
-          {{ totalUnreadNotifications }}
+        <span class="ml-auto px-2 py-1 bg-red-500 text-white text-xs rounded-full">
+          {{ total_notifications }}
         </span>
       </RouterLink>
     </div>
@@ -42,79 +39,68 @@ const emits = defineEmits(['close'])
     <!-- Notification List -->
     <div class="flex flex-col divide-y divide-gray-100">
       <RouterLink
-        v-if="grouped_counts.leaveApplication"
+        v-if="count_notifications?.leave_applications"
         :to="{ name: 'NotificationList', query: { type: 'leaveApplication' } }"
         @click="emits('close')"
         class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
       >
         <span class="text-sm text-gray-700">📄 Leave Applications</span>
         <span class="text-xs bg-teal-500 text-white rounded-full px-2 py-0.5 font-semibold">
-          {{ grouped_counts.leaveApplication }}
+          {{ count_notifications.leave_applications }}
         </span>
       </RouterLink>
+
       <RouterLink
-        v-if="grouped_counts.shortLeave"
+        v-if="count_notifications?.short_leave_applications"
         :to="{ name: 'NotificationList', query: { type: 'shortLeave' } }"
         @click="emits('close')"
         class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
       >
         <span class="text-sm text-gray-700">🕒 Short Leave</span>
         <span class="text-xs bg-yellow-500 text-white rounded-full px-2 py-0.5 font-semibold">
-          {{ grouped_counts.shortLeave }}
+          {{ count_notifications.short_leave_applications }}
         </span>
       </RouterLink>
 
       <RouterLink
-        v-if="grouped_counts.exchange"
-        :to="{ name: 'NotificationList', query: { type: 'exchange' } }"
-        @click="emits('close')"
-        class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
-      >
-        <span class="text-sm text-gray-700">🔄 Exchange Request</span>
-        <span class="text-xs bg-purple-500 text-white rounded-full px-2 py-0.5 font-semibold">
-          {{ grouped_counts.exchange }}
-        </span>
-      </RouterLink>
-      <RouterLink
-        v-if="grouped_counts.shift"
+        v-if="count_notifications?.shift_exchange_applications"
         :to="{ name: 'NotificationList', query: { type: 'shift' } }"
         @click="emits('close')"
         class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
       >
-        <span class="text-sm text-gray-700">🔄 Shift Exchange Request</span>
+        <span class="text-sm text-gray-700">🔄 Shift Exchange</span>
         <span class="text-xs bg-purple-500 text-white rounded-full px-2 py-0.5 font-semibold">
-          {{ grouped_counts?.shift }}
+          {{ count_notifications.shift_exchange_applications }}
         </span>
       </RouterLink>
 
       <RouterLink
-        v-if="grouped_counts.offday"
+        v-if="count_notifications?.offday_exchange_applications"
         :to="{ name: 'NotificationList', query: { type: 'offday' } }"
         @click="emits('close')"
         class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
       >
-        <span class="text-sm text-gray-700">🔄 Offday Exchange Request</span>
+        <span class="text-sm text-gray-700">🔄 Offday Exchange</span>
         <span class="text-xs bg-purple-500 text-white rounded-full px-2 py-0.5 font-semibold">
-          {{ grouped_counts.offday }}
+          {{ count_notifications.offday_exchange_applications }}
         </span>
       </RouterLink>
+
       <RouterLink
-        v-if="grouped_counts.manualAttendance"
+        v-if="count_notifications?.manual_attendance_applications"
         :to="{ name: 'NotificationList', query: { type: 'manualAttendance' } }"
         @click="emits('close')"
         class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
       >
         <span class="text-sm text-gray-700"
-          ><i class="fal fa-clipboard-user text-lg"></i> Manual Attendance Request</span
+          ><i class="fal fa-clipboard-user text-lg mx-1"></i> Manual Attendance</span
         >
         <span class="text-xs bg-sky-500 text-white rounded-full px-2 py-0.5 font-semibold">
-          {{ grouped_counts.manualAttendance }}
+          {{ count_notifications.manual_attendance_applications }}
         </span>
       </RouterLink>
-      <div
-        v-if="!Object.keys(grouped_counts).length"
-        class="px-4 py-3 text-center text-sm text-gray-400"
-      >
+
+      <div v-if="total_notifications === 0" class="px-4 py-3 text-center text-sm text-gray-400">
         No new notifications.
       </div>
     </div>
