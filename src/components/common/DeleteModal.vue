@@ -16,7 +16,7 @@ const handleConfirm = () => {
 <template>
   <div v-if="show" class="modal-bg">
     <div class="modal-card">
-      <h2 class="text-xl font-bold mb-4">{{ title }}</h2>
+      <h2 class="text-xl font-bold mb-4 capitalize">{{ title }}</h2>
       <p>{{ message }}</p>
       <div class="flex justify-end mt-4">
         <button

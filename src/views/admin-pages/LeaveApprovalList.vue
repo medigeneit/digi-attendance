@@ -88,7 +88,7 @@ onMounted(() => {
 
 <template>
   <div class="my-container space-y-2">
-    <HeaderWithButtons title="Leave Approvals" @add="openAddModal" />
+    <HeaderWithButtons :title="`${approvalType} Approvals`" @add="openAddModal" />
 
     <div class="overflow-x-auto">
       <table class="min-w-full table-auto bg-white shadow-md rounded-lg overflow-hidden">
@@ -170,7 +170,7 @@ onMounted(() => {
 
     <DeleteModal
       :show="showDeleteModal"
-      :title="'Delete Leave Approval'"
+      :title="`Delete ${approvalType} Approval`"
       :message="`Are you sure you want to delete ${selectedLeaveApproval?.name}?`"
       @close="closeDeleteModal"
       @confirm="handleDelete"

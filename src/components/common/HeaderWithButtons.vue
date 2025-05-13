@@ -28,7 +28,7 @@ const goBack = () => {
       <span class="hidden md:flex">Back</span>
     </button>
 
-    <h1 class="title-md md:title-lg flex-wrap text-center">
+    <h1 class="title-md md:title-lg flex-wrap text-center capitalize">
       {{ title }}
     </h1>
 
