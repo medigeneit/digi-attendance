@@ -196,9 +196,9 @@ const submitLeaveApplication = async () => {
     if(payload.id)
     {
       const newApplication = await leaveApplicationStore.updateLeaveApplication(payload.id, payload)
-    }
-    if (newApplication) {
-      router.push({ name: 'LeaveApplicationShow', params: { id: newApplication?.id } })
+      if (newApplication) {
+        router.push({ name: 'LeaveApplicationShow', params: { id: newApplication?.id } })
+      }
     }
   } catch (err) {
     error.value = err.message || 'Failed to submit leave application'
@@ -350,7 +350,7 @@ const isHoliday = async (day) => {
       <div v-if="error" class="text-red-500 text-sm">{{ error }}</div>
 
       <div class="flex justify-end">
-        <button type="submit" class="btn-2">Submit</button>
+        <button type="submit" class="btn-1">Update</button>
       </div>
     </form>
   </div>

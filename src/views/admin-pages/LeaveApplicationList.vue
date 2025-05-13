@@ -165,6 +165,7 @@ const deleteApplication = async (applicationId) => {
                     <i class="far fa-eye"></i>
                   </RouterLink>
                   <RouterLink
+                    v-if="application?.status !== 'Approved'"
                     :to="{ name: 'LeaveApplicationEdit', params: { id: application?.id } }"
                     class="btn-icon"
                   >
