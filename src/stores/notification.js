@@ -38,6 +38,22 @@ export const useNotificationStore = defineStore('notification', () => {
     }
   }
 
+  async function updateSpecificNotification(notificationType, applicationId, action) {
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await apiClient.put(`/pending-notifications/${notificationType}/${applicationId}/${action}`)
+      
+      await fetchCountNotifications()
+      await fetchSpecificNotifications(notificationType)
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to fetch notifications'
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function fetchSpecificNotifications(notificationType) {
     loading.value = true
     error.value = null
@@ -84,6 +100,7 @@ export const useNotificationStore = defineStore('notification', () => {
     markAsRead,
     totalUnreadNotifications,
     grouped_counts,
+    updateSpecificNotification,
     fetchSpecificNotifications,
     fetchCountNotifications,
     count_notifications,

@@ -123,9 +123,31 @@ const formattedType = computed(() => {
               <strong v-if="notification.approved"> Approved: {{ notification.approved }} </strong>
             </p>
           </div>
-          <div class="flex gap-3 ml-auto">
-            <!-- <button class="btn-2">Approve</button>
-            <button class="btn-1">Reject</button> -->
+          <div v-if="false" class="flex gap-3 ml-auto">
+            <button
+              @click="
+                notificationStore.updateSpecificNotification(
+                  route.params.type,
+                  notification.application_id,
+                  'accept',
+                )
+              "
+              class="btn-2"
+            >
+              Approve
+            </button>
+            <button
+              @click="
+                notificationStore.updateSpecificNotification(
+                  route.params.type,
+                  notification.application_id,
+                  'reject',
+                )
+              "
+              class="btn-1"
+            >
+              Reject
+            </button>
           </div>
         </div>
       </div>
