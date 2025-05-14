@@ -5,7 +5,7 @@ import { computed, onMounted } from 'vue'
 
 const notificationStore = useNotificationStore()
 
-const { total_notifications, count_notifications } = storeToRefs(notificationStore)
+const { icons, total_notifications, count_notifications } = storeToRefs(notificationStore)
 
 onMounted(() => {
   notificationStore.fetchCountNotifications()
@@ -30,7 +30,7 @@ const error = computed(() => notificationStore.error)
         class="main-button"
       >
         <div class="w-full flex justify-between items-center gap-2">
-          <span>📄</span>
+          <span>{{ icons.leave_applications }}</span>
           <span>Leave Applications</span>
           <span
             v-if="count_notifications?.leave_applications"
@@ -45,7 +45,7 @@ const error = computed(() => notificationStore.error)
         class="main-button"
       >
         <div class="w-full flex justify-between items-center gap-2">
-          <span>🕒</span>
+          <span>{{ icons.short_leave_applications }}</span>
           <span>Short Leave</span>
           <span
             v-if="count_notifications?.short_leave_applications"
@@ -57,7 +57,7 @@ const error = computed(() => notificationStore.error)
       </RouterLink>
       <RouterLink :to="{ name: 'MySpecificNotificationList', params: { type: 'shift_exchange_applications' } }" class="main-button">
         <div class="w-full flex justify-between items-center gap-2">
-          <span>🔄</span>
+          <span>{{ icons.shift_exchange_applications }}</span>
           <span>Shift Exchange</span>
           <span
             v-if="count_notifications?.shift_exchange_applications"
@@ -69,7 +69,7 @@ const error = computed(() => notificationStore.error)
       </RouterLink>
       <RouterLink :to="{ name: 'MySpecificNotificationList', params: { type: 'offday_exchange_applications' } }" class="main-button">
         <div class="w-full flex justify-between items-center gap-2">
-          <span>🔄</span>
+          <span>{{ icons.offday_exchange_applications }}</span>
           <span>Offday Exchange</span>
           <span
             v-if="count_notifications?.offday_exchange_applications"
@@ -84,11 +84,11 @@ const error = computed(() => notificationStore.error)
         class="main-button"
       >
         <div class="w-full flex justify-between items-center gap-2">
-          <i class="fal fa-clipboard-user text-lg"></i>
+          <span>{{ icons.manual_attendance_applications }}</span>
           <span>Manual Attendance</span>
           <span
             v-if="count_notifications?.manual_attendance_applications"
-            class="ml-auto text-xs bg-purple-700 text-white rounded-full px-2 py-0.5 font-semibold"
+            class="ml-auto text-xs bg-sky-500 text-white rounded-full px-2 py-0.5 font-semibold"
           >
             {{ count_notifications?.manual_attendance_applications }}
           </span>

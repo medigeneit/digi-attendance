@@ -11,7 +11,7 @@ const props = defineProps({
   },
 })
 
-const { count_notifications, total_notifications } = storeToRefs(notificationStore)
+const { icons, count_notifications, total_notifications } = storeToRefs(notificationStore)
 
 const emits = defineEmits(['close'])
 </script>
@@ -27,7 +27,7 @@ const emits = defineEmits(['close'])
       <RouterLink
         :to="{ name: 'MyNotificationList' }"
         @click="emits('close')"
-        class="text-base font-bold text-gray-700"
+        class="w-full flex text-base font-bold text-gray-700"
       >
         🔔 Notifications
         <span class="ml-auto px-2 py-1 bg-red-500 text-white text-xs rounded-full">
@@ -44,7 +44,7 @@ const emits = defineEmits(['close'])
         @click="emits('close')"
         class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
       >
-        <span class="text-sm text-gray-700">📄 Leave Applications</span>
+        <span class="text-sm text-gray-700">{{ icons.leave_applications }} Leave Applications</span>
         <span class="text-xs bg-teal-500 text-white rounded-full px-2 py-0.5 font-semibold">
           {{ count_notifications.leave_applications }}
         </span>
@@ -56,7 +56,7 @@ const emits = defineEmits(['close'])
         @click="emits('close')"
         class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
       >
-        <span class="text-sm text-gray-700">🕒 Short Leave</span>
+        <span class="text-sm text-gray-700">{{ icons.short_leave_applications }} Short Leave</span>
         <span class="text-xs bg-yellow-500 text-white rounded-full px-2 py-0.5 font-semibold">
           {{ count_notifications.short_leave_applications }}
         </span>
@@ -68,7 +68,9 @@ const emits = defineEmits(['close'])
         @click="emits('close')"
         class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
       >
-        <span class="text-sm text-gray-700">🔄 Shift Exchange</span>
+        <span class="text-sm text-gray-700"
+          >{{ icons.shift_exchange_applications }} Shift Exchange</span
+        >
         <span class="text-xs bg-purple-500 text-white rounded-full px-2 py-0.5 font-semibold">
           {{ count_notifications.shift_exchange_applications }}
         </span>
@@ -80,7 +82,9 @@ const emits = defineEmits(['close'])
         @click="emits('close')"
         class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
       >
-        <span class="text-sm text-gray-700">🔄 Offday Exchange</span>
+        <span class="text-sm text-gray-700"
+          >{{ icons.offday_exchange_applications }} Offday Exchange</span
+        >
         <span class="text-xs bg-purple-500 text-white rounded-full px-2 py-0.5 font-semibold">
           {{ count_notifications.offday_exchange_applications }}
         </span>
@@ -92,9 +96,9 @@ const emits = defineEmits(['close'])
         @click="emits('close')"
         class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
       >
-        <span class="text-sm text-gray-700"
-          ><i class="fal fa-clipboard-user text-lg mx-1"></i> Manual Attendance</span
-        >
+        <span class="text-sm text-gray-700">
+          {{ icons.manual_attendance_applications }} Manual Attendance
+        </span>
         <span class="text-xs bg-sky-500 text-white rounded-full px-2 py-0.5 font-semibold">
           {{ count_notifications.manual_attendance_applications }}
         </span>

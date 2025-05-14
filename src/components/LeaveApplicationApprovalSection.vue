@@ -1,5 +1,5 @@
 <template>
-  <div v-if="userApprovalRole && leaveApplication" class="text-center space-y-2 print:hidden">
+  <div class="text-center space-y-2 print:hidden">
     <!-- Note Input (conditionally shown) -->
 
     <div v-if="approvalModal" class="modal-bg">

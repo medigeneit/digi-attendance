@@ -10,6 +10,14 @@ export const useNotificationStore = defineStore('notification', () => {
   const grouped_counts = ref(null)
   const count_notifications = ref({})
 
+  const icons = ref({
+    'leave_applications': '📜',
+    'short_leave_applications': '📋',
+    'shift_exchange_applications': '🔄',
+    'offday_exchange_applications': '🔄',
+    'manual_attendance_applications': '🕒',
+  })
+
   const total_notifications = computed(() => {
     return Object.values(count_notifications.value).reduce((sum, n) => sum + n, 0)
   })
@@ -68,6 +76,7 @@ export const useNotificationStore = defineStore('notification', () => {
   }
 
   return {
+    icons,
     notifications,
     loading,
     error,

@@ -1,14 +1,15 @@
 <script setup>
+import LoaderView from '@/components/common/LoaderView.vue'
 import { useNotificationStore } from '@/stores/notification'
 import { storeToRefs } from 'pinia'
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
 const { type } = route.params
 
 const notificationStore = useNotificationStore()
-const { loading, notifications } = storeToRefs(notificationStore)
+const { icons, loading, notifications, count_notifications } = storeToRefs(notificationStore)
 
 onMounted(() => {
   if (type) {
@@ -23,32 +24,101 @@ const specifications = {
   offday_exchange_applications: 'ExchangeOffdayShow',
   manual_attendance_applications: 'ManualAttendanceShow',
 }
+
+const formattedType = computed(() => {
+  if (!type) return ''
+  return type
+    .replace(/[_-]/g, ' ')
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ')
+})
 </script>
 
 <template>
   <div class="space-y-6 px-4 py-4">
     <h2 class="text-2xl font-semibold capitalize text-gray-700">
-      {{ type.replace(/([A-Z])/g, ' $1') || 'Notifications' }}
+      {{ formattedType || 'Notifications' }}
+      <span
+        v-if="count_notifications[type]"
+        class="ml-auto text-xs bg-red-500 text-white rounded-full px-2 py-0.5 font-semibold"
+      >
+        {{ count_notifications[type] }}
+      </span>
     </h2>
-    <div v-if="loading" class="text-center text-red-500 py-10 text-xl italic">Data fetching....</div>
+    <div v-if="loading" class="text-center text-red-500 py-10 text-xl italic">
+      <LoaderView />
+    </div>
     <div v-else-if="notifications.length" class="space-y-4">
       <div
         v-for="notification in notifications"
         :key="notification.application_id"
-        class="bg-white p-4 rounded-xl shadow border flex flex-wrap items-center"
+        class="bg-white p-3 md:p-4 rounded-xl shadow border grid gap-2"
       >
-        <span>#{{ notification.application_id }}</span>
-        <RouterLink
-          :to="{
-            name: specifications[type],
-            params: { id: notification.application_id },
-          }"
-          class="btn-4 ml-auto"
-        >
-          <i class="far fa-eye"></i>
-        </RouterLink>
+        <div class="flex gap-2 md:gap-3 items-center">
+          <div class="shrink-0 grow-0 btn-1 size-8 p-0">{{ icons[type] }}</div>
+          <div class="shrink grow font-semibold text-sm md:text-base">
+            {{ notification.user_name }}
+          </div>
+          <div class="ml-auto shrink-0 grow-0 flex gap-2 md:gap-3 items-center">
+            <a
+              v-if="notification?.attachment"
+              :href="notification.attachment"
+              target="_blank"
+              class="btn-4 px-2"
+            >
+              <i class="fad fa-link"></i>
+            </a>
+            <RouterLink
+              :to="{
+                name: specifications[type],
+                params: { id: notification.application_id },
+              }"
+              class="btn-1 px-3"
+            >
+              <i class="far fa-eye"></i>
+            </RouterLink>
+          </div>
+        </div>
+        <div
+          class="flex items-center text-red-600 text-xs md:text-sm lg:text-base"
+          v-html="notification.message"
+        ></div>
+        <div class="flex flex-wrap gap-y-1 gap-x-3 items-center text-xs md:text-sm lg:text-base">
+          <div v-if="notification.type">
+            <span class="text-gray-400">Type:</span>
+            {{ notification.type }}
+          </div>
+          <div v-if="notification.duration">
+            <span class="text-gray-400">Duration:</span>
+            {{ notification.duration }}
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-y-1 gap-x-3 items-center text-xs md:text-sm lg:text-base">
+          <div v-if="notification.reason">
+            <span class="text-gray-400">Reason:</span>
+            {{ notification.reason }}
+          </div>
+        </div>
+        <div class="flex gap-3 items-center">
+          <div class="flex items-center gap-8">
+            <p class="flex flex-col md:flex-row gap-x-1 font-light text-xs md:text-sm pt-0.5">
+              <strong v-if="notification.pending"> Pending: {{ notification.pending }} </strong>
+              <span v-if="notification.pending && notification.approved" class="hidden md:inline">
+                /
+              </span>
+              <strong v-if="notification.approved"> Approved: {{ notification.approved }} </strong>
+            </p>
+          </div>
+          <div class="flex gap-3 ml-auto">
+            <button class="btn-2">Approve</button>
+            <button class="btn-1">Reject</button>
+          </div>
+        </div>
       </div>
     </div>
-    <div v-else class="text-center text-red-500 py-10 text-xl italic">notifications not found.</div>
   </div>
 </template>
