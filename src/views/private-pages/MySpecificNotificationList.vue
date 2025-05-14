@@ -122,8 +122,8 @@ const formattedType = computed(() => {
             </p>
           </div>
           <div class="flex gap-3 ml-auto">
-            <button class="btn-2">Approve</button>
-            <button class="btn-1">Reject</button>
+            <!-- <button class="btn-2">Approve</button>
+            <button class="btn-1">Reject</button> -->
           </div>
         </div>
       </div>
