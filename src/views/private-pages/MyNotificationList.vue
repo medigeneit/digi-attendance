@@ -29,9 +29,9 @@ const error = computed(() => notificationStore.error)
         :to="{ name: 'MySpecificNotificationList', params: { type: 'leave_applications' } }"
         class="main-button"
       >
-        <div class="w-full flex justify-between items-center gap-2">
+        <div class="w-full flex items-center gap-2">
           <span>{{ icons.leave_applications }}</span>
-          <span>Leave Applications</span>
+          <span class="mr-auto">Leave Applications</span>
           <span
             v-if="count_notifications?.leave_applications"
             class="ml-auto text-xs bg-teal-500 text-white rounded-full px-2 py-0.5 font-semibold"
@@ -44,9 +44,9 @@ const error = computed(() => notificationStore.error)
         :to="{ name: 'MySpecificNotificationList', params: { type: 'short_leave_applications' } }"
         class="main-button"
       >
-        <div class="w-full flex justify-between items-center gap-2">
+        <div class="w-full flex items-center gap-2">
           <span>{{ icons.short_leave_applications }}</span>
-          <span>Short Leave</span>
+          <span class="mr-auto">Short Leave</span>
           <span
             v-if="count_notifications?.short_leave_applications"
             class="ml-auto text-xs bg-yellow-500 text-white rounded-full px-2 py-0.5 font-semibold"
@@ -56,9 +56,9 @@ const error = computed(() => notificationStore.error)
         </div>
       </RouterLink>
       <RouterLink :to="{ name: 'MySpecificNotificationList', params: { type: 'shift_exchange_applications' } }" class="main-button">
-        <div class="w-full flex justify-between items-center gap-2">
+        <div class="w-full flex items-center gap-2">
           <span>{{ icons.shift_exchange_applications }}</span>
-          <span>Shift Exchange</span>
+          <span class="mr-auto">Shift Exchange</span>
           <span
             v-if="count_notifications?.shift_exchange_applications"
             class="ml-auto text-xs bg-purple-500 text-white rounded-full px-2 py-0.5 font-semibold"
@@ -68,9 +68,9 @@ const error = computed(() => notificationStore.error)
         </div>
       </RouterLink>
       <RouterLink :to="{ name: 'MySpecificNotificationList', params: { type: 'offday_exchange_applications' } }" class="main-button">
-        <div class="w-full flex justify-between items-center gap-2">
+        <div class="w-full flex items-center gap-2">
           <span>{{ icons.offday_exchange_applications }}</span>
-          <span>Offday Exchange</span>
+          <span class="mr-auto">Offday Exchange</span>
           <span
             v-if="count_notifications?.offday_exchange_applications"
             class="ml-auto text-xs bg-purple-700 text-white rounded-full px-2 py-0.5 font-semibold"
@@ -83,9 +83,9 @@ const error = computed(() => notificationStore.error)
         :to="{ name: 'MySpecificNotificationList', params: { type: 'manual_attendance_applications' } }"
         class="main-button"
       >
-        <div class="w-full flex justify-between items-center gap-2">
+        <div class="w-full flex items-center gap-2">
           <span>{{ icons.manual_attendance_applications }}</span>
-          <span>Manual Attendance</span>
+          <span class="mr-auto">Manual Attendance</span>
           <span
             v-if="count_notifications?.manual_attendance_applications"
             class="ml-auto text-xs bg-sky-500 text-white rounded-full px-2 py-0.5 font-semibold"

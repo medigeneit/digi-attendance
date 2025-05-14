@@ -12,6 +12,7 @@ const { icons, loading, notifications, count_notifications } = storeToRefs(notif
 
 onMounted(() => {
   if (route.params.type) {
+    notificationStore.fetchCountNotifications()
     notificationStore.fetchSpecificNotifications(route.params.type)
   }
 })
@@ -20,6 +21,7 @@ watch(
   () => route.params.type,
   (newType, oldType) => {
     if (newType && newType !== oldType) {
+      notificationStore.fetchCountNotifications()
       notificationStore.fetchSpecificNotifications(newType)
     }
   },
