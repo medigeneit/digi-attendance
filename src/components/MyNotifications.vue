@@ -40,7 +40,7 @@ const emits = defineEmits(['close'])
     <div class="flex flex-col divide-y divide-gray-100">
       <RouterLink
         v-if="count_notifications?.leave_applications"
-        :to="{ name: 'NotificationList', query: { type: 'leaveApplication' } }"
+        :to="{ name: 'MySpecificNotificationList', params: { type: 'leave_applications' } }"
         @click="emits('close')"
         class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
       >
@@ -52,7 +52,7 @@ const emits = defineEmits(['close'])
 
       <RouterLink
         v-if="count_notifications?.short_leave_applications"
-        :to="{ name: 'NotificationList', query: { type: 'shortLeave' } }"
+        :to="{ name: 'MySpecificNotificationList', params: { type: 'short_leave_applications' } }"
         @click="emits('close')"
         class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
       >
@@ -64,13 +64,13 @@ const emits = defineEmits(['close'])
 
       <RouterLink
         v-if="count_notifications?.shift_exchange_applications"
-        :to="{ name: 'NotificationList', query: { type: 'shift' } }"
+        :to="{ name: 'MySpecificNotificationList', params: { type: 'shift_exchange_applications' } }"
         @click="emits('close')"
         class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
       >
-        <span class="text-sm text-gray-700"
-          >{{ icons.shift_exchange_applications }} Shift Exchange</span
-        >
+        <span class="text-sm text-gray-700">
+          {{ icons.shift_exchange_applications }} Shift Exchange
+        </span>
         <span class="text-xs bg-purple-500 text-white rounded-full px-2 py-0.5 font-semibold">
           {{ count_notifications.shift_exchange_applications }}
         </span>
@@ -78,13 +78,13 @@ const emits = defineEmits(['close'])
 
       <RouterLink
         v-if="count_notifications?.offday_exchange_applications"
-        :to="{ name: 'NotificationList', query: { type: 'offday' } }"
+        :to="{ name: 'MySpecificNotificationList', params: { type: 'offday_exchange_applications' } }"
         @click="emits('close')"
         class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
       >
-        <span class="text-sm text-gray-700"
-          >{{ icons.offday_exchange_applications }} Offday Exchange</span
-        >
+        <span class="text-sm text-gray-700">
+          {{ icons.offday_exchange_applications }} Offday Exchange
+        </span>
         <span class="text-xs bg-purple-500 text-white rounded-full px-2 py-0.5 font-semibold">
           {{ count_notifications.offday_exchange_applications }}
         </span>
@@ -92,7 +92,7 @@ const emits = defineEmits(['close'])
 
       <RouterLink
         v-if="count_notifications?.manual_attendance_applications"
-        :to="{ name: 'NotificationList', query: { type: 'manualAttendance' } }"
+        :to="{ name: 'MySpecificNotificationList', params: { type: 'manual_attendance_applications' } }"
         @click="emits('close')"
         class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
       >

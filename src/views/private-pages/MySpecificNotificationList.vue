@@ -2,20 +2,28 @@
 import LoaderView from '@/components/common/LoaderView.vue'
 import { useNotificationStore } from '@/stores/notification'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
-const { type } = route.params
 
 const notificationStore = useNotificationStore()
 const { icons, loading, notifications, count_notifications } = storeToRefs(notificationStore)
 
 onMounted(() => {
-  if (type) {
-    notificationStore.fetchSpecificNotifications(type)
+  if (route.params.type) {
+    notificationStore.fetchSpecificNotifications(route.params.type)
   }
 })
+
+watch(
+  () => route.params.type,
+  (newType, oldType) => {
+    if (newType && newType !== oldType) {
+      notificationStore.fetchSpecificNotifications(newType)
+    }
+  },
+)
 
 const specifications = {
   leave_applications: 'LeaveApplicationShow',
@@ -26,8 +34,8 @@ const specifications = {
 }
 
 const formattedType = computed(() => {
-  if (!type) return ''
-  return type
+  if (!route.params.type) return ''
+  return route.params.type
     .replace(/[_-]/g, ' ')
     .replace(/([A-Z])/g, ' $1')
     .replace(/\s+/g, ' ')
@@ -43,10 +51,10 @@ const formattedType = computed(() => {
     <h2 class="text-2xl font-semibold capitalize text-gray-700">
       {{ formattedType || 'Notifications' }}
       <span
-        v-if="count_notifications[type]"
+        v-if="count_notifications[route.params.type]"
         class="ml-auto text-xs bg-red-500 text-white rounded-full px-2 py-0.5 font-semibold"
       >
-        {{ count_notifications[type] }}
+        {{ count_notifications[route.params.type] }}
       </span>
     </h2>
     <div v-if="loading" class="text-center text-red-500 py-10 text-xl italic">
@@ -59,7 +67,7 @@ const formattedType = computed(() => {
         class="bg-white p-3 md:p-4 rounded-xl shadow border grid gap-2"
       >
         <div class="flex gap-2 md:gap-3 items-center">
-          <div class="shrink-0 grow-0 btn-1 size-8 p-0">{{ icons[type] }}</div>
+          <div class="shrink-0 grow-0 btn-1 size-8 p-0">{{ icons[route.params.type] }}</div>
           <div class="shrink grow font-semibold text-sm md:text-base">
             {{ notification.user_name }}
           </div>
@@ -74,7 +82,7 @@ const formattedType = computed(() => {
             </a>
             <RouterLink
               :to="{
-                name: specifications[type],
+                name: specifications[route.params.type],
                 params: { id: notification.application_id },
               }"
               class="btn-1 px-3"
