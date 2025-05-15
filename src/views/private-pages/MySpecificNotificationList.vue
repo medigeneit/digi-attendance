@@ -1,5 +1,6 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import NotificationAcceptAndRejectHandler from '@/components/NotificationAcceptAndRejectHandler.vue'
 import { useNotificationStore } from '@/stores/notification'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, watch } from 'vue'
@@ -123,32 +124,11 @@ const formattedType = computed(() => {
               <strong v-if="notification.approved"> Approved: {{ notification.approved }} </strong>
             </p>
           </div>
-          <div v-if="false" class="flex gap-3 ml-auto">
-            <button
-              @click="
-                notificationStore.updateSpecificNotification(
-                  route.params.type,
-                  notification.application_id,
-                  'accept',
-                )
-              "
-              class="btn-2"
-            >
-              Approve
-            </button>
-            <button
-              @click="
-                notificationStore.updateSpecificNotification(
-                  route.params.type,
-                  notification.application_id,
-                  'reject',
-                )
-              "
-              class="btn-1"
-            >
-              Reject
-            </button>
-          </div>
+          <NotificationAcceptAndRejectHandler
+            class="ml-auto"
+            :notificationType="route.params.type"
+            :applicationId="notification.application_id"
+          />
         </div>
       </div>
     </div>

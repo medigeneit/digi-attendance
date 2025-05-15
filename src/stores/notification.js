@@ -11,11 +11,11 @@ export const useNotificationStore = defineStore('notification', () => {
   const count_notifications = ref({})
 
   const icons = ref({
-    'leave_applications': '📜',
-    'short_leave_applications': '📋',
-    'shift_exchange_applications': '🔄',
-    'offday_exchange_applications': '🔄',
-    'manual_attendance_applications': '🕒',
+    leave_applications: '📜',
+    short_leave_applications: '📋',
+    shift_exchange_applications: '🔄',
+    offday_exchange_applications: '🔄',
+    manual_attendance_applications: '🕒',
   })
 
   const total_notifications = computed(() => {
@@ -38,13 +38,16 @@ export const useNotificationStore = defineStore('notification', () => {
     }
   }
 
-  async function updateSpecificNotification(notificationType, applicationId, action) {
+  async function updateSpecificNotification(notificationType, applicationId, action, note = '') {
     loading.value = true
     error.value = null
 
     try {
-      const response = await apiClient.put(`/pending-notifications/${notificationType}/${applicationId}/${action}`)
-      
+      const response = await apiClient.put(
+        `/pending-notifications/${notificationType}/${applicationId}/${action}`,
+        { note },
+      )
+
       await fetchCountNotifications()
       await fetchSpecificNotifications(notificationType)
     } catch (err) {
