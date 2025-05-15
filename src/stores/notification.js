@@ -10,6 +10,8 @@ export const useNotificationStore = defineStore('notification', () => {
   const grouped_counts = ref(null)
   const count_notifications = ref({})
 
+  const approvalPermissions = ref({})
+
   const icons = ref({
     leave_applications: '📜',
     short_leave_applications: '📋',
@@ -31,6 +33,23 @@ export const useNotificationStore = defineStore('notification', () => {
       notifications.value = response?.data?.notifications
       totalUnreadNotifications.value = response?.data?.total_unread
       grouped_counts.value = response?.data?.grouped_counts
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to fetch notifications'
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function fetchApprovalPermissions(notificationType, applicationId) {
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await apiClient.get(
+        `/pending-notifications/${notificationType}/${applicationId}/permissions`,
+      )
+
+      approvalPermissions.value = response.data || {}
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch notifications'
     } finally {
@@ -103,10 +122,12 @@ export const useNotificationStore = defineStore('notification', () => {
     markAsRead,
     totalUnreadNotifications,
     grouped_counts,
+    fetchApprovalPermissions,
     updateSpecificNotification,
     fetchSpecificNotifications,
     fetchCountNotifications,
     count_notifications,
     total_notifications,
+    approvalPermissions,
   }
 })

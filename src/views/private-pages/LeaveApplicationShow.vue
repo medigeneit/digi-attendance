@@ -28,7 +28,6 @@ onMounted(async () => {
   const { id } = route.params
   try {
     await leaveApplicationStore.fetchLeaveApplicationById(id)
-    // await leaveApplicationStore.fetchLeaveBalance(leaveApplicationStore?.leaveApplication?.user_id)
   } catch (error) {
     console.error('Failed to load leave application:', error)
   } finally {
@@ -331,7 +330,9 @@ const totalWithWeekendDays = computed(() => {
             <p>{{ leaveApplication?.handover_user?.name || 'Not assigned' }}</p>
             <div
               v-if="
-                !leaveApplication?.status && leaveApplication.handover_user_id === authStore.user.id
+                notificationStore.approvalPermissions?.allow_handover &&
+                !leaveApplication?.status &&
+                leaveApplication.handover_user_id === authStore.user.id
               "
               class="print:hidden"
             >
@@ -444,6 +445,7 @@ const totalWithWeekendDays = computed(() => {
 
             <div
               v-if="
+                notificationStore.approvalPermissions?.allow_in_charge &&
                 leaveApplication.status !== 'Rejected' &&
                 leaveApplication.status !== 'Approved' &&
                 !leaveApplication?.in_charge_user_id &&
@@ -496,6 +498,7 @@ const totalWithWeekendDays = computed(() => {
             </p>
             <div
               v-if="
+                notificationStore.approvalPermissions?.allow_coordinator &&
                 leaveApplication.status !== 'Rejected' &&
                 leaveApplication.status !== 'Approved' &&
                 !leaveApplication?.coordinator_user_id &&
@@ -542,6 +545,7 @@ const totalWithWeekendDays = computed(() => {
             </p>
             <div
               v-if="
+                notificationStore.approvalPermissions?.allow_operational_admin &&
                 leaveApplication.status !== 'Rejected' &&
                 leaveApplication.status !== 'Approved' &&
                 !leaveApplication?.operational_admin_user_id &&
@@ -594,6 +598,7 @@ const totalWithWeekendDays = computed(() => {
             </p>
             <div
               v-if="
+                notificationStore.approvalPermissions?.allow_recommend_by &&
                 leaveApplication.status !== 'Rejected' &&
                 leaveApplication.status !== 'Approved' &&
                 !leaveApplication?.recommend_by_user_id &&
@@ -644,6 +649,7 @@ const totalWithWeekendDays = computed(() => {
 
             <div
               v-if="
+                notificationStore.approvalPermissions?.allow_approved_by &&
                 leaveApplication.status !== 'Rejected' &&
                 leaveApplication.status !== 'Approved' &&
                 !leaveApplication?.approved_by_user_id &&
