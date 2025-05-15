@@ -201,7 +201,11 @@ async function refresh() {
           <div>
             <p>{{ shortLeave?.handover_user?.name || 'Not assigned' }}</p>
             <div
-              v-if="!shortLeave?.status && shortLeave?.handover_user_id === authStore?.user?.id"
+              v-if="
+                notificationStore.approvalPermissions?.allow_handover &&
+                !shortLeave?.status &&
+                shortLeave?.handover_user_id === authStore?.user?.id
+              "
               class="print:hidden"
             >
               <p class="text-xs">
@@ -272,6 +276,7 @@ async function refresh() {
           </p>
           <div
             v-if="
+              notificationStore.approvalPermissions?.allow_in_charge &&
               shortLeave?.status !== 'Rejected' &&
               shortLeave?.status !== 'Approved' &&
               !shortLeave?.in_charge_user_id &&
@@ -314,11 +319,12 @@ async function refresh() {
           <p v-if="shortLeave?.recommend_by_user">
             {{ shortLeave?.recommend_by_user?.name || '' }}
           </p>
-          <p>
+          <p v-else>
             {{ shortLeave?.user?.other_approval?.recommend_by_user?.name || 'N/A' }}
           </p>
           <div
             v-if="
+              notificationStore.approvalPermissions?.allow_recommend_by &&
               shortLeave?.status !== 'Rejected' &&
               shortLeave?.status !== 'Approved' &&
               !shortLeave?.recommend_by_user_id &&
@@ -365,6 +371,7 @@ async function refresh() {
           </p>
           <div
             v-if="
+              notificationStore.approvalPermissions?.allow_approved_by &&
               shortLeave?.status !== 'Rejected' &&
               shortLeave?.status !== 'Approved' &&
               !shortLeave?.approved_by_user_id &&
