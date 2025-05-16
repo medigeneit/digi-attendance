@@ -9,6 +9,7 @@ import { useShortLeaveStore } from '@/stores/short-leave'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
+
 const notificationStore = useNotificationStore()
 const toast = useToast()
 const router = useRouter()
@@ -140,13 +141,14 @@ const onAction = async () => {
           <div><b>Short Leave Date:</b> {{ shortLeave?.date }}</div>
           <div><b>Total Minutes:</b> {{ shortLeave?.total_minutes }}</div>
         </div>
-        <div class="grid grid-cols-2 gap-4 pt-10 items-center">
-          <div><b>Reason:</b> {{ shortLeave?.reason || 'N/A' }}</div>
+        <div class="grid md:grid-cols-3 gap-x-4 pt-2 md:justify-between items-end md:items-start">
+          <div class="md:col-span-2"><b>Reason:</b> {{ shortLeave?.reason || 'N/A' }}</div>
           <ApprovalItem
             :application="shortLeave"
             type="short_leave_applications"
             item="handover"
             :onAction="onAction"
+            class="pt-10 ml-auto hidden md:block"
           />
         </div>
       </div>
@@ -173,7 +175,17 @@ const onAction = async () => {
         </div>
       </div>
 
-      <div class="grid grid-cols-2 text-sm md:text-base md:grid-cols-3 md:gap-x-4 gap-y-14 pt-7 md:pt-14 items-end">
+      <div
+        class="grid grid-cols-2 text-sm md:text-base md:grid-cols-3 md:gap-x-4 gap-y-14 pt-14 items-end"
+      >
+        <ApprovalItem
+          :application="shortLeave"
+          type="short_leave_applications"
+          item="handover"
+          :onAction="onAction"
+          class="md:hidden"
+        />
+
         <ApprovalItem
           :application="shortLeave"
           type="short_leave_applications"

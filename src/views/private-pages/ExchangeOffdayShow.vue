@@ -1,4 +1,5 @@
 <script setup>
+import ApprovalItem from '@/components/applications/ApprovalItem.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import ScreenshotCapture from '@/components/common/ScreenshotCapture.vue'
 import ShareComponent from '@/components/common/ShareComponent.vue'
@@ -16,10 +17,6 @@ const exchangeStore = useExchangeStore()
 const authStore = useAuthStore()
 const toast = useToast()
 const loading = ref(true)
-const rejectionModal = ref(false)
-const rejectionReason = ref('')
-const approvalModal = ref(false)
-const approvalNote = ref('')
 const attachment = ref(null)
 
 const exchange = computed(() => exchangeStore.exchange)
@@ -34,55 +31,6 @@ onMounted(async () => {
     loading.value = false
   }
 })
-
-let action = ref('')
-
-function openApprovalModal(url) {
-  action.value = url
-  approvalModal.value = true
-}
-
-async function submitApproval() {
-  acceptExchangeAction(action.value)
-  approvalModal.value = false
-}
-
-const rejectExchange = async () => {
-  try {
-    await exchangeStore.rejectExchange(route.params.id, rejectionReason.value)
-    rejectionModal.value = false
-    rejectionReason.value = ''
-    await exchangeStore.fetchExchange(route.params.id)
-    refresh()
-  } catch (err) {
-    console.error('Failed to reject exchange request:', err)
-    alert('Failed to reject exchange request.')
-  }
-}
-
-const openRejectionModal = () => {
-  rejectionModal.value = true
-}
-
-const acceptExchangeAction = async (action) => {
-  try {
-    const { id } = route.params
-    if (action === 'handover') await exchangeStore.handoverAccept({ id, note: approvalNote.value })
-    if (action === 'inCharge') await exchangeStore.inChargeAccept({ id, note: approvalNote.value })
-    if (action === 'recommend')
-      await exchangeStore.recommendByAccept({ id, note: approvalNote.value })
-    if (action === 'approve') await exchangeStore.approvedByAccept({ id, note: approvalNote.value })
-    // alert(`${action} accepted successfully!`)
-    if (confirm('Are you sure you want to approve?')) {
-      await exchangeStore.fetchExchange(id)
-      refresh()
-    }
-  } catch (err) {
-    console.error(`Failed to accept ${action}:`, err)
-    alert(`Failed to accept ${action}.`)
-  }
-}
-// uploadAttachmentExchange
 
 const fileUploadLink = async (event) => {
   const file = event.target.files[0]
@@ -99,6 +47,7 @@ const fileUploadLink = async (event) => {
     }
   }
 }
+
 const uploadAttachment = async () => {
   try {
     const payload = {
@@ -124,8 +73,8 @@ const getDayName = (dateString) => {
   return date.toLocaleDateString('en-US', { weekday: 'long' })
 }
 
-async function refresh() {
-  await notificationStore.markAsRead(route.query.notifyId)
+const onAction = async () => {
+  exchangeStore.fetchExchange(route.params.id)
 }
 </script>
 
@@ -147,7 +96,7 @@ async function refresh() {
 
     <LoaderView v-if="loading" />
 
-    <div v-else class="card-bg p-4 md:p-8">
+    <div v-else class="card-bg p-4 md:p-8 text-sm md:text-base">
       <div>
         <h1 class="title-lg text-center">Offday Exchange Application</h1>
       </div>
@@ -178,52 +127,22 @@ async function refresh() {
         <div class="col-span-2 pt-2"><b>Reason:</b> {{ exchange?.reason || 'N/A' }}</div>
       </div>
 
-      <div class="grid print:grid-cols-2 md:grid-cols-2 gap-4 pt-10">
-        <div>
+      <div class="grid md:grid-cols-3 gap-x-4 py-1 md:justify-between items-end md:items-start">
+        <div class="md:col-span-2 print:col-span-2">
           <div><b>Works in Hand:</b> {{ exchange?.works_in_hand || 'N/A' }}</div>
         </div>
-        <div>
-          <p>{{ exchange?.handover_user?.name || 'Not assigned' }}</p>
-          <div
-            v-if="!exchange?.status && exchange.handover_user_id === authStore.user.id"
-            class="print:hidden"
-          >
-            <p class="text-xs">
-              {{ exchange?.user?.name }} has assigned you for his handover.<br />
-              Do you agree?
-            </p>
-            <div class="flex gap-2">
-              <button
-                class="font-bold text-lg text-green-600 px-2"
-                @click="openApprovalModal('handover')"
-              >
-                ✔
-              </button>
-              <button class="px-2">❌</button>
-            </div>
-          </div>
-          <hr class="w-44 border-black" />
-          <h4 class="font-bold">
-            Handover
-            <span
-              v-if="exchange?.handover_user_id && exchange?.status"
-              class="text-green-600 print:text-black"
-            >
-              (✔)
-            </span>
-            <span
-              v-if="exchange?.handover_user_id && !exchange?.status"
-              class="pl-2 text-yellow-700"
-              ><i class="fad fa-spinner"></i
-            ></span>
-          </h4>
-          <p class="text-xs text-gray-500">
-            {{ exchange?.handover_note }}
-          </p>
-        </div>
+        <ApprovalItem
+          :application="exchange"
+          type="offday_exchange_applications"
+          item="handover"
+          :onAction="onAction"
+          class="pt-10 ml-auto hidden md:block"
+        />
       </div>
-      <hr />
-      <div>
+
+      <hr class="my-2" />
+
+      <div class="text-center">
         <h3 class="title-md">
           Approvals
           <span
@@ -242,143 +161,40 @@ async function refresh() {
         </div>
       </div>
 
-      <div class="grid grid-cols-2 print:grid-cols-3 md:grid-cols-3 gap-4">
-        <div class="pt-10">
-          <p v-if="exchange?.in_charge_user">{{ exchange?.in_charge_user?.name || '' }}</p>
-          <p v-else>
-            {{ exchange?.user?.other_approval?.in_charge_user?.name || '' }}
-          </p>
-          <div
-            v-if="
-              exchange.status !== 'Rejected' &&
-              exchange.status !== 'Approved' &&
-              !exchange?.in_charge_user_id &&
-              exchange?.user?.other_approval?.in_charge_user_id === authStore.user.id
-            "
-            class="print:hidden"
-          >
-            <p class="text-xs text-blue-600">
-              {{ exchange?.user?.name }} has submitted an application. <br />
-              Will you forward it?
-            </p>
-            <div class="flex gap-4">
-              <button
-                class="font-bold text-lg text-green-600"
-                @click="openApprovalModal('inCharge')"
-              >
-                ✔
-              </button>
-              <button class="" @click="openRejectionModal">❌</button>
-            </div>
-          </div>
+      <div
+        class="grid grid-cols-2 text-sm md:text-base md:grid-cols-3 md:gap-x-4 gap-y-14 pt-14 items-end"
+      >
+        <ApprovalItem
+          :application="exchange"
+          type="offday_exchange_applications"
+          item="handover"
+          :onAction="onAction"
+          class="md:hidden"
+        />
 
-          <hr class="w-28 md:w-44 border-black mt-2" />
-          <p class="font-bold">
-            In-Charge
-            <span v-if="exchange?.in_charge_user_id" class="text-green-600">(✔)</span>
-            <span
-              v-if="!exchange?.in_charge_user_id && exchange?.user?.other_approval?.in_charge_user"
-              class="pl-2 text-yellow-700"
-              ><i class="fad fa-spinner"></i
-            ></span>
-          </p>
-          <p class="text-xs text-gray-500">
-            {{ exchange?.in_charge_note }}
-          </p>
-        </div>
+        <ApprovalItem
+          :application="exchange"
+          type="offday_exchange_applications"
+          item="in_charge"
+          :onAction="onAction"
+        />
 
-        <div class="pt-10">
-          <p v-if="exchange?.recommend_by_user">{{ exchange?.recommend_by_user?.name || '' }}</p>
-          <p v-else>
-            {{ exchange?.user?.other_approval?.recommend_by_user?.name || 'N/A' }}
-          </p>
-          <div
-            v-if="
-              exchange.status !== 'Rejected' &&
-              exchange.status !== 'Approved' &&
-              !exchange?.recommend_by_user_id &&
-              exchange?.user?.other_approval?.recommend_by_user_id === authStore.user.id
-            "
-            class="print:hidden"
-          >
-            <p class="text-xs text-blue-600">
-              {{ exchange?.user?.name }} has submitted an application.<br />
-              Will you recommend it?
-            </p>
-            <div class="flex gap-4">
-              <button
-                class="font-bold text-lg text-green-600"
-                @click="openApprovalModal('recommend')"
-              >
-                ✔
-              </button>
-              <button class="" @click="openRejectionModal">❌</button>
-            </div>
-          </div>
+        <ApprovalItem
+          :application="exchange"
+          type="offday_exchange_applications"
+          item="recommend_by"
+          :onAction="onAction"
+        />
 
-          <hr class="w-28 md:w-44 border-black mt-2" />
-          <p class="font-bold">
-            Recommend By
-            <span v-if="exchange?.recommend_by_user_id" class="text-green-600">(✔)</span>
-            <span
-              v-if="
-                !exchange?.recommend_by_user_id && exchange?.user?.other_approval?.recommend_by_user
-              "
-              class="pl-2 text-yellow-700"
-              ><i class="fad fa-spinner"></i
-            ></span>
-          </p>
-          <p class="text-xs text-gray-500">
-            {{ exchange?.recommend_by_note }}
-          </p>
-        </div>
-        <div class="pt-10">
-          <p v-if="exchange?.approved_by_user">{{ exchange?.approved_by_user?.name || '' }}</p>
-          <p v-else>
-            {{ exchange?.user?.other_approval?.approved_by_user?.name || '' }}
-          </p>
-          <div
-            v-if="
-              exchange.status !== 'Rejected' &&
-              exchange.status !== 'Approved' &&
-              !exchange?.approved_by_user_id &&
-              exchange?.user?.other_approval?.approved_by_user_id === authStore.user.id
-            "
-            class="print:hidden"
-          >
-            <p class="text-xs text-blue-600">
-              {{ exchange?.user?.name }} has submitted an application.<br />
-              Will you accept it?
-            </p>
-            <div class="flex gap-4">
-              <button
-                class="font-bold text-lg text-green-600"
-                @click="openApprovalModal('approve')"
-              >
-                ✔
-              </button>
-              <button class="" @click="openRejectionModal">❌</button>
-            </div>
-          </div>
-
-          <hr class="w-44 border-black mt-2" />
-          <p class="font-bold">
-            Approved By
-            <span v-if="exchange?.approved_by_user_id" class="text-green-600">(✔)</span>
-            <span
-              v-if="
-                !exchange?.approved_by_user_id && exchange?.user?.other_approval?.approved_by_user
-              "
-              class="pl-2 text-yellow-700"
-              ><i class="fad fa-spinner"></i
-            ></span>
-          </p>
-          <p class="text-xs text-gray-500">
-            {{ exchange?.approved_by_note }}
-          </p>
-        </div>
+        <ApprovalItem
+          :application="exchange"
+          type="offday_exchange_applications"
+          item="approved_by"
+          :onAction="onAction"
+        />
       </div>
     </div>
+
     <div class="print:hidden">
       <div>
         <label>Attachment</label>
@@ -401,37 +217,5 @@ async function refresh() {
     <ShareComponent>
       <ScreenshotCapture targetId="leave-application" platform="whatsapp" />
     </ShareComponent>
-  </div>
-
-  <div v-if="approvalModal" class="modal-bg">
-    <div class="modal-card">
-      <h3 class="title-lg">Accept Application</h3>
-      <input
-        v-model="approvalNote"
-        rows="4"
-        placeholder="Enter accept note..."
-        class="w-full border rounded-lg p-2 text-gray-700"
-      />
-      <div class="flex justify-end gap-2 mt-4">
-        <button class="btn-3" @click="approvalModal = false">Cancel</button>
-        <button class="btn-2 bg-red-500 text-white" @click="submitApproval">Confirm</button>
-      </div>
-    </div>
-  </div>
-
-  <div v-if="rejectionModal" class="modal-bg">
-    <div class="modal-card">
-      <h3 class="title-lg">Reject Exchange Request</h3>
-      <textarea
-        v-model="rejectionReason"
-        rows="4"
-        placeholder="Enter rejection reason..."
-        class="w-full border rounded-lg p-2 text-gray-700"
-      ></textarea>
-      <div class="flex justify-end gap-2 mt-4">
-        <button class="btn-3" @click="rejectionModal = false">Cancel</button>
-        <button class="btn-2 bg-red-500 text-white" @click="rejectExchange">Confirm</button>
-      </div>
-    </div>
   </div>
 </template>

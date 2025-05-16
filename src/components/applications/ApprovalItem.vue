@@ -49,9 +49,9 @@ const isPending = computed(
 </script>
 
 <template>
-  <div class="flex flex-col justify-center items-center text-sm md:text-base">
-    <div v-if="itemUserId">
-      <p>{{ itemUser?.name || '' }}</p>
+  <div class="flex flex-col justify-center items-center text-sm md:text-base text-center">
+    <div v-if="itemUserId" class="text-center">
+      <p class="text-center">{{ itemUser?.name || '' }}</p>
       <p class="text-xs text-gray-400 text-center">{{ itemNote }}</p>
     </div>
     <p v-else class="text-center">
