@@ -68,7 +68,6 @@ export const useNotificationStore = defineStore('notification', () => {
       )
 
       await fetchCountNotifications()
-      await fetchSpecificNotifications(notificationType)
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch notifications'
     } finally {

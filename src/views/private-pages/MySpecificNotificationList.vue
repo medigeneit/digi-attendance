@@ -1,6 +1,6 @@
 <script setup>
+import AcceptAndRejectHandler from '@/components/applications/AcceptAndRejectHandler.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
-import NotificationAcceptAndRejectHandler from '@/components/NotificationAcceptAndRejectHandler.vue'
 import { useNotificationStore } from '@/stores/notification'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, watch } from 'vue'
@@ -28,6 +28,10 @@ watch(
   },
 )
 
+const onSuccess = async () => {
+  await notificationStore.fetchSpecificNotifications(route.params.type)
+}
+
 const specifications = {
   leave_applications: 'LeaveApplicationShow',
   short_leave_applications: 'ShortLeaveShow',
@@ -51,7 +55,7 @@ const formattedType = computed(() => {
 
 <template>
   <div class="space-y-6 px-4 py-4">
-    <h2 class="text-2xl font-semibold capitalize text-gray-700">
+    <h2 class="md:text-2xl font-semibold capitalize text-gray-700">
       {{ formattedType || 'Notifications' }}
       <span
         v-if="count_notifications[route.params.type]"
@@ -124,10 +128,12 @@ const formattedType = computed(() => {
               <strong v-if="notification.approved"> Approved: {{ notification.approved }} </strong>
             </p>
           </div>
-          <NotificationAcceptAndRejectHandler
+          <AcceptAndRejectHandler
             class="ml-auto"
             :notificationType="route.params.type"
             :applicationId="notification.application_id"
+            :onSuccess="onSuccess"
+            :variant="2"
           />
         </div>
       </div>

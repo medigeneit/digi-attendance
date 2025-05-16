@@ -1,6 +1,7 @@
 <script setup>
 import { useNotificationStore } from '@/stores/notification'
 import { computed, ref } from 'vue'
+import { useToast } from 'vue-toastification'
 
 const props = defineProps({
   notificationType: {
@@ -15,7 +16,13 @@ const props = defineProps({
     type: Function,
     default: () => {},
   },
+  variant: {
+    type: Number,
+    default: 1,
+  },
 })
+
+const toast = useToast()
 
 const notificationStore = useNotificationStore()
 
@@ -45,6 +52,10 @@ function closeModal() {
 }
 
 async function handleConfirm() {
+  if (currentAction.value === 'reject' && !note.value) {
+    return toast.error('Rejection Reason is required!')
+  }
+
   await notificationStore.updateSpecificNotification(
     props.notificationType,
     props.applicationId,
@@ -60,9 +71,15 @@ async function handleConfirm() {
 
 <template>
   <div>
-    <div class="flex justify-center items-center gap-4">
-      <button @click="openModal('accept')" class="font-bold text-lg text-green-600">✔</button>
-      <button @click="openModal('reject')" class="">❌</button>
+    <div class="flex justify-center items-center" :class="variant === 1 ? 'gap-5' : 'gap-2'">
+      <button @click="openModal('accept')">
+        <span v-if="variant === 1" class="font-bold text-xl text-green-600">✔</span>
+        <span v-if="variant === 2" class="btn-2">Approve</span>
+      </button>
+      <button @click="openModal('reject')">
+        <span v-if="variant === 1" class="text-base">❌</span>
+        <span v-if="variant === 2" class="btn-1">Reject</span>
+      </button>
     </div>
 
     <!-- Single reusable modal -->
@@ -76,8 +93,9 @@ async function handleConfirm() {
         <textarea
           v-model="note"
           rows="7"
-          :placeholder="`Enter ${currentAction === 'accept' ? 'accept' : 'rejection'} note...`"
+          :placeholder="currentAction === 'accept' ? 'Accept Note...' : 'Rejection Reason...'"
           class="w-full border rounded-lg p-2 text-gray-700"
+          :required="currentAction === 'reject'"
         ></textarea>
         <div class="flex justify-between gap-2 mt-4">
           <button class="btn-3" @click="closeModal">Cancel</button>

@@ -1,4 +1,5 @@
 <script setup>
+import ApprovalItem from '@/components/applications/ApprovalItem.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import ScreenshotCapture from '@/components/common/ScreenshotCapture.vue'
 import ShareComponent from '@/components/common/ShareComponent.vue'
@@ -16,10 +17,6 @@ const shortLeaveStore = useShortLeaveStore()
 const authStore = useAuthStore()
 const attachment = ref(null)
 const loading = ref(true)
-const rejectionModal = ref(false)
-const rejectionReason = ref('')
-const approvalModal = ref(false)
-const approvalNote = ref('')
 
 const shortLeave = computed(() => shortLeaveStore.shortLeave)
 
@@ -34,32 +31,6 @@ onMounted(async () => {
   }
 })
 
-let action = ref('')
-
-function openApprovalModal(url) {
-  action.value = url
-  approvalModal.value = true
-}
-
-async function submitApproval() {
-  acceptShortLeaveAction(action.value)
-  approvalModal.value = false
-}
-
-const rejectShortLeave = async () => {
-  try {
-    await shortLeaveStore.rejectShortLeave(route.params.id, rejectionReason.value)
-    alert('Short leave rejected successfully!')
-    rejectionModal.value = false
-    rejectionReason.value = ''
-    await shortLeaveStore.fetchShortLeaveById(route.params.id)
-    refresh()
-  } catch (err) {
-    console.error('Failed to reject short leave:', err)
-    alert('Failed to reject short leave.')
-  }
-}
-
 const uploadShortLeaveAttachment = async () => {
   try {
     const payload = {
@@ -69,31 +40,6 @@ const uploadShortLeaveAttachment = async () => {
   } catch (err) {
     console.error('Failed to reject short leave:', err)
     alert('Failed to reject short leave.')
-  }
-}
-
-const openRejectionModal = () => {
-  rejectionModal.value = true
-}
-
-const acceptShortLeaveAction = async (action) => {
-  try {
-    const { id } = route.params
-    console.log(action, id, approvalNote.value)
-    if (action === 'handover')
-      await shortLeaveStore.handoverAccept({ id, note: approvalNote.value })
-    if (action === 'inCharge')
-      await shortLeaveStore.inChargeAccept({ id, note: approvalNote.value })
-    if (action === 'recommend')
-      await shortLeaveStore.recommendByAccept({ id, note: approvalNote.value })
-    if (action === 'approve')
-      await shortLeaveStore.approvedByAccept({ id, note: approvalNote.value })
-    alert(`${action} accepted successfully!`)
-    await shortLeaveStore.fetchShortLeaveById(id)
-    refresh()
-  } catch (err) {
-    console.error(`Failed to accept ${action}:`, err)
-    alert(`Failed to accept ${action}.`)
   }
 }
 
@@ -135,10 +81,8 @@ const formatTime = (timeString) => {
   })
 }
 
-async function refresh() {
-  if (route.query.notifyId) {
-    await notificationStore.markAsRead(route.query.notifyId)
-  }
+const onAction = async () => {
+  await shortLeaveStore.fetchShortLeaveById(route.params.id)
 }
 </script>
 
@@ -196,51 +140,14 @@ async function refresh() {
           <div><b>Short Leave Date:</b> {{ shortLeave?.date }}</div>
           <div><b>Total Minutes:</b> {{ shortLeave?.total_minutes }}</div>
         </div>
-        <div class="grid md:grid-cols-2 gap-4 pt-10 items-center">
+        <div class="grid grid-cols-2 gap-4 pt-10 items-center">
           <div><b>Reason:</b> {{ shortLeave?.reason || 'N/A' }}</div>
-          <div>
-            <p>{{ shortLeave?.handover_user?.name || 'Not assigned' }}</p>
-            <div
-              v-if="
-                notificationStore.approvalPermissions?.allow_handover &&
-                !shortLeave?.status &&
-                shortLeave?.handover_user_id === authStore?.user?.id
-              "
-              class="print:hidden"
-            >
-              <p class="text-xs">
-                {{ shortLeave?.user?.name }} has assigned you for his handover. <br />
-                Do you agree?
-              </p>
-              <div class="flex gap-2">
-                <button
-                  class="font-bold text-lg text-green-600 px-2"
-                  @click="openApprovalModal('handover')"
-                >
-                  ✔
-                </button>
-                <button class="px-2">❌</button>
-              </div>
-            </div>
-            <hr class="w-44 border-black mt-1" />
-            <h4 class="font-semibold text-sm">
-              Handover
-              <span
-                v-if="shortLeave?.handover_user_id && shortLeave?.status"
-                class="text-green-600 print:text-black"
-              >
-                (✔)
-              </span>
-              <span
-                v-if="shortLeave?.handover_user_id && !shortLeave?.status"
-                class="pl-2 text-yellow-700"
-                ><i class="fad fa-spinner"></i
-              ></span>
-            </h4>
-            <p class="text-xs text-gray-500">
-              {{ shortLeave?.handover_note }}
-            </p>
-          </div>
+          <ApprovalItem
+            :application="shortLeave"
+            type="short_leave_applications"
+            item="handover"
+            :onAction="onAction"
+          />
         </div>
       </div>
 
@@ -266,150 +173,27 @@ async function refresh() {
         </div>
       </div>
 
-      <div class="grid grid-cols-2 text-sm md:text-base md:grid-cols-3 md:gap-4">
-        <div class="pt-10">
-          <p v-if="shortLeave?.in_charge_user">
-            {{ shortLeave?.in_charge_user?.name || '' }}
-          </p>
-          <p v-else>
-            {{ shortLeave?.user?.other_approval?.in_charge_user?.name || 'N/A' }}
-          </p>
-          <div
-            v-if="
-              notificationStore.approvalPermissions?.allow_in_charge &&
-              shortLeave?.status !== 'Rejected' &&
-              shortLeave?.status !== 'Approved' &&
-              !shortLeave?.in_charge_user_id &&
-              shortLeave?.user?.other_approval?.in_charge_user_id === authStore?.user?.id
-            "
-            class="print:hidden"
-          >
-            <p class="text-xs text-blue-600">
-              {{ shortLeave?.user?.name }} has submitted an application. <br />
-              Will you forward it?
-            </p>
-            <div class="flex gap-4">
-              <button
-                class="font-bold text-lg text-green-600"
-                @click="openApprovalModal('inCharge')"
-              >
-                ✔
-              </button>
-              <button class="" @click="openRejectionModal">❌</button>
-            </div>
-          </div>
-          <hr class="w-28 md:w-36 border-black mt-2" />
-          <p class="font-semibold text-sm">
-            In-Charge
-            <span v-if="shortLeave?.in_charge_user_id" class="text-green-600">(✔)</span>
-            <span
-              v-if="
-                !shortLeave?.in_charge_user_id && shortLeave?.user?.other_approval?.in_charge_user
-              "
-              class="pl-2 text-yellow-700"
-              ><i class="fad fa-spinner"></i
-            ></span>
-          </p>
-          <p class="text-xs text-gray-500">
-            {{ shortLeave?.in_charge_note }}
-          </p>
-        </div>
+      <div class="grid grid-cols-2 text-sm md:text-base md:grid-cols-3 md:gap-x-4 gap-y-14 pt-7 md:pt-14 items-end">
+        <ApprovalItem
+          :application="shortLeave"
+          type="short_leave_applications"
+          item="in_charge"
+          :onAction="onAction"
+        />
 
-        <div class="pt-10">
-          <p v-if="shortLeave?.recommend_by_user">
-            {{ shortLeave?.recommend_by_user?.name || '' }}
-          </p>
-          <p v-else>
-            {{ shortLeave?.user?.other_approval?.recommend_by_user?.name || 'N/A' }}
-          </p>
-          <div
-            v-if="
-              notificationStore.approvalPermissions?.allow_recommend_by &&
-              shortLeave?.status !== 'Rejected' &&
-              shortLeave?.status !== 'Approved' &&
-              !shortLeave?.recommend_by_user_id &&
-              shortLeave?.user?.other_approval?.recommend_by_user_id === authStore?.user?.id
-            "
-            class="print:hidden"
-          >
-            <p class="text-xs text-blue-600">
-              {{ shortLeave?.user?.name }} has submitted an application.<br />
-              Will you recommend it?
-            </p>
-            <div class="flex gap-4">
-              <button
-                class="font-bold text-lg text-green-600"
-                @click="openApprovalModal('recommend')"
-              >
-                ✔
-              </button>
-              <button class="" @click="openRejectionModal">❌</button>
-            </div>
-          </div>
+        <ApprovalItem
+          :application="shortLeave"
+          type="short_leave_applications"
+          item="recommend_by"
+          :onAction="onAction"
+        />
 
-          <hr class="w-28 md:w-36 border-black mt-2" />
-          <p class="font-semibold text-sm">
-            Recommend By
-            <span v-if="shortLeave?.recommend_by_user_id" class="text-green-600">(✔)</span>
-            <span
-              v-if="
-                !shortLeave?.recommend_by_user_id &&
-                shortLeave?.user?.other_approval?.recommend_by_user
-              "
-              class="pl-2 text-yellow-700"
-              ><i class="fad fa-spinner"></i
-            ></span>
-          </p>
-          <p class="text-xs text-gray-500">
-            {{ shortLeave?.recommend_by_note }}
-          </p>
-        </div>
-        <div class="pt-10">
-          <p v-if="shortLeave?.approved_by_user">{{ shortLeave?.approved_by_user?.name || '' }}</p>
-          <p v-else>
-            {{ shortLeave?.user?.other_approval?.approved_by_user?.name || 'N/A' }}
-          </p>
-          <div
-            v-if="
-              notificationStore.approvalPermissions?.allow_approved_by &&
-              shortLeave?.status !== 'Rejected' &&
-              shortLeave?.status !== 'Approved' &&
-              !shortLeave?.approved_by_user_id &&
-              shortLeave?.user?.other_approval?.approved_by_user_id === authStore?.user?.id
-            "
-            class="print:hidden"
-          >
-            <p class="text-xs text-blue-600">
-              {{ shortLeave?.user?.name }} has submitted an application.<br />
-              Will you accept it?
-            </p>
-            <div class="flex gap-4">
-              <button
-                class="font-bold text-lg text-green-600"
-                @click="openApprovalModal('approve')"
-              >
-                ✔
-              </button>
-              <button class="" @click="openRejectionModal">❌</button>
-            </div>
-          </div>
-          <hr class="w-28 md:w-36 border-black mt-2" />
-          <p class="font-semibold text-sm">
-            Approved By
-            <span v-if="shortLeave?.approved_by_user_id" class="text-green-600">(✔)</span>
-            <span
-              v-if="
-                !shortLeave?.approved_by_user_id &&
-                shortLeave?.user?.other_approval?.approved_by_user
-              "
-              class="pl-2 text-yellow-700"
-              ><i class="fad fa-spinner"></i
-            ></span>
-          </p>
-          <p class="text-xs text-gray-500">
-            {{ shortLeave?.approved_by_note }}
-          </p>
-        </div>
+        <ApprovalItem
+          :application="shortLeave"
+          type="short_leave_applications"
+          item="approved_by"
+          :onAction="onAction"
+        />
       </div>
     </div>
     <div>
@@ -438,37 +222,5 @@ async function refresh() {
     <ShareComponent>
       <ScreenshotCapture targetId="leave-application" platform="whatsapp" />
     </ShareComponent>
-  </div>
-
-  <div v-if="approvalModal" class="modal-bg">
-    <div class="modal-card">
-      <h3 class="title-lg">Accept Application</h3>
-      <input
-        v-model="approvalNote"
-        rows="4"
-        placeholder="Enter rejection reason..."
-        class="w-full border rounded-lg p-2 text-gray-700"
-      />
-      <div class="flex justify-end gap-2 mt-4">
-        <button class="btn-3" @click="approvalModal = false">Cancel</button>
-        <button class="btn-2 bg-red-500 text-white" @click="submitApproval">Confirm</button>
-      </div>
-    </div>
-  </div>
-
-  <div v-if="rejectionModal" class="modal-bg">
-    <div class="modal-card">
-      <h3 class="title-lg">Reject Short Leave</h3>
-      <textarea
-        v-model="rejectionReason"
-        rows="4"
-        placeholder="Enter rejection reason..."
-        class="w-full border rounded-lg p-2 text-gray-700"
-      ></textarea>
-      <div class="flex justify-end gap-2 mt-4">
-        <button class="btn-3" @click="rejectionModal = false">Cancel</button>
-        <button class="btn-2 bg-red-500 text-white" @click="rejectShortLeave">Confirm</button>
-      </div>
-    </div>
   </div>
 </template>
