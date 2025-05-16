@@ -1,4 +1,5 @@
 <script setup>
+import ApprovalItem from '@/components/applications/ApprovalItem.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import ShareComponent from '@/components/common/ShareComponent.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -10,24 +11,17 @@ import { useRoute, useRouter } from 'vue-router'
 const authStore = useAuthStore()
 const notificationStore = useNotificationStore()
 const leaveApplicationStore = useLeaveApplicationStore()
+
 const router = useRouter()
 const route = useRoute()
+
 const loading = ref(true)
-
-const rejectionModal = ref(false)
-
-const rejectionReason = ref('')
-
-const approvalModal = ref(false)
-
-const approvalNote = ref('')
 
 const leaveApplication = computed(() => leaveApplicationStore.leaveApplication)
 
 onMounted(async () => {
-  const { id } = route.params
   try {
-    await leaveApplicationStore.fetchLeaveApplicationById(id)
+    await leaveApplicationStore.fetchLeaveApplicationById(route.params.id)
   } catch (error) {
     console.error('Failed to load leave application:', error)
   } finally {
@@ -35,123 +29,12 @@ onMounted(async () => {
   }
 })
 
-async function rejectApplication() {
-  try {
-    await leaveApplicationStore.rejectLeaveApplication(route.params.id, {
-      rejection_reason: rejectionReason.value,
-    })
-    alert('Leave application rejected successfully!')
-    rejectionModal.value = false
-    rejectionReason.value = ''
-    await leaveApplicationStore.fetchLeaveApplicationById(route.params.id)
-    refresh()
-  } catch (err) {
-    alert(err.message)
-  }
-}
-
-function openRejectionModal() {
-  rejectionModal.value = true
-}
-
-let approvalUrl = ''
-
-function openApprovalModal(url) {
-  approvalModal.value = true
-  approvalUrl = url
-}
-
-async function submitApproval() {
-  if (approvalUrl === 'acceptApprovedByApplication') {
-    acceptApprovedByApplication(route.params.id)
-  }
-  if (approvalUrl === 'acceptHandoverApplication') {
-    acceptHandoverApplication(route.params.id)
-  }
-  if (approvalUrl === 'acceptInChargeApplication') {
-    acceptInChargeApplication(route.params.id)
-  }
-  if (approvalUrl === 'acceptRecommendByApplication') {
-    acceptRecommendByApplication(route.params.id)
-  }
-  approvalModal.value = false
-}
-
-async function acceptHandoverApplication(id) {
-  try {
-    await leaveApplicationStore.acceptHandover({ id, note: approvalNote.value })
-    // alert('Handover accepted successfully!')
-    await leaveApplicationStore.fetchLeaveApplicationById(id)
-    refresh()
-  } catch (err) {
-    alert(err.message)
-  }
-}
-
-async function acceptInChargeApplication(id) {
-  try {
-    await leaveApplicationStore.acceptInCharge({ id, note: approvalNote.value })
-    // alert('Leave Application Successfully Accepted!')
-    await leaveApplicationStore.fetchLeaveApplicationById(id)
-    refresh()
-  } catch (err) {
-    alert(err.message)
-  }
-}
-
-async function acceptCoordinatorApplication(id) {
-  try {
-    await leaveApplicationStore.acceptCoordinator({ id, note: approvalNote.value })
-    // alert('Coordinator accepted successfully!')
-    await leaveApplicationStore.fetchLeaveApplicationById(id)
-    refresh()
-  } catch (err) {
-    alert(err.message)
-  }
-}
-
-async function acceptOperationalAdminApplication(id) {
-  try {
-    await leaveApplicationStore.acceptOperationalAdmin({ id, note: approvalNote.value })
-    // alert('Operational Admin accepted successfully!')
-    await leaveApplicationStore.fetchLeaveApplicationById(id)
-    refresh()
-  } catch (err) {
-    alert(err.message)
-  }
-}
-
-async function acceptRecommendByApplication(id) {
-  try {
-    await leaveApplicationStore.acceptRecommendBy({ id, note: approvalNote.value })
-    // alert('Recommendation accepted successfully!')
-    await leaveApplicationStore.fetchLeaveApplicationById(id)
-    refresh()
-  } catch (err) {
-    alert(err.message)
-  }
-}
-
-async function acceptApprovedByApplication(id) {
-  console.log(approvalNote.value)
-  try {
-    await leaveApplicationStore.acceptApprovedBy({ id, note: approvalNote.value })
-    // alert('Leave Application approved successfully!')
-    refresh()
-    await leaveApplicationStore.fetchLeaveApplicationById(id)
-  } catch (err) {
-    alert(err.message)
-  }
-}
-
-async function refresh() {
-  if (route?.query?.notifyId) {
-    await notificationStore.markAsRead(route?.query?.notifyId)
-  }
-}
-
 function print() {
   window.print()
+}
+
+const onAction = async () => {
+  await leaveApplicationStore.fetchLeaveApplicationById(route.params.id)
 }
 
 const goBack = () => router.go(-1)
@@ -326,49 +209,12 @@ const totalWithWeekendDays = computed(() => {
             </div>
           </div>
 
-          <div class="flex flex-col justify-center items-center text-sm">
-            <p>{{ leaveApplication?.handover_user?.name || 'Not assigned' }}</p>
-            <div
-              v-if="
-                notificationStore.approvalPermissions?.allow_handover &&
-                !leaveApplication?.status &&
-                leaveApplication.handover_user_id === authStore.user.id
-              "
-              class="print:hidden"
-            >
-              <p class="text-xs text-center">
-                {{ leaveApplication?.user?.name }} has assigned you for his handover. <br />
-                Do you agree?
-              </p>
-              <div class="flex justify-center gap-2">
-                <button
-                  class="font-bold text-lg text-green-600 px-2"
-                  @click="openApprovalModal('acceptHandoverApplication')"
-                >
-                  ✔
-                </button>
-                <button class="px-2">❌</button>
-              </div>
-            </div>
-            <hr class="w-44 border-black mt-2" />
-            <h4 class="font-bold">
-              Handover
-              <span
-                v-if="leaveApplication?.handover_user_id && leaveApplication?.status"
-                class="text-green-600 print:text-black"
-              >
-                (✔)
-              </span>
-              <span
-                v-if="leaveApplication?.handover_user_id && !leaveApplication?.status"
-                class="pl-2 text-yellow-700"
-                ><i class="fad fa-spinner"></i
-              ></span>
-            </h4>
-            <p class="text-xs text-gray-500">
-              {{ leaveApplication?.handover_note }}
-            </p>
-          </div>
+          <ApprovalItem
+            :application="leaveApplication"
+            type="leave_applications"
+            item="handover"
+            :onAction="onAction"
+          />
         </div>
 
         <div>
@@ -435,293 +281,51 @@ const totalWithWeekendDays = computed(() => {
 
         <div class="grid md:grid-cols-3 print:grid-cols-3 gap-4 text-sm items-end">
           <!-- In-Charge Approval -->
-          <div class="flex flex-col justify-center items-center">
-            <p v-if="leaveApplication?.in_charge_user">
-              {{ leaveApplication?.in_charge_user?.name || '' }}
-            </p>
-            <p v-else class="text-center">
-              {{ leaveApplication?.user?.leave_approval?.in_charge_user?.name || '' }}
-            </p>
-
-            <div
-              v-if="
-                notificationStore.approvalPermissions?.allow_in_charge &&
-                leaveApplication.status !== 'Rejected' &&
-                leaveApplication.status !== 'Approved' &&
-                !leaveApplication?.in_charge_user_id &&
-                leaveApplication?.user?.leave_approval?.in_charge_user_id === authStore.user.id
-              "
-              class="print:hidden"
-            >
-              <p class="text-xs text-center text-blue-600">
-                {{ leaveApplication?.user?.name }} has submitted an application. <br />
-                Will you forward it?
-              </p>
-              <div class="flex justify-center gap-4">
-                <button
-                  class="font-bold text-lg text-green-600"
-                  @click="openApprovalModal('acceptInChargeApplication')"
-                >
-                  ✔
-                </button>
-                <button class="" @click="openRejectionModal">❌</button>
-              </div>
-            </div>
-
-            <hr class="w-44 border-black mt-2" />
-            <h4 class="font-bold">
-              <p>
-                In-Charge
-                <span v-if="leaveApplication?.in_charge_user_id" class="text-green-600">(✔)</span>
-                <span
-                  v-if="
-                    !leaveApplication?.in_charge_user_id &&
-                    leaveApplication?.user?.leave_approval?.in_charge_user
-                  "
-                  class="pl-2 text-yellow-700"
-                  ><i class="fad fa-spinner"></i
-                ></span>
-              </p>
-            </h4>
-            <p class="text-xs text-gray-500">
-              {{ leaveApplication?.in_charge_note }}
-            </p>
-          </div>
+          <ApprovalItem
+            :application="leaveApplication"
+            type="leave_applications"
+            item="in_charge"
+            :onAction="onAction"
+          />
 
           <!-- Coordinator Approval -->
-          <div class="flex flex-col justify-center items-center">
-            <p v-if="leaveApplication?.coordinator_user">
-              {{ leaveApplication?.coordinator_user?.name || 'N/A' }}
-            </p>
-            <p v-else class="text-center">
-              {{ leaveApplication?.user?.leave_approval?.coordinator_user?.name || 'N/A' }}
-            </p>
-            <div
-              v-if="
-                notificationStore.approvalPermissions?.allow_coordinator &&
-                leaveApplication.status !== 'Rejected' &&
-                leaveApplication.status !== 'Approved' &&
-                !leaveApplication?.coordinator_user_id &&
-                leaveApplication?.user?.leave_approval?.coordinator_user_id === authStore.user.id
-              "
-              class="print:hidden"
-            >
-              <p class="text-xs text-center text-blue-600">
-                {{ leaveApplication?.user?.name }} has submitted an application. <br />
-                Will you recommend it?
-              </p>
-              <div class="flex justify-center gap-4">
-                <button
-                  class="font-bold text-lg text-green-600"
-                  @click="acceptCoordinatorApplication(leaveApplication.id)"
-                >
-                  ✔
-                </button>
-                <button class="" @click="openRejectionModal">❌</button>
-              </div>
-            </div>
-            <hr class="w-44 border-black mt-2" />
-            <p class="font-bold">
-              Coordinator
-              <span v-if="leaveApplication?.coordinator_user_id" class="text-green-600">(✔)</span>
-              <span
-                v-if="
-                  !leaveApplication?.coordinator_user_id &&
-                  leaveApplication?.user?.leave_approval?.coordinator_user
-                "
-                class="pl-2 text-yellow-700"
-                ><i class="fad fa-spinner"></i
-              ></span>
-            </p>
-          </div>
+          <ApprovalItem
+            :application="leaveApplication"
+            type="leave_applications"
+            item="coordinator"
+            :onAction="onAction"
+          />
 
           <!-- Operational Admin Approval -->
-          <div class="flex flex-col justify-center items-center">
-            <p v-if="leaveApplication?.operational_admin_user">
-              {{ leaveApplication?.operational_admin_user?.name || '' }}
-            </p>
-            <p v-else class="text-center">
-              {{ leaveApplication?.user?.leave_approval?.operational_admin_user?.name || 'N/A' }}
-            </p>
-            <div
-              v-if="
-                notificationStore.approvalPermissions?.allow_operational_admin &&
-                leaveApplication.status !== 'Rejected' &&
-                leaveApplication.status !== 'Approved' &&
-                !leaveApplication?.operational_admin_user_id &&
-                leaveApplication?.user?.leave_approval?.operational_admin_user_id ===
-                  authStore.user.id
-              "
-              class="print:hidden"
-            >
-              <p class="text-xs text-center text-blue-600">
-                {{ leaveApplication?.user?.name }} has submitted an application.<br />
-                Will you recommend it?
-              </p>
-              <div class="flex justify-center gap-4">
-                <button
-                  class="font-bold text-lg text-green-600"
-                  @click="acceptOperationalAdminApplication(leaveApplication.id)"
-                >
-                  ✔
-                </button>
-                <button class="" @click="openRejectionModal">❌</button>
-              </div>
-            </div>
-            <hr class="w-44 border-black mt-2" />
-            <p class="font-bold">
-              Operational Admin
-              <span v-if="leaveApplication?.operational_admin_user_id" class="text-green-600"
-                >(✔)</span
-              >
-              <span
-                v-if="
-                  !leaveApplication?.operational_admin_user_id &&
-                  leaveApplication?.user?.leave_approval?.operational_admin_user
-                "
-                class="pl-2 text-yellow-700"
-                ><i class="fad fa-spinner"></i
-              ></span>
-            </p>
-          </div>
+          <ApprovalItem
+            :application="leaveApplication"
+            type="leave_applications"
+            item="operational_admin"
+            :onAction="onAction"
+          />
         </div>
 
         <!-- Additional Approvals -->
         <div class="flex justify-evenly text-sm items-end">
           <!-- Recommend By Approval -->
-          <div class="flex flex-col justify-center items-center">
-            <p v-if="leaveApplication?.recommend_by_user">
-              {{ leaveApplication?.recommend_by_user?.name || 'N/A' }}
-            </p>
-            <p v-else class="text-center">
-              {{ leaveApplication?.user?.leave_approval?.recommend_by_user?.name || 'N/A' }}
-            </p>
-            <div
-              v-if="
-                notificationStore.approvalPermissions?.allow_recommend_by &&
-                leaveApplication.status !== 'Rejected' &&
-                leaveApplication.status !== 'Approved' &&
-                !leaveApplication?.recommend_by_user_id &&
-                leaveApplication?.user?.leave_approval?.recommend_by_user_id === authStore.user.id
-              "
-              class="print:hidden"
-            >
-              <p class="text-xs text-center text-blue-600">
-                {{ leaveApplication?.user?.name }} has submitted an application.<br />
-                Will you recommend it?
-              </p>
-              <div class="flex justify-center gap-4">
-                <button
-                  class="font-bold text-lg text-green-600"
-                  @click="openApprovalModal('acceptRecommendByApplication')"
-                >
-                  ✔
-                </button>
-                <button class="" @click="openRejectionModal">❌</button>
-              </div>
-            </div>
-            <hr class="w-44 border-black mt-2" />
-            <p class="font-bold">
-              Recommend By
-              <span v-if="leaveApplication?.recommend_by_user_id" class="text-green-600">(✔)</span>
-              <span
-                v-if="
-                  !leaveApplication?.recommend_by_user_id &&
-                  leaveApplication?.user?.leave_approval?.recommend_by_user
-                "
-                class="pl-2 text-yellow-700"
-                ><i class="fad fa-spinner"></i
-              ></span>
-            </p>
-            <p class="text-xs text-gray-500">
-              {{ leaveApplication?.recommend_note }}
-            </p>
-          </div>
+          <ApprovalItem
+            :application="leaveApplication"
+            type="leave_applications"
+            item="recommend_by"
+            :onAction="onAction"
+          />
 
           <!-- Approved By Approval -->
-          <div class="flex flex-col justify-center items-center">
-            <p v-if="leaveApplication?.approved_by_user">
-              {{ leaveApplication?.approved_by_user?.name || '' }}
-            </p>
-            <p v-else class="text-center">
-              {{ leaveApplication?.user?.leave_approval?.approved_by_user?.name || '' }}
-            </p>
-
-            <div
-              v-if="
-                notificationStore.approvalPermissions?.allow_approved_by &&
-                leaveApplication.status !== 'Rejected' &&
-                leaveApplication.status !== 'Approved' &&
-                !leaveApplication?.approved_by_user_id &&
-                leaveApplication?.user?.leave_approval?.approved_by_user_id === authStore.user.id
-              "
-              class="print:hidden"
-            >
-              <p class="text-xs text-center text-blue-600">
-                {{ leaveApplication?.user?.name }} has submitted an application.<br />
-                Will you accept it?
-              </p>
-              <div class="flex justify-center gap-4">
-                <button
-                  class="font-bold text-lg text-green-600"
-                  @click="openApprovalModal('acceptApprovedByApplication')"
-                >
-                  ✔
-                </button>
-                <button class="" @click="openRejectionModal">❌</button>
-              </div>
-            </div>
-            <hr class="w-44 border-black mt-2" />
-            <p class="font-bold">
-              Approved By
-              <span v-if="leaveApplication?.approved_by_user_id" class="text-green-600">(✔)</span>
-              <span
-                v-if="
-                  !leaveApplication?.approved_by_user_id &&
-                  leaveApplication?.user?.leave_approval?.approved_by_user
-                "
-                class="pl-2 text-yellow-700"
-                ><i class="fad fa-spinner"></i
-              ></span>
-            </p>
-            <p class="text-xs text-gray-500">
-              {{ leaveApplication?.approval_note }}
-            </p>
-          </div>
+          <ApprovalItem
+            :application="leaveApplication"
+            type="leave_applications"
+            item="approved_by"
+            :onAction="onAction"
+          />
         </div>
       </div>
     </div>
 
     <ShareComponent />
-  </div>
-  <div v-if="approvalModal" class="modal-bg">
-    <div class="modal-card">
-      <h3 class="title-lg">Accept Application</h3>
-      <input
-        v-model="approvalNote"
-        rows="4"
-        placeholder="Enter accept note..."
-        class="w-full border rounded-lg p-2 text-gray-700"
-      />
-      <div class="flex justify-end gap-2 mt-4">
-        <button class="btn-3" @click="approvalModal = false">Cancel</button>
-        <button class="btn-2 bg-red-500 text-white" @click="submitApproval">Confirm</button>
-      </div>
-    </div>
-  </div>
-  <div v-if="rejectionModal" class="modal-bg">
-    <div class="modal-card">
-      <h3 class="title-lg">Reject Application</h3>
-      <textarea
-        v-model="rejectionReason"
-        rows="4"
-        placeholder="Enter rejection reason..."
-        class="w-full border rounded-lg p-2 text-gray-700"
-      ></textarea>
-      <div class="flex justify-end gap-2 mt-4">
-        <button class="btn-3" @click="rejectionModal = false">Cancel</button>
-        <button class="btn-2 bg-red-500 text-white" @click="rejectApplication">Confirm</button>
-      </div>
-    </div>
   </div>
 </template>

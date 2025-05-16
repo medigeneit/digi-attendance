@@ -282,7 +282,7 @@ function print() {
             ></span>
           </p>
           <p class="text-xs text-gray-500">
-            {{ manualAttendance?.recommend_note }}
+            {{ manualAttendance?.recommend_by_note }}
           </p>
         </div>
       </div>
@@ -330,7 +330,7 @@ function print() {
           ></span>
         </p>
         <p class="text-xs text-gray-500">
-          {{ manualAttendance?.approval_note }}
+          {{ manualAttendance?.approved_by_note }}
         </p>
       </div>
     </div>

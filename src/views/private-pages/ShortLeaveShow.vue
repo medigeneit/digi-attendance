@@ -361,7 +361,7 @@ async function refresh() {
             ></span>
           </p>
           <p class="text-xs text-gray-500">
-            {{ shortLeave?.recommend_note }}
+            {{ shortLeave?.recommend_by_note }}
           </p>
         </div>
         <div class="pt-10">
@@ -407,7 +407,7 @@ async function refresh() {
             ></span>
           </p>
           <p class="text-xs text-gray-500">
-            {{ shortLeave?.approval_note }}
+            {{ shortLeave?.approved_by_note }}
           </p>
         </div>
       </div>

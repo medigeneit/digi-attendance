@@ -331,7 +331,7 @@ async function refresh() {
             ></span>
           </p>
           <p class="text-xs text-gray-500">
-            {{ exchange?.recommend_note }}
+            {{ exchange?.recommend_by_note }}
           </p>
         </div>
         <div class="pt-10">
@@ -376,7 +376,7 @@ async function refresh() {
             ></span>
           </p>
           <p class="text-xs text-gray-500">
-            {{ exchange?.approval_note }}
+            {{ exchange?.approved_by_note }}
           </p>
         </div>
       </div>
