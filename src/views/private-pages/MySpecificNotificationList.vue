@@ -120,12 +120,23 @@ const formattedType = computed(() => {
         </div>
         <div class="flex gap-3 items-center">
           <div class="flex items-center gap-8">
-            <p class="flex flex-col md:flex-row gap-x-1 font-light text-xs md:text-sm pt-0.5">
-              <strong v-if="notification.pending"> Pending: {{ notification.pending }} </strong>
-              <span v-if="notification.pending && notification.approved" class="hidden md:inline">
+            <p
+              class="flex flex-col md:flex-row gap-x-1 font-light text-xs md:text-sm px-2 pt-0.5 bg-gray-100 text-gray-800 rounded-lg text-center"
+            >
+              <span v-if="notification.count_pending">
+                <span class="text-gray-600">Pending: </span>
+                <span class="font-bold">{{ notification.count_pending }}</span>
+              </span>
+              <span
+                v-if="notification.count_pending && notification.count_approved"
+                class="hidden md:inline"
+              >
                 /
               </span>
-              <strong v-if="notification.approved"> Approved: {{ notification.approved }} </strong>
+              <strong v-if="notification.count_approved">
+                <span class="text-gray-600">Approved: </span>
+                <span class="font-bold">{{ notification.count_approved }}</span>
+              </strong>
             </p>
           </div>
           <AcceptAndRejectHandler
