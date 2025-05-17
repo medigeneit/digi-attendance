@@ -14,7 +14,7 @@ const leaveApplicationStore = useLeaveApplicationStore()
 
 const router = useRouter()
 const route = useRoute()
-
+const attachment = ref(null)
 const loading = ref(true)
 
 const leaveApplication = computed(() => leaveApplicationStore.leaveApplication)
@@ -57,6 +57,30 @@ const totalWithWeekendDays = computed(() => {
 
   return diffDays - 1 // Exclude last working day itself
 })
+
+const uploadLeaveApplicationAttachment = async () => {
+  try {
+    const payload = {
+      attachment: attachment.value,
+    }
+    await leaveApplicationStore.uploadLeaveApplicationAttachment(route.params.id, payload)
+  } catch (err) {
+    console.error('Failed to reject short leave:', err)
+    alert('Failed to reject short leave.')
+  }
+}
+
+const fileUploadLink = async (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('folder', 'leave-application')
+    const response = await leaveApplicationStore.fetchFileUpload(formData)
+    attachment.value = response?.url
+    uploadLeaveApplicationAttachment()
+  }
+}
 </script>
 
 <template>
@@ -325,7 +349,17 @@ const totalWithWeekendDays = computed(() => {
         </div>
       </div>
     </div>
-
+    <div>
+      <label>Attachment</label>
+      <!-- Show existing file link if available -->
+      <div v-if="shortLeave?.attachment && typeof shortLeave?.attachment === 'string'" class="mb-2">
+        <a :href="shortLeave?.attachment" target="_blank" class="text-blue-500 underline">
+          View Current File
+        </a>
+      </div>
+      <!-- File Input -->
+      <input type="file" @change="fileUploadLink" class="w-full p-2 border rounded" />
+    </div>
     <ShareComponent />
   </div>
 </template>

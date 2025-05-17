@@ -1,7 +1,7 @@
-import apiClient from '@/axios' // Assuming axios is configured in '@/axios'
-import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import { useNotificationStore } from './notification'
+import apiClient from '@/axios'; // Assuming axios is configured in '@/axios'
+import { defineStore } from 'pinia';
+import { ref } from 'vue';
+import { useNotificationStore } from './notification';
 
 export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
   const leaveApplications = ref([])
@@ -70,6 +70,22 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
     }
   }
 
+   const fetchFileUpload = async (payload) => {
+      try {
+        loading.value = true
+        const response = await apiClient.post('cental-attachment-upload', payload, {
+          headers: {
+            'Content-Type': 'multipart/form-data', // ✅ Content-Type ঠিক রাখা
+          },
+        })
+        return response.data
+      } catch (err) {
+        error.value = err.response?.data?.message || 'Something went wrong'
+      } finally {
+        loading.value = false
+      }
+  }
+
   async function updateLeaveApplication(id, payload) {
     loading.value = true
     error.value = null
@@ -87,6 +103,25 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
       loading.value = false
     }
   }
+
+   const uploadLeaveApplicationAttachment = async (id, data) => {
+      loading.value = true
+      error.value = null
+      try {
+        const response = await apiClient.put(`/leave-attachment/${id}`, data)
+        const index = leaveApplications.value.findIndex((leave) => leave.id === id)
+        if (index !== -1) {
+          leaveApplications.value[index] = response.data.data
+        }
+        return response.data.data
+      } catch (err) {
+        error.value = err.response?.data?.message || `Failed to update application leave (ID: ${id})`
+        console.error(`Error updating application leave with id ${id}:`, err)
+        throw new Error(error.value)
+      } finally {
+        loading.value = false
+      }
+    }
 
   async function fetchLeaveApplicationById(id) {
     loading.value = true
@@ -280,5 +315,7 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
     rejectLeaveApplication,
     fetchMyLeaveApplications,
     deleteLeaveApplication,
+    fetchFileUpload,
+    uploadLeaveApplicationAttachment
   }
 })
