@@ -21,6 +21,7 @@ onMounted(() => {
   leaveApplicationStore.fetchLeaveApplications({
     selectedDate: selectedDate.value,
     selectedStatus: leaveApplicationStore.selectedStatus,
+    query: route?.query?.search,
   })
   selectedUser.value = userStore.users.find((user) => user.id == route?.query?.user_id)
 })

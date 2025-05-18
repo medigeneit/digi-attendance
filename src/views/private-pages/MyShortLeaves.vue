@@ -8,7 +8,7 @@ const router = useRouter()
 const shortLeaveStore = useShortLeaveStore()
 
 onMounted(() => {
-  shortLeaveStore.fetchMyShortLeaves()
+  shortLeaveStore.fetchMyShortLeaves({ date: shortLeaveStore.selectedMonth })
 })
 
 const goBack = () => {
