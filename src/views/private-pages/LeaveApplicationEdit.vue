@@ -41,7 +41,7 @@ onMounted(async () => {
     }
 
     if (leaveApplicationStore.leaveApplication) {
-      await userStore.fetchTypeWiseEmployees({ except: 'auth' })
+      await userStore.fetchTypeWiseEmployees({ except: [leaveApplicationStore.leaveApplication.user_id] })
       if(userStore.users.length > 0)
       {
         
