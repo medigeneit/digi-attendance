@@ -57,7 +57,7 @@ watch(
 )
 
 onMounted(() => {
-  userStore.fetchHandoverDepartmentWiseEmployees()
+  userStore.fetchTypeWiseEmployees({ except: 'auth' })
   authStore.fetchUser()
 })
 

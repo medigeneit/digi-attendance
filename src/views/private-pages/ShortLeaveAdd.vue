@@ -86,7 +86,7 @@ const formatTime = (timeStr) => {
 }
 
 onMounted(() => {
-  userStore.fetchHandoverDepartmentWiseEmployees()
+  userStore.fetchTypeWiseEmployees({ except: 'auth' })
 
   form.value.date = formatDate(
     type === 'Delay' ? start_time : type === 'Early' ? end_time : todayDate,

@@ -59,7 +59,7 @@ const submitOffdayExchange = async () => {
 }
 
 onMounted(() => {
-  userStore.fetchHandoverDepartmentWiseEmployees()
+  userStore.fetchTypeWiseEmployees({ except: 'auth' })
   authStore.fetchUser()
 })
 
