@@ -153,12 +153,14 @@ const deleteApplication = async (applicationId) => {
               </td>
               <td class="border border-gray-300 px-2">{{ application?.last_working_date }}</td>
               <td class="border border-gray-300 px-2">{{ application?.resumption_date }}</td>
-              <td class="border border-gray-300 px-2">{{ application?.total_leave_days }}</td>
+              <td class="border border-gray-300 px-2">
+                <div v-html="application.duration || application?.total_leave_days"></div>
+              </td>
               <td class="border border-gray-300 px-2">
                 {{ application?.status || 'N/A' }}
               </td>
               <td class="border border-gray-300 px-2">
-                <div class="flex gap-2">
+                <div class="flex justify-center gap-2">
                   <RouterLink
                     :to="{ name: 'LeaveApplicationShow', params: { id: application?.id } }"
                     class="btn-icon"
