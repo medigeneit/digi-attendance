@@ -41,5 +41,9 @@
       <i class="fas fa-cash-register text-3xl"></i>
       Device List
     </RouterLink>
+    <RouterLink :to="{ name: 'SyncData' }" class="main-button">
+      <i class="fas fa-sync text-3xl"></i>
+      Device Data Sync
+    </RouterLink>
   </div>
 </template>

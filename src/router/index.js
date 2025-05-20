@@ -302,6 +302,12 @@ const router = createRouter({
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] },
         },
         {
+          path: '/settings/sync-data',
+          name: 'SyncData',
+          component: () => import('@/views/admin-pages/SyncData.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] },
+        },
+        {
           path: '/settings/company-list',
           name: 'CompanyList',
           component: () => import('@/views/admin-pages/CompanyList.vue'),
