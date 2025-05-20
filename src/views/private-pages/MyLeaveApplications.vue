@@ -53,9 +53,11 @@ function deleteApplication(applicationId) {
           <thead>
             <tr class="bg-gray-200">
               <th class="border border-gray-300 px-2 text-left">#</th>
-              <th class="border border-gray-300 px-2 text-left">Leave Date</th>
+              <th class="border border-gray-300 px-2 text-left">Last Working Date</th>
+              <th class="border border-gray-300 px-2 text-left">Resumption Date</th>
               <th class="border border-gray-300 px-2 text-left">Total Days</th>
               <th class="border border-gray-300 px-2 text-left">Handover</th>
+              <th class="border border-gray-300 px-2 text-left">Attach</th>
               <th class="border border-gray-300 px-2 text-left">Status</th>
               <th class="border border-gray-300 px-2 text-left">Action</th>
             </tr>
@@ -67,10 +69,21 @@ function deleteApplication(applicationId) {
               class="border-b border-gray-200 hover:bg-blue-200"
             >
               <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
-              <td class="border border-gray-300 px-2">{{ application?.leave_period }}</td>
+              <td class="border border-gray-300 px-2">{{ application?.last_working_date }}</td>
+              <td class="border border-gray-300 px-2">{{ application?.resumption_date }}</td>
               <td class="border border-gray-300 px-2">{{ application?.total_leave_days }}</td>
               <td class="border border-gray-300 px-2">
                 {{ application?.handover_user?.name || 'N/A' }}
+              </td>
+              <td class="border border-gray-300 px-2 text-center">
+                <a
+                  v-if="application.attachment"
+                  :href="application?.attachment"
+                  target="_blank"
+                  class="text-blue-500 underline"
+                >
+                  <i class="fad fa-link"></i>
+                </a>
               </td>
               <td class="border border-gray-300 px-2">{{ application?.status || 'N/A' }}</td>
               <td class="border border-gray-300 px-2">

@@ -352,13 +352,18 @@ const fileUploadLink = async (event) => {
     <div>
       <label>Attachment</label>
       <!-- Show existing file link if available -->
-      <div v-if="shortLeave?.attachment && typeof shortLeave?.attachment === 'string'" class="mb-2">
-        <a :href="shortLeave?.attachment" target="_blank" class="text-blue-500 underline">
+      <div
+        v-if="leaveApplication?.attachment && typeof leaveApplication?.attachment === 'string'"
+        class="mb-2"
+      >
+        <a :href="leaveApplication?.attachment" target="_blank" class="text-blue-500 underline">
           View Current File
         </a>
       </div>
       <!-- File Input -->
-      <input type="file" @change="fileUploadLink" class="w-full p-2 border rounded" />
+      <div v-if="leaveApplication.user_id === authStore.user.id">
+        <input type="file" @change="fileUploadLink" class="w-full p-2 border rounded" />
+      </div>
     </div>
     <ShareComponent />
   </div>

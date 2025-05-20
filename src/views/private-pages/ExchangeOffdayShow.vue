@@ -205,10 +205,12 @@ const onAction = async () => {
           </a>
         </div>
         <!-- File Input -->
-        <input type="file" @change="fileUploadLink" class="w-full p-2 border rounded" />
+        <div v-if="authStore.user.id === exchange.user_id">
+          <input type="file" @change="fileUploadLink" class="w-full p-2 border rounded" />
+          <p class="text-sm text-gray-600 mt-1">Selected File</p>
+        </div>
 
         <!-- Show Selected File Name -->
-        <p class="text-sm text-gray-600 mt-1">Selected File</p>
       </div>
       <!-- <button type="button" v-if="attachment" class="btn-2" @click="uploadAttachment">
         Upload Attachment
