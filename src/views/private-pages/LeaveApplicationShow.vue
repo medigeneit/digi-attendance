@@ -360,8 +360,9 @@ const fileUploadLink = async (event) => {
           View Current File
         </a>
       </div>
+      <div v-else class="text-center text-lg italic text-gray-400">No attachment</div>
       <!-- File Input -->
-      <div v-if="leaveApplication.user_id === authStore.user.id">
+      <div v-if="leaveApplication?.user_id === authStore?.user?.id">
         <input type="file" @change="fileUploadLink" class="w-full p-2 border rounded" />
       </div>
     </div>
