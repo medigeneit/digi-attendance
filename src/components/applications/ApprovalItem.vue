@@ -39,7 +39,21 @@ const approvalUser = computed(() => application?.user?.[approvalKey.value]?.[`${
 
 const hasPermission = computed(() => notificationStore.approvalPermissions?.[`allow_${item}`])
 
-const isApproved = computed(() => application.status && itemUserId.value)
+const isApproved = computed(() => {
+  if (!application.status || !itemUserId.value) {
+    return false
+  }
+
+  if (item === 'handover') {
+    const isNotRejectedOrRejectedByOther =
+      application.status !== 'Rejected' ||
+      application.rejected_by_user_id !== application.handover_user_id
+
+    return isNotRejectedOrRejectedByOther
+  }
+
+  return true
+})
 
 const isPending = computed(
   () =>
