@@ -101,7 +101,7 @@ const fileUploadLink = async (event) => {
 
     <LoaderView v-if="loading" />
 
-    <div v-else class="card-bg p-4 md:p-8">
+    <div v-else class="card-bg p-4 md:p-8 print:text-black">
       <div>
         <h1 class="title-lg text-center">
           {{ leaveApplication?.user?.company?.name }}
@@ -118,7 +118,16 @@ const fileUploadLink = async (event) => {
             <p class="">{{ leaveApplication?.user?.company?.name }}</p>
             <p class="text-sm">{{ leaveApplication?.user?.company.address }}</p>
             <div>
-              <p class="pt-6"><b>Subject:</b> Leave Application</p>
+              <p class="pt-6">
+                <b>Subject:</b>
+                Leave Application for
+                <template v-for="(leave, index) in leaveApplication?.leave_types" :key="index">
+                  <span v-if="index && leave.days">,&nbsp;</span>
+                  <span v-if="leave.days" class="font-semibold">
+                    {{ leave.type }}
+                  </span>
+                </template>
+              </p>
             </div>
           </div>
           <div class="flex justify-end gap-4">
@@ -224,8 +233,11 @@ const fileUploadLink = async (event) => {
         <div class="pt-8 grid grid-cols-2">
           <div>
             <div class="text-sm">
-              <hr class="w-44 border-black hidden print:block" />
-              <p><strong>Applicant:</strong> {{ leaveApplication?.user?.name }}</p>
+              <hr class="w-44 border-black hidden print:block my-1" />
+              <p>
+                <strong>Applicant: </strong> 
+                <span class="text-blue-700 print:text-black">{{ leaveApplication?.user?.name }}</span>
+              </p>
               <p><strong>Designation:</strong> {{ leaveApplication?.user?.designation?.title }}</p>
               <p><strong>Department:</strong> {{ leaveApplication?.user?.department?.name }}</p>
               <!-- <p><strong>Email:</strong> {{ leaveApplication?.user?.email }}</p> -->
