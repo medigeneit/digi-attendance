@@ -302,6 +302,12 @@ const router = createRouter({
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] },
         },
         {
+          path: '/settings/sync-data',
+          name: 'SyncData',
+          component: () => import('@/views/admin-pages/SyncData.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] },
+        },
+        {
           path: '/settings/company-list',
           name: 'CompanyList',
           component: () => import('@/views/admin-pages/CompanyList.vue'),
@@ -499,6 +505,13 @@ const router = createRouter({
         },
 
         {
+          path: '/my-notifications/:type',
+          name: 'MySpecificNotificationList',
+          component: () => import('@/views/private-pages/MySpecificNotificationList.vue'),
+          meta: { requiresAuth: true },
+        },
+
+        {
           path: '/notifications',
           name: 'NotificationList',
           component: () => import('@/components/NotificationList.vue'),
@@ -570,7 +583,12 @@ const router = createRouter({
           component: () => import('@/views/private-pages/LeaveApplicationShow.vue'),
           meta: { requiresAuth: true },
         },
-
+        {
+          path: '/leave-application-edit/:id',
+          name: 'LeaveApplicationEdit',
+          component: () => import('@/views/private-pages/LeaveApplicationEdit.vue'),
+          meta: { requiresAuth: true, roles: ['super_admin', 'developer'] },
+        },
         {
           path: '/my-applications/short-leaves',
           name: 'MyShortLeaves',

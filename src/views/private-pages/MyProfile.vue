@@ -53,6 +53,10 @@ const formatDate = (date) => {
               <p class="text-sm font-bold text-gray-600">Address:</p>
               <p class="text-lg text-gray-800">{{ user?.address || 'N/A' }}</p>
             </div>
+            <div>
+              <p class="text-sm font-bold text-gray-600">Employee ID:</p>
+              <p class="text-lg text-gray-800">{{ user?.employee_id || 'N/A' }}</p>
+            </div>
           </div>
         </div>
         <div class="bg-gray-100 p-4 rounded-lg">

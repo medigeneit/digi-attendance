@@ -12,7 +12,7 @@ const props = defineProps({
 
 const notificationStore = useNotificationStore()
 
-const { grouped_counts, totalUnreadNotifications } = storeToRefs(notificationStore)
+const { total_notifications } = storeToRefs(notificationStore)
 
 const showNotice = ref(false)
 const showUserPhoto = ref(true)
@@ -22,7 +22,7 @@ const toggleNotice = () => {
 }
 
 onMounted(() => {
-  notificationStore.fetchNotifications()
+  notificationStore.fetchCountNotifications()
 })
 
 const markNotificationAndNavigate = async (notificationId, url) => {
@@ -34,14 +34,14 @@ const markNotificationAndNavigate = async (notificationId, url) => {
 <template>
   <div class="bg-white py-2 shadow">
     <div class="mx-auto flex justify-between items-center px-4">
-      <RouterLink to="/" class="logo">
+      <RouterLink to="/" class="logo ml-7 md:ml-0">
         <img class="h-[50px]" src="/src/assets/logo.png" alt="Logo" />
       </RouterLink>
       <ul class="flex gap-4 items-center">
         <!-- Notification Bell -->
         <button class="btn-icon relative" @click="toggleNotice">
           <i class="fas fa-bell"></i>
-          <div v-if="totalUnreadNotifications > 0" class="absolute top-0 right-0">
+          <div v-if="total_notifications > 0" class="absolute top-0 right-0">
             <span class="relative flex h-3 w-3">
               <span
                 class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"
@@ -79,7 +79,6 @@ const markNotificationAndNavigate = async (notificationId, url) => {
 
       <MyNotifications
         v-if="showNotice"
-        :notifications="notificationStore.notifications"
         :markNotification="markNotificationAndNavigate"
         @close="showNotice = false"
       />

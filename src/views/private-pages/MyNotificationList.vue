@@ -5,47 +5,14 @@ import { computed, onMounted } from 'vue'
 
 const notificationStore = useNotificationStore()
 
-const { grouped_counts } = storeToRefs(notificationStore)
+const { icons, total_notifications, count_notifications } = storeToRefs(notificationStore)
 
 onMounted(() => {
-  notificationStore.fetchNotifications()
+  notificationStore.fetchCountNotifications()
 })
 
-const notifications = computed(() => notificationStore.notifications)
 const loading = computed(() => notificationStore.loading)
 const error = computed(() => notificationStore.error)
-
-// ✅ Group notifications by event_type
-const groupedNotifications = computed(() => {
-  if (!Array.isArray(notifications.value)) return {}
-
-  return notifications.value.reduce((acc, notification) => {
-    const type = notification.data?.event_type || 'other'
-    if (!acc[type]) {
-      acc[type] = []
-    }
-    acc[type].push(notification)
-    return acc
-  }, {})
-})
-
-const markNotification = async (notificationId, url) => {
-  await notificationStore.markAsRead(notificationId)
-  if (url) {
-    window.location.href = url
-  }
-}
-
-const getTargetUrl = (eventType) => {
-  const eventTypes = {
-    leaveApplication: '/leave-application-show/',
-    shortLeave: '/short-leave-show/',
-    offday: '/exchange-offday-show/',
-    shift: '/exchange-shift-show/',
-    manualAttendance: '/manual-attendance-show/',
-  }
-  return eventTypes[eventType] || '#'
-}
 </script>
 
 <template>
@@ -59,66 +26,73 @@ const getTargetUrl = (eventType) => {
     <!-- Notifications List -->
     <div v-if="!loading && !error" class="grid gap-4 md:grid-cols-3 px-4">
       <RouterLink
-        :to="{ name: 'NotificationList', query: { type: 'leaveApplication' } }"
+        :to="{ name: 'MySpecificNotificationList', params: { type: 'leave_applications' } }"
         class="main-button"
       >
-        <div class="flex justify-between items-center gap-2">
-          <span>📄 Leave Applications</span>
+        <div class="w-full flex items-center gap-2">
+          <span>{{ icons.leave_applications }}</span>
+          <span class="mr-auto">Leave Applications</span>
           <span
-            v-if="grouped_counts?.leaveApplication"
-            class="text-xs bg-teal-500 text-white rounded-full px-2 py-0.5 font-semibold"
+            v-if="count_notifications?.leave_applications"
+            class="ml-auto text-xs bg-teal-500 text-white rounded-full px-2 py-0.5 font-semibold"
           >
-            {{ grouped_counts?.leaveApplication }}
+            {{ count_notifications?.leave_applications }}
           </span>
         </div>
       </RouterLink>
       <RouterLink
-        :to="{ name: 'NotificationList', query: { type: 'shortLeave' } }"
+        :to="{ name: 'MySpecificNotificationList', params: { type: 'short_leave_applications' } }"
         class="main-button"
       >
-        <div class="flex justify-between items-center gap-2">
-          <span>🕒 Short Leave</span>
+        <div class="w-full flex items-center gap-2">
+          <span>{{ icons.short_leave_applications }}</span>
+          <span class="mr-auto">Short Leave</span>
           <span
-            v-if="grouped_counts?.shortLeave"
-            class="text-xs bg-yellow-500 text-white rounded-full px-2 py-0.5 font-semibold"
+            v-if="count_notifications?.short_leave_applications"
+            class="ml-auto text-xs bg-yellow-500 text-white rounded-full px-2 py-0.5 font-semibold"
           >
-            {{ grouped_counts?.shortLeave }}
+            {{ count_notifications?.short_leave_applications }}
           </span>
         </div>
       </RouterLink>
-      <RouterLink :to="{ name: 'NotificationList', query: { type: 'shift' } }" class="main-button">
-        <div class="flex justify-between items-center gap-2">
-          <span>🔄Shift Exchange Request</span>
+      <RouterLink :to="{ name: 'MySpecificNotificationList', params: { type: 'shift_exchange_applications' } }" class="main-button">
+        <div class="w-full flex items-center gap-2">
+          <span>{{ icons.shift_exchange_applications }}</span>
+          <span class="mr-auto">Shift Exchange</span>
           <span
-            v-if="grouped_counts?.shift"
-            class="text-xs bg-purple-500 text-white rounded-full px-2 py-0.5 font-semibold"
+            v-if="count_notifications?.shift_exchange_applications"
+            class="ml-auto text-xs bg-purple-500 text-white rounded-full px-2 py-0.5 font-semibold"
           >
-            {{ grouped_counts?.shift }}
+            {{ count_notifications?.shift_exchange_applications }}
           </span>
         </div>
       </RouterLink>
-      <RouterLink :to="{ name: 'NotificationList', query: { type: 'offday' } }" class="main-button">
-        <div class="flex justify-between items-center gap-2">
-          <span>🔄 Offday Exchange Request</span>
+      <RouterLink :to="{ name: 'MySpecificNotificationList', params: { type: 'offday_exchange_applications' } }" class="main-button">
+        <div class="w-full flex items-center gap-2">
+          <span>{{ icons.offday_exchange_applications }}</span>
+          <span class="mr-auto">Offday Exchange</span>
           <span
-            v-if="grouped_counts?.offday"
-            class="text-xs bg-purple-700 text-white rounded-full px-2 py-0.5 font-semibold"
+            v-if="count_notifications?.offday_exchange_applications"
+            class="ml-auto text-xs bg-purple-700 text-white rounded-full px-2 py-0.5 font-semibold"
           >
-            {{ grouped_counts?.offday }}
+            {{ count_notifications?.offday_exchange_applications }}
           </span>
         </div>
       </RouterLink>
       <RouterLink
-        :to="{ name: 'NotificationList', query: { type: 'manualAttendance' } }"
+        :to="{ name: 'MySpecificNotificationList', params: { type: 'manual_attendance_applications' } }"
         class="main-button"
       >
-        <span><i class="fal fa-clipboard-user text-lg"></i> Manual Attendance Applications</span>
-        <span
-          v-if="grouped_counts?.manualAttendance"
-          class="text-xs bg-purple-700 text-white rounded-full px-2 py-0.5 font-semibold"
-        >
-          {{ grouped_counts?.manualAttendance }}
-        </span>
+        <div class="w-full flex items-center gap-2">
+          <span>{{ icons.manual_attendance_applications }}</span>
+          <span class="mr-auto">Manual Attendance</span>
+          <span
+            v-if="count_notifications?.manual_attendance_applications"
+            class="ml-auto text-xs bg-sky-500 text-white rounded-full px-2 py-0.5 font-semibold"
+          >
+            {{ count_notifications?.manual_attendance_applications }}
+          </span>
+        </div>
       </RouterLink>
     </div>
   </div>

@@ -7,22 +7,69 @@ import { useLeaveApplicationStore } from '@/stores/leave-application'
 import { useLeaveTypeStore } from '@/stores/leave-type'
 import { useUserStore } from '@/stores/user'
 import { computed, onMounted, ref, watch, watchEffect } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
-const router = useRouter()
+const authStore = useAuthStore()
 const leaveApplicationStore = useLeaveApplicationStore()
+const router = useRouter()
+const route = useRoute()
 const leaveTypeStore = useLeaveTypeStore()
 const userStore = useUserStore()
-const authStore = useAuthStore()
 const holidayStore = useHolidayStore()
-const selectUser = ref('')
+const leaveApplication = computed(() => leaveApplicationStore.leaveApplication)
+const leaveApplicationId = computed(() => route.params.id)
+const selectUser = ref(null)
 const form = ref({
+  user_id: '',
   last_working_date: '',
   resumption_date: '',
   reason: '',
   works_in_hand: '',
   handover_user_id: '',
   leave_days: [],
+})
+
+onMounted(async () => {
+  const { id } = route.params
+  try {
+    await leaveApplicationStore.fetchLeaveApplicationById(id)
+
+    const companyId = leaveApplicationStore.leaveApplication?.user?.company?.id
+
+    if (companyId) {
+      await leaveTypeStore.fetchLeaveTypes(companyId)
+    }
+
+    if (leaveApplicationStore.leaveApplication) {
+      await userStore.fetchTypeWiseEmployees({
+        type: leaveApplicationStore.leaveApplication.user.type,
+        except: [leaveApplicationStore.leaveApplication.user.id],
+      })
+      if (userStore.users.length > 0) {
+        const user = computed(
+          () =>
+            userStore.users.filter(
+              (user) => user.id === leaveApplicationStore.leaveApplication?.handover_user_id,
+            )[0] || {},
+        )
+        console.log('users', user.value)
+        selectUser.value = user.value
+      }
+    }
+    if (leaveApplicationStore.leaveApplication) {
+      form.value.user_id = leaveApplicationStore.leaveApplication?.user_id
+      form.value.last_working_date = leaveApplicationStore.leaveApplication?.last_working_date
+      form.value.resumption_date = leaveApplicationStore.leaveApplication?.resumption_date
+      form.value.reason = leaveApplicationStore.leaveApplication?.reason
+      form.value.works_in_hand = leaveApplicationStore.leaveApplication?.works_in_hand
+      form.value.handover_user_id = leaveApplicationStore.leaveApplication?.handover_user_id
+      form.value.leave_days = leaveApplicationStore.leaveApplication?.leave_days
+    }
+  } catch (error) {
+    console.error('Failed to load leave application:', error)
+  } finally {
+    loading.value = false
+  }
 })
 
 const selectedLeaveTypes = ref([])
@@ -141,7 +188,8 @@ const submitLeaveApplication = async () => {
       .filter((leaveDay) => leaveDay.leave_type_id !== null) // 'weekend' অপশন ফিল্টার করে সরিয়ে ফেলছে
 
     const payload = {
-      user_id: authStore?.user?.id,
+      id: leaveApplicationId.value,
+      user_id: leaveApplication?.value?.user_id,
       last_working_date: form.value.last_working_date,
       resumption_date: form.value.resumption_date,
       reason: form.value.reason,
@@ -150,10 +198,11 @@ const submitLeaveApplication = async () => {
       leave_days: leaveDaysPayload,
       json_data: leaveDaysJson,
     }
-
-    const newApplication = await leaveApplicationStore.storeLeaveApplication(payload)
-    if (newApplication) {
-      router.push({ name: 'LeaveApplicationShow', params: { id: newApplication?.id } })
+    if (payload.id) {
+      const newApplication = await leaveApplicationStore.updateLeaveApplication(payload.id, payload)
+      if (newApplication) {
+        router.push({ name: 'LeaveApplicationShow', params: { id: newApplication?.id } })
+      }
     }
   } catch (err) {
     error.value = err.message || 'Failed to submit leave application'
@@ -161,16 +210,6 @@ const submitLeaveApplication = async () => {
     loading.value = false
   }
 }
-
-onMounted(() => {
-  watchEffect(() => {
-    const companyId = authStore?.user?.company_id
-    if (companyId) {
-      leaveTypeStore.fetchLeaveTypes(companyId)
-    }
-  })
-  userStore.fetchTypeWiseEmployees({ except: 'auth' })
-})
 
 const goBack = () => {
   router.go(-1)
@@ -300,7 +339,6 @@ const isHoliday = async (day) => {
           :multiple="false"
           label="label"
           placeholder="Select user"
-          class="z-50"
         />
       </div>
 
@@ -318,7 +356,7 @@ const isHoliday = async (day) => {
       <div v-if="error" class="text-red-500 text-sm">{{ error }}</div>
 
       <div class="flex justify-end">
-        <button type="submit" class="btn-2">Submit</button>
+        <button type="submit" class="btn-1">Update</button>
       </div>
     </form>
   </div>

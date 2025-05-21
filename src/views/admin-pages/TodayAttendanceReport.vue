@@ -138,6 +138,7 @@ watch(status, (newStatus) => {
           :options="departments"
           :multiple="false"
           placeholder="Select department"
+          label="name"
         />
       </div>
       <div>
@@ -146,6 +147,7 @@ watch(status, (newStatus) => {
           :options="employees"
           :multiple="false"
           placeholder="Select employee"
+          label="label"
         />
       </div>
       <div>

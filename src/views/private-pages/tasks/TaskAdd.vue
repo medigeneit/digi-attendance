@@ -151,7 +151,7 @@ function repeatSymbol(symbol, times) {
             :options="users"
             :multiple="true"
             track-by="id"
-            label="name"
+            label="label"
             placeholder="Select users"
           />
         </div>

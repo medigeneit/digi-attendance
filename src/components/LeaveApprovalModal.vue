@@ -129,8 +129,8 @@ onMounted(() => {
   >
     <div class="bg-white rounded-lg shadow-lg w-full max-w-lg">
       <div class="px-6 py-4 border-b">
-        <h3 class="text-lg font-bold">
-          {{ isEditMode ? 'Edit Leave Approval' : 'Add Leave Approval' }}
+        <h3 class="text-lg font-bold capitalize">
+          {{ isEditMode ? 'Edit' : 'Add' }} {{ approvalType }} Approval
         </h3>
       </div>
       <form @submit.prevent="handleSubmit" class="p-6 space-y-4">
@@ -173,7 +173,7 @@ onMounted(() => {
             <MultiselectDropdown
               v-model="selectedUsers[field]"
               :multiple="false"
-              label="name"
+              label="label"
               :options="userStore.users"
             />
           </div>
