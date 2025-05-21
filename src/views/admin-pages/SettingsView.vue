@@ -45,5 +45,9 @@
       <i class="fas fa-sync text-3xl"></i>
       Device Data Sync
     </RouterLink>
+    <RouterLink :to="{ name: 'ZKUsers' }" class="main-button">
+      <i class="fas fa-users text-3xl"></i>
+      ZK User Management
+    </RouterLink>
   </div>
 </template>
