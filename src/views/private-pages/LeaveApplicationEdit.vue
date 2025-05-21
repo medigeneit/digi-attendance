@@ -337,7 +337,7 @@ const isHoliday = async (day) => {
           v-model="selectUser"
           :options="userStore.users"
           :multiple="false"
-          label="name"
+          label="label"
           placeholder="Select user"
         />
       </div>

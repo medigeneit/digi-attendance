@@ -173,7 +173,7 @@ onMounted(() => {
             <MultiselectDropdown
               v-model="selectedUsers[field]"
               :multiple="false"
-              label="name"
+              label="label"
               :options="userStore.users"
             />
           </div>

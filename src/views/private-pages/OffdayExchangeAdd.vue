@@ -143,7 +143,7 @@ const goBack = () => {
           :options="userStore.users"
           :multiple="false"
           :required="checkUserRequired"
-          label="name"
+          label="label"
           placeholder="Select user"
         />
       </div>

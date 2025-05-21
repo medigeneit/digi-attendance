@@ -83,7 +83,7 @@ const formatTime = (timestamp) => {
         v-model="selectedUser"
         :options="userStore.users"
         :multiple="false"
-        label="name"
+        label="label"
         placeholder="Select Employee"
       />
       <div>

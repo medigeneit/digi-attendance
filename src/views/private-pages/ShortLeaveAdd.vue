@@ -206,7 +206,7 @@ const goBack = () => {
           :options="userStore.users"
           :multiple="false"
           :required="false"
-          label="name"
+          label="label"
           placeholder="Select user"
         />
       </div>

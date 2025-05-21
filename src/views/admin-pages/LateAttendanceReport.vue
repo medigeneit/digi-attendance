@@ -107,7 +107,7 @@ const statusClass = (status) => {
           v-model="selectedEmployeeId"
           :options="employees"
           :multiple="false"
-          label="name"
+          label="label"
           placeholder="Please select employee..."
         />
       </div>

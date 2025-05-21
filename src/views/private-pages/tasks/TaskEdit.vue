@@ -100,7 +100,7 @@ const update = async () => {
             :options="userStore.users"
             :multiple="true"
             track-by="id"
-            label="name"
+            label="label"
             placeholder="Select users"
           />
         </div>
