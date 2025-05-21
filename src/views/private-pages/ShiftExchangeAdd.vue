@@ -144,7 +144,7 @@ const goBack = () => {
         <label for="handover-user" class="block text-sm font-medium">Handover User</label>
         <MultiselectDropdown
           v-model="selectUser"
-          :options="userStore.handoverUsers"
+          :options="userStore.users"
           :multiple="false"
           :required="false"
           label="name"
