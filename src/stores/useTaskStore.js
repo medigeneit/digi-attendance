@@ -29,7 +29,7 @@ export const useTaskStore = defineStore('task', () => {
     error.value = null;
     try {
       const response = await apiClient.get('/tasks', {params});
-      tasks.value = response.data;
+      tasks.value = response.data?.tasks || [];
     } catch (err) {
       error.value = err.response?.data?.message || 'টাস্ক লোড করতে ব্যর্থ হয়েছে।';
       console.error('Error fetching tasks:', err);

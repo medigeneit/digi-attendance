@@ -51,7 +51,7 @@
             >
               {{ getInitials(item?.name) }}
             </div>
-            <span class="text-xs text-gray-700 mr-2">{{ item?.name }}</span>
+            <span class="text-xs text-gray-700 mr-2">{{ item.id }} - {{ item?.name }}</span>
           </div>
         </div>
 
@@ -185,7 +185,7 @@ const priorityColor = (priority) => {
   }
 }
 
-const progressColor = (priority) => {
+const progressColor = () => {
   const percent = getPercentage()
 
   let container, bar, text

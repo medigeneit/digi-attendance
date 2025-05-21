@@ -73,12 +73,18 @@ async function handleConfirm() {
   <div>
     <div class="flex justify-center items-center" :class="variant === 1 ? 'gap-5' : 'gap-2'">
       <button @click="openModal('accept')">
-        <span v-if="variant === 1" class="font-bold text-xl text-green-600">✔</span>
-        <span v-if="variant === 2" class="btn-2">Approve</span>
+        <span v-if="variant === 1" class="font-bold text-lg text-green-600">✔</span>
+        <span v-if="variant === 2" class="btn-2">
+          <span class="text-base scale-110">✔</span>
+          <span class="hidden md:inline">Approve</span>
+        </span>
       </button>
       <button @click="openModal('reject')">
         <span v-if="variant === 1" class="text-base">❌</span>
-        <span v-if="variant === 2" class="btn-1">Reject</span>
+        <span v-if="variant === 2" class="btn-1">
+          <span class="text-base">❌</span>
+          <span class="hidden md:inline">Reject</span>
+        </span>
       </button>
     </div>
 
