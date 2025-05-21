@@ -121,22 +121,13 @@ const formattedType = computed(() => {
         <div class="flex gap-3 items-center">
           <div class="flex items-center gap-8">
             <p
-              class="flex flex-col md:flex-row gap-x-1 font-light text-xs md:text-sm px-2 pt-0.5 bg-gray-100 text-gray-800 rounded-lg text-center"
+              v-if="notification.messages?.length"
+              class="flex flex-wrap flex-col md:flex-row gap-x-1 text-xs md:text-sm text-left"
             >
-              <span v-if="notification.pending_message">
-                <span class="text-gray-600">Pending: </span>
-                <span class="font-bold">{{ notification.pending_message }}</span>
-              </span>
-              <span
-                v-if="notification.pending_message && notification.approved_message"
-                class="hidden md:inline"
-              >
-                /
-              </span>
-              <strong v-if="notification.approved_message">
-                <span class="text-gray-600">Approved: </span>
-                <span class="font-bold">{{ notification.approved_message }}</span>
-              </strong>
+              <template v-for="(message, index) in notification.messages" :key="index">
+                <span v-if="index" class="hidden md:inline font-bold">|</span>
+                <span v-html="message" class="text-black font-semibold"></span>
+              </template>
             </p>
           </div>
           <AcceptAndRejectHandler
