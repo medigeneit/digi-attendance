@@ -123,19 +123,19 @@ const formattedType = computed(() => {
             <p
               class="flex flex-col md:flex-row gap-x-1 font-light text-xs md:text-sm px-2 pt-0.5 bg-gray-100 text-gray-800 rounded-lg text-center"
             >
-              <span v-if="notification.count_pending">
+              <span v-if="notification.pending_message">
                 <span class="text-gray-600">Pending: </span>
-                <span class="font-bold">{{ notification.count_pending }}</span>
+                <span class="font-bold">{{ notification.pending_message }}</span>
               </span>
               <span
-                v-if="notification.count_pending && notification.count_approved"
+                v-if="notification.pending_message && notification.approved_message"
                 class="hidden md:inline"
               >
                 /
               </span>
-              <strong v-if="notification.count_approved">
+              <strong v-if="notification.approved_message">
                 <span class="text-gray-600">Approved: </span>
-                <span class="font-bold">{{ notification.count_approved }}</span>
+                <span class="font-bold">{{ notification.approved_message }}</span>
               </strong>
             </p>
           </div>
