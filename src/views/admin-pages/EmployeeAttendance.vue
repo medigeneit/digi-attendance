@@ -46,8 +46,6 @@ watch(selectedMonth, (date) => {
 watch(
   userId,
   (newValue, oldValue) => {
-    console.log('sdf')
-
     if (newValue !== null) {
       fetchAttendance()
     }
