@@ -139,7 +139,8 @@ const formattedName = (name) => {
         v-model="selectedUser"
         :options="userStore.users"
         :multiple="false"
-        label="label"
+        label="name"
+        label-prefix="employee_id"
         class="w-1/3"
         placeholder="Select user"
       />

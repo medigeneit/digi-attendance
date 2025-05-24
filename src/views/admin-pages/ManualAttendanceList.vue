@@ -70,7 +70,8 @@ const deleteApplication = async (applicationId) => {
           v-model="selectedUser"
           :options="userStore.users"
           :multiple="false"
-          label="label"
+          label="name"
+          label-prefix="employee_id"
           placeholder="Select user"
         />
       </div>
