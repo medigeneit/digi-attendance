@@ -1,12 +1,10 @@
 <script setup>
-import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
+import { useTaskStore } from '@/stores/useTaskStore'
 import { onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useTaskStore } from '@/stores/useTaskStore'
-import { useUserStore } from '@/stores/user'
 
 const store = useTaskStore()
-const userStore = useUserStore()
+// const userStore = useUserStore()
 const route = useRoute()
 const router = useRouter()
 
@@ -24,7 +22,7 @@ const form = ref({
 })
 
 onMounted(async () => {
-  userStore.fetchUsers()
+  // userStore.fetchUsers()
   await store.fetchTask(taskId)
   selectedUsers.value = store.task.users
   form.value = {
@@ -93,7 +91,7 @@ const update = async () => {
           </div>
         </div>
 
-        <div class="mb-4">
+        <!-- <div class="mb-4">
           <label class="block text-gray-600 text-sm mb-1 font-medium">User <RequiredIcon /></label>
           <MultiselectDropdown
             v-model="selectedUsers"
@@ -103,7 +101,7 @@ const update = async () => {
             label="label"
             placeholder="Select users"
           />
-        </div>
+        </div> -->
 
         <div class="grid grid-cols-2 gap-4 mb-4">
           <div>
