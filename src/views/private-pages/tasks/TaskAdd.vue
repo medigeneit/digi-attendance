@@ -14,16 +14,14 @@ const route = useRoute()
 const requirementStore = useRequirementStore()
 const userStore = useUserStore()
 
-const { requirements, requirement } = storeToRefs(requirementStore)
+const { requirement } = storeToRefs(requirementStore)
 const { users } = storeToRefs(userStore)
-const { tasks, task } = storeToRefs(store)
+const { task } = storeToRefs(store)
 const { taskListTree } = storeToRefs(store)
 const { flattenedTasks } = storeToRefs(store)
 
 const selectedUser = ref([])
 const user_ids = computed(() => selectedUser.value.map((u) => u.id))
-const selectedRequirement = ref('')
-const requirement_id = computed(() => selectedRequirement.value?.id)
 
 const form = ref({
   title: '',
@@ -39,7 +37,7 @@ watch(user_ids, (val) => {
 
 onMounted(() => {
   requirementStore.fetchRequirements()
-  userStore.fetchUsers()
+  // userStore.fetchUsers()
   if (route.query?.parent_id > 0) {
     store.fetchTask(route.query?.parent_id)
   }
@@ -68,14 +66,6 @@ const submit = async () => {
   if (!store.error) {
     router.push({ name: 'TaskList' })
   }
-}
-
-function repeatSymbol(symbol, times) {
-  let result = ''
-  for (let i = 0; i < times; i++) {
-    result += symbol
-  }
-  return result
 }
 </script>
 
@@ -144,7 +134,7 @@ function repeatSymbol(symbol, times) {
         <!-- <div>{{ tasks.map((t) => ({ id: t.id, title: t.title, parent_id: t.parent_id })) }}</div> -->
         <!-- <pre>{{ taskListTree }}</pre> -->
 
-        <div class="mb-4">
+        <!-- <div class="mb-4">
           <label class="block text-gray-600 text-sm mb-1 font-medium">User</label>
           <MultiselectDropdown
             v-model="selectedUser"
@@ -154,7 +144,7 @@ function repeatSymbol(symbol, times) {
             label="label"
             placeholder="Select users"
           />
-        </div>
+        </div> -->
 
         <div class="grid grid-cols-2 gap-4 mb-4">
           <div>
