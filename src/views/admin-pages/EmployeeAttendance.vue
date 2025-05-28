@@ -13,7 +13,7 @@ const selectedUser = ref(null)
 const selectedMonth = ref(route?.query?.date || attendanceStore.selectedMonth)
 const userId = computed(() => selectedUser.value?.id)
 const fetchAttendance = async () => {
-  if (userId) {
+  if (userId.value) {
     await attendanceStore.getMonthlyAttendanceByShift(userId.value, selectedMonth.value)
   }
 }
@@ -46,8 +46,6 @@ watch(selectedMonth, (date) => {
 watch(
   userId,
   (newValue, oldValue) => {
-    console.log('sdf')
-
     if (newValue !== null) {
       fetchAttendance()
     }
@@ -75,7 +73,8 @@ const goBack = () => router.go(-1)
           :options="userStore.users"
           :multiple="false"
           class="w-full"
-          label="label"
+          label="name"
+          label-prefix="employee_id"
           placeholder="Select Employee"
         />
       </div>
@@ -152,20 +151,21 @@ const goBack = () => router.go(-1)
                   >
                     ({{ log.first_short_leave }})
                   </span> -->
-                  <router-link v-if="log.first_short_leave"
-                      :to="{
-                        name: 'ShortLeaveShow',
-                        params: {
-                          id: log.first_short_leave_id,
-                        },
-                      }"
-                      :class="{
-                        'text-green-500': log.first_short_leave === 'Approved',
-                        'text-yellow-500':
-                          log.first_short_leave === 'Pending',
-                        'text-red-500': log.first_short_leave === 'Rejected',
-                      }">
-                    ({{log.first_short_leave}})
+                  <router-link
+                    v-if="log.first_short_leave"
+                    :to="{
+                      name: 'ShortLeaveShow',
+                      params: {
+                        id: log.first_short_leave_id,
+                      },
+                    }"
+                    :class="{
+                      'text-green-500': log.first_short_leave === 'Approved',
+                      'text-yellow-500': log.first_short_leave === 'Pending',
+                      'text-red-500': log.first_short_leave === 'Rejected',
+                    }"
+                  >
+                    ({{ log.first_short_leave }})
                   </router-link>
                 </div>
               </td>
@@ -184,24 +184,22 @@ const goBack = () => router.go(-1)
                   >
                     ({{ log.last_short_leave }})
                   </span> -->
-                  <router-link v-if="log.last_short_leave"
-                      :to="{
-                        name: 'ShortLeaveShow',
-                        params: {
-                          id: log.last_short_leave_id,
-                        },
-                      }"
-                      class="px-1"
-                      :class="{
-                        'text-green-500':
-                          log.last_short_leave === 'Approved',
-                        'text-yellow-500':
-                          log.last_short_leave === 'Pending',
-                        'text-red-500':
-                          log.last_short_leave === 'Rejected',
-                      }"
-                    >
-                    ({{log.last_short_leave}})
+                  <router-link
+                    v-if="log.last_short_leave"
+                    :to="{
+                      name: 'ShortLeaveShow',
+                      params: {
+                        id: log.last_short_leave_id,
+                      },
+                    }"
+                    class="px-1"
+                    :class="{
+                      'text-green-500': log.last_short_leave === 'Approved',
+                      'text-yellow-500': log.last_short_leave === 'Pending',
+                      'text-red-500': log.last_short_leave === 'Rejected',
+                    }"
+                  >
+                    ({{ log.last_short_leave }})
                   </router-link>
                 </div>
               </td>
@@ -231,6 +229,7 @@ const goBack = () => router.go(-1)
           <p><strong>Company:</strong> {{ selectedUser.company?.name || 'N/A' }}</p>
           <p><strong>Phone:</strong> {{ selectedUser.phone }}</p>
           <p><strong>Email:</strong> {{ selectedUser.email || 'N/A' }}</p>
+          <p><strong>Employee ID :</strong> {{ selectedUser.employee_id || 'N/A' }}</p>
         </div>
       </div>
 

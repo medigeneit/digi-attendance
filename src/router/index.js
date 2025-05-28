@@ -308,6 +308,12 @@ const router = createRouter({
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] },
         },
         {
+          path: '/settings/zk-users',
+          name: 'ZKUsers',
+          component: () => import('@/views/admin-pages/ZKUsers.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] },
+        },
+        {
           path: '/settings/company-list',
           name: 'CompanyList',
           component: () => import('@/views/admin-pages/CompanyList.vue'),
