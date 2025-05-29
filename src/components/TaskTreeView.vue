@@ -84,10 +84,7 @@
 
       <div class="mt-4">
         <div class="flex items-center">
-          <div
-            class="flex gap-3 group items-center"
-            @click="task.children_tasks?.length > 0 ? (showSubTask = !showSubTask) : null"
-          >
+          <div class="flex gap-3 group items-center" @click="handleSubTaskClick">
             <i
               v-if="showSubTask"
               class="fas fa-caret-down text-gray-400 group-hover:text-sky-400"
@@ -98,11 +95,14 @@
             </span>
           </div>
           <div class="flex gap-2 ml-auto items-center text-xs" v-if="!hideButtons">
-            <RouterLink
+            <!-- <RouterLink
               :to="{ name: 'TaskEdit', params: { id: task.id } }"
               class="btn-2 py-0.5 text-xs"
               ><i class="fas fa-edit"></i> Edit
-            </RouterLink>
+            </RouterLink> -->
+            <button @click="$emit('editClick', task.id)" class="btn-2 py-0.5 text-xs">
+              <i class="fas fa-edit"></i> Edit
+            </button>
 
             <RouterLink
               :to="{ name: 'TaskReports', params: { id: task?.id } }"
@@ -125,12 +125,14 @@
             >
               <i class="fas fa-plus"></i> Add Sub Task
             </RouterLink>
-            <!-- <button
-            class="bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold px-3 py-1 rounded-full transition border-2"
-            @click="emits('commentButtonClick', task?.id)"
-          >
-            + Comment
-          </button> -->
+            <!-- 
+              <button
+                class="bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold px-3 py-1 rounded-full transition border-2"
+                @click="emits('commentButtonClick', task?.id)"
+              >
+                + Comment
+              </button> 
+            -->
           </div>
         </div>
         <div class="ml-0">
@@ -139,6 +141,7 @@
             :childrenTasks="task.children_tasks"
             :hide-buttons="hideButtons"
             :parent-tree-level="treeLevel"
+            @editClick="(taskId) => emits('editClick', taskId)"
           />
         </div>
       </div>
@@ -148,16 +151,49 @@
 
 <script setup>
 import TaskTreeChildren from '@/components/TaskTreeChildren.vue'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 const props = defineProps({
   task: { type: Object, required: true },
   hideButtons: { type: Boolean, default: false },
   treeLevel: { type: Number, default: 0 },
 })
 
-const emits = defineEmits(['commentButtonClick'])
+const emits = defineEmits(['commentButtonClick', 'editClick'])
 
-const showSubTask = ref(false)
+const subTaskOpenedList = ref([])
+
+// Initialize from localStorage once
+const stored = localStorage.getItem('sub_task_opened_list')
+if (stored) {
+  try {
+    subTaskOpenedList.value = JSON.parse(stored)
+  } catch (e) {
+    subTaskOpenedList.value = []
+  }
+}
+
+const showSubTask = computed({
+  get: () => {
+    return subTaskOpenedList.value.includes(props.task.id)
+  },
+  set: (value) => {
+    const exists = subTaskOpenedList.value.includes(props.task.id)
+    if (value && !exists) {
+      subTaskOpenedList.value.push(props.task.id)
+    } else if (!value && exists) {
+      subTaskOpenedList.value = subTaskOpenedList.value.filter((id) => id !== props.task.id)
+    }
+  },
+})
+
+// Sync back to localStorage when it changes
+watch(
+  subTaskOpenedList,
+  (newVal) => {
+    localStorage.setItem('sub_task_opened_list', JSON.stringify(newVal))
+  },
+  { deep: true },
+)
 
 const subTaskHeadingClass = computed(() => {
   return {
@@ -207,32 +243,11 @@ const progressColor = () => {
   }
 }
 
-// function getCompletedSubTaskCount() {
-//   if (props.task.children_tasks.length === 0) {
-//     return props.task.status === 'COMPLETED' ? 1 : 0
-//   }
-
-//   const getChildrenCompletedCount = (childrenTasks) => {
-//     let count = 0
-//     let i = 0
-
-//     for (i = 0; i < childrenTasks.length; i++) {
-//       if (childrenTasks[i].children_tasks.length === 0) {
-//         count = childrenTasks[i].status === 'COMPLETED' ? 1 : 0
-//       } else {
-//         count +=
-//           childrenTasks[i].children_tasks.length ===
-//           getChildrenCompletedCount(childrenTasks[i].children_tasks)
-//             ? 1
-//             : 0
-//       }
-//     }
-
-//     return count
-//   }
-
-//   return getChildrenCompletedCount(props.task.children_tasks)
-// }
+function handleSubTaskClick() {
+  if (props.task.children_tasks.length > 0) {
+    showSubTask.value = !showSubTask.value
+  }
+}
 
 function getCompletedSubTaskCount() {
   if (props.task.children_tasks.length === 0) {

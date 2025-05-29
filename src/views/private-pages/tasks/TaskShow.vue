@@ -1,8 +1,8 @@
 <script setup>
-import { onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useTaskStore } from '@/stores/useTaskStore'
 import CommentModal from '@/components/CommentModal.vue'
+import { useTaskStore } from '@/stores/useTaskStore'
+import { onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const store = useTaskStore()
 const route = useRoute()
@@ -11,29 +11,14 @@ const selectedTaskId = ref(null)
 const showCommentModal = ref(false)
 
 const taskId = route.params.id
-const loading = ref(false)
 
 onMounted(async () => {
   await store.fetchTask(taskId)
 })
 
-const goToAdd = () => {
-  router.push({ name: 'TaskAdd' })
-}
-
 const goToEdit = (id) => {
   event.stopPropagation()
   router.push({ name: 'TaskEdit', params: { id } })
-}
-
-const goToShow = (id) => {
-  router.push({ name: 'TaskShow', params: { id } })
-}
-
-const openComment = (id) => {
-  event.stopPropagation()
-  selectedTaskId.value = id
-  showCommentModal.value = true
 }
 
 const closeComment = () => {
@@ -110,31 +95,36 @@ const closeComment = () => {
               <i class="fas fa-user-plus"></i> Assign Users
             </RouterLink>
 
-            <!-- <button
-              @click="openComment($event, store.task?.id)"
-              class="bg-indigo-500 text-white px-3 py-1 rounded-full"
-            >
-              <i class="fas fa-plus"></i> Comment
-            </button> -->
-            <RouterLink
+            <!-- 
+              <button
+                @click="openComment($event, store.task?.id)"
+                class="bg-indigo-500 text-white px-3 py-1 rounded-full"
+              >
+                <i class="fas fa-plus"></i> Comment
+              </button> 
+            -->
+
+            <!-- <RouterLink
               :to="{
-                name: 'TaskAdd',
-                query: { parent_id: store.task?.id },
+                name: 'SubTasks',
+                params: { id: store.task?.id },
               }"
               @click="$event.stopPropagation()"
               class="py-1 btn-3 ml-auto"
             >
-              <i class="fas fa-plus"></i> Sub Task</RouterLink
-            >
+              <i class="fal fa-list"></i> Sub Tasks
+            </RouterLink> -->
+
             <RouterLink
               :to="{
                 name: 'TaskReports',
                 params: { id: store.task?.id },
               }"
               @click="$event.stopPropagation()"
-              class="py-1 btn-3"
-              ><i class="fal fa-file-alt"></i> Reports</RouterLink
+              class="py-1 btn-3 ml-auto"
             >
+              <i class="fal fa-file-alt"></i> Reports
+            </RouterLink>
           </div>
         </section>
         <router-view />

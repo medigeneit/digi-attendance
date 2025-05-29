@@ -132,6 +132,12 @@ const router = createRouter({
           meta: { requiresAuth: true },
           children: [
             {
+              path: 'sub-tasks',
+              name: 'SubTasks',
+              component: () => import('@/views/private-pages/tasks/SubTasks.vue'),
+              meta: { requiresAuth: true }
+            },
+            {
               path: 'reports',
               name: 'TaskReports',
               component: () => import('@/views/private-pages/tasks/TaskReports.vue'),

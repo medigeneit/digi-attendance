@@ -1,34 +1,52 @@
 <script setup>
 import CommentModal from '@/components/CommentModal.vue'
+import OverlyModal from '@/components/common/OverlyModal.vue'
 import Multiselect from '@/components/MultiselectDropdown.vue'
+import TaskEditForm from '@/components/tasks/TaskEditForm.vue'
 import TaskTreeView from '@/components/TaskTreeView.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useCompanyStore } from '@/stores/company'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { storeToRefs } from 'pinia'
-import { onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const store = useTaskStore()
 const lateAttendanceStore = useAttendanceStore()
 const companyStore = useCompanyStore()
 const { flattenedTasks } = storeToRefs(store)
 const { companies, employees } = storeToRefs(companyStore)
+const route = useRoute()
 const router = useRouter()
 const showCommentModal = ref(false)
 const userId = 1 // অ্যাকচুয়াল auth ইউজার আইডি
 const selectedTaskId = ref(null)
-const selectedCompanyId = ref('')
-const selectedEmployeeId = ref('')
+
+const selectedCompanyId = computed(setOrGetQuery('company-id'))
+const selectedEmployeeId = computed(setOrGetQuery('user-id'))
+const selectedEmployee = ref()
 const { selectedMonth } = storeToRefs(lateAttendanceStore)
+
+const editingId = ref(null)
 
 onMounted(async () => {
   await companyStore.fetchCompanies()
-  await store.fetchTasks()
+  await store.fetchTasks(route.query['user-id'] ? { user_ids: route.query['user-id'] } : {})
 })
 
 const goToAdd = () => {
   router.push({ name: 'TaskAdd' })
+}
+
+function setOrGetQuery(key) {
+  return {
+    set: (value) => {
+      router.push({ query: { ...route.query, [key]: value } })
+    },
+    get: () => {
+      return route.query[key] || undefined
+    },
+  }
 }
 
 const openComment = (id) => {
@@ -43,40 +61,77 @@ const closeComment = () => {
 
 watch(
   () => selectedCompanyId.value,
+
   async (newCompanyId) => {
     if (newCompanyId) {
       await companyStore.fetchEmployee(newCompanyId)
+      selectedEmployee.value =
+        employees.value.find((emp) => emp.id == selectedEmployeeId.value) || null
     }
   },
+
+  {
+    initial: true,
+    immediate: true,
+  },
 )
+
 watch(
-  () => selectedEmployeeId.value,
+  () => ({
+    id: route.query['user-id'],
+  }),
+
   async (newEmployee) => {
-    if (newEmployee.id) {
-      await store.fetchTasks({ user_ids: newEmployee.id })
-    }
+    console.log('Selected Employee:', newEmployee)
+    fetchTasksByEmployeeId(newEmployee.id)
   },
 )
+
+async function fetchTasksByEmployeeId(employeeId) {
+  if (employeeId) {
+    await store.fetchTasks({ user_ids: employeeId })
+  } else {
+    await store.fetchTasks()
+  }
+}
+
+function handleTaskUpdate() {
+  editingId.value = null
+  fetchTasksByEmployeeId(route.query['user-id'])
+}
+
+watch(selectedEmployee, (emp) => {
+  selectedEmployeeId.value = emp?.id
+})
 </script>
 
 <template>
-  <div class="container mx-auto p-6">
+  <div class="container mx-auto p-6 relative">
+    <OverlyModal v-if="editingId">
+      <TaskEditForm
+        :taskId="editingId"
+        class="rounded-full"
+        @close="editingId = null"
+        @updated="handleTaskUpdate"
+      />
+    </OverlyModal>
+
     <div class="mb-3">
       <div class="flex justify-between items-center">
         <h2 class="text-2xl font-bold text-gray-800">Task List</h2>
       </div>
       <div class="flex flex-wrap items-center gap-2 mt-3">
         <div>
-          <select id="user-filter" v-model="selectedCompanyId" class="input-1">
+          <select id="company-filter" v-model="selectedCompanyId" class="input-1">
             <option value="">Select Company</option>
-            <option v-for="user in companies" :key="user.id" :value="user.id">
-              {{ user.name }}
+            <option v-for="company in companies" :key="company.id" :value="company.id">
+              {{ company.name }}
             </option>
           </select>
         </div>
         <div>
           <Multiselect
-            v-model="selectedEmployeeId"
+            v-model="selectedEmployee"
             :options="employees"
             :multiple="false"
             label="name"
@@ -112,6 +167,7 @@ watch(
           :task="task"
           class="!border-0"
           @commentButtonClick="openComment($event, task.id)"
+          @editClick="(taskId) => (editingId = taskId)"
         />
       </div>
     </div>

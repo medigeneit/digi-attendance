@@ -9,6 +9,7 @@
       :label="label"
       class="w-full border-2 border-gray-400 rounded focus:ring focus:ring-indigo-200 focus:outline-none"
       :placeholder="placeholder"
+      clear-on-select
     >
       <!-- Customize the option label -->
       <template #option="{ option }">
@@ -40,7 +41,7 @@
 </template>
 
 <script setup>
-import { computed, defineProps, ref, watch } from 'vue'
+import { defineProps, ref, watch } from 'vue'
 import Multiselect from 'vue-multiselect'
 
 const props = defineProps({
@@ -67,14 +68,6 @@ watch(
 // Emit updated value to parent
 watch(selectedValue, (value) => {
   emit('update:modelValue', value)
-})
-
-const isInvalid = computed(() => {
-  return (
-    props.required &&
-    (!selectedValue.value ||
-      (Array.isArray(selectedValue.value) && selectedValue.value.length === 0))
-  )
 })
 </script>
 
