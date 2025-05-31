@@ -29,14 +29,18 @@
             Requirement: {{ task?.requirement?.title }}
           </p>
 
-          <div class="flex items-center gap-2 text-xs text-gray-500 mt-2 opacity-50">
+          <div class="flex items-center gap-2 text-xs text-gray-500 mt-2 opacity-80 text-left">
             <span
-              class="px-2 py-0.5 text-xs rounded bg-blue-100 text-blue-800 border border-blue-200"
-              >{{ task.status }}</span
+              class="text-xs px-2 py-0.5 rounded-full border bg-yellow-800 text-white"
+              v-if="task?.is_important"
+              >IMPORTANT</span
             >
-            <span class="text-xs px-2 py-0.5 rounded border" :class="priorityColor(task.priority)">
-              {{ task.priority }}
-            </span>
+
+            <span
+              class="text-xs px-2 py-0.5 rounded-full border bg-red-500 text-white"
+              v-if="task?.is_urgent"
+              >URGENT</span
+            >
           </div>
         </div>
 
@@ -55,9 +59,14 @@
           </div>
         </div>
 
-        <div class="flex justify-end items-center">
+        <div class="flex justify-end items-center gap-2">
+          <span
+            class="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800 border border-blue-200"
+            >{{ task.status }}</span
+          >
           <div class="text-sm">
             <!-- <span class="text-gray-400 uppercase text-xs">Status </span> -->
+
             <div
               class="rounded-full border py-0.5 text-xs relative overflow-hidden h-6"
               style="width: 180px"
@@ -210,16 +219,16 @@ const getInitials = (name) => {
     .toUpperCase()
 }
 
-const priorityColor = (priority) => {
-  switch (priority) {
-    case 'HIGH':
-      return 'border-red-500 text-red-500'
-    case 'MEDIUM':
-      return 'border-yellow-500 text-yellow-500'
-    default:
-      return 'border-gray-300 text-gray-500'
-  }
-}
+// const priorityColor = (priority) => {
+//   switch (priority) {
+//     case 'HIGH':
+//       return 'border-red-500 text-red-500'
+//     case 'MEDIUM':
+//       return 'border-yellow-500 text-yellow-500'
+//     default:
+//       return 'border-gray-300 text-gray-500'
+//   }
+// }
 
 const progressColor = () => {
   const percent = getPercentage()
