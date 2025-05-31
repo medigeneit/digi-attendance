@@ -1,23 +1,26 @@
 <script setup>
 import RequiredIcon from '@/components/RequiredIcon.vue'
-import { useUserStore } from '@/stores/user'
 import { useRequirementStore } from '@/stores/useRequirementStore'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+
+const props = defineProps({
+  parentTaskId: {
+    type: Number,
+    required: true,
+  },
+  requirementId: {
+    type: Number,
+  },
+})
+
+const emit = defineEmits(['taskCreated', 'close', 'error', 'ok'])
 
 const store = useTaskStore()
-const router = useRouter()
-const route = useRoute()
 const requirementStore = useRequirementStore()
-const userStore = useUserStore()
-
 const { requirement } = storeToRefs(requirementStore)
-const { users } = storeToRefs(userStore)
 const { task } = storeToRefs(store)
-const { taskListTree } = storeToRefs(store)
-const { flattenedTasks } = storeToRefs(store)
 
 const selectedUser = ref([])
 const user_ids = computed(() => selectedUser.value.map((u) => u.id))
@@ -38,19 +41,19 @@ watch(user_ids, (val) => {
 
 onMounted(() => {
   requirementStore.fetchRequirements()
-  // userStore.fetchUsers()
-  if (route.query?.parent_id > 0) {
-    store.fetchTask(route.query?.parent_id)
+
+  if (props.parentTaskId > 0) {
+    store.fetchTask(props.parentTaskId, {}, { loadingBeforeFetch: false })
   }
 
-  if (route.query?.requirement_id > 0) {
-    requirementStore.fetchRequirement(route.query?.requirement_id)
+  if (props.requirementId > 0) {
+    requirementStore.fetchRequirement(props.requirementId)
   }
 })
 
 const loading = ref(false)
 
-const submit = async () => {
+async function submit() {
   loading.value = true
 
   const payload = {
@@ -58,58 +61,59 @@ const submit = async () => {
     parent_id: task?.value?.id || 0,
     requirement_id: requirement?.value?.id || null,
   }
-
   console.log({ payload })
 
-  await store.createTask(payload)
-  loading.value = false
-
-  if (!store.error) {
-    router.push({ name: 'TaskList' })
+  try {
+    await store.createTask(payload)
+    emit('taskCreated')
+  } catch (err) {
+    console.log({ err })
+    emit('error', store.error)
+  } finally {
+    loading.value = false
   }
 }
 </script>
 
 <template>
-  <div class="container mx-auto p-6">
-    <div class="max-w-2xl mx-auto bg-white shadow-lg rounded-lg p-6">
-      <h2 class="text-2xl font-semibold text-gray-800">Add New Task</h2>
+  <div class="max-w-2xl mx-auto bg-white shadow-lg rounded-lg p-6">
+    <h2 class="text-2xl font-semibold text-gray-800">Add New Task</h2>
 
-      <hr class="mb-4" />
-      <div class="text-purple-600/60 mb-4 text-xs">
-        Fields that must be filled in will be marked with an asterisk.
+    <hr class="mb-4" />
+    <div class="text-purple-600/60 mb-4 text-xs" @click.prevent="emit('ok')">
+      Fields that must be filled in will be marked with an asterisk.
+    </div>
+    <form @submit.prevent="submit">
+      <p class="text-center mt-2 mb-6" v-if="requirementId && requirement?.title">
+        Task under requirement <span class="text-sky-600">{{ requirement.title }}</span>
+      </p>
+      <p class="text-center mt-2 mb-6" v-if="parentTaskId && task?.title">
+        Sub task on <span class="text-sky-600">{{ task.title }}</span>
+      </p>
+
+      <div class="mb-4">
+        <label class="block text-gray-600 text-sm mb-1 font-medium"
+          >Task Title <RequiredIcon />
+        </label>
+        <input
+          v-model="form.title"
+          required
+          placeholder="Enter task title"
+          class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+        />
       </div>
-      <form @submit.prevent="submit">
-        <p class="text-center mt-2 mb-6" v-if="route.query?.requirement_id && requirement?.title">
-          Task under requirement <span class="text-sky-600">{{ requirement.title }}</span>
-        </p>
-        <p class="text-center mt-2 mb-6" v-if="route.query?.parent_id && task?.title">
-          Sub task on <span class="text-sky-600">{{ task.title }}</span>
-        </p>
+      <div class="mb-4">
+        <label class="flex gap-1 items-center">
+          <input type="checkbox" v-model="form.is_important" class="size-4" />
+          <span class="block text-gray-600 text-base pt-1 mb-1 font-medium">Important</span>
+        </label>
+        <label class="flex gap-1 items-center">
+          <input type="checkbox" v-model="form.is_urgent" class="size-4" />
+          <span class="block text-gray-600 text-base mb-1 font-medium">Urgent</span>
+        </label>
+      </div>
 
-        <div class="mb-4">
-          <label class="block text-gray-600 text-sm mb-1 font-medium"
-            >Task Title <RequiredIcon />
-          </label>
-          <input
-            v-model="form.title"
-            required
-            placeholder="Enter task title"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        <div class="mb-4">
-          <label class="flex gap-1 items-center">
-            <input type="checkbox" v-model="form.is_important" class="size-4" />
-            <span class="block text-gray-600 text-base pt-1 mb-1 font-medium">Important</span>
-          </label>
-          <label class="flex gap-1 items-center">
-            <input type="checkbox" v-model="form.is_urgent" class="size-4" />
-            <span class="block text-gray-600 text-base mb-1 font-medium">Urgent</span>
-          </label>
-        </div>
-
-        <!-- <div class="mb-4">
+      <!-- <div class="mb-4">
           <label class="block text-gray-600 text-sm mb-1 font-medium">Parent Task: </label>
           <select
             id="parent-task"
@@ -131,7 +135,7 @@ const submit = async () => {
           </select>
         </div> -->
 
-        <!-- <div class="mb-4">
+      <!-- <div class="mb-4">
           <label class="block text-gray-600 text-sm mb-1 font-medium">Requirement </label>
           <MultiselectDropdown
             v-model="selectedRequirement"
@@ -143,10 +147,10 @@ const submit = async () => {
           />
         </div> -->
 
-        <!-- <div>{{ tasks.map((t) => ({ id: t.id, title: t.title, parent_id: t.parent_id })) }}</div> -->
-        <!-- <pre>{{ taskListTree }}</pre> -->
+      <!-- <div>{{ tasks.map((t) => ({ id: t.id, title: t.title, parent_id: t.parent_id })) }}</div> -->
+      <!-- <pre>{{ taskListTree }}</pre> -->
 
-        <!-- <div class="mb-4">
+      <!-- <div class="mb-4">
           <label class="block text-gray-600 text-sm mb-1 font-medium">User</label>
           <MultiselectDropdown
             v-model="selectedUser"
@@ -158,8 +162,8 @@ const submit = async () => {
           />
         </div> -->
 
-        <div class="grid grid-cols-2 gap-4 mb-4">
-          <!-- <div>
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <!-- <div>
             <label class="block text-gray-600 text-sm mb-1 font-medium"
               >Priority <RequiredIcon
             /></label>
@@ -174,58 +178,57 @@ const submit = async () => {
             </select>
           </div> -->
 
-          <div>
-            <label class="block text-gray-600 text-sm mb-1 font-medium"
-              >Status <RequiredIcon
-            /></label>
-            <select
-              v-model="form.status"
-              class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">--select---</option>
-              <option>PENDING</option>
-              <option>IN_PROGRESS</option>
-              <option>COMPLETED</option>
-              <option>BLOCKED</option>
-              <option>CANCELLED</option>
-              <option>BACK_LOG</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="mb-4">
-          <label class="block text-gray-600 text-sm mb-1 font-medium">Description</label>
-          <textarea
-            v-model="form.description"
-            rows="4"
-            placeholder="Enter task description"
+        <div>
+          <label class="block text-gray-600 text-sm mb-1 font-medium"
+            >Status <RequiredIcon
+          /></label>
+          <select
+            v-model="form.status"
             class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-          ></textarea>
-        </div>
-
-        <hr class="mb-4" />
-        <div v-if="store.error" class="mb-4 text-red-500 font-medium">
-          {{ store.error }}
-        </div>
-
-        <div class="flex items-center gap-4">
-          <button
-            :disabled="loading"
-            type="submit"
-            class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-5 py-2 rounded transition"
           >
-            {{ loading ? 'Saving...' : 'Save Task' }}
-          </button>
-
-          <button
-            type="button"
-            @click="router.push({ name: 'TaskList' })"
-            class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-5 py-2 rounded transition"
-          >
-            Cancel
-          </button>
+            <option value="">--select---</option>
+            <option>PENDING</option>
+            <option>IN_PROGRESS</option>
+            <option>COMPLETED</option>
+            <option>BLOCKED</option>
+            <option>CANCELLED</option>
+            <option>BACK_LOG</option>
+          </select>
         </div>
-      </form>
-    </div>
+      </div>
+
+      <div class="mb-4">
+        <label class="block text-gray-600 text-sm mb-1 font-medium">Description</label>
+        <textarea
+          v-model="form.description"
+          rows="4"
+          placeholder="Enter task description"
+          class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+        ></textarea>
+      </div>
+
+      <hr class="mb-4" />
+      <div v-if="store.error" class="mb-4 text-red-500 font-medium">
+        {{ store.error }}
+      </div>
+
+      <div class="flex items-center gap-4">
+        <button
+          :disabled="loading"
+          type="submit"
+          class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-5 py-2 rounded transition"
+        >
+          {{ loading ? 'Saving...' : 'Save Task' }}
+        </button>
+
+        <button
+          type="button"
+          @click="emit('close')"
+          class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-5 py-2 rounded transition"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
   </div>
 </template>

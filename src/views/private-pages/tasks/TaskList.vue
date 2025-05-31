@@ -2,13 +2,14 @@
 import CommentModal from '@/components/CommentModal.vue'
 import OverlyModal from '@/components/common/OverlyModal.vue'
 import Multiselect from '@/components/MultiselectDropdown.vue'
+import TaskAddForm from '@/components/tasks/TaskAddForm.vue'
 import TaskEditForm from '@/components/tasks/TaskEditForm.vue'
 import TaskTreeView from '@/components/TaskTreeView.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useCompanyStore } from '@/stores/company'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const store = useTaskStore()
@@ -28,14 +29,21 @@ const selectedEmployee = ref()
 const { selectedMonth } = storeToRefs(lateAttendanceStore)
 
 const editingId = ref(null)
+const addForm = ref(false)
+const addFormData = reactive({
+  parentId: 0,
+  requirementId: 0,
+})
 
 onMounted(async () => {
   await companyStore.fetchCompanies()
   await store.fetchTasks(route.query['user-id'] ? { user_ids: route.query['user-id'] } : {})
 })
 
-const goToAdd = () => {
-  router.push({ name: 'TaskAdd' })
+const goToAdd = (parentId) => {
+  //router.push({ name: 'TaskAdd' })
+  addForm.value = true
+  addFormData.parentId = parentId
 }
 
 function setOrGetQuery(key) {
@@ -88,16 +96,17 @@ watch(
 )
 
 async function fetchTasksByEmployeeId(employeeId) {
-  if (employeeId) {
-    await store.fetchTasks({ user_ids: employeeId })
-  } else {
-    await store.fetchTasks()
-  }
+  await store.fetchTasks(employeeId ? { user_ids: employeeId } : {}, { loadingBeforeFetch: false })
 }
 
 function handleTaskUpdate() {
   editingId.value = null
   fetchTasksByEmployeeId(route.query['user-id'])
+}
+
+function handleTaskAddClose() {
+  addForm.value = false
+  addFormData.parentId = 0
 }
 
 watch(selectedEmployee, (emp) => {
@@ -113,6 +122,16 @@ watch(selectedEmployee, (emp) => {
         class="rounded-full"
         @close="editingId = null"
         @updated="handleTaskUpdate"
+      />
+    </OverlyModal>
+
+    <OverlyModal v-if="addForm">
+      <TaskAddForm
+        :parentTaskId="addFormData.parentId"
+        :requirementId="addFormData.requirementId"
+        class="rounded-full"
+        @close="handleTaskAddClose"
+        @created="handleTaskUpdate"
       />
     </OverlyModal>
 
@@ -168,6 +187,7 @@ watch(selectedEmployee, (emp) => {
           class="!border-0"
           @commentButtonClick="openComment($event, task.id)"
           @editClick="(taskId) => (editingId = taskId)"
+          @addClick="(taskId) => goToAdd(taskId)"
         />
       </div>
     </div>

@@ -109,7 +109,7 @@
               class="btn-2 py-0.5 text-xs"
               ><i class="fas fa-edit"></i> Edit
             </RouterLink> -->
-            <button @click="$emit('editClick', task.id)" class="btn-2 py-0.5 text-xs">
+            <button @click="emits('editClick', task.id)" class="btn-2 py-0.5 text-xs">
               <i class="fas fa-edit"></i> Edit
             </button>
 
@@ -127,13 +127,12 @@
               <i class="fas fa-user-plus"></i> Assign Users
             </RouterLink>
 
-            <RouterLink
-              :to="{ name: 'TaskAdd', query: { parent_id: task?.id } }"
+            <button
               class="border-indigo-500 hover:bg-indigo-600 text-indigo-600 hover:text-white font-semibold px-3 py-0.5 rounded-full transition border-2"
-              @click="$event.stopPropagation()"
+              @click="emits('addClick', props.task.id)"
             >
               <i class="fas fa-plus"></i> Add Sub Task
-            </RouterLink>
+            </button>
             <!-- 
               <button
                 class="bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold px-3 py-1 rounded-full transition border-2"
@@ -151,6 +150,7 @@
             :hide-buttons="hideButtons"
             :parent-tree-level="treeLevel"
             @editClick="(taskId) => emits('editClick', taskId)"
+            @addClick="(taskId) => emits('addClick', taskId)"
           />
         </div>
       </div>
@@ -167,7 +167,7 @@ const props = defineProps({
   treeLevel: { type: Number, default: 0 },
 })
 
-const emits = defineEmits(['commentButtonClick', 'editClick'])
+const emits = defineEmits(['commentButtonClick', 'editClick', 'addClick'])
 
 const subTaskOpenedList = ref([])
 

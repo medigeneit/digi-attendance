@@ -7,6 +7,7 @@
         :hide-buttons="hideButtons"
         :tree-level="parentTreeLevel + 1"
         @editClick="emits('editClick', childTask.id)"
+        @addClick="emits('addClick', childTask.id)"
       />
     </template>
   </div>
@@ -23,5 +24,5 @@ const props = defineProps({
 
 // @editClick="(taskId) => (editingId = taskId)"
 
-const emits = defineEmits(['editClick'])
+const emits = defineEmits(['editClick', 'addClick'])
 </script>

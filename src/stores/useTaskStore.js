@@ -24,8 +24,11 @@ export const useTaskStore = defineStore('task', () => {
     }
   };
 
-  const fetchTasks = async (params) => {
-    loading.value = true;
+  const fetchTasks = async (params, options = {loadingBeforeFetch: true}) => {
+    if( options.loadingBeforeFetch ) {
+      loading.value = true;
+    }
+
     error.value = null;
     try {
       const response = await apiClient.get('/tasks', {params});
@@ -79,12 +82,18 @@ export const useTaskStore = defineStore('task', () => {
   }
 
 
-  const fetchTask = async (id, params = {}) => {
-    loading.value = true;
+  const fetchTask = async (id, params = {}, options = {loadingBeforeFetch: true}) => {
+
+    if( options.loadingBeforeFetch ) {
+      loading.value = true;
+    }
+
     error.value = null;
+    
     try {
       const response = await apiClient.get(`/tasks/${id}`, {params});
-      task.value = response.data;
+      task.value = response.data?.task || {};
+      return response.data;
     } catch (err) {
       error.value = err.response?.data?.message || `টাস্ক (ID: ${id}) লোড করতে ব্যর্থ হয়েছে।`;
       console.error(`Error fetching task with id ${id}:`, err);
@@ -98,7 +107,9 @@ export const useTaskStore = defineStore('task', () => {
     error.value = null;
     try {
       const response = await apiClient.post('/tasks', data);
-      tasks.value.push(response.data.data);
+      if( response.data?.data ) {
+        tasks.value.push(response.data?.data);
+      }
       return response.data.data;
     } catch (err) {
       error.value = err.response?.data?.message || 'টাস্ক তৈরি করতে ব্যর্থ হয়েছে।';
