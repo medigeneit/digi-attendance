@@ -205,6 +205,9 @@ const loadScheduleData = async (companyId, month) => {
       showDefaultSchedule.value = false
     }
 
+    console.log(daysInMonth.value);
+    
+
     data.forEach((item) => {
       // ✅ Only push selected employee if NOT default schedule
       if (!showDefaultSchedule.value && !selectedEmployeeIds.value.includes(item.employee_id)) {
@@ -265,7 +268,7 @@ const loadScheduleData = async (companyId, month) => {
     </p>
 
     <!-- Color Legend with selectable shift -->
-    <div class="flex flex-wrap gap-3 mb-4 p-4">
+    <div class="flex flex-wrap gap-3 mb-4 p-4 bg-white rounded sticky top-16">
       <div
         v-for="shift in allShifts"
         :key="shift.id"
