@@ -14,7 +14,7 @@
       <!-- Customize the option label -->
       <template #option="{ option }">
         <div>
-          <span v-if="labelPrefix">{{ labelPrefix ? option[labelPrefix] : '' }}</span>
+          <span v-if="labelPrefix">{{ labelPrefix ? option[labelPrefix] : '' }} - </span>
 
           <span v-if="option[label]">{{ option[label] }}</span>
           <span v-else-if="option?.title">{{ option?.title }}</span>
@@ -25,9 +25,9 @@
       <!-- Customize the selected label -->
       <template #selected="{ option }">
         <div>
-          <span v-if="labelPrefix">{{ option[labelPrefix] }}</span>
+          <span v-if="labelPrefix">{{ option[labelPrefix] }} - </span>
 
-          <span v-if="option[label]">{{ option[label] }}</span>
+          <span v-if="option[label]">{{ option[label] }} - </span>
           <span v-else-if="option?.title">{{ option?.title }}</span>
           <span v-else>{{ option?.name || option?.id }}</span>
         </div>

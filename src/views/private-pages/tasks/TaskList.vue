@@ -1,11 +1,12 @@
 <script setup>
 import CommentModal from '@/components/CommentModal.vue'
+// import Draggable from '@/components/common/Draggable.js'
+// import draggable from 'vuedraggable'
 import OverlyModal from '@/components/common/OverlyModal.vue'
 import Multiselect from '@/components/MultiselectDropdown.vue'
 import TaskAddForm from '@/components/tasks/TaskAddForm.vue'
 import TaskEditForm from '@/components/tasks/TaskEditForm.vue'
 import TaskTreeView from '@/components/TaskTreeView.vue'
-import { useAttendanceStore } from '@/stores/attendance'
 import { useCompanyStore } from '@/stores/company'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { storeToRefs } from 'pinia'
@@ -13,9 +14,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const store = useTaskStore()
-const lateAttendanceStore = useAttendanceStore()
 const companyStore = useCompanyStore()
-const { flattenedTasks } = storeToRefs(store)
 const { companies, employees } = storeToRefs(companyStore)
 const route = useRoute()
 const router = useRouter()
@@ -26,7 +25,6 @@ const selectedTaskId = ref(null)
 const selectedCompanyId = computed(setOrGetQuery('company-id'))
 const selectedEmployeeId = computed(setOrGetQuery('user-id'))
 const selectedEmployee = ref()
-const { selectedMonth } = storeToRefs(lateAttendanceStore)
 
 const editingId = ref(null)
 const addForm = ref(false)
@@ -37,7 +35,7 @@ const addFormData = reactive({
 
 onMounted(async () => {
   await companyStore.fetchCompanies()
-  await store.fetchTasks(route.query['user-id'] ? { user_ids: route.query['user-id'] } : {})
+  await fetchTasks()
 })
 
 const goToAdd = (parentId) => {
@@ -49,10 +47,10 @@ const goToAdd = (parentId) => {
 function setOrGetQuery(key) {
   return {
     set: (value) => {
-      router.push({ query: { ...route.query, [key]: value } })
+      router.push({ query: { ...route.query, [key]: value || undefined } })
     },
     get: () => {
-      return route.query[key] || undefined
+      return route.query[key] || ''
     },
   }
 }
@@ -72,6 +70,7 @@ watch(
 
   async (newCompanyId) => {
     if (newCompanyId) {
+      // selectedEmployeeId.value = null
       await companyStore.fetchEmployee(newCompanyId)
       selectedEmployee.value =
         employees.value.find((emp) => emp.id == selectedEmployeeId.value) || null
@@ -86,27 +85,35 @@ watch(
 
 watch(
   () => ({
-    id: route.query['user-id'],
+    'user-id': route.query['user-id'],
+    'company-id': route.query['company-id'],
   }),
-
-  async (newEmployee) => {
-    console.log('Selected Employee:', newEmployee)
-    fetchTasksByEmployeeId(newEmployee.id)
+  async () => {
+    fetchTasks()
   },
 )
 
-async function fetchTasksByEmployeeId(employeeId) {
-  await store.fetchTasks(employeeId ? { user_ids: employeeId } : {}, { loadingBeforeFetch: false })
+async function fetchTasks() {
+  await store.fetchTasks(
+    {
+      user_ids: route.query['user-id'] || undefined,
+      company_id: route.query['company-id'] || undefined,
+    },
+    {
+      loadingBeforeFetch: false,
+    },
+  )
 }
 
-function handleTaskUpdate() {
+async function handleTaskUpdate() {
   editingId.value = null
-  fetchTasksByEmployeeId(route.query['user-id'])
+  await fetchTasks()
 }
 
-function handleTaskAddClose() {
+async function handleTaskAddClose() {
   addForm.value = false
   addFormData.parentId = 0
+  await fetchTasks()
 }
 
 watch(selectedEmployee, (emp) => {
@@ -140,21 +147,24 @@ watch(selectedEmployee, (emp) => {
         <h2 class="text-2xl font-bold text-gray-800">Task List</h2>
       </div>
       <div class="flex flex-wrap items-center gap-2 mt-3">
-        <div>
-          <select id="company-filter" v-model="selectedCompanyId" class="input-1">
-            <option value="">Select Company</option>
-            <option v-for="company in companies" :key="company.id" :value="company.id">
-              {{ company.name }}
-            </option>
-          </select>
-        </div>
-        <div>
+        <div class="flex gap-4">
+          <div class="flex-shrink-0 w-full md:w-64 text-gray-600">
+            <select id="company-filter" v-model="selectedCompanyId" class="input-1 h-full">
+              <option value="">Select Company</option>
+              <option v-for="company in companies" :key="company.id" :value="company.id">
+                {{ company.name }}
+              </option>
+            </select>
+          </div>
+
           <Multiselect
             v-model="selectedEmployee"
             :options="employees"
             :multiple="false"
             label="name"
+            label-prefix="id"
             placeholder="Please select employee..."
+            class="w-full md:w-64 text-gray-600"
           />
         </div>
         <!-- <div>
@@ -177,6 +187,13 @@ watch(selectedEmployee, (emp) => {
     </div>
 
     <div v-else class="space-y-4">
+      <!-- <Draggable
+        :list="store?.taskListTree"
+        class="list-group"
+        ghost-class="ghost"
+        :move="checkMove"
+      >
+      </Draggable> -->
       <div
         v-for="task in store?.taskListTree || []"
         :key="task.id"

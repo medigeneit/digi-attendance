@@ -82,9 +82,9 @@ export const useTaskStore = defineStore('task', () => {
   }
 
 
-  const fetchTask = async (id, params = {}, options = {loadingBeforeFetch: true}) => {
+  const fetchTask = async (id, params = {}, options = {loadingBeforeFetch: true, fetchOnly: false}) => {
 
-    if( options.loadingBeforeFetch ) {
+    if( !options.fetchOnly ) {
       loading.value = true;
     }
 
@@ -92,13 +92,20 @@ export const useTaskStore = defineStore('task', () => {
     
     try {
       const response = await apiClient.get(`/tasks/${id}`, {params});
-      task.value = response.data?.task || {};
+      if( !options.fetchOnly ) {
+        task.value = response.data?.task || {};
+      }
       return response.data;
     } catch (err) {
-      error.value = err.response?.data?.message || `টাস্ক (ID: ${id}) লোড করতে ব্যর্থ হয়েছে।`;
-      console.error(`Error fetching task with id ${id}:`, err);
+      const msg = err.response?.data?.message || `টাস্ক (ID: ${id}) লোড করতে ব্যর্থ হয়েছে।`;
+      if( !options.fetchOnly ) {
+        error.value = msg;
+      }
+      return msg
     } finally {
-      loading.value = false;
+      if( !options.fetchOnly ) {
+        loading.value = false;
+      }
     }
   };
 

@@ -13,11 +13,7 @@ const props = defineProps({
 const emit = defineEmits(['updated', 'cancel'])
 
 const store = useTaskStore()
-// const userStore = useUserStore()
-// const route = useRoute()
-// const router = useRouter()
-
-// const taskId = route.params.id
+const task = ref()
 const loading = ref(false)
 const selectedUsers = ref([])
 
@@ -34,22 +30,24 @@ const form = ref({
 
 onMounted(async () => {
   // userStore.fetchUsers()
-  await store.fetchTask(props.taskId)
-  selectedUsers.value = store.task.users
+  loading.value = true
+  task.value = (await store.fetchTask(props.taskId, {}, { fetchOnly: true }))?.task
+  selectedUsers.value = task.value.users
+  loading.value = false
   form.value = {
-    title: store.task.title,
-    requirement_id: store.task.requirement_id,
-    user_ids: store.task.users.map((u) => u.id).join(','),
-    priority: store.task.priority,
-    status: store.task.status,
-    description: store.task.description,
-    is_important: store.task.is_important,
-    is_urgent: store.task.is_urgent,
+    title: task.value.title,
+    requirement_id: task.value.requirement_id,
+    user_ids: task.value.users.map((u) => u.id).join(','),
+    priority: task.value.priority,
+    status: task.value.status,
+    description: task.value.description,
+    is_important: task.value.is_important,
+    is_urgent: task.value.is_urgent,
   }
 })
 
 watch(
-  () => store.task,
+  () => task.value,
   (newTask) => {
     form.value = {
       title: newTask.title,
@@ -78,12 +76,12 @@ const update = async () => {
 </script>
 
 <template>
-  <div class="bg-white shadow-lg rounded-lg p-6">
+  <div class="p-4">
     <h2 class="text-2xl font-semibold text-gray-800 mb-4">Edit Task</h2>
 
-    <div v-if="store.loading" class="text-center py-4 text-gray-500">Loading task details...</div>
+    <div v-if="loading" class="text-center py-4 text-gray-500">Loading form...</div>
 
-    <form v-else-if="store.task" @submit.prevent="update">
+    <form v-else-if="task" @submit.prevent="update">
       <div class="mb-4">
         <label class="block text-gray-700 font-medium mb-2">Task Title</label>
         <input
@@ -104,10 +102,10 @@ const update = async () => {
         </label>
       </div>
 
-      <div class="mb-4" v-if="store.task.requirement">
+      <div class="mb-4" v-if="task.requirement">
         <label class="block text-gray-700 font-medium mb-2">Requirement</label>
         <div>
-          <p>{{ store.task?.requirement?.title }}</p>
+          <p>{{ task?.requirement?.title }}</p>
         </div>
       </div>
 

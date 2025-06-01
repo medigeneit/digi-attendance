@@ -7,7 +7,7 @@ import TaskList from './TaskList.vue'
 
 const props = defineProps({
   subTasks: Array,
-  parentId: Number,
+  parentId: { type: Number, required: true },
 })
 
 const emit = defineEmits(['created', 'error'])

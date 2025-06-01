@@ -38,7 +38,7 @@ watch(() => route.params.id, fetchTaskList, {
 
 <template>
   <div class="container mx-auto p-6">
-    <div class="max-w-8xl mx-auto bg-white shadow-lg rounded-lg p-6">
+    <div class="max-w-8xl min-h-64 mx-auto bg-white shadow-lg rounded-lg p-6">
       <!-- {{ store.task }} -->
       <!-- <pre>{{ subTasks }}</pre> -->
 
@@ -164,6 +164,7 @@ watch(() => route.params.id, fetchTaskList, {
         <section v-if="route.name == 'TaskShow'">
           <SubTaskList
             :subTasks="subTasks"
+            :parent-id="route.params.id"
             @created="fetchTaskList(route.params.id)"
             @updated="fetchTaskList(route.params.id)"
           />
@@ -174,8 +175,11 @@ watch(() => route.params.id, fetchTaskList, {
         </section>
       </template>
 
+      <div v-else-if="store.loading" class="text-center py-4 text-gray-500">
+        Loading task details...
+      </div>
       <div v-else class="text-center py-4 text-red-500">
-        {{ store.error || 'Task not found.' }}
+        {{ store.error }}
       </div>
     </div>
     <!-- 
