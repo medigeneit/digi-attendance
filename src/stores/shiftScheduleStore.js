@@ -7,7 +7,13 @@ export const useShiftScheduleStore = defineStore('shiftSchedule', () => {
 
   const fetchSchedules = async (payload) => {
     const res = await apiClient.get('/shift-schedules', payload);
-    schedules.value = res.data;
+    schedules.value = res?.data;
+    return res.data;
+  };
+
+  const fetchDefaultSchedules = async (payload) => {
+    const res = await apiClient.get('/default-shift-schedules', payload);
+    schedules.value = res?.data;
     return res.data;
   };
 
@@ -20,5 +26,6 @@ export const useShiftScheduleStore = defineStore('shiftSchedule', () => {
     schedules,
     fetchSchedules,
     saveSchedules,
+    fetchDefaultSchedules
   };
 });

@@ -1,8 +1,10 @@
 <script setup>
+import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
 import { useShiftStore } from '@/stores/shift'
 import { useShiftScheduleStore } from '@/stores/shiftScheduleStore'
+
 import dayjs from 'dayjs'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -11,6 +13,8 @@ const companyStore = useCompanyStore()
 const shiftStore = useShiftStore()
 const departmentStore = useDepartmentStore()
 
+const showDefaultSchedule = ref(false)
+
 const { companies, employees } = storeToRefs(companyStore)
 const { departments } = storeToRefs(departmentStore)
 const { shifts } = storeToRefs(shiftStore)
@@ -18,6 +22,7 @@ const { shifts } = storeToRefs(shiftStore)
 const selectedMonth = ref(dayjs().format('YYYY-MM'))
 const selectedCompany = ref('')
 const selectedDepartment = ref('')
+const selectedEmployee = ref('')
 const selectedShift = ref('')
 const scheduleMap = ref({})
 const selectedEmployeeIds = ref([])
@@ -162,13 +167,18 @@ watch(selectedMonth, async (month) => {
   }
 })
 
+const filteredEmployees = computed(() => {
+  if (!selectedEmployee.value) return employees.value
+  return employees.value.filter((emp) => emp.id === parseInt(selectedEmployee.value?.id))
+})
+
 onMounted(async () => {
   await companyStore.fetchCompanies()
 })
 
 const loadScheduleData = async (companyId, month) => {
   try {
-    const data = await store.fetchSchedules({
+    let data = await store.fetchSchedules({
       params: {
         company_id: companyId,
         month: month, // format: YYYY-MM
@@ -177,8 +187,32 @@ const loadScheduleData = async (companyId, month) => {
 
     const mapped = {}
 
+    // 2. If no data, fallback to default schedules
+    if (!data.length) {
+      const fallback = await store.fetchDefaultSchedules({
+        params: {
+          company_id: companyId,
+          month: month,
+        },
+      })
+      console.log('[Fallback Schedule]', fallback)
+      data = fallback
+
+      // 🔴 Prevent bulk selection on fallback
+      selectedEmployeeIds.value = []
+      showDefaultSchedule.value = true
+    } else {
+      showDefaultSchedule.value = false
+    }
+
+    console.log(daysInMonth.value);
+    
+
     data.forEach((item) => {
-      selectedEmployeeIds.value.push(item.employee_id)
+      // ✅ Only push selected employee if NOT default schedule
+      if (!showDefaultSchedule.value && !selectedEmployeeIds.value.includes(item.employee_id)) {
+        selectedEmployeeIds.value.push(item.employee_id)
+      }
       selectedShift.value = item?.shift_id
       const empId = item.employee_id
       const day = parseInt(item.date.split('-')[2])
@@ -204,6 +238,20 @@ const loadScheduleData = async (companyId, month) => {
         <option value="">- Department -</option>
         <option v-for="d in departments" :key="d.id" :value="d.id">{{ d.name }}</option>
       </select>
+      <!-- <select v-model="selectedEmployee" class="p-2 border rounded">
+        <option value="">- Employee -</option>
+        <option v-for="d in employees" :key="d.id" :value="d.id">{{ d.name }}</option>
+      </select> -->
+      <div>
+        <MultiselectDropdown
+          v-model="selectedEmployee"
+          :options="employees"
+          :multiple="false"
+          label="name"
+          label-prefix="employee_id"
+          placeholder="Select user"
+        />
+      </div>
       <select v-model="selectedShift" class="p-2 border rounded">
         <option value="">- Shift -</option>
         <option v-for="s in allShifts" :key="s.id" :value="s.id">{{ s.name }}</option>
@@ -212,8 +260,15 @@ const loadScheduleData = async (companyId, month) => {
       <input type="month" v-model="selectedMonth" class="p-2 border rounded" />
     </div>
 
+    <p
+      v-if="showDefaultSchedule"
+      class="text-yellow-600 font-medium mb-2 p-2 border rounded border-black"
+    >
+      ⚠ Showing default schedule from current shift. Select employees manually before saving.
+    </p>
+
     <!-- Color Legend with selectable shift -->
-    <div class="flex flex-wrap gap-3 mb-4">
+    <div class="flex flex-wrap gap-3 mb-4 p-4 bg-white rounded sticky top-16">
       <div
         v-for="shift in allShifts"
         :key="shift.id"
@@ -276,7 +331,7 @@ const loadScheduleData = async (companyId, month) => {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="emp in employees" :key="emp.id">
+          <tr v-for="emp in filteredEmployees" :key="emp.id">
             <td class="border p-2">
               <input type="checkbox" class="mr-2" :value="emp.id" v-model="selectedEmployeeIds" />
               {{ emp.code }}
