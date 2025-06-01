@@ -32,33 +32,6 @@ const handlePushFps = () => {
     syncStore.pushFingerprints(selectedDevice.value)
   }
 }
-
-const userForm = ref({
-  zk_uid: '',
-  zk_userid: '',
-  name: '',
-  password: '',
-  role: 0,
-  cardno: '',
-})
-
-const handleCreateUser = async () => {
-  if (!selectedDevice.value) return
-
-  await syncStore.createUser(selectedDevice.value, userForm.value)
-
-  // Reset form after success
-  if (!syncStore.error.value) {
-    userForm.value = {
-      zk_uid: '',
-      zk_userid: '',
-      name: '',
-      password: '',
-      role: 0,
-      cardno: '',
-    }
-  }
-}
 </script>
 
 <template>
@@ -123,55 +96,6 @@ const handleCreateUser = async () => {
       </div>
 
       <div v-if="syncStore.error" class="text-red-600 font-medium">❌ {{ syncStore.error }}</div>
-    </div>
-
-    <div class="card-bg p-4 md:p-6 space-y-4">
-      <h2 class="text-lg font-semibold">👤 Create User on Device</h2>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <input
-          v-model="userForm.zk_uid"
-          type="number"
-          placeholder="UID"
-          class="border px-3 py-2 rounded w-full"
-        />
-        <input
-          v-model="userForm.zk_userid"
-          type="text"
-          placeholder="User ID"
-          class="border px-3 py-2 rounded w-full"
-        />
-        <input
-          v-model="userForm.name"
-          type="text"
-          placeholder="Name"
-          class="border px-3 py-2 rounded w-full"
-        />
-        <input
-          v-model="userForm.password"
-          type="text"
-          placeholder="Password (optional)"
-          class="border px-3 py-2 rounded w-full"
-        />
-        <input
-          v-model="userForm.cardno"
-          type="number"
-          placeholder="Card No (optional)"
-          class="border px-3 py-2 rounded w-full"
-        />
-        <select v-model="userForm.role" class="border px-3 py-2 rounded w-full">
-          <option :value="0">User</option>
-          <option :value="14">Admin</option>
-        </select>
-      </div>
-
-      <button
-        class="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded"
-        @click="handleCreateUser"
-        :disabled="syncStore.loading || !selectedDevice"
-      >
-        ➕ Create User
-      </button>
     </div>
   </div>
 </template>

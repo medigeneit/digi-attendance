@@ -63,19 +63,6 @@ export const useSyncStore = defineStore('sync', () => {
     }
   }
 
-  const createUser = async (deviceId, payload) => {
-  reset()
-  loading.value = true
-  try {
-    const response = await apiClient.post(`/zk-users/create/${deviceId}`, payload)
-    message.value = response.data.message
-  } catch (err) {
-    handleError(err)
-  } finally {
-    loading.value = false
-  }
-}
-
   // Reset message & error
   const reset = () => {
     message.value = null
@@ -95,7 +82,6 @@ export const useSyncStore = defineStore('sync', () => {
     pushUsers,
     pullFingerprints,
     pushFingerprints,
-    createUser,
     reset,
   }
 })
