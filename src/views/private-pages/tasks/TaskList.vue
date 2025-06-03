@@ -35,7 +35,7 @@ const addFormData = reactive({
 
 onMounted(async () => {
   await companyStore.fetchCompanies()
-  await fetchTasks()
+  await fetchTasks({}, { loadingBeforeFetch: true })
 })
 
 const goToAdd = (parentId) => {
@@ -100,13 +100,15 @@ async function fetchTasks() {
       company_id: route.query['company-id'] || undefined,
     },
     {
-      loadingBeforeFetch: false,
+      loadingBeforeFetch: true,
     },
   )
 }
 
 async function handleTaskUpdate() {
   editingId.value = null
+  addForm.value = false
+  addFormData.parentId = 0
   await fetchTasks()
 }
 
@@ -138,7 +140,7 @@ watch(selectedEmployee, (emp) => {
         :requirementId="addFormData.requirementId"
         class="rounded-full"
         @close="handleTaskAddClose"
-        @created="handleTaskUpdate"
+        @taskCreated="handleTaskUpdate"
       />
     </OverlyModal>
 
@@ -180,13 +182,11 @@ watch(selectedEmployee, (emp) => {
       </div>
     </div>
 
-    <div v-if="store.loading" class="text-center py-4 text-gray-500">Loading tasks...</div>
-
-    <div v-else-if="store.error" class="text-center py-4 text-red-500">
+    <div v-if="store.error" class="text-center py-4 text-red-500">
       {{ store.error }}
     </div>
 
-    <div v-else class="space-y-4">
+    <div class="space-y-4">
       <!-- <Draggable
         :list="store?.taskListTree"
         class="list-group"

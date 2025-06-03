@@ -109,9 +109,13 @@
               class="btn-2 py-0.5 text-xs"
               ><i class="fas fa-edit"></i> Edit
             </RouterLink> -->
-            <button @click="emits('editClick', task.id)" class="btn-2 py-0.5 text-xs">
+            <a
+              :href="`/tasks/edit/${task.id}`"
+              @click.stop.prevent="emits('editClick', task.id)"
+              class="btn-2 py-0.5 text-xs"
+            >
               <i class="fas fa-edit"></i> Edit
-            </button>
+            </a>
 
             <RouterLink
               :to="{ name: 'TaskReports', params: { id: task?.id } }"
@@ -127,12 +131,13 @@
               <i class="fas fa-user-plus"></i> Assign Users
             </RouterLink>
 
-            <button
+            <a
+              :href="`/tasks/add?parent_id=${props.task.id}`"
               class="border-indigo-500 hover:bg-indigo-600 text-indigo-600 hover:text-white font-semibold px-3 py-0.5 rounded-full transition border-2"
-              @click="emits('addClick', props.task.id)"
+              @click.stop.prevent="emits('addClick', props.task.id)"
             >
               <i class="fas fa-plus"></i> Add Sub Task
-            </button>
+            </a>
             <!-- 
               <button
                 class="bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold px-3 py-1 rounded-full transition border-2"
@@ -149,8 +154,8 @@
             :childrenTasks="task.children_tasks"
             :hide-buttons="hideButtons"
             :parent-tree-level="treeLevel"
-            @editClick="(taskId) => emits('editClick', taskId)"
-            @addClick="(taskId) => emits('addClick', taskId)"
+            @editClick="handleChildEditClick"
+            @addClick="handleChildAddClick"
           />
         </div>
       </div>
@@ -168,6 +173,14 @@ const props = defineProps({
 })
 
 const emits = defineEmits(['commentButtonClick', 'editClick', 'addClick'])
+
+function handleChildAddClick(taskId) {
+  emits('addClick', taskId)
+}
+
+function handleChildEditClick(taskId) {
+  emits('editClick', taskId)
+}
 
 const subTaskOpenedList = ref([])
 

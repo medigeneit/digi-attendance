@@ -2,6 +2,7 @@
 import { useTaskStore } from '@/stores/useTaskStore'
 import { onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import SectionLoading from '../common/SectionLoading.vue'
 
 const props = defineProps({
   taskId: {
@@ -31,7 +32,9 @@ const form = ref({
 onMounted(async () => {
   // userStore.fetchUsers()
   loading.value = true
-  task.value = (await store.fetchTask(props.taskId, {}, { fetchOnly: true }))?.task
+  task.value = (
+    await store.fetchTask(props.taskId, {}, { fetchOnly: true, loadingBeforeFetch: false })
+  )?.task
   selectedUsers.value = task.value.users
   loading.value = false
   form.value = {
@@ -68,7 +71,7 @@ const update = async () => {
     user_ids: selectedUsers.value?.map((u) => Number(u.id)) || [],
   }
 
-  await store.updateTask(props.taskId, payload)
+  await store.updateTask(props.taskId, payload, { loadingBeforeFetch: false })
   loading.value = false
 
   emit('updated')
@@ -77,6 +80,8 @@ const update = async () => {
 
 <template>
   <div class="p-4">
+    <SectionLoading v-if="loading" />
+
     <h2 class="text-2xl font-semibold text-gray-800 mb-4">Edit Task</h2>
 
     <div v-if="loading" class="text-center py-4 text-gray-500">Loading form...</div>

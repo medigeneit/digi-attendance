@@ -6,8 +6,8 @@
         class="mb-3"
         :hide-buttons="hideButtons"
         :tree-level="parentTreeLevel + 1"
-        @editClick="emits('editClick', childTask.id)"
-        @addClick="emits('addClick', childTask.id)"
+        @editClick="(taskId) => emits('editClick', taskId)"
+        @addClick="(taskId) => emits('addClick', taskId)"
       />
     </template>
   </div>

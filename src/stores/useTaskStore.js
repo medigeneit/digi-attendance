@@ -24,8 +24,8 @@ export const useTaskStore = defineStore('task', () => {
     }
   };
 
-  const fetchTasks = async (params, options = {loadingBeforeFetch: true}) => {
-    if( options.loadingBeforeFetch ) {
+  const fetchTasks = async (params,{loadingBeforeFetch = true}) => {
+    if(loadingBeforeFetch ) {
       loading.value = true;
     }
 
@@ -109,8 +109,10 @@ export const useTaskStore = defineStore('task', () => {
     }
   };
 
-  const createTask = async (data) => {
-    loading.value = true;
+  const createTask = async (data, options = {loadingBeforeCreate: false}) => {
+    if( options.loadingBeforeCreate ) {
+      loading.value = true;
+    }
     error.value = null;
     try {
       const response = await apiClient.post('/tasks', data);
@@ -122,12 +124,16 @@ export const useTaskStore = defineStore('task', () => {
       error.value = err.response?.data?.message || 'টাস্ক তৈরি করতে ব্যর্থ হয়েছে।';
       console.error('Error creating task:', err);
     } finally {
-      loading.value = false;
+      if( options.loadingBeforeCreate ) {
+        loading.value = false;
+      }
     }
   };
 
-  const updateTask = async (id, data) => {
-    loading.value = true;
+  const updateTask = async (id, data, options = {loadingBeforeFetch: true}) => {
+    if( options.loadingBeforeFetch ) {
+      loading.value = true;
+    }
     error.value = null;
     try {
       const response = await apiClient.put(`/tasks/${id}`, data);
@@ -140,7 +146,9 @@ export const useTaskStore = defineStore('task', () => {
       error.value = err.response?.data?.message || `টাস্ক (ID: ${id}) আপডেট করতে ব্যর্থ হয়েছে।`;
       console.error(`Error updating task with id ${id}:`, err);
     } finally {
-      loading.value = false;
+      if( options.loadingBeforeFetch ) {
+        loading.value = false;
+      }
     }
   };
 
