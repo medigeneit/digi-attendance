@@ -14,13 +14,10 @@ const selectedUser = ref('')
 const selectedMonth = ref(route?.query?.date || shortLeaveStore.selectedMonth)
 const selectedUserId = computed(() => selectedUser.value?.id)
 
-onMounted(() => {
+onMounted( async () => {
   userStore.fetchUsers()
-  shortLeaveStore.fetchShortLeaves({
-    selectedMonth: selectedMonth.value,
-    selectedStatus: shortLeaveStore.selectedStatus,
-  })
   selectedUser.value = userStore.users.find((user) => user.id == route?.query?.user_id)
+  await fetchShortLeavesByUser()
 })
 
 const fetchShortLeavesByUser = async () => {

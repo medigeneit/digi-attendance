@@ -4,21 +4,20 @@ import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useManualAttendanceStore } from '@/stores/manual-attendance'
 import { useUserStore } from '@/stores/user'
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
 const manualAttendanceStore = useManualAttendanceStore()
 const userStore = useUserStore()
 
 const selectedUser = ref('')
 const selectedUserId = computed(() => selectedUser.value?.id)
 
-onMounted(() => {
+onMounted( async () => {
   userStore.fetchUsers()
-  manualAttendanceStore.fetchManualAttendances({
-    selectedMonth: manualAttendanceStore.selectedMonth,
-    selectedStatus: manualAttendanceStore.selectedStatus,
-  })
+  selectedUser.value = userStore.users.find((user) => user.id == route?.query?.user_id)
+  await fetchManualAttendancesByUser()
 })
 
 const fetchManualAttendancesByUser = async () => {

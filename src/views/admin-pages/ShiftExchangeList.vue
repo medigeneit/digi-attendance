@@ -16,14 +16,10 @@ const selectedUserId = computed(() => selectedUser.value?.id)
 const selectedMonth = ref(route.query.date || exchangeStore.selectedMonth)
 
 // Fetch all users and exchanges
-onMounted(() => {
+onMounted( async () => {
   userStore.fetchUsers()
-  exchangeStore.fetchAllExchanges({
-    type: type,
-    selectedMonth: selectedMonth.value,
-    selectedStatus: exchangeStore.selectedStatus,
-  })
   selectedUser.value = userStore.users.find((user) => user.id == route?.query?.user_id)
+  await fetchOffDayExchangeByUser()
 })
 
 const fetchOffDayExchangeByUser = async () => {

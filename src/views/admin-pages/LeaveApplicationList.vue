@@ -16,13 +16,10 @@ const selectedUser = ref('')
 const selectedUserId = computed(() => selectedUser.value?.id)
 const selectedDate = ref(route?.query?.date || leaveApplicationStore.selectedMonth)
 
-onMounted(() => {
+onMounted( async () => {
   userStore.fetchUsers()
-  leaveApplicationStore.fetchLeaveApplications({
-    selectedDate: selectedDate.value,
-    selectedStatus: leaveApplicationStore.selectedStatus,
-  })
   selectedUser.value = userStore.users.find((user) => user.id == route?.query?.user_id)
+  await fetchApplicationsByUser()
 })
 
 const goBack = () => {
