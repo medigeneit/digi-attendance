@@ -16,7 +16,7 @@ const selectedUserId = computed(() => selectedUser.value?.id)
 const selectedMonth = ref(route.query.date || exchangeStore.selectedMonth)
 
 onMounted( async () => {
-  userStore.fetchUsers()
+  await userStore.fetchUsers()
   selectedUser.value = userStore.users.find((user) => user.id == route?.query?.user_id)
   await fetchOffDayExchangeByUser()
 })
