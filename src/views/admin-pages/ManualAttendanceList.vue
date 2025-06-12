@@ -10,9 +10,9 @@ const router = useRouter()
 const route = useRoute()
 const manualAttendanceStore = useManualAttendanceStore()
 const userStore = useUserStore()
-
-const selectedUser = ref('')
+const selectedUser = ref(null)
 const selectedUserId = computed(() => selectedUser.value?.id)
+const selectedMonth = ref(route?.query?.date || manualAttendanceStore.selectedMonth)
 
 onMounted( async () => {
   userStore.fetchUsers()
@@ -20,11 +20,29 @@ onMounted( async () => {
   await fetchManualAttendancesByUser()
 })
 
+watch(selectedUserId, (user) => {
+  router.replace({
+    query: {
+      ...route.query,
+      user_id: user,
+    },
+  })
+})
+
+watch(selectedMonth, (date) => {
+  router.replace({
+    query: {
+      ...route.query,
+      date: date,
+    },
+  })
+})
+
 const fetchManualAttendancesByUser = async () => {
   if (selectedUserId.value) {
     await manualAttendanceStore.fetchManualAttendances({
       user_id: selectedUserId.value,
-      selectedMonth: manualAttendanceStore.selectedMonth,
+      selectedMonth: selectedMonth.value,
       selectedStatus: manualAttendanceStore.selectedStatus,
     })
   } else {
@@ -70,6 +88,7 @@ const deleteApplication = async (applicationId) => {
           :options="userStore.users"
           :multiple="false"
           label="name"
+          label-prefix="employee_id"
           placeholder="Select user"
         />
       </div>
@@ -77,7 +96,7 @@ const deleteApplication = async (applicationId) => {
         <input
           id="monthSelect"
           type="month"
-          v-model="manualAttendanceStore.selectedMonth"
+          v-model="selectedMonth"
           @change="fetchManualAttendancesByUser"
           class="input-1"
         />

@@ -169,7 +169,7 @@ onMounted(() => {
       leaveTypeStore.fetchLeaveTypes(companyId)
     }
   })
-  userStore.fetchDepartmentWiseEmployees()
+  userStore.fetchTypeWiseEmployees({ except: 'auth' })
 })
 
 const goBack = () => {
@@ -293,23 +293,26 @@ const isHoliday = async (day) => {
       </div>
 
       <div>
+        <label for="handover-user" class="block text-sm font-medium">Handover User</label>
+        <MultiselectDropdown
+          v-model="selectUser"
+          :options="userStore.users"
+          :multiple="false"
+          label="label"
+          placeholder="Select user"
+          class="z-50"
+        />
+      </div>
+
+      <div>
         <label for="works-in-hand" class="block text-sm font-medium">Works in Hand</label>
         <textarea
           id="works-in-hand"
           v-model="form.works_in_hand"
           class="input-1 w-full"
           placeholder="Enter details of works in hand"
+          rows="6"
         ></textarea>
-      </div>
-      <div>
-        <label for="handover-user" class="block text-sm font-medium">Handover User</label>
-        <MultiselectDropdown
-          v-model="selectUser"
-          :options="userStore.users"
-          :multiple="false"
-          label="name"
-          placeholder="Select user"
-        />
       </div>
 
       <div v-if="error" class="text-red-500 text-sm">{{ error }}</div>

@@ -139,7 +139,7 @@ const goBack = () => router.go(-1)
           v-model="selectedEmployee"
           :options="employees"
           :multiple="false"
-          label="name"
+          label="label"
           placeholder="Select employee"
         />
       </div>

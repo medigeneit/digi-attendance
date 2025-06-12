@@ -57,7 +57,7 @@ watch(
 )
 
 onMounted(() => {
-  userStore.fetchHandoverDepartmentWiseEmployees()
+  userStore.fetchTypeWiseEmployees({ except: 'auth' })
   authStore.fetchUser()
 })
 
@@ -144,10 +144,10 @@ const goBack = () => {
         <label for="handover-user" class="block text-sm font-medium">Handover User</label>
         <MultiselectDropdown
           v-model="selectUser"
-          :options="userStore.handoverUsers"
+          :options="userStore.users"
           :multiple="false"
           :required="false"
-          label="name"
+          label="label"
           placeholder="Select user"
         />
       </div>

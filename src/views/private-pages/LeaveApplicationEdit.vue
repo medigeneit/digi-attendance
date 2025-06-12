@@ -22,10 +22,10 @@ const selectUser = ref(null)
 const form = ref({
   user_id: '',
   last_working_date: '',
-  resumption_date:  '',
+  resumption_date: '',
   reason: '',
   works_in_hand: '',
-  handover_user_id:  '',
+  handover_user_id: '',
   leave_days: [],
 })
 
@@ -41,17 +41,22 @@ onMounted(async () => {
     }
 
     if (leaveApplicationStore.leaveApplication) {
-      await userStore.fetchUsers()
-      if(userStore.users.length > 0)
-      {
-        
-        const user = computed(() => userStore.users.filter((user) => user.id === leaveApplicationStore.leaveApplication?.handover_user_id)[0] || {})
-        console.log('users', user.value);
+      await userStore.fetchTypeWiseEmployees({
+        type: leaveApplicationStore.leaveApplication.user.type,
+        except: [leaveApplicationStore.leaveApplication.user.id],
+      })
+      if (userStore.users.length > 0) {
+        const user = computed(
+          () =>
+            userStore.users.filter(
+              (user) => user.id === leaveApplicationStore.leaveApplication?.handover_user_id,
+            )[0] || {},
+        )
+        console.log('users', user.value)
         selectUser.value = user.value
       }
     }
-    if(leaveApplicationStore.leaveApplication)
-    {
+    if (leaveApplicationStore.leaveApplication) {
       form.value.user_id = leaveApplicationStore.leaveApplication?.user_id
       form.value.last_working_date = leaveApplicationStore.leaveApplication?.last_working_date
       form.value.resumption_date = leaveApplicationStore.leaveApplication?.resumption_date
@@ -193,8 +198,7 @@ const submitLeaveApplication = async () => {
       leave_days: leaveDaysPayload,
       json_data: leaveDaysJson,
     }
-    if(payload.id)
-    {
+    if (payload.id) {
       const newApplication = await leaveApplicationStore.updateLeaveApplication(payload.id, payload)
       if (newApplication) {
         router.push({ name: 'LeaveApplicationShow', params: { id: newApplication?.id } })
@@ -328,23 +332,25 @@ const isHoliday = async (day) => {
       </div>
 
       <div>
+        <label for="handover-user" class="block text-sm font-medium">Handover User</label>
+        <MultiselectDropdown
+          v-model="selectUser"
+          :options="userStore.users"
+          :multiple="false"
+          label="label"
+          placeholder="Select user"
+        />
+      </div>
+
+      <div>
         <label for="works-in-hand" class="block text-sm font-medium">Works in Hand</label>
         <textarea
           id="works-in-hand"
           v-model="form.works_in_hand"
           class="input-1 w-full"
           placeholder="Enter details of works in hand"
+          rows="6"
         ></textarea>
-      </div>
-      <div>
-        <label for="handover-user" class="block text-sm font-medium">Handover User</label>
-        <MultiselectDropdown
-          v-model="selectUser"
-          :options="userStore.users"
-          :multiple="false"
-          label="name"
-          placeholder="Select user"
-        />
       </div>
 
       <div v-if="error" class="text-red-500 text-sm">{{ error }}</div>

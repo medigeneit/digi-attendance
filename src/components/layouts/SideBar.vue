@@ -39,9 +39,9 @@ const logout = () => {
       </RouterLink>
 
       <RouterLink
-        to="/task-management"
+        to="/tasks"
         class="side-menu"
-        :class="{ 'side-menu-active': currentRoute.includes('/task-management') }"
+        :class="{ 'side-menu-active': currentRoute.includes('/tasks') }"
       >
         <i class="fad fa-table py-2"></i>
         <h4 v-if="open">Task Management</h4>

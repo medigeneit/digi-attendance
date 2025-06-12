@@ -140,6 +140,7 @@ const formattedName = (name) => {
         :options="userStore.users"
         :multiple="false"
         label="name"
+        label-prefix="employee_id"
         class="w-1/3"
         placeholder="Select user"
       />

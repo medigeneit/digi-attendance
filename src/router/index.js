@@ -132,6 +132,12 @@ const router = createRouter({
           meta: { requiresAuth: true },
           children: [
             {
+              path: 'sub-tasks',
+              name: 'SubTasks',
+              component: () => import('@/views/private-pages/tasks/SubTasks.vue'),
+              meta: { requiresAuth: true }
+            },
+            {
               path: 'reports',
               name: 'TaskReports',
               component: () => import('@/views/private-pages/tasks/TaskReports.vue'),
@@ -299,6 +305,18 @@ const router = createRouter({
           path: '/settings/device-list',
           name: 'DeviceList',
           component: () => import('@/views/admin-pages/DeviceList.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] },
+        },
+        {
+          path: '/settings/sync-data',
+          name: 'SyncData',
+          component: () => import('@/views/admin-pages/SyncData.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] },
+        },
+        {
+          path: '/settings/zk-users',
+          name: 'ZKUsers',
+          component: () => import('@/views/admin-pages/ZKUsers.vue'),
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] },
         },
         {
@@ -495,6 +513,13 @@ const router = createRouter({
           path: '/my-notifications',
           name: 'MyNotificationList',
           component: () => import('@/views/private-pages/MyNotificationList.vue'),
+          meta: { requiresAuth: true },
+        },
+
+        {
+          path: '/my-notifications/:type',
+          name: 'MySpecificNotificationList',
+          component: () => import('@/views/private-pages/MySpecificNotificationList.vue'),
           meta: { requiresAuth: true },
         },
 

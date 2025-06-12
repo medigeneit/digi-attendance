@@ -9,22 +9,27 @@
       :label="label"
       class="w-full border-2 border-gray-400 rounded focus:ring focus:ring-indigo-200 focus:outline-none"
       :placeholder="placeholder"
+      clear-on-select
     >
       <!-- Customize the option label -->
       <template #option="{ option }">
         <div>
-          <span>{{ option[label] }}</span>
-          <span>{{ labelTwo ? option[labelTwo] : '' }}</span>
-          <!-- Combine first and last name -->
+          <span v-if="labelPrefix">{{ labelPrefix ? option[labelPrefix] : '' }} - </span>
+
+          <span v-if="option[label]">{{ option[label] }}</span>
+          <span v-else-if="option?.title">{{ option?.title }}</span>
+          <span v-else>{{ option?.name || option?.id }}</span>
         </div>
       </template>
 
       <!-- Customize the selected label -->
       <template #selected="{ option }">
         <div>
-          <span>{{ option[label] }}</span>
-          <span>{{ labelTwo ? option[labelTwo] : '' }}</span>
-          <!-- Combine first and last name -->
+          <span v-if="labelPrefix">{{ option[labelPrefix] }} - </span>
+
+          <span v-if="option[label]">{{ option[label] }} - </span>
+          <span v-else-if="option?.title">{{ option?.title }}</span>
+          <span v-else>{{ option?.name || option?.id }}</span>
         </div>
       </template>
     </Multiselect>
@@ -36,7 +41,7 @@
 </template>
 
 <script setup>
-import { computed, defineProps, ref, watch } from 'vue'
+import { defineProps, ref, watch } from 'vue'
 import Multiselect from 'vue-multiselect'
 
 const props = defineProps({
@@ -46,7 +51,7 @@ const props = defineProps({
   required: Boolean,
   placeholder: String,
   label: String,
-  labelTwo: String,
+  labelPrefix: String,
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -63,14 +68,6 @@ watch(
 // Emit updated value to parent
 watch(selectedValue, (value) => {
   emit('update:modelValue', value)
-})
-
-const isInvalid = computed(() => {
-  return (
-    props.required &&
-    (!selectedValue.value ||
-      (Array.isArray(selectedValue.value) && selectedValue.value.length === 0))
-  )
 })
 </script>
 

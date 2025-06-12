@@ -1,202 +1,209 @@
-import apiClient from '@/axios'; // Ensure you have configured Axios as `apiClient`
-import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import apiClient from '@/axios' // Ensure you have configured Axios as `apiClient`
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
+import { useNotificationStore } from './notification'
 
 export const useExchangeStore = defineStore('exchange', () => {
-  const all_exchanges = ref([]);
-  const exchanges = ref([]);
-  const exchange = ref(null);
-  const loading = ref(false);
-  const error = ref(null);
-  const selectedMonth = ref(new Date().toISOString().substring(0, 7));
-  const selectedStatus = ref('');
+  const all_exchanges = ref([])
+  const exchanges = ref([])
+  const exchange = ref(null)
+  const loading = ref(false)
+  const error = ref(null)
+  const selectedMonth = ref(new Date().toISOString().substring(0, 7))
+  const selectedStatus = ref('')
 
   // Fetch all exchanges
   async function fetchAllExchanges(filters = {}) {
-    loading.value = true;
-    error.value = null;
+    loading.value = true
+    error.value = null
     try {
-      const response = await apiClient.get(`/all-exchanges`, { params: filters });
-      
-      all_exchanges.value = response?.data;
+      const response = await apiClient.get(`/all-exchanges`, { params: filters })
+
+      all_exchanges.value = response?.data
     } catch (err) {
-      error.value = err.response?.data?.message || 'Failed to fetch exchanges';
+      error.value = err.response?.data?.message || 'Failed to fetch exchanges'
     } finally {
-      loading.value = false;
+      loading.value = false
     }
   }
 
   // Fetch all exchanges
   async function fetchExchanges({ payload }) {
-    loading.value = true;
-    error.value = null;
+    loading.value = true
+    error.value = null
     try {
-      const response = await apiClient.get(`/exchanges?type=${payload.type}`,payload);
-      exchanges.value = response.data.data;
+      const response = await apiClient.get(`/exchanges?type=${payload.type}`, payload)
+      exchanges.value = response.data.data
     } catch (err) {
-      error.value = err.response?.data?.message || 'Failed to fetch exchanges';
+      error.value = err.response?.data?.message || 'Failed to fetch exchanges'
     } finally {
-      loading.value = false;
+      loading.value = false
     }
   }
 
   // Fetch a single exchange by ID
   async function fetchExchange(id) {
-    loading.value = true;
-    error.value = null;
+    loading.value = true
+    error.value = null
     try {
-      const response = await apiClient.get(`/exchanges/${id}`);
-      exchange.value = response.data;
+      const response = await apiClient.get(`/exchanges/${id}`)
+      exchange.value = response.data
+
+      const notificationStore = useNotificationStore()
+
+      await notificationStore.fetchApprovalPermissions(
+        `${exchange.value.exchange_type}_exchange_applications`,
+        exchange.value.id,
+      )
     } catch (err) {
-      error.value = err.response?.data?.message || `Failed to fetch exchange with ID ${id}`;
+      error.value = err.response?.data?.message || `Failed to fetch exchange with ID ${id}`
     } finally {
-      loading.value = false;
+      loading.value = false
     }
   }
 
   async function createExchange(payload) {
-    loading.value = true;
-    error.value = null;
+    loading.value = true
+    error.value = null
     try {
-      const response = await apiClient.post('/exchanges', payload);
-      exchanges.value.push(response?.data?.data);
-      return response?.data?.data;
-
+      const response = await apiClient.post('/exchanges', payload)
+      exchanges.value.push(response?.data?.data)
+      return response?.data?.data
     } catch (err) {
-      error.value = err.response?.data?.message || 'Failed to create exchange';
+      error.value = err.response?.data?.message || 'Failed to create exchange'
     } finally {
-      loading.value = false;
+      loading.value = false
     }
   }
 
   async function updateExchange(id, payload) {
-    loading.value = true;
-    error.value = null;
+    loading.value = true
+    error.value = null
     try {
-      const response = await apiClient.put(`/exchanges/${id}`, payload);
-      const index = exchanges.value.findIndex((ex) => ex.id === id);
+      const response = await apiClient.put(`/exchanges/${id}`, payload)
+      const index = exchanges.value.findIndex((ex) => ex.id === id)
       if (index !== -1) {
-        exchanges.value[index] = response.data;
+        exchanges.value[index] = response.data
       }
     } catch (err) {
-      error.value = err.response?.data?.message || `Failed to update exchange with ID ${id}`;
+      error.value = err.response?.data?.message || `Failed to update exchange with ID ${id}`
     } finally {
-      loading.value = false;
+      loading.value = false
     }
   }
 
   async function uploadAttachmentExchange(id, payload) {
-    loading.value = true;
-    error.value = null;
+    loading.value = true
+    error.value = null
     try {
-      const response = await apiClient.put(`/attachment-upload/exchanges/${id}`, payload);
-      const index = exchanges.value.findIndex((ex) => ex.id === id);
+      const response = await apiClient.put(`/attachment-upload/exchanges/${id}`, payload)
+      const index = exchanges.value.findIndex((ex) => ex.id === id)
       if (index !== -1) {
-        exchanges.value[index] = response.data;
+        exchanges.value[index] = response.data
       }
     } catch (err) {
-      error.value = err.response?.data?.message || `Failed to update exchange with ID ${id}`;
+      error.value = err.response?.data?.message || `Failed to update exchange with ID ${id}`
     } finally {
-      loading.value = false;
+      loading.value = false
     }
   }
 
   // Delete an exchange
   async function deleteExchange(id) {
-    loading.value = true;
-    error.value = null;
+    loading.value = true
+    error.value = null
     try {
-      
-      await apiClient.delete(`/exchanges/${id}`);
+      await apiClient.delete(`/exchanges/${id}`)
 
-      exchanges.value = exchanges.value.filter((ex) => ex.id !== id);
-
+      exchanges.value = exchanges.value.filter((ex) => ex.id !== id)
     } catch (err) {
-      error.value = err.response?.data?.message || `Failed to delete exchange with ID ${id}`;
+      error.value = err.response?.data?.message || `Failed to delete exchange with ID ${id}`
     } finally {
-      loading.value = false;
+      loading.value = false
     }
   }
 
   // Accept Exchange by Handover
   async function handoverAccept(payload) {
-    loading.value = true;
-    error.value = null;
+    loading.value = true
+    error.value = null
     try {
-      const response = await apiClient.post(`/exchanges/${payload.id}/handover-accept`, payload);
-      exchange.value = response.data;
+      const response = await apiClient.post(`/exchanges/${payload.id}/handover-accept`, payload)
+      exchange.value = response.data
     } catch (err) {
-      error.value = err.response?.data?.message || `Failed to accept handover for exchange ID ${payload.id}`;
+      error.value =
+        err.response?.data?.message || `Failed to accept handover for exchange ID ${payload.id}`
     } finally {
-      loading.value = false;
+      loading.value = false
     }
   }
 
   // Accept Exchange by In-Charge
   async function inChargeAccept(payload) {
-    loading.value = true;
-    error.value = null;
+    loading.value = true
+    error.value = null
     try {
-      const response = await apiClient.post(`/exchanges/${payload?.id}/in-charge-accept`, payload);
-      exchange.value = response.data;
+      const response = await apiClient.post(`/exchanges/${payload?.id}/in-charge-accept`, payload)
+      exchange.value = response.data
     } catch (err) {
-      error.value = err.response?.data?.message || `Failed to accept in-charge for exchange ID ${payload.id}`;
+      error.value =
+        err.response?.data?.message || `Failed to accept in-charge for exchange ID ${payload.id}`
     } finally {
-      loading.value = false;
+      loading.value = false
     }
   }
 
   // Accept Exchange by Recommend
   async function recommendByAccept(payload) {
-    loading.value = true;
-    error.value = null;
+    loading.value = true
+    error.value = null
     try {
-      const response = await apiClient.post(`/exchanges/${payload?.id}/recommend-accept`, payload);
-      exchange.value = response.data;
+      const response = await apiClient.post(`/exchanges/${payload?.id}/recommend-accept`, payload)
+      exchange.value = response.data
     } catch (err) {
-      error.value = err.response?.data?.message || `Failed to recommend exchange ID ${payload.id}`;
+      error.value = err.response?.data?.message || `Failed to recommend exchange ID ${payload.id}`
     } finally {
-      loading.value = false;
+      loading.value = false
     }
   }
 
   // Approve Exchange
   async function approvedByAccept(payload) {
-    loading.value = true;
-    error.value = null;
+    loading.value = true
+    error.value = null
     try {
-      const response = await apiClient.post(`/exchanges/${payload?.id}/approve`, payload);
-      exchange.value = response.data;
+      const response = await apiClient.post(`/exchanges/${payload?.id}/approve`, payload)
+      exchange.value = response.data
     } catch (err) {
-      error.value = err.response?.data?.message || `Failed to approve exchange ID ${payload.id}`;
+      error.value = err.response?.data?.message || `Failed to approve exchange ID ${payload.id}`
     } finally {
-      loading.value = false;
+      loading.value = false
     }
   }
 
   // Reject Exchange
   async function rejectExchange(id, rejectionReason) {
-    loading.value = true;
-    error.value = null;
+    loading.value = true
+    error.value = null
     try {
       const response = await apiClient.post(`/exchanges/${id}/reject`, {
         rejection_reason: rejectionReason,
-      });
-      exchange.value = response.data;
+      })
+      exchange.value = response.data
     } catch (err) {
-      error.value = err.response?.data?.message || `Failed to reject exchange ID ${id}`;
+      error.value = err.response?.data?.message || `Failed to reject exchange ID ${id}`
     } finally {
-      loading.value = false;
+      loading.value = false
     }
   }
 
   const fetchFileUpload = async (payload) => {
     try {
-      loading.value = true;
+      loading.value = true
       const response = await apiClient.post('attachment-upload', payload, {
         headers: {
-          'Content-Type': 'multipart/form-data'  // ✅ Content-Type ঠিক রাখা
-        }
+          'Content-Type': 'multipart/form-data', // ✅ Content-Type ঠিক রাখা
+        },
       })
       return response.data
     } catch (err) {
@@ -204,7 +211,7 @@ export const useExchangeStore = defineStore('exchange', () => {
     } finally {
       loading.value = false
     }
-  };
+  }
 
   return {
     all_exchanges,
@@ -226,6 +233,6 @@ export const useExchangeStore = defineStore('exchange', () => {
     approvedByAccept,
     rejectExchange,
     fetchFileUpload,
-    uploadAttachmentExchange
-  };
-});
+    uploadAttachmentExchange,
+  }
+})
