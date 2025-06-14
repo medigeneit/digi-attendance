@@ -30,7 +30,7 @@ const state = ref('')
 const form = ref({
   title: '',
   user_ids: [],
-  priority: 'MEDIUM',
+  priority: 0,
   status: 'PENDING',
   description: '',
   is_important: false,
@@ -42,7 +42,7 @@ watch(user_ids, (val) => {
 })
 
 onMounted(async () => {
-  state.value = 'loading'
+  state.value = ''
 })
 
 watch(

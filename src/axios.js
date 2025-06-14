@@ -43,7 +43,7 @@ apiClient.interceptors.request.use(async (config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
-  console.log('API call initiated...');
+  console.log(`${config.method.toUpperCase()} ${config.url} - API call initiated...`);
 
   await loadCsrfToken();
 
@@ -53,6 +53,7 @@ apiClient.interceptors.request.use(async (config) => {
 });
 
 apiClient.interceptors.response.use((response) => {
+  console.log(`${response.config.method.toUpperCase()} ${response.config.url} - Api Call SUCCESS`);
   return response;
 }, (error) => {
   if (error.response && error.response.status === 403) {

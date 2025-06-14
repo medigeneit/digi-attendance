@@ -152,6 +152,17 @@ export const useTaskStore = defineStore('task', () => {
     }
   };
 
+  const updateTaskPriorities = async (parentId, changedIds) => {
+   
+    const response = await apiClient.put(
+      `/tasks/${parentId}/update-priorities`, {
+      task_ids: changedIds
+    });
+
+    return response.data;
+     
+  };
+
   const deleteTask = async (id) => {
     loading.value = true;
     error.value = null;
@@ -180,6 +191,7 @@ export const useTaskStore = defineStore('task', () => {
     createTask,
     updateTask,
     deleteTask,
-    assignUsers
+    assignUsers,
+    updateTaskPriorities
   };
 });

@@ -1,5 +1,8 @@
 <script setup>
 import TaskTreeView from '@/components/TaskTreeView.vue'
+import DraggableList from '@/components/common/DraggableList.vue'
+import useTaskPriorityUpdate from '@/libs/task-priority'
+import { ref } from 'vue'
 
 const props = defineProps({
   tasks: {
@@ -14,15 +17,31 @@ const props = defineProps({
     default: '',
     type: String,
   },
+  parentId: {
+    type: Number,
+    default: 0,
+  },
 })
-
 const emit = defineEmits(['commentButtonClick', 'editClick', 'addClick'])
+
+const draggableTaskList = ref(null)
+
+const { handleItemsPriorityUpdate, saveTaskPriority, listHasRearranged } = useTaskPriorityUpdate(
+  () => props.tasks,
+  props.parentId,
+)
 </script>
 
 <template>
   <div>
     <div class="mb-3">
       <slot name="task:header"></slot>
+    </div>
+
+    <div v-if="listHasRearranged" class="flex gap-2 items-center mx-auto justify-center mb-2">
+      <span class="text-red-500">Priority Changed</span>
+      <button class="btn-3" @click.prevent="saveTaskPriority">Save</button>
+      <button class="btn-3" @click.prevent="draggableTaskList.resetItems">Discard</button>
     </div>
 
     <div v-if="loading" class="text-center py-4 text-gray-500">Loading tasks...</div>
@@ -32,10 +51,28 @@ const emit = defineEmits(['commentButtonClick', 'editClick', 'addClick'])
     </div>
 
     <div v-else class="space-y-4">
-      <div
+      <DraggableList
+        :items="tasks"
+        handle="handle"
+        @itemsUpdate="handleItemsPriorityUpdate"
+        class="rounded-lg bg-white overflow-hidden space-y-3"
+        ref="draggableTaskList"
+        #item="{ item }"
+      >
+        <TaskTreeView
+          :task="item"
+          class="!border-0"
+          @commentButtonClick="emit('commentButtonClick', item.id)"
+          @editClick="(taskId) => emit('editClick', taskId)"
+          @addClick="(taskId) => emit('addClick', taskId)"
+          :showDraggableHandle="true"
+        />
+      </DraggableList>
+
+      <!-- <div
         v-for="task in tasks || []"
         :key="task.id"
-        class="rounded-lg border bg-white overflow-hidden"
+        class="rounded-lg bg-white overflow-hidden space-y-4"
       >
         <TaskTreeView
           :task="task"
@@ -44,7 +81,7 @@ const emit = defineEmits(['commentButtonClick', 'editClick', 'addClick'])
           @editClick="(taskId) => emit('editClick', taskId)"
           @addClick="(taskId) => emit('addClick', taskId)"
         />
-      </div>
+      </div> -->
     </div>
   </div>
 </template>

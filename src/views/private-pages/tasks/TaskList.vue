@@ -2,11 +2,13 @@
 import CommentModal from '@/components/CommentModal.vue'
 // import Draggable from '@/components/common/Draggable.js'
 // import draggable from 'vuedraggable'
+import DraggableList from '@/components/common/DraggableList.vue'
 import OverlyModal from '@/components/common/OverlyModal.vue'
 import Multiselect from '@/components/MultiselectDropdown.vue'
 import TaskAddForm from '@/components/tasks/TaskAddForm.vue'
 import TaskEditForm from '@/components/tasks/TaskEditForm.vue'
 import TaskTreeView from '@/components/TaskTreeView.vue'
+import useTaskPriorityUpdate from '@/libs/task-priority'
 import { useCompanyStore } from '@/stores/company'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { storeToRefs } from 'pinia'
@@ -25,6 +27,7 @@ const selectedTaskId = ref(null)
 const selectedCompanyId = computed(setOrGetQuery('company-id'))
 const selectedEmployeeId = computed(setOrGetQuery('user-id'))
 const selectedEmployee = ref()
+const priorityChangingDisabled = ref(false)
 
 const editingId = ref(null)
 const addForm = ref(false)
@@ -32,6 +35,8 @@ const addFormData = reactive({
   parentId: 0,
   requirementId: 0,
 })
+
+const draggableTaskList = ref(null)
 
 onMounted(async () => {
   await companyStore.fetchCompanies()
@@ -94,6 +99,8 @@ watch(
 )
 
 async function fetchTasks() {
+  priorityChangingDisabled.value = !!route.query['user-id']
+
   await store.fetchTasks(
     {
       user_ids: route.query['user-id'] || undefined,
@@ -121,6 +128,18 @@ async function handleTaskAddClose() {
 watch(selectedEmployee, (emp) => {
   selectedEmployeeId.value = emp?.id
 })
+
+const { handleItemsPriorityUpdate, saveTaskPriority, listHasRearranged } = useTaskPriorityUpdate(
+  () => store.taskListTree,
+  0,
+)
+
+async function handleTaskPrioritySave() {
+  if (saveTaskPriority()) {
+    await fetchTasks()
+    // draggableTaskList.value.resetItems()
+  }
+}
 </script>
 
 <template>
@@ -178,7 +197,14 @@ watch(selectedEmployee, (emp) => {
           />
         </div> -->
 
-        <button @click="goToAdd" class="btn-1 ml-auto">Add Task</button>
+        <div class="ml-auto flex gap-6 items-center">
+          <div v-if="listHasRearranged" class="flex gap-2 items-center">
+            <span class="text-red-500">Priority Changed</span>
+            <button class="btn-3" @click.prevent="handleTaskPrioritySave">Save</button>
+            <button class="btn-3" @click.prevent="draggableTaskList.resetItems">Discard</button>
+          </div>
+          <button @click="goToAdd" class="btn-1">Add Task</button>
+        </div>
       </div>
     </div>
 
@@ -187,26 +213,24 @@ watch(selectedEmployee, (emp) => {
     </div>
 
     <div class="space-y-4">
-      <!-- <Draggable
-        :list="store?.taskListTree"
-        class="list-group"
-        ghost-class="ghost"
-        :move="checkMove"
+      <DraggableList
+        :items="store.taskListTree"
+        handle="handle"
+        @itemsUpdate="handleItemsPriorityUpdate"
+        class="space-y-4"
+        ref="draggableTaskList"
       >
-      </Draggable> -->
-      <div
-        v-for="task in store?.taskListTree || []"
-        :key="task.id"
-        class="rounded-lg border bg-white overflow-hidden"
-      >
-        <TaskTreeView
-          :task="task"
-          class="!border-0"
-          @commentButtonClick="openComment($event, task.id)"
-          @editClick="(taskId) => (editingId = taskId)"
-          @addClick="(taskId) => goToAdd(taskId)"
-        />
-      </div>
+        <template #item="{ item }">
+          <TaskTreeView
+            :task="item"
+            class="!border-0"
+            @commentButtonClick="openComment($event, task.id)"
+            @editClick="(taskId) => (editingId = taskId)"
+            @addClick="(taskId) => goToAdd(taskId)"
+            :showDraggableHandle="!priorityChangingDisabled"
+          />
+        </template>
+      </DraggableList>
     </div>
 
     <!-- Comment Modal -->

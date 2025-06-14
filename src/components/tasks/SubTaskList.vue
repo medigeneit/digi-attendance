@@ -60,6 +60,7 @@ function handleTaskAddClose() {
 
     <TaskList
       :tasks="subTasks"
+      :parentId="parentId"
       @addClick="(taskId) => goToAdd(taskId)"
       @editClick="(taskId) => (editingId = taskId)"
     >

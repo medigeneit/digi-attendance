@@ -15,15 +15,27 @@
     >
       <div class="items-start grid grid-cols-3">
         <div class="">
-          <RouterLink
-            :to="{
-              name: 'TaskShow',
-              params: { id: task.id },
-            }"
-            class="font-medium text-gray-700 cursor-pointer hover:text-sky-700"
-          >
-            {{ task.title }}
-          </RouterLink>
+          <div>
+            <div class="flex gap-4">
+              <button @mousedown.stop="handleDragging" class="handle" v-if="showDraggableHandle">
+                <i class="fas fa-arrows-alt text-gray-500 cursor-grab"></i>
+              </button>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-sky-800"> #{{ task.id }} </span>
+              <RouterLink
+                :to="{
+                  name: 'TaskShow',
+                  params: { id: task.id },
+                }"
+                class="font-medium text-gray-700 cursor-pointer hover:text-sky-700"
+              >
+                <div>
+                  {{ task.title }}
+                </div>
+              </RouterLink>
+            </div>
+          </div>
 
           <p class="text-sm text-gray-500 mt-2" v-if="task?.requirement">
             Requirement: {{ task?.requirement?.title }}
@@ -170,6 +182,7 @@ const props = defineProps({
   task: { type: Object, required: true },
   hideButtons: { type: Boolean, default: false },
   treeLevel: { type: Number, default: 0 },
+  showDraggableHandle: { Boolean, default: false },
 })
 
 const emits = defineEmits(['commentButtonClick', 'editClick', 'addClick'])

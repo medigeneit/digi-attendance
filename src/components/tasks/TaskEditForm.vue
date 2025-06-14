@@ -22,7 +22,6 @@ const form = ref({
   title: '',
   requirement_id: '',
   user_ids: '',
-  priority: 'MEDIUM',
   status: 'PENDING',
   description: '',
   is_important: false,
@@ -41,7 +40,6 @@ onMounted(async () => {
     title: task.value.title,
     requirement_id: task.value.requirement_id,
     user_ids: task.value.users.map((u) => u.id).join(','),
-    priority: task.value.priority,
     status: task.value.status,
     description: task.value.description,
     is_important: task.value.is_important,
@@ -56,7 +54,6 @@ watch(
       title: newTask.title,
       requirement_id: newTask.requirement_id,
       user_ids: newTask.users.map((u) => u.id).join(','),
-      priority: newTask.priority,
       status: newTask.status,
       description: newTask.description,
     }
