@@ -15,10 +15,11 @@ const { leaveApplications } = storeToRefs(leaveApplicationStore)
 const selectedUser = ref('')
 const selectedUserId = computed(() => selectedUser.value?.id)
 const selectedDate = ref(route?.query?.date || leaveApplicationStore.selectedMonth)
-
+const search = ref('')
 onMounted( async () => {
   await userStore.fetchUsers()
   selectedUser.value = userStore.users.find((user) => user.id == route?.query?.user_id)
+  search.value = route?.query?.search || ''
   await fetchApplicationsByUser()
 })
 
@@ -32,12 +33,14 @@ const fetchApplicationsByUser = async () => {
       user_id: selectedUserId.value,
       selectedDate: selectedDate.value,
       selectedStatus: leaveApplicationStore.selectedStatus,
+      query: search.value,
     })
   } else {
     // Fetch all short leaves if no user is selected
     await leaveApplicationStore.fetchLeaveApplications({
       selectedStatus: leaveApplicationStore.selectedStatus,
       selectedDate: selectedDate.value,
+      query: search.value,
     })
   }
 }
