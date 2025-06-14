@@ -3,6 +3,7 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useExchangeStore } from '@/stores/exchange'
 import { useUserStore } from '@/stores/user'
+import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -14,8 +15,9 @@ const type = 'offday'
 const selectedUser = ref(null)
 const selectedUserId = computed(() => selectedUser.value?.id)
 const selectedMonth = ref(route.query.date || exchangeStore.selectedMonth)
-
+const { loading } = storeToRefs(exchangeStore)
 onMounted( async () => {
+  loading.value = true
   await userStore.fetchUsers()
   selectedUser.value = userStore.users.find((user) => user.id == route?.query?.user_id)
   await fetchOffDayExchangeByUser()

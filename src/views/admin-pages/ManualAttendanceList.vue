@@ -3,6 +3,7 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useManualAttendanceStore } from '@/stores/manual-attendance'
 import { useUserStore } from '@/stores/user'
+import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -13,8 +14,9 @@ const userStore = useUserStore()
 const selectedUser = ref(null)
 const selectedUserId = computed(() => selectedUser.value?.id)
 const selectedMonth = ref(route?.query?.date || manualAttendanceStore.selectedMonth)
-
+const { loading } = storeToRefs(manualAttendanceStore)
 onMounted( async () => {
+  loading.value = true
   await userStore.fetchUsers()
   selectedUser.value = userStore.users.find((user) => user.id == route?.query?.user_id)
   await fetchManualAttendancesByUser()

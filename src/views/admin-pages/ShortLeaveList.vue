@@ -13,10 +13,12 @@ const userStore = useUserStore()
 const selectedUser = ref('')
 const selectedMonth = ref(route?.query?.date || shortLeaveStore.selectedMonth)
 const selectedUserId = computed(() => selectedUser.value?.id)
+const search = ref('')
 
 onMounted( async () => {
   userStore.fetchUsers()
   selectedUser.value = userStore.users.find((user) => user.id == route?.query?.user_id)
+  search.value = route?.query?.search || ''
   await fetchShortLeavesByUser()
 })
 
@@ -26,12 +28,14 @@ const fetchShortLeavesByUser = async () => {
       user_id: selectedUserId.value,
       selectedMonth: selectedMonth.value,
       selectedStatus: shortLeaveStore.selectedStatus,
+      query: search.value,
     })
   } else {
     // Fetch all short leaves if no user is selected
     await shortLeaveStore.fetchShortLeaves({
       selectedMonth: selectedMonth.value,
       selectedStatus: shortLeaveStore.selectedStatus,
+      query: search.value,
     })
   }
 }
