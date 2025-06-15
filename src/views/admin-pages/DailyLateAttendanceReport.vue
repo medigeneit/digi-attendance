@@ -212,7 +212,7 @@ const statusClass = (status) => {
         </table>
       </div>
       <div v-else class="text-center text-red-500 text-xl italic mt-10">
-        Please select company and employee
+        Please select company
       </div>
     </div>
   </div>
