@@ -34,6 +34,9 @@ onMounted(async () => {
   task.value = (
     await store.fetchTask(props.taskId, {}, { fetchOnly: true, loadingBeforeFetch: false })
   )?.task
+
+  console.log({ task: task.value })
+
   selectedUsers.value = task.value.users
   loading.value = false
   form.value = {
@@ -56,6 +59,8 @@ watch(
       user_ids: newTask.users.map((u) => u.id).join(','),
       status: newTask.status,
       description: newTask.description,
+      is_important: task.value.is_important,
+      is_urgent: task.value.is_urgent,
     }
   },
 )
