@@ -188,14 +188,13 @@ async function handleTaskPrioritySave() {
             class="w-full md:w-64 text-gray-600"
           />
         </div>
-        <!-- <div>
-          <input
-            id="month-filter"
-            v-model="month"
-            type="month"
-            class="input-1"
-          />
-        </div> -->
+
+        <!--
+          <div>
+            <input id="month-filter" v-model="month" type="month" class="input-1" />
+          </div>
+
+        -->
 
         <div class="ml-auto flex gap-6 items-center">
           <div v-if="listHasRearranged" class="flex gap-2 items-center">
