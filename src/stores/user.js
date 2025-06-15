@@ -22,6 +22,7 @@ export const useUserStore = defineStore('user', () => {
     try {
       isLoading.value = true // লোডিং শুরু
       const response = await apiClient.get('/users')
+      
       users.value = response.data
       error.value = null
     } catch (err) {
