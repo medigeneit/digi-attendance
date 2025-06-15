@@ -10,45 +10,91 @@ import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
 const route = useRoute()
+
 const lateAttendanceStore = useAttendanceStore()
 const companyStore = useCompanyStore()
+
 const { dailyLateLogs, isLoading, selectedMonth } = storeToRefs(lateAttendanceStore)
 const { companies, employees } = storeToRefs(companyStore)
-const month = ref(selectedMonth)
-const selectedCompanyId = ref('')
+
+const month = ref(route.query.date || selectedMonth.value)
+const selectedCompanyId = ref(route.query.company_id || '')
 const selectedEmployeeId = ref('')
 
-onMounted(() => {
-  companyStore.fetchCompanies()
-})
+onMounted(async () => {
+  await companyStore.fetchCompanies()
 
-watch(
-  () => selectedCompanyId.value,
-  async (newCompanyId) => {
-    if (newCompanyId) {
-      await companyStore.fetchEmployee(newCompanyId)
-    }
-  },
-)
+  // If company_id is available in query, fetch employees
+  if (route.query.company_id) {
+    selectedCompanyId.value = route.query.company_id
+    await companyStore.fetchEmployee(route.query.company_id)
+  }
 
-watch(
-  () => selectedEmployeeId.value,
-  async (newEmployee) => {
-    if (newEmployee.id) {
+  // If employee_id exists, set employee object after fetching employees
+  if (route.query.employee_id) {
+    const employee = employees.value.find((em) => em.id == route.query.employee_id)
+    if (employee) {
+      selectedEmployeeId.value = employee
       await fetchApplicationsByUser()
     }
-  },
-)
+  }
+})
 
-const goBack = () => {
-  router.go(-1)
+// Watcher for company change
+watch(selectedCompanyId, async (newCompanyId) => {
+  if (newCompanyId) {
+    await companyStore.fetchEmployee(newCompanyId)
+    selectedEmployeeId.value = '' // Reset employee selection
+  }
+
+  router.replace({
+    query: {
+      ...route.query,
+      company_id: newCompanyId || '',
+      employee_id: '', // Reset employee_id in query
+    },
+  })
+})
+
+// Watcher for employee change
+watch(selectedEmployeeId, async (newEmployee) => {
+  if (newEmployee?.id) {
+    await fetchApplicationsByUser()
+  }
+
+  router.replace({
+    query: {
+      ...route.query,
+      employee_id: newEmployee?.id || '',
+    },
+  })
+})
+
+// Watcher for selectedMonth changes
+watch(selectedMonth, (newMonth) => {
+  router.replace({
+    query: {
+      ...route.query,
+      date: newMonth,
+    },
+  })
+})
+
+const fetchApplicationsByUser = async () => {
+  if (selectedCompanyId.value && selectedEmployeeId?.value?.id) {
+    await lateAttendanceStore.getAttendanceLateReport(
+      selectedCompanyId.value,
+      selectedEmployeeId.value.id,
+      month.value,
+    )
+  }
 }
 
 const getExportExcel = async () => {
-  if (selectedCompanyId.value && selectedEmployeeId?.value.id) {
+  if (selectedCompanyId.value && selectedEmployeeId?.value?.id) {
     await lateAttendanceStore.lateReportDownloadExcel(
       selectedCompanyId.value,
-      selectedEmployeeId?.value.id,
+      selectedEmployeeId.value.id,
       month.value,
     )
   } else {
@@ -61,15 +107,10 @@ const getExportExcel = async () => {
   }
 }
 
-const fetchApplicationsByUser = async () => {
-  if (selectedCompanyId.value && selectedEmployeeId?.value.id) {
-    await lateAttendanceStore.getAttendanceLateReport(
-      selectedCompanyId.value,
-      selectedEmployeeId?.value.id,
-      month.value,
-    )
-  }
+const goBack = () => {
+  router.go(-1)
 }
+
 const statusClass = (status) => {
   if (status === 'Pending') return 'text-yellow-700'
   if (status === 'Approved') return 'text-green-700'
