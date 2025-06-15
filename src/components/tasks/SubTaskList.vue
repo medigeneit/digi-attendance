@@ -10,7 +10,7 @@ const props = defineProps({
   parentId: { type: Number, required: true },
 })
 
-const emit = defineEmits(['created', 'error'])
+const emit = defineEmits(['created', 'error', 'updatePriority'])
 
 const editingId = ref()
 
@@ -63,6 +63,7 @@ function handleTaskAddClose() {
       :parentId="parentId"
       @addClick="(taskId) => goToAdd(taskId)"
       @editClick="(taskId) => (editingId = taskId)"
+      @updatePriority="emit('updatePriority')"
     >
       <template #task:header>
         <div class="flex justify-between mt-5">

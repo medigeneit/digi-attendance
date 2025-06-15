@@ -22,7 +22,7 @@ const props = defineProps({
     default: 0,
   },
 })
-const emit = defineEmits(['commentButtonClick', 'editClick', 'addClick'])
+const emit = defineEmits(['commentButtonClick', 'editClick', 'addClick', 'updatePriority'])
 
 const draggableTaskList = ref(null)
 
@@ -30,6 +30,11 @@ const { handleItemsPriorityUpdate, saveTaskPriority, listHasRearranged } = useTa
   () => props.tasks,
   props.parentId,
 )
+
+const handleTaskPrioritySave = async () => {
+  await saveTaskPriority()
+  emit('updatePriority')
+}
 </script>
 
 <template>
@@ -40,7 +45,7 @@ const { handleItemsPriorityUpdate, saveTaskPriority, listHasRearranged } = useTa
 
     <div v-if="listHasRearranged" class="flex gap-2 items-center mx-auto justify-center mb-2">
       <span class="text-red-500">Priority Changed</span>
-      <button class="btn-3" @click.prevent="saveTaskPriority">Save</button>
+      <button class="btn-3" @click.prevent="handleTaskPrioritySave">Save</button>
       <button class="btn-3" @click.prevent="draggableTaskList.resetItems">Discard</button>
     </div>
 

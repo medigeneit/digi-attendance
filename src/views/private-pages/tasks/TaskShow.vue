@@ -1,8 +1,10 @@
 <script setup>
 import SubTaskList from '@/components/tasks/SubTaskList.vue'
+import SubTaskProgress from '@/components/tasks/SubTaskProgress.vue'
+import UserAvatar from '@/components/UserAvatar.vue'
 import { useTaskTree } from '@/libs/task-tree'
 import { useTaskStore } from '@/stores/useTaskStore'
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const store = useTaskStore()
@@ -11,6 +13,7 @@ const router = useRouter()
 
 const taskTree = useTaskTree()
 const subTasks = computed(() => taskTree.getTaskListTree())
+const progress = ref({})
 
 onMounted(async () => {})
 
@@ -34,30 +37,60 @@ watch(() => route.params.id, fetchTaskList, {
   initial: true,
   immediate: true,
 })
+
+const taskForProgress = computed(() => {
+  return {
+    ...store.task,
+    ...{
+      children_tasks: subTasks.value,
+    },
+  }
+})
 </script>
 
 <template>
   <div class="container mx-auto p-6">
     <div class="max-w-8xl min-h-64 mx-auto bg-white shadow-lg rounded-lg p-6">
-      <!-- {{ store.task }} -->
-      <!-- <pre>{{ subTasks }}</pre> -->
-
       <template v-if="store.task">
         <section class="grid grid-cols-4">
-          <div class="py-2 font-medium col-span-full text-xl">{{ store.task.title }}</div>
+          <div class="mb-2 font-medium col-span-full text-xl flex">
+            <h2>
+              {{ store.task.title }}
+            </h2>
+            <div
+              class="text-right col-span-full md:col-span-1 ml-auto flex justify-center gap-4 !text-lg"
+            >
+              <span
+                :class="{
+                  'bg-gray-200': store.task?.status === 'PENDING',
+                  'bg-blue-200': store.task?.status === 'IN_PROGRESS',
+                  'bg-green-200': store.task?.status === 'COMPLETED',
+                  'bg-red-200': store.task?.status === 'BLOCKED',
+                }"
+                class="px-3 py-0.5 rounded-full text-sm h-6"
+              >
+                {{ store.task?.status }}
+              </span>
+
+              <SubTaskProgress :task="taskForProgress" ref="progress" class="!text-lg" />
+            </div>
+          </div>
 
           <div class="py-2 font-medium mb-4 col-span-full md:col-span-2">
             <div class="text-xs mb-0.5 text-gray-600 uppercase">Assigns</div>
-            <div class="flex gap-2 flex-wrap">
-              <span
-                @click="$event.stopPropagation()"
-                v-for="user in store.task.users"
-                :key="user.id"
-                class="btn-1 !inline-flex flex-shrink-0"
+
+            <div class="flex items-center flex-wrap gap-3">
+              <div
+                class="flex items-center gap-2 border rounded-full px-1 py-0.5 bg-slate-100 shadow-sm"
+                v-for="(item, index) in store.task?.users || []"
+                :key="index"
               >
-                <i class="fad fa-user"></i>
-                {{ user?.name }}
-              </span>
+                <UserAvatar :user="item" class="w-6 h-6 !text-xs" />
+                <span class="text-xs text-gray-700 mr-2">{{ item.id }} - {{ item?.name }}</span>
+              </div>
+              <div v-if="store.task?.users?.length === 0" class="text-gray-500 text-xs">
+                Not Assigned To Anyone
+              </div>
             </div>
           </div>
 
@@ -87,19 +120,6 @@ watch(() => route.params.id, fetchTaskList, {
             >
               {{ store.task.priority }}
             </span> -->
-          </div>
-          <div class="py-4 text-right col-span-full md:col-span-1">
-            <span
-              :class="{
-                'bg-gray-200': store.task?.status === 'PENDING',
-                'bg-blue-200': store.task?.status === 'IN_PROGRESS',
-                'bg-green-200': store.task?.status === 'COMPLETED',
-                'bg-red-200': store.task?.status === 'BLOCKED',
-              }"
-              class="px-3 py-0.5 rounded-full"
-            >
-              {{ store.task?.status }}
-            </span>
           </div>
 
           <hr class="my-3 col-span-full" />
@@ -167,6 +187,7 @@ watch(() => route.params.id, fetchTaskList, {
             :parent-id="route.params.id"
             @created="fetchTaskList(route.params.id)"
             @updated="fetchTaskList(route.params.id)"
+            @updatePriority="fetchTaskList(route.params.id)"
           />
         </section>
 
