@@ -15,11 +15,12 @@ const selectedUser = ref(null)
 const selectedUserId = computed(() => selectedUser.value?.id)
 const selectedMonth = ref(route?.query?.date || manualAttendanceStore.selectedMonth)
 const { loading } = storeToRefs(manualAttendanceStore)
-onMounted( async () => {
-  loading.value = true
+onMounted(async () => {
   await userStore.fetchUsers()
   selectedUser.value = userStore.users.find((user) => user.id == route?.query?.user_id)
+  loading.value = ref(true)
   await fetchManualAttendancesByUser()
+  loading.value = ref(false)
 })
 
 watch(selectedUserId, (user) => {
@@ -50,7 +51,7 @@ const fetchManualAttendancesByUser = async () => {
   } else {
     // Fetch all short leaves if no user is selected
     await manualAttendanceStore.fetchManualAttendances({
-      selectedMonth: manualAttendanceStore.selectedMonth,
+      selectedMonth: selectedMonth.value,
       selectedStatus: manualAttendanceStore.selectedStatus,
     })
   }
@@ -80,7 +81,7 @@ const deleteApplication = async (applicationId) => {
         <span class="hidden md:flex">Back</span>
       </button>
 
-      <h1 class="title-md md:title-lg flex-wrap text-center">My Manual Attendances</h1>
+      <h1 class="title-md md:title-lg flex-wrap text-center">Manual Attendances</h1>
       <div></div>
     </div>
     <div class="flex gap-4">
