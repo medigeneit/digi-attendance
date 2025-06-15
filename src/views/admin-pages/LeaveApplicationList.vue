@@ -16,7 +16,7 @@ const selectedUser = ref('')
 const selectedUserId = computed(() => selectedUser.value?.id)
 const selectedDate = ref(route?.query?.date || leaveApplicationStore.selectedMonth)
 const search = ref('')
-onMounted( async () => {
+onMounted(async () => {
   loading.value = true
   await userStore.fetchUsers()
   selectedUser.value = userStore.users.find((user) => user.id == route?.query?.user_id)
@@ -136,6 +136,7 @@ const deleteApplication = async (applicationId) => {
               <th class="border border-gray-300 px-2 text-left">Employee Name</th>
               <th class="border border-gray-300 px-2 text-left">Last Working Day</th>
               <th class="border border-gray-300 px-2 text-left">Resumption Date</th>
+              <th class="border border-gray-300 px-2 text-left">Leave Period</th>
               <th class="border border-gray-300 px-2 text-left">Total Days</th>
               <th class="border border-gray-300 px-2 text-left">Status</th>
               <th class="border border-gray-300 px-2 text-left">Action</th>
@@ -153,6 +154,7 @@ const deleteApplication = async (applicationId) => {
               </td>
               <td class="border border-gray-300 px-2">{{ application?.last_working_date }}</td>
               <td class="border border-gray-300 px-2">{{ application?.resumption_date }}</td>
+              <td class="border border-gray-300 px-2">{{ application?.leave_period }}</td>
               <td class="border border-gray-300 px-2">
                 <div v-html="application.duration || application?.total_leave_days"></div>
               </td>
