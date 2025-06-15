@@ -1,9 +1,10 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import { RouterView } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
 import HeaderPrivate from '@/components/layouts/HeaderPrivate.vue'
 import SideBar from '@/components/layouts/SideBar.vue'
+import { getUserInitials } from '@/libs/user.js'
+import { useAuthStore } from '@/stores/auth'
+import { computed, onMounted, ref } from 'vue'
+import { RouterView } from 'vue-router'
 
 const authStore = useAuthStore()
 const sidebarVisible = ref(JSON.parse(localStorage.getItem('sidebarVisible')) ?? true)
@@ -15,9 +16,7 @@ const toggleSidebar = () => {
 
 const user = ref(null)
 
-const userInitial = computed(() =>
-  user?.value && user?.value?.name ? user?.value?.name.charAt(0).toUpperCase() : '',
-)
+const userInitial = computed(() => (user?.value ? getUserInitials(user?.value) : ''))
 
 onMounted(async () => {
   if (!authStore.user) {

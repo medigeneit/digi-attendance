@@ -6,23 +6,22 @@
       ></div>
     </div>
     <div
-      class="flex-grow border rounded py-3 group px-3"
+      class="flex-grow border rounded py-3 px-3"
       :class="{
-        'bg-green-50 ': getPercentage() === 100,
-        'bg-gray-50': getPercentage() < 100,
+        'bg-green-50  ': progress?.completedPercentage === 100,
+        'bg-gray-50 hover:bg-teal-50': progress?.completedPercentage < 100,
         'shadow-sm': treeLevel > 0,
       }"
     >
-      <div class="items-start grid grid-cols-3">
-        <div class="">
+      <div class="items-start grid grid-cols-3 group">
+        <div class=" ">
           <div>
             <div class="flex gap-4">
               <button @mousedown.stop="handleDragging" class="handle" v-if="showDraggableHandle">
-                <i class="fas fa-arrows-alt text-gray-500 cursor-grab"></i>
-              </button>
+                <i class="fas fa-arrows-alt text-gray-500 cursor-grab"></i></button
+              ><span class="text-sky-800"> #{{ task.id }} </span>
             </div>
             <div class="flex items-center gap-2">
-              <span class="text-sky-800"> #{{ task.id }} </span>
               <RouterLink
                 :to="{
                   name: 'TaskShow',
@@ -56,19 +55,25 @@
           </div>
         </div>
 
-        <div class="flex items-start flex-wrap gap-3">
+        <div class="flex items-center flex-wrap gap-3">
           <div
             class="flex items-center gap-2 border rounded-full px-1 py-0.5 bg-slate-100 shadow-sm"
             v-for="(item, index) in task.users"
             :key="index"
           >
-            <div
-              class="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-medium text-gray-600"
-            >
-              {{ getInitials(item?.name) }}
-            </div>
+            <UserAvatar :user="item" class="w-6 h-6 !text-xs" />
             <span class="text-xs text-gray-700 mr-2">{{ item.id }} - {{ item?.name }}</span>
           </div>
+          <div v-if="task.users.length === 0" class="text-gray-500 text-xs">
+            Not Assigned To Anyone
+          </div>
+          <RouterLink
+            :to="{ name: 'TaskUserAssign', params: { id: task?.id } }"
+            title="Assign user"
+            class="border-gray-400 bg-gray-50 text-gray-500 hover:bg-indigo-600 hover:text-white font-semibold px-3 py-0.5 rounded-full transition border"
+          >
+            <i class="fas fa-user-plus"></i>
+          </RouterLink>
         </div>
 
         <div class="flex justify-end items-center gap-2">
@@ -76,30 +81,7 @@
             class="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800 border border-blue-200"
             >{{ task.status }}</span
           >
-          <div class="text-sm">
-            <!-- <span class="text-gray-400 uppercase text-xs">Status </span> -->
-
-            <div
-              class="rounded-full border py-0.5 text-xs relative overflow-hidden h-6"
-              style="width: 180px"
-              :class="progressColor().container"
-            >
-              <div
-                class="z-10 absolute top-0 bottom-0"
-                :style="`width: ${getPercentage()}%`"
-                :class="progressColor().bar"
-              ></div>
-              <span
-                class="z-20 absolute inset-0 gap-1 text-center h-full flex justify-center items-center"
-                :class="progressColor().text"
-              >
-                <span>
-                  <span>{{ getCompletedSubTaskCount() }}</span> /
-                  <span>{{ task.children_tasks.length || 1 }}</span>
-                </span>
-              </span>
-            </div>
-          </div>
+          <SubTaskProgress :task="task" ref="progress" class="text-sm" />
         </div>
       </div>
 
@@ -113,6 +95,13 @@
             <i v-else class="fas fa-caret-right text-gray-400 group-hover:text-sky-400"></i>
             <span :class="subTaskHeadingClass" class="text-xs text-gray-500">
               Sub Tasks ({{ task.children_tasks?.length }})
+              <a
+                :href="`/tasks/add?parent_id=${props.task.id}`"
+                class="hover:bg-indigo-600 text-indigo-600 hover:text-white font-semibold px-3 py-0.5 rounded-full transition border border-transparent ml-2"
+                @click.stop.prevent="emits('addClick', props.task.id)"
+              >
+                <i class="fas fa-plus"></i> Add Sub Task
+              </a>
             </span>
           </div>
           <div class="flex gap-2 ml-auto items-center text-xs" v-if="!hideButtons">
@@ -136,20 +125,20 @@
               <i class="far fa-file-alt"></i> Reports
             </RouterLink>
 
-            <RouterLink
+            <!-- <RouterLink
               :to="{ name: 'TaskUserAssign', params: { id: task?.id } }"
               class="border-indigo-500 hover:bg-indigo-600 text-indigo-600 hover:text-white font-semibold px-3 py-0.5 rounded-full transition border-2"
             >
               <i class="fas fa-user-plus"></i> Assign Users
-            </RouterLink>
+            </RouterLink> -->
 
-            <a
+            <!-- <a
               :href="`/tasks/add?parent_id=${props.task.id}`"
               class="border-indigo-500 hover:bg-indigo-600 text-indigo-600 hover:text-white font-semibold px-3 py-0.5 rounded-full transition border-2"
               @click.stop.prevent="emits('addClick', props.task.id)"
             >
               <i class="fas fa-plus"></i> Add Sub Task
-            </a>
+            </a> -->
             <!-- 
               <button
                 class="bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold px-3 py-1 rounded-full transition border-2"
@@ -177,13 +166,18 @@
 
 <script setup>
 import TaskTreeChildren from '@/components/TaskTreeChildren.vue'
+import UserAvatar from '@/components/UserAvatar.vue'
+import SubTaskProgress from '@/components/tasks/SubTaskProgress.vue'
 import { computed, ref, watch } from 'vue'
+
 const props = defineProps({
   task: { type: Object, required: true },
   hideButtons: { type: Boolean, default: false },
   treeLevel: { type: Number, default: 0 },
   showDraggableHandle: { Boolean, default: false },
 })
+
+const progress = ref(null)
 
 const emits = defineEmits(['commentButtonClick', 'editClick', 'addClick'])
 
@@ -237,14 +231,6 @@ const subTaskHeadingClass = computed(() => {
   }
 })
 
-const getInitials = (name) => {
-  return name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-}
-
 // const priorityColor = (priority) => {
 //   switch (priority) {
 //     case 'HIGH':
@@ -256,66 +242,9 @@ const getInitials = (name) => {
 //   }
 // }
 
-const progressColor = () => {
-  const percent = getPercentage()
-
-  let container, bar, text
-
-  if (percent === 100) {
-    container = 'bg-green-50'
-    bar = 'bg-green-200'
-    text = 'text-green-600 '
-  } else if (percent < 100) {
-    container = 'bg-red-50'
-    bar = 'bg-red-200'
-    text = 'text-red-600 '
-  }
-
-  return {
-    container,
-    bar,
-    text,
-  }
-}
-
 function handleSubTaskClick() {
   if (props.task.children_tasks.length > 0) {
     showSubTask.value = !showSubTask.value
   }
-}
-
-function getCompletedSubTaskCount() {
-  if (props.task.children_tasks.length === 0) {
-    return props.task.status === 'COMPLETED' ? 1 : 0
-  }
-
-  const getChildrenCompletedCount = (childrenTasks) => {
-    let count = 0
-
-    for (let i = 0; i < childrenTasks.length; i++) {
-      const child = childrenTasks[i]
-
-      if (child.children_tasks.length === 0) {
-        if (child.status === 'COMPLETED') count += 1
-      } else {
-        // Recursive call
-        const total = child.children_tasks.length
-        const completed = getChildrenCompletedCount(child.children_tasks)
-        if (completed === total) count += 1
-      }
-    }
-
-    return count
-  }
-
-  return getChildrenCompletedCount(props.task.children_tasks)
-}
-
-function getPercentage() {
-  if (props.task.children_tasks.length === 0) {
-    return props.task.status === 'COMPLETED' ? 100 : 0
-  }
-
-  return (getCompletedSubTaskCount() / props.task.children_tasks.length) * 100
 }
 </script>
