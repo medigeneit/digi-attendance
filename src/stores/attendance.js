@@ -7,6 +7,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
   const attendanceLogs = ref([]);
   const dailyLogs = ref([]);
   const dailyLateLogs = ref([]);
+  const monthlyLateLogs = ref([]);
   const summary = ref(null);
   const monthly_company_summary = ref(null);
   const selectedMonth = ref(new Date().toISOString().substring(0, 7));
@@ -68,23 +69,32 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   };
 
-  const getAttendanceLateReport = async (company_id, employee_id, month) => {
-    isLoading.value = true;
-    try {
-      const params = {company_id,employee_id, month}
+ const getAttendanceLateReport = async (company_id, employee_id, value, type) => {
+  isLoading.value = true;
+  try {
+    const params = {
+      company_id,
+      employee_id,
+      type,
+      ...(type === 'daily' ? { date: value } : { month: value }),
+    };
 
-      console.log({params});
-      
-      const response = await apiClient.get("/monthly/attendance/late-reports", { params });
-      dailyLateLogs.value = response.data; 
-      error.value = null;
-    } catch (err) {
-      error.value = err.response?.data?.message || 'Something went wrong';
-      console.error(error.value);
-    } finally {
-      isLoading.value = false;
+    const response = await apiClient.get("/monthly/attendance/late-reports", { params });
+
+    if (type === 'daily') {
+      dailyLateLogs.value = response.data;
+    } else if (type === 'monthly') {
+      monthlyLateLogs.value = response.data;
     }
-  };
+    
+    error.value = null;
+  } catch (err) {
+    error.value = err.response?.data?.message || 'Something went wrong';
+    console.error(error.value);
+  } finally {
+    isLoading.value = false;
+  }
+};
 
   // const getAttendanceLateReport = async (company_id, employee_id, month) => {
   //   isLoading.value = true;
@@ -209,7 +219,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
 };
 
-  const attendanceDownloadExcel = async (companyId, employee_id , category, month, status) => {
+const attendanceDownloadExcel = async (companyId, employee_id , category, month, status) => {
     isLoading.value = true;
     try {
         const params = { companyId, employee_id , category, month, status };
@@ -234,42 +244,51 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
 };
 
-const lateReportDownloadExcel = async (company_id, employee_id, month) => {
-  
-  if (!company_id || !month) {
-    error.value = 'Invalid company ID or month';
+const lateReportDownloadExcel = async (company_id, employee_id, value, type) => {
+  if (!company_id) {
+    error.value = 'Invalid company ID or date/month';
     return;
   }
+
   isLoading.value = true;
-  
+
   try {
-    
-    const params = { company_id, employee_id, month };
+    const params = {
+      company_id,
+      ...(employee_id ? { employee_id } : {}), // only include if present
+      type,
+      ...(type === 'daily' ? { date: value } : { month: value }),
+    };
 
-      const response = await apiClient.get(`/monthly/attendance/late-reports?flag=excel`, {
-          params,
-          responseType: 'blob', // Important for file downloads
-      });
+    const response = await apiClient.get(`/monthly/attendance/late-reports?flag=excel`, {
+      params,
+      responseType: 'blob',
+    });
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `${month} attendance_summary.xlsx`); // File name
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+
+    // File name should reflect type
+    const filename = `${type === 'daily' ? value : value}-late-attendance.xlsx`;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 
   } catch (err) {
-      error.value = err.response?.data?.message || 'Something went wrong';
-      console.error(error.value);
+    error.value = err.response?.data?.message || 'Something went wrong';
+    console.error(error.value);
   } finally {
-      isLoading.value = false;
+    isLoading.value = false;
   }
 };
+
 
   return {
     monthlyLogs,
     dailyLateLogs,
+    monthlyLateLogs,
     summary,
     monthly_company_summary,
     selectedMonth,

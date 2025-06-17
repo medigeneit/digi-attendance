@@ -426,9 +426,15 @@ const router = createRouter({
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] },
         },
         {
-          path: '/reports/leave-attendance-list',
+          path: '/reports/monthly-late-report-list',
           name: 'LateAttendanceReport',
           component: () => import('@/views/admin-pages/LateAttendanceReport.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] },
+        },
+        {
+          path: '/reports/daily-late-report-list',
+          name: 'DailyLateAttendanceReport',
+          component: () => import('@/views/admin-pages/DailyLateAttendanceReport.vue'),
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] },
         },
 

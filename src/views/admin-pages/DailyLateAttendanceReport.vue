@@ -14,49 +14,43 @@ const route = useRoute()
 const lateAttendanceStore = useAttendanceStore()
 const companyStore = useCompanyStore()
 
-const { monthlyLateLogs, isLoading, selectedMonth } = storeToRefs(lateAttendanceStore)
+const { dailyLateLogs, isLoading, selectedDate } = storeToRefs(lateAttendanceStore)
 const { companies, employees } = storeToRefs(companyStore)
 
-const month = ref(route.query.date || selectedMonth.value)
 const selectedCompanyId = ref(route.query.company_id || '')
 const selectedEmployeeId = ref('')
+
+// Set selectedDate from query if exists
+if (route.query.date) {
+  selectedDate.value = route.query.date
+}
 
 onMounted(async () => {
   await companyStore.fetchCompanies()
 
-  // If company_id is available in query, fetch employees
-  if (route.query.company_id) {
-    selectedCompanyId.value = route.query.company_id
-    await companyStore.fetchEmployee(route.query.company_id)
-  }
-
-  // If employee_id exists, set employee object after fetching employees
-  if (route.query.employee_id) {
-    const employee = employees.value.find((em) => em.id == route.query.employee_id)
-    if (employee) {
-      selectedEmployeeId.value = employee
-      await fetchApplicationsByUser()
-    }
+  if (selectedCompanyId.value) {
+    await companyStore.fetchEmployee(selectedCompanyId.value)
+    await fetchApplicationsByUser()
   }
 })
 
-// Watcher for company change
+// Watch company change
 watch(selectedCompanyId, async (newCompanyId) => {
   if (newCompanyId) {
     await companyStore.fetchEmployee(newCompanyId)
-    selectedEmployeeId.value = '' // Reset employee selection
+    selectedEmployeeId.value = ''
   }
 
   router.replace({
     query: {
       ...route.query,
       company_id: newCompanyId || '',
-      employee_id: '', // Reset employee_id in query
+      employee_id: '',
     },
   })
 })
 
-// Watcher for employee change
+// Watch employee change
 watch(selectedEmployeeId, async (newEmployee) => {
   if (newEmployee?.id) {
     await fetchApplicationsByUser()
@@ -70,34 +64,34 @@ watch(selectedEmployeeId, async (newEmployee) => {
   })
 })
 
-// Watcher for selectedMonth changes
-watch(selectedMonth, (newMonth) => {
+// Watch date change (selectedDate is reactive from store)
+watch(selectedDate, (newDate) => {
   router.replace({
     query: {
       ...route.query,
-      date: newMonth,
+      date: newDate,
     },
   })
 })
 
 const fetchApplicationsByUser = async () => {
-  if (selectedCompanyId.value && selectedEmployeeId?.value?.id) {
+  if (selectedCompanyId.value) {
     await lateAttendanceStore.getAttendanceLateReport(
       selectedCompanyId.value,
       selectedEmployeeId.value.id,
-      month.value,
-      'monthly',
+      selectedDate.value,
+      'daily',
     )
   }
 }
 
 const getExportExcel = async () => {
-  if (selectedCompanyId.value && selectedEmployeeId?.value?.id) {
+  if (selectedCompanyId.value) {
     await lateAttendanceStore.lateReportDownloadExcel(
       selectedCompanyId.value,
       selectedEmployeeId.value.id,
-      month.value,
-      'monthly',
+      selectedDate.value,
+      'daily',
     )
   } else {
     Swal.fire({
@@ -128,7 +122,7 @@ const statusClass = (status) => {
         <span class="hidden md:flex">Back</span>
       </button>
 
-      <h1 class="title-md md:title-lg flex-wrap text-center">Monthly Late Reports</h1>
+      <h1 class="title-md md:title-lg flex-wrap text-center">Daily Late Reports</h1>
       <div class="flex gap-4">
         <button type="button" @click="getExportExcel" class="btn-3">
           <i class="far fa-file-excel text-2xl text-green-500"></i>
@@ -157,9 +151,9 @@ const statusClass = (status) => {
       <div>
         <input
           id="user-filter"
-          v-model="month"
+          v-model="selectedDate"
           @change="fetchApplicationsByUser"
-          type="month"
+          type="date"
           class="input-1"
         />
       </div>
@@ -170,7 +164,7 @@ const statusClass = (status) => {
     </div>
 
     <div v-else class="space-y-4">
-      <div class="overflow-x-auto" v-if="selectedCompanyId && selectedEmployeeId">
+      <div class="overflow-x-auto" v-if="selectedCompanyId">
         <table
           class="min-w-full table-auto border-collapse border border-gray-200 bg-white rounded-md text-sm"
         >
@@ -178,6 +172,7 @@ const statusClass = (status) => {
             <tr class="bg-gray-200">
               <th class="border border-gray-300 px-2 text-left">#</th>
               <th class="border border-gray-300 px-2 text-left">Date</th>
+              <th class="border border-gray-300 px-2 text-left">Weekday</th>
               <th class="border border-gray-300 px-2 text-left">Employee Name</th>
               <th class="border border-gray-300 px-2 text-left">Company</th>
               <th class="border border-gray-300 px-2 text-left">Department</th>
@@ -189,19 +184,20 @@ const statusClass = (status) => {
           </thead>
           <tbody>
             <tr
-              v-for="(report, index) in monthlyLateLogs"
-              :key="report.id"
+              v-for="(report, index) in dailyLateLogs"
+              :key="report.id || index"
               class="border-b border-gray-200 hover:bg-blue-200"
             >
               <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
               <td class="border border-gray-300 px-2">{{ report?.date }}</td>
+              <td class="border border-gray-300 px-2">{{ report?.weekday }}</td>
               <td class="border border-gray-300 px-2">{{ report?.user_name || 'Unknown' }}</td>
               <td class="border border-gray-300 px-2">{{ report?.company_name || 'Unknown' }}</td>
               <td class="border border-gray-300 px-2">
                 {{ report?.department_name || 'Unknown' }}
               </td>
-              <td class="border border-gray-300 px-2">{{ report.entry_time }}</td>
-              <td class="border border-gray-300 px-2">{{ report.late_duration }}</td>
+              <td class="border border-gray-300 px-2">{{ report?.entry_time }}</td>
+              <td class="border border-gray-300 px-2">{{ report?.late_duration }}</td>
               <td class="border border-gray-300 px-2">
                 <div v-if="report?.short_leave">
                   <span :class="statusClass(report.short_leave.status)">
@@ -210,13 +206,13 @@ const statusClass = (status) => {
                 </div>
                 <div v-else class="text-gray-500 italic text-xs">No Application</div>
               </td>
-              <td class="border border-gray-300 px-2">{{ report.shift_name }}</td>
+              <td class="border border-gray-300 px-2">{{ report?.shift_name }}</td>
             </tr>
           </tbody>
         </table>
       </div>
       <div v-else class="text-center text-red-500 text-xl italic mt-10">
-        Please select company and employee
+        Please select company
       </div>
     </div>
   </div>
