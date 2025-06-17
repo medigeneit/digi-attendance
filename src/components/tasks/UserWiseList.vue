@@ -6,13 +6,22 @@ import { computed } from 'vue'
 
 const props = defineProps({
   tasks: Array,
+  selectedUserId: { type: String, default: null },
 })
 
 const users = computed(() => {
-  return props.tasks.reduce((users, task) => {
-    users.push(...task.users.filter((tu) => !users.find((u) => u.id == tu.id)))
-    return users
-  }, [])
+  return props.tasks
+    .reduce((users, task) => {
+      users.push(...task.users.filter((tu) => !users.find((u) => u.id == tu.id && tu.id)))
+
+      return users
+    }, [])
+    .filter((u) => {
+      if (props.selectedUserId) {
+        return u.id == props.selectedUserId
+      }
+      return true
+    })
 })
 
 const getUserAllTasks = (userId) => {

@@ -212,7 +212,11 @@ async function handleTaskPrioritySave() {
     </div>
 
     <div class="space-y-4">
-      <UserWiseList v-if="route.query?.view == 'userwise'" :tasks="store.tasks" />
+      <UserWiseList
+        v-if="route.query?.view == 'userwise'"
+        :tasks="store.tasks"
+        :selectedUserId="route.query['user-id']"
+      />
 
       <DraggableList
         v-else
