@@ -59,3 +59,9 @@ export const useTaskTree = () => {
     setTaskList
   }
 }
+
+export const getTreeList = (taskList, parentId) => {
+  const tree = useTaskTree()
+  tree.setTaskList(taskList, parentId)
+  return tree.getTaskListTree()
+}

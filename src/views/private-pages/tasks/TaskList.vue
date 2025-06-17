@@ -7,6 +7,7 @@ import OverlyModal from '@/components/common/OverlyModal.vue'
 import Multiselect from '@/components/MultiselectDropdown.vue'
 import TaskAddForm from '@/components/tasks/TaskAddForm.vue'
 import TaskEditForm from '@/components/tasks/TaskEditForm.vue'
+import UserWiseList from '@/components/tasks/UserWiseList.vue'
 import TaskTreeView from '@/components/TaskTreeView.vue'
 import useTaskPriorityUpdate from '@/libs/task-priority'
 import { useCompanyStore } from '@/stores/company'
@@ -193,7 +194,6 @@ async function handleTaskPrioritySave() {
           <div>
             <input id="month-filter" v-model="month" type="month" class="input-1" />
           </div>
-
         -->
 
         <div class="ml-auto flex gap-6 items-center">
@@ -212,7 +212,10 @@ async function handleTaskPrioritySave() {
     </div>
 
     <div class="space-y-4">
+      <UserWiseList v-if="route.query?.view == 'userwise'" :tasks="store.tasks" />
+
       <DraggableList
+        v-else
         :items="store.taskListTree"
         handle="handle"
         @itemsUpdate="handleItemsPriorityUpdate"
