@@ -22,11 +22,19 @@ const logout = () => {
 <template>
   <aside class="bg-white sidebar h-screen overflow-auto scrollbar pb-24">
     <div class="space-y-1">
-      <div @click="open = !open" class="side-menu md:py-7 sticky top-0 z-20">
+      <div
+        @click="open = !open"
+        class="side-menu md:py-7 sticky top-0 z-20 cursor-pointer group"
+        :title="open ? 'Minimize Menu' : 'Expand Menu'"
+      >
         <button>
-          <i :class="['fad fa-chevron-double-right', { 'rotate-180': open }]"></i>
+          <i
+            :class="[
+              'fad fa-chevron-double-right transition-transform duration-200',
+              { 'rotate-180': open },
+            ]"
+          ></i>
         </button>
-        <h4 v-show="open">Dashboard</h4>
       </div>
 
       <RouterLink
