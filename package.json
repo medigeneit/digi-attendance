@@ -16,6 +16,7 @@
     "@vueuse/core": "^13.3.0",
     "@vueuse/integrations": "^13.3.0",
     "axios": "^1.7.9",
+    "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
     "html2canvas": "^1.4.1",
     "pinia": "^2.2.6",

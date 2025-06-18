@@ -17,5 +17,9 @@
       <i class="fas fa-calendar-day text-3xl"></i>
       Monthly Attendance Summary
     </RouterLink>
+    <RouterLink :to="{ name: 'DateWiseAttendanceSummaryReport' }" class="main-button">
+      <i class="fas fa-calendar-day text-3xl"></i>
+      Date Range Attendance Report
+    </RouterLink>
   </div>
 </template>

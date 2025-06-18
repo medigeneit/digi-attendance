@@ -425,6 +425,14 @@ const router = createRouter({
           component: () => import('@/views/admin-pages/MonthlyAttendanceSummaryReport.vue'),
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] },
         },
+
+        {
+          path: '/reports/date-wise-attendance-summary-report',
+          name: 'DateWiseAttendanceSummaryReport',
+          component: () => import('@/views/admin-pages/DateRangeWiseAttendanceReport.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] },
+        },
+
         {
           path: '/reports/monthly-late-report-list',
           name: 'LateAttendanceReport',

@@ -33,6 +33,77 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   };
 
+  const getDateRangeAttendanceSummary = async (startDate, endDate, companyId, userId) => {
+    if (!companyId || !startDate || !endDate) {
+      error.value = 'Company, Start Date, and End Date are required';
+      return;
+    }
+
+    isLoading.value = true;
+
+    try {
+      const response = await apiClient.get(`/attendance/date-range-summary`, {
+        params: {
+          company_id: companyId,
+          start_date: startDate,
+          end_date: endDate,
+          employee_id: userId || undefined
+        }
+      });
+
+      return response.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Something went wrong';
+      console.error(error.value);
+      return null;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  // 👉 EXCEL DOWNLOAD
+  const downloadDateRangeExcel = async(startDate, endDate, companyId, userId = null, category = '') => {
+    if (!companyId || !startDate || !endDate) {
+      error.value = 'Company, Start Date, and End Date are required'
+      return
+    }
+
+    // Get baseURL from apiClient config
+    const baseURL = apiClient.defaults.baseURL?.replace(/\/$/, '') // remove trailing slash if exists
+
+    let query = `flag=excel&company_id=${companyId}&start_date=${startDate}&end_date=${endDate}`
+
+    if (userId) query += `&employee_id=${userId}`
+    if (category) query += `&category=${category}`
+
+    const fullUrl = `${baseURL}/attendance/date-range-summary?${query}`
+
+    console.log('📁 Opening Excel Download URL:', fullUrl)
+
+    window.open(fullUrl, '_blank')
+  }
+
+  // 👉 PDF DOWNLOAD
+  const downloadDateRangePdf = (startDate, endDate, companyId, userId = null, category = '') => {
+    if (!companyId || !startDate || !endDate) {
+      error.value = 'Company, Start Date, and End Date are required'
+      return
+    }
+
+    const params = new URLSearchParams({
+      flag: 'pdf',
+      company_id: companyId,
+      start_date: startDate,
+      end_date: endDate,
+    })
+
+    if (userId) params.append('employee_id', userId)
+    if (category) params.append('category', category)
+
+    const url = `/attendance/date-range-summary?${params.toString()}`
+    window.open(url, '_blank')
+  }
+
   const getMonthlyAttendanceByShift = async (userId, month) => {
     if (!userId || !month) {
       error.value = 'Invalid user ID or month';
@@ -307,6 +378,9 @@ const lateReportDownloadExcel = async (company_id, employee_id, value, type) => 
     attendanceDownloadPdf,
     lateReportDownloadExcel,
     getMonthlyAttendanceLog,
+    getDateRangeAttendanceSummary,
+    downloadDateRangeExcel,
+    downloadDateRangePdf,
   };
 });
 
