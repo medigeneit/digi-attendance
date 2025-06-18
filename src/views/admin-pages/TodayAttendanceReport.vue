@@ -232,14 +232,45 @@ watch(status, (newStatus) => {
               <td class="border px-1 py-0.5">{{ log.working_hours }}</td>
               <td class="border px-1 py-0.5">{{ log.late_duration }}</td>
               <td class="border px-1 py-0.5">{{ log.early_leave_duration }}</td>
-              <td
-                class="border px-1 py-0.5"
-                :class="{
-                  'text-red-600': log.status === 'Absent',
-                  'text-green-600': log.status === 'Present',
-                }"
-              >
-                {{ log.status }}
+              <td class="border px-1 py-0.5">
+                <span
+                  v-if="log.absent_reason"
+                  :class="[
+                    'font-medium',
+                    {
+                      'text-green-600': log.absent_reason.includes('Approved'),
+                      'text-orange-500': log.absent_reason.includes('Pending'),
+                      'text-gray-600':
+                        !log.absent_reason.includes('Approved') &&
+                        !log.absent_reason.includes('Pending'),
+                    },
+                  ]"
+                >
+                  {{ log.absent_reason }}
+                  <router-link
+                    :to="{
+                      name: 'LeaveApplicationShow',
+                      params: {
+                        id: log.application_id,
+                      },
+                    }"
+                  >
+                    <i class="far fa-eye"></i>
+                  </router-link>
+                </span>
+                <span
+                  v-else
+                  :class="[
+                    'font-medium',
+                    {
+                      'text-red-600': log.status === 'Absent',
+                      'text-green-600': log.status === 'Present',
+                      'text-gray-600': log.status === 'Weekend' || log.status === 'Leave',
+                    },
+                  ]"
+                >
+                  {{ log.status }}
+                </span>
               </td>
             </tr>
           </tbody>
