@@ -73,6 +73,14 @@ watch(selectedDate, (newDate) => {
     },
   })
 })
+watch(selectedCompanyId, (newDate) => {
+  router.replace({
+    query: {
+      ...route.query,
+      date: newDate,
+    },
+  })
+})
 
 const fetchApplicationsByUser = async () => {
   if (selectedCompanyId.value) {

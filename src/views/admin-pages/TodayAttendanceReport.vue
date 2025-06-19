@@ -38,14 +38,6 @@ const fetchAttendance = async () => {
 
 onMounted(async () => {
   await companyStore.fetchCompanies()
-  await attendanceStore.getTodayAttendanceReport(
-    selectedCompanyId.value,
-    selectedDepartment?.value.id,
-    selectedEmployeeId?.value.id,
-    category?.value,
-    attendanceStore.selectedDate,
-    status.value,
-  )
 })
 
 watch([selectedCompanyId, selectedDate], fetchAttendance)
@@ -248,10 +240,22 @@ watch(status, (newStatus) => {
                 >
                   {{ log.absent_reason }}
                   <router-link
+                    v-if="log.application_id"
                     :to="{
                       name: 'LeaveApplicationShow',
                       params: {
                         id: log.application_id,
+                      },
+                    }"
+                  >
+                    <i class="far fa-eye"></i>
+                  </router-link>
+                  <router-link
+                    v-if="log.exchange_application_id"
+                    :to="{
+                      name: 'ExchangeOffdayShow',
+                      params: {
+                        id: log.exchange_application_id,
                       },
                     }"
                   >
