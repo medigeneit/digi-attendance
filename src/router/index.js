@@ -510,6 +510,13 @@ const router = createRouter({
         },
 
         {
+          path: '/hrd/manual-attendance-add',
+          name: 'HrdManualAttendanceAdd',
+          component: () => import('@/views/admin-pages/ManualAttendanceAdd.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] },
+        },
+
+        {
           path: '/my-profile',
           name: 'MyProfile',
           component: () => import('@/views/private-pages/MyProfile.vue'),

@@ -71,6 +71,19 @@ const deleteApplication = async (applicationId) => {
     manualAttendanceStore.deleteManualAttendance(applicationId)
   }
 }
+const formatDate = (dt) => {
+  return new Date(dt).toLocaleDateString('en-GB') // e.g., 19/06/2025
+}
+
+const formatTime = (datetime) => {
+  if (!datetime) return null
+  return new Date(datetime).toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'Asia/Dhaka',
+  })
+}
 </script>
 
 <template>
@@ -82,7 +95,12 @@ const deleteApplication = async (applicationId) => {
       </button>
 
       <h1 class="title-md md:title-lg flex-wrap text-center">Manual Attendances</h1>
-      <div></div>
+      <div>
+        <RouterLink :to="{ name: 'HrdManualAttendanceAdd' }" class="btn-3">
+          <i class="far fa-plus"></i>
+          <span class="hidden md:flex">Add Manual Attendance</span>
+        </RouterLink>
+      </div>
     </div>
     <div class="flex gap-4">
       <div style="width: 300px">
@@ -132,6 +150,7 @@ const deleteApplication = async (applicationId) => {
               <th class="border border-gray-300 px-2 text-left">#</th>
               <th class="border border-gray-300 px-2 text-left">Employee Name</th>
               <th class="border border-gray-300 px-2 text-left">Department</th>
+              <th class="border border-gray-300 px-2 text-left">Create</th>
               <th class="border border-gray-300 px-2 text-left">Date</th>
               <th class="border border-gray-300 px-2 text-left">Type</th>
               <th class="border border-gray-300 px-2 text-left">Check-In</th>
@@ -150,18 +169,32 @@ const deleteApplication = async (applicationId) => {
               <td class="border border-gray-300 px-2">{{ attendance?.user?.name }}</td>
               <td class="border border-gray-300 px-2">{{ attendance?.user?.department?.name }}</td>
               <td class="border border-gray-300 px-2">
-                {{
-                  new Date(attendance.created_at).toLocaleDateString('en-GB', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                  })
-                }}
+                {{ formatDate(attendance.created_at) }}
+              </td>
+              <td class="border border-gray-300 px-2">
+                {{ formatDate(attendance.check_in || attendance.check_out) }}
               </td>
               <td class="border border-gray-300 px-2">{{ attendance.type }}</td>
-              <td class="border border-gray-300 px-2">{{ attendance.check_in || 'N/A' }}</td>
-              <td class="border border-gray-300 px-2">{{ attendance.check_out || 'N/A' }}</td>
-              <td class="border border-gray-300 px-2">{{ attendance.status || 'Pending' }}</td>
+              <td class="border border-gray-300 px-2">
+                {{ formatTime(attendance.check_in) || 'N/A' }}
+              </td>
+              <td class="border border-gray-300 px-2">
+                {{ formatTime(attendance.check_out) || 'N/A' }}
+              </td>
+              <td class="border border-gray-300 px-2">
+                <span
+                  :class="{
+                    'bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-xs':
+                      attendance.status === 'Pending',
+                    'bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs':
+                      attendance.status === 'Approved',
+                    'bg-red-100 text-red-800 px-2 py-0.5 rounded text-xs':
+                      attendance.status === 'Rejected',
+                  }"
+                >
+                  {{ attendance.status }}
+                </span>
+              </td>
               <td class="border border-gray-300 px-2">
                 <div class="flex gap-2">
                   <RouterLink

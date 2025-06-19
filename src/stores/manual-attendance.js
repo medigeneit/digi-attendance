@@ -75,6 +75,26 @@ export const useManualAttendanceStore = defineStore('manualAttendance', () => {
       loading.value = false
     }
   }
+  const createBulkManualAttendance = async (data) => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await apiClient.post('manual-attendance/bulk-store', data)
+
+      // Optional: if your response includes created data
+      if (Array.isArray(response.data.data)) {
+        manualAttendances.value.push(...response.data.data)
+      }
+
+      return response.data
+    } catch (err) {
+      console.error('Error creating manual attendance:', err)
+      error.value = err.response?.data?.message || 'Failed to create manual attendance'
+      throw new Error(error.value)
+    } finally {
+      loading.value = false
+    }
+  }
 
   const updateManualAttendance = async (id, data) => {
     loading.value = true
@@ -219,5 +239,6 @@ export const useManualAttendanceStore = defineStore('manualAttendance', () => {
     approvedByAccept,
     rejectManualAttendance,
     fetchUserManualAttendances,
+    createBulkManualAttendance
   }
 })
