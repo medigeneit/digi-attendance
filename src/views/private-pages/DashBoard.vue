@@ -15,10 +15,7 @@
       </div>
     </div>
 
-    <div
-      class="grid gap-4 md:grid-cols-3 mt-4"
-      v-if="['admin', 'super_admin', 'developer'].includes(user?.role)"
-    >
+    <div class="grid gap-4 md:grid-cols-3 mt-4" v-if="isAdmin && authStore.adminMode">
       <RouterLink
         :to="{ name: 'TodayAttendanceReport', query: { search: 'all' } }"
         class="main-button"
@@ -84,7 +81,7 @@
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 const authStore = useAuthStore()
 const userStore = useUserStore()
 // const user = ref(authStore.user)
@@ -99,4 +96,6 @@ onMounted(async () => {
     await userStore.fetchUserDashboardData()
   }
 })
+
+const isAdmin = computed(() => ['admin', 'super_admin', 'developer'].includes(user?.value?.role))
 </script>
