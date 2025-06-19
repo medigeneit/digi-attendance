@@ -234,7 +234,7 @@ const fileUploadLink = async (event) => {
           <div>
             <div class="text-sm">
               <hr class="w-44 border-black hidden print:block my-1" />
-              <p>
+              <p class='font-bold'>
                 <strong>Applicant: </strong> 
                 <span class="text-blue-700 print:text-black">{{ leaveApplication?.user?.name }}</span>
               </p>

@@ -64,6 +64,15 @@ onMounted(async () => {
       form.value.works_in_hand = leaveApplicationStore.leaveApplication?.works_in_hand
       form.value.handover_user_id = leaveApplicationStore.leaveApplication?.handover_user_id
       form.value.leave_days = leaveApplicationStore.leaveApplication?.leave_days
+      if (leaveApplicationStore.leaveApplication?.json_data) {
+          leaveApplicationStore.leaveApplication?.json_data.forEach((item, index)  => {
+              if (item.leave_type_id) {
+                  selectedLeaveTypes.value[index] = item.leave_type_id
+              } else {
+                  selectedLeaveTypes.value[index] = leaveTypeStore.leaveTypes[0].id // Default to first leave type
+              }
+          })
+      }
     }
   } catch (error) {
     console.error('Failed to load leave application:', error)
