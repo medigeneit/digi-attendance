@@ -140,13 +140,14 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   };
 
- const getAttendanceLateReport = async (company_id, employee_id, value, type) => {
+ const getAttendanceLateReport = async (company_id, category, employee_id, value, type) => {
   isLoading.value = true;
   try {
     const params = {
       company_id,
-      employee_id,
-      type,
+      category,        // eg: "executive"
+      employee_id,     // eg: 5
+      type,            // 'daily'
       ...(type === 'daily' ? { date: value } : { month: value }),
     };
 
