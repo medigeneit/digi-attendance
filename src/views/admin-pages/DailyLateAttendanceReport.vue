@@ -10,7 +10,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
 const route = useRoute()
-
+const category = ref('all')
 const lateAttendanceStore = useAttendanceStore()
 const companyStore = useCompanyStore()
 
@@ -39,6 +39,7 @@ watch(selectedCompanyId, async (newCompanyId) => {
   if (newCompanyId) {
     await companyStore.fetchEmployee(newCompanyId)
     selectedEmployeeId.value = ''
+    await fetchApplicationsByUser()
   }
 
   router.replace({
@@ -73,11 +74,22 @@ watch(selectedDate, (newDate) => {
     },
   })
 })
+watch(selectedCompanyId, (newDate) => {
+  router.replace({
+    query: {
+      ...route.query,
+      date: newDate,
+    },
+  })
+})
 
 const fetchApplicationsByUser = async () => {
+  if (!selectedCompanyId.value || !selectedDate.value) return
+
   if (selectedCompanyId.value) {
     await lateAttendanceStore.getAttendanceLateReport(
       selectedCompanyId.value,
+      category.value,
       selectedEmployeeId.value.id,
       selectedDate.value,
       'daily',
@@ -89,6 +101,7 @@ const getExportExcel = async () => {
   if (selectedCompanyId.value) {
     await lateAttendanceStore.lateReportDownloadExcel(
       selectedCompanyId.value,
+      category?.value,
       selectedEmployeeId.value.id,
       selectedDate.value,
       'daily',
@@ -139,6 +152,22 @@ const statusClass = (status) => {
           </option>
         </select>
       </div>
+
+      <div>
+        <select
+          id="userSelect"
+          v-model="category"
+          @change="fetchApplicationsByUser"
+          class="input-1"
+        >
+          <option value="all">All Category</option>
+          <option value="executive">Executive</option>
+          <option value="support_staff">Support Staff</option>
+          <option value="doctor">Doctor</option>
+          <option value="academy_body">Academy Body</option>
+        </select>
+      </div>
+
       <div>
         <Multiselect
           v-model="selectedEmployeeId"
@@ -211,9 +240,7 @@ const statusClass = (status) => {
           </tbody>
         </table>
       </div>
-      <div v-else class="text-center text-red-500 text-xl italic mt-10">
-        Please select company
-      </div>
+      <div v-else class="text-center text-red-500 text-xl italic mt-10">Please select company</div>
     </div>
   </div>
 </template>
