@@ -49,5 +49,9 @@
       <i class="fas fa-users text-3xl"></i>
       ZK User Management
     </RouterLink>
+    <RouterLink :to="{ name: 'PermissionList' }" class="main-button">
+      <i class="fas fa-users text-3xl"></i>
+      Permission List
+    </RouterLink>
   </div>
 </template>

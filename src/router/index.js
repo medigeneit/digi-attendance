@@ -271,12 +271,33 @@ const router = createRouter({
           component: () => import('@/views/private-pages/AttendanceView.vue'),
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] },
         },
+
         {
           path: '/settings',
           name: 'SettingsView',
           component: () => import('@/views/admin-pages/SettingsView.vue'),
           meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] },
         },
+        {
+          path: '/settings/permissions-add',
+          name: 'PermissionsAdd',
+          component: () => import('@/views/admin-pages/PermissionAdd.vue'),
+          meta: { requiresAuth: true, roles: ['super_admin', 'developer'] },
+        },
+        {
+          path: '/settings/permissions-edit/:id',
+          name: 'PermissionsEdit',
+          component: () => import('@/views/admin-pages/PermissionEdit.vue'),
+          meta: { requiresAuth: true, roles: ['super_admin', 'developer'] },
+        },
+        
+        {
+          path: '/settings/permissions-list',
+          name: 'PermissionList',
+          component: () => import('@/views/admin-pages/PermissionList.vue'),
+          meta: { requiresAuth: true, roles: ['super_admin', 'developer'] }
+        },
+
         {
           path: '/settings/user-list',
           name: 'UserList',
