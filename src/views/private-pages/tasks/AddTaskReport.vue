@@ -1,13 +1,14 @@
 <script setup>
-import { onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useTaskStore } from '@/stores/useTaskStore'
 import { useTaskReportStore } from '@/stores/useTaskReportStore'
+import { useTaskStore } from '@/stores/useTaskStore'
+import { onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const title = ref('')
 const durationHour = ref(0)
 const reportDate = ref('')
 const durationMinute = ref(0)
+const progress = ref(0)
 
 const store = useTaskReportStore()
 const taskStore = useTaskStore()
@@ -26,6 +27,7 @@ const submitForm = async () => {
   const payload = {
     title: title.value,
     report_date: reportDate.value,
+    progress: progress.value,
     duration,
     task_id: taskId, // replace with actual task_id
   }
@@ -100,6 +102,17 @@ const submitForm = async () => {
               type="number"
               min="0"
               max="59"
+              class="border rounded p-2 w-full"
+            />
+          </div>
+          <div class="flex-1">
+            <label for="durationMinute" class="block">Progress (%)</label>
+            <input
+              id="durationMinute"
+              v-model.number="progress"
+              type="number"
+              min="0"
+              max="100"
               class="border rounded p-2 w-full"
             />
           </div>

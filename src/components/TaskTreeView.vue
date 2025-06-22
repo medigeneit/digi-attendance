@@ -18,7 +18,7 @@
           <div>
             <div class="flex gap-4 items-center">
               <div class="text-xl font-semibold text-sky-500" v-if="index !== undefined">
-                #{{ index + 1 }}
+                {{ index + 1 }}
               </div>
               <button @mousedown.stop="handleDragging" class="handle" v-if="showDraggableHandle">
                 <i class="fas fa-arrows-alt text-gray-500 cursor-grab"></i>
@@ -41,12 +41,19 @@
         </div>
 
         <div class="flex items-center flex-wrap gap-3">
-          <UserChip
-            class="flex items-center gap-2 border rounded-full px-1 py-0.5 bg-slate-100 shadow-sm"
+          <RouterLink
             v-for="(item, index) in task.users"
             :key="index"
-            :user="item"
-          />
+            :to="{
+              name: 'TaskList',
+              query: { view: 'userwise', 'company-id': item.company_id, 'user-id': item.id },
+            }"
+          >
+            <UserChip
+              class="flex items-center gap-2 border rounded-full px-1 py-0.5 bg-slate-100 shadow-sm"
+              :user="item"
+            />
+          </RouterLink>
 
           <div v-if="task.users.length === 0" class="text-gray-500 text-xs">
             Not Assigned To Anyone
@@ -138,12 +145,12 @@
 <script setup>
 import TaskTreeChildren from '@/components/TaskTreeChildren.vue'
 import SubTaskProgress from '@/components/tasks/SubTaskProgress.vue'
+import UserChip from '@/components/user/UserChip.vue'
 import { getDisplayDate } from '@/libs/datetime.js'
 import { computed, ref, watch } from 'vue'
 import TaskImportantBadge from './tasks/TaskImportantBadge.vue'
 import TaskTitleRouterLink from './tasks/TaskTitleRouterLink.vue'
 import TaskUrgentBadge from './tasks/TaskUrgentBadge.vue'
-import UserChip from './user/UserChip.vue'
 
 const props = defineProps({
   task: { type: Object, required: true },

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { TaskUserWithProgress } from '@/interfaces/user'
+import { getDisplayDate } from '@/libs/datetime'
 import UserChip from '../user/UserChip.vue'
 
 const props = defineProps<{
@@ -38,8 +39,12 @@ const props = defineProps<{
         <td class="px-2 py-1 border-y">
           <UserChip :user="progressUser" />
         </td>
-        <td class="px-2 py-1 border-y text-center">{{ progressUser.started_at }}</td>
-        <td class="px-2 py-1 border-y text-center">{{ progressUser.finished_at }}</td>
+        <td class="px-2 py-1 border-y text-center">
+          {{ getDisplayDate(progressUser.started_at) }}
+        </td>
+        <td class="px-2 py-1 border-y text-center">
+          {{ getDisplayDate(progressUser.finished_at) }}
+        </td>
         <td class="px-2 py-1 border-y text-center">{{ progressUser.user_progress }}%</td>
         <td class="px-2 py-1 border-y text-center">{{ progressUser.task_progress }}%</td>
       </tr>
