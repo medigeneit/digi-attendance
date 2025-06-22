@@ -1,6 +1,6 @@
 <script setup>
 import TaskTreeView from '@/components/TaskTreeView.vue'
-import UserAvatar from '@/components/UserAvatar.vue'
+import UserChip from '@/components/user/UserChip.vue'
 import { getTreeList } from '@/libs/task-tree.js'
 import { computed } from 'vue'
 
@@ -9,6 +9,7 @@ const props = defineProps({
   selectedUserId: { type: String, default: null },
 })
 
+const emit = defineEmits(['commentButtonClick', 'editClick', 'addClick', 'updatePriority'])
 const users = computed(() => {
   return props.tasks
     .reduce((users, task) => {
@@ -71,21 +72,20 @@ const taskUsers = computed(() => {
               v-if="taskIndex == 0"
               :rowspan="Math.max(taskUser.tasks.length, 1)"
             >
-              <div
-                class="flex items-center gap-2 border rounded-full px-1 py-0.5 bg-slate-100 shadow-sm"
-              >
-                <UserAvatar :user="taskUser" class="w-6 h-6 !text-xs" />
-                <span class="text-xs text-gray-700 mr-2 hidden md:inline"
-                  >{{ taskUser.id }} - {{ taskUser?.name }}</span
-                >
-              </div>
+              <UserChip :user="taskUser" class="sticky top-[80px]" />
             </td>
 
-            <td class="border p-4">
-              {{ taskIndex + 1 }}
-            </td>
             <td class="">
-              <TaskTreeView :task="task" class="!border-0" />
+              <TaskTreeView
+                :task="task"
+                class="!border-0"
+                :index="taskIndex"
+                @commentButtonClick="emit('commentButtonClick', item.id)"
+                @editClick="(taskId) => emit('editClick', taskId)"
+                @addClick="(taskId) => emit('addClick', taskId)"
+              >
+                <template #item-override="{ task, level }">{{ { task, level } }} </template>
+              </TaskTreeView>
               <!-- #{{ task.id }} - {{ task.title }} -->
             </td>
             <!-- <td class="border p-4">

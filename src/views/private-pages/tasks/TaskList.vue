@@ -216,6 +216,9 @@ async function handleTaskPrioritySave() {
         v-if="route.query?.view == 'userwise'"
         :tasks="store.tasks"
         :selectedUserId="route.query['user-id']"
+        @commentButtonClick="openComment($event, task.id)"
+        @editClick="(taskId) => (editingId = taskId)"
+        @addClick="(taskId) => goToAdd(taskId)"
       />
 
       <DraggableList
@@ -226,15 +229,18 @@ async function handleTaskPrioritySave() {
         class="space-y-4"
         ref="draggableTaskList"
       >
-        <template #item="{ item }">
-          <TaskTreeView
-            :task="item"
-            class="!border-0"
-            @commentButtonClick="openComment($event, task.id)"
-            @editClick="(taskId) => (editingId = taskId)"
-            @addClick="(taskId) => goToAdd(taskId)"
-            :showDraggableHandle="!priorityChangingDisabled"
-          />
+        <template #item="{ item, index }">
+          <div class="flex items-stretched">
+            <TaskTreeView
+              :task="item"
+              :index="index"
+              class="!border-0"
+              @commentButtonClick="openComment($event, task.id)"
+              @editClick="(taskId) => (editingId = taskId)"
+              @addClick="(taskId) => goToAdd(taskId)"
+              :showDraggableHandle="!priorityChangingDisabled"
+            />
+          </div>
         </template>
       </DraggableList>
     </div>

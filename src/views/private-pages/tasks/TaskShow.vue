@@ -1,7 +1,9 @@
 <script setup>
+import CountdownTimer from '@/components/CountdownTimer.vue'
 import SubTaskList from '@/components/tasks/SubTaskList.vue'
 import SubTaskProgress from '@/components/tasks/SubTaskProgress.vue'
-import UserAvatar from '@/components/UserAvatar.vue'
+import UserChip from '@/components/user/UserChip.vue'
+import { getDisplayDate } from '@/libs/datetime'
 import { useTaskTree } from '@/libs/task-tree'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -33,11 +35,6 @@ async function fetchTaskList(taskId) {
   taskTree.setTaskList(taskResponse.sub_tasks, store.task.id)
 }
 
-watch(() => route.params.id, fetchTaskList, {
-  initial: true,
-  immediate: true,
-})
-
 const taskForProgress = computed(() => {
   return {
     ...store.task,
@@ -46,6 +43,14 @@ const taskForProgress = computed(() => {
     },
   }
 })
+
+const startedDate = computed(() => getDisplayDate(store.task.started_at))
+const deadline = computed(() => getDisplayDate(store.task.deadline))
+
+watch(() => route.params.id, fetchTaskList, {
+  initial: true,
+  immediate: true,
+})
 </script>
 
 <template>
@@ -53,10 +58,26 @@ const taskForProgress = computed(() => {
     <div class="max-w-8xl min-h-64 mx-auto bg-white shadow-lg rounded-lg p-6">
       <template v-if="store.task">
         <section class="grid grid-cols-4">
-          <div class="mb-2 font-medium col-span-full text-xl flex">
-            <h2>
-              {{ store.task.title }}
-            </h2>
+          <div class="mb-4 flex col-span-full">
+            <div>
+              <h2 class="font-medium text-xl">
+                {{ store.task.title }}
+              </h2>
+              <div class="flex items-center gap-2 text-xs text-gray-500 mt-2 opacity-80 text-left">
+                <span
+                  class="text-xs px-2 py-0.5 rounded-full border bg-yellow-800 text-white"
+                  v-if="store.task?.is_important"
+                  >IMPORTANT</span
+                >
+
+                <span
+                  class="text-xs px-2 py-0.5 rounded-full border bg-red-500 text-white"
+                  v-if="store.task?.is_urgent"
+                  >URGENT</span
+                >
+              </div>
+            </div>
+
             <div
               class="text-right col-span-full md:col-span-1 ml-auto flex justify-center gap-4 !text-lg"
             >
@@ -77,49 +98,32 @@ const taskForProgress = computed(() => {
           </div>
 
           <div class="py-2 font-medium mb-4 col-span-full md:col-span-2">
-            <div class="text-xs mb-0.5 text-gray-600 uppercase">Assigns</div>
+            <div>
+              <div class="text-xs mb-0.5 text-gray-600 uppercase">Assigns</div>
 
-            <div class="flex items-center flex-wrap gap-3">
-              <div
-                class="flex items-center gap-2 border rounded-full px-1 py-0.5 bg-slate-100 shadow-sm"
-                v-for="(item, index) in store.task?.users || []"
-                :key="index"
-              >
-                <UserAvatar :user="item" class="w-6 h-6 !text-xs" />
-                <span class="text-xs text-gray-700 mr-2">{{ item.id }} - {{ item?.name }}</span>
-              </div>
-              <div v-if="store.task?.users?.length === 0" class="text-gray-500 text-xs">
-                Not Assigned To Anyone
+              <div class="flex items-center flex-wrap gap-3">
+                <UserChip :user="item" v-for="item in store.task?.users || []" :key="item.id" />
+                <div v-if="store.task?.users?.length === 0" class="text-gray-500 text-xs">
+                  Not Assigned To Anyone
+                </div>
               </div>
             </div>
+            <!-- <section class="mt-4">
+              <TaskProgressTable :progress-users="taskProgressUsers" />
+            </section> -->
           </div>
 
-          <div class="py-2 col-span-full md:col-span-1">
-            <div class="flex items-center gap-2 text-xs text-gray-500 mt-2 opacity-80 text-left">
-              <span
-                class="text-xs px-2 py-0.5 rounded-full border bg-yellow-800 text-white"
-                v-if="store.task?.is_important"
-                >IMPORTANT</span
-              >
-
-              <span
-                class="text-xs px-2 py-0.5 rounded-full border bg-red-500 text-white"
-                v-if="store.task?.is_urgent"
-                >URGENT</span
-              >
-            </div>
-            <!-- <div class="text-xs mb-0.5 text-gray-600 uppercase">Priority</div>
-            <span
-              :class="{
-                'text-green-600': store.task?.priority === 'LOW',
-                'text-yellow-600': store.task?.priority === 'MEDIUM',
-                'text-orange-600': store.task?.priority === 'HIGH',
-                'text-red-600': store.task?.priority === 'CRITICAL',
-              }"
-              class="font-semibold"
-            >
-              {{ store.task.priority }}
-            </span> -->
+          <div class="ml-auto text-right text-sm col-span-full">
+            <CountdownTimer
+              :targetDateTime="store.task.deadline"
+              class="text-lg font-semibold italic text-green-600"
+            />
+            <span class="text-gray-500">
+              Started: <span class="font-semibold text-green-800">{{ startedDate }}</span>
+            </span>
+            <span class="ml-4 text-gray-500">
+              Deadline: <span class="text-red-500 font-semibold">{{ deadline }}</span>
+            </span>
           </div>
 
           <hr class="my-3 col-span-full" />

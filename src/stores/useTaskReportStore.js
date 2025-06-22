@@ -16,7 +16,7 @@ export const useTaskReportStore = defineStore('task-report', () => {
 
     try {
       const response = await apiClient.get('/task-reports', {params});
-      task_reports.value = response.data;
+      task_reports.value = response.data.reports;
     } catch (err) {
       error.value = err.response?.data?.message || 'টাস্ক লোড করতে ব্যর্থ হয়েছে।';
       console.error('Error fetching tasks:', err);

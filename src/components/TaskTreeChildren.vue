@@ -1,14 +1,19 @@
 <template>
   <div class="mt-3">
-    <template v-for="childTask in childrenTasks" :key="childTask.id">
+    <template v-for="(childTask, index) in childrenTasks" :key="childTask.id">
       <TaskTreeView
+        :index="index"
         :task="childTask"
         class="mb-3"
         :hide-buttons="hideButtons"
         :tree-level="parentTreeLevel + 1"
         @editClick="(taskId) => emits('editClick', taskId)"
         @addClick="(taskId) => emits('addClick', taskId)"
-      />
+      >
+        <template #item-end="{ task, level }">
+          <slot name="treeItemEnd" :task="task" :level="level"></slot>
+        </template>
+      </TaskTreeView>
     </template>
   </div>
 </template>

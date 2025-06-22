@@ -62,9 +62,10 @@ const handleTaskPrioritySave = async () => {
         @itemsUpdate="handleItemsPriorityUpdate"
         class="rounded-lg bg-white overflow-hidden space-y-3"
         ref="draggableTaskList"
-        #item="{ item }"
+        #item="{ item, index }"
       >
         <TaskTreeView
+          :index="index"
           :task="item"
           class="!border-0"
           @commentButtonClick="emit('commentButtonClick', item.id)"

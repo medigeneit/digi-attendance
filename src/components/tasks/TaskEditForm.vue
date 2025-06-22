@@ -23,11 +23,32 @@ const form = ref({
   requirement_id: '',
   user_ids: '',
   status: 'PENDING',
+  progress: 0,
   description: '',
   is_important: false,
   is_urgent: false,
+  started_at: '',
+  deadline: '',
 })
 
+const getDate = (dateTime) => {
+  if (!dateTime) {
+    return ''
+  }
+
+  try {
+    const date = new Date(dateTime)
+    if (isNaN(date)) return ''
+
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0') // Months are 0-based
+    const day = String(date.getDate()).padStart(2, '0')
+
+    return `${year}-${month}-${day}`
+  } catch (e) {
+    return ''
+  }
+}
 onMounted(async () => {
   // userStore.fetchUsers()
   loading.value = true
@@ -44,9 +65,12 @@ onMounted(async () => {
     requirement_id: task.value.requirement_id,
     user_ids: task.value.users.map((u) => u.id).join(','),
     status: task.value.status,
+    progress: task.value.progress,
     description: task.value.description,
     is_important: task.value.is_important,
     is_urgent: task.value.is_urgent,
+    started_at: getDate(task.value.started_at),
+    deadline: getDate(task.value.deadline),
   }
 })
 
@@ -58,9 +82,12 @@ watch(
       requirement_id: newTask.requirement_id,
       user_ids: newTask.users.map((u) => u.id).join(','),
       status: newTask.status,
+      progress: task.value.progress,
       description: newTask.description,
       is_important: task.value.is_important,
       is_urgent: task.value.is_urgent,
+      started_at: getDate(task.value.started_at),
+      deadline: getDate(task.value.deadline),
     }
   },
 )
@@ -129,19 +156,6 @@ const update = async () => {
         </div> -->
 
       <div class="grid grid-cols-2 gap-4 mb-4">
-        <!-- <div>
-          <label class="block text-gray-700 font-medium mb-2">Priority</label>
-          <select
-            v-model="form.priority"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-          >
-            <option>LOW</option>
-            <option>MEDIUM</option>
-            <option>HIGH</option>
-            <option>CRITICAL</option>
-          </select>
-        </div> -->
-
         <div>
           <label class="block text-gray-700 font-medium mb-2">Status</label>
           <select
@@ -153,6 +167,32 @@ const update = async () => {
             <option>COMPLETED</option>
             <option>BLOCKED</option>
           </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4 mb-4 mt-12">
+        <div class="mb-4">
+          <label class="block text-gray-600 text-sm mb-1 font-medium">
+            Start Date <RequiredIcon /> {{ form.started_at }}
+          </label>
+          <input
+            v-model="form.started_at"
+            type="date"
+            placeholder="Enter Start Date"
+            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-gray-600 text-sm mb-1 font-medium">
+            Deadline <RequiredIcon />
+          </label>
+          <input
+            v-model="form.deadline"
+            type="date"
+            placeholder="Enter Start Date"
+            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+          />
         </div>
       </div>
 

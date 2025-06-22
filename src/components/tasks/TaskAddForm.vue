@@ -78,7 +78,6 @@ async function submit() {
     parent_id: task?.value?.id || 0,
     requirement_id: requirement?.value?.id || null,
   }
-  console.log({ payload })
 
   try {
     await store.createTask(payload, { loadingBeforeCreate: false })
@@ -152,6 +151,31 @@ async function submit() {
         </div>
       </div>
 
+      <div class="grid grid-cols-2 gap-4 mb-4 mt-12">
+        <div class="mb-4">
+          <label class="block text-gray-600 text-sm mb-1 font-medium">
+            Start Date <RequiredIcon />
+          </label>
+          <input
+            v-model="form.started_at"
+            type="date"
+            placeholder="Enter Start Date"
+            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-gray-600 text-sm mb-1 font-medium">
+            Deadline <RequiredIcon />
+          </label>
+          <input
+            v-model="form.deadline"
+            type="date"
+            placeholder="Enter Start Date"
+            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      </div>
       <div class="mb-4">
         <label class="block text-gray-600 text-sm mb-1 font-medium">Description</label>
         <textarea

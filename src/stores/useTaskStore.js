@@ -123,6 +123,7 @@ export const useTaskStore = defineStore('task', () => {
     } catch (err) {
       error.value = err.response?.data?.message || 'টাস্ক তৈরি করতে ব্যর্থ হয়েছে।';
       console.error('Error creating task:', err);
+      throw err
     } finally {
       if( options.loadingBeforeCreate ) {
         loading.value = false;
@@ -145,6 +146,7 @@ export const useTaskStore = defineStore('task', () => {
     } catch (err) {
       error.value = err.response?.data?.message || `টাস্ক (ID: ${id}) আপডেট করতে ব্যর্থ হয়েছে।`;
       console.error(`Error updating task with id ${id}:`, err);
+      throw err
     } finally {
       if( options.loadingBeforeFetch ) {
         loading.value = false;

@@ -1,17 +1,19 @@
 <script setup>
-import { onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useTaskStore } from '@/stores/useTaskStore'
+import UserChip from '@/components/user/UserChip.vue'
 import { useTaskReportStore } from '@/stores/useTaskReportStore'
+import { useTaskStore } from '@/stores/useTaskStore'
+import { onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 
 const store = useTaskReportStore()
 const taskStore = useTaskStore()
 const route = useRoute()
-const router = useRouter()
 
 const taskId = route.params.id
 
 onMounted(async () => {
+  console.log({ taskId })
+  await taskStore.fetchTask(taskId)
   await store.fetchTaskReports({ task_id: taskId })
 })
 </script>
@@ -20,13 +22,14 @@ onMounted(async () => {
   <div class="mt-4">
     <hr class="mb-2" />
     <div class="bg-white">
+      <pre>{{ usersTaskProgress }}</pre>
+
       <div class="flex mb-2 items-end">
         <h3 class="text-sm uppercase mt-4">Task Reports</h3>
         <RouterLink
           :to="{
             name: 'TaskReportAdd',
-            params: { todoable_id: store.task?.id },
-            query: { todoable_type: 'task' },
+            params: { id: store.task?.id },
           }"
           @click="$event.stopPropagation()"
           class="btn-3 ml-auto inline-flex !my-1"
@@ -37,9 +40,11 @@ onMounted(async () => {
         <thead class="bg-gray-100">
           <tr>
             <th class="px-4 py-2 text-left">#</th>
-            <th class="px-4 py-2 text-left">Title</th>
+            <th class="px-4 py-2 text-left lg:w-[200px]">User</th>
+            <th class="px-4 py-2 text-left">Report</th>
             <th class="px-4 py-2 text-left">Date</th>
             <th class="px-4 py-2 text-left">Duration</th>
+            <th class="px-4 py-2 text-left">Progress</th>
           </tr>
         </thead>
         <tbody>
@@ -54,11 +59,19 @@ onMounted(async () => {
             role="button"
           >
             <td class="px-4 py-2">{{ index + 1 }}</td>
-            <td class="px-4 py-2 font-medium">{{ task_report.title }}</td>
+            <td class="px-4 py-2 font-medium">
+              <div>
+                <UserChip :user="task_report.user" class="inline" />
+              </div>
+            </td>
+            <td class="px-4 py-2 font-medium">
+              {{ task_report.title }}
+            </td>
             <td class="px-4 py-2 font-medium">{{ task_report.report_date }}</td>
             <td class="px-4 py-2 font-medium">
               {{ task_report.duration_hour }} h {{ task_report.duration_minute }} m
             </td>
+            <td class="px-4 py-2 font-medium">{{ task_report.progress }}%</td>
           </tr>
         </tbody>
       </table>

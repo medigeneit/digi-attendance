@@ -14,25 +14,19 @@
       }"
     >
       <div class="items-start grid grid-cols-3 group">
-        <div class=" ">
+        <div>
           <div>
-            <div class="flex gap-4">
+            <div class="flex gap-4 items-center">
+              <div class="text-xl font-semibold text-sky-500" v-if="index !== undefined">
+                #{{ index + 1 }}
+              </div>
               <button @mousedown.stop="handleDragging" class="handle" v-if="showDraggableHandle">
-                <i class="fas fa-arrows-alt text-gray-500 cursor-grab"></i></button
-              ><span class="text-sky-800"> #{{ task.id }} </span>
+                <i class="fas fa-arrows-alt text-gray-500 cursor-grab"></i>
+              </button>
+              <span class="text-gray-500 text-sm"> #{{ task.id }} </span>
             </div>
             <div class="flex items-center gap-2">
-              <RouterLink
-                :to="{
-                  name: 'TaskShow',
-                  params: { id: task.id },
-                }"
-                class="font-medium text-gray-700 cursor-pointer hover:text-sky-700"
-              >
-                <div>
-                  {{ task.title }}
-                </div>
-              </RouterLink>
+              <TaskTitleRouterLink :task="task" />
             </div>
           </div>
 
@@ -41,29 +35,19 @@
           </p>
 
           <div class="flex items-center gap-2 text-xs text-gray-500 mt-2 opacity-80 text-left">
-            <span
-              class="text-xs px-2 py-0.5 rounded-full border bg-yellow-800 text-white"
-              v-if="task?.is_important"
-              >IMPORTANT</span
-            >
-
-            <span
-              class="text-xs px-2 py-0.5 rounded-full border bg-red-500 text-white"
-              v-if="task?.is_urgent"
-              >URGENT</span
-            >
+            <TaskImportantBadge v-if="task?.is_important" />
+            <TaskUrgentBadge v-if="task?.is_urgent" />
           </div>
         </div>
 
         <div class="flex items-center flex-wrap gap-3">
-          <div
+          <UserChip
             class="flex items-center gap-2 border rounded-full px-1 py-0.5 bg-slate-100 shadow-sm"
             v-for="(item, index) in task.users"
             :key="index"
-          >
-            <UserAvatar :user="item" class="w-6 h-6 !text-xs" />
-            <span class="text-xs text-gray-700 mr-2">{{ item.id }} - {{ item?.name }}</span>
-          </div>
+            :user="item"
+          />
+
           <div v-if="task.users.length === 0" class="text-gray-500 text-xs">
             Not Assigned To Anyone
           </div>
@@ -82,6 +66,7 @@
             >{{ task.status }}</span
           >
           <SubTaskProgress :task="task" ref="progress" class="text-sm" />
+          <!-- <slot name="item-end" :level="treeLevel" :task="task"></slot> -->
         </div>
       </div>
 
@@ -104,12 +89,17 @@
               </a>
             </span>
           </div>
-          <div class="flex gap-2 ml-auto items-center text-xs" v-if="!hideButtons">
-            <!-- <RouterLink
-              :to="{ name: 'TaskEdit', params: { id: task.id } }"
-              class="btn-2 py-0.5 text-xs"
-              ><i class="fas fa-edit"></i> Edit
-            </RouterLink> -->
+
+          <div class="ml-auto text-right text-sm">
+            <span class="text-gray-500">
+              Started: <span class="font-semibold text-green-800">{{ startedDate }}</span>
+            </span>
+            <span class="ml-4 text-gray-500">
+              Deadline: <span class="text-red-500 font-semibold">{{ deadline }}</span>
+            </span>
+          </div>
+
+          <div class="flex gap-2 ml-4 items-center text-xs" v-if="!hideButtons">
             <a
               :href="`/tasks/edit/${task.id}`"
               @click.stop.prevent="emits('editClick', task.id)"
@@ -124,29 +114,6 @@
             >
               <i class="far fa-file-alt"></i> Reports
             </RouterLink>
-
-            <!-- <RouterLink
-              :to="{ name: 'TaskUserAssign', params: { id: task?.id } }"
-              class="border-indigo-500 hover:bg-indigo-600 text-indigo-600 hover:text-white font-semibold px-3 py-0.5 rounded-full transition border-2"
-            >
-              <i class="fas fa-user-plus"></i> Assign Users
-            </RouterLink> -->
-
-            <!-- <a
-              :href="`/tasks/add?parent_id=${props.task.id}`"
-              class="border-indigo-500 hover:bg-indigo-600 text-indigo-600 hover:text-white font-semibold px-3 py-0.5 rounded-full transition border-2"
-              @click.stop.prevent="emits('addClick', props.task.id)"
-            >
-              <i class="fas fa-plus"></i> Add Sub Task
-            </a> -->
-            <!-- 
-              <button
-                class="bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold px-3 py-1 rounded-full transition border-2"
-                @click="emits('commentButtonClick', task?.id)"
-              >
-                + Comment
-              </button> 
-            -->
           </div>
         </div>
         <div class="ml-0">
@@ -157,7 +124,11 @@
             :parent-tree-level="treeLevel"
             @editClick="handleChildEditClick"
             @addClick="handleChildAddClick"
-          />
+          >
+            <template #tree-item-end="{ task, level }">
+              <slot name="item-end" :level="level" :task="task"></slot>
+            </template>
+          </TaskTreeChildren>
         </div>
       </div>
     </div>
@@ -166,15 +137,20 @@
 
 <script setup>
 import TaskTreeChildren from '@/components/TaskTreeChildren.vue'
-import UserAvatar from '@/components/UserAvatar.vue'
 import SubTaskProgress from '@/components/tasks/SubTaskProgress.vue'
+import { getDisplayDate } from '@/libs/datetime.js'
 import { computed, ref, watch } from 'vue'
+import TaskImportantBadge from './tasks/TaskImportantBadge.vue'
+import TaskTitleRouterLink from './tasks/TaskTitleRouterLink.vue'
+import TaskUrgentBadge from './tasks/TaskUrgentBadge.vue'
+import UserChip from './user/UserChip.vue'
 
 const props = defineProps({
   task: { type: Object, required: true },
   hideButtons: { type: Boolean, default: false },
   treeLevel: { type: Number, default: 0 },
   showDraggableHandle: { Boolean, default: false },
+  index: { type: Number },
 })
 
 const progress = ref(null)
@@ -200,6 +176,9 @@ if (stored) {
     subTaskOpenedList.value = []
   }
 }
+
+const startedDate = computed(() => getDisplayDate(props.task.started_at))
+const deadline = computed(() => getDisplayDate(props.task.deadline))
 
 const showSubTask = computed({
   get: () => {
