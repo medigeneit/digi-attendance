@@ -8,16 +8,24 @@ const props = defineProps<{
 </script>
 
 <template>
-  <table class="min-w-full bg-white shadow rounded-lg overflow-hidden">
-    <caption class="border rounded-t-lg py-0.5 px-4 text-bg font-semibold">
-      Progress
+  <table class="min-w-full bg-white rounded overflow-hidden">
+    <caption class="py-0.5 text-bg font-semibold">
+      <slot name="caption">Progress</slot>
     </caption>
-    <thead class="bg-gray-100">
+    <thead class="bg-gray-50">
       <tr>
-        <th class="px-4 py-2 text-left">#</th>
-        <th class="px-4 py-2 text-left lg:w-[200px]">User</th>
-        <th class="px-4 py-2 text-center">User Progress</th>
-        <th class="px-4 py-2 text-center">Task Progress</th>
+        <th class="px-2 py-1 border-y font-semibold text-xs uppercase text-left">#</th>
+        <th class="px-2 py-1 border-y font-semibold text-xs uppercase text-left lg:w-[200px]">
+          User
+        </th>
+        <th class="px-2 py-1 border-y font-semibold text-xs uppercase text-center">Started</th>
+        <th class="px-2 py-1 border-y font-semibold text-xs uppercase text-center">Finished</th>
+        <th class="px-2 py-1 border-y font-semibold text-xs uppercase text-center">
+          User Progress
+        </th>
+        <th class="px-2 py-1 border-y font-semibold text-xs uppercase text-center">
+          Task Progress
+        </th>
       </tr>
     </thead>
     <tbody>
@@ -26,12 +34,14 @@ const props = defineProps<{
         :key="progressUser.id"
         class="border-t hover:bg-gray-50 cursor-pointer"
       >
-        <td class="px-4 py-2">{{ index + 1 }}</td>
-        <td class="px-4 py-2">
+        <td class="px-2 py-1 border-y">{{ index + 1 }}</td>
+        <td class="px-2 py-1 border-y">
           <UserChip :user="progressUser" />
         </td>
-        <td class="px-4 py-2 text-center">{{ progressUser.user_progress }}%</td>
-        <td class="px-4 py-2 text-center">{{ progressUser.task_progress }}%</td>
+        <td class="px-2 py-1 border-y text-center">{{ progressUser.started_at }}</td>
+        <td class="px-2 py-1 border-y text-center">{{ progressUser.finished_at }}</td>
+        <td class="px-2 py-1 border-y text-center">{{ progressUser.user_progress }}%</td>
+        <td class="px-2 py-1 border-y text-center">{{ progressUser.task_progress }}%</td>
       </tr>
     </tbody>
   </table>

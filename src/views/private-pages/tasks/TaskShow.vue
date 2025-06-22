@@ -2,8 +2,9 @@
 import CountdownTimer from '@/components/CountdownTimer.vue'
 import SubTaskList from '@/components/tasks/SubTaskList.vue'
 import SubTaskProgress from '@/components/tasks/SubTaskProgress.vue'
-import UserChip from '@/components/user/UserChip.vue'
+import TaskProgressTable from '@/components/tasks/TaskProgressTable.vue'
 import { getDisplayDate } from '@/libs/datetime'
+import { getTaskProgressUsers } from '@/libs/task-progress'
 import { useTaskTree } from '@/libs/task-tree'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -43,6 +44,10 @@ const taskForProgress = computed(() => {
     },
   }
 })
+
+const taskProgressUsers = computed(() =>
+  getTaskProgressUsers(store.task.users, store.task.task_reports),
+)
 
 const startedDate = computed(() => getDisplayDate(store.task.started_at))
 const deadline = computed(() => getDisplayDate(store.task.deadline))
@@ -97,7 +102,7 @@ watch(() => route.params.id, fetchTaskList, {
             </div>
           </div>
 
-          <div class="py-2 font-medium mb-4 col-span-full md:col-span-2">
+          <!-- <div class="py-2 font-medium mb-4 col-span-full md:col-span-2">
             <div>
               <div class="text-xs mb-0.5 text-gray-600 uppercase">Assigns</div>
 
@@ -108,20 +113,27 @@ watch(() => route.params.id, fetchTaskList, {
                 </div>
               </div>
             </div>
-            <!-- <section class="mt-4">
-              <TaskProgressTable :progress-users="taskProgressUsers" />
-            </section> -->
-          </div>
+          </div> -->
+          <section class="mt-4 col-span-full mb-6">
+            <TaskProgressTable :progress-users="taskProgressUsers">
+              <template #caption>
+                <div class="text-sm py-1 text-left uppercase font-semibold text-gray-600">
+                  Assigned Users
+                </div>
+              </template>
+            </TaskProgressTable>
+          </section>
 
           <div class="ml-auto text-right text-sm col-span-full">
             <CountdownTimer
+              v-if="store.task.deadline"
               :targetDateTime="store.task.deadline"
               class="text-lg font-semibold italic text-green-600"
             />
-            <span class="text-gray-500">
+            <span class="text-gray-500" v-if="startedDate">
               Started: <span class="font-semibold text-green-800">{{ startedDate }}</span>
             </span>
-            <span class="ml-4 text-gray-500">
+            <span class="ml-4 text-gray-500" v-if="deadline">
               Deadline: <span class="text-red-500 font-semibold">{{ deadline }}</span>
             </span>
           </div>
@@ -129,11 +141,11 @@ watch(() => route.params.id, fetchTaskList, {
           <hr class="my-3 col-span-full" />
 
           <div class="py-2 flex justify-center items-center gap-2 col-span-full">
-            <button @click.stop="goToEdit(store.task?.id)" class="btn-2">Edit</button>
+            <button @click.stop="goToEdit(store.task?.id)" class="btn-2 py-0.5">Edit</button>
 
             <RouterLink
               :to="{ name: 'TaskUserAssign', params: { id: store.task?.id } }"
-              class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-3 py-1 rounded-full transition"
+              class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-3 py-0.5 rounded-full transition"
               @click="$event.stopPropagation()"
             >
               <i class="fas fa-user-plus"></i> Assign Users
@@ -141,11 +153,14 @@ watch(() => route.params.id, fetchTaskList, {
 
             <RouterLink
               :to="backLink"
-              class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-3 py-1 rounded-full transition"
+              class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-3 py-0.5 rounded-full transition"
               @click="$event.stopPropagation()"
             >
               <i class="fas fa-arrow-left"></i> Back
             </RouterLink>
+
+            <!-- <button class="btn-3 px-3 py-0.5 font-semibold border">Set Started Date</button>
+            <button class="btn-3 px-3 py-0.5 font-semibold border">Set Finish Date</button> -->
 
             <!-- 
               <button
