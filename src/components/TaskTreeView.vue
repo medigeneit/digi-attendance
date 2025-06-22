@@ -98,10 +98,10 @@
           </div>
 
           <div class="ml-auto text-right text-sm">
-            <span class="text-gray-500">
+            <span class="text-gray-500" v-if="startedDate">
               Started: <span class="font-semibold text-green-800">{{ startedDate }}</span>
             </span>
-            <span class="ml-4 text-gray-500">
+            <span class="ml-4 text-gray-500" v-if="deadline">
               Deadline: <span class="text-red-500 font-semibold">{{ deadline }}</span>
             </span>
           </div>
