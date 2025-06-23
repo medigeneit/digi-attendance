@@ -27,7 +27,7 @@ const selectedTaskId = ref(null)
 
 const selectedCompanyId = computed(setOrGetQuery('company-id'))
 const selectedEmployeeId = computed(setOrGetQuery('user-id'))
-const selectedEmployee = ref()
+
 const priorityChangingDisabled = ref(false)
 
 const editingId = ref(null)
@@ -39,10 +39,29 @@ const addFormData = reactive({
 
 const draggableTaskList = ref(null)
 
+const { handleItemsPriorityUpdate, saveTaskPriority, listHasRearranged } = useTaskPriorityUpdate(
+  () => store.taskListTree,
+  0,
+)
+
 onMounted(async () => {
   await companyStore.fetchCompanies()
   await fetchTasks({}, { loadingBeforeFetch: true })
 })
+
+async function fetchTasks() {
+  priorityChangingDisabled.value = !!route.query['user-id']
+
+  await store.fetchTasks(
+    {
+      user_ids: route.query['user-id'] || undefined,
+      company_id: route.query['company-id'] || undefined,
+    },
+    {
+      loadingBeforeFetch: true,
+    },
+  )
+}
 
 const goToAdd = (parentId) => {
   //router.push({ name: 'TaskAdd' })
@@ -71,48 +90,6 @@ const closeComment = () => {
   selectedTaskId.value = null
 }
 
-watch(
-  () => selectedCompanyId.value,
-
-  async (newCompanyId) => {
-    if (newCompanyId) {
-      // selectedEmployeeId.value = null
-      await companyStore.fetchEmployee(newCompanyId)
-      selectedEmployee.value =
-        employees.value.find((emp) => emp.id == selectedEmployeeId.value) || null
-    }
-  },
-
-  {
-    initial: true,
-    immediate: true,
-  },
-)
-
-watch(
-  () => ({
-    'user-id': route.query['user-id'],
-    'company-id': route.query['company-id'],
-  }),
-  async () => {
-    fetchTasks()
-  },
-)
-
-async function fetchTasks() {
-  priorityChangingDisabled.value = !!route.query['user-id']
-
-  await store.fetchTasks(
-    {
-      user_ids: route.query['user-id'] || undefined,
-      company_id: route.query['company-id'] || undefined,
-    },
-    {
-      loadingBeforeFetch: true,
-    },
-  )
-}
-
 async function handleTaskUpdate() {
   editingId.value = null
   addForm.value = false
@@ -126,25 +103,77 @@ async function handleTaskAddClose() {
   await fetchTasks()
 }
 
-watch(selectedEmployee, (emp) => {
-  selectedEmployeeId.value = emp?.id
-})
+const selectedEmployee = ref()
 
-const { handleItemsPriorityUpdate, saveTaskPriority, listHasRearranged } = useTaskPriorityUpdate(
-  () => store.taskListTree,
-  0,
-)
+function getSelectedEmployee() {
+  return employees.value.find((emp) => emp.id == selectedEmployeeId.value) || null
+}
 
 async function handleTaskPrioritySave() {
   if (saveTaskPriority()) {
     await fetchTasks()
-    // draggableTaskList.value.resetItems()
   }
 }
+
+watch(
+  () => ({
+    'user-id': route.query['user-id'],
+    'company-id': route.query['company-id'],
+  }),
+  async () => {
+    await fetchTasks()
+    //selectedEmployee.value = getSelectedEmployee()
+  },
+)
+
+watch(selectedEmployee, (emp) => {
+  selectedEmployeeId.value = emp?.id
+})
+
+watch(selectedEmployeeId, () => {
+  if (getSelectedEmployee()) {
+    selectedEmployee.value = getSelectedEmployee()
+  }
+})
+
+watch(
+  () => selectedCompanyId.value,
+
+  async (newCompanyId) => {
+    if (newCompanyId) {
+      await companyStore.fetchEmployee(newCompanyId)
+
+      if (!getSelectedEmployee()) {
+        selectedEmployeeId.value = ''
+      }
+
+      console.log({ selectedEmployee: getSelectedEmployee(), employees: employees.value })
+      selectedEmployee.value = getSelectedEmployee()
+    }
+  },
+
+  {
+    initial: true,
+    immediate: true,
+  },
+)
+
+const taskFilter = ref({
+  month: '2025-04',
+  'company-id': route.query['company-id'] || '',
+  'user-id': route.query['user-id'],
+  status: route.query['status'] || '',
+})
+
+watch(taskFilter, function (f) {
+  console.log({ f })
+})
 </script>
 
 <template>
   <div class="container mx-auto p-6 relative">
+    <!-- <TaskHeader v-model="taskFilter" /> -->
+
     <OverlyModal v-if="editingId">
       <TaskEditForm
         :taskId="editingId"
