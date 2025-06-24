@@ -704,6 +704,20 @@ const router = createRouter({
           component: () => import('@/views/private-pages/ManualAttendanceShow.vue'),
           meta: { requiresAuth: true },
         },
+
+        {
+          path: '/my-applications/my-overtimes',
+          name: 'MyOvertimeList',
+          component: () => import('@/views/private-pages/MyOvertimeList.vue'),
+          meta: { requiresAuth: true },
+        },
+
+        {
+          path: '/my-applications/my-overtimes-add',
+          name: 'MyOvertimeAdd',
+          component: () => import('@/views/private-pages/ManualAttendanceAdd.vue'),
+          meta: { requiresAuth: true },
+        },
       ],
     },
   ],

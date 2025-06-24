@@ -10,16 +10,20 @@
       Short Leaves
     </RouterLink>
     <RouterLink :to="{ name: 'MyShiftExchangeList' }" class="main-button">
-      <i class="fas fa-exchange text-3xl"></i>
+      <i class="fad fa-repeat text-3xl"></i>
       Shift Exchanges
     </RouterLink>
     <RouterLink :to="{ name: 'MyOffdayExchangeList' }" class="main-button">
-      <i class="fas fa-calendar-day text-3xl"></i>
+      <i class="fad fa-random text-3xl"></i>
       Offday Exchanges
     </RouterLink>
     <RouterLink :to="{ name: 'MyManualAttendanceList' }" class="main-button">
       <i class="fas fa-fingerprint text-3xl"></i>
-      Manual Attendance List
+      Manual Attendance
+    </RouterLink>
+    <RouterLink :to="{ name: 'MyOvertimeList' }" class="main-button">
+      <i class="far fa-business-time text-3xl"></i>
+      Overtime
     </RouterLink>
   </div>
 </template>
