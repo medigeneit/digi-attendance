@@ -37,7 +37,7 @@ const props = defineProps<{
       >
         <td class="px-2 py-1 border-y">{{ index + 1 }}</td>
         <td class="px-2 py-1 border-y">
-          <UserChip :user="progressUser" />
+          <UserChip :user="progressUser" class="border border-red-500" />
         </td>
         <td class="px-2 py-1 border-y text-center">
           {{ getDisplayDate(progressUser.started_at) }}
