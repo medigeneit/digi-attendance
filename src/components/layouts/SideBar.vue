@@ -148,6 +148,7 @@ const logout = () => {
         </RouterLink>
 
         <RouterLink
+          v-if="['super_admin', 'developer'].includes(user?.role)"
           to="/settings"
           class="side-menu"
           :class="{ 'side-menu-active': currentRoute.includes('/settings') }"
