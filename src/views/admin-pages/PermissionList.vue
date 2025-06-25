@@ -22,20 +22,21 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="p-6 max-w-5xl mx-auto">
-    <div class="flex justify-between items-center mb-6">
-      <h2 class="text-2xl font-semibold">Permissions List</h2>
-      <RouterLink
-        :to="{ name: 'PermissionsAdd' }"
-        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-      >
-        + Add New
-      </RouterLink>
+  <div class="space-y-2 px-4">
+    <div class="flex items-center justify-between gap-2">
+      <button class="btn-3" @click="goBack">
+        <i class="far fa-arrow-left"></i>
+        <span class="hidden md:flex">Back</span>
+      </button>
+
+      <h1 class="title-md md:title-lg flex-wrap text-center">Permissions List</h1>
+      <RouterLink :to="{ name: 'PermissionsAdd' }" class="btn-2"> + Add New </RouterLink>
     </div>
 
-    <table class="w-full table-auto border">
+    <table class="min-w-full table-auto bg-white shadow-md rounded-lg overflow-hidden">
       <thead class="bg-gray-100">
-        <tr>
+        <tr class="bg-gray-200">
+          <th class="text-left p-3 border">User</th>
           <th class="text-left p-3 border">Company</th>
           <th class="text-left p-3 border">Departments</th>
           <th class="text-left p-3 border">Actions</th>
@@ -43,7 +44,8 @@ onMounted(() => {
       </thead>
       <tbody>
         <tr v-for="perm in permissions" :key="perm.id" class="hover:bg-gray-50">
-          <td class="p-3 border">{{ perm.company.name }}</td>
+          <td class="p-3 border">{{ perm?.user?.name }}</td>
+          <td class="p-3 border">{{ perm?.company?.name }}</td>
           <td class="p-3 border">
             <span v-if="perm.department_ids.includes('*')">All</span>
             <span v-else>{{ perm.departments.join(', ') }}</span>
