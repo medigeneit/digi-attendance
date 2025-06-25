@@ -51,7 +51,7 @@
                 ...route.query,
                 view: 'userwise',
                 'company-id': item.company_id,
-                'user-id': item.id,
+                'user-ids': item.id,
               },
             }"
           >

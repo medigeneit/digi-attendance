@@ -49,17 +49,12 @@ function setAndGetModelValue(key) {
 const selectedEmployee = computed(() => getEmployee(selectedEmployeeId.value))
 
 async function loadEmployees(newCompanyId) {
-  console.log({ newCompanyId })
   if (newCompanyId) {
     await companyStore.fetchEmployee(newCompanyId)
   }
 }
 
-watch(
-  () => selectedCompanyId.value,
-
-  loadEmployees,
-)
+watch(() => selectedCompanyId.value, loadEmployees)
 
 onMounted(async () => {
   await companyStore.fetchCompanies()
@@ -73,7 +68,6 @@ function getEmployee(employeeId) {
 }
 
 function handleUserSelect(emp) {
-  console.log('SELECTED', { emp })
   selectedEmployeeId.value = emp?.id || ''
 }
 

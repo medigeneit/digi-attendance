@@ -3,6 +3,7 @@ import CommentModal from '@/components/CommentModal.vue'
 // import Draggable from '@/components/common/Draggable.js'
 // import draggable from 'vuedraggable'
 import DraggableList from '@/components/common/DraggableList.vue'
+import LoaderView from '@/components/common/LoaderView.vue'
 import OverlyModal from '@/components/common/OverlyModal.vue'
 import TaskAddForm from '@/components/tasks/TaskAddForm.vue'
 import TaskEditForm from '@/components/tasks/TaskEditForm.vue'
@@ -148,49 +149,55 @@ const taskFilter = computed({
       </div>
     </template>
 
-    <div v-if="store.error" class="text-center py-4 text-red-500">
-      {{ store.error }}
+    <div v-if="store.loading">
+      <LoaderView />
     </div>
+    <template v-else>
+      <div v-if="store.error" class="text-center py-4 text-red-500">
+        {{ store.error }}
+      </div>
 
-    <div class="space-y-4" v-else-if="store.tasks.length > 0">
-      <UserWiseList
-        v-if="route.query?.view == 'userwise'"
-        :tasks="store.tasks"
-        :selectedUserId="route.query['user-id']"
-        @commentButtonClick="openComment($event, task.id)"
-        @editClick="(taskId) => (editingId = taskId)"
-        @addClick="(taskId) => goToAdd(taskId)"
-      />
+      <div class="space-y-4" v-else-if="store.tasks.length > 0">
+        <UserWiseList
+          v-if="route.query?.view == 'userwise'"
+          :tasks="store.tasks"
+          :selectedUserId="route.query['user-ids']"
+          @commentButtonClick="openComment($event, task.id)"
+          @editClick="(taskId) => (editingId = taskId)"
+          @addClick="(taskId) => goToAdd(taskId)"
+        />
 
-      <DraggableList
+        <DraggableList
+          v-else
+          :items="store.taskListTree"
+          handle="handle"
+          @itemsUpdate="handleItemsPriorityUpdate"
+          class="space-y-4"
+          ref="draggableTaskList"
+        >
+          <template #item="{ item, index }">
+            <div class="flex items-stretched">
+              <TaskTreeView
+                :task="item"
+                :index="index"
+                :showDraggableHandle="!priorityChangingDisabled"
+                @commentButtonClick="openComment($event, task.id)"
+                @editClick="(taskId) => (editingId = taskId)"
+                @addClick="(taskId) => goToAdd(taskId)"
+                class="!border-0"
+              />
+            </div>
+          </template>
+        </DraggableList>
+      </div>
+
+      <div
         v-else
-        :items="store.taskListTree"
-        handle="handle"
-        @itemsUpdate="handleItemsPriorityUpdate"
-        class="space-y-4"
-        ref="draggableTaskList"
+        class="text-center py-4 text-gray-500 border h-[100px] flex items-center justify-center text-xl rounded bg-gray-50"
       >
-        <template #item="{ item, index }">
-          <div class="flex items-stretched">
-            <TaskTreeView
-              :task="item"
-              :index="index"
-              :showDraggableHandle="!priorityChangingDisabled"
-              @commentButtonClick="openComment($event, task.id)"
-              @editClick="(taskId) => (editingId = taskId)"
-              @addClick="(taskId) => goToAdd(taskId)"
-              class="!border-0"
-            />
-          </div>
-        </template>
-      </DraggableList>
-    </div>
-    <div
-      v-else
-      class="text-center py-4 text-gray-500 border h-[100px] flex items-center justify-center text-xl rounded bg-gray-50"
-    >
-      No tasks found.
-    </div>
+        No tasks found.
+      </div>
+    </template>
 
     <!-- Comment Modal -->
     <CommentModal
