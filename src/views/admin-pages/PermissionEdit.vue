@@ -1,39 +1,72 @@
 <script setup>
-import axios from 'axios'
-import { onMounted, ref } from 'vue'
+import Multiselect from '@/components/MultiselectDropdown.vue'
+import { useCompanyStore } from '@/stores/company'
+import { useDepartmentStore } from '@/stores/department'
+import { useUserStore } from '@/stores/user'
+import { useUserPermissionStore } from '@/stores/userPermissionStore'
+import { storeToRefs } from 'pinia'
+import { onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+
+const userStore = useUserStore()
+const userPermissionStore = useUserPermissionStore()
+const companyStore = useCompanyStore()
+const departmentStore = useDepartmentStore()
+
+const { users } = storeToRefs(userStore)
+const { companies } = storeToRefs(companyStore)
+const { departments } = storeToRefs(departmentStore)
 
 const route = useRoute()
 const router = useRouter()
 
-const companies = ref([])
-const departments = ref([])
-const form = ref({ company_id: '', department_ids: [] })
+const selectedUser = ref(null)
+const form = ref({
+  user_id: '',
+  company_id: '',
+  department_ids: [],
+})
 
-const loadPermission = async () => {
-  const res = await axios.get(`/api/permissions/${route.params.id}`)
-  form.value = res.data
-  await loadDepartments()
+const fetchPermission = async () => {
+  try {
+    const permission = await userPermissionStore.fetchPermission(route.params.id)
+
+    form.value.user_id = permission.user_id
+    form.value.company_id = permission.company_id
+    form.value.department_ids = permission.department_ids.includes('*')
+      ? ['*']
+      : permission.department_ids
+
+    selectedUser.value = users.value.find((u) => u.id === permission.user_id) || null
+
+    await departmentStore.fetchDepartments(permission.company_id)
+  } catch (err) {
+    alert(userPermissionStore.error || 'Failed to load permission')
+    router.push({ name: 'PermissionList' })
+  }
 }
 
-const loadCompanies = async () => {
-  const res = await axios.get('/api/companies')
-  companies.value = res.data
+watch(selectedUser, (newVal) => {
+  form.value.user_id = newVal?.id || ''
+})
+
+const onCompanyChange = async () => {
+  form.value.department_ids = []
+  await departmentStore.fetchDepartments(form.value.company_id)
 }
 
-const loadDepartments = async () => {
-  const res = await axios.get(`/api/companies/${form.value.company_id}/departments`)
-  departments.value = res.data
+const submit = async () => {
+  try {
+    await userPermissionStore.updatePermission(route.params.id, form.value)
+    router.push({ name: 'PermissionList' })
+  } catch (err) {
+    alert(userPermissionStore.error || 'Update failed')
+  }
 }
 
-const update = async () => {
-  await axios.put(`/api/permissions/${route.params.id}`, form.value)
-  router.push({ name: 'PermissionList' })
-}
-
-onMounted(() => {
-  loadCompanies()
-  loadPermission()
+onMounted(async () => {
+  await Promise.all([userStore.fetchUsers(), companyStore.fetchCompanies()])
+  await fetchPermission()
 })
 </script>
 
@@ -42,10 +75,21 @@ onMounted(() => {
     <h2 class="text-2xl font-bold text-gray-700">Edit Permission</h2>
 
     <div>
+      <label class="block font-medium mb-1">Select User</label>
+      <Multiselect
+        v-model="selectedUser"
+        :options="users"
+        :multiple="false"
+        label="label"
+        placeholder="Select employee"
+      />
+    </div>
+
+    <div>
       <label class="block font-medium mb-1">Select Company</label>
       <select
         v-model="form.company_id"
-        @change="loadDepartments"
+        @change="onCompanyChange"
         class="w-full border rounded px-3 py-2"
       >
         <option value="">-- Select Company --</option>
@@ -71,8 +115,13 @@ onMounted(() => {
       </div>
     </div>
 
-    <button @click="update" class="w-full py-2 bg-green-600 text-white rounded hover:bg-green-700">
-      Update Permission
+    <button
+      @click="submit"
+      :disabled="userPermissionStore.loading"
+      class="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+    >
+      <span v-if="userPermissionStore.loading">Updating...</span>
+      <span v-else>Update Permission</span>
     </button>
   </div>
 </template>

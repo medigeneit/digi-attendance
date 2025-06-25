@@ -1,22 +1,23 @@
 <script setup>
-import axios from 'axios'
-import { onMounted, ref } from 'vue'
+import { useUserPermissionStore } from '@/stores/userPermissionStore'
+import { storeToRefs } from 'pinia'
+import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
-const permissions = ref([])
+const userPermissionStore = useUserPermissionStore()
 const router = useRouter()
 
-const loadPermissions = async () => {
-  const res = await axios.get('/api/permissions')
-  permissions.value = res.data
-}
+const { userPermissions: permissions } = storeToRefs(userPermissionStore)
 
 const editPermission = (id) => {
   router.push({ name: 'PermissionEdit', params: { id } })
 }
+const deletePermission = (id) => {
+  userPermissionStore.deletePermission(id)
+}
 
 onMounted(() => {
-  loadPermissions()
+  userPermissionStore.fetchUserPermissions()
 })
 </script>
 
@@ -45,11 +46,14 @@ onMounted(() => {
           <td class="p-3 border">{{ perm.company.name }}</td>
           <td class="p-3 border">
             <span v-if="perm.department_ids.includes('*')">All</span>
-            <span v-else>{{ perm.department_ids.join(', ') }}</span>
+            <span v-else>{{ perm.departments.join(', ') }}</span>
           </td>
-          <td class="p-3 border">
-            <button @click="editPermission(perm.id)" class="text-blue-600 hover:underline">
-              Edit
+          <td class="p-3 border flex justify-center md:gap-4">
+            <button @click="editPermission(perm.id)" class="btn-1">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button @click="deletePermission(perm.id)" class="btn-1 text-red-600">
+              <i class="fas fa-trash"></i>
             </button>
           </td>
         </tr>

@@ -286,7 +286,7 @@ const router = createRouter({
         },
         {
           path: '/settings/permissions-edit/:id',
-          name: 'PermissionsEdit',
+          name: 'PermissionEdit',
           component: () => import('@/views/admin-pages/PermissionEdit.vue'),
           meta: { requiresAuth: true, roles: ['super_admin', 'developer'] },
         },
