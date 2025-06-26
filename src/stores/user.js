@@ -19,10 +19,11 @@ export const useUserStore = defineStore('user', () => {
   const errorMessage = computed(() => error.value)
 
   // Actions
-  const fetchUsers = async () => {
+  const fetchUsers = async ( params = {}) => {
     try {
+      
       isLoading.value = true // লোডিং শুরু
-      const response = await apiClient.get('/users')
+      const response = await apiClient.get(`/users`, {params})
       
       users.value = response.data
       error.value = null

@@ -42,7 +42,9 @@ const submit = async () => {
 }
 
 onMounted(() => {
-  userStore.fetchUsers()
+  userStore.fetchUsers({
+    type: 'admin',
+  })
   companyStore.fetchCompanies()
 })
 </script>
