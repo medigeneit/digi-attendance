@@ -151,7 +151,17 @@ async function submit() {
         </div>
       </div>
 
-      <div class="grid grid-cols-2 gap-4 mb-4 mt-12">
+      <div class="mt-8">
+        <label
+          class="flex gap-1 items-center mt-4 border rounded py-2 justify-center cursor-pointer"
+          :class="{ 'bg-yellow-200': form.is_target }"
+        >
+          <input type="checkbox" v-model="form.is_target" class="size-6" />
+          <span class="block text-gray-600 text-base mb-1 font-medium">Is Target Task</span>
+        </label>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4 mb-4 mt-4">
         <div class="mb-4">
           <label class="block text-gray-600 text-sm mb-1 font-medium">
             Start Date <RequiredIcon />
