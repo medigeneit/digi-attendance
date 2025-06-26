@@ -17,7 +17,7 @@ const store = useTaskStore()
 const task = ref()
 const loading = ref(false)
 const selectedUsers = ref([])
-
+const errorMessage = ref('')
 const form = ref({
   title: '',
   requirement_id: '',
@@ -27,6 +27,7 @@ const form = ref({
   description: '',
   is_important: false,
   is_urgent: false,
+  is_target: false,
   started_at: '',
   deadline: '',
 })
@@ -69,6 +70,7 @@ onMounted(async () => {
     description: task.value.description,
     is_important: task.value.is_important,
     is_urgent: task.value.is_urgent,
+    is_target: task.value.is_target,
     started_at: getDate(task.value.started_at),
     deadline: getDate(task.value.deadline),
   }
@@ -86,6 +88,7 @@ watch(
       description: newTask.description,
       is_important: task.value.is_important,
       is_urgent: task.value.is_urgent,
+      is_target: task.value.is_target,
       started_at: getDate(task.value.started_at),
       deadline: getDate(task.value.deadline),
     }
@@ -95,15 +98,19 @@ watch(
 const update = async () => {
   loading.value = true
 
-  const payload = {
-    ...form.value,
-    user_ids: selectedUsers.value?.map((u) => Number(u.id)) || [],
+  try {
+    const payload = {
+      ...form.value,
+      user_ids: selectedUsers.value?.map((u) => Number(u.id)) || [],
+    }
+
+    await store.updateTask(props.taskId, payload, { loadingBeforeFetch: false })
+    emit('updated')
+  } catch (err) {
+    errorMessage.value = err.response?.data?.message || 'An error occurred while updating the task.'
+  } finally {
+    loading.value = false
   }
-
-  await store.updateTask(props.taskId, payload, { loadingBeforeFetch: false })
-  loading.value = false
-
-  emit('updated')
 }
 </script>
 
@@ -115,7 +122,7 @@ const update = async () => {
 
     <div v-if="loading" class="text-center py-4 text-gray-500">Loading form...</div>
 
-    <form v-else-if="task" @submit.prevent="update">
+    <form @submit.prevent="update">
       <div class="mb-4">
         <label class="block text-gray-700 font-medium mb-2">Task Title</label>
         <input
@@ -136,7 +143,7 @@ const update = async () => {
         </label>
       </div>
 
-      <div class="mb-4" v-if="task.requirement">
+      <div class="mb-4" v-if="task?.requirement">
         <label class="block text-gray-700 font-medium mb-2">Requirement</label>
         <div>
           <p>{{ task?.requirement?.title }}</p>
@@ -168,6 +175,16 @@ const update = async () => {
             <option>BLOCKED</option>
           </select>
         </div>
+      </div>
+
+      <div class="mt-8">
+        <label
+          class="flex gap-1 items-center mt-4 border rounded py-2 justify-center cursor-pointer"
+          :class="{ 'bg-yellow-200': form.is_target }"
+        >
+          <input type="checkbox" v-model="form.is_target" class="size-6" />
+          <span class="block text-gray-600 text-base mb-1 font-medium">Is Target Task</span>
+        </label>
       </div>
 
       <div class="grid grid-cols-2 gap-4 mb-4 mt-12">
@@ -226,11 +243,8 @@ const update = async () => {
         >
           Cancel
         </button>
+        <div class="text-red-500 text-sm" v-if="errorMessage">{{ errorMessage }}</div>
       </div>
     </form>
-
-    <div v-else class="text-center py-4 text-red-500">
-      {{ store.error || 'Task not found.' }}
-    </div>
   </div>
 </template>

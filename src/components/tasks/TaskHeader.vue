@@ -22,6 +22,7 @@ const month = computed(setAndGetModelValue('month'))
 const taskStatus = computed(setAndGetModelValue('status'))
 const isImportant = computed(setAndGetModelValue('is-important'))
 const isUrgent = computed(setAndGetModelValue('is-urgent'))
+const isTarget = computed(setAndGetModelValue('is-target'))
 
 const emit = defineEmits([
   'update:modelValue',
@@ -141,12 +142,16 @@ function handleUserDeSelect() {
 
         <div class="flex gap-4 items-center flex-shrink-0">
           <label class="flex gap-2">
-            <input type="checkbox" v-model="isImportant" value="1" />
+            <input type="checkbox" v-model="isImportant" />
             <span>Important</span>
           </label>
           <label class="flex gap-2">
-            <input type="checkbox" v-model="isUrgent" value="1" />
+            <input type="checkbox" v-model="isUrgent" />
             <span>Urgent</span>
+          </label>
+          <label class="flex gap-2">
+            <input type="checkbox" v-model="isTarget" />
+            <span>Is Target</span>
           </label>
         </div>
         <div class="text-gray-600 w-full md:w-40 md:ml-auto">

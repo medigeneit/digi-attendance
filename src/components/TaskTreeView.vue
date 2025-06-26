@@ -56,7 +56,8 @@
             }"
           >
             <UserChip
-              class="flex items-center gap-2 border rounded-full px-1 py-0.5 bg-slate-100 shadow-sm"
+              class="flex items-center gap-2 border rounded-full px-1 py-0.5 shadow-sm"
+              :class="{ '!bg-yellow-400': task?.is_target }"
               :user="item"
             />
           </RouterLink>
@@ -103,7 +104,11 @@
             </span>
           </div>
 
-          <div class="ml-auto text-right text-sm">
+          <div class="ml-auto text-right text-sm flex items-center gap-4">
+            <div v-if="task.is_target" class="bg-yellow-200 px-2 py-0.5 rounded-lg text-yellow-900">
+              TARGET TASK
+            </div>
+
             <span class="text-gray-500" v-if="startedDate">
               Started: <span class="font-semibold text-green-800">{{ startedDate }}</span>
             </span>

@@ -6,6 +6,7 @@ export type Task = {
   title: string
   is_important: boolean
   is_urgent: boolean
+  is_target: boolean
   description: string
   status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'BLOCKED' | 'CANCELLED' | 'BACK_LOG'
   priority: number
