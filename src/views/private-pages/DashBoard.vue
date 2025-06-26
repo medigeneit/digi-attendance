@@ -49,7 +49,6 @@
         :to="{ name: 'LeaveApplicationList', query: { search: 'today' } }"
         class="main-button"
       >
-        <!-- <i class="fas fa-exchange text-3xl"></i> -->
         <span class="text-3xl">
           {{ dashboardInfo?.todayLeaves }}
         </span>
@@ -76,37 +75,31 @@
     </div>
     <div class="w-full mt-4" v-else>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Recent Notices -->
         <div class="bg-white shadow-md rounded-lg p-4">
           <div class="space-y-4">
-            <!-- Section Header -->
             <div class="flex items-center">
               <i class="fas fa-file mr-2 h-5 w-5"></i>
               <h2 class="text-xl font-semibold">Recent Applications</h2>
             </div>
 
-            <!-- Leave Applications Loop -->
             <RouterLink
               :to="{ name: 'MyLeaveApplicationShow', params: { id: leaveApplication.id } }"
               v-for="leaveApplication in userDashboard?.current_month_leave"
               :key="leaveApplication.id"
               class="p-2 transition-shadow duration-300"
             >
-              <!-- Leave Application Title -->
-              <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-semibold text-gray-800">
+              <div class="flex justify-between items-center px-4">
+                <h3 class="font-semibold text-gray-800">
                   Leave Application #{{ leaveApplication.id }}
                 </h3>
-
-                <!-- Display Status -->
                 <p
                   class="text-sm font-medium flex items-center space-x-2"
                   :class="{
-                    'bg-gray-500 p-2 rounded-full px-4 text-white':
+                    'bg-gray-500 py-1.5 rounded-full px-4 text-white':
                       leaveApplication.status === null,
-                    'bg-yellow-500 p-2 rounded-full px-4 text-white':
+                    'bg-yellow-500 py-1.5 rounded-full px-4 text-white':
                       leaveApplication.status === 'Pending',
-                    'bg-green-500 p-2 rounded-full px-4 text-white':
+                    'bg-green-500 py-1.5 rounded-full px-4 text-white':
                       leaveApplication.status === 'approved',
                   }"
                 >
@@ -134,7 +127,6 @@
             </div>
           </div>
           <div class="space-y-4">
-            <!-- Iterate over notices -->
             <div
               v-for="(notice, index) in userDashboard.notices"
               :key="index"
@@ -150,10 +142,9 @@
                       : 'bg-green-100',
                 ]"
               >
-                <!-- Removed AlertCircle -->
                 <span
                   :class="[
-                    'h-3 w-3',
+                    'h-4 w-4',
                     notice.priority === 'high'
                       ? 'bg-red-600'
                       : notice.priority === 'medium'
@@ -165,10 +156,8 @@
               </div>
               <div class="flex-1 min-w-0">
                 <p class="text-sm font-medium text-gray-900">{{ notice.title }}</p>
-                <p class="text-sm text-gray-500">{{ notice.description }}</p>
                 <p class="text-xs text-gray-400 mt-1">{{ notice.published_at }}</p>
               </div>
-              <!-- Conditional RouterLink for Notice or Policy based on the type -->
               <RouterLink
                 :to="
                   notice.type === 1
@@ -222,53 +211,21 @@
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted } from 'vue'
 const authStore = useAuthStore()
 const userStore = useUserStore()
-// const user = ref(authStore.user)
 const { dashboardInfo, selectedDate, userDashboard } = storeToRefs(userStore)
 const { user } = storeToRefs(authStore)
 
 const isAdmin = computed(() => ['admin', 'super_admin', 'developer'].includes(user?.value?.role))
 
-const adminMode = ref(localStorage.getItem('admin_mode') || 'false')
-
-// Watch for changes to adminMode in localStorage and update the ref
-watch(adminMode, (newAdminMode) => {
-  // Update localStorage whenever adminMode changes
-  localStorage.setItem('admin_mode', newAdminMode)
-})
-
 onMounted(async () => {
-  // Ensure the user is fetched if not available
   if (!user.value) {
     await authStore.fetchUser()
   }
-
-  // Fetch the dashboard data based on the initial adminMode value
-  await fetchDashboardData()
-})
-
-// Watch for changes in adminMode stored in localStorage
-watch(adminMode, async (newAdminMode, oldAdminMode) => {
-  // If adminMode changes, reload the dashboard data
-  if (newAdminMode !== oldAdminMode) {
-    console.log('adminMode changed:', newAdminMode)
-    await fetchDashboardData()
+  await userStore.fetchUserDashboardData()
+  if (isAdmin.value) {
+    await userStore.fetchAdminDashboardData()
   }
 })
-
-async function fetchDashboardData() {
-  if (user.value) {
-    // Fetch dashboard data based on user role and adminMode
-    const isAdminMode = adminMode.value !== 'false' // Convert to boolean
-    if (isAdmin.value && isAdminMode) {
-      await userStore.fetchAdminDashboardData()
-    } else {
-      await userStore.fetchUserDashboardData()
-    }
-  } else {
-    console.error('User data is unavailable')
-  }
-}
 </script>
