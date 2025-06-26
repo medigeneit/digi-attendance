@@ -76,7 +76,7 @@
     <div class="w-full mt-4" v-else>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="bg-white shadow-md rounded-lg p-4">
-          <div class="space-y-4">
+          <div class="space-y-2">
             <div class="flex items-center">
               <i class="fas fa-file mr-2 h-5 w-5"></i>
               <h2 class="text-xl font-semibold">Recent Applications</h2>
@@ -85,10 +85,8 @@
             <RouterLink
               :to="{ name: 'MyLeaveApplicationShow', params: { id: leaveApplication.id } }"
               v-for="leaveApplication in userDashboard?.current_month_leave"
-              :key="leaveApplication.id"
-              class="p-2 transition-shadow duration-300"
-            >
-              <div class="flex justify-between items-center px-4">
+              :key="leaveApplication.id">
+              <div class="flex justify-between items-center px-4 py-2 rounded hover:bg-gray-50 transition-colors">
                 <h3 class="font-semibold text-gray-800">
                   Leave Application #{{ leaveApplication.id }}
                 </h3>
