@@ -3,6 +3,7 @@
     <Multiselect
       v-model="selectedValue"
       @select="(opt, val) => emit('select', opt, val)"
+      @remove="(opt, val) => emit('remove', opt, val)"
       :options="options"
       :multiple="multiple"
       :searchable="true"
@@ -62,7 +63,7 @@ const props = defineProps({
   labelPrefix: String,
 })
 
-const emit = defineEmits(['update:modelValue', 'select'])
+const emit = defineEmits(['update:modelValue', 'select', 'remove'])
 const selectedValue = ref(props.modelValue)
 
 // Watcher to sync selected value with modelValue

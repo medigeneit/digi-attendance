@@ -17,7 +17,7 @@ const props = defineProps({
 })
 
 const selectedCompanyId = computed(setAndGetModelValue('company-id'))
-const selectedEmployeeId = computed(setAndGetModelValue('user-id'))
+const selectedEmployeeId = computed(setAndGetModelValue('user-ids'))
 const month = computed(setAndGetModelValue('month'))
 const taskStatus = computed(setAndGetModelValue('status'))
 const isImportant = computed(setAndGetModelValue('is-important'))
@@ -35,13 +35,9 @@ const { companies, employees } = storeToRefs(companyStore)
 
 function setAndGetModelValue(key) {
   return {
-    get() {
-      console.log(`-- Getting ${key} value`, props.modelValue[key])
-      return props.modelValue[key]
-    },
-    set(value) {
-      console.log(`-- Setting ${key} to`, value, props.modelValue)
-
+    get: () => props.modelValue[key] || '',
+    set: (value) => {
+      console.log('---SETTING modelValue: ', { key, value })
       emit('update:modelValue', {
         ...props.modelValue,
         [key]: value || undefined,
@@ -52,22 +48,19 @@ function setAndGetModelValue(key) {
 
 const selectedEmployee = computed(() => getEmployee(selectedEmployeeId.value))
 
-watch(
-  () => selectedCompanyId.value,
+async function loadEmployees(newCompanyId) {
+  if (newCompanyId) {
+    await companyStore.fetchEmployee(newCompanyId)
+  }
+}
 
-  async (newCompanyId) => {
-    if (newCompanyId) {
-      await companyStore.fetchEmployee(newCompanyId)
-    }
-  },
-)
-
-watch(selectedEmployee, (emp) => {
-  selectedEmployeeId.value = emp?.id || ''
-})
+watch(() => selectedCompanyId.value, loadEmployees)
 
 onMounted(async () => {
   await companyStore.fetchCompanies()
+  if (props.modelValue?.['company-id']) {
+    await loadEmployees(props.modelValue?.['company-id'])
+  }
 })
 
 function getEmployee(employeeId) {
@@ -77,17 +70,30 @@ function getEmployee(employeeId) {
 function handleUserSelect(emp) {
   selectedEmployeeId.value = emp?.id || ''
 }
+
+function handleUserDeSelect() {
+  selectedEmployeeId.value = ''
+}
 </script>
 
 <template>
   <div class="mb-3 task-header">
-    {{ { selectedEmployeeId, selectedCompanyId, month } }}
     <div class="flex justify-between items-center">
       <h2 class="text-2xl font-bold text-gray-800">Task List</h2>
+
+      <div class="ml-auto flex gap-6 items-center">
+        <div v-if="listHasRearranged" class="flex gap-2 items-center">
+          <span class="text-red-500">Priority Changed</span>
+          <button class="btn-3" @click.prevent="emit('clickPrioritySave')">Save</button>
+          <button class="btn-3" @click.prevent="emit('clickPriorityDiscard')">Discard</button>
+        </div>
+        <button @click="emit('clickAddTask')" class="btn-1">Add Task</button>
+      </div>
     </div>
+
     <div class="flex flex-wrap items-center gap-2 mt-3">
-      <div class="flex flex-wrap gap-4">
-        <div class="text-gray-600 w-64">
+      <div class="flex flex-wrap gap-4 w-full">
+        <div class="text-gray-600 w-full md:w-44">
           <select id="company-filter" v-model="selectedCompanyId" class="input-1">
             <option value="">All Company</option>
             <option v-for="company in companies" :key="company.id" :value="company.id">
@@ -96,30 +102,41 @@ function handleUserSelect(emp) {
           </select>
         </div>
 
-        <Multiselect
-          :modelValue="selectedEmployee"
-          @select="handleUserSelect"
-          :options="employees"
-          :multiple="false"
-          label="name"
-          label-prefix="id"
-          placeholder="Please select employee..."
-          class="text-gray-600 w-64"
-        >
-          <template #option="{ option }">
-            <UserChip :user="option" class="z-50" />
-          </template>
-        </Multiselect>
+        <div class="relative w-full md:w-52">
+          <Multiselect
+            :modelValue="selectedEmployee"
+            @select="handleUserSelect"
+            @remove="handleUserDeSelect"
+            :options="employees"
+            :multiple="false"
+            label="name"
+            label-prefix="id"
+            placeholder="All Employee"
+            class="text-gray-600 w-full"
+          >
+            <template #option="{ option }">
+              <UserChip :user="option" class="w-full line-clamp-1" />
+            </template>
+          </Multiselect>
+          <div
+            class="absolute right-8 text-xl top-0 bottom-0 flex items-center"
+            v-if="selectedEmployee"
+          >
+            <button
+              @click.prevent="handleUserDeSelect"
+              class="mt-0.5 text-gray-500 hover:text-red-700"
+            >
+              &times;
+            </button>
+          </div>
+        </div>
+
         <div class="text-gray-600 w-40">
           <select v-model="taskStatus" class="input-1">
             <option value="">All Tasks</option>
             <option value="not-completed">Not Completed</option>
-            <option value="only-completed">Only Completed</option>
+            <option value="only-completed">Completed</option>
           </select>
-        </div>
-
-        <div class="text-gray-600 w-40">
-          <input id="month-filter" v-model="month" type="month" class="input-1" />
         </div>
 
         <div class="flex gap-4 items-center flex-shrink-0">
@@ -132,15 +149,9 @@ function handleUserSelect(emp) {
             <span>Urgent</span>
           </label>
         </div>
-      </div>
-
-      <div class="ml-auto flex gap-6 items-center">
-        <div v-if="listHasRearranged" class="flex gap-2 items-center">
-          <span class="text-red-500">Priority Changed</span>
-          <button class="btn-3" @click.prevent="emit('clickPrioritySave')">Save</button>
-          <button class="btn-3" @click.prevent="emit('clickPriorityDiscard')">Discard</button>
+        <div class="text-gray-600 w-full md:w-40 md:ml-auto">
+          <input id="month-filter" v-model="month" type="month" class="input-1" />
         </div>
-        <button @click="emit('clickAddTask')" class="btn-1">Add Task</button>
       </div>
     </div>
   </div>
@@ -157,21 +168,45 @@ function handleUserSelect(emp) {
 }
 
 .task-header .multiselect .multiselect__placeholder {
-  @apply inline;
+  @apply inline text-sm;
 }
 
 .task-header .multiselect .multiselect__select {
   @apply leading-none;
 }
 
+.task-header .multiselect .multiselect__input {
+  @apply text-sm;
+}
+
 .task-header .multiselect .multiselect__single {
   @apply text-sm;
+}
+
+.task-header .multiselect .multiselect__content-wrapper {
+  @apply top-[102%] left-[-1%];
 }
 
 .task-header .multiselect__tags {
   @apply h-full min-h-full   p-1.5 pr-6;
 }
-/* .task-header .multiselect__option::after {
-  @apply opacity-80 bottom-0 top-auto left-0 text-center;
-} */
+.task-header .multiselect__option::after {
+  content: '';
+}
+
+.task-header .multiselect__option {
+  @apply p-1 mb-1;
+}
+
+.task-header .multiselect__option--highlight {
+  @apply bg-sky-100;
+}
+
+.task-header ul.multiselect__content {
+  @apply p-1 mb-1 w-full;
+}
+
+.task-header .multiselect__element .multiselect__option--selected {
+  @apply bg-blue-200;
+}
 </style>

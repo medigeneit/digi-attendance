@@ -8,8 +8,8 @@
     <div
       class="flex-grow border rounded py-3 px-3"
       :class="{
-        'bg-green-50  ': progress?.completedPercentage === 100,
-        'bg-gray-50 hover:bg-teal-50': progress?.completedPercentage < 100,
+        'bg-green-100  ': progress?.completedPercentage === 100,
+        'bg-white hover:bg-gray-50': progress?.completedPercentage < 100,
         'shadow-sm': treeLevel > 0,
       }"
     >
@@ -25,6 +25,7 @@
               </button>
               <span class="text-gray-500 text-sm"> #{{ task.id }} </span>
             </div>
+
             <div class="flex items-center gap-2">
               <TaskTitleRouterLink :task="task" />
             </div>
@@ -46,7 +47,12 @@
             :key="index"
             :to="{
               name: 'TaskList',
-              query: { view: 'userwise', 'company-id': item.company_id, 'user-id': item.id },
+              query: {
+                ...route.query,
+                view: 'userwise',
+                'company-id': item.company_id,
+                'user-ids': item.id,
+              },
             }"
           >
             <UserChip
@@ -148,6 +154,7 @@ import SubTaskProgress from '@/components/tasks/SubTaskProgress.vue'
 import UserChip from '@/components/user/UserChip.vue'
 import { getDisplayDate } from '@/libs/datetime.js'
 import { computed, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import TaskImportantBadge from './tasks/TaskImportantBadge.vue'
 import TaskTitleRouterLink from './tasks/TaskTitleRouterLink.vue'
 import TaskUrgentBadge from './tasks/TaskUrgentBadge.vue'
@@ -159,6 +166,8 @@ const props = defineProps({
   showDraggableHandle: { Boolean, default: false },
   index: { type: Number },
 })
+
+const route = useRoute()
 
 const progress = ref(null)
 
