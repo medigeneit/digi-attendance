@@ -7,6 +7,7 @@
         </p>
         <h1 class="title-xl">Welcome back</h1>
         <p>
+          <i class="fas fa-phone mr-2"></i>
           Your phone number is <span class="title-md">{{ user.phone }}</span>
         </p>
       </div>
@@ -14,7 +15,6 @@
         <p>Loading...</p>
       </div>
     </div>
-
     <div class="grid gap-4 md:grid-cols-3 mt-4" v-if="isAdmin && authStore.adminMode">
       <RouterLink
         :to="{ name: 'TodayAttendanceReport', query: { search: 'all' } }"
@@ -74,6 +74,147 @@
         Today Short Leaves
       </RouterLink>
     </div>
+    <div class="w-full mt-4" v-else>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Recent Notices -->
+        <div class="bg-white shadow-md rounded-lg p-4">
+          <div class="space-y-4">
+            <!-- Section Header -->
+            <div class="flex items-center">
+              <i class="fas fa-file mr-2 h-5 w-5"></i>
+              <h2 class="text-xl font-semibold">Recent Applications</h2>
+            </div>
+
+            <!-- Leave Applications Loop -->
+            <RouterLink
+              :to="{ name: 'MyLeaveApplicationShow', params: { id: leaveApplication.id } }"
+              v-for="leaveApplication in userDashboard?.current_month_leave"
+              :key="leaveApplication.id"
+              class="p-2 transition-shadow duration-300"
+            >
+              <!-- Leave Application Title -->
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-semibold text-gray-800">
+                  Leave Application #{{ leaveApplication.id }}
+                </h3>
+
+                <!-- Display Status -->
+                <p
+                  class="text-sm font-medium flex items-center space-x-2"
+                  :class="{
+                    'bg-gray-500 p-2 rounded-full px-4 text-white':
+                      leaveApplication.status === null,
+                    'bg-yellow-500 p-2 rounded-full px-4 text-white':
+                      leaveApplication.status === 'Pending',
+                    'bg-green-500 p-2 rounded-full px-4 text-white':
+                      leaveApplication.status === 'approved',
+                  }"
+                >
+                  <span v-if="leaveApplication.status === null">
+                    <i class="fas fa-clock mr-2"></i>
+                    Wait for Hanover
+                  </span>
+                  <span v-else-if="leaveApplication.status === 'Pending'">
+                    <i class="fas fa-hourglass-half mr-2"></i>
+                    Pending
+                  </span>
+                  <span v-else>
+                    <i class="fas fa-check-circle mr-2"></i>
+                    Approved
+                  </span>
+                </p>
+              </div>
+            </RouterLink>
+          </div>
+
+          <div class="flex justify-between items-start mb-4">
+            <div class="flex items-center">
+              <i class="fas fa-file mr-2 h-5 w-5"></i>
+              <h2 class="text-xl font-semibold">Recent Notices</h2>
+            </div>
+          </div>
+          <div class="space-y-4">
+            <!-- Iterate over notices -->
+            <div
+              v-for="(notice, index) in userDashboard.notices"
+              :key="index"
+              class="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <div
+                :class="[
+                  'p-1 rounded-full',
+                  notice.priority === 'high'
+                    ? 'bg-red-100'
+                    : notice.priority === 'medium'
+                      ? 'bg-yellow-100'
+                      : 'bg-green-100',
+                ]"
+              >
+                <!-- Removed AlertCircle -->
+                <span
+                  :class="[
+                    'h-3 w-3',
+                    notice.priority === 'high'
+                      ? 'bg-red-600'
+                      : notice.priority === 'medium'
+                        ? 'bg-yellow-600'
+                        : 'bg-green-600',
+                    'rounded-full inline-block',
+                  ]"
+                ></span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-gray-900">{{ notice.title }}</p>
+                <p class="text-sm text-gray-500">{{ notice.description }}</p>
+                <p class="text-xs text-gray-400 mt-1">{{ notice.published_at }}</p>
+              </div>
+              <!-- Conditional RouterLink for Notice or Policy based on the type -->
+              <RouterLink
+                :to="
+                  notice.type === 1
+                    ? `/notice-details/${notice.id}`
+                    : `/policy-details/${notice.id}`
+                "
+                class="text-blue-500 hover:text-blue-700 font-semibold"
+              >
+                View Details
+              </RouterLink>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="bg-white shadow-md rounded-lg p-6">
+          <h2 class="text-xl font-semibold">Leave Balance</h2>
+          <div class="overflow-x-auto shadow-md sm:rounded-lg">
+            <table class="min-w-full text-sm text-left text-gray-500">
+              <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                <tr>
+                  <th scope="col" class="px-6 py-3">Type</th>
+                  <th scope="col" class="px-6 py-3">Total Days</th>
+                  <th scope="col" class="px-6 py-3">Used Days</th>
+                  <th scope="col" class="px-6 py-3">Remaining Days</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="leave_balance in userDashboard?.leave_balance"
+                  :key="leave_balance.id"
+                  class="border-b hover:bg-gray-100"
+                >
+                  <td class="px-6 py-4 font-medium text-gray-900">
+                    {{ leave_balance.leave_type }}
+                  </td>
+                  <td class="px-6 py-4">{{ leave_balance.total_leave_days }}</td>
+                  <td class="px-6 py-4">{{ leave_balance.used_days }}</td>
+                  <td class="px-6 py-4">{{ leave_balance.remaining_days }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -81,21 +222,53 @@
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 const authStore = useAuthStore()
 const userStore = useUserStore()
 // const user = ref(authStore.user)
-const { dashboardInfo, selectedDate } = storeToRefs(userStore)
+const { dashboardInfo, selectedDate, userDashboard } = storeToRefs(userStore)
 const { user } = storeToRefs(authStore)
 
+const isAdmin = computed(() => ['admin', 'super_admin', 'developer'].includes(user?.value?.role))
+
+const adminMode = ref(localStorage.getItem('admin_mode') || 'false')
+
+// Watch for changes to adminMode in localStorage and update the ref
+watch(adminMode, (newAdminMode) => {
+  // Update localStorage whenever adminMode changes
+  localStorage.setItem('admin_mode', newAdminMode)
+})
+
 onMounted(async () => {
+  // Ensure the user is fetched if not available
   if (!user.value) {
     await authStore.fetchUser()
   }
-  if (['admin', 'super_admin', 'developer'].includes(user?.value?.role)) {
-    await userStore.fetchUserDashboardData()
+
+  // Fetch the dashboard data based on the initial adminMode value
+  await fetchDashboardData()
+})
+
+// Watch for changes in adminMode stored in localStorage
+watch(adminMode, async (newAdminMode, oldAdminMode) => {
+  // If adminMode changes, reload the dashboard data
+  if (newAdminMode !== oldAdminMode) {
+    console.log('adminMode changed:', newAdminMode)
+    await fetchDashboardData()
   }
 })
 
-const isAdmin = computed(() => ['admin', 'super_admin', 'developer'].includes(user?.value?.role))
+async function fetchDashboardData() {
+  if (user.value) {
+    // Fetch dashboard data based on user role and adminMode
+    const isAdminMode = adminMode.value !== 'false' // Convert to boolean
+    if (isAdmin.value && isAdminMode) {
+      await userStore.fetchAdminDashboardData()
+    } else {
+      await userStore.fetchUserDashboardData()
+    }
+  } else {
+    console.error('User data is unavailable')
+  }
+}
 </script>

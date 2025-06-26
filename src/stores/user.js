@@ -7,6 +7,7 @@ export const useUserStore = defineStore('user', () => {
   const users = ref([])
   const handoverUsers = ref([])
   const user = ref({})
+  const userDashboard = ref({})
   const dashboardInfo = ref({})
   const error = ref(null)
   const isLoading = ref(false) // লোডিং স্টেট
@@ -122,6 +123,22 @@ export const useUserStore = defineStore('user', () => {
       const response = await apiClient.get('/dashboard')
       const data = response.data
       if (data) {
+        userDashboard.value = data
+      }
+      error.value = null
+      return data
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Something went wrong'
+    } finally {
+      isLoading.value = false
+    }
+  }
+  const fetchAdminDashboardData = async () => {
+    try {
+      isLoading.value = true
+      const response = await apiClient.get('/admin-dashboard')
+      const data = response.data
+      if (data) {
         dashboardInfo.value = data
       }
       error.value = null
@@ -187,6 +204,7 @@ export const useUserStore = defineStore('user', () => {
     singleUser,
     errorMessage,
     dashboardInfo,
+    userDashboard,
     selectedDate,
     fetchUsers,
     fetchUser,
@@ -194,6 +212,7 @@ export const useUserStore = defineStore('user', () => {
     updateUser,
     deleteUser,
     fetchUserDashboardData,
+    fetchAdminDashboardData,
     fetchTypeWiseEmployees,
     fetchDepartmentWiseEmployees,
     fetchHandoverDepartmentWiseEmployees,
