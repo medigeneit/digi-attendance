@@ -82,7 +82,6 @@
             >{{ task.status }}</span
           >
           <SubTaskProgress :task="task" ref="progress" class="text-sm" />
-          <!-- <slot name="item-end" :level="treeLevel" :task="task"></slot> -->
         </div>
       </div>
 
@@ -110,6 +109,7 @@
                 :href="`/tasks/add?parent_id=${props.task.id}`"
                 class="hover:bg-indigo-600 hover:text-white text-indigo-600 font-semibold px-3 py-0.5 rounded-full transition border border-transparent"
                 @click.stop.prevent="emits('addClick', props.task.id)"
+                v-if="treeLevel < 2"
               >
                 <i class="fas fa-plus"></i> Add Sub Task
               </a>
