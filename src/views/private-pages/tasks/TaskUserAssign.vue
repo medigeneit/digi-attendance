@@ -49,7 +49,7 @@ const submit = async () => {
 <template>
   <div class="container mx-auto p-6">
     <div class="max-w-xl mx-auto bg-white shadow-lg rounded-lg p-6">
-      <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+      <h2 class="text-xl font-semibold text-gray-800 mb-4">
         Assign Users to Task: "{{ taskStore.task?.title }}"
       </h2>
 
@@ -57,7 +57,7 @@ const submit = async () => {
 
       <form v-else @submit.prevent="submit">
         <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-2">Select Users</label>
+          <label class="block text-gray-700 font-medium">Select Users</label>
           <MultiselectDropdown
             v-model="selectedUsers"
             :options="users"
