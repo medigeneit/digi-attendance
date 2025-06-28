@@ -1,6 +1,6 @@
 <script setup>
 import UserAvatar from '@/components/UserAvatar.vue'
-defineProps({ user: Object })
+defineProps({ user: Object, hideEmployeeId: { type: Boolean, default: false } })
 </script>
 <template>
   <div
@@ -9,8 +9,9 @@ defineProps({ user: Object })
   >
     <UserAvatar :user="user" class="w-6 h-6 !text-xs" />
     <span class="text-xs text-gray-700 mr-2 flex items-center gap-1">
-      <span>{{ user.id }}</span> -
-      <span class="line-clamp-1">{{ user?.name }} </span>
+      <span class="line-clamp-1">{{ user?.name }}</span>
+      <span v-if="user.employee_id && !hideEmployeeId"> #{{ user.employee_id }}</span>
     </span>
+    <slot name="after" :user="user"></slot>
   </div>
 </template>

@@ -94,7 +94,7 @@ function handleUserDeSelect() {
 
     <div class="flex flex-wrap items-center gap-2 mt-3">
       <div class="flex flex-wrap gap-4 w-full">
-        <div class="text-gray-600 w-full md:w-44">
+        <div class="text-gray-600 w-full md:w-64">
           <select id="company-filter" v-model="selectedCompanyId" class="input-1">
             <option value="">All Company</option>
             <option v-for="company in companies" :key="company.id" :value="company.id">
@@ -103,7 +103,7 @@ function handleUserDeSelect() {
           </select>
         </div>
 
-        <div class="relative w-full md:w-52">
+        <div class="relative w-full md:w-72">
           <Multiselect
             :modelValue="selectedEmployee"
             @select="handleUserSelect"
@@ -188,9 +188,9 @@ function handleUserDeSelect() {
   @apply text-sm;
 }
 
-.task-header .multiselect .multiselect__content-wrapper {
+/* .task-header .multiselect .multiselect__content-wrapper {
   @apply top-[102%] left-[-1%];
-}
+} */
 
 .task-header .multiselect__tags {
   @apply h-full min-h-full   p-1.5 pr-6;

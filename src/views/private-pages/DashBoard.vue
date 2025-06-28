@@ -85,8 +85,11 @@
             <RouterLink
               :to="{ name: 'MyLeaveApplicationShow', params: { id: leaveApplication.id } }"
               v-for="leaveApplication in userDashboard?.current_month_leave"
-              :key="leaveApplication.id">
-              <div class="flex justify-between items-center px-4 py-2 rounded hover:bg-gray-50 transition-colors">
+              :key="leaveApplication.id"
+            >
+              <div
+                class="flex justify-between items-center px-4 py-2 rounded hover:bg-gray-50 transition-colors"
+              >
                 <h3 class="font-semibold text-gray-800">
                   Leave Application #{{ leaveApplication.id }}
                 </h3>
@@ -171,9 +174,9 @@
         </div>
 
         <!-- Quick Actions -->
-        <div class="bg-white shadow-md rounded-lg p-6">
-          <h2 class="text-xl font-semibold">Leave Balance</h2>
-          <div class="overflow-x-auto shadow-md sm:rounded-lg">
+        <div class="bg-white shadow-md rounded-lg">
+          <h2 class="text-xl font-semibold py-3 px-4">Leave Balance</h2>
+          <div class="overflow-x-auto shadow-md sm:rounded-lg min-h-max">
             <table class="min-w-full text-sm text-left text-gray-500">
               <thead class="text-xs text-gray-700 uppercase bg-gray-50">
                 <tr>
