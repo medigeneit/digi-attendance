@@ -1,13 +1,17 @@
 <script setup>
 import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import UserChip from '@/components/user/UserChip.vue'
+import { useAuthStore } from '@/stores/auth'
+import { useCompanyStore } from '@/stores/company'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { useUserStore } from '@/stores/user'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const taskStore = useTaskStore()
+const companyStore = useCompanyStore()
 const userStore = useUserStore()
+const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const selectedUsers = ref([])
@@ -20,15 +24,27 @@ const users = ref([])
 onMounted(async () => {
   loading.value = true
   await taskStore.fetchTask(taskId, { with_parent: 'true' })
+
   if (taskStore.task.parent) {
     users.value = taskStore.task?.parent?.users || []
   } else {
-    await userStore.fetchUsers() // all available users
-    users.value = userStore.users
+    if (auth.user?.role === 'employee') {
+      users.value =
+        (await companyStore.fetchEmployees(auth.user?.company_id))?.data?.employees || []
+    } else {
+      await userStore.fetchUsers() // all available users
+      users.value = userStore.users
+    }
   }
 
   selectedUsers.value = taskStore.task.users
   loading.value = false
+})
+
+const userOptions = computed(() => {
+  return users.value.filter((u) => {
+    return !selectedUsers.value.find((selectedUser) => selectedUser.id === u.id)
+  })
 })
 
 const submit = async () => {
@@ -58,9 +74,10 @@ const submit = async () => {
       <form v-else @submit.prevent="submit">
         <div class="mb-4">
           <label class="block text-gray-700 font-medium">Select Users</label>
+
           <MultiselectDropdown
             v-model="selectedUsers"
-            :options="users"
+            :options="userOptions"
             :multiple="true"
             track-by="id"
             label="label"
