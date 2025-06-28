@@ -24,6 +24,8 @@
                 <i class="fas fa-arrows-alt text-gray-500 cursor-grab"></i>
               </button>
               <span class="text-gray-500 text-sm"> #{{ task.id }} </span>
+
+              <div class="text-red-500 text-2xl">{{ treeLevel }}</div>
             </div>
 
             <div class="flex items-center gap-2">
@@ -86,22 +88,32 @@
 
       <div class="mt-4">
         <div class="flex items-center">
-          <div class="flex gap-3 group items-center" @click="handleSubTaskClick">
-            <i
-              v-if="showSubTask"
-              class="fas fa-caret-down text-gray-400 group-hover:text-sky-400"
-            ></i>
-            <i v-else class="fas fa-caret-right text-gray-400 group-hover:text-sky-400"></i>
-            <span :class="subTaskHeadingClass" class="text-xs text-gray-500">
-              Sub Tasks ({{ task.children_tasks?.length }})
+          <div class="flex gap-3 items-center">
+            <div class="text-xs text-gray-500 flex gap-3">
+              <button
+                :class="{
+                  'text-yellow-600 font-semibold  inline-block animate-bounce': hasSubTask,
+                }"
+                class="flex items-center gap-1 group"
+                @click="handleSubTaskClick"
+              >
+                <i
+                  :class="showSubTask ? 'fa-caret-down' : 'fa-caret-right'"
+                  class="fas w-3 text-left text-xl"
+                ></i>
+                <span :class="hasSubTask ? 'group-hover:underline' : ''">
+                  Sub Tasks ({{ task.children_tasks?.length }})
+                </span>
+              </button>
+
               <a
                 :href="`/tasks/add?parent_id=${props.task.id}`"
-                class="hover:bg-indigo-600 text-indigo-600 hover:text-white font-semibold px-3 py-0.5 rounded-full transition border border-transparent ml-2"
+                class="hover:bg-indigo-600 hover:text-white text-indigo-600 font-semibold px-3 py-0.5 rounded-full transition border border-transparent"
                 @click.stop.prevent="emits('addClick', props.task.id)"
               >
                 <i class="fas fa-plus"></i> Add Sub Task
               </a>
-            </span>
+            </div>
           </div>
 
           <div class="ml-auto text-right text-sm flex items-center gap-4">
@@ -224,11 +236,8 @@ watch(
   { deep: true },
 )
 
-const subTaskHeadingClass = computed(() => {
-  return {
-    'hover:underline hover:text-sky-400 cursor-pointer': props.task?.children_tasks?.length > 0,
-    'cursor-default pointer-none': props.task?.children_tasks?.length === 0,
-  }
+const hasSubTask = computed(() => {
+  return props.task?.children_tasks?.length > 0
 })
 
 // const priorityColor = (priority) => {
