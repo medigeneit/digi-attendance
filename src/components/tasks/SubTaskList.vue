@@ -8,6 +8,7 @@ import TaskList from './TaskList.vue'
 const props = defineProps({
   subTasks: Array,
   parentId: { type: Number, required: true },
+  treeLevel: { type: Number, required: true },
 })
 
 const emit = defineEmits(['created', 'error', 'updatePriority'])
@@ -61,6 +62,7 @@ function handleTaskAddClose() {
     <TaskList
       :tasks="subTasks"
       :parentId="parentId"
+      :treeLevel="treeLevel"
       @addClick="(taskId) => goToAdd(taskId)"
       @editClick="(taskId) => (editingId = taskId)"
       @updatePriority="emit('updatePriority')"

@@ -238,6 +238,7 @@ watch(() => route.params.id, fetchTaskList, {
           <SubTaskList
             :subTasks="subTasks"
             :parent-id="route.params.id"
+            :tree-level="store.task.level + 1"
             @created="fetchTaskList(route.params.id)"
             @updated="fetchTaskList(route.params.id)"
             @updatePriority="fetchTaskList(route.params.id)"
