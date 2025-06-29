@@ -2,6 +2,7 @@
 import LoaderView from '@/components/common/LoaderView.vue'
 import ShiftAssignmentModal from '@/components/common/ShiftAssignmentModal.vue'
 import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
+import UserChip from '@/components/user/UserChip.vue'
 import { useShiftStore } from '@/stores/shift'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
@@ -135,6 +136,7 @@ const formattedName = (name) => {
           <option v-for="(item, index) in companyNames" :key="index">{{ item }}</option>
         </select>
       </div>
+      <!-- {{ userStore.users }} -->
       <MultiselectDropdown
         v-model="selectedUser"
         :options="userStore.users"
@@ -143,7 +145,11 @@ const formattedName = (name) => {
         label-prefix="employee_id"
         class="w-1/3"
         placeholder="Select user"
-      />
+      >
+        <template #option="{ option }">
+          <UserChip :user="option" class="w-full line-clamp-1" />
+        </template>
+      </MultiselectDropdown>
       <button type="button" @click="excelDownload" class="btn-3">
         <i class="far fa-file-excel text-2xl text-green-500"></i>Excel
       </button>

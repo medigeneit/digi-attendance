@@ -110,6 +110,12 @@ const router = createRouter({
           component: () => import('@/views/private-pages/tasks/TaskList.vue'),
           meta: { requiresAuth: true },
         },
+        {
+          path: 'tasks-new',
+          name: 'TaskList',
+          component: () => import('@/views/private-pages/tasks/TaskListNew.vue'),
+          meta: { requiresAuth: true },
+        },
 
         {
           path: 'tasks/add',
