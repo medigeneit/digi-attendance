@@ -24,7 +24,7 @@ export const useTaskStore = defineStore('task', () => {
     }
   };
 
-  const fetchTasks = async (params,{loadingBeforeFetch = true, newList=false}) => {
+  const fetchTasks = async (params,{loadingBeforeFetch = true, newList=false} = {}) => {
     if(loadingBeforeFetch ) {
       loading.value = true;
     }

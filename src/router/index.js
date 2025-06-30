@@ -105,13 +105,13 @@ const router = createRouter({
         },
 
         {
-          path: 'tasks',
+          path: 'tasks-old',
           name: 'TaskList',
           component: () => import('@/views/private-pages/tasks/TaskList.vue'),
           meta: { requiresAuth: true },
         },
         {
-          path: 'tasks-new',
+          path: 'tasks',
           name: 'NewTaskList',
           component: () => import('@/views/private-pages/tasks/TaskListNew.vue'),
           meta: { requiresAuth: true },
@@ -134,7 +134,7 @@ const router = createRouter({
         {
           path: 'tasks/:id',
           name: 'TaskShow',
-          component: () => import('@/views/private-pages/tasks/TaskShow.vue'),
+          component: () => import('@/views/private-pages/tasks/TaskShowNew.vue'),
           meta: { requiresAuth: true },
           children: [
             {
