@@ -153,7 +153,6 @@ const taskFilter = computed({
         class="text-sm btn-3 py-0.5"
         :class="route.query?.view === 'userwise' ? 'bg-blue-500 text-white' : ''"
         :to="{
-          name: 'TaskList',
           query: {
             ...route.query,
             view: 'userwise',
@@ -166,7 +165,6 @@ const taskFilter = computed({
         class="text-sm btn-3 py-0.5"
         :class="route.query?.view !== 'userwise' ? 'bg-blue-500 text-white' : ''"
         :to="{
-          name: 'TaskList',
           query: {
             ...Object.keys(route?.query || {})
               .filter((k) => route?.query[k] !== 'userwise')

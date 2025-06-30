@@ -5,6 +5,7 @@
         class="border-l border-b w-4 rounded-bl-full border-gray-200 h-4/6 ml-[-1px] mt-[-30px]"
       ></div>
     </div>
+
     <div
       class="flex-grow border rounded py-3 px-3"
       :class="{
@@ -13,139 +14,136 @@
         'shadow-sm': treeLevel > 0,
       }"
     >
-      <div class="items-start grid grid-cols-3 group">
-        <div>
-          <div>
+      <div class="items-start grid grid-cols-4 gap-4 group">
+        <div class="col-span-full md:col-span-full pb-3 border-b -mx-3 px-3 flex flex-wrap">
+          <div
+            class="flex items-center gap-2 w-full lg:w-auto mb-3 lg:mb-0 whitespace-break-spaces"
+          >
+            <div class="text-xl font-semibold text-sky-500" v-if="index !== undefined">
+              {{ index + 1 }}.
+            </div>
+            <TaskTitleRouterLink :task="task" />
+
+            <p class="text-sm text-gray-500 mt-2" v-if="task?.requirement">
+              Requirement: {{ task?.requirement?.title }}
+            </p>
+          </div>
+
+          <div class="justify-end items-center gap-2 ml-auto flex order-1 lg:order-0">
+            <TaskStatus :status="task.status" />
+            <SubTaskProgress :task="task" ref="progress" class="text-sm" />
+          </div>
+
+          <div class="flex items-center gap-6 flex-none lg:w-full order-0 lg:order-1">
             <div class="flex gap-4 items-center">
-              <div class="text-xl font-semibold text-sky-500" v-if="index !== undefined">
-                {{ index + 1 }}
-              </div>
               <button @mousedown.stop="handleDragging" class="handle" v-if="showDraggableHandle">
                 <i class="fas fa-arrows-alt text-gray-500 cursor-grab"></i>
               </button>
+
               <span class="text-gray-500 text-sm"> #{{ task.id }} </span>
 
-              <div class="text-red-500 text-2xl">{{ treeLevel }}</div>
+              <div class="text-red-500 text-sm">{{ treeLevel }}</div>
             </div>
 
-            <div class="flex items-center gap-2">
-              <TaskTitleRouterLink :task="task" />
+            <div class="flex items-center gap-2 text-xs text-gray-500 opacity-80 text-left">
+              <TaskImportantBadge v-if="task?.is_important" />
+              <TaskUrgentBadge v-if="task?.is_urgent" />
             </div>
-          </div>
-
-          <p class="text-sm text-gray-500 mt-2" v-if="task?.requirement">
-            Requirement: {{ task?.requirement?.title }}
-          </p>
-
-          <div class="flex items-center gap-2 text-xs text-gray-500 mt-2 opacity-80 text-left">
-            <TaskImportantBadge v-if="task?.is_important" />
-            <TaskUrgentBadge v-if="task?.is_urgent" />
           </div>
         </div>
 
-        <div class="flex items-center flex-wrap gap-3">
-          <RouterLink
-            v-for="(item, index) in task.users"
-            :key="index"
-            :to="{
-              name: 'TaskList',
-              query: {
-                ...route.query,
-                view: 'userwise',
-                'company-id': item.company_id,
-                'user-ids': item.id,
-              },
-            }"
-          >
-            <UserChip
-              class="flex items-center gap-2 border rounded-full px-1 py-0.5 shadow-sm"
-              :class="{ '!bg-yellow-400': task?.is_target }"
-              :user="item"
-            />
-          </RouterLink>
+        <div
+          class="col-span-full md:col-span-3 xl:col-span-3 flex items-center mb-8 md:mb-0 justify-center md:justify-end flex-wrap gap-3"
+        >
+          <TaskAssignedUsers
+            class="flex items-center justify-center md:justify-end flex-wrap gap-3"
+            :users="task.users || []"
+            :routeTo="
+              (user) => ({
+                query: {
+                  ...route.query,
+                  view: 'userwise',
+                  'company-id': user.company_id,
+                  'user-ids': user.id,
+                },
+              })
+            "
+          />
 
-          <div v-if="task.users.length === 0" class="text-gray-500 text-xs">
-            Not Assigned To Anyone
-          </div>
           <RouterLink
             :to="{ name: 'TaskUserAssign', params: { id: task?.id } }"
-            title="Assign user"
+            title="Add/Remove User"
             class="border-gray-400 bg-gray-50 text-gray-500 hover:bg-indigo-600 hover:text-white font-semibold px-3 py-0.5 rounded-full transition border"
           >
-            <i class="fas fa-user-plus"></i>
+            <i class="fas fa-users-cog"></i>
           </RouterLink>
-        </div>
-
-        <div class="flex justify-end items-center gap-2">
-          <span
-            class="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800 border border-blue-200"
-            >{{ task.status }}</span
-          >
-          <SubTaskProgress :task="task" ref="progress" class="text-sm" />
         </div>
       </div>
 
-      <div class="mt-4">
-        <div class="flex items-center">
-          <div class="flex gap-3 items-center">
-            <div class="text-xs text-gray-500 flex gap-3">
-              <button
-                :class="{
-                  'text-yellow-600 font-semibold  inline-block animate-bounce': hasSubTask,
-                }"
-                class="flex items-center gap-1 group"
-                @click="handleSubTaskClick"
-              >
-                <i
-                  :class="showSubTask ? 'fa-caret-down' : 'fa-caret-right'"
-                  class="fas w-3 text-left text-xl"
-                ></i>
-                <span :class="hasSubTask ? 'group-hover:underline' : ''">
-                  Sub Tasks ({{ task.children_tasks?.length }})
-                </span>
-              </button>
+      <div
+        class="ml-auto text-right text-sm flex items-center justify-center sm:justify-start gap-4"
+      >
+        <div v-if="task.is_target" class="bg-yellow-200 px-2 py-0.5 rounded-lg text-yellow-900">
+          TARGET TASK
+        </div>
 
-              <a
-                :href="`/tasks/add?parent_id=${props.task.id}`"
-                class="hover:bg-indigo-600 hover:text-white text-indigo-600 font-semibold px-3 py-0.5 rounded-full transition border border-transparent"
-                @click.stop.prevent="emits('addClick', props.task.id)"
-                v-if="treeLevel < 2"
-              >
-                <i class="fas fa-plus"></i> Add Sub Task
-              </a>
-            </div>
-          </div>
+        <span class="text-gray-500" v-if="startedDate">
+          Started: <span class="font-semibold text-green-800">{{ startedDate }}</span>
+        </span>
+        <span class="ml-4 text-gray-500" v-if="deadline">
+          Deadline: <span class="text-red-500 font-semibold">{{ deadline }}</span>
+        </span>
+      </div>
 
-          <div class="ml-auto text-right text-sm flex items-center gap-4">
-            <div v-if="task.is_target" class="bg-yellow-200 px-2 py-0.5 rounded-lg text-yellow-900">
-              TARGET TASK
-            </div>
+      <div class="mt-4 col-span-full">
+        <div class="flex flex-col sm:flex-row gap-3 items-center mt-4 w-full">
+          <div class="text-xs text-gray-500 flex gap-3 order-1 sm:order-0">
+            <button
+              :class="{
+                'text-yellow-600 font-semibold  inline-block  ': hasSubTask,
+              }"
+              class="flex items-center gap-1 group"
+              @click="handleSubTaskClick"
+            >
+              <i
+                :class="showSubTask ? 'fa-caret-down' : 'fa-caret-right'"
+                class="fas w-3 text-left text-xl"
+              ></i>
+              <span :class="hasSubTask ? 'group-hover:underline' : ''">
+                Sub Tasks ({{ task.children_tasks?.length }})
+              </span>
+            </button>
 
-            <span class="text-gray-500" v-if="startedDate">
-              Started: <span class="font-semibold text-green-800">{{ startedDate }}</span>
-            </span>
-            <span class="ml-4 text-gray-500" v-if="deadline">
-              Deadline: <span class="text-red-500 font-semibold">{{ deadline }}</span>
-            </span>
-          </div>
-
-          <div class="flex gap-2 ml-4 items-center text-xs" v-if="!hideButtons">
             <a
-              :href="`/tasks/edit/${task.id}`"
-              @click.stop.prevent="emits('editClick', task.id)"
-              class="btn-2 py-0.5 text-xs"
+              :href="`/tasks/add?parent_id=${props.task.id}`"
+              class="hover:bg-indigo-600 hover:text-white text-indigo-600 font-semibold px-3 py-0.5 rounded-full transition border border-transparent"
+              @click.stop.prevent="emits('addClick', props.task.id)"
+              v-if="treeLevel < 2"
             >
-              <i class="fas fa-edit"></i> Edit
+              <i class="fas fa-plus"></i> Add Sub Task
             </a>
+          </div>
 
-            <RouterLink
-              :to="{ name: 'TaskReports', params: { id: task?.id } }"
-              class="border-indigo-500 hover:bg-indigo-600 text-indigo-600 hover:text-white font-semibold px-3 py-0.5 rounded-full transition border-2"
-            >
-              <i class="far fa-file-alt"></i> Reports
-            </RouterLink>
+          <div class="flex items-center sm:ml-auto order-0 sm:order-1">
+            <div class="flex gap-2 ml-4 items-center text-xs" v-if="!hideButtons">
+              <a
+                :href="`/tasks/edit/${task.id}`"
+                @click.stop.prevent="emits('editClick', task.id)"
+                class="btn-2 py-0.5 text-xs"
+              >
+                <i class="fas fa-edit"></i> Edit
+              </a>
+
+              <RouterLink
+                :to="{ name: 'TaskReports', params: { id: task?.id } }"
+                class="border-indigo-500 hover:bg-indigo-600 text-indigo-600 hover:text-white font-semibold px-3 py-0.5 rounded-full transition border-2"
+              >
+                <i class="far fa-file-alt"></i> Reports
+              </RouterLink>
+            </div>
           </div>
         </div>
+
         <div class="ml-0">
           <TaskTreeChildren
             v-if="showSubTask"
@@ -168,10 +166,11 @@
 <script setup>
 import TaskTreeChildren from '@/components/TaskTreeChildren.vue'
 import SubTaskProgress from '@/components/tasks/SubTaskProgress.vue'
-import UserChip from '@/components/user/UserChip.vue'
+import TaskStatus from '@/components/tasks/TaskStatus.vue'
 import { getDisplayDate } from '@/libs/datetime.js'
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import TaskAssignedUsers from './tasks/TaskAssignedUsers.vue'
 import TaskImportantBadge from './tasks/TaskImportantBadge.vue'
 import TaskTitleRouterLink from './tasks/TaskTitleRouterLink.vue'
 import TaskUrgentBadge from './tasks/TaskUrgentBadge.vue'
@@ -239,17 +238,6 @@ watch(
 const hasSubTask = computed(() => {
   return props.task?.children_tasks?.length > 0
 })
-
-// const priorityColor = (priority) => {
-//   switch (priority) {
-//     case 'HIGH':
-//       return 'border-red-500 text-red-500'
-//     case 'MEDIUM':
-//       return 'border-yellow-500 text-yellow-500'
-//     default:
-//       return 'border-gray-300 text-gray-500'
-//   }
-// }
 
 function handleSubTaskClick() {
   if (props.task.children_tasks.length > 0) {

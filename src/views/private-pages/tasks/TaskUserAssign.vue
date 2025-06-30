@@ -53,7 +53,7 @@ const submit = async () => {
 
   try {
     await taskStore.assignUsers(taskId, user_ids.value)
-    router.push({ name: 'TaskList' })
+    router.back()
   } catch (err) {
     error.value = err.message || 'Assign users failed'
   } finally {
@@ -121,7 +121,7 @@ const submit = async () => {
 
           <button
             type="button"
-            @click="router.push({ name: 'TaskList' })"
+            @click="router.back()"
             class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-5 py-2 rounded transition"
           >
             Cancel
