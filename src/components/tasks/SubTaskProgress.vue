@@ -1,24 +1,41 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
-type Task = {
-  id: number | string
-  status: string
-  completed_count: number
-  children_task_count: number
-  children_tasks: Task[]
-}
+type Task = { id: number | string; status: string; children_tasks: Task[] }
 const props = defineProps<{ task: Task }>()
 
 const completedSubTaskCount = computed(function () {
-  return props.task.completed_count
+  if (props.task.children_tasks.length === 0) {
+    return props.task.status === 'COMPLETED' ? 1 : 0
+  }
+
+  const getChildrenCompletedCount = (childrenTasks: Task[]) => {
+    let count = 0
+
+    for (let i = 0; i < childrenTasks.length; i++) {
+      const child = childrenTasks[i]
+
+      if (child.children_tasks.length === 0) {
+        if (child.status === 'COMPLETED') count += 1
+      } else {
+        // Recursive call
+        const total = child.children_tasks.length
+        const completed = getChildrenCompletedCount(child.children_tasks)
+        if (completed === total) count += 1
+      }
+    }
+
+    return count
+  }
+
+  return getChildrenCompletedCount(props.task.children_tasks)
 })
 
 const completedPercentage = computed<number>(() => {
-  if (props.task.children_task_count === 0) {
+  if (props.task.children_tasks.length === 0) {
     return props.task.status === 'COMPLETED' ? 100 : 0
   }
 
-  return (completedSubTaskCount.value / props.task.children_task_count) * 100
+  return (completedSubTaskCount.value / props.task.children_tasks.length) * 100
 })
 
 const progressColor = computed<{ container: string; bar: string; text: string }>(() => {
@@ -55,7 +72,6 @@ defineExpose({
       class="rounded-full border py-0.5 relative overflow-hidden h-6"
       style="width: 180px"
       :class="progressColor.container"
-      v-if="task.children_task_count > 0"
     >
       <div
         class="z-10 absolute top-0 bottom-0"
@@ -68,7 +84,7 @@ defineExpose({
       >
         <span>
           <span>{{ completedSubTaskCount }}</span> /
-          <span>{{ task.children_task_count }}</span>
+          <span>{{ task.children_tasks.length || 1 }}</span>
         </span>
       </span>
     </div>
