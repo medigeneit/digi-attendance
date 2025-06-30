@@ -56,6 +56,7 @@
           <TaskAssignedUsers
             class="flex items-center justify-center flex-wrap gap-3"
             :users="task.users || []"
+            :isTargetTask="task.is_target"
             :routeTo="
               (user) => ({
                 query: {
