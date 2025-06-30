@@ -19,8 +19,8 @@ const hiddenUsers = computed(() => {
 })
 
 function routerLinkTo(item) {
-  if (typeof props.routerTo == 'function') {
-    return props.routerTo(item)
+  if (typeof props.routeTo == 'function') {
+    return props.routeTo(item)
   }
 }
 
