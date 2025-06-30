@@ -114,7 +114,7 @@ const taskFilter = computed({
 </script>
 
 <template>
-  <div class="container mx-auto p-6 relative">
+  <div class="container mx-auto p-6 relative bg-white border rounded-md shadow-md">
     <OverlyModal v-if="editingId">
       <TaskEditForm
         :taskId="editingId"
@@ -149,7 +149,7 @@ const taskFilter = computed({
       </div>
     </template>
 
-    <div class="w-full flex justify-end gap-5 mb-1">
+    <div class="w-full flex justify-end gap-5 mb-4">
       <RouterLink
         class="text-sm btn-3 py-0.5"
         :class="route.query?.view === 'userwise' ? 'bg-blue-500 text-white' : ''"

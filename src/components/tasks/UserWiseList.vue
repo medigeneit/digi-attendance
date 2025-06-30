@@ -68,40 +68,32 @@ const taskUsers = computed(() => {
         <template v-for="taskUser in taskUsers" :key="taskUser.id">
           <tr v-for="(task, taskIndex) in taskUser.tasks" :key="task.id">
             <td
-              class="border p-4 align-top"
+              class="border p-4 align-top border-green-300 bg-blue-50"
               v-if="taskIndex == 0"
               :rowspan="Math.max(taskUser.tasks.length, 1)"
             >
               <UserChip :user="taskUser" class="sticky top-[80px]" />
             </td>
 
-            <td class="">
+            <td
+              class="py-4 px-4 border-x border-green-300 bg-blue-50"
+              :class="{
+                'border-t': taskIndex == 0,
+                'border-b': taskUser.tasks.length - 1 === taskIndex,
+              }"
+            >
               <TaskTreeView
                 :task="task"
-                class="!border-0"
+                class="!border-0 my-0"
                 :index="taskIndex"
                 @commentButtonClick="emit('commentButtonClick', item.id)"
                 @editClick="(taskId) => emit('editClick', taskId)"
                 @addClick="(taskId) => emit('addClick', taskId)"
-              >
-                <template #item-override="{ task, level }">{{ { task, level } }} </template>
-              </TaskTreeView>
-              <!-- #{{ task.id }} - {{ task.title }} -->
+              />
             </td>
-            <!-- <td class="border p-4">
-              {{ task.parent_id }}
-            </td>
-            <td class="border p-4">
-              {{ task.users.find((tu) => tu.id == taskUser.id)?.name }}
-            </td>
-            <td class="border p-4"></td>
-            <td class="border p-4"></td> -->
           </tr>
         </template>
       </tbody>
     </table>
   </div>
-  <!-- <pre>{{ userTasks }}</pre>
-  <pre>{{ users }}</pre>
-  <pre>{{ tasks }}</pre> -->
 </template>

@@ -9,8 +9,14 @@ defineProps({ user: Object, hideEmployeeId: { type: Boolean, default: false } })
   >
     <UserAvatar :user="user" class="w-6 h-6 !text-xs" />
     <span class="text-xs text-gray-700 mr-2 flex items-center gap-1">
-      <span class="line-clamp-1">{{ user?.name }}</span>
-      <span v-if="user.employee_id && !hideEmployeeId"> #{{ user.employee_id }}</span>
+      <span
+        class="text-gray-900 font-semibold w-full"
+        :class="{ '  ': user.employee_id && !hideEmployeeId }"
+        >{{ user?.name }}</span
+      >
+      <span v-if="user.employee_id && !hideEmployeeId" class="text-gray-500">
+        {{ user.employee_id }}</span
+      >
     </span>
     <slot name="after" :user="user"></slot>
   </div>

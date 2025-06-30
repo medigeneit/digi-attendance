@@ -32,7 +32,7 @@ const ItemComponent = computed(() => {
 })
 </script>
 <template>
-  <div>
+  <div class="relative">
     <div v-if="props.users.length === 0" class="text-gray-500 text-xs">Not Assigned To Anyone</div>
     <component
       v-else
@@ -48,14 +48,12 @@ const ItemComponent = computed(() => {
       />
     </component>
 
-    <div v-if="hiddenUsers.length > 0" class="text-sm text-gray-500 relative group/users">
+    <div v-if="hiddenUsers.length > 0" class="text-sm text-gray-500 group/users">
       <div class="cursor-pointer hover:underline text-blue-600">
         + {{ hiddenUsers.length }} more users
       </div>
 
-      <div
-        class="hidden absolute group-hover/users:block right-0 p-3 bg-white rounded shadow-lg min-w-48"
-      >
+      <div class="hidden absolute group-hover/users:block right-0 p-3 bg-white rounded shadow-lg">
         <component
           :is="ItemComponent"
           v-for="(item, index) in hiddenUsers"
