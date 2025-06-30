@@ -52,11 +52,9 @@
           </div>
         </div>
 
-        <div
-          class="col-span-full md:col-span-3 xl:col-span-3 flex items-center mb-8 md:mb-0 justify-center md:justify-end flex-wrap gap-3"
-        >
+        <div class="col-span-full flex items-center my-6 lg:my-8 justify-center flex-wrap gap-3">
           <TaskAssignedUsers
-            class="flex items-center justify-center md:justify-end flex-wrap gap-3"
+            class="flex items-center justify-center flex-wrap gap-3"
             :users="task.users || []"
             :routeTo="
               (user) => ({
