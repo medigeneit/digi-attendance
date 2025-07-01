@@ -197,7 +197,18 @@ watch(selectedDepartment, async (departmentId) => {
 watch(selectedMonth, async (month) => {
   if (month && selectedCompany.value && selectedDepartment.value) {
     await companyStore.fetchEmployee(selectedCompany.value)
-    await shiftStore.fetchShifts({ companyId: selectedCompany.value })
+
+    if (selectedCompany.value) {
+      await shiftStore.fetchShifts({ companyId: selectedCompany.value })
+    }
+
+    if (selectedDepartment.value) {
+      const response = await departmentStore.fetchDepartmentEmployee({
+        departmentIds: [selectedDepartment.value],
+      })
+      employees.value = response
+    }
+
     assignColorsToShifts()
     await loadScheduleData(selectedCompany.value, selectedDepartment.value, month)
   }
