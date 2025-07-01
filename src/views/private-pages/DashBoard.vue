@@ -79,7 +79,7 @@
           <div class="space-y-2">
             <div class="flex items-center">
               <i class="fas fa-file mr-2 h-5 w-5"></i>
-              <h2 class="text-xl font-semibold">Recent Applications</h2>
+              <h2 class="text-xl font-semibold">Applications</h2>
             </div>
 
             <RouterLink
@@ -124,50 +124,54 @@
           <div class="flex justify-between items-start mb-4">
             <div class="flex items-center">
               <i class="fas fa-file mr-2 h-5 w-5"></i>
-              <h2 class="text-xl font-semibold">Recent Notices</h2>
+              <h2 class="text-xl font-semibold">Notices</h2>
             </div>
           </div>
-          <div class="space-y-4">
+          <div class="space-y-3">
             <div
               v-for="(notice, index) in userDashboard.notices"
               :key="index"
-              class="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+              class="flex items-center justify-between p-4 border rounded-lg shadow-sm hover:shadow transition-all bg-white"
             >
-              <div
-                :class="[
-                  'p-1 rounded-full',
-                  notice.priority === 'high'
-                    ? 'bg-red-100'
-                    : notice.priority === 'medium'
-                      ? 'bg-yellow-100'
-                      : 'bg-green-100',
-                ]"
-              >
-                <span
-                  :class="[
-                    'h-4 w-4',
-                    notice.priority === 'high'
-                      ? 'bg-red-600'
-                      : notice.priority === 'medium'
-                        ? 'bg-yellow-600'
-                        : 'bg-green-600',
-                    'rounded-full inline-block',
-                  ]"
-                ></span>
+              <!-- Left Section: Status + Title -->
+              <div class="flex items-center space-x-4">
+                <!-- Status Circle with Tooltip -->
+                <div
+                  :class="['rounded-full', !notice.user_feedback ? 'bg-red-100' : 'bg-green-100']"
+                  class="h-8 w-8 flex items-center justify-center rounded-full"
+                >
+                  <span
+                    :class="[
+                      'h-3 w-3',
+                      !notice.user_feedback ? 'bg-red-600' : 'bg-green-600',
+                      'rounded-full inline-block',
+                    ]"
+                  ></span>
+
+                  <div
+                    class="absolute top-10 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition pointer-events-none z-10 whitespace-nowrap"
+                  >
+                    {{ !notice.user_feedback ? 'Feedback Pending' : 'Feedback Submitted' }}
+                  </div>
+                </div>
+
+                <!-- Notice Details -->
+                <div>
+                  <p class="text-sm font-medium text-gray-900">{{ notice.title }}</p>
+                  <p class="text-xs text-gray-500 mt-0.5">{{ notice.published_at }}</p>
+                </div>
               </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-gray-900">{{ notice.title }}</p>
-                <p class="text-xs text-gray-400 mt-1">{{ notice.published_at }}</p>
-              </div>
+
+              <!-- Right Section: View Button -->
               <RouterLink
                 :to="
                   notice.type === 1
                     ? `/notice-details/${notice.id}`
                     : `/policy-details/${notice.id}`
                 "
-                class="text-blue-500 hover:text-blue-700 font-semibold"
+                class="text-blue-600 hover:text-blue-800 font-semibold text-sm"
               >
-                View Details
+                View
               </RouterLink>
             </div>
           </div>
