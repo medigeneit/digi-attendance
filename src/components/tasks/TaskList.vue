@@ -21,6 +21,11 @@ const props = defineProps({
     type: Number,
     default: 0,
   },
+
+  treeLevel: {
+    type: Number,
+    required: true,
+  },
 })
 const emit = defineEmits(['commentButtonClick', 'editClick', 'addClick', 'updatePriority'])
 
@@ -67,11 +72,12 @@ const handleTaskPrioritySave = async () => {
         <TaskTreeView
           :index="index"
           :task="item"
+          :showDraggableHandle="true"
+          :tree-level="treeLevel"
           class="!border-0"
           @commentButtonClick="emit('commentButtonClick', item.id)"
           @editClick="(taskId) => emit('editClick', taskId)"
           @addClick="(taskId) => emit('addClick', taskId)"
-          :showDraggableHandle="true"
         />
       </DraggableList>
 

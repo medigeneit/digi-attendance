@@ -52,11 +52,10 @@ async function fetchTasks() {
   const data = await store.fetchTasks(
     { ...route.query },
     {
+      newList: true,
       loadingBeforeFetch: true,
     },
   )
-
-  console.log({ dataQuery: data.query_log })
 
   queryLogs.value = data.query_log || []
 }
@@ -114,7 +113,7 @@ const taskFilter = computed({
 </script>
 
 <template>
-  <div class="container mx-auto p-6 relative bg-white border rounded-md shadow-md">
+  <div class="container mx-auto p-6 relative">
     <OverlyModal v-if="editingId">
       <TaskEditForm
         :taskId="editingId"
@@ -149,12 +148,11 @@ const taskFilter = computed({
       </div>
     </template>
 
-    <div class="w-full flex justify-end gap-5 mb-4">
+    <div class="w-full flex justify-end gap-5 mb-1">
       <RouterLink
         class="text-sm btn-3 py-0.5"
         :class="route.query?.view === 'userwise' ? 'bg-blue-500 text-white' : ''"
         :to="{
-          name: 'TaskList',
           query: {
             ...route.query,
             view: 'userwise',
@@ -167,7 +165,6 @@ const taskFilter = computed({
         class="text-sm btn-3 py-0.5"
         :class="route.query?.view !== 'userwise' ? 'bg-blue-500 text-white' : ''"
         :to="{
-          name: 'TaskList',
           query: {
             ...Object.keys(route?.query || {})
               .filter((k) => route?.query[k] !== 'userwise')
@@ -181,6 +178,7 @@ const taskFilter = computed({
     <div v-if="store.loading">
       <LoaderView />
     </div>
+
     <template v-else>
       <div v-if="store.error" class="text-center py-4 text-red-500">
         {{ store.error }}
@@ -198,7 +196,7 @@ const taskFilter = computed({
 
         <DraggableList
           v-else
-          :items="store.taskListTree"
+          :items="store.tasks"
           handle="handle"
           @itemsUpdate="handleItemsPriorityUpdate"
           class="space-y-4"

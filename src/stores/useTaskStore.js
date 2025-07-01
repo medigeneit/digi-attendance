@@ -24,14 +24,20 @@ export const useTaskStore = defineStore('task', () => {
     }
   };
 
-  const fetchTasks = async (params,{loadingBeforeFetch = true}) => {
+  const fetchTasks = async (params,{loadingBeforeFetch = true, newList=false} = {}) => {
     if(loadingBeforeFetch ) {
       loading.value = true;
     }
 
     error.value = null;
     try {
-      const response = await apiClient.get('/tasks', {params});
+      let response;
+      if( newList ) {
+        response = await apiClient.get('/tasks2', {params});
+      } else {
+        response = await apiClient.get('/tasks', {params});
+      }
+
       tasks.value = response.data?.tasks || [];
       return response.data;
     } catch (err) {

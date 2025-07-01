@@ -1,10 +1,12 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import ChangePasswordModal from '@/components/user/ChangePasswordModal.vue'
 import { useAuthStore } from '@/stores/auth'
 import { computed, ref } from 'vue'
 
 const authStore = useAuthStore()
 const isLoading = ref(false)
+const changePasswordModal = ref(false)
 
 // লগইন করা ইউজারের তথ্য
 const user = computed(() => authStore.user)
@@ -16,13 +18,26 @@ const formatDate = (date) => {
 </script>
 
 <template>
+  <ChangePasswordModal
+    v-if="changePasswordModal"
+    @close="
+      () => {
+        changePasswordModal = false
+      }
+    "
+    :user="user"
+  />
   <div class="my-container space-y-6">
     <div class="card-bg p-6">
-      <div class="flex justify-between">
-        <div></div>
-
+      <div class="flex justify-between gap-4">
         <h2 class="title-lg text-center">My Profile</h2>
-
+        <button
+          type="button"
+          @click="changePasswordModal = !changePasswordModal"
+          class="ml-auto bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+        >
+          Change Password
+        </button>
         <RouterLink to="/my-profile/edit" class="btn-2">
           <i class="far fa-edit"></i> Edit
         </RouterLink>

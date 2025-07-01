@@ -189,7 +189,7 @@ watch(selectedCompanyId, async (newVal) => {
           <tr class="bg-gray-100 text-sm">
             <th class="border px-2 py-1">#</th>
             <th class="border px-2 py-1">Emp/Worker Name</th>
-            <th v-for="date in dateList" :key="date" colspan="3" class="border px-2 py-1">
+            <th v-for="date in dateList" :key="date" colspan="5" class="border px-2 py-1">
               {{ formatDate(date) }}
             </th>
           </tr>
@@ -199,6 +199,8 @@ watch(selectedCompanyId, async (newVal) => {
             <template v-for="date in dateList" :key="date">
               <th class="border px-2 py-1">In</th>
               <th class="border px-2 py-1">Out</th>
+              <th class="border px-2 py-1">Late</th>
+              <th class="border px-2 py-1">Early</th>
               <th class="border px-2 py-1">Comment</th>
             </template>
           </tr>
@@ -217,6 +219,12 @@ watch(selectedCompanyId, async (newVal) => {
               </td>
               <td class="border px-2 py-1">
                 {{ emp.attendance?.[date]?.out || '-' }}
+              </td>
+              <td class="border px-2 py-1">
+                {{ emp.attendance?.[date]?.late || '-' }}
+              </td>
+              <td class="border px-2 py-1">
+                {{ emp.attendance?.[date]?.early || '-' }}
               </td>
               <td class="border px-2 py-1">
                 {{ emp.attendance?.[date]?.comment || '' }}

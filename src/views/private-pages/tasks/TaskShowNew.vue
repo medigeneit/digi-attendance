@@ -4,10 +4,10 @@ import CountdownTimer from '@/components/CountdownTimer.vue'
 import SubTaskList from '@/components/tasks/SubTaskList.vue'
 import SubTaskProgress from '@/components/tasks/SubTaskProgress.vue'
 import TaskProgressTable from '@/components/tasks/TaskProgressTable.vue'
+import TaskStatus from '@/components/tasks/TaskStatus.vue'
 import TaskUserDateUpdate from '@/components/tasks/TaskUserDateUpdate.vue'
 import { getDisplayDate } from '@/libs/datetime'
 import { getTaskProgressUsers } from '@/libs/task-progress'
-import { useTaskTree } from '@/libs/task-tree'
 import { useAuthStore } from '@/stores/auth'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
@@ -17,12 +17,15 @@ const store = useTaskStore()
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
+const task = ref()
 
-const taskTree = useTaskTree()
-const subTasks = computed(() => taskTree.getTaskListTree())
+// const subTasks = computed(() => taskTree.getTaskListTree())
+const subTasks = computed(() => store.tasks)
 const progress = ref({})
 
-onMounted(async () => {})
+onMounted(async () => {
+  fetchTaskList(route.params.id)
+})
 
 const dateUpdateModal = reactive({
   user: null,
@@ -35,24 +38,27 @@ const goToEdit = (id) => {
 
 const backLink = computed(() => {
   if (store.task.parent_id == 0) {
-    return { name: 'TaskList', params: { id: store.task?.id } }
+    return { name: 'NewTaskList', params: { id: store.task?.id } }
   }
   return { name: 'TaskShow', params: { id: store.task?.parent_id } }
 })
 
 async function fetchTaskList(taskId) {
-  const taskResponse = await store.fetchTask(taskId)
-  taskTree.setTaskList(taskResponse.sub_tasks, store.task.id)
-}
-
-const taskForProgress = computed(() => {
-  return {
-    ...store.task,
-    ...{
-      children_tasks: subTasks.value,
+  await store.fetchTask(taskId)
+  const taskResponse = await store.fetchTasks(
+    {
+      parent_id: taskId,
     },
-  }
-})
+    {
+      newList: true,
+      loadingBeforeFetch: true,
+    },
+  )
+
+  task.value = taskResponse.parent_task
+
+  //taskTree.setTaskList(taskResponse.sub_tasks, store.task.id)
+}
 
 const taskProgressUsers = computed(() =>
   getTaskProgressUsers(store.task.users, store.task.task_reports),
@@ -71,15 +77,12 @@ function handleDateChangeModal(type) {
 }
 
 async function handleUpdateDate() {
-  await fetchTaskList(store.task.id)
+  await fetchTaskList(route.params.id)
   dateUpdateModal.user = null
   dateUpdateModal.type = ''
 }
 
-watch(() => route.params.id, fetchTaskList, {
-  initial: true,
-  immediate: true,
-})
+watch(() => route.params.id, fetchTaskList)
 </script>
 
 <template>
@@ -118,21 +121,10 @@ watch(() => route.params.id, fetchTaskList, {
             </div>
 
             <div
-              class="text-right col-span-full md:col-span-1 ml-auto flex justify-center gap-4 !text-lg"
+              class="text-right col-span-full md:col-span-1 ml-auto flex items-start justify-center gap-4 !text-lg"
             >
-              <span
-                :class="{
-                  'bg-gray-200': store.task?.status === 'PENDING',
-                  'bg-blue-200': store.task?.status === 'IN_PROGRESS',
-                  'bg-green-200': store.task?.status === 'COMPLETED',
-                  'bg-red-200': store.task?.status === 'BLOCKED',
-                }"
-                class="px-3 py-0.5 rounded-full text-sm h-6"
-              >
-                {{ store.task?.status }}
-              </span>
-
-              <SubTaskProgress :task="taskForProgress" ref="progress" class="!text-lg" />
+              <TaskStatus :status="task?.status" class="" />
+              <SubTaskProgress v-if="task" :task="task" ref="progress" class="!text-lg" />
             </div>
           </div>
 

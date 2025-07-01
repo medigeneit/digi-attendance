@@ -6,7 +6,8 @@ import Swal from 'sweetalert2'
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useToast } from 'vue-toastification'
-
+import { useHead } from '@vueuse/head'
+import noitceImage from '@/assets/notice.png'
 const noticeStore = useNoticeStore()
 const toast = useToast()
 const route = useRoute()
@@ -73,11 +74,34 @@ const createNoticeFeedback = async () => {
 
 onMounted(async () => {
   await fetchNotice()
+  useHead({
+    title: notice.value?.title || 'Genesis - Notice',
+    meta: [
+      { property: 'og:title', content: notice.value?.title || 'Genesis - Notice' },
+      { property: 'og:image', content: notice.value?.file || '/src/assets/notice.png' },
+      { property: 'og:description', content: notice.value?.description || 'Genesis - Notice Description' },
+    ]
+  })
 })
 
 const downloadFile = async (fileUrl) => {
   window.open(fileUrl, '_blank') // Opens file in a new tab
 }
+
+const isImage = (file) => {
+  if (!file) return false;
+  return /\.(jpg|jpeg|png|gif|webp)$/i.test(file);
+};
+
+const isPDF = (file) => {
+  if (!file) return false;
+  return /\.pdf$/i.test(file);
+};
+
+const getFilename = (file) => {
+  return file?.split('/').pop();
+};
+
 </script>
 
 <template>
@@ -93,6 +117,7 @@ const downloadFile = async (fileUrl) => {
           <p class="title-md">Notice Info</p>
           <hr class="mb-2" />
           <div class="grid md:grid-cols-2 gap-4">
+            <!-- 
             <div>
               <p class="text-sm font-bold text-gray-600">Company:</p>
               <p class="text-lg text-gray-800">{{ notice?.company?.name || 'N/A' }}</p>
@@ -108,7 +133,7 @@ const downloadFile = async (fileUrl) => {
               </p>
             </div>
 
-            <div>
+             <div>
               <p class="text-sm font-bold text-gray-600">Published Date:</p>
               <p class="text-lg text-gray-800">{{ formatDate(notice?.published_at) }}</p>
             </div>
@@ -116,19 +141,41 @@ const downloadFile = async (fileUrl) => {
             <div>
               <p class="text-sm font-bold text-gray-600">Expired Date:</p>
               <p class="text-lg text-gray-800">{{ formatDate(notice?.expired_at) }}</p>
+            </div> -->
+            <div class="col-span-full flex items-center gap-2">
+              <p class="text-sm font-bold text-gray-600">Title:</p>
+              <p class="text-lg text-gray-800" v-html="notice?.title"></p>
             </div>
-
-            <div>
-              <p class="text-sm font-bold text-gray-600">File:</p>
-              <button v-if="notice?.file" @click="downloadFile(notice?.file)" class="btn-2">
-                Download File
-              </button>
-            </div>
-
-            <div class="col-span-full">
+            <div class="col-span-full" v-if="notice?.description">
               <p class="text-sm font-bold text-gray-600">Description / Body:</p>
               <p class="text-lg text-gray-800" v-html="notice?.description"></p>
             </div>
+            <div class="col-span-full" v-if="notice?.file">
+              <div class="flex items-center gap-2">
+                 <!-- যদি ইমেজ হয় -->
+                <img
+                  v-if="isImage(notice?.file)"
+                  :src="notice?.file"
+                  alt="Notice File"
+                  class="object-cover rounded-md cursor-pointer"
+                  style="width: 70%;"
+                  @click="downloadFile(notice?.file)"
+                />
+
+                <!-- যদি PDF হয় -->
+                <iframe
+                  v-else-if="isPDF(notice?.file)"
+                  :src="notice?.file"
+                  class="w-full h-96 border rounded-md"
+                ></iframe>
+
+                <!-- অন্য ফাইল -->
+                <span v-else class="text-blue-500 cursor-pointer" @click="downloadFile(notice?.file)">
+                  File: {{ getFilename(notice?.file) }}
+                </span>
+              </div>
+            </div>
+           
           </div>
         </div>
         <div class="md:flex justify-center mt-8 gap-4" v-if="!notice?.user_feedback">

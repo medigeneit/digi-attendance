@@ -65,6 +65,9 @@ onMounted(async () => {
 })
 
 function getEmployee(employeeId) {
+  if (!Array.isArray(employees.value)) {
+    return null
+  }
   return employees.value.find((emp) => emp.id == employeeId) || null
 }
 
@@ -94,7 +97,11 @@ function handleUserDeSelect() {
 
     <div class="flex flex-wrap items-center gap-2 mt-3">
       <div class="flex flex-wrap gap-4 w-full">
-        <div class="text-gray-600 w-full md:w-44">
+        <div class="text-gray-600 w-full md:w-64 relative">
+          <label
+            class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30"
+            >Company</label
+          >
           <select id="company-filter" v-model="selectedCompanyId" class="input-1">
             <option value="">All Company</option>
             <option v-for="company in companies" :key="company.id" :value="company.id">
@@ -103,7 +110,7 @@ function handleUserDeSelect() {
           </select>
         </div>
 
-        <div class="relative w-full md:w-52">
+        <div class="relative w-full md:w-72">
           <Multiselect
             :modelValue="selectedEmployee"
             @select="handleUserSelect"
@@ -112,7 +119,7 @@ function handleUserDeSelect() {
             :multiple="false"
             label="name"
             label-prefix="id"
-            placeholder="All Employee"
+            placeholder="All Employees"
             class="text-gray-600 w-full"
           >
             <template #option="{ option }">
@@ -130,9 +137,13 @@ function handleUserDeSelect() {
               &times;
             </button>
           </div>
+          <label class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 z-50"
+            >Employee</label
+          >
         </div>
 
-        <div class="text-gray-600 w-40">
+        <div class="text-gray-600 w-40 relative">
+          <label class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500">Status</label>
           <select v-model="taskStatus" class="input-1">
             <option value="">All Tasks</option>
             <option value="not-completed">Not Completed</option>
@@ -154,8 +165,15 @@ function handleUserDeSelect() {
             <span>Is Target</span>
           </label>
         </div>
-        <div class="text-gray-600 w-full md:w-40 md:ml-auto">
-          <input id="month-filter" v-model="month" type="month" class="input-1" />
+        <div class="text-gray-600 w-full md:w-40 md:ml-auto relative">
+          <label class="absolute text-xs left-2.5 -top-1.5 bg-slate-100 text-blue-500">Month</label>
+          <input
+            id="month-filter"
+            v-model="month"
+            type="month"
+            class="input-1"
+            placeholder="All month"
+          />
         </div>
       </div>
     </div>
@@ -188,9 +206,9 @@ function handleUserDeSelect() {
   @apply text-sm;
 }
 
-.task-header .multiselect .multiselect__content-wrapper {
+/* .task-header .multiselect .multiselect__content-wrapper {
   @apply top-[102%] left-[-1%];
-}
+} */
 
 .task-header .multiselect__tags {
   @apply h-full min-h-full   p-1.5 pr-6;
