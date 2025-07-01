@@ -184,7 +184,6 @@ watch(selectedCompany, async (companyId) => {
 watch(selectedDepartment, async (departmentId) => {
   if (departmentId) {
     const payload = {
-      companyId: selectedCompany.value,
       departmentIds: [departmentId],
     }
     const response = await departmentStore.fetchDepartmentEmployee(payload)
