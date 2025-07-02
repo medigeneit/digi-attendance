@@ -187,7 +187,7 @@ const update = async () => {
                 :value="department.id"
                 :key="department.id"
               >
-                {{ company.name }} - {{ department.name }}
+                {{ department.name }}
               </option>
             </optgroup>
           </select>
@@ -212,7 +212,7 @@ const update = async () => {
                 :value="department.id"
                 :key="department.id"
               >
-                {{ company.name }} - {{ department.name }}
+                {{ department.name }}
               </option>
             </optgroup>
           </select>
