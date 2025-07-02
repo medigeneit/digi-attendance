@@ -9,11 +9,11 @@ export const useCompanyStore = defineStore('company', () => {
   const loading = ref(false); // লোডিং স্টেট
   const error = ref(null); // এরর স্টেট
 
-  const fetchCompanies = async () => {
+  const fetchCompanies = async (params = {}) => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await apiClient.get('/companies');
+      const response = await apiClient.get('/companies', { params });
       companies.value = response.data;
     } catch (err) {
       error.value = err.response?.data?.message || 'কোম্পানি লোড করতে ব্যর্থ হয়েছে।';

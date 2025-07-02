@@ -118,19 +118,13 @@ const taskFilter = computed({
 <template>
   <div class="container mx-auto p-6 relative">
     <OverlyModal v-if="editingId">
-      <TaskEditForm
-        :taskId="editingId"
-        class="rounded-full"
-        @close="editingId = null"
-        @updated="handleTaskUpdate"
-      />
+      <TaskEditForm :taskId="editingId" @close="editingId = null" @updated="handleTaskUpdate" />
     </OverlyModal>
 
     <OverlyModal v-if="addForm">
       <TaskAddForm
         :parentTaskId="addFormData.parentId"
         :requirementId="addFormData.requirementId"
-        class="rounded-full"
         @close="handleTaskAddClose"
         @taskCreated="handleTaskUpdate"
       />
