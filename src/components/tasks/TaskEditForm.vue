@@ -62,7 +62,10 @@ onMounted(async () => {
     await store.fetchTask(props.taskId, {}, { fetchOnly: true, loadingBeforeFetch: false })
   )?.task
 
-  await companyStore.fetchCompanies({ with: 'departments' })
+  await companyStore.fetchCompanies({
+    with: 'departments',
+    ignore_permission: true,
+  })
 
   console.log({ task: task.value })
 

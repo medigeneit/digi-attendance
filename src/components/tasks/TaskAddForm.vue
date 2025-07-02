@@ -49,6 +49,7 @@ onMounted(async () => {
   state.value = 'loading'
   await companyStore.fetchCompanies({
     with: 'departments',
+    ignore_permission: true,
   })
 })
 
