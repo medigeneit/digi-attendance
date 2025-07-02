@@ -169,7 +169,7 @@ const update = async () => {
       <template v-if="task?.parent_id === 0">
         <div class="mb-4">
           <label class="block text-gray-600 text-sm mb-1 font-medium">
-            Requested Department <RequiredIcon />
+            From Department <RequiredIcon />
           </label>
 
           <select
@@ -195,7 +195,7 @@ const update = async () => {
 
         <div class="mb-4">
           <label class="block text-gray-600 text-sm mb-1 font-medium">
-            Executing Department <RequiredIcon />
+            To Department <RequiredIcon />
           </label>
           <select
             v-model="form.to_department_id"

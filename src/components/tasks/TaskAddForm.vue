@@ -51,6 +51,7 @@ onMounted(async () => {
     with: 'departments',
     ignore_permission: true,
   })
+  state.value = ''
 })
 
 watch(
@@ -117,7 +118,7 @@ async function submit() {
       </div>
     </div>
 
-    <SectionLoading v-if="state === 'loading' || state == 'submitting'" />
+    <SectionLoading v-if="state === 'loading' || state === 'submitting'" />
     <form @submit.prevent="submit">
       <p class="text-center mt-2 mb-6" v-if="requirementId && requirement?.title">
         Task under requirement <span class="text-sky-600">{{ requirement.title }}</span>
@@ -141,7 +142,7 @@ async function submit() {
       <template v-if="state !== 'loading' && !(parentTaskId && task?.title)">
         <div class="mb-4">
           <label class="block text-gray-600 text-sm mb-1 font-medium">
-            Requested Department <RequiredIcon />
+            From Department <RequiredIcon />
           </label>
           <select
             v-model="form.from_department_id"
@@ -158,7 +159,7 @@ async function submit() {
                 :value="department.id"
                 :key="department.id"
               >
-                {{ company.name }} - {{ department.name }}
+                {{ department.name }}
               </option>
             </optgroup>
           </select>
@@ -166,7 +167,7 @@ async function submit() {
 
         <div class="mb-4">
           <label class="block text-gray-600 text-sm mb-1 font-medium">
-            Executing Department <RequiredIcon />
+            To Department <RequiredIcon />
           </label>
           <select
             v-model="form.to_department_id"
@@ -183,7 +184,7 @@ async function submit() {
                 :value="department.id"
                 :key="department.id"
               >
-                {{ company.name }} - {{ department.name }}
+                {{ department.name }}
               </option>
             </optgroup>
           </select>
@@ -266,13 +267,13 @@ async function submit() {
         ></textarea>
       </div>
 
-      <div class="sticky bottom-0 bg-white py-4 border-t">
+      <div class="sticky bottom-0 bg-white py-4 border-t -mx-6 px-6">
         <div v-if="store.error" class="mb-4 text-red-500 font-medium">
           {{ store.error }}
         </div>
         <hr v-if="store.error" class="mb-4" />
 
-        <div class="flex items-center gap-4">
+        <div class="flex items-center justify-between gap-4">
           <button
             :disabled="state == 'loading' || state == 'submitting'"
             type="submit"
