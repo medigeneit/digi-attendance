@@ -158,7 +158,7 @@ const getFilename = (file) => {
                   :src="notice?.file"
                   alt="Notice File"
                   class="object-cover rounded-md cursor-pointer"
-                  style="width: 70%;"
+                  style="width: 80%;"
                   @click="downloadFile(notice?.file)"
                 />
 
@@ -166,7 +166,7 @@ const getFilename = (file) => {
                 <iframe
                   v-else-if="isPDF(notice?.file)"
                   :src="notice?.file"
-                  class="w-full h-96 border rounded-md"
+                  class="w-full md:h-[700px] border rounded-md"
                 ></iframe>
 
                 <!-- অন্য ফাইল -->
