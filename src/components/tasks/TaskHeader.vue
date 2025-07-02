@@ -17,7 +17,7 @@ const props = defineProps({
   },
 })
 
-const fromDepartmentId = computed(setAndGetModelValue('form-department-id'))
+const fromDepartmentId = computed(setAndGetModelValue('from-department-id'))
 const toDepartmentId = computed(setAndGetModelValue('to-department-id'))
 
 const selectedEmployeeId = computed(setAndGetModelValue('user-ids'))
