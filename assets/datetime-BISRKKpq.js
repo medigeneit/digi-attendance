@@ -1,0 +1,1 @@
+const s=e=>{if(!e)return"";try{const t=new Date(e);if(isNaN(t))return"";const n=String(t.getDate()).padStart(2,"0"),a=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][t.getMonth()],r=t.getFullYear();return`${n}-${a}-${r}`}catch{return""}};export{s as g};
