@@ -58,13 +58,15 @@
         <div
           class="col-span-full flex items-center my-2 lg:my-0 justify-center flex-wrap gap-x-3 gap-y-2"
         >
-          <div class="text-xs px-2 py-0.5 rounded-full border bg-sky-500 text-white">
-            {{ task?.from_department?.name || '--' }}
-          </div>
-          <span class="text-2xl text-gray-400">&rArr;</span>
-          <div class="text-xs px-2 py-0.5 rounded-full border bg-blue-500 text-white">
-            {{ task?.to_department?.name || '--' }}
-          </div>
+          <template v-if="treeLevel === 0">
+            <div class="text-xs px-2 py-0.5 rounded-full border bg-sky-500 text-white">
+              {{ task?.from_department?.name || '--' }}
+            </div>
+            <span class="text-2xl text-gray-400">&rArr;</span>
+            <div class="text-xs px-2 py-0.5 rounded-full border bg-blue-500 text-white">
+              {{ task?.to_department?.name || '--' }}
+            </div>
+          </template>
 
           <TaskAssignedUsers
             class="flex items-center justify-center flex-wrap gap-x-3"

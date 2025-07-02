@@ -5,15 +5,16 @@ import { useRequirementStore } from '@/stores/useRequirementStore'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
+import CompanyDepartmentSelectInput from '../common/CompanyDepartmentSelectInput.vue'
 import SectionLoading from '../common/SectionLoading.vue'
 
 const props = defineProps({
   parentTaskId: {
-    type: Number,
+    type: [Number, String],
     required: true,
   },
   requirementId: {
-    type: Number,
+    type: [Number, String],
   },
 })
 
@@ -140,55 +141,27 @@ async function submit() {
       </div>
 
       <template v-if="state !== 'loading' && !(parentTaskId && task?.title)">
-        <div class="mb-4">
-          <label class="block text-gray-600 text-sm mb-1 font-medium">
-            From Department <RequiredIcon />
-          </label>
-          <select
-            v-model="form.from_department_id"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">--select department--</option>
-            <optgroup
-              v-for="company in companyStore.companies"
-              :key="company.id"
-              :label="company.name"
-            >
-              <option
-                v-for="department in company.departments"
-                :value="department.id"
-                :key="department.id"
-              >
-                {{ department.name }}
-              </option>
-            </optgroup>
-          </select>
-        </div>
+        <CompanyDepartmentSelectInput
+          v-model="form.from_department_id"
+          :companies="companyStore?.companies || []"
+        >
+          <template #label>
+            <label class="block text-gray-600 text-sm mb-1 font-medium">
+              From Department <RequiredIcon />
+            </label>
+          </template>
+        </CompanyDepartmentSelectInput>
 
-        <div class="mb-4">
-          <label class="block text-gray-600 text-sm mb-1 font-medium">
-            To Department <RequiredIcon />
-          </label>
-          <select
-            v-model="form.to_department_id"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">--select department--</option>
-            <optgroup
-              v-for="company in companyStore.companies"
-              :key="company.id"
-              :label="company.name"
-            >
-              <option
-                v-for="department in company.departments"
-                :value="department.id"
-                :key="department.id"
-              >
-                {{ department.name }}
-              </option>
-            </optgroup>
-          </select>
-        </div>
+        <CompanyDepartmentSelectInput
+          v-model="form.to_department_id"
+          :companies="companyStore?.companies || []"
+        >
+          <template #label>
+            <label class="block text-gray-600 text-sm mb-1 font-medium">
+              To Department <RequiredIcon />
+            </label>
+          </template>
+        </CompanyDepartmentSelectInput>
       </template>
 
       <div class="flex gap-16 items-center justify-center my-8">

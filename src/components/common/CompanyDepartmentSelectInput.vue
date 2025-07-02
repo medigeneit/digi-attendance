@@ -25,23 +25,21 @@ const department_id = computed({
 </script>
 
 <template>
-  <div class="mb-4">
-    <label class="block text-gray-600 text-sm mb-1 font-medium">
-      Requested Department <RequiredIcon />
-    </label>
+  <div>
+    <slot name="label">Department</slot>
     <select
       v-model="department_id"
       class="w-full border rounded-md focus:ring-2 focus:ring-blue-500"
       :class="className.select"
     >
       <option value="">--select department--</option>
-      <optgroup v-for="company in companyStore.companies" :key="company.id" :label="company.name">
+      <optgroup v-for="company in companies" :key="company.id" :label="company.name">
         <option
           v-for="department in company.departments"
           :value="department.id"
           :key="department.id"
         >
-          {{ company.name }} - {{ department.name }}
+          {{ department.name }}
         </option>
       </optgroup>
     </select>

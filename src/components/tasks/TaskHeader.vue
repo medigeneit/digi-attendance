@@ -3,6 +3,7 @@ import Multiselect from '@/components/MultiselectDropdown.vue'
 import { useCompanyStore } from '@/stores/company'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, watch } from 'vue'
+import CompanyDepartmentSelectInput from '../common/CompanyDepartmentSelectInput.vue'
 import UserChip from '../user/UserChip.vue'
 
 const props = defineProps({
@@ -16,7 +17,9 @@ const props = defineProps({
   },
 })
 
-const selectedCompanyId = computed(setAndGetModelValue('company-id'))
+const fromDepartmentId = computed(setAndGetModelValue('form-department-id'))
+const toDepartmentId = computed(setAndGetModelValue('to-department-id'))
+
 const selectedEmployeeId = computed(setAndGetModelValue('user-ids'))
 const month = computed(setAndGetModelValue('month'))
 const taskStatus = computed(setAndGetModelValue('status'))
@@ -32,13 +35,12 @@ const emit = defineEmits([
 ])
 
 const companyStore = useCompanyStore()
-const { companies, employees } = storeToRefs(companyStore)
+const { employees } = storeToRefs(companyStore)
 
 function setAndGetModelValue(key) {
   return {
     get: () => props.modelValue[key] || '',
     set: (value) => {
-      console.log('---SETTING modelValue: ', { key, value })
       emit('update:modelValue', {
         ...props.modelValue,
         [key]: value || undefined,
@@ -55,10 +57,22 @@ async function loadEmployees(newCompanyId) {
   }
 }
 
-watch(() => selectedCompanyId.value, loadEmployees)
+async function loadEmployeesByDepartment() {
+  if (toDepartmentId.value) {
+    const selectedCompany = companyStore.companies.find((company) =>
+      company.departments.some((department) => department.id == toDepartmentId.value),
+    )
+
+    await companyStore.fetchEmployee(selectedCompany.id)
+  }
+}
 
 onMounted(async () => {
-  await companyStore.fetchCompanies()
+  await companyStore.fetchCompanies({
+    with: 'departments',
+    ignore_permission: true,
+  })
+
   if (props.modelValue?.['company-id']) {
     await loadEmployees(props.modelValue?.['company-id'])
   }
@@ -78,6 +92,8 @@ function handleUserSelect(emp) {
 function handleUserDeSelect() {
   selectedEmployeeId.value = ''
 }
+
+watch(() => toDepartmentId.value, loadEmployeesByDepartment)
 </script>
 
 <template>
@@ -97,18 +113,35 @@ function handleUserDeSelect() {
 
     <div class="flex flex-wrap items-center gap-2 mt-3">
       <div class="flex flex-wrap gap-4 w-full">
-        <div class="text-gray-600 w-full md:w-64 relative">
-          <label
-            class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30"
-            >Company</label
-          >
-          <select id="company-filter" v-model="selectedCompanyId" class="input-1">
-            <option value="">All Company</option>
-            <option v-for="company in companies" :key="company.id" :value="company.id">
-              {{ company.name }}
-            </option>
-          </select>
-        </div>
+        <CompanyDepartmentSelectInput
+          v-model="fromDepartmentId"
+          :companies="companyStore?.companies || []"
+          class="relative w-full md:w-64"
+          :className="{ select: 'h-10 text-sm px-2 text-gray-600 border-2 border-gray-400' }"
+        >
+          <template #label>
+            <div
+              class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30"
+            >
+              From Department
+            </div>
+          </template>
+        </CompanyDepartmentSelectInput>
+
+        <CompanyDepartmentSelectInput
+          v-model="toDepartmentId"
+          :companies="companyStore?.companies || []"
+          class="relative w-full md:w-64"
+          :className="{ select: 'h-10 text-sm px-2 text-gray-600  border-2 border-gray-400' }"
+        >
+          <template #label>
+            <div
+              class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30"
+            >
+              To Department
+            </div>
+          </template>
+        </CompanyDepartmentSelectInput>
 
         <div class="relative w-full md:w-72">
           <Multiselect
