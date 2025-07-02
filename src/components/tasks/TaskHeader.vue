@@ -3,19 +3,16 @@ import Multiselect from '@/components/MultiselectDropdown.vue'
 import { useCompanyStore } from '@/stores/company'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import CompanyDepartmentSelectInput from '../common/CompanyDepartmentSelectInput.vue'
 import UserChip from '../user/UserChip.vue'
 
 const props = defineProps({
-  modelValue: {
-    type: Object,
-    default: () => ({}),
-  },
-  listHasRearranged: {
-    type: Boolean,
-    default: false,
-  },
+  modelValue: { type: Object, default: () => ({}) },
+  listHasRearranged: { type: Boolean, default: false },
 })
+
+const route = useRoute()
 
 const fromDepartmentId = computed(setAndGetModelValue('from-department-id'))
 const toDepartmentId = computed(setAndGetModelValue('to-department-id'))
@@ -41,10 +38,7 @@ function setAndGetModelValue(key) {
   return {
     get: () => props.modelValue[key] || '',
     set: (value) => {
-      emit('update:modelValue', {
-        ...props.modelValue,
-        [key]: value || undefined,
-      })
+      emit('update:modelValue', { ...props.modelValue, [key]: value || undefined })
     },
   }
 }
@@ -68,10 +62,7 @@ async function loadEmployeesByDepartment() {
 }
 
 onMounted(async () => {
-  await companyStore.fetchCompanies({
-    with: 'departments',
-    ignore_permission: true,
-  })
+  await companyStore.fetchCompanies({ with: 'departments', ignore_permission: true })
 
   if (props.modelValue?.['company-id']) {
     await loadEmployees(props.modelValue?.['company-id'])
@@ -118,6 +109,7 @@ watch(() => toDepartmentId.value, loadEmployeesByDepartment)
           :companies="companyStore?.companies || []"
           class="relative w-full md:w-64"
           :className="{ select: 'h-10 text-sm px-2 text-gray-600 border-2 border-gray-400' }"
+          v-if="route.name !== 'MyTaskList'"
         >
           <template #label>
             <div
@@ -133,6 +125,7 @@ watch(() => toDepartmentId.value, loadEmployeesByDepartment)
           :companies="companyStore?.companies || []"
           class="relative w-full md:w-64"
           :className="{ select: 'h-10 text-sm px-2 text-gray-600  border-2 border-gray-400' }"
+          v-if="route.name !== 'MyTaskList'"
         >
           <template #label>
             <div
@@ -143,7 +136,7 @@ watch(() => toDepartmentId.value, loadEmployeesByDepartment)
           </template>
         </CompanyDepartmentSelectInput>
 
-        <div class="relative w-full md:w-72">
+        <div class="relative w-full md:w-72" v-if="route.name !== 'MyTaskList'">
           <Multiselect
             :modelValue="selectedEmployee"
             @select="handleUserSelect"

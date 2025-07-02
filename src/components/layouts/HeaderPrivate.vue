@@ -6,10 +6,7 @@ import { storeToRefs } from 'pinia'
 import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
-const props = defineProps({
-  user: Object,
-  userInitial: String,
-})
+const props = defineProps({ user: Object, userInitial: String })
 
 const notificationStore = useNotificationStore()
 

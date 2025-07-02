@@ -147,6 +147,7 @@ const taskFilter = computed({
 
     <div class="w-full flex justify-end gap-5 mb-1">
       <RouterLink
+        v-if="route.name !== 'MyTaskList'"
         class="text-sm btn-3 py-0.5"
         :class="route.query?.view === 'userwise' ? 'bg-blue-500 text-white' : ''"
         :to="{
@@ -159,6 +160,7 @@ const taskFilter = computed({
         User Wise List
       </RouterLink>
       <RouterLink
+        v-if="route.name !== 'MyTaskList'"
         class="text-sm btn-3 py-0.5"
         :class="route.query?.view !== 'userwise' ? 'bg-blue-500 text-white' : ''"
         :to="{

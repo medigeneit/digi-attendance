@@ -258,6 +258,13 @@ const router = createRouter({
         },
 
         {
+          path: 'my-tasks',
+          name: 'MyTaskList',
+          component: () => import('@/views/private-pages/tasks/TaskList.vue'),
+          meta: { requiresAuth: true },
+        },
+
+        {
           path: '/my-attendance',
           name: 'MyAttendance',
           component: () => import('@/views/private-pages/MyAttendance.vue'),
