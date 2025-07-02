@@ -5,6 +5,7 @@ import { useTaskStore } from '@/stores/useTaskStore'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
 import SectionLoading from '../common/SectionLoading.vue'
+import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps({
   parentTaskId: {
@@ -19,6 +20,7 @@ const props = defineProps({
 const emit = defineEmits(['taskCreated', 'close', 'error', 'ok'])
 
 const store = useTaskStore()
+const authStore = useAuthStore()
 const requirementStore = useRequirementStore()
 const { requirement } = storeToRefs(requirementStore)
 const task = ref()
@@ -101,6 +103,7 @@ async function submit() {
     <div class="text-purple-600/60 mb-4 text-xs" @click.prevent="emit('ok')">
       Fields that must be filled in will be marked with an asterisk.
     </div>
+
     <form @submit.prevent="submit">
       <p class="text-center mt-2 mb-6" v-if="requirementId && requirement?.title">
         Task under requirement <span class="text-sky-600">{{ requirement.title }}</span>

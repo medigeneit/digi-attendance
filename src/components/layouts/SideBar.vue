@@ -23,7 +23,7 @@ const logout = () => {
 </script>
 
 <template>
-  <aside class="bg-white sidebar h-screen overflow-auto scrollbar pb-24">
+  <aside class="bg-white sidebar h-screen overflow-auto scrollbar pb-24 z-[500]">
     <div class="space-y-1">
       <!-- Admin Mode + Toggle Menu Row -->
       <div
@@ -129,6 +129,15 @@ const logout = () => {
 
       <!-- Admin Menus -->
       <template v-if="isAdmin && authStore.adminMode">
+        <RouterLink
+          to="/tasks"
+          class="side-menu"
+          :class="{ 'side-menu-active': currentRoute.includes('/tasks') }"
+        >
+          <i class="fad fa-tasks py-2"></i>
+          <h4 v-if="open">Task Management</h4>
+        </RouterLink>
+
         <RouterLink
           to="/reports"
           class="side-menu"

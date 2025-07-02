@@ -1,8 +1,9 @@
 <script setup>
 import UserChip from '@/components/user/UserChip.vue'
+import { getDisplayDate } from '@/libs/datetime'
 import { useTaskReportStore } from '@/stores/useTaskReportStore'
 import { useTaskStore } from '@/stores/useTaskStore'
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
 const store = useTaskReportStore()
@@ -12,15 +13,66 @@ const route = useRoute()
 const taskId = route.params.id
 
 onMounted(async () => {
-  console.log({ taskId })
   await taskStore.fetchTask(taskId)
   await store.fetchTaskReports({ task_id: taskId })
+})
+
+function collectLeafReports(tasks, parentChain = []) {
+  const reports = []
+
+  for (const task of tasks) {
+    const newChain = [...parentChain, task.title]
+
+    if (task.children_tasks.length === 0) {
+      // Leaf task: include its report and full parent chain (excluding itself)
+      reports.push(
+        ...task.reports.map((report) => {
+          return {
+            ...report,
+            task_id: task.id,
+            task_title: task.title,
+            task_parents: parentChain,
+            user: task.users.find((user) => user.id === report.user_id),
+          }
+        }),
+      )
+    } else {
+      // Traverse children
+      reports.push(...collectLeafReports(task.children_tasks, newChain))
+    }
+  }
+
+  return reports
+}
+
+function sortByReportDate(reportA, reportB) {
+  try {
+    const timeA = new Date(reportA.report_date).getTime()
+    const timeB = new Date(reportB.report_date).getTime()
+    if (timeB === timeA) {
+      return reportB.id - reportA.id
+    }
+    return timeB - timeA // descending order
+  } catch (err) {
+    return -1
+  }
+}
+
+const taskReports = computed(() => {
+  if (taskStore.task.children_task_count === 0) {
+    return [...store.task_reports].sort(sortByReportDate)
+  }
+
+  return [...collectLeafReports(taskStore.tasks)].sort(sortByReportDate)
 })
 </script>
 
 <template>
   <div class="mt-4">
     <hr class="mb-2" />
+    <!-- <pre>{{ taskReports }}</pre> -->
+    <hr class="mb-2" />
+    <!-- <pre>{{ taskStore.tasks }}</pre> -->
     <div class="bg-white">
       <pre>{{ usersTaskProgress }}</pre>
 
@@ -36,46 +88,94 @@ onMounted(async () => {
           >Add Report</RouterLink
         >
       </div>
-      <table v-if="!store.loading" class="min-w-full bg-white shadow rounded-lg overflow-hidden">
-        <thead class="bg-gray-100">
-          <tr>
-            <th class="px-4 py-2 text-left">#</th>
-            <th class="px-4 py-2 text-left lg:w-[200px]">User</th>
-            <th class="px-4 py-2 text-left">Report</th>
-            <th class="px-4 py-2 text-left">Date</th>
-            <th class="px-4 py-2 text-left">Duration</th>
-            <th class="px-4 py-2 text-left">Progress</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="store.task_reports?.length === 0">
-            <td class="px-4 py-4 font-medium text-gray-500 text-center" colspan="10">NO REPORTS</td>
-          </tr>
-          <tr
-            v-for="(task_report, index) in store.task_reports"
-            :key="task_report.id"
-            class="border-t hover:bg-gray-50 cursor-pointer"
-            @click.prevent="goToShow(task_report.id)"
-            role="button"
-          >
-            <td class="px-4 py-2">{{ index + 1 }}</td>
-            <td class="px-4 py-2 font-medium">
-              <div>
-                <UserChip :user="task_report.user" class="inline" />
-              </div>
-            </td>
-            <td class="px-4 py-2 font-medium">
-              {{ task_report.title }}
-            </td>
-            <td class="px-4 py-2 font-medium">{{ task_report.report_date }}</td>
-            <td class="px-4 py-2 font-medium">
-              {{ task_report.duration_hour }} h {{ task_report.duration_minute }} m
-            </td>
-            <td class="px-4 py-2 font-medium">{{ task_report.progress }}%</td>
-          </tr>
-        </tbody>
-      </table>
-      <div v-else class="text-center border py-4 text-gray-500">Loading...</div>
+      <div class="overflow-auto w-full">
+        <table v-if="!store.loading" class="min-w-full bg-white shadow rounded-lg overflow-hidden">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="px-4 py-2 text-left">#</th>
+              <th
+                class="px-4 py-2 text-left md:w-[100px] lg:w-[220px] xl:w-[320px]"
+                v-if="taskStore.task.children_task_count > 0"
+              >
+                Task
+              </th>
+              <th class="px-4 py-2 text-left lg:w-[540px]">User Report</th>
+              <th class="px-4 py-2 text-center">Duration</th>
+              <th class="px-4 py-2 text-center">Progress</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="taskReports?.length === 0">
+              <td class="px-4 py-4 font-medium text-gray-500 text-center" colspan="10">
+                NO REPORTS
+              </td>
+            </tr>
+            <tr
+              v-for="(task_report, index) in taskReports"
+              :key="task_report.id"
+              class="border-t hover:bg-gray-50 cursor-pointer"
+              @click.prevent="goToShow(task_report.id)"
+              role="button"
+            >
+              <td class="px-4 py-2">{{ index + 1 }}</td>
+
+              <td
+                class="px-4 py-2 font-medium border-r"
+                v-if="taskStore.task.children_task_count > 0"
+              >
+                <div>
+                  <div
+                    v-for="(parentTaskTitle, index) in task_report.task_parents.reverse()"
+                    :key="index"
+                    class="text-gray-400 text-sm line-clamp-1"
+                    :class="{ '-ml-1': index == 0 }"
+                  >
+                    <span style="font-family: monospace" v-if="index > 0">↳</span>
+                    <span class="ml-1"> {{ parentTaskTitle }} </span>
+                  </div>
+
+                  <div>
+                    <span
+                      v-if="task_report.task_parents?.length > 0"
+                      style="font-family: monospace"
+                      :class="{
+                        'ml-2': task_report.task_parents?.length == 1,
+                        'ml-4': task_report.task_parents?.length == 2,
+                        'ml-6': task_report.task_parents?.length == 3,
+                        'ml-8': task_report.task_parents?.length == 4,
+                      }"
+                      >↳</span
+                    >
+                    <span class="ml-1">
+                      {{ task_report.task_title }}
+                    </span>
+                  </div>
+                </div>
+              </td>
+              <td class="font-medium py-2 px-4">
+                <div class="border rounded-md bg-gray-50">
+                  <UserChip :user="task_report.user" class="inline-block w-full !rounded-sm" />
+                  <div class="text-sm flex items-center px-3 py-3">
+                    <div>
+                      {{ task_report.title }}
+                    </div>
+
+                    <div class="text-gray-600 text-sm ml-auto whitespace-nowrap">
+                      on {{ getDisplayDate(task_report.report_date) }}
+                    </div>
+                  </div>
+                </div>
+              </td>
+
+              <td class="px-4 py-2 font-medium text-center">
+                {{ task_report.duration_hour }} h {{ task_report.duration_minute }} m
+              </td>
+              <td class="px-4 py-2 font-medium text-center">{{ task_report.progress }}%</td>
+            </tr>
+          </tbody>
+        </table>
+        <div v-else class="text-center border py-4 text-gray-500">Loading...</div>
+      </div>
     </div>
   </div>
 </template>

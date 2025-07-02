@@ -7,11 +7,13 @@
     </div>
 
     <div
-      class="flex-grow border rounded py-3 px-3"
+      class="flex-grow border-2 rounded py-3 px-3"
       :class="{
         'bg-green-100  ': progress?.completedPercentage === 100,
         'bg-white hover:bg-gray-50': progress?.completedPercentage < 100,
         'shadow-sm': treeLevel > 0,
+        'border-sky-500': index % 2 === 0,
+        'border-pink-300': index % 2 === 1,
       }"
     >
       <div class="items-start grid grid-cols-4 gap-4 group">
@@ -22,6 +24,7 @@
             <div class="text-xl font-semibold text-sky-500" v-if="index !== undefined">
               {{ index + 1 }}.
             </div>
+
             <TaskTitleRouterLink :task="task" />
 
             <p class="text-sm text-gray-500 mt-2" v-if="task?.requirement">

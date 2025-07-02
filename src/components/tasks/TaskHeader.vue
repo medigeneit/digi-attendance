@@ -110,6 +110,19 @@ function handleUserDeSelect() {
           </select>
         </div>
 
+        <div class="text-gray-600 w-full md:w-64 relative">
+          <label
+            class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30"
+            >Company</label
+          >
+          <select id="company-filter" v-model="selectedCompanyId" class="input-1">
+            <option value="">All Company</option>
+            <option v-for="company in companies" :key="company.id" :value="company.id">
+              {{ company.name }}
+            </option>
+          </select>
+        </div>
+
         <div class="relative w-full md:w-72">
           <Multiselect
             :modelValue="selectedEmployee"
@@ -137,9 +150,9 @@ function handleUserDeSelect() {
               &times;
             </button>
           </div>
-          <label class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 z-50"
-            >Employee</label
-          >
+          <label class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 z-50">
+            Employee
+          </label>
         </div>
 
         <div class="text-gray-600 w-40 relative">

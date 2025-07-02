@@ -30,7 +30,7 @@ onMounted(async () => {
   <div class="md:flex relative">
     <div
       :class="{ 'hidden md:block': !sidebarVisible }"
-      class="bg-white md:shadow-md shadow-2xl absolute md:static z-50 transition-transform duration-300 print:hidden"
+      class="bg-white md:shadow-md shadow-2xl absolute md:static transition-transform duration-300 print:hidden z-[100]"
     >
       <div class="sticky top-0 print:hidden">
         <div class="relative">

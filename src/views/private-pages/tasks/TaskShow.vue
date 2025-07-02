@@ -1,13 +1,14 @@
 <script setup>
+import LoaderView from '@/components/common/LoaderView.vue'
 import OverlyModal from '@/components/common/OverlyModal.vue'
 import CountdownTimer from '@/components/CountdownTimer.vue'
 import SubTaskList from '@/components/tasks/SubTaskList.vue'
 import SubTaskProgress from '@/components/tasks/SubTaskProgress.vue'
 import TaskProgressTable from '@/components/tasks/TaskProgressTable.vue'
+import TaskStatus from '@/components/tasks/TaskStatus.vue'
 import TaskUserDateUpdate from '@/components/tasks/TaskUserDateUpdate.vue'
 import { getDisplayDate } from '@/libs/datetime'
 import { getTaskProgressUsers } from '@/libs/task-progress'
-import { useTaskTree } from '@/libs/task-tree'
 import { useAuthStore } from '@/stores/auth'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
@@ -17,42 +18,38 @@ const store = useTaskStore()
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
+const task = ref()
+const state = ref('')
 
-const taskTree = useTaskTree()
-const subTasks = computed(() => taskTree.getTaskListTree())
+// const subTasks = computed(() => taskTree.getTaskListTree())
+const subTasks = computed(() => store.tasks)
 const progress = ref({})
 
-onMounted(async () => {})
+onMounted(async () => {
+  state.value = 'loading'
+  await fetchTaskList(route.params.id)
+  state.value = ''
+})
 
 const dateUpdateModal = reactive({
   user: null,
   type: '',
 })
 
-const goToEdit = (id) => {
-  router.push({ name: 'TaskEdit', params: { id } })
-}
-
-const backLink = computed(() => {
-  if (store.task.parent_id == 0) {
-    return { name: 'TaskList', params: { id: store.task?.id } }
-  }
-  return { name: 'TaskShow', params: { id: store.task?.parent_id } }
-})
-
 async function fetchTaskList(taskId) {
-  const taskResponse = await store.fetchTask(taskId)
-  taskTree.setTaskList(taskResponse.sub_tasks, store.task.id)
-}
-
-const taskForProgress = computed(() => {
-  return {
-    ...store.task,
-    ...{
-      children_tasks: subTasks.value,
+  await store.fetchTask(taskId)
+  const taskResponse = await store.fetchTasks(
+    {
+      parent_id: taskId,
     },
-  }
-})
+    {
+      newList: true,
+      loadingBeforeFetch: true,
+    },
+  )
+
+  task.value = taskResponse.parent_task
+}
 
 const taskProgressUsers = computed(() =>
   getTaskProgressUsers(store.task.users, store.task.task_reports),
@@ -71,15 +68,34 @@ function handleDateChangeModal(type) {
 }
 
 async function handleUpdateDate() {
-  await fetchTaskList(store.task.id)
+  await fetchTaskList(route.params.id)
   dateUpdateModal.user = null
   dateUpdateModal.type = ''
 }
 
-watch(() => route.params.id, fetchTaskList, {
-  initial: true,
-  immediate: true,
+const goToEdit = (id) => {
+  router.push({ name: 'TaskEdit', params: { id } })
+}
+
+const backLink = computed(() => {
+  if (!task.value) {
+    return null
+  }
+
+  if (task.value?.parent_id == 0) {
+    return { name: 'TaskList' }
+  }
+  return { name: 'TaskShow', params: { id: task.value?.parent_id } }
 })
+
+watch(
+  () => route.params.id,
+  async (taskId) => {
+    state.value = 'changing'
+    await fetchTaskList(taskId)
+    state.value = ''
+  },
+)
 </script>
 
 <template>
@@ -94,7 +110,8 @@ watch(() => route.params.id, fetchTaskList, {
       />
     </OverlyModal>
 
-    <div class="max-w-8xl min-h-64 mx-auto bg-white shadow-lg rounded-lg p-6">
+    <LoaderView v-if="state === 'loading'" />
+    <div class="max-w-8xl min-h-64 mx-auto bg-white shadow-lg rounded-lg p-6 relative" v-else>
       <template v-if="store.task">
         <section class="grid grid-cols-4">
           <div class="mb-4 flex col-span-full">
@@ -118,21 +135,10 @@ watch(() => route.params.id, fetchTaskList, {
             </div>
 
             <div
-              class="text-right col-span-full md:col-span-1 ml-auto flex justify-center gap-4 !text-lg"
+              class="text-right col-span-full md:col-span-1 ml-auto flex items-start justify-center gap-4 !text-lg"
             >
-              <span
-                :class="{
-                  'bg-gray-200': store.task?.status === 'PENDING',
-                  'bg-blue-200': store.task?.status === 'IN_PROGRESS',
-                  'bg-green-200': store.task?.status === 'COMPLETED',
-                  'bg-red-200': store.task?.status === 'BLOCKED',
-                }"
-                class="px-3 py-0.5 rounded-full text-sm h-6"
-              >
-                {{ store.task?.status }}
-              </span>
-
-              <SubTaskProgress :task="taskForProgress" ref="progress" class="!text-lg" />
+              <TaskStatus :status="task?.status" class="" />
+              <SubTaskProgress v-if="task" :task="task" ref="progress" class="!text-lg" />
             </div>
           </div>
 
@@ -188,6 +194,7 @@ watch(() => route.params.id, fetchTaskList, {
             >
               Set Started Date
             </button>
+
             <button
               class="btn-3 px-3 py-0.5 font-semibold border disabled:opacity-30 disabled:pointer-events-none"
               @click.prevent="() => handleDateChangeModal('finish-date')"
@@ -234,7 +241,7 @@ watch(() => route.params.id, fetchTaskList, {
           </div>
         </section>
 
-        <section v-if="route.name == 'TaskShow'">
+        <section v-if="route.name == 'TaskShow' && task?.level <= 2">
           <SubTaskList
             :subTasks="subTasks"
             :parent-id="route.params.id"
@@ -250,12 +257,11 @@ watch(() => route.params.id, fetchTaskList, {
         </section>
       </template>
 
-      <div v-else-if="store.loading" class="text-center py-4 text-gray-500">
-        Loading task details...
-      </div>
       <div v-else class="text-center py-4 text-red-500">
         {{ store.error }}
       </div>
+
+      <LoaderView class="absolute bg-opacity-80 inset-0 z-20" v-if="state === 'changing'" />
     </div>
     <!-- 
     <CommentModal
