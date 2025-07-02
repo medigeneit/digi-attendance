@@ -31,8 +31,8 @@ const state = ref('')
 
 const form = ref({
   title: '',
-  requested_department_id: '',
-  executed_department_id: '',
+  from_department_id: '',
+  to_department_id: '',
   user_ids: [],
   priority: 0,
   status: 'PENDING',
@@ -144,7 +144,7 @@ async function submit() {
             Requested Department <RequiredIcon />
           </label>
           <select
-            v-model="form.requested_department_id"
+            v-model="form.from_department_id"
             class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
           >
             <option value="">--select department--</option>
@@ -169,7 +169,7 @@ async function submit() {
             Executing Department <RequiredIcon />
           </label>
           <select
-            v-model="form.executed_department_id"
+            v-model="form.to_department_id"
             class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
           >
             <option value="">--select department--</option>

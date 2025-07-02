@@ -22,8 +22,8 @@ const selectedUsers = ref([])
 const errorMessage = ref('')
 const form = ref({
   title: '',
-  requested_department_id: '',
-  executed_department_id: '',
+  from_department_id: '',
+  to_department_id: '',
   requirement_id: '',
   user_ids: '',
   status: 'PENDING',
@@ -73,8 +73,8 @@ onMounted(async () => {
   loading.value = false
   form.value = {
     title: task.value.title,
-    requested_department_id: task.value.requested_department_id,
-    executed_department_id: task.value.executed_department_id,
+    from_department_id: task.value.from_department_id,
+    to_department_id: task.value.to_department_id,
     requirement_id: task.value.requirement_id,
     user_ids: task.value.users.map((u) => u.id).join(','),
     status: task.value.status,
@@ -93,8 +93,8 @@ watch(
   (newTask) => {
     form.value = {
       title: newTask.title,
-      requested_department_id: newTask.requested_department_id,
-      executed_department_id: newTask.executed_department_id,
+      from_department_id: newTask.from_department_id,
+      to_department_id: newTask.to_department_id,
       requirement_id: newTask.requirement_id,
       user_ids: newTask.users.map((u) => u.id).join(','),
       status: newTask.status,
@@ -171,8 +171,9 @@ const update = async () => {
           <label class="block text-gray-600 text-sm mb-1 font-medium">
             Requested Department <RequiredIcon />
           </label>
+
           <select
-            v-model="form.requested_department_id"
+            v-model="form.from_department_id"
             class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
           >
             <option value="">--select department--</option>
@@ -197,7 +198,7 @@ const update = async () => {
             Executing Department <RequiredIcon />
           </label>
           <select
-            v-model="form.executed_department_id"
+            v-model="form.to_department_id"
             class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
           >
             <option value="">--select department--</option>
