@@ -33,7 +33,7 @@
           </div>
 
           <div class="justify-end items-center gap-2 ml-auto flex order-1 lg:order-0">
-            <TaskStatus :status="task.status" />
+            <TaskStatus :status="task?.status" :progressPercent="task?.progress_percent || 0" />
             <SubTaskProgress :task="task" ref="progress" class="text-sm" />
           </div>
 

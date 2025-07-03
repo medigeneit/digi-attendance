@@ -128,7 +128,11 @@ watch(
             <div
               class="text-right col-span-full md:col-span-1 ml-auto flex items-start justify-center gap-4 !text-lg"
             >
-              <TaskStatus :status="store.task?.status" class="" />
+              <TaskStatus
+                :status="store.task?.status"
+                :progressPercent="store.task?.progress_percent"
+                class="h-6 !text-lg"
+              />
               <SubTaskProgress
                 v-if="store.task"
                 :task="store.task"

@@ -3,6 +3,7 @@ import { computed } from 'vue'
 
 const props = defineProps({
   status: { type: String, required: true },
+  progressPercent: { type: Number, required: true },
 })
 
 const className = computed(() => {
@@ -31,6 +32,7 @@ const iconClassName = computed(() => {
 <template>
   <div class="px-2 py-0.5 text-xs rounded-full border flex items-center gap-1" :class="className">
     <i :class="iconClassName"></i>
-    {{ status }}
+    <span>{{ status }} </span>
+    <span v-if="status !== 'PENDING'">{{ progressPercent }}% </span>
   </div>
 </template>
