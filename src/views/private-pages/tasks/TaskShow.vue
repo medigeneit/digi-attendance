@@ -18,7 +18,6 @@ const store = useTaskStore()
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
-const task = ref()
 const state = ref('')
 
 // const subTasks = computed(() => taskTree.getTaskListTree())
@@ -38,21 +37,10 @@ const dateUpdateModal = reactive({
 
 async function fetchTaskList(taskId) {
   await store.fetchTask(taskId)
-  const taskResponse = await store.fetchTasks(
-    {
-      parent_id: taskId,
-    },
-    {
-      newList: true,
-      loadingBeforeFetch: true,
-    },
-  )
-
-  task.value = taskResponse.parent_task
 }
 
 const taskProgressUsers = computed(() =>
-  getTaskProgressUsers(store.task.users, store.task.task_reports),
+  getTaskProgressUsers(store.task.users, store.task.task_reports || []),
 )
 
 const authUserProgress = computed(() => {
@@ -78,14 +66,15 @@ const goToEdit = (id) => {
 }
 
 const backLink = computed(() => {
-  if (!task.value) {
+  if (!store.task) {
     return null
   }
 
-  if (task.value?.parent_id == 0) {
+  if (store.task?.parent_id == 0) {
     return { name: 'TaskList' }
   }
-  return { name: 'TaskShow', params: { id: task.value?.parent_id } }
+
+  return { name: 'TaskShow', params: { id: store.task?.parent_id } }
 })
 
 watch(
@@ -111,6 +100,7 @@ watch(
     </OverlyModal>
 
     <LoaderView v-if="state === 'loading'" />
+
     <div class="max-w-8xl min-h-64 mx-auto bg-white shadow-lg rounded-lg p-6 relative" v-else>
       <template v-if="store.task">
         <section class="grid grid-cols-4">
@@ -119,6 +109,7 @@ watch(
               <h2 class="font-medium text-xl">
                 {{ store.task.title }}
               </h2>
+
               <div class="flex items-center gap-2 text-xs text-gray-500 mt-2 opacity-80 text-left">
                 <span
                   class="text-xs px-2 py-0.5 rounded-full border bg-yellow-800 text-white"
@@ -137,8 +128,13 @@ watch(
             <div
               class="text-right col-span-full md:col-span-1 ml-auto flex items-start justify-center gap-4 !text-lg"
             >
-              <TaskStatus :status="task?.status" class="" />
-              <SubTaskProgress v-if="task" :task="task" ref="progress" class="!text-lg" />
+              <TaskStatus :status="store.task?.status" class="" />
+              <SubTaskProgress
+                v-if="store.task"
+                :task="store.task"
+                ref="progress"
+                class="!text-lg"
+              />
             </div>
           </div>
 
@@ -241,7 +237,7 @@ watch(
           </div>
         </section>
 
-        <section v-if="route.name == 'TaskShow' && task?.level <= 2">
+        <section v-if="route.name == 'TaskShow' && store.task?.level <= 2">
           <SubTaskList
             :subTasks="subTasks"
             :parent-id="route.params.id"

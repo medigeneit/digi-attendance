@@ -101,6 +101,7 @@ export const useTaskStore = defineStore('task', () => {
       const response = await apiClient.get(`/tasks/${id}`, {params});
       if( !options.fetchOnly ) {
         task.value = response.data?.task || {};
+        tasks.value = response.data.sub_tasks || []
       }
       return response.data;
     } catch (err) {

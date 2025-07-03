@@ -211,6 +211,7 @@ watch(() => toDepartmentId.value, loadEmployeesByDepartment)
             <span>Is Target</span>
           </label>
         </div>
+
         <div class="text-gray-600 w-full md:w-40 relative">
           <label class="absolute text-xs left-2.5 -top-1.5 bg-slate-100 text-blue-500">Month</label>
           <input
@@ -221,6 +222,7 @@ watch(() => toDepartmentId.value, loadEmployeesByDepartment)
             placeholder="All month"
           />
         </div>
+
         <div class="text-gray-600 w-full border lg:w-48 md:ml-auto relative">
           <label class="absolute text-xs left-2.5 -top-1.5 bg-slate-100 text-blue-500"
             >Search</label
