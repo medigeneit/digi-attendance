@@ -108,8 +108,8 @@ watch(() => toDepartmentId.value, loadEmployeesByDepartment)
 
 <template>
   <div class="mb-3 task-header">
-    <div class="flex justify-between items-center">
-      <h2 class="text-2xl font-bold text-gray-800">Task List</h2>
+    <div class="flex justify-between items-start mb-4">
+      <h2 class="text-2xl font-bold text-gray-800 leading-none">Task List</h2>
 
       <div class="ml-auto flex gap-6 items-center">
         <div v-if="listHasRearranged" class="flex gap-2 items-center">
@@ -227,8 +227,8 @@ watch(() => toDepartmentId.value, loadEmployeesByDepartment)
     </div>
   </div>
 
-  <div class="flex mb-4 items-end">
-    <div class="text-gray-600 w-full border lg:w-96 md:ml-auto relative">
+  <div class="flex mb-4 items-end mt-5">
+    <div class="text-gray-600 w-full md:w-64 lg:w-96 md:ml-auto relative">
       <label class="absolute text-xs left-2.5 -top-1.5 bg-slate-100 text-blue-500">Search</label>
       <input
         id="search"

@@ -116,7 +116,7 @@ const taskFilter = computed({
 </script>
 
 <template>
-  <div class="container mx-auto p-6 relative">
+  <div class="container mx-auto p-6 mt-2 relative bg-white rounded-md shadow-md">
     <OverlyModal v-if="editingId">
       <TaskEditForm :taskId="editingId" @close="editingId = null" @updated="handleTaskUpdate" />
     </OverlyModal>
