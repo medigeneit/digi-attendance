@@ -100,8 +100,8 @@ const taskReports = computed(() => {
                 Task
               </th>
               <th class="px-4 py-2 text-left lg:w-[540px]">User Report</th>
-              <th class="px-4 py-2 text-center">Duration</th>
-              <th class="px-4 py-2 text-center">Progress</th>
+              <!-- <th class="px-4 py-2 text-center">Duration</th>
+              <th class="px-4 py-2 text-center">Progress</th> -->
             </tr>
           </thead>
           <tbody>
@@ -166,11 +166,12 @@ const taskReports = computed(() => {
                   </div>
                 </div>
               </td>
-
+              <!-- 
               <td class="px-4 py-2 font-medium text-center">
                 {{ task_report.duration_hour }} h {{ task_report.duration_minute }} m
               </td>
-              <td class="px-4 py-2 font-medium text-center">{{ task_report.progress }}%</td>
+              <td class="px-4 py-2 font-medium text-center">{{ task_report.progress }}%</td> 
+-->
             </tr>
           </tbody>
         </table>

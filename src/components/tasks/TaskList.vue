@@ -27,6 +27,7 @@ const props = defineProps({
     required: true,
   },
 })
+
 const emit = defineEmits(['commentButtonClick', 'editClick', 'addClick', 'updatePriority'])
 
 const draggableTaskList = ref(null)

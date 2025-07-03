@@ -118,6 +118,8 @@ const update = async () => {
       user_ids: selectedUsers.value?.map((u) => Number(u.id)) || [],
     }
 
+    console.log({ payload })
+
     await store.updateTask(props.taskId, payload, { loadingBeforeFetch: false })
     emit('updated')
   } catch (err) {
