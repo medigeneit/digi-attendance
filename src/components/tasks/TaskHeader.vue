@@ -26,6 +26,7 @@ const taskStatus = computed(setAndGetModelValue('status'))
 const isImportant = computed(setAndGetModelValue('is-important'))
 const isUrgent = computed(setAndGetModelValue('is-urgent'))
 const isTarget = computed(setAndGetModelValue('is-target'))
+const search = computed(setAndGetInputSearch('search'))
 
 const emit = defineEmits([
   'update:modelValue',
@@ -45,6 +46,25 @@ function setAndGetModelValue(key) {
         ...props.modelValue,
         [key]: value || undefined,
       })
+    },
+  }
+}
+
+function setAndGetInputSearch() {
+  let timeoutId = 0
+
+  const emitSearchText = (value) => {
+    emit('update:modelValue', {
+      ...props.modelValue,
+      search: value || undefined,
+    })
+  }
+
+  return {
+    get: () => props.modelValue['search'] || '',
+    set: (value) => {
+      clearTimeout(timeoutId)
+      timeoutId = setTimeout(emitSearchText, 500, value)
     },
   }
 }
@@ -198,7 +218,7 @@ watch(() => toDepartmentId.value, loadEmployeesByDepartment)
             <span>Is Target</span>
           </label>
         </div>
-        <div class="text-gray-600 w-full md:w-40 md:ml-auto relative">
+        <div class="text-gray-600 w-full md:w-40 relative">
           <label class="absolute text-xs left-2.5 -top-1.5 bg-slate-100 text-blue-500">Month</label>
           <input
             id="month-filter"
@@ -207,6 +227,19 @@ watch(() => toDepartmentId.value, loadEmployeesByDepartment)
             class="input-1"
             placeholder="All month"
           />
+        </div>
+        <div class="text-gray-600 w-full border lg:w-48 md:ml-auto relative">
+          <label class="absolute text-xs left-2.5 -top-1.5 bg-slate-100 text-blue-500"
+            >Search</label
+          >
+          <input
+            id="search"
+            v-model="search"
+            type="text"
+            class="input-1 !pr-7 w-full"
+            placeholder="Search by main task title"
+          />
+          <i class="fas fa-search absolute right-2 top-[50%] translate-y-[-50%]"></i>
         </div>
       </div>
     </div>
