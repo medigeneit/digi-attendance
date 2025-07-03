@@ -43,17 +43,8 @@ const taskProgressUsers = computed(() =>
   getTaskProgressUsers(store.task.users, store.task.task_reports || []),
 )
 
-const authUserProgress = computed(() => {
-  return taskProgressUsers.value.find((user) => user.id === auth.user?.id)
-})
-
 const startedDate = computed(() => getDisplayDate(store.task.started_at))
 const deadline = computed(() => getDisplayDate(store.task.deadline))
-
-function handleDateChangeModal(type) {
-  dateUpdateModal.user = auth.user
-  dateUpdateModal.type = type
-}
 
 async function handleUpdateDate() {
   await fetchTaskList(route.params.id)
@@ -186,22 +177,6 @@ watch(
             >
               <i class="fas fa-arrow-left"></i> Back
             </RouterLink>
-
-            <button
-              class="btn-3 px-3 py-0.5 font-semibold border disabled:opacity-30 disabled:pointer-events-none"
-              @click.prevent="() => handleDateChangeModal('start-date')"
-              :disabled="!!authUserProgress?.started_at"
-            >
-              Set Started Date
-            </button>
-
-            <button
-              class="btn-3 px-3 py-0.5 font-semibold border disabled:opacity-30 disabled:pointer-events-none"
-              @click.prevent="() => handleDateChangeModal('finish-date')"
-              :disabled="!!authUserProgress?.finished_at"
-            >
-              Set Finish Date
-            </button>
 
             <!-- 
               <button

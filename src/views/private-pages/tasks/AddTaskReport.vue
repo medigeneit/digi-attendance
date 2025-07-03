@@ -131,7 +131,7 @@ const userCanReport = computed(() => {
       </div>
 
       <form v-else @submit.prevent="submitForm" class="grid gap-x-4 gap-y-6 grid-cols-4">
-        <h2 class="text-2xl font-bold">Add Task</h2>
+        <h2 class="text-2xl font-bold col-span-full border-b pb-1">Add Report</h2>
         <div class="col-span-full" v-if="taskStore.task.children_task_count === 0">
           Add Report on <span class="font-semibold">{{ taskStore.task?.title }}</span>
           <hr class="mt-1" />
