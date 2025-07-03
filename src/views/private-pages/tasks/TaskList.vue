@@ -145,35 +145,6 @@ const taskFilter = computed({
       </div>
     </template>
 
-    <div class="w-full flex justify-end gap-5 mb-1">
-      <RouterLink
-        v-if="route.name !== 'MyTaskList'"
-        class="text-sm btn-3 py-0.5"
-        :class="route.query?.view === 'userwise' ? 'bg-blue-500 text-white' : ''"
-        :to="{
-          query: {
-            ...route.query,
-            view: 'userwise',
-          },
-        }"
-      >
-        User Wise List
-      </RouterLink>
-      <RouterLink
-        v-if="route.name !== 'MyTaskList'"
-        class="text-sm btn-3 py-0.5"
-        :class="route.query?.view !== 'userwise' ? 'bg-blue-500 text-white' : ''"
-        :to="{
-          query: {
-            ...Object.keys(route?.query || {})
-              .filter((k) => route?.query[k] !== 'userwise')
-              .reduce((acc, k) => ({ ...acc, [k]: route.query[k] }), {}),
-          },
-        }"
-      >
-        TaskWise List
-      </RouterLink>
-    </div>
     <div v-if="store.loading">
       <LoaderView />
     </div>

@@ -10,6 +10,7 @@ const props = defineProps({
       select: 'px-4 py-2',
     }),
   },
+  defaultOption: { type: String, default: '--select department--' },
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -32,7 +33,7 @@ const department_id = computed({
       class="w-full border rounded-md focus:ring-2 focus:ring-blue-500"
       :class="className.select"
     >
-      <option value="">--select department--</option>
+      <option value="">{{ defaultOption }}</option>
       <optgroup v-for="company in companies" :key="company.id" :label="company.name">
         <option
           v-for="department in company.departments"

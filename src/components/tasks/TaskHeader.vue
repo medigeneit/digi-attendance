@@ -16,7 +16,6 @@ const route = useRoute()
 
 const fromDepartmentId = computed(setAndGetModelValue('from-department-id'))
 const toDepartmentId = computed(setAndGetModelValue('to-department-id'))
-
 const selectedEmployeeId = computed(setAndGetModelValue('user-ids'))
 const month = computed(setAndGetModelValue('month'))
 const taskStatus = computed(setAndGetModelValue('status'))
@@ -130,12 +129,13 @@ watch(() => toDepartmentId.value, loadEmployeesByDepartment)
           class="relative w-full md:w-64"
           :className="{ select: 'h-10 text-sm px-2 text-gray-600 border-2 border-gray-400' }"
           v-if="route.name !== 'MyTaskList'"
+          defaultOption="--ALL DEPARTMENT--"
         >
           <template #label>
             <div
               class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30"
             >
-              From Department
+              Task From Department
             </div>
           </template>
         </CompanyDepartmentSelectInput>
@@ -146,12 +146,13 @@ watch(() => toDepartmentId.value, loadEmployeesByDepartment)
           class="relative w-full md:w-64"
           :className="{ select: 'h-10 text-sm px-2 text-gray-600  border-2 border-gray-400' }"
           v-if="route.name !== 'MyTaskList'"
+          defaultOption="--ALL DEPARTMENT--"
         >
           <template #label>
             <div
               class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30"
             >
-              To Department
+              Task To Department
             </div>
           </template>
         </CompanyDepartmentSelectInput>
@@ -165,7 +166,7 @@ watch(() => toDepartmentId.value, loadEmployeesByDepartment)
             :multiple="false"
             label="name"
             label-prefix="id"
-            placeholder="All Employees"
+            placeholder="--ALL EMPLOYEES--"
             class="text-gray-600 w-full"
           >
             <template #option="{ option }">
@@ -191,7 +192,7 @@ watch(() => toDepartmentId.value, loadEmployeesByDepartment)
         <div class="text-gray-600 w-40 relative">
           <label class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500">Status</label>
           <select v-model="taskStatus" class="input-1">
-            <option value="">All Tasks</option>
+            <option value="">--ALL TASKS--</option>
             <option value="not-completed">Not Completed</option>
             <option value="only-completed">Completed</option>
           </select>
@@ -222,21 +223,51 @@ watch(() => toDepartmentId.value, loadEmployeesByDepartment)
             placeholder="All month"
           />
         </div>
-
-        <div class="text-gray-600 w-full border lg:w-48 md:ml-auto relative">
-          <label class="absolute text-xs left-2.5 -top-1.5 bg-slate-100 text-blue-500"
-            >Search</label
-          >
-          <input
-            id="search"
-            v-model="search"
-            type="text"
-            class="input-1 !pr-7 w-full"
-            placeholder="Search by main task title"
-          />
-          <i class="fas fa-search absolute right-2 top-[50%] translate-y-[-50%]"></i>
-        </div>
       </div>
+    </div>
+  </div>
+
+  <div class="flex mb-4 items-end">
+    <div class="text-gray-600 w-full border lg:w-96 md:ml-auto relative">
+      <label class="absolute text-xs left-2.5 -top-1.5 bg-slate-100 text-blue-500">Search</label>
+      <input
+        id="search"
+        v-model="search"
+        type="text"
+        class="input-1 !pr-7 w-full"
+        placeholder="Search by main task title"
+      />
+      <i class="fas fa-search absolute right-2 top-[50%] translate-y-[-50%]"></i>
+    </div>
+
+    <div class="w-full flex justify-end gap-5 mb-1">
+      <RouterLink
+        v-if="route.name !== 'MyTaskList'"
+        class="text-sm btn-3 py-0.5"
+        :class="route.query?.view === 'userwise' ? 'bg-blue-500 text-white' : ''"
+        :to="{
+          query: {
+            ...route.query,
+            view: 'userwise',
+          },
+        }"
+      >
+        User Wise List
+      </RouterLink>
+      <RouterLink
+        v-if="route.name !== 'MyTaskList'"
+        class="text-sm btn-3 py-0.5"
+        :class="route.query?.view !== 'userwise' ? 'bg-blue-500 text-white' : ''"
+        :to="{
+          query: {
+            ...Object.keys(route?.query || {})
+              .filter((k) => route?.query[k] !== 'userwise')
+              .reduce((acc, k) => ({ ...acc, [k]: route.query[k] }), {}),
+          },
+        }"
+      >
+        TaskWise List
+      </RouterLink>
     </div>
   </div>
 </template>
