@@ -232,7 +232,7 @@ const update = async () => {
         </label>
       </div>
 
-      <div class="grid grid-cols-2 gap-4 mb-4">
+      <div class="grid grid-cols-2 gap-4 mb-4" v-if="store.task?.children_count">
         <div>
           <label class="block text-gray-700 font-medium mb-2">Status</label>
           <select
