@@ -24,6 +24,8 @@ const auth = useAuthStore()
 const subTasks = computed(() => store.tasks)
 const progress = ref({})
 
+const full_description_hidden = ref(true)
+
 onMounted(async () => {
   state.value = 'loading'
   await fetchTaskList(route.params.id)
@@ -135,6 +137,21 @@ watch(
                 class="!text-lg"
               />
             </div>
+          </div>
+
+          <div class="col-span-full">
+            <p
+              v-html="store.task?.description"
+              class=""
+              :class="{ 'line-clamp-3': full_description_hidden }"
+            />
+            <button
+              v-if="store.task?.description?.length >= 600"
+              class="text-blue-500 mt-2"
+              @click.prevent="full_description_hidden = !full_description_hidden"
+            >
+              Show {{ full_description_hidden ? 'More' : 'Less' }}
+            </button>
           </div>
 
           <section class="mt-4 col-span-full mb-6">
