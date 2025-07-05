@@ -142,7 +142,7 @@ watch(
           <div class="col-span-full">
             <p
               v-html="store.task?.description"
-              class=""
+              class="text-gray-700"
               :class="{ 'line-clamp-3': full_description_hidden }"
             />
             <button
