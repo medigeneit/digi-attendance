@@ -9,6 +9,7 @@ import TaskStatus from '@/components/tasks/TaskStatus.vue'
 import TaskUserDateUpdate from '@/components/tasks/TaskUserDateUpdate.vue'
 import { getDisplayDate } from '@/libs/datetime'
 import { getTaskProgressUsers } from '@/libs/task-progress'
+import { useAuthStore } from '@/stores/auth'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -17,6 +18,7 @@ const store = useTaskStore()
 const route = useRoute()
 const router = useRouter()
 const state = ref('')
+const auth = useAuthStore()
 
 // const subTasks = computed(() => taskTree.getTaskListTree())
 const subTasks = computed(() => store.tasks)
@@ -44,6 +46,10 @@ const taskProgressUsers = computed(() =>
 const startedDate = computed(() => getDisplayDate(store.task.started_at))
 const deadline = computed(() => getDisplayDate(store.task.deadline))
 
+function handleDateChangeModal(type) {
+  dateUpdateModal.user = auth.user
+  dateUpdateModal.type = type
+}
 async function handleUpdateDate() {
   await fetchTaskList(route.params.id)
   dateUpdateModal.user = null
@@ -191,6 +197,24 @@ watch(
             -->
 
             <div class="ml-auto flex gap-4">
+              <template v-if="store.task?.children_task_count === 0">
+                <button
+                  class="btn-3 px-3 py-0.5 font-semibold border disabled:opacity-30 disabled:pointer-events-none"
+                  @click.prevent="() => handleDateChangeModal('start-date')"
+                  :disabled="!!authUserProgress?.started_at"
+                >
+                  Set Started Date
+                </button>
+
+                <button
+                  class="btn-3 px-3 py-0.5 font-semibold border disabled:opacity-30 disabled:pointer-events-none"
+                  @click.prevent="() => handleDateChangeModal('finish-date')"
+                  :disabled="!!authUserProgress?.finished_at"
+                >
+                  Set Finish Date
+                </button>
+              </template>
+
               <RouterLink
                 :to="{
                   name: 'TaskShow',
