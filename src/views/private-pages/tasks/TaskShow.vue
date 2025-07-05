@@ -199,7 +199,7 @@ watch(
             <div class="ml-auto flex gap-4">
               <template v-if="store.task?.children_task_count === 0">
                 <button
-                  class="btn-3 px-3 py-0.5 font-semibold border disabled:opacity-30 disabled:pointer-events-none"
+                  class="btn-3 px-3 py-0.5 text-sm h-8 font-semibold border disabled:opacity-30 disabled:pointer-events-none"
                   @click.prevent="() => handleDateChangeModal('start-date')"
                   :disabled="!!authUserProgress?.started_at"
                 >
@@ -207,7 +207,7 @@ watch(
                 </button>
 
                 <button
-                  class="btn-3 px-3 py-0.5 font-semibold border disabled:opacity-30 disabled:pointer-events-none"
+                  class="btn-3 px-3 py-0.5 text-sm h-8 font-semibold border disabled:opacity-30 disabled:pointer-events-none"
                   @click.prevent="() => handleDateChangeModal('finish-date')"
                   :disabled="!!authUserProgress?.finished_at"
                 >
@@ -221,7 +221,7 @@ watch(
                   params: { id: store.task?.id },
                 }"
                 @click="$event.stopPropagation()"
-                class="py-1 btn-3 ml-auto"
+                class="py-0.5 btn-3 ml-auto text-sm h-8"
                 :class="{ 'bg-blue-500 text-white': route.name == 'TaskShow' }"
                 v-if="subTasks.length > 0"
               >
@@ -234,7 +234,7 @@ watch(
                   params: { id: store.task?.id },
                 }"
                 @click="$event.stopPropagation()"
-                class="py-1 btn-3"
+                class="py-0.5 btn-3 text-sm h-8"
                 :class="{ 'bg-blue-500 text-white': route.name == 'TaskReports' }"
               >
                 <i class="fal fa-file-alt"></i> Reports
