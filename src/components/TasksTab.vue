@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-4">
-    <h2 class="text-xl font-semibold">My Tasks</h2>
+    <h2 class="text-xl font-semibold">Tasks</h2>
     <!-- <pre>
       {{ taskListTree }}
     </pre> -->

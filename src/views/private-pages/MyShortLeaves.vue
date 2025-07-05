@@ -52,7 +52,7 @@ const formatTime = (timeString) => {
         <span class="hidden md:flex">Back</span>
       </button>
 
-      <h1 class="title-md md:title-lg flex-wrap text-center">My Short Leaves</h1>
+      <h1 class="title-md md:title-lg flex-wrap text-center">Short Leaves</h1>
       <div>
         <RouterLink :to="{ name: 'ShortLeaveAdd' }" class="btn-2">New Short Leave</RouterLink>
       </div>

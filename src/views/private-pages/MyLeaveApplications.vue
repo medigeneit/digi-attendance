@@ -35,7 +35,7 @@ function deleteApplication(applicationId) {
         <span class="hidden md:flex">Back</span>
       </button>
 
-      <h1 class="title-md md:title-lg flex-wrap text-center">My Leave Applications</h1>
+      <h1 class="title-md md:title-lg flex-wrap text-center">Leave Applications</h1>
       <div>
         <RouterLink :to="{ name: 'LeaveApplicationAdd' }" class="btn-2">Apply for Leave</RouterLink>
       </div>

@@ -263,17 +263,17 @@ const router = createRouter({
         },
 
         {
-          path: 'my-tasks',
+          path: 'tasks',
           name: 'MyTaskList',
           component: () => import('@/views/private-pages/tasks/TaskList.vue'),
           meta: { requiresAuth: true },
         },
 
         {
-          path: '/my-attendance',
+          path: '/attendance',
           name: 'MyAttendance',
           component: () => import('@/views/private-pages/MyAttendance.vue'),
-          meta: { requiresAuth: true, title:'My Attendance'},
+          meta: { requiresAuth: true, title:'Attendance'},
         },
 
         {
@@ -549,28 +549,28 @@ const router = createRouter({
         },
 
         {
-          path: '/my-profile',
+          path: '/profile',
           name: 'MyProfile',
           component: () => import('@/views/private-pages/MyProfile.vue'),
-          meta: { requiresAuth: true, title:'My Profile' },
+          meta: { requiresAuth: true, title:'Profile' },
         },
 
         {
-          path: '/my-profile/edit',
+          path: '/profile/edit',
           name: 'EditProfile',
           component: () => import('@/views/private-pages/ProfileEdit.vue'),
           meta: { requiresAuth: true, title:'Edit Profile' },
         },
 
         {
-          path: '/my-notifications',
+          path: '/notifications',
           name: 'MyNotificationList',
           component: () => import('@/views/private-pages/MyNotificationList.vue'),
           meta: { requiresAuth: true, title:'Notification List' },
         },
 
         {
-          path: '/my-notifications/:type',
+          path: '/notifications/:type',
           name: 'MySpecificNotificationList',
           component: () => import('@/views/private-pages/MySpecificNotificationList.vue'),
           meta: { requiresAuth: true, title:'Notification List'},
@@ -618,26 +618,26 @@ const router = createRouter({
         },
 
         {
-          path: '/my-applications',
+          path: '/applications',
           name: 'MyApplications',
           component: () => import('@/views/private-pages/MyApplications.vue'),
           meta: { requiresAuth: true, title:'My Applications'},
         },
 
         {
-          path: '/my-applications/leave-applications',
+          path: '/applications/leave-applications',
           name: 'MyLeaveApplications',
           component: () => import('@/views/private-pages/MyLeaveApplications.vue'),
           meta: { requiresAuth: true, title:'Leave Applications' },
         },
         {
-          path: '/my-applications/leave-application-add',
+          path: '/applications/leave-application-add',
           name: 'LeaveApplicationAdd',
           component: () => import('@/views/private-pages/LeaveApplicationAdd.vue'),
           meta: { requiresAuth: true, title:'Add Applications'},
         },
         {
-          path: '/my-applications/leave-application-show/:id',
+          path: '/applications/leave-application-show/:id',
           name: 'MyLeaveApplicationShow',
           component: () => import('@/views/private-pages/LeaveApplicationShow.vue'),
           meta: { requiresAuth: true, title:'Show Applications'},
@@ -655,14 +655,14 @@ const router = createRouter({
           meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title:'Edit Applications'},
         },
         {
-          path: '/my-applications/short-leaves',
+          path: '/applications/short-leaves',
           name: 'MyShortLeaves',
           component: () => import('@/views/private-pages/MyShortLeaves.vue'),
           meta: { requiresAuth: true, title:'Short Leave Applications' },
         },
 
         {
-          path: '/my-applications/short-leaves-add',
+          path: '/applications/short-leaves-add',
           name: 'ShortLeaveAdd',
           component: () => import('@/views/private-pages/ShortLeaveAdd.vue'),
           meta: { requiresAuth: true , title:'Add Short Leave'},
@@ -676,27 +676,27 @@ const router = createRouter({
         },
 
         {
-          path: '/my-applications/my-offday-exchanges',
+          path: '/applications/offday-exchanges',
           name: 'MyOffdayExchangeList',
           component: () => import('@/views/private-pages/MyOffdayExchangeList.vue'),
           meta: { requiresAuth: true },
         },
         {
-          path: '/my-applications/offday-exchanges-add',
+          path: '/applications/offday-exchanges-add',
           name: 'OffdayExchangeAdd',
           component: () => import('@/views/private-pages/OffdayExchangeAdd.vue'),
           meta: { requiresAuth: true },
         },
 
         {
-          path: '/my-applications/my-shift-exchanges',
+          path: '/applications/shift-exchanges',
           name: 'MyShiftExchangeList',
           component: () => import('@/views/private-pages/MyShiftExchangeList.vue'),
           meta: { requiresAuth: true, title:'Shift Exchange List' },
         },
 
         {
-          path: '/my-applications/shift-exchanges-add',
+          path: '/applications/shift-exchanges-add',
           name: 'ShiftExchangeAdd',
           component: () => import('@/views/private-pages/ShiftExchangeAdd.vue'),
           meta: { requiresAuth: true , title:'Add Shift Exchange'},
@@ -717,14 +717,14 @@ const router = createRouter({
         },
 
         {
-          path: '/my-applications/my-manual-attendances',
+          path: '/applications/manual-attendances',
           name: 'MyManualAttendanceList',
           component: () => import('@/views/private-pages/MyManualAttendanceList.vue'),
           meta: { requiresAuth: true  , title:'Manual Attendance List'},
         },
 
         {
-          path: '/my-applications/manual-attendances-add',
+          path: '/applications/manual-attendances-add',
           name: 'ManualAttendanceAdd',
           component: () => import('@/views/private-pages/ManualAttendanceAdd.vue'),
           meta: { requiresAuth: true  , title:'Add Manual Attendance'},
@@ -738,14 +738,14 @@ const router = createRouter({
         },
 
         {
-          path: '/my-applications/my-overtimes',
+          path: '/applications/overtimes',
           name: 'MyOvertimeList',
           component: () => import('@/views/private-pages/MyOvertimeList.vue'),
           meta: { requiresAuth: true  , title:'Overtime List'},
         },
 
         {
-          path: '/my-applications/my-overtimes-add',
+          path: '/applications/overtimes-add',
           name: 'MyOvertimeAdd',
           component: () => import('@/views/private-pages/ManualAttendanceAdd.vue'),
           meta: { requiresAuth: true , title:'Add Overtime'},

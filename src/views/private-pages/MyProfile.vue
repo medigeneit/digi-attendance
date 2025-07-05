@@ -30,7 +30,7 @@ const formatDate = (date) => {
   <div class="my-container space-y-6">
     <div class="card-bg p-6">
       <div class="flex justify-between gap-4">
-        <h2 class="title-lg text-center">My Profile</h2>
+        <h2 class="title-lg text-center">Profile</h2>
         <button
           type="button"
           @click="changePasswordModal = !changePasswordModal"
@@ -38,7 +38,7 @@ const formatDate = (date) => {
         >
           Change Password
         </button>
-        <RouterLink to="/my-profile/edit" class="btn-2">
+        <RouterLink to="/profile/edit" class="btn-2">
           <i class="far fa-edit"></i> Edit
         </RouterLink>
       </div>

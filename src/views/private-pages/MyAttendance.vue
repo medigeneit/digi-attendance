@@ -69,7 +69,7 @@ const getInitials = (name) => {
         <span class="hidden md:flex">Back</span>
       </button>
       <h1 class="title-lg md:title-lg flex-wrap text-center">
-        My Attendance of {{ formattedMonthName }}
+        Attendance of {{ formattedMonthName }}
       </h1>
       <div class="flex gap-4">
         <div>

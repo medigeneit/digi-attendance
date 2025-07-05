@@ -30,7 +30,7 @@ const myManualAttendances = computed(() => {
         <span class="hidden md:flex">Back</span>
       </button>
 
-      <h1 class="title-md md:title-lg flex-wrap text-center">My Manual Attendances</h1>
+      <h1 class="title-md md:title-lg flex-wrap text-center">Manual Attendances</h1>
       <div>
         <RouterLink :to="{ name: 'ManualAttendanceAdd' }" class="btn-2">Request</RouterLink>
       </div>

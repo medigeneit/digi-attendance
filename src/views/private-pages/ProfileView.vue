@@ -111,7 +111,7 @@ const uploadPhoto = async () => {
 <template>
   <div class="my-container max-w-xl">
     <div class="card-bg p-4 md:p-8 flex flex-col items-center relative">
-      <h1 class="title-lg">My Profile</h1>
+      <h1 class="title-lg">Profile</h1>
       <div
         @click="openPhotoModal"
         class="bg-gray-200 size-40 rounded-full overflow-hidden relative"

@@ -234,7 +234,7 @@ const isHoliday = async (day) => {
       </button>
       <h1 class="title-md md:title-lg flex-wrap text-center">Leave Application Form</h1>
       <div>
-        <RouterLink to="/my-applications" class="btn-2">Home</RouterLink>
+        <RouterLink to="/applications" class="btn-2">Home</RouterLink>
       </div>
     </div>
 
