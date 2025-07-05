@@ -115,6 +115,7 @@ const formatTime = (timeString) => {
           <table class="min-w-full table-auto bg-white shadow-md rounded-lg overflow-hidden">
             <thead>
               <tr class="bg-gray-200 text-gray-700 text-sm leading-normal">
+                <th class="py-3 px-2 text-left">#</th>
                 <th class="py-3 px-2 text-left">Name</th>
                 <th class="py-3 px-2 text-left">Start Time</th>
                 <th class="py-3 px-2 text-left">End Time</th>
@@ -125,10 +126,11 @@ const formatTime = (timeString) => {
             </thead>
             <tbody class="text-gray-600 text-sm">
               <tr
-                v-for="shift in shifts"
+                v-for="(shift,index) in shifts"
                 :key="shift.id"
                 class="border-b border-gray-200 hover:bg-blue-200"
               >
+                <td class="py-3 px-2 text-left">{{ index+=1 }}</td>
                 <td class="py-3 px-2 text-left">{{ shift.name }}</td>
                 <td class="py-3 px-2 text-left">{{ formatTime(shift.start_time) }}</td>
                 <td class="py-3 px-2 text-left">{{ formatTime(shift.end_time) }}</td>

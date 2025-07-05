@@ -82,6 +82,7 @@ onMounted(async () => {
       <table class="min-w-full table-auto bg-white shadow-md rounded-lg overflow-hidden">
         <thead>
           <tr class="bg-gray-200 text-gray-700 text-sm leading-normal">
+            <th class="py-3 px-2 text-left">#</th>
             <th class="py-3 px-2 text-left">Name</th>
             <th class="py-3 px-2 text-left">Short Name</th>
             <th class="py-3 px-2 text-center">Phone</th>
@@ -98,10 +99,13 @@ onMounted(async () => {
           </tr>
           <template v-else-if="companyStore.companies && companyStore.companies.length">
             <tr
-              v-for="company in companyStore.companies"
+              v-for="(company,index) in companyStore.companies"
               :key="company.id"
               class="border-b border-gray-200 hover:bg-blue-200"
             >
+              <td class="py-3 px-2 text-left">
+                <p class="font-medium">{{ index+=1 }}</p>
+              </td>
               <td class="py-3 px-2 text-left">
                 <p class="font-medium">{{ company.name }}</p>
               </td>

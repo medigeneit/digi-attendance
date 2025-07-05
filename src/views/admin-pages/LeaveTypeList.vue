@@ -93,6 +93,7 @@ onMounted(() => {
           <table class="min-w-full table-auto bg-white shadow-md rounded-lg overflow-hidden">
             <thead>
               <tr class="bg-gray-200 text-gray-700 text-sm leading-normal">
+                <th class="py-3 px-2 text-left">#</th>
                 <th class="py-3 px-2 text-left">Leave Name</th>
                 <th class="py-3 px-2 text-left">Annual Quota</th>
                 <th class="py-3 px-2 text-center">Type</th>
@@ -102,10 +103,11 @@ onMounted(() => {
             </thead>
             <tbody class="text-gray-600 text-sm">
               <tr
-                v-for="leaveType in leaveTypes"
-                :key="leaveType.id"
+                v-for="(leaveType, index) in leaveTypes"
+                :key="index"
                 class="border-b border-gray-200 hover:bg-blue-200"
               >
+                <td class="py-3 px-2 text-left">{{ index+=1 }}</td>
                 <td class="py-3 px-2 text-left">{{ leaveType?.name }}</td>
                 <td class="py-3 px-2 text-left">{{ leaveType?.annual_quota }}</td>
                 <td class="py-3 px-2 text-center">{{ leaveType?.type }}</td>

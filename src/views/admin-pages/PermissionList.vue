@@ -36,6 +36,7 @@ onMounted(() => {
     <table class="min-w-full table-auto bg-white shadow-md rounded-lg overflow-hidden">
       <thead class="bg-gray-100">
         <tr class="bg-gray-200">
+          <th class="text-left p-3 border">#</th>
           <th class="text-left p-3 border">User</th>
           <th class="text-left p-3 border">Company</th>
           <th class="text-left p-3 border">Departments</th>
@@ -43,7 +44,8 @@ onMounted(() => {
         </tr>
       </thead>
       <tbody>
-        <tr v-for="perm in permissions" :key="perm.id" class="hover:bg-gray-50">
+        <tr v-for="(perm,index) in permissions" :key="perm.id" class="hover:bg-gray-50">
+          <td class="p-3 border">{{ index+=1 }}</td>
           <td class="p-3 border">{{ perm?.user?.name }}</td>
           <td class="p-3 border">{{ perm?.company?.name }}</td>
           <td class="p-3 border">

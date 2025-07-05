@@ -301,7 +301,7 @@ const router = createRouter({
           path: '/settings/permissions-list',
           name: 'PermissionList',
           component: () => import('@/views/admin-pages/PermissionList.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'] }
+          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title:"Permissions List" }
         },
 
         {
@@ -332,61 +332,61 @@ const router = createRouter({
           path: '/settings/device-list',
           name: 'DeviceList',
           component: () => import('@/views/admin-pages/DeviceList.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'] },
+          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title:"Device List" },
         },
         {
           path: '/settings/sync-data',
           name: 'SyncData',
           component: () => import('@/views/admin-pages/SyncData.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'] },
+          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title:"Syn Data List"  },
         },
         {
           path: '/settings/zk-users',
           name: 'ZKUsers',
           component: () => import('@/views/admin-pages/ZKUsers.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'] },
+          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title:"ZKU List" },
         },
         {
           path: '/settings/company-list',
           name: 'CompanyList',
           component: () => import('@/views/admin-pages/CompanyList.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'] },
+          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title:"Company List"},
         },
         {
           path: '/settings/department-list',
           name: 'DepartmentList',
           component: () => import('@/views/admin-pages/DepartmentList.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'] },
+          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title:"Department List" },
         },
         {
           path: '/settings/designation-list',
           name: 'DesignationList',
           component: () => import('@/views/admin-pages/DesignationList.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'] },
+          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title:"Designation List"},
         },
         {
           path: '/settings/shift-list',
           name: 'ShiftList',
           component: () => import('@/views/admin-pages/ShiftList.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'] },
+          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title:"Shift List" },
         },
         {
           path: '/settings/leave-type-list',
           name: 'LeaveTypeList',
           component: () => import('@/views/admin-pages/LeaveTypeList.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'] },
+          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title:"Leave Type List" },
         },
         {
           path: '/settings/leave-approval-list',
           name: 'LeaveApprovalList',
           component: () => import('@/views/admin-pages/LeaveApprovalList.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'] },
+          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title:"Leave Approval List" },
         },
         {
           path: '/settings/other-approval-list',
           name: 'OtherApprovalList',
           component: () => import('@/views/admin-pages/LeaveApprovalList.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'] },
+          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title:"Other Approval List" },
         },
         {
           path: '/settings/holiday-list',
@@ -763,6 +763,14 @@ router.beforeEach((to, _from, next) => {
     next({ name: 'login' })
   } else {
     next()
+  }
+})
+
+router.afterEach((to) => {
+  if (to.meta && to.meta.title) {
+    document.title = `${to.meta.title} | Digi Attendance`
+  } else {
+    document.title = 'Digi Attendance'
   }
 })
 
