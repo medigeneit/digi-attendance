@@ -9,7 +9,6 @@ import TaskStatus from '@/components/tasks/TaskStatus.vue'
 import TaskUserDateUpdate from '@/components/tasks/TaskUserDateUpdate.vue'
 import { getDisplayDate } from '@/libs/datetime'
 import { getTaskProgressUsers } from '@/libs/task-progress'
-import { useAuthStore } from '@/stores/auth'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -17,7 +16,6 @@ import { useRoute, useRouter } from 'vue-router'
 const store = useTaskStore()
 const route = useRoute()
 const router = useRouter()
-const auth = useAuthStore()
 const state = ref('')
 
 // const subTasks = computed(() => taskTree.getTaskListTree())
@@ -134,7 +132,12 @@ watch(
           </div>
 
           <section class="mt-4 col-span-full mb-6">
-            <TaskProgressTable :progress-users="taskProgressUsers">
+            <TaskProgressTable
+              :task-users="store.task?.users || []"
+              :task="store.task"
+              :sub-tasks="store.tasks"
+              :progress-users="taskProgressUsers"
+            >
               <template #caption>
                 <div class="text-sm py-1 text-left uppercase font-semibold text-gray-600">
                   Assigned Users
