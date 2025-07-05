@@ -100,6 +100,7 @@ onMounted(async () => {
             <table class="min-w-full table-auto bg-white shadow-md rounded-lg overflow-hidden">
               <thead>
                 <tr class="bg-gray-200 text-gray-700 text-sm leading-normal">
+                  <th class="py-3 px-2 text-left">#</th>
                   <th class="py-3 px-2 text-left">Title</th>
                   <th class="py-3 px-2 text-left">Grade</th>
                   <th class="py-3 px-2 text-center">Status</th>
@@ -108,10 +109,11 @@ onMounted(async () => {
               </thead>
               <tbody class="text-gray-600 text-sm">
                 <tr
-                  v-for="item in designationArray"
+                  v-for="(item,index) in designationArray"
                   :key="item.id"
                   class="border-b border-gray-200 hover:bg-blue-200"
                 >
+                  <td class="py-3 px-2 text-left">{{index+=1 }}</td>
                   <td class="py-3 px-2 text-left">{{ item.title }}</td>
                   <td class="py-3 px-2 text-left whitespace-nowrap">{{ item.grade }}</td>
                   <td class="py-3 px-2 text-center">{{ item.status }}</td>

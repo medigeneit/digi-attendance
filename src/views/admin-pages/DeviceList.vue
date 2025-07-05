@@ -85,6 +85,7 @@ onMounted(async () => {
       <table class="min-w-full table-auto bg-white shadow-md rounded-lg overflow-hidden">
         <thead>
           <tr class="bg-gray-200 text-gray-700 text-sm leading-normal">
+            <th class="py-3 px-2 text-left">#</th>
             <th class="py-3 px-2 text-left">Name</th>
             <th class="py-3 px-2 text-left">IP Address</th>
             <th class="py-3 px-2 text-center">Port</th>
@@ -101,10 +102,13 @@ onMounted(async () => {
           </tr>
           <template v-else-if="deviceStore.devices && deviceStore.devices.length">
             <tr
-              v-for="device in deviceStore.devices"
-              :key="device.id"
+              v-for="(device,index) in deviceStore.devices"
+              :key="index"
               class="border-b border-gray-200 hover:bg-blue-200"
             >
+              <td class="py-3 px-2 text-left">
+                <p class="font-medium">{{ index+=1 }}</p>
+              </td>
               <td class="py-3 px-2 text-left">
                 <p class="font-medium">{{ device.name }}</p>
               </td>

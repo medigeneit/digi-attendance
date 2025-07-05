@@ -113,6 +113,7 @@ onMounted(async () => {
           <table class="min-w-full table-auto bg-white shadow-md rounded-lg overflow-hidden">
             <thead>
               <tr class="bg-gray-200 text-gray-700 text-sm leading-normal">
+                <th class="py-3 px-2 text-left">#</th>
                 <th class="py-3 px-2 text-left">Name</th>
                 <th class="py-3 px-2 text-left">Short Name</th>
                 <th class="py-3 px-2 text-center">Employee Number</th>
@@ -122,10 +123,11 @@ onMounted(async () => {
             </thead>
             <tbody class="text-gray-600 text-sm">
               <tr
-                v-for="department in departments"
-                :key="department.id"
+                v-for="(department, index) in departments"
+                :key="index"
                 class="border-b border-gray-200 hover:bg-blue-200"
               >
+                <td class="py-3 px-2 text-left">{{ index+=1 }}</td>
                 <td class="py-3 px-2 text-left">{{ department.name }}</td>
                 <td class="py-3 px-2 text-left whitespace-nowrap">{{ department.short_name }}</td>
                 <td class="py-3 px-2 text-center">{{ department?.users_count }}</td>

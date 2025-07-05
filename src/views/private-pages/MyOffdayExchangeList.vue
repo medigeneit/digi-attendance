@@ -49,7 +49,7 @@ function deleteApplication(id) {
         <span class="hidden md:flex">Back</span>
       </button>
 
-      <h1 class="title-md md:title-lg flex-wrap text-center">My Offday Exchanges</h1>
+      <h1 class="title-md md:title-lg flex-wrap text-center">Offday Exchanges</h1>
       <div>
         <RouterLink :to="{ name: 'OffdayExchangeAdd' }" class="btn-2"
           >Request Offday Exchange</RouterLink

@@ -112,7 +112,7 @@ const goBack = () => {
 
       <h1 class="title-lg flex-wrap text-center">Short Leave Application Form</h1>
       <div>
-        <RouterLink to="/my-applications" class="btn-2">Home</RouterLink>
+        <RouterLink to="/applications" class="btn-2">Home</RouterLink>
       </div>
     </div>
 

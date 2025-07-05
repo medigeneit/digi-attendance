@@ -38,7 +38,7 @@ const goBack = () => {
         <span class="hidden md:flex">Back</span>
       </button>
 
-      <h1 class="title-md md:title-lg flex-wrap text-center">My Shift Exchanges</h1>
+      <h1 class="title-md md:title-lg flex-wrap text-center"> Shift Exchanges</h1>
       <div>
         <RouterLink :to="{ name: 'ShiftExchangeAdd' }" class="btn-2"
           >Request Shift Exchange</RouterLink

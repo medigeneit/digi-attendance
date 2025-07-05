@@ -52,7 +52,7 @@ const markNotificationAndNavigate = async (notificationId, url) => {
         </button>
 
         <RouterLink
-          to="/my-profile"
+          to="/profile"
           class="menus font-bold bg-gray-100 hover:bg-teal-100 p-1 rounded-full border"
         >
           <UserAvatar :user="user" />
