@@ -1,4 +1,5 @@
 <script setup>
+import { getYearMonthDayFormat } from '@/libs/datetime'
 import { useCompanyStore } from '@/stores/company'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { onMounted, ref, watch } from 'vue'
@@ -25,7 +26,7 @@ const form = ref({
   from_department_id: '',
   to_department_id: '',
   requirement_id: '',
-  user_ids: '',
+  user_ids: [],
   status: 'PENDING',
   progress: 0,
   description: '',
@@ -35,25 +36,6 @@ const form = ref({
   started_at: '',
   deadline: '',
 })
-
-const getDate = (dateTime) => {
-  if (!dateTime) {
-    return ''
-  }
-
-  try {
-    const date = new Date(dateTime)
-    if (isNaN(date)) return ''
-
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0') // Months are 0-based
-    const day = String(date.getDate()).padStart(2, '0')
-
-    return `${year}-${month}-${day}`
-  } catch (e) {
-    return ''
-  }
-}
 
 onMounted(async () => {
   loading.value = true
@@ -93,8 +75,8 @@ function setTaskOnFormData(taskData) {
     is_important: taskData.is_important,
     is_urgent: taskData.is_urgent,
     is_target: taskData.is_target,
-    started_at: getDate(taskData.started_at),
-    deadline: getDate(taskData.deadline),
+    started_at: getYearMonthDayFormat(taskData.started_at),
+    deadline: getYearMonthDayFormat(taskData.deadline),
   }
 }
 
@@ -210,7 +192,7 @@ const update = async () => {
         </div>
       </template>
 
-      <div class="flex gap-16 items-center justify-center my-8">
+      <!-- <div class="flex gap-16 items-center justify-center my-8">
         <label class="flex gap-1 items-center">
           <input type="checkbox" v-model="form.is_important" class="size-4" />
           <span class="block text-gray-600 text-base font-medium">Important</span>
@@ -219,9 +201,9 @@ const update = async () => {
           <input type="checkbox" v-model="form.is_urgent" class="size-4" />
           <span class="block text-gray-600 text-base font-medium">Urgent</span>
         </label>
-      </div>
+      </div> -->
 
-      <div class="grid grid-cols-2 gap-4 mb-4">
+      <div class="grid grid-cols-2 gap-4 mb-4" v-if="task?.children_task_count === 0">
         <div>
           <label class="block text-gray-700 font-medium mb-2">Status</label>
           <select
@@ -236,7 +218,7 @@ const update = async () => {
         </div>
       </div>
 
-      <div class="mt-8">
+      <!-- <div class="mt-8">
         <label
           class="flex gap-1 items-center mt-4 border rounded py-2 justify-center cursor-pointer"
           :class="{ 'bg-yellow-200': form.is_target }"
@@ -270,7 +252,7 @@ const update = async () => {
             class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
           />
         </div>
-      </div>
+      </div> -->
 
       <div class="mb-4">
         <label class="block text-gray-700 font-medium mb-2">Description</label>

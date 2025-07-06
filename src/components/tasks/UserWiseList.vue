@@ -8,7 +8,13 @@ const props = defineProps({
   selectedUserId: { type: String, default: null },
 })
 
-const emit = defineEmits(['commentButtonClick', 'editClick', 'addClick', 'updatePriority'])
+const emit = defineEmits([
+  'commentButtonClick',
+  'editClick',
+  'addClick',
+  'updatePriority',
+  'employeeAssignClick',
+])
 const users = computed(() => {
   return props.tasks
     .reduce((users, task) => {
@@ -91,6 +97,7 @@ const taskUsers = computed(() => {
                 @commentButtonClick="emit('commentButtonClick', item.id)"
                 @editClick="(taskId) => emit('editClick', taskId)"
                 @addClick="(taskId) => emit('addClick', taskId)"
+                @employeeAssignClick="(taskId) => emit('employeeAssignClick', taskId)"
               />
             </td>
           </tr>
