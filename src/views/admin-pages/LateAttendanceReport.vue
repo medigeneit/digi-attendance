@@ -1,90 +1,43 @@
 <script setup>
+import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
-import Multiselect from '@/components/MultiselectDropdown.vue'
 import { useAttendanceStore } from '@/stores/attendance'
-import { useCompanyStore } from '@/stores/company'
 import { storeToRefs } from 'pinia'
 import Swal from 'sweetalert2'
-import { onMounted, ref, watch } from 'vue'
+import { computed } from 'vue'
+import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
 const route = useRoute()
 
 const lateAttendanceStore = useAttendanceStore()
-const companyStore = useCompanyStore()
 
 const { monthlyLateLogs, isLoading, selectedMonth } = storeToRefs(lateAttendanceStore)
-const { companies, employees } = storeToRefs(companyStore)
 
 const month = ref(route.query.date || selectedMonth.value)
-const selectedCompanyId = ref(route.query.company_id || '')
-const selectedEmployeeId = ref('')
 
-onMounted(async () => {
-  await companyStore.fetchCompanies()
-
-  // If company_id is available in query, fetch employees
-  if (route.query.company_id) {
-    selectedCompanyId.value = route.query.company_id
-    await companyStore.fetchEmployee(route.query.company_id)
-  }
-
-  // If employee_id exists, set employee object after fetching employees
-  if (route.query.employee_id) {
-    const employee = employees.value.find((em) => em.id == route.query.employee_id)
-    if (employee) {
-      selectedEmployeeId.value = employee
-      await fetchApplicationsByUser()
-    }
-  }
-})
-
-// Watcher for company change
-watch(selectedCompanyId, async (newCompanyId) => {
-  if (newCompanyId) {
-    await companyStore.fetchEmployee(newCompanyId)
-    selectedEmployeeId.value = '' // Reset employee selection
-  }
-
+const handleMonthChange = () => {
   router.replace({
     query: {
       ...route.query,
-      company_id: newCompanyId || '',
-      employee_id: '', // Reset employee_id in query
+      date: month.value,
     },
   })
-})
 
-// Watcher for employee change
-watch(selectedEmployeeId, async (newEmployee) => {
-  if (newEmployee?.id) {
-    await fetchApplicationsByUser()
+  if (filters.value?.company_id && filters.value?.department_id && filters.value?.type && filters.value?.employee_id) {
+    fetchApplicationsByUser(filters.value)
   }
+}
 
-  router.replace({
-    query: {
-      ...route.query,
-      employee_id: newEmployee?.id || '',
-    },
-  })
-})
 
-// Watcher for selectedMonth changes
-watch(selectedMonth, (newMonth) => {
-  router.replace({
-    query: {
-      ...route.query,
-      date: newMonth,
-    },
-  })
-})
-
-const fetchApplicationsByUser = async () => {
-  if (selectedCompanyId.value && selectedEmployeeId?.value?.id) {
-    await lateAttendanceStore.getAttendanceLateReport(
-      selectedCompanyId.value,
-      selectedEmployeeId.value.id,
+const fetchApplicationsByUser = async (params) => {
+  if (params.company_id && params?.department_id && params?.type && params?.type && params?.employee_id && month.value) {
+     await lateAttendanceStore.getAttendanceLateReport(
+     params?.company_id, 
+      params?.department_id , 
+      params?.type, 
+      params?.employee_id,
       month.value,
       'monthly',
     )
@@ -92,10 +45,10 @@ const fetchApplicationsByUser = async () => {
 }
 
 const getExportExcel = async () => {
-  if (selectedCompanyId.value && selectedEmployeeId?.value?.id) {
+  if (filters.value.company_id && filters.value.employee_id && month.value) {
     await lateAttendanceStore.lateReportDownloadExcel(
-      selectedCompanyId.value,
-      selectedEmployeeId.value.id,
+      filters.value.company_id,
+      filters.value.employee_id,
       month.value,
       'monthly',
     )
@@ -103,11 +56,13 @@ const getExportExcel = async () => {
     Swal.fire({
       icon: 'warning',
       title: 'Missing Selection!',
-      text: 'Please select Company and Employee first!',
+      text: 'Please select Company, Employee, and Month first!',
       confirmButtonText: 'OK',
     })
   }
 }
+
+
 
 const goBack = () => {
   router.go(-1)
@@ -118,6 +73,40 @@ const statusClass = (status) => {
   if (status === 'Approved') return 'text-green-700'
   return 'text-red-500'
 }
+
+const filters = ref({
+  company_id:  '',
+  department_id: 'all',
+  type:  'all',
+  employee_id: '',
+})
+
+const handleFilterChange = async() => {
+  // You can trigger your fetch here
+  router.replace({
+    query: {
+      ...route.query,
+      company_id: filters.value?.company_id,
+      department_id: filters.value?.department_id,
+      type: filters.value?.type,
+      employee_id: filters.value?.employee_id,
+    },
+  })
+  // fetchApplicationsByUser()
+
+  if (filters.value?.company_id && filters.value?.department_id && filters.value?.type && filters.value?.employee_id) {
+    fetchApplicationsByUser(filters.value)
+  
+  }
+}
+
+const initialFilter = computed(() => ({
+  company_id: route.query.company_id || '',
+  department_id: route.query.department_id || 'all',
+  type: route.query.type || 'all',
+  employee_id: route.query.employee_id || '',
+}))
+
 </script>
 
 <template>
@@ -135,30 +124,18 @@ const statusClass = (status) => {
         </button>
       </div>
     </div>
+    <EmployeeFilter 
+      v-model="filters" 
+      :initial-value="initialFilter" 
+      @filter-change="handleFilterChange" 
+    />
 
     <div class="flex flex-wrap items-center gap-2">
       <div>
-        <select id="user-filter" v-model="selectedCompanyId" class="input-1">
-          <option value="">Select Company</option>
-          <option v-for="user in companies" :key="user.id" :value="user.id">
-            {{ user.name }}
-          </option>
-        </select>
-      </div>
-      <div>
-        <Multiselect
-          v-model="selectedEmployeeId"
-          :options="employees"
-          :multiple="false"
-          label="label"
-          placeholder="Please select employee..."
-        />
-      </div>
-      <div>
-        <input
+       <input
           id="user-filter"
           v-model="month"
-          @change="fetchApplicationsByUser"
+          @change="handleMonthChange"
           type="month"
           class="input-1"
         />
@@ -170,7 +147,7 @@ const statusClass = (status) => {
     </div>
 
     <div v-else class="space-y-4">
-      <div class="overflow-x-auto" v-if="selectedCompanyId && selectedEmployeeId">
+      <div class="overflow-x-auto" v-if="filters.company_id && filters.employee_id && filters.department_id">
         <table
           class="min-w-full table-auto border-collapse border border-gray-200 bg-white rounded-md text-sm"
         >
@@ -216,7 +193,7 @@ const statusClass = (status) => {
         </table>
       </div>
       <div v-else class="text-center text-red-500 text-xl italic mt-10">
-        Please select company and employee
+        Please select company, department and employee
       </div>
     </div>
   </div>

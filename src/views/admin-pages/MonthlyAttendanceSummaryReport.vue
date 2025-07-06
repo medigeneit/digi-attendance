@@ -1,9 +1,11 @@
 <script setup>
+import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import Multiselect from '@/components/MultiselectDropdown.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useCompanyStore } from '@/stores/company'
 import { storeToRefs } from 'pinia'
+import { computed } from 'vue'
 import { onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -21,9 +23,9 @@ const category = ref('')
 const fetchAttendance = async () => {
   if (selectedCompanyId.value) {
     await attendanceStore.getMonthlyAttendanceSummaryReport(
-      selectedCompanyId.value,
-      selectedEmployee?.value?.id,
-      category?.value,
+      filters.value?.company_id,
+      filters.value?.employee_id,
+      filters?.value?.type,
       selectedMonth.value,
     )
   }
@@ -90,7 +92,37 @@ watch(selectedEmployee, (newEmployee) => {
   }
 })
 
+const filters = ref({
+  company_id:  '',
+  department_id: 'all',
+  type:  'all',
+  employee_id: '',
+})
+
+const handleFilterChange = async() => {
+  // You can trigger your fetch here
+  router.replace({
+    query: {
+      ...route.query,
+      company_id: filters.value?.company_id,
+      department_id: filters.value?.department_id,
+      type: filters.value?.type,
+      employee_id: filters.value?.employee_id,
+    },
+  })
+  // fetchApplicationsByUser()
+  fetchAttendance(filters.value)
+}
+
+const initialFilter = computed(() => ({
+  company_id: route.query.company_id || '',
+  department_id: route.query.department_id || 'all',
+  type: route.query.type || 'all',
+  employee_id: route.query.employee_id || '',
+}))
+
 const goBack = () => router.go(-1)
+
 </script>
 
 <template>
@@ -112,7 +144,12 @@ const goBack = () => router.go(-1)
     </div>
 
     <div class="flex flex-wrap gap-4">
-      <div>
+      <EmployeeFilter 
+        v-model="filters" 
+        :initial-value="initialFilter" 
+        @filter-change="handleFilterChange" 
+      />
+      <!-- <div>
         <select
           id="userSelect"
           v-model="selectedCompanyId"
@@ -142,7 +179,7 @@ const goBack = () => router.go(-1)
           label="label"
           placeholder="Select employee"
         />
-      </div>
+      </div> -->
       <div>
         <input type="month" v-model="selectedMonth" @change="fetchAttendance" class="input-1" />
       </div>
@@ -151,7 +188,7 @@ const goBack = () => router.go(-1)
     <LoaderView v-if="attendanceStore.isLoading" />
 
     <div v-else class="space-y-4">
-      <div class="overflow-x-auto card-bg" v-if="selectedCompanyId">
+      <div class="overflow-x-auto card-bg" v-if="filters.company_id">
         <table class="min-w-full table-auto border-collapse border border-gray-300 bg-white">
           <thead>
             <tr class="bg-gray-100 text-sm">

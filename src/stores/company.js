@@ -76,6 +76,7 @@ export const useCompanyStore = defineStore('company', () => {
     try {
       const response = await apiClient.get(`/companies/${id}/employees`);
       employees.value = response.data;
+      return response.data;
     } catch (err) {
       error.value = err.response?.data?.message || `কোম্পানি (ID: ${id}) এর এমপ্লয়ী লোড করতে ব্যর্থ হয়েছে।`;
       console.error(`Error fetching department with id ${id}:`, err);

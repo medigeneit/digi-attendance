@@ -3,6 +3,8 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import ShiftAssignmentModal from '@/components/common/ShiftAssignmentModal.vue'
 import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import UserChip from '@/components/user/UserChip.vue'
+import { useCompanyStore } from '@/stores/company'
+import { useDepartmentStore } from '@/stores/department'
 import { useShiftStore } from '@/stores/shift'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
@@ -16,12 +18,21 @@ const route = useRoute()
 const userStore = useUserStore()
 const companyNames = ref([])
 const selectedCompany = ref(route.query.company || 'all')
+const selectedDepartment = ref(route.query.department || 'all')
+const selectedLineType = ref(route.query.line_type || 'all')
 const selectedUser = ref('')
 const selectedEmployee = ref('')
 const shiftAssignmentModal = ref(false)
+const departmentStore = useDepartmentStore()
+const companyStore = useCompanyStore()
+const { companies } = storeToRefs(companyStore)
+const { departments } = storeToRefs(departmentStore)
+
 
 onMounted(() => {
   userStore.fetchUsers()
+  companyStore.fetchCompanies()
+  onCompanyChange(selectedCompany.value)
 })
 
 const goBack = () => {
@@ -29,55 +40,70 @@ const goBack = () => {
 }
 
 watch(selectedCompany, (newVal) => {
+  onCompanyChange(newVal)
   router.push({
     query: {
       ...route.query,
-      company: newVal,
+      company:newVal,
     },
   })
 })
 
+watch(selectedDepartment, (newVal) => {
+  router.push({
+    query: {
+      ...route.query,
+      department:newVal,
+    },
+  })
+})
+
+watch(selectedLineType, (newVal) => {
+  router.push({
+    query: {
+      ...route.query,
+      line_type:newVal,
+    },
+  })
+})
+
+const onCompanyChange = async (company_id) => {
+  await departmentStore.fetchDepartments(company_id)
+}
+
 const groupedUsers = computed(() => {
+  let filteredUsers = [...userStore?.users || []]
+  // 1. Filter by Selected Company
+  if (selectedCompany.value !== 'all') {
+    filteredUsers = filteredUsers.filter(user => user?.company?.id == selectedCompany.value)
+  }
+
+  // 2. Filter by Selected Department
+  if (selectedDepartment.value !== 'all') {
+    filteredUsers = filteredUsers.filter(user => user?.department?.id == selectedDepartment.value)
+  }
+
+  // 3. Filter by Line Type
+  if (selectedLineType.value !== 'all') {
+    filteredUsers = filteredUsers.filter(user => user?.type == selectedLineType.value)
+  }
+
+  // 4. Filter by Selected User
+  if (selectedUser.value?.id) {
+    filteredUsers = filteredUsers.filter(user => user?.id == selectedUser.value.id)
+  }
+
+  // Group Users by Company Name
   const grouped = {}
-  const uniqueNames = new Set()
-
-  userStore?.users.forEach((user) => {
+  filteredUsers.forEach(user => {
     const companyName = user?.company?.name || 'Unknown Company'
-
     if (!grouped[companyName]) {
       grouped[companyName] = []
     }
     grouped[companyName].push(user)
-
-    uniqueNames.add(companyName)
   })
 
-  companyNames.value = Array.from(uniqueNames)
-
-  let filteredGrouped = grouped
-
-  // Filter by company
-  if (selectedCompany.value !== 'all') {
-    filteredGrouped = {
-      [selectedCompany.value]: grouped[selectedCompany.value] || [],
-    }
-  }
-
-  // Filter by selectedUser (assumes user object with id)
-  if (selectedUser.value?.id) {
-    const filtered = {}
-
-    for (const [company, users] of Object.entries(filteredGrouped)) {
-      const matchedUsers = users.filter((u) => u.id === selectedUser.value.id)
-      if (matchedUsers.length) {
-        filtered[company] = matchedUsers
-      }
-    }
-
-    return filtered
-  }
-
-  return filteredGrouped
+  return grouped
 })
 
 const modalEmployeeId = ref('')
@@ -133,7 +159,22 @@ const formattedName = (name) => {
       <div>
         <select v-model="selectedCompany" class="input-1">
           <option value="all" selected>All Company</option>
-          <option v-for="(item, index) in companyNames" :key="index">{{ item }}</option>
+          <option v-for="(item, index) in companies" :key="index" :value="item.id" >{{ item?.name }}</option>
+        </select>
+      </div>
+      <div>
+        <select v-model="selectedDepartment" class="input-1">
+          <option value="all" selected>All Department</option>
+          <option v-for="(item, index) in departments" :key="index" :value="item.id" >{{ item?.name }}</option>
+        </select>
+      </div>
+      <div>
+        <select v-model="selectedLineType" class="input-1">
+          <option value="all">All Category</option>
+          <option value="executive">Executive</option>
+          <option value="support_staff">Support Staff</option>
+          <option value="doctor">Doctor</option>
+          <option value="academy_body">Academy Body</option>
         </select>
       </div>
       <!-- {{ userStore.users }} -->
@@ -158,6 +199,7 @@ const formattedName = (name) => {
     <div v-if="userStore.isLoading" class="text-center py-4">
       <LoaderView />
     </div>
+    
 
     <div v-else class="space-y-4">
       <div v-for="(users, companyName) in groupedUsers" :key="companyName">

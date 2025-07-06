@@ -3,6 +3,7 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import Multiselect from '@/components/MultiselectDropdown.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useCompanyStore } from '@/stores/company'
+import { useDepartmentStore } from '@/stores/department'
 import { storeToRefs } from 'pinia'
 import Swal from 'sweetalert2'
 import { onMounted, ref, watch } from 'vue'
@@ -13,12 +14,16 @@ const route = useRoute()
 const category = ref('all')
 const lateAttendanceStore = useAttendanceStore()
 const companyStore = useCompanyStore()
+const departmentStore = useDepartmentStore()
 
 const { dailyLateLogs, isLoading, selectedDate } = storeToRefs(lateAttendanceStore)
-const { companies, employees } = storeToRefs(companyStore)
+const { companies } = storeToRefs(companyStore)
 
 const selectedCompanyId = ref(route.query.company_id || '')
+const selectedDepartmentId = ref(route.query.department_id || '')
 const selectedEmployeeId = ref('')
+const { departments } = storeToRefs(departmentStore)
+const filterEmployees = ref([])
 
 // Set selectedDate from query if exists
 if (route.query.date) {
@@ -29,7 +34,9 @@ onMounted(async () => {
   await companyStore.fetchCompanies()
 
   if (selectedCompanyId.value) {
-    await companyStore.fetchEmployee(selectedCompanyId.value)
+    const res = await companyStore.fetchEmployee(selectedCompanyId.value)
+    filterEmployees.value = res;
+    onCompanyChange(selectedCompanyId.value)
     await fetchApplicationsByUser()
   }
 })
@@ -38,17 +45,50 @@ onMounted(async () => {
 watch(selectedCompanyId, async (newCompanyId) => {
   if (newCompanyId) {
     await companyStore.fetchEmployee(newCompanyId)
+    filterEmployees.value = companyStore.employees
     selectedEmployeeId.value = ''
-    await fetchApplicationsByUser()
+    selectedDepartmentId.value = ''
+    onCompanyChange(newCompanyId)
+  } else {
+    filterEmployees.value = []
+    selectedEmployeeId.value = ''
+    selectedDepartmentId.value = ''
   }
+  updateFilters()
+})
 
-  router.replace({
-    query: {
-      ...route.query,
-      company_id: newCompanyId || '',
-      employee_id: '',
-    },
-  })
+// Watch department change
+watch(selectedDepartmentId, (newVal) => {
+  if (newVal) {
+    // Filter from already fetched employees of the company
+    filterEmployees.value = companyStore.employees.filter(emp => emp.department_id == newVal)
+  } else {
+    // Reset to all employees of the selected company
+    filterEmployees.value = companyStore.employees
+  }
+  updateFilters()
+})
+
+// Watch category (Line) change
+watch(category, (newVal) => {
+  if (newVal !== 'all') {
+    // Filter from already fetched employees of the company
+    filterEmployees.value = companyStore.employees.filter(emp => emp.type == newVal)
+  } else {
+    // Reset to all employees of the selected company
+    filterEmployees.value = companyStore.employees
+  }
+  updateFilters()
+})
+
+// Watch employee change
+watch(selectedEmployeeId, () => {
+  updateFilters()
+})
+
+// Watch date change
+watch(selectedDate, () => {
+  updateFilters()
 })
 
 // Watch employee change
@@ -56,7 +96,6 @@ watch(selectedEmployeeId, async (newEmployee) => {
   if (newEmployee?.id) {
     await fetchApplicationsByUser()
   }
-
   router.replace({
     query: {
       ...route.query,
@@ -89,6 +128,7 @@ const fetchApplicationsByUser = async () => {
   if (selectedCompanyId.value) {
     await lateAttendanceStore.getAttendanceLateReport(
       selectedCompanyId.value,
+      selectedDepartmentId.value,
       category.value,
       selectedEmployeeId.value.id,
       selectedDate.value,
@@ -97,10 +137,16 @@ const fetchApplicationsByUser = async () => {
   }
 }
 
+const onCompanyChange = async (company_id) => {
+  await departmentStore.fetchDepartments(company_id)
+}
+
+
 const getExportExcel = async () => {
   if (selectedCompanyId.value) {
     await lateAttendanceStore.lateReportDownloadExcel(
       selectedCompanyId.value,
+      selectedDepartmentId.value,
       category?.value,
       selectedEmployeeId.value.id,
       selectedDate.value,
@@ -125,6 +171,34 @@ const statusClass = (status) => {
   if (status === 'Approved') return 'text-green-700'
   return 'text-red-500'
 }
+
+
+const updateFilters = async () => {
+  if (!selectedCompanyId.value || !selectedDate.value) return
+
+  await lateAttendanceStore.getAttendanceLateReport(
+    selectedCompanyId.value,
+    selectedDepartmentId.value,
+    category.value,
+    selectedEmployeeId.value?.id || '',
+    selectedDate.value,
+    'daily',
+    selectedDepartmentId.value || ''
+  )
+
+  router.replace({
+    query: {
+      company_id: selectedCompanyId.value || '',
+      department_id: selectedDepartmentId.value || '',
+      employee_id: selectedEmployeeId.value?.id || '',
+      date: selectedDate.value || '',
+    },
+  })
+}
+
+
+
+
 </script>
 
 <template>
@@ -134,7 +208,6 @@ const statusClass = (status) => {
         <i class="far fa-arrow-left"></i>
         <span class="hidden md:flex">Back</span>
       </button>
-
       <h1 class="title-md md:title-lg flex-wrap text-center">Daily Late Reports</h1>
       <div class="flex gap-4">
         <button type="button" @click="getExportExcel" class="btn-3">
@@ -142,12 +215,19 @@ const statusClass = (status) => {
         </button>
       </div>
     </div>
-
     <div class="flex flex-wrap items-center gap-2">
       <div>
         <select id="user-filter" v-model="selectedCompanyId" class="input-1">
           <option value="">Select Company</option>
           <option v-for="user in companies" :key="user.id" :value="user.id">
+            {{ user.name }}
+          </option>
+        </select>
+      </div>
+      <div>
+        <select id="user-filter" v-model="selectedDepartmentId" class="input-1">
+          <option value="">Select Department</option>
+          <option v-for="user in departments" :key="user.id" :value="user.id">
             {{ user.name }}
           </option>
         </select>
@@ -171,7 +251,7 @@ const statusClass = (status) => {
       <div>
         <Multiselect
           v-model="selectedEmployeeId"
-          :options="employees"
+          :options="filterEmployees"
           :multiple="false"
           label="label"
           placeholder="Please select employee..."
