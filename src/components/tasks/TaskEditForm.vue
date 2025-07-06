@@ -67,47 +67,36 @@ onMounted(async () => {
     ignore_permission: true,
   })
 
-  console.log({ task: task.value })
-
+  setTaskOnFormData(task.value)
   selectedUsers.value = task.value.users
   loading.value = false
-  form.value = {
-    title: task.value.title,
-    from_department_id: task.value.from_department_id,
-    to_department_id: task.value.to_department_id,
-    requirement_id: task.value.requirement_id,
-    user_ids: task.value.users.map((u) => u.id).join(','),
-    status: task.value.status,
-    progress: task.value.progress,
-    description: task.value.description,
-    is_important: task.value.is_important,
-    is_urgent: task.value.is_urgent,
-    is_target: task.value.is_target,
-    started_at: getDate(task.value.started_at),
-    deadline: getDate(task.value.deadline),
-  }
 })
 
 watch(
   () => task.value,
   (newTask) => {
-    form.value = {
-      title: newTask.title,
-      from_department_id: newTask.from_department_id,
-      to_department_id: newTask.to_department_id,
-      requirement_id: newTask.requirement_id,
-      user_ids: newTask.users.map((u) => u.id).join(','),
-      status: newTask.status,
-      progress: task.value.progress,
-      description: newTask.description,
-      is_important: task.value.is_important,
-      is_urgent: task.value.is_urgent,
-      is_target: task.value.is_target,
-      started_at: getDate(task.value.started_at),
-      deadline: getDate(task.value.deadline),
-    }
+    setTaskOnFormData(newTask)
+    selectedUsers.value = newTask.users
   },
 )
+
+function setTaskOnFormData(taskData) {
+  form.value = {
+    title: taskData.title,
+    from_department_id: taskData.from_department_id,
+    to_department_id: taskData.to_department_id,
+    requirement_id: taskData.requirement_id,
+    user_ids: taskData.users.map((u) => u.id).join(','),
+    status: taskData.status,
+    progress: taskData.progress,
+    description: taskData.description,
+    is_important: taskData.is_important,
+    is_urgent: taskData.is_urgent,
+    is_target: taskData.is_target,
+    started_at: getDate(taskData.started_at),
+    deadline: getDate(taskData.deadline),
+  }
+}
 
 const update = async () => {
   loading.value = true

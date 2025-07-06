@@ -6,24 +6,31 @@ import { useCompanyStore } from '@/stores/company'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { useUserStore } from '@/stores/user'
 import { computed, onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 
 const taskStore = useTaskStore()
 const companyStore = useCompanyStore()
 const userStore = useUserStore()
 const auth = useAuthStore()
-const route = useRoute()
-const router = useRouter()
 const selectedUsers = ref([])
 const user_ids = computed(() => selectedUsers.value.map((u) => u.id))
-const taskId = route.params.id
+// const taskId = route.params.id
 const loading = ref(false)
 const error = ref(null)
 const users = ref([])
 
+const props = defineProps({
+  taskId: {
+    type: [Number, String],
+    required: true,
+  },
+})
+
+const emit = defineEmits(['success', 'cancelClick'])
+
 onMounted(async () => {
   loading.value = true
-  await taskStore.fetchTask(taskId, { with_parent: 'true' })
+  await taskStore.fetchTask(props.taskId, { with_parent: 'true' })
 
   if (taskStore.task.parent) {
     users.value = taskStore.task?.parent?.users || []
@@ -52,8 +59,8 @@ const submit = async () => {
   error.value = null
 
   try {
-    await taskStore.assignUsers(taskId, user_ids.value)
-    router.back()
+    await taskStore.assignUsers(props.taskId, user_ids.value)
+    emit('success')
   } catch (err) {
     error.value = err.message || 'Assign users failed'
   } finally {
@@ -121,7 +128,7 @@ const submit = async () => {
 
           <button
             type="button"
-            @click="router.back()"
+            @click="emit('cancelClick')"
             class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-5 py-2 rounded transition"
           >
             Cancel
