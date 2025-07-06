@@ -159,7 +159,7 @@ const router = createRouter({
         {
           path: 'tasks/:id/assign-users',
           name: 'TaskUserAssign',
-          component: () => import('@/views/private-pages/tasks/TaskUserAssign.vue'),
+          component: () => import('@/views/private-pages/tasks/TaskUserAssignForm.vue'),
           meta: { requiresAuth: true },
         },
 
@@ -301,7 +301,7 @@ const router = createRouter({
           component: () => import('@/views/admin-pages/PermissionEdit.vue'),
           meta: { requiresAuth: true, roles: ['super_admin', 'developer'],  title:"Permissions Add"  },
         },
-        
+
         {
           path: '/settings/permissions-list',
           name: 'PermissionList',

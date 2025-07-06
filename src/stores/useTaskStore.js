@@ -9,18 +9,25 @@ export const useTaskStore = defineStore('task', () => {
   const error = ref(null);
 
 
-  const assignUsers = async (taskId, user_ids) => {
-    loading.value = true;
-    error.value = null;
+  const assignUsers = async (taskId, user_ids, {updateStoreData = true}) => {
+
+    if( updateStoreData == true ) {
+      loading.value = true;
+      error.value = null;
+    }
 
     try {
       await apiClient.post(`/tasks/${taskId}/assign-users`, { user_ids });
       await fetchTask(taskId); // refresh task details
     } catch (err) {
-      error.value = err.response?.data?.message || 'Assign users failed';
+      if( updateStoreData == true ) {
+        error.value = err.response?.data?.message || 'Assign users failed';
+      }
       throw err;
     } finally {
-      loading.value = false;
+      if( updateStoreData == true ) {
+        loading.value = false;
+      }
     }
   };
 
@@ -70,7 +77,7 @@ export const useTaskStore = defineStore('task', () => {
 
     const traverse = (nodes, depth = 0, path = '') => {
       nodes.forEach(node => {
-        
+
         result.push({
           ...node,
           depth,
@@ -96,7 +103,7 @@ export const useTaskStore = defineStore('task', () => {
     }
 
     error.value = null;
-    
+
     try {
       const response = await apiClient.get(`/tasks/${id}`, {params});
       if( !options.fetchOnly ) {
@@ -163,14 +170,14 @@ export const useTaskStore = defineStore('task', () => {
   };
 
   const updateTaskPriorities = async (parentId, changedIds) => {
-   
+
     const response = await apiClient.put(
       `/tasks/${parentId}/update-priorities`, {
       task_ids: changedIds
     });
 
     return response.data;
-     
+
   };
 
   const deleteTask = async (id) => {

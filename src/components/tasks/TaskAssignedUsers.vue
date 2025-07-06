@@ -53,7 +53,9 @@ const ItemComponent = computed(() => {
         + {{ hiddenUsers.length }} more users
       </div>
 
-      <div class="hidden absolute group-hover/users:block right-0 p-3 bg-white rounded shadow-lg">
+      <div
+        class="hidden absolute group-hover/users:block right-0 p-3 bg-white rounded shadow-lg z-30"
+      >
         <component
           :is="ItemComponent"
           v-for="(item, index) in hiddenUsers"

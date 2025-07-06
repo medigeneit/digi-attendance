@@ -8,6 +8,7 @@ import OverlyModal from '@/components/common/OverlyModal.vue'
 import TaskAddForm from '@/components/tasks/TaskAddForm.vue'
 import TaskEditForm from '@/components/tasks/TaskEditForm.vue'
 import TaskHeader from '@/components/tasks/TaskHeader.vue'
+import TaskUserAssignForm from '@/components/tasks/TaskUserAssignForm.vue'
 import UserWiseList from '@/components/tasks/UserWiseList.vue'
 import TaskTreeView from '@/components/TaskTreeView.vue'
 import useTaskPriorityUpdate from '@/libs/task-priority'
@@ -28,6 +29,11 @@ const addForm = ref(false)
 const addFormData = reactive({
   parentId: 0,
   requirementId: 0,
+})
+
+const employeeAssignForm = reactive({
+  taskId: 0,
+  isOpen: false,
 })
 const draggableTaskList = ref(null)
 const queryLogs = ref([])
@@ -64,6 +70,11 @@ const goToAdd = (parentId) => {
   //router.push({ name: 'TaskAdd' })
   addForm.value = true
   addFormData.parentId = parentId
+}
+
+const openEmployeeAssignForm = (taskId) => {
+  employeeAssignForm.taskId = taskId
+  employeeAssignForm.isOpen = true
 }
 
 const openComment = (id) => {
@@ -130,6 +141,25 @@ const taskFilter = computed({
       />
     </OverlyModal>
 
+    <OverlyModal v-if="employeeAssignForm.isOpen">
+      <TaskUserAssignForm
+        :taskId="employeeAssignForm.taskId"
+        @cancelClick="
+          () => {
+            employeeAssignForm.isOpen = false
+            employeeAssignForm.taskId = 0
+          }
+        "
+        @success="
+          () => {
+            employeeAssignForm.isOpen = false
+            employeeAssignForm.taskId = 0
+            fetchTasks()
+          }
+        "
+      />
+    </OverlyModal>
+
     <TaskHeader
       v-model="taskFilter"
       @clickAddTask="goToAdd"
@@ -162,6 +192,7 @@ const taskFilter = computed({
           @commentButtonClick="openComment($event, task.id)"
           @editClick="(taskId) => (editingId = taskId)"
           @addClick="(taskId) => goToAdd(taskId)"
+          @employeeAssignClick="(taskId) => openEmployeeAssignForm(taskId)"
         />
 
         <DraggableList
@@ -181,6 +212,7 @@ const taskFilter = computed({
                 @commentButtonClick="openComment($event, task.id)"
                 @editClick="(taskId) => (editingId = taskId)"
                 @addClick="(taskId) => goToAdd(taskId)"
+                @employeeAssignClick="(taskId) => openEmployeeAssignForm(taskId)"
                 class="!border-0"
               />
             </div>

@@ -1,4 +1,5 @@
 <script setup>
+import { getYearMonthDayFormat } from '@/libs/datetime'
 import { useCompanyStore } from '@/stores/company'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { onMounted, ref, watch } from 'vue'
@@ -25,7 +26,7 @@ const form = ref({
   from_department_id: '',
   to_department_id: '',
   requirement_id: '',
-  user_ids: '',
+  user_ids: [],
   status: 'PENDING',
   progress: 0,
   description: '',
@@ -35,25 +36,6 @@ const form = ref({
   started_at: '',
   deadline: '',
 })
-
-const getDate = (dateTime) => {
-  if (!dateTime) {
-    return ''
-  }
-
-  try {
-    const date = new Date(dateTime)
-    if (isNaN(date)) return ''
-
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0') // Months are 0-based
-    const day = String(date.getDate()).padStart(2, '0')
-
-    return `${year}-${month}-${day}`
-  } catch (e) {
-    return ''
-  }
-}
 
 onMounted(async () => {
   loading.value = true
@@ -67,47 +49,36 @@ onMounted(async () => {
     ignore_permission: true,
   })
 
-  console.log({ task: task.value })
-
+  setTaskOnFormData(task.value)
   selectedUsers.value = task.value.users
   loading.value = false
-  form.value = {
-    title: task.value.title,
-    from_department_id: task.value.from_department_id,
-    to_department_id: task.value.to_department_id,
-    requirement_id: task.value.requirement_id,
-    user_ids: task.value.users.map((u) => u.id).join(','),
-    status: task.value.status,
-    progress: task.value.progress,
-    description: task.value.description,
-    is_important: task.value.is_important,
-    is_urgent: task.value.is_urgent,
-    is_target: task.value.is_target,
-    started_at: getDate(task.value.started_at),
-    deadline: getDate(task.value.deadline),
-  }
 })
 
 watch(
   () => task.value,
   (newTask) => {
-    form.value = {
-      title: newTask.title,
-      from_department_id: newTask.from_department_id,
-      to_department_id: newTask.to_department_id,
-      requirement_id: newTask.requirement_id,
-      user_ids: newTask.users.map((u) => u.id).join(','),
-      status: newTask.status,
-      progress: task.value.progress,
-      description: newTask.description,
-      is_important: task.value.is_important,
-      is_urgent: task.value.is_urgent,
-      is_target: task.value.is_target,
-      started_at: getDate(task.value.started_at),
-      deadline: getDate(task.value.deadline),
-    }
+    setTaskOnFormData(newTask)
+    selectedUsers.value = newTask.users
   },
 )
+
+function setTaskOnFormData(taskData) {
+  form.value = {
+    title: taskData.title,
+    from_department_id: taskData.from_department_id,
+    to_department_id: taskData.to_department_id,
+    requirement_id: taskData.requirement_id,
+    user_ids: taskData.users.map((u) => u.id).join(','),
+    status: taskData.status,
+    progress: taskData.progress,
+    description: taskData.description,
+    is_important: taskData.is_important,
+    is_urgent: taskData.is_urgent,
+    is_target: taskData.is_target,
+    started_at: getYearMonthDayFormat(taskData.started_at),
+    deadline: getYearMonthDayFormat(taskData.deadline),
+  }
+}
 
 const update = async () => {
   loading.value = true
@@ -221,7 +192,7 @@ const update = async () => {
         </div>
       </template>
 
-      <div class="flex gap-16 items-center justify-center my-8">
+      <!-- <div class="flex gap-16 items-center justify-center my-8">
         <label class="flex gap-1 items-center">
           <input type="checkbox" v-model="form.is_important" class="size-4" />
           <span class="block text-gray-600 text-base font-medium">Important</span>
@@ -230,9 +201,9 @@ const update = async () => {
           <input type="checkbox" v-model="form.is_urgent" class="size-4" />
           <span class="block text-gray-600 text-base font-medium">Urgent</span>
         </label>
-      </div>
+      </div> -->
 
-      <div class="grid grid-cols-2 gap-4 mb-4">
+      <div class="grid grid-cols-2 gap-4 mb-4" v-if="task?.children_task_count === 0">
         <div>
           <label class="block text-gray-700 font-medium mb-2">Status</label>
           <select
@@ -247,7 +218,7 @@ const update = async () => {
         </div>
       </div>
 
-      <div class="mt-8">
+      <!-- <div class="mt-8">
         <label
           class="flex gap-1 items-center mt-4 border rounded py-2 justify-center cursor-pointer"
           :class="{ 'bg-yellow-200': form.is_target }"
@@ -281,7 +252,7 @@ const update = async () => {
             class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
           />
         </div>
-      </div>
+      </div> -->
 
       <div class="mb-4">
         <label class="block text-gray-700 font-medium mb-2">Description</label>

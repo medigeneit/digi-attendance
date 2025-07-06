@@ -77,11 +77,13 @@ const taskReports = computed(() => {
       <pre>{{ usersTaskProgress }}</pre>
 
       <div class="flex mb-2 items-end">
-        <h3 class="text-sm uppercase mt-4">Task Reports</h3>
+        <h3 class="text-sm font-semibold text-gray-600 uppercase mt-4">Task Reports</h3>
+
         <RouterLink
+          v-if="taskStore.task.children_task_count === 0"
           :to="{
             name: 'TaskReportAdd',
-            params: { id: store.task?.id },
+            params: { id: taskStore.task?.id },
           }"
           @click="$event.stopPropagation()"
           class="btn-3 ml-auto inline-flex !my-1"

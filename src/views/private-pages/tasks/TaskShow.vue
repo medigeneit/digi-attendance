@@ -9,6 +9,7 @@ import TaskStatus from '@/components/tasks/TaskStatus.vue'
 import TaskUserDateUpdate from '@/components/tasks/TaskUserDateUpdate.vue'
 import { getDisplayDate } from '@/libs/datetime'
 import { getTaskProgressUsers } from '@/libs/task-progress'
+import { useAuthStore } from '@/stores/auth'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -17,10 +18,13 @@ const store = useTaskStore()
 const route = useRoute()
 const router = useRouter()
 const state = ref('')
+const auth = useAuthStore()
 
 // const subTasks = computed(() => taskTree.getTaskListTree())
 const subTasks = computed(() => store.tasks)
 const progress = ref({})
+
+const full_description_hidden = ref(true)
 
 onMounted(async () => {
   state.value = 'loading'
@@ -44,6 +48,10 @@ const taskProgressUsers = computed(() =>
 const startedDate = computed(() => getDisplayDate(store.task.started_at))
 const deadline = computed(() => getDisplayDate(store.task.deadline))
 
+function handleDateChangeModal(type) {
+  dateUpdateModal.user = auth.user
+  dateUpdateModal.type = type
+}
 async function handleUpdateDate() {
   await fetchTaskList(route.params.id)
   dateUpdateModal.user = null
@@ -131,6 +139,21 @@ watch(
             </div>
           </div>
 
+          <div class="col-span-full">
+            <p
+              v-html="store.task?.description"
+              class="text-gray-700"
+              :class="{ 'line-clamp-3': full_description_hidden }"
+            />
+            <button
+              v-if="store.task?.description?.length >= 600"
+              class="text-blue-500 mt-2"
+              @click.prevent="full_description_hidden = !full_description_hidden"
+            >
+              Show {{ full_description_hidden ? 'More' : 'Less' }}
+            </button>
+          </div>
+
           <section class="mt-4 col-span-full mb-6">
             <TaskProgressTable
               :task-users="store.task?.users || []"
@@ -191,13 +214,31 @@ watch(
             -->
 
             <div class="ml-auto flex gap-4">
+              <template v-if="store.task?.children_task_count === 0">
+                <button
+                  class="btn-3 px-3 py-0.5 text-sm h-8 font-semibold border disabled:opacity-30 disabled:pointer-events-none"
+                  @click.prevent="() => handleDateChangeModal('start-date')"
+                  :disabled="!!authUserProgress?.started_at"
+                >
+                  Set Started Date
+                </button>
+
+                <button
+                  class="btn-3 px-3 py-0.5 text-sm h-8 font-semibold border disabled:opacity-30 disabled:pointer-events-none"
+                  @click.prevent="() => handleDateChangeModal('finish-date')"
+                  :disabled="!!authUserProgress?.finished_at"
+                >
+                  Set Finish Date
+                </button>
+              </template>
+
               <RouterLink
                 :to="{
                   name: 'TaskShow',
                   params: { id: store.task?.id },
                 }"
                 @click="$event.stopPropagation()"
-                class="py-1 btn-3 ml-auto"
+                class="py-0.5 btn-3 ml-auto text-sm h-8"
                 :class="{ 'bg-blue-500 text-white': route.name == 'TaskShow' }"
                 v-if="subTasks.length > 0"
               >
@@ -210,7 +251,7 @@ watch(
                   params: { id: store.task?.id },
                 }"
                 @click="$event.stopPropagation()"
-                class="py-1 btn-3"
+                class="py-0.5 btn-3 text-sm h-8"
                 :class="{ 'bg-blue-500 text-white': route.name == 'TaskReports' }"
               >
                 <i class="fal fa-file-alt"></i> Reports

@@ -23,6 +23,9 @@ export type Task = {
 
 export type TaskWithChildren = Task & {
   children_tasks: TaskWithChildren[]
+  children_task_count: number
+  in_progress_count: number
+  completed_count: number
 }
 
 export type TaskReport = {

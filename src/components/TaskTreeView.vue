@@ -84,13 +84,13 @@
             "
           />
 
-          <RouterLink
-            :to="{ name: 'TaskUserAssign', params: { id: task?.id } }"
-            title="Add/Remove User"
+          <a
+            :href="`/tasks/${task.id}/assign-users`"
+            @click.stop.prevent="emits('employeeAssignClick', task.id)"
             class="border-gray-400 bg-gray-50 text-gray-500 hover:bg-indigo-600 hover:text-white font-semibold px-3 py-0.5 rounded-full transition border"
           >
-            <i class="fas fa-users-cog"></i>
-          </RouterLink>
+            <i class="fas fa-users-cog"></i> Manage Employee
+          </a>
         </div>
       </div>
 
@@ -166,6 +166,7 @@
             :parent-tree-level="treeLevel"
             @editClick="handleChildEditClick"
             @addClick="handleChildAddClick"
+            @employeeAssignClick="handleChildEmployeeAssignClick"
           >
             <template #tree-item-end="{ task, level }">
               <slot name="item-end" :level="level" :task="task"></slot>
@@ -201,7 +202,7 @@ const route = useRoute()
 
 const progress = ref(null)
 
-const emits = defineEmits(['commentButtonClick', 'editClick', 'addClick'])
+const emits = defineEmits(['commentButtonClick', 'editClick', 'addClick', 'employeeAssignClick'])
 
 function handleChildAddClick(taskId) {
   emits('addClick', taskId)
@@ -209,6 +210,10 @@ function handleChildAddClick(taskId) {
 
 function handleChildEditClick(taskId) {
   emits('editClick', taskId)
+}
+
+function handleChildEmployeeAssignClick(taskId) {
+  emits('employeeAssignClick', taskId)
 }
 
 const subTaskOpenedList = ref([])

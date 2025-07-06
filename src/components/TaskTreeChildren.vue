@@ -9,6 +9,7 @@
         :tree-level="parentTreeLevel + 1"
         @editClick="(taskId) => emits('editClick', taskId)"
         @addClick="(taskId) => emits('addClick', taskId)"
+        @employeeAssignClick="(taskId) => emits('employeeAssignClick', taskId)"
       >
         <template #item-end="{ task, level }">
           <slot name="treeItemEnd" :task="task" :level="level"></slot>
@@ -29,5 +30,5 @@ const props = defineProps({
 
 // @editClick="(taskId) => (editingId = taskId)"
 
-const emits = defineEmits(['editClick', 'addClick'])
+const emits = defineEmits(['editClick', 'addClick', 'employeeAssignClick'])
 </script>
