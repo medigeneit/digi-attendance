@@ -1,128 +1,89 @@
 <script setup>
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
-import Multiselect from '@/components/MultiselectDropdown.vue'
 import { useAttendanceStore } from '@/stores/attendance'
-import { useCompanyStore } from '@/stores/company'
 import { storeToRefs } from 'pinia'
-import { computed } from 'vue'
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
 const route = useRoute()
-const companyStore = useCompanyStore()
 const attendanceStore = useAttendanceStore()
-const selectedCompanyId = ref(route.query.company_id || '')
-const selectedEmployee = ref(null)
 const selectedMonth = ref(route.query.date || attendanceStore.selectedMonth)
-const { companies, employees } = storeToRefs(companyStore)
 const { monthly_company_summary } = storeToRefs(attendanceStore)
 const category = ref('')
+const filters = ref({
+  company_id: route.query.company_id || '',
+  department_id: route.query.department_id || 'all',
+  type: route.query.type || 'all',
+  employee_id: route.query.employee_id || '',
+})
 
 const fetchAttendance = async () => {
-  if (selectedCompanyId.value) {
+  if (filters.value.company_id) {
     await attendanceStore.getMonthlyAttendanceSummaryReport(
-      filters.value?.company_id,
-      filters.value?.employee_id,
-      filters?.value?.type,
-      selectedMonth.value,
+      filters.value.company_id,
+      filters.value.employee_id,
+      filters.value.type,
+      selectedMonth.value
     )
   }
 }
 
 const getExportExcel = async () => {
-  if (selectedCompanyId.value) {
+  if (filters.value.company_id) {
     await attendanceStore.downloadExcel(
-      selectedCompanyId.value,
-      category?.value,
-      selectedMonth.value,
+      filters.value.company_id,
+      category.value,
+      selectedMonth.value
     )
   }
 }
 
 const getDownloadPDF = async () => {
-  if (selectedCompanyId.value) {
-    await attendanceStore.downloadPDF(selectedCompanyId.value, category?.value, selectedMonth.value)
+  if (filters.value.company_id) {
+    await attendanceStore.downloadPDF(
+      filters.value.company_id,
+      category.value,
+      selectedMonth.value
+    )
   }
 }
 
 onMounted(async () => {
-  await companyStore.fetchCompanies()
   await fetchAttendance()
-  selectedEmployee.value = employees.value.find((em) => em.id == route.query.employee_id)
 })
 
-watch(selectedCompanyId, (newCompanyId) => {
-  companyStore.fetchEmployee(newCompanyId)
-})
-
-watch([selectedCompanyId, selectedMonth], fetchAttendance)
-
-watch(selectedCompanyId, (newSelectedCompanyId) => {
-  router.replace({
-    query: {
-      ...route.query,
-      company_id: newSelectedCompanyId,
-    },
-  })
+watch(() => filters.value.company_id, async (newCompanyId) => {
+  if (newCompanyId) {
+    await fetchAttendance()
+  }
 })
 
 watch(selectedMonth, (date) => {
   router.replace({
     query: {
       ...route.query,
-      date: date,
-    },
+      date
+    }
   })
+  fetchAttendance()
 })
 
-watch(selectedEmployee, (newEmployee) => {
+const handleFilterChange = () => {
   router.replace({
     query: {
       ...route.query,
-      employee_id: newEmployee?.id,
-    },
+      company_id: filters.value.company_id,
+      department_id: filters.value.department_id,
+      type: filters.value.type,
+      employee_id: filters.value.employee_id,
+    }
   })
-})
-
-watch(selectedEmployee, (newEmployee) => {
-  if (newEmployee?.id) {
-    fetchAttendance()
-  }
-})
-
-const filters = ref({
-  company_id:  '',
-  department_id: 'all',
-  type:  'all',
-  employee_id: '',
-})
-
-const handleFilterChange = async() => {
-  // You can trigger your fetch here
-  router.replace({
-    query: {
-      ...route.query,
-      company_id: filters.value?.company_id,
-      department_id: filters.value?.department_id,
-      type: filters.value?.type,
-      employee_id: filters.value?.employee_id,
-    },
-  })
-  // fetchApplicationsByUser()
-  fetchAttendance(filters.value)
+  fetchAttendance()
 }
 
-const initialFilter = computed(() => ({
-  company_id: route.query.company_id || '',
-  department_id: route.query.department_id || 'all',
-  type: route.query.type || 'all',
-  employee_id: route.query.employee_id || '',
-}))
-
 const goBack = () => router.go(-1)
-
 </script>
 
 <template>
@@ -149,37 +110,6 @@ const goBack = () => router.go(-1)
         :initial-value="initialFilter" 
         @filter-change="handleFilterChange" 
       />
-      <!-- <div>
-        <select
-          id="userSelect"
-          v-model="selectedCompanyId"
-          @change="fetchAttendance"
-          class="input-1"
-        >
-          <option value="" disabled>Select a Company</option>
-          <option v-for="company in companies" :key="company?.id" :value="company?.id">
-            {{ company?.name }}
-          </option>
-        </select>
-      </div>
-      <div>
-        <select v-model="category" @change="fetchAttendance" class="input-1">
-          <option value="">All Category</option>
-          <option value="executive">Executive</option>
-          <option value="support_staff">Support Staff</option>
-          <option value="doctor">Doctor</option>
-          <option value="academy_body">Academy Body</option>
-        </select>
-      </div>
-      <div>
-        <Multiselect
-          v-model="selectedEmployee"
-          :options="employees"
-          :multiple="false"
-          label="label"
-          placeholder="Select employee"
-        />
-      </div> -->
       <div>
         <input type="month" v-model="selectedMonth" @change="fetchAttendance" class="input-1" />
       </div>

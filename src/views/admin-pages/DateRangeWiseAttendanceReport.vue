@@ -1,4 +1,5 @@
 <script setup>
+import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import Multiselect from '@/components/MultiselectDropdown.vue'
 import { useAttendanceStore } from '@/stores/attendance'
@@ -14,15 +15,21 @@ const route = useRoute()
 
 const companies = ref([])
 const employees = ref([])
-const selectedCompanyId = ref(route.query.company_id || '')
-const selectedEmployee = ref(null)
-const category = ref('')
+
 const selectedDateRange = ref({
   start: '',
   end: '',
 })
 
 const dateRangeAttendance = ref([])
+
+const filters = ref({
+  company_id: route.query.company_id || '',
+  department_id: route.query.department_id || 'all',
+  type: route.query.type || 'all',
+  employee_id: route.query.employee_id || '',
+  category: '',
+})
 
 const dateList = computed(() => {
   if (!selectedDateRange.value.start || !selectedDateRange.value.end) return []
@@ -40,16 +47,14 @@ const formatDate = (date) => {
 }
 
 const fetchDateRangeAttendance = async () => {
-  if (!selectedCompanyId.value || !selectedDateRange.value.start || !selectedDateRange.value.end) {
-    return
-  }
+  if (!filters.value.company_id || !selectedDateRange.value.start || !selectedDateRange.value.end) return
 
   const res = await attendanceStore.getDateRangeAttendanceSummary(
     selectedDateRange.value.start,
     selectedDateRange.value.end,
-    selectedCompanyId.value,
-    selectedEmployee.value?.id,
-    category.value,
+    filters.value.company_id,
+    filters.value.employee_id,
+    filters.value.category
   )
 
   if (res) {
@@ -61,9 +66,9 @@ const downloadDateRangeExcel = async () => {
   attendanceStore.downloadDateRangeExcel(
     selectedDateRange.value.start,
     selectedDateRange.value.end,
-    selectedCompanyId.value,
-    selectedEmployee.value?.id,
-    category.value,
+    filters.value.company_id,
+    filters.value.employee_id,
+    filters.value.category
   )
 }
 
@@ -73,30 +78,44 @@ onMounted(async () => {
   await companyStore.fetchCompanies()
   companies.value = companyStore.companies
 
-  if (selectedCompanyId.value) {
-    await companyStore.fetchEmployee(selectedCompanyId.value)
+  if (filters.value.company_id) {
+    await companyStore.fetchEmployee(filters.value.company_id)
     employees.value = companyStore.employees
-    selectedEmployee.value = employees.value.find((em) => em.id == route.query.employee_id)
   }
 })
 
-// 🔄 Watchers to trigger fetch automatically on change
-watch(
-  [selectedCompanyId, selectedDateRange, selectedEmployee, category],
-  async () => {
-    await fetchDateRangeAttendance()
-  },
-  { deep: true },
-)
-
-watch(selectedCompanyId, async (newVal) => {
+watch(() => filters.value.company_id, async (newVal) => {
   if (newVal) {
     await companyStore.fetchEmployee(newVal)
     employees.value = companyStore.employees
   }
 })
-</script>
 
+watch([() => filters.value.company_id, () => filters.value.employee_id, () => filters.value.category, selectedDateRange], async () => {
+  await fetchDateRangeAttendance()
+}, { deep: true })
+
+const handleFilterChange = () => {
+  router.replace({
+    query: {
+      ...route.query,
+      company_id: filters.value.company_id,
+      department_id: filters.value.department_id,
+      type: filters.value.type,
+      employee_id: filters.value.employee_id,
+    },
+  })
+  fetchDateRangeAttendance()
+}
+
+const initialFilter = computed(() => ({
+  company_id: route.query.company_id || '',
+  department_id: route.query.department_id || 'all',
+  type: route.query.type || 'all',
+  employee_id: route.query.employee_id || '',
+  category: '',
+}))
+</script>
 <template>
   <div class="px-4 space-y-4">
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
@@ -140,8 +159,14 @@ watch(selectedCompanyId, async (newVal) => {
 
       <!-- Get Report Button -->
       <div class="w-full flex flex-wrap gap-4 items-center md:w-auto">
-        <!-- Company -->
-        <div class="flex flex-col">
+
+        <EmployeeFilter 
+        v-model="filters" 
+        :initial-value="initialFilter" 
+        @filter-change="handleFilterChange" 
+      />
+        
+        <!-- <div class="flex flex-col">
           <label class="text-xs font-medium text-gray-600 mb-1">Company</label>
           <select v-model="selectedCompanyId" class="input-1 w-[200px]">
             <option value="" disabled>Select a Company</option>
@@ -149,10 +174,10 @@ watch(selectedCompanyId, async (newVal) => {
               {{ company?.name }}
             </option>
           </select>
-        </div>
+        </div> -->
 
         <!-- Category -->
-        <div class="flex flex-col">
+        <!-- <div class="flex flex-col">
           <label class="text-xs font-medium text-gray-600 mb-1">Category</label>
           <select v-model="category" class="input-1 w-[180px]">
             <option value="">All Category</option>
@@ -161,10 +186,10 @@ watch(selectedCompanyId, async (newVal) => {
             <option value="doctor">Doctor</option>
             <option value="academy_body">Academy Body</option>
           </select>
-        </div>
+        </div> -->
 
         <!-- Employee Multiselect -->
-        <div class="flex flex-col">
+        <!-- <div class="flex flex-col">
           <label class="text-xs font-medium text-gray-600 mb-1">Employee</label>
           <Multiselect
             v-model="selectedEmployee"
@@ -174,7 +199,7 @@ watch(selectedCompanyId, async (newVal) => {
             placeholder="Select employee"
             class="w-[220px]"
           />
-        </div>
+        </div> -->
         <!-- <div class="mt-1">
           <button @click="fetchDateRangeAttendance" class="btn-1 h-[38px]">🔍 Get Report</button>
         </div> -->

@@ -124,15 +124,15 @@ const initialFilter = computed(() => ({
         </button>
       </div>
     </div>
-    <EmployeeFilter 
-      v-model="filters" 
-      :initial-value="initialFilter" 
-      @filter-change="handleFilterChange" 
-    />
-
+    
     <div class="flex flex-wrap items-center gap-2">
+      <EmployeeFilter 
+        v-model="filters" 
+        :initial-value="initialFilter" 
+        @filter-change="handleFilterChange" 
+      />
       <div>
-       <input
+        <input
           id="user-filter"
           v-model="month"
           @change="handleMonthChange"
