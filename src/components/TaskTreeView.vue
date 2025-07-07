@@ -129,7 +129,7 @@
             </button>
 
             <a
-              :href="`/tasks/add?parent_id=${props.task.id}`"
+              :href="`/tasks/add?parent_id=${props.task.id}&back-to=${encodeURIComponent(route.path + '?' + objectToQuery(route.query)).toLowerCase()}`"
               class="hover:bg-indigo-600 hover:text-white text-indigo-600 font-semibold px-3 py-0.5 rounded-full transition border border-transparent"
               @click.stop.prevent="emits('addClick', props.task.id)"
               v-if="treeLevel < 2"
@@ -183,6 +183,7 @@ import TaskTreeChildren from '@/components/TaskTreeChildren.vue'
 import SubTaskProgress from '@/components/tasks/SubTaskProgress.vue'
 import TaskStatus from '@/components/tasks/TaskStatus.vue'
 import { getDisplayDate } from '@/libs/datetime.js'
+import { objectToQuery } from '@/libs/url'
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import TaskAssignedUsers from './tasks/TaskAssignedUsers.vue'

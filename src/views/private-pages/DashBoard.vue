@@ -15,7 +15,7 @@
         <p>Loading...</p>
       </div>
     </div>
-    <div class="grid gap-4 md:grid-cols-3 mt-4" v-if="isAdmin && authStore.adminMode">
+    <div class="grid gap-4 md:grid-cols-3 mt-4" v-if="isAdmin && authStore.isAdminMood">
       <RouterLink
         :to="{ name: 'TodayAttendanceReport', query: { search: 'all' } }"
         class="main-button"

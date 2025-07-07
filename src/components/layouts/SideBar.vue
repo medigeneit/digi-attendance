@@ -36,16 +36,16 @@ const logout = () => {
             <input
               type="checkbox"
               class="sr-only"
-              :checked="authStore.adminMode"
+              :checked="authStore.isAdminMood"
               @change="authStore.toggleAdminMode"
             />
             <div
               class="w-11 h-6 bg-gray-200 rounded-full shadow-inner relative transition duration-200"
-              :class="{ '!bg-blue-600': authStore.adminMode }"
+              :class="{ '!bg-blue-600': authStore.isAdminMood }"
             >
               <div
                 class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition"
-                :class="{ 'translate-x-5': authStore.adminMode }"
+                :class="{ 'translate-x-5': authStore.isAdminMood }"
               ></div>
             </div>
           </label>
@@ -71,7 +71,7 @@ const logout = () => {
         <h4 v-if="open">Dashboard</h4>
       </RouterLink>
 
-      <template v-if="!authStore.adminMode || !isAdmin">
+      <template v-if="!authStore.isAdminMood || !isAdmin">
         <RouterLink
           :to="`/tasks?status=not-completed&user-ids=${authStore.user?.id}`"
           class="side-menu"
@@ -128,7 +128,7 @@ const logout = () => {
       </template>
 
       <!-- Admin Menus -->
-      <template v-if="isAdmin && authStore.adminMode">
+      <template v-if="isAdmin && authStore.isAdminMood">
         <RouterLink
           to="/tasks"
           class="side-menu"
