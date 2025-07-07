@@ -206,6 +206,7 @@ const editable = computed(() => {
 
       <div class="flex gap-16 items-center mb-8">
         <label
+          v-if="editable.is_important && editable.is_urgent"
           class="border px-2 py-0.5 rounded cursor-pointer"
           :class="{
             'border-blue-500 bg-green-200': is_regular_task,
@@ -225,13 +226,14 @@ const editable = computed(() => {
         </label>
 
         <label
+          v-if="editable.is_important"
           class="border px-2 py-0.5 rounded cursor-pointer"
           :class="{
             'border-yellow-500 bg-yellow-200': form.is_important,
             'bg-gray-50 hover:bg-yellow-50': !form.is_important,
           }"
         >
-          <div class="flex gap-1 items-center" v-if="editable.is_important">
+          <div class="flex gap-1 items-center">
             <input type="checkbox" v-model="form.is_important" class="size-4" />
             <span class="block text-gray-600 text-base font-medium">Important Task</span>
           </div>
@@ -239,13 +241,14 @@ const editable = computed(() => {
         </label>
 
         <label
+          v-if="editable.is_urgent"
           class="border px-2 py-0.5 rounded cursor-pointer"
           :class="{
             'border-red-500 bg-red-200': form.is_urgent,
             'bg-gray-50 hover:bg-red-50': !form.is_urgent,
           }"
         >
-          <div class="flex gap-1 items-center" v-if="editable.is_urgent">
+          <div class="flex gap-1 items-center">
             <input type="checkbox" v-model="form.is_urgent" class="size-4" />
             <span class="block text-gray-600 text-base font-medium">Urgent Task</span>
           </div>
