@@ -7,7 +7,6 @@ import { useCompanyStore } from '@/stores/company'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { useUserStore } from '@/stores/user'
 import { computed, onMounted, ref } from 'vue'
-import RequiredIcon from '../RequiredIcon.vue'
 
 const taskStore = useTaskStore()
 const companyStore = useCompanyStore()
@@ -115,6 +114,10 @@ function setTaskOnFormData(taskData) {
   }
 }
 
+const setting_editable = computed(() => {
+  return Object.values(editable.value).reduce((status, value) => value || status, false)
+})
+
 const editable = computed(() => {
   let _editable = {
     is_important: false,
@@ -187,14 +190,12 @@ const editable = computed(() => {
         </MultiselectDropdown>
       </div>
 
-      <hr />
-
-      <h3 class="my-6 text-center w-full relative">
+      <h3 class="my-6 text-center w-full relative" v-if="setting_editable">
         <div class="inline-block bg-white px-4">
           <b class="fas fa-cog text-gray-400"></b>
-          <span class="text-gray-700">Task Settings for Employee</span>
+          <span class="text-gray-700 ml-2">Task Settings for Employee</span>
         </div>
-        <hr class="bottom-0 border-gray-400 -mt-3" />
+        <hr class="bottom-0 border-gray-300 -mt-3" />
       </h3>
 
       <div class="flex gap-16 items-center mb-8">
@@ -220,9 +221,7 @@ const editable = computed(() => {
 
       <div class="grid grid-cols-2 gap-4 mb-4 mt-12">
         <div class="mb-4" v-if="editable.started_at">
-          <label class="block text-gray-600 text-sm mb-1 font-medium">
-            Start Date <RequiredIcon /> {{ form.started_at }}
-          </label>
+          <label class="block text-gray-600 text-sm mb-1 font-medium"> Start Date </label>
           <input
             v-model="form.started_at"
             type="date"
@@ -232,9 +231,7 @@ const editable = computed(() => {
         </div>
 
         <div class="mb-4" v-if="editable.deadline">
-          <label class="block text-gray-600 text-sm mb-1 font-medium">
-            Deadline <RequiredIcon />
-          </label>
+          <label class="block text-gray-600 text-sm mb-1 font-medium"> Deadline </label>
           <input
             v-model="form.deadline"
             type="date"
