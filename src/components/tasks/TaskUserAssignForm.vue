@@ -118,6 +118,16 @@ const setting_editable = computed(() => {
   return Object.values(editable.value).reduce((status, value) => value || status, false)
 })
 
+const is_regular_task = computed({
+  set: () => {
+    form.value.is_important = false
+    form.value.is_urgent = false
+  },
+  get: () => {
+    return !(form.value.is_important || form.value.is_urgent)
+  },
+})
+
 const editable = computed(() => {
   let _editable = {
     is_important: false,
@@ -195,23 +205,61 @@ const editable = computed(() => {
       </h3>
 
       <div class="flex gap-16 items-center mb-8">
-        <label class="flex gap-1 items-center" v-if="editable.is_important">
-          <input type="checkbox" v-model="form.is_important" class="size-4" />
-          <span class="block text-gray-600 text-base font-medium">Important</span>
+        <label
+          class="border px-2 py-0.5 rounded cursor-pointer"
+          :class="{
+            'border-blue-500 bg-green-200': is_regular_task,
+            'bg-gray-50 hover:bg-green-50': !is_regular_task,
+          }"
+        >
+          <div class="flex gap-1 items-center">
+            <input
+              type="checkbox"
+              v-model="is_regular_task"
+              class="size-4"
+              :disabled="is_regular_task"
+            />
+            <span class="block text-gray-600 text-base font-medium">Regular Task</span>
+          </div>
+          <div class="text-sm text-gray-500">Usually: 1-30 Days</div>
         </label>
-        <label class="flex gap-1 items-center" v-if="editable.is_urgent">
-          <input type="checkbox" v-model="form.is_urgent" class="size-4" />
-          <span class="block text-gray-600 text-base font-medium">Urgent</span>
+
+        <label
+          class="border px-2 py-0.5 rounded cursor-pointer"
+          :class="{
+            'border-yellow-500 bg-yellow-200': form.is_important,
+            'bg-gray-50 hover:bg-yellow-50': !form.is_important,
+          }"
+        >
+          <div class="flex gap-1 items-center" v-if="editable.is_important">
+            <input type="checkbox" v-model="form.is_important" class="size-4" />
+            <span class="block text-gray-600 text-base font-medium">Important Task</span>
+          </div>
+          <div class="text-sm text-gray-500">Usually: 1-7 Days</div>
+        </label>
+
+        <label
+          class="border px-2 py-0.5 rounded cursor-pointer"
+          :class="{
+            'border-red-500 bg-red-200': form.is_urgent,
+            'bg-gray-50 hover:bg-red-50': !form.is_urgent,
+          }"
+        >
+          <div class="flex gap-1 items-center" v-if="editable.is_urgent">
+            <input type="checkbox" v-model="form.is_urgent" class="size-4" />
+            <span class="block text-gray-600 text-base font-medium">Urgent Task</span>
+          </div>
+          <div class="text-sm text-gray-500">Usually: 1-3 Days</div>
         </label>
       </div>
 
       <div class="mt-8" v-if="editable.is_target">
         <label
-          class="flex gap-1 items-center mt-4 border rounded py-2 justify-center cursor-pointer"
-          :class="{ 'bg-yellow-200': form.is_target }"
+          class="flex gap-1 items-center mt-4 border rounded py-2 px-2 cursor-pointer"
+          :class="{ 'bg-yellow-100/80 border-yellow-300': form.is_target }"
         >
           <input type="checkbox" v-model="form.is_target" class="size-6" />
-          <span class="block text-gray-600 text-base mb-1 font-medium">Is Target Task</span>
+          <span class="block text-gray-600 text-base font-medium">Is Target Task</span>
         </label>
       </div>
 
