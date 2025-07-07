@@ -145,12 +145,8 @@ const editable = computed(() => {
   <div class="px-4 max-h-[90vh] overflow-auto rounded">
     <div class="sticky top-0 bg-white z-20">
       <h2 class="text-xl font-semibold text-gray-800 mb-1 mt-4">Manage Employee(s) for Task</h2>
-
-      <h3 class="mb-2 flex items-center gap-2">
-        <div class="uppercase text-sm text-gray-600">Task:</div>
-        <div class="font-semibold text-gray-600 text-sm leading-none">
-          {{ task?.title }}
-        </div>
+      <h3 class="mb-2 font-semibold text-gray-600 text-sm leading-none">
+        {{ task?.title }}
       </h3>
       <hr class="mb-4 !mt-0" />
     </div>
