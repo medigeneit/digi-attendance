@@ -1,11 +1,11 @@
 <script setup>
+import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import TextEditor from '@/components/TextEditor.vue'
 import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
 import { useNoticeStore } from '@/stores/notice'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import Multiselect from 'vue-multiselect'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 
@@ -43,9 +43,14 @@ const employee_ids = computed(() => selectedEmployees.value.map((dep) => dep.id)
 
 const toggleAllDepartments = () => {
   if (form.all_departments) {
-    department_ids.value = []
+    // Assign all departments when checked
+    selectedDepartments.value = [...departmentStore.departments]
+  } else {
+    // Clear when unchecked
+    selectedDepartments.value = []
   }
 }
+
 
 const toggleAllCompany = () => {
   if (form.all_companies) {
@@ -152,7 +157,7 @@ const saveNotice = async () => {
                   <input type="checkbox" v-model="form.all_companies" @change="toggleAllCompany" />
                   Select All Companies
                 </label>
-                <Multiselect
+                <MultiselectDropdown
                   v-model="selectedCompanies"
                   :options="companies"
                   :multiple="true"
@@ -205,7 +210,7 @@ const saveNotice = async () => {
                     />
                     Select All Departments
                   </label>
-                  <Multiselect
+                  <MultiselectDropdown
                     v-model="selectedDepartments"
                     :options="departmentStore.departments"
                     :multiple="true"
@@ -225,7 +230,7 @@ const saveNotice = async () => {
                     />
                     Select All Employees
                   </label>
-                  <Multiselect
+                  <MultiselectDropdown
                     v-model="selectedEmployees"
                     :options="departmentStore.employees"
                     :multiple="true"
@@ -282,6 +287,3 @@ const saveNotice = async () => {
     </div>
   </div>
 </template>
-<style>
-@import 'vue-multiselect/dist/vue-multiselect.css';
-</style>

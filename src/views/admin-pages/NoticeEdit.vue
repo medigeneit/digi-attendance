@@ -1,5 +1,6 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import TextEditor from '@/components/TextEditor.vue'
 import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
@@ -45,11 +46,22 @@ const selectedCompanies = ref([])
 
 const company_ids = computed(() => selectedCompanies.value.map((comp) => comp.id))
 
+// const toggleAllDepartments = () => {
+//   if (form.all_departments) {
+//     department_ids.value = []
+//   }
+// }
+
 const toggleAllDepartments = () => {
   if (form.all_departments) {
-    department_ids.value = []
+    // Assign all departments when checked
+    selectedDepartments.value = [...departmentStore.departments]
+  } else {
+    // Clear when unchecked
+    selectedDepartments.value = []
   }
 }
+
 
 // Handle "Select All Employees"
 const toggleAllEmployees = () => {
@@ -195,7 +207,7 @@ watch(selectedDepartments, (newSelection) => {
                   <input type="checkbox" v-model="form.all_companies" @change="toggleAllCompany" />
                   Select All Companies
                 </label>
-                <Multiselect
+                <MultiselectDropdown
                   v-model="selectedCompanies"
                   :options="companies"
                   :multiple="true"
@@ -240,7 +252,7 @@ watch(selectedDepartments, (newSelection) => {
                     />
                     Select All Departments
                   </label>
-                  <Multiselect
+                  <MultiselectDropdown
                     v-model="selectedDepartments"
                     :options="departmentStore.departments"
                     :multiple="true"
@@ -260,7 +272,7 @@ watch(selectedDepartments, (newSelection) => {
                     />
                     Select All Employees
                   </label>
-                  <Multiselect
+                  <MultiselectDropdown
                     v-model="selectedEmployees"
                     :options="employees"
                     :multiple="true"
@@ -324,6 +336,3 @@ watch(selectedDepartments, (newSelection) => {
     </div>
   </div>
 </template>
-<style>
-@import 'vue-multiselect/dist/vue-multiselect.css';
-</style>

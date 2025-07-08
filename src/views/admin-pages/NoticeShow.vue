@@ -1,10 +1,13 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
 import ShareComponent from '@/components/common/ShareComponent.vue'
+import { useAuthStore } from '@/stores/auth'
 import { useNoticeStore } from '@/stores/notice'
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useToast } from 'vue-toastification'
+
+const authStore = useAuthStore()
 
 const noticeStore = useNoticeStore()
 const toast = useToast()
@@ -48,6 +51,20 @@ onMounted(async () => {
 const downloadFile = async (fileUrl) => {
   window.open(fileUrl, '_blank') // Opens file in a new tab
 }
+
+const isImage = (file) => {
+  if (!file) return false;
+  return /\.(jpg|jpeg|png|gif|webp)$/i.test(file);
+};
+
+const isPDF = (file) => {
+  if (!file) return false;
+  return /\.pdf$/i.test(file);
+};
+
+const getFilename = (file) => {
+  return file?.split('/').pop();
+};
 </script>
 
 <template>
@@ -67,7 +84,8 @@ const downloadFile = async (fileUrl) => {
               <p class="font-bold text-gray-600">Title:</p>
               <p class="text-sm text-gray-800">{{ notice?.title }}</p>
             </div>
-            <div>
+
+            <div v-if="authStore?.user?.role === 'super_admin' ||  authStore?.user?.role === 'developer' || authStore?.user?.id === notice?.created_id" >
               <p class="font-bold text-gray-600">Company:</p>
               <p
                 class="text-gray-800 text-sm"
@@ -81,7 +99,7 @@ const downloadFile = async (fileUrl) => {
               <p v-else class="text-lg text-gray-800">All department</p>
             </div>
 
-            <div>
+            <div v-if="authStore?.user?.role === 'super_admin' ||  authStore?.user?.role === 'developer' || authStore?.user?.id === notice?.created_id">
               <p class="font-bold text-gray-600">Department:</p>
               <p
                 class="text-gray-800"
@@ -95,7 +113,7 @@ const downloadFile = async (fileUrl) => {
               <p v-else class="text-gray-800">All department</p>
             </div>
 
-            <div>
+            <div v-if="authStore?.user?.role === 'super_admin' ||  authStore?.user?.role === 'developer' || authStore?.user?.id === notice?.created_id">
               <p class="font-bold text-gray-600">Employee:</p>
               <p
                 v-if="Array.isArray(notice?.employees) && !notice?.employees?.length"
@@ -116,16 +134,42 @@ const downloadFile = async (fileUrl) => {
               <p class="text-gray-800">{{ formatDate(notice?.expired_at) }}</p>
             </div>
 
-            <div>
+            <!-- <div>
               <p class="text-sm font-bold text-gray-600 mb-2">File:</p>
               <button v-if="notice?.file" @click="downloadFile(notice?.file)" class="btn-2">
                 Download File
               </button>
-            </div>
+            </div> -->
 
             <div class="col-span-full">
               <p class="font-bold text-gray-600">Description / Body:</p>
               <p class="text-gray-800" v-html="notice?.description"></p>
+            </div>
+
+            <div class="col-span-full" v-if="notice?.file">
+              <div class="flex items-center gap-2">
+                 <!-- যদি ইমেজ হয় -->
+                <img
+                  v-if="isImage(notice?.file)"
+                  :src="notice?.file"
+                  alt="Notice File"
+                  class="object-cover rounded-md cursor-pointer"
+                  style="width: 80%;"
+                  @click="downloadFile(notice?.file)"
+                />
+
+                <!-- যদি PDF হয় -->
+                <iframe
+                  v-else-if="isPDF(notice?.file)"
+                  :src="notice?.file"
+                  class="w-full md:h-[700px] border rounded-md"
+                ></iframe>
+
+                <!-- অন্য ফাইল -->
+                <span v-else class="text-blue-500 cursor-pointer" @click="downloadFile(notice?.file)">
+                  File: {{ getFilename(notice?.file) }}
+                </span>
+              </div>
             </div>
           </div>
         </div>
