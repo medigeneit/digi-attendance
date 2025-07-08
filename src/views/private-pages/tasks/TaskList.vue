@@ -131,7 +131,7 @@ const taskFilter = computed({
     <OverlyModal v-if="editingId">
       <TaskEditForm :taskId="editingId" @close="editingId = null" @updated="handleTaskUpdate" />
     </OverlyModal>
-
+ 
     <OverlyModal v-if="addForm">
       <TaskAddForm
         :parentTaskId="addFormData.parentId"

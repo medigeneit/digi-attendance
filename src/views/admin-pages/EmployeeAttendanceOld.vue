@@ -1,89 +1,59 @@
 <script setup>
-import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
+import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useUserStore } from '@/stores/user'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-
 const router = useRouter()
 const route = useRoute()
-const attendanceStore = useAttendanceStore()
 const userStore = useUserStore()
-
+const attendanceStore = useAttendanceStore()
 const selectedUser = ref(null)
-const selectedMonth = ref(route.query.date || attendanceStore.selectedMonth)
-
-const filters = ref({
-  company_id: route.query.company_id || '',
-  department_id: route.query.department_id || 'all',
-  type: route.query.type || 'all',
-  employee_id: route.query.employee_id || '',
-  category: '',
-})
-
-// Fetch user when employee_id changes
-const fetchUser = async (employeeId) => {
-  if (employeeId) {
-    await userStore.fetchUser(employeeId)
-    selectedUser.value = userStore.user
-  } else {
-    selectedUser.value = null
-  }
-}
-
-// Fetch attendance
+const selectedMonth = ref(route?.query?.date || attendanceStore.selectedMonth)
+const userId = computed(() => selectedUser.value?.id)
 const fetchAttendance = async () => {
-  if (filters.value.employee_id && selectedMonth.value) {
-    await attendanceStore.getMonthlyAttendanceByShift(filters.value.employee_id, selectedMonth.value)
+  if (userId.value) {
+    await attendanceStore.getMonthlyAttendanceByShift(userId.value, selectedMonth.value)
   }
 }
 
-// Initial load
 onMounted(async () => {
-  if (filters.value.employee_id) {
-    await fetchUser(filters.value.employee_id)
-    await fetchAttendance()
-  }
+  await userStore.fetchUsers()
+  selectedUser.value = userStore.users.find((user) => user.id == route.query.user_id)
 })
 
-// Watch selectedMonth change
+watch([selectedMonth], fetchAttendance)
+
+watch(userId, (user) => {
+  router.replace({
+    query: {
+      ...route.query,
+      user_id: user,
+    },
+  })
+})
+
 watch(selectedMonth, (date) => {
   router.replace({
     query: {
       ...route.query,
-      date,
+      date: date,
     },
   })
-  fetchAttendance()
 })
 
-// Watch employee_id change
 watch(
-  () => filters.value.employee_id,
-  async (newVal, oldVal) => {
-    if (newVal && newVal !== oldVal) {
-      await fetchUser(newVal)
-      await fetchAttendance()
+  userId,
+  (newValue, oldValue) => {
+    if (newValue !== null) {
+      fetchAttendance()
     }
-  }
+  },
+  { immediate: false },
 )
 
-// Go back handler
 const goBack = () => router.go(-1)
-
-// Filter change handler
-const handleFilterChange = () => {
-  router.replace({
-    query: {
-      ...route.query,
-      company_id: filters.value.company_id,
-      department_id: filters.value.department_id,
-      type: filters.value.type,
-      employee_id: filters.value.employee_id,
-    },
-  })
-}
 </script>
 
 <template>
@@ -96,13 +66,19 @@ const handleFilterChange = () => {
       <h1 class="title-md md:title-lg flex-wrap text-center">Monthly Attendance</h1>
       <div></div>
     </div>
-    <div class="w-full flex flex-wrap  gap-4 items-center md:w-auto">
-       <EmployeeFilter 
-        v-model="filters" 
-        :initial-value="route.query" 
-        @filter-change="handleFilterChange" 
-      />
-      <div>
+    <div class="w-1/2 flex gap-4">
+      <div class="w-full">
+        <MultiselectDropdown
+          v-model="selectedUser"
+          :options="userStore.users"
+          :multiple="false"
+          class="w-full"
+          label="name"
+          label-prefix="employee_id"
+          placeholder="Select Employee"
+        />
+      </div>
+      <div class="w-full">
         <input
           id="monthSelect"
           type="month"

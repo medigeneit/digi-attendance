@@ -1,9 +1,9 @@
 <script setup>
+import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
-import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useUserStore } from '@/stores/user'
-import { computed, onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -12,60 +12,92 @@ const userStore = useUserStore()
 const attendanceStore = useAttendanceStore()
 
 const selectedUser = ref(null)
-const selectedUserId = ref('')
 const selectedMonth = ref(route.query.date || attendanceStore.selectedMonth)
 
-const userId = computed(() => selectedUser.value?.id)
+const filters = ref({
+  company_id: route.query.company_id || '',
+  department_id: route.query.department_id || 'all',
+  type: route.query.type || 'all',
+  employee_id: route.query.employee_id || '',
+  category: '',
+})
 
-const fetchAttendance = async () => {
-  if (userId) {
-    await attendanceStore.getMonthlyAttendanceLog(userId.value, selectedMonth.value)
+// Fetch selected user info
+const fetchUser = async (employeeId) => {
+  if (employeeId) {
+    await userStore.fetchUser(employeeId)
+    selectedUser.value = userStore.user
+  } else {
+    selectedUser.value = null
   }
 }
 
+// Fetch attendance
+const fetchAttendance = async () => {
+  if (filters.value.employee_id && selectedMonth.value) {
+    await attendanceStore.getMonthlyAttendanceLog(filters.value.employee_id, selectedMonth.value)
+  }
+}
+
+// Initial fetch on mount
 onMounted(async () => {
-  await userStore.fetchUsers()
-  selectedUser.value = userStore.users.find((user) => user.id == route.query.user_id)
+  if (filters.value.employee_id) {
+    await fetchUser(filters.value.employee_id)
+    await fetchAttendance()
+  }
 })
 
-watch([selectedUserId, selectedMonth], fetchAttendance)
-
-watch(userId, (user) => {
-  router.replace({
-    query: {
-      ...route.query,
-      user_id: user,
-    },
-  })
-})
-
-watch(selectedMonth, (date) => {
-  router.replace({
-    query: {
-      ...route.query,
-      date: date,
-    },
-  })
-})
-
+// Watch employee_id changes
 watch(
-  userId,
-  (newValue, oldValue) => {
-    if (newValue !== null) {
-      fetchAttendance()
+  () => filters.value.employee_id,
+  async (newVal, oldVal) => {
+    if (newVal && newVal !== oldVal) {
+      await fetchUser(newVal)
+      await fetchAttendance()
+      router.replace({
+        query: {
+          ...route.query,
+          employee_id: newVal,
+        },
+      })
     }
-  },
-  { immediate: false },
+  }
 )
 
+// Watch month change
+watch(selectedMonth, (newDate) => {
+  router.replace({
+    query: {
+      ...route.query,
+      date: newDate,
+    },
+  })
+  fetchAttendance()
+})
+
+// Go back
 const goBack = () => router.go(-1)
 
-// time formatter
+// Format time
 const formatTime = (timestamp) => {
   const d = new Date(timestamp)
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
+
+// Apply filters from EmployeeFilter component
+const handleFilterChange = () => {
+  router.replace({
+    query: {
+      ...route.query,
+      company_id: filters.value.company_id,
+      department_id: filters.value.department_id,
+      type: filters.value.type,
+      employee_id: filters.value.employee_id,
+    },
+  })
+}
 </script>
+
 
 <template>
   <div class="px-4 space-y-4">
@@ -78,14 +110,20 @@ const formatTime = (timestamp) => {
       <div></div>
     </div>
 
-    <div class="w-1/2 flex flex-wrap gap-4">
-      <MultiselectDropdown
+    <div class="flex flex-wrap gap-4">
+
+       <EmployeeFilter 
+        v-model="filters" 
+        :initial-value="route.query" 
+        @filter-change="handleFilterChange" 
+      />
+      <!-- <MultiselectDropdown
         v-model="selectedUser"
         :options="userStore.users"
         :multiple="false"
         label="label"
         placeholder="Select Employee"
-      />
+      /> -->
       <div>
         <input
           id="monthSelect"

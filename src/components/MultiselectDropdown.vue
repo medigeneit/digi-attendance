@@ -1,5 +1,6 @@
 <template>
   <div>
+    <slot name="label"></slot>
     <Multiselect
       v-model="selectedValue"
       @select="(opt, val) => emit('select', opt, val)"

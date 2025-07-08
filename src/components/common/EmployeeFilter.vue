@@ -139,7 +139,14 @@ const emitFilter = () => {
       label="name" 
       track-by="id" 
       placeholder="Select Company" 
-    />
+      class="relative w-full md:!w-64"
+    > 
+        <template #label>
+            <div class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30">
+              Company
+            </div>
+          </template>
+    </Multiselect>
 
     <Multiselect 
       v-model="selectedDepartmentId" 
@@ -148,7 +155,15 @@ const emitFilter = () => {
       track-by="id" 
       placeholder="Select Department" 
       :disabled="!selectedCompanyId"
-    />
+      class="relative w-full md:!w-64"
+    >
+
+     <template #label>
+        <div class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30" >
+              Department
+        </div>
+      </template>
+    </Multiselect>
 
     <Multiselect 
       v-if="withType"
@@ -156,8 +171,15 @@ const emitFilter = () => {
       :options="[{id:'all', name:'All Types'},{id:'executive', name:'Executive'},{id:'support_staff', name:'Support Staff'},{id:'doctor', name:'Doctor'},{id:'academy_body', name:'Academy Body'}]" 
       label="name" 
       track-by="id" 
-      placeholder="Select Type" 
-    />
+      placeholder="Select Type"
+      class="relative w-full md:!w-64"
+    >
+     <template #label>
+        <div class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30" >
+              Line Type
+        </div>
+      </template>
+   </Multiselect>
 
     <Multiselect 
       v-model="selectedEmployeeId" 
@@ -166,6 +188,13 @@ const emitFilter = () => {
       track-by="id" 
       placeholder="Select Employee" 
       :disabled="filterEmployees.length === 0"
-    />
+      class="relative w-full md:!w-64"
+      >
+        <template #label>
+          <div class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30" >
+                Employee
+          </div>
+        </template>
+      </Multiselect>
   </div>
 </template>

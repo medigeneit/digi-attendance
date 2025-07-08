@@ -1,9 +1,8 @@
 <script setup>
+import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
-import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useManualAttendanceStore } from '@/stores/manual-attendance'
 import { useUserStore } from '@/stores/user'
-import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -12,67 +11,86 @@ const route = useRoute()
 const manualAttendanceStore = useManualAttendanceStore()
 const userStore = useUserStore()
 const selectedUser = ref(null)
-const selectedUserId = computed(() => selectedUser.value?.id)
-const selectedMonth = ref(route?.query?.date || manualAttendanceStore.selectedMonth)
-const { loading } = storeToRefs(manualAttendanceStore)
+const selectedMonth = ref(route.query.date || manualAttendanceStore.selectedMonth)
+
+const loading = ref(false)
+
+const filters = ref({
+  company_id: route.query.company_id || '',
+  department_id: route.query.department_id || 'all',
+  type: route.query.type || 'all',
+  employee_id: route.query.employee_id || '',
+  category: '',
+})
+
+const fetchManualAttendancesByUser = async () => {
+  const payload = {
+    company_id: filters.value.company_id,
+    department_id: filters.value.department_id,
+    selectedMonth: selectedMonth.value,
+    selectedStatus: manualAttendanceStore.selectedStatus,
+  }
+
+  if (filters.value.employee_id) {
+    payload.user_id = filters.value.employee_id
+  }
+
+  loading.value = true
+  await manualAttendanceStore.fetchManualAttendances(payload)
+  loading.value = false
+}
+
+// Initial data load
 onMounted(async () => {
   await userStore.fetchUsers()
-  selectedUser.value = userStore.users.find((user) => user.id == route?.query?.user_id)
-  loading.value = ref(true)
+  selectedUser.value = userStore.users.find(user => user.id == filters.value.employee_id) || null
   await fetchManualAttendancesByUser()
-  loading.value = ref(false)
 })
 
-watch(selectedUserId, (user) => {
-  router.replace({
-    query: {
-      ...route.query,
-      user_id: user,
-    },
-  })
-})
+// Watch filters and month
+watch(
+  () => [
+    filters.value.company_id,
+    filters.value.department_id,
+    filters.value.employee_id,
+    selectedMonth.value,
+  ],
+  async () => {
+    await fetchManualAttendancesByUser()
+  }
+)
 
+// Watch month to sync with URL
 watch(selectedMonth, (date) => {
   router.replace({
     query: {
       ...route.query,
-      date: date,
+      date,
     },
   })
 })
 
-const fetchManualAttendancesByUser = async () => {
-  if (selectedUserId.value) {
-    await manualAttendanceStore.fetchManualAttendances({
-      user_id: selectedUserId.value,
-      selectedMonth: selectedMonth.value,
-      selectedStatus: manualAttendanceStore.selectedStatus,
-    })
-  } else {
-    // Fetch all short leaves if no user is selected
-    await manualAttendanceStore.fetchManualAttendances({
-      selectedMonth: selectedMonth.value,
-      selectedStatus: manualAttendanceStore.selectedStatus,
-    })
-  }
-}
-
-watch([selectedUserId], fetchManualAttendancesByUser)
-
+// Computed for filtered result
 const filteredManualAttendances = computed(() => {
-  return manualAttendanceStore.manualAttendances
+  return manualAttendanceStore.manualAttendances || []
 })
 
+// Navigation
 const goBack = () => {
   router.go(-1)
 }
+
+// Delete
 const deleteApplication = async (applicationId) => {
   if (confirm('Are you sure to delete this application?')) {
-    manualAttendanceStore.deleteManualAttendance(applicationId)
+    await manualAttendanceStore.deleteManualAttendance(applicationId)
+    await fetchManualAttendancesByUser()
   }
 }
+
+// Formatters
 const formatDate = (dt) => {
-  return new Date(dt).toLocaleDateString('en-GB') // e.g., 19/06/2025
+  return new Date(dt).toLocaleDateString('en-GB') // 19/06/2025
 }
 
 const formatTime = (datetime) => {
@@ -84,7 +102,21 @@ const formatTime = (datetime) => {
     timeZone: 'Asia/Dhaka',
   })
 }
+
+// Update query string when filter changes
+const handleFilterChange = () => {
+  router.replace({
+    query: {
+      ...route.query,
+      company_id: filters.value.company_id,
+      department_id: filters.value.department_id,
+      type: filters.value.type,
+      employee_id: filters.value.employee_id,
+    },
+  })
+}
 </script>
+
 
 <template>
   <div class="space-y-2 px-4">
@@ -102,17 +134,14 @@ const formatTime = (datetime) => {
         </RouterLink>
       </div>
     </div>
-    <div class="flex gap-4">
-      <div style="width: 300px">
-        <MultiselectDropdown
-          v-model="selectedUser"
-          :options="userStore.users"
-          :multiple="false"
-          label="name"
-          label-prefix="employee_id"
-          placeholder="Select user"
+    <div class="flex flex-wrap gap-4">
+
+       <EmployeeFilter 
+          v-model="filters" 
+          :initial-value="route.query" 
+          @filter-change="handleFilterChange" 
         />
-      </div>
+
       <div>
         <input
           id="monthSelect"

@@ -1,6 +1,6 @@
 <script setup>
+import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
-import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
@@ -11,71 +11,107 @@ const router = useRouter()
 const route = useRoute()
 const leaveApplicationStore = useLeaveApplicationStore()
 const userStore = useUserStore()
+
 const { leaveApplications, loading } = storeToRefs(leaveApplicationStore)
-const selectedUser = ref('')
-const selectedUserId = computed(() => selectedUser.value?.id)
-const selectedDate = ref(route?.query?.date || leaveApplicationStore.selectedMonth)
-const search = ref('')
-onMounted(async () => {
+
+const selectedUser = ref(null)
+const selectedDate = ref(route.query.date || leaveApplicationStore.selectedMonth)
+const search = ref(route.query.search || '')
+
+const filters = ref({
+  company_id: route.query.company_id || '',
+  department_id: route.query.department_id || 'all',
+  type: route.query.type || 'all',
+  employee_id: route.query.employee_id || '',
+  category: '',
+})
+
+const selectedUserId = computed(() => selectedUser.value?.id || '')
+
+const fetchApplicationsByUser = async () => {
+  const payload = {
+    selectedDate: selectedDate.value,
+    selectedStatus: leaveApplicationStore.selectedStatus,
+    query: search.value,
+  }
+
+  if (filters.value.employee_id) {
+    payload.user_id = filters.value.employee_id
+  }
+
   loading.value = true
-  await userStore.fetchUsers()
-  selectedUser.value = userStore.users.find((user) => user.id == route?.query?.user_id)
-  search.value = route?.query?.search || ''
+  await leaveApplicationStore.fetchLeaveApplications(payload)
+  loading.value = false
+}
+
+// On mount: load user and apps
+onMounted(async () => {
+  if (filters.value.employee_id) {
+    await userStore.fetchUser(filters.value.employee_id)
+    selectedUser.value = userStore.user || null
+  }
   await fetchApplicationsByUser()
 })
 
-const goBack = () => {
-  router.go(-1)
-}
+// Watch selectedUser and update apps + query
+watch(
+  () => selectedUserId.value,
+  async (newId) => {
+    if (newId) {
+      filters.value.employee_id = newId
+    } else {
+      filters.value.employee_id = ''
+    }
 
-const fetchApplicationsByUser = async () => {
-  if (selectedUserId.value) {
-    await leaveApplicationStore.fetchLeaveApplications({
-      user_id: selectedUserId.value,
-      selectedDate: selectedDate.value,
-      selectedStatus: leaveApplicationStore.selectedStatus,
-      query: search.value,
+    router.replace({
+      query: {
+        ...route.query,
+        employee_id: newId || '',
+      },
     })
-  } else {
-    // Fetch all short leaves if no user is selected
-    await leaveApplicationStore.fetchLeaveApplications({
-      selectedStatus: leaveApplicationStore.selectedStatus,
-      selectedDate: selectedDate.value,
-      query: search.value,
-    })
+
+    await fetchApplicationsByUser()
   }
-}
+)
 
-const filteredLeaveApplications = computed(() => {
-  return leaveApplicationStore.leaveApplications
-})
+watch(
+  () => selectedDate.value,
+  (newDate) => {
+    router.replace({
+      query: {
+        ...route.query,
+        date: newDate,
+      },
+    })
+    fetchApplicationsByUser()
+  }
+)
 
-watch([selectedUserId], fetchApplicationsByUser)
-
-watch(selectedUserId, (user) => {
-  router.replace({
-    query: {
-      ...route.query,
-      user_id: user,
-    },
-  })
-})
-
-watch(selectedDate, (date) => {
-  router.replace({
-    query: {
-      ...route.query,
-      date: date,
-    },
-  })
-})
+const filteredLeaveApplications = computed(() => leaveApplications.value || [])
 
 const deleteApplication = async (applicationId) => {
   if (confirm('Are you sure to delete this application?')) {
-    leaveApplicationStore.deleteLeaveApplication(applicationId)
+    await leaveApplicationStore.deleteLeaveApplication(applicationId)
+    await fetchApplicationsByUser()
   }
 }
+
+const goBack = () => router.go(-1)
+
+const handleFilterChange = () => {
+  router.replace({
+    query: {
+      ...route.query,
+      company_id: filters.value.company_id,
+      department_id: filters.value.department_id,
+      type: filters.value.type,
+      employee_id: filters.value.employee_id,
+    },
+  })
+}
 </script>
+
+
 
 <template>
   <div class="space-y-2 px-4">
@@ -89,7 +125,12 @@ const deleteApplication = async (applicationId) => {
       <div></div>
     </div>
     <div class="flex gap-2">
-      <div style="width: 300px">
+      <EmployeeFilter 
+        v-model="filters" 
+        :initial-value="route.query" 
+        @filter-change="handleFilterChange" 
+      />
+      <!-- <div style="width: 300px">
         <MultiselectDropdown
           v-model="selectedUser"
           :options="userStore.users"
@@ -97,7 +138,7 @@ const deleteApplication = async (applicationId) => {
           label="label"
           placeholder="Select user"
         />
-      </div>
+      </div> -->
       <div>
         <input
           id="monthSelect"
@@ -182,7 +223,7 @@ const deleteApplication = async (applicationId) => {
                 </div>
               </td>
             </tr>
-            <tr v-if="filteredLeaveApplications.length === 0">
+            <tr v-if="!filteredLeaveApplications.length">
               <td colspan="7" class="p-1 text-center text-red-500">No application found</td>
             </tr>
           </tbody>

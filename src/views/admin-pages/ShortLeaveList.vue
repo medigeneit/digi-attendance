@@ -1,6 +1,6 @@
 <script setup>
+import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
-import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useShortLeaveStore } from '@/stores/short-leave'
 import { useUserStore } from '@/stores/user'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -8,80 +8,124 @@ import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
 const route = useRoute()
+
 const shortLeaveStore = useShortLeaveStore()
 const userStore = useUserStore()
-const selectedUser = ref('')
-const selectedMonth = ref(route?.query?.date || shortLeaveStore.selectedMonth)
-const selectedUserId = computed(() => selectedUser.value?.id)
-const search = ref('')
 
-onMounted( async () => {
-  userStore.fetchUsers()
-  selectedUser.value = userStore.users.find((user) => user.id == route?.query?.user_id)
-  search.value = route?.query?.search || ''
-  await fetchShortLeavesByUser()
+const selectedUser = ref(null)
+const selectedMonth = ref(route.query.date || shortLeaveStore.selectedMonth)
+const search = ref(route.query.search || '')
+
+const filters = ref({
+  company_id: route.query.company_id || '',
+  department_id: route.query.department_id || 'all',
+  type: route.query.type || 'all',
+  employee_id: route.query.employee_id || '',
+  category: '',
 })
 
 const fetchShortLeavesByUser = async () => {
-  if (selectedUserId.value) {
-    await shortLeaveStore.fetchShortLeaves({
-      user_id: selectedUserId.value,
-      selectedMonth: selectedMonth.value,
-      selectedStatus: shortLeaveStore.selectedStatus,
-      query: search.value,
-    })
-  } else {
-    // Fetch all short leaves if no user is selected
-    await shortLeaveStore.fetchShortLeaves({
-      selectedMonth: selectedMonth.value,
-      selectedStatus: shortLeaveStore.selectedStatus,
-      query: search.value,
-    })
+  const payload = {
+    selectedCompany:filters.value.company_id,
+    selectedDepartment:filters.value.department_id,
+    selectedMonth: selectedMonth.value,
+    selectedStatus: shortLeaveStore.selectedStatus,
+    query: search.value,
   }
+
+  if (filters.value.employee_id) {
+    payload.user_id = filters.value.employee_id
+  }
+
+  await shortLeaveStore.fetchShortLeaves(payload)
 }
 
-const goBack = () => {
-  router.go(-1)
-}
+onMounted(async () => {
+  await userStore.fetchUsers()
 
-watch([selectedUserId], fetchShortLeavesByUser)
+  if (filters.value.employee_id) {
+    selectedUser.value = userStore.users.find((u) => u.id == filters.value.employee_id) || null
+  }
 
-watch(selectedUserId, (user) => {
-  router.replace({
-    query: {
-      ...route.query,
-      user_id: user,
-    },
-  })
+  await fetchShortLeavesByUser()
 })
 
-watch(selectedMonth, (date) => {
-  router.replace({
-    query: {
-      ...route.query,
-      date: date,
-    },
-  })
-})
+// Watch for employee selection change
+watch(
+  () => filters.value.employee_id,
+  async (newVal, oldVal) => {
+    if (newVal !== oldVal) {
+      selectedUser.value = userStore.users.find(u => u.id == newVal) || null
+      await fetchShortLeavesByUser()
+    }
+  }
+)
+// Watch for employee selection change
+watch(
+  () => filters.value.company_id,
+  async (newVal, oldVal) => {
+    if (newVal !== oldVal) {
+      await fetchShortLeavesByUser()
+    }
+  }
+)
+// Watch for employee selection change
+watch(
+  () => filters.value.department_id,
+  async (newVal, oldVal) => {
+    if (newVal !== oldVal) {
+      await fetchShortLeavesByUser()
+    }
+  }
+)
+
+// Watch for selectedMonth change
+watch(
+  () => selectedMonth.value,
+  async (newDate) => {
+    router.replace({
+      query: {
+        ...route.query,
+        date: newDate,
+      },
+    })
+    await fetchShortLeavesByUser()
+  }
+)
+
+const goBack = () => router.go(-1)
 
 const formatTime = (timeString) => {
-  const [hour, minute] = timeString.split(':').map(Number) // Extract hour & minute
+  const [hour, minute] = timeString.split(':').map(Number)
   const date = new Date()
   date.setHours(hour, minute)
-
   return date.toLocaleString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
-    hour12: true, // Ensures AM/PM format
+    hour12: true,
   })
 }
 
 const deleteApplication = async (applicationId) => {
   if (confirm('Are you sure to delete this application?')) {
-    shortLeaveStore.deleteShortLeave(applicationId)
+    await shortLeaveStore.deleteShortLeave(applicationId)
+    await fetchShortLeavesByUser()
   }
 }
+
+const handleFilterChange = () => {
+  router.replace({
+    query: {
+      ...route.query,
+      company_id: filters.value.company_id,
+      department_id: filters.value.department_id,
+      type: filters.value.type,
+      employee_id: filters.value.employee_id,
+    },
+  })
+}
 </script>
+
 
 <template>
   <div class="space-y-2 px-4">
@@ -95,16 +139,14 @@ const deleteApplication = async (applicationId) => {
 
       <div></div>
     </div>
-    <div class="flex gap-4">
-      <div style="width: 300px">
-        <MultiselectDropdown
-          v-model="selectedUser"
-          :options="userStore.users"
-          :multiple="false"
-          label="label"
-          placeholder="Select user"
+    <div class="flex flex-wrap gap-4">
+
+        <EmployeeFilter 
+          v-model="filters" 
+          :initial-value="route.query" 
+          @filter-change="handleFilterChange" 
         />
-      </div>
+
       <div>
         <input
           id="monthSelect"

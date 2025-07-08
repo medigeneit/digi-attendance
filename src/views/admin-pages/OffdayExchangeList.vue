@@ -1,6 +1,6 @@
 <script setup>
+import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
-import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useExchangeStore } from '@/stores/exchange'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
@@ -13,20 +13,30 @@ const exchangeStore = useExchangeStore()
 const userStore = useUserStore()
 const type = 'offday'
 const selectedUser = ref(null)
-const selectedUserId = computed(() => selectedUser.value?.id)
 const selectedMonth = ref(route.query.date || exchangeStore.selectedMonth)
 const { loading } = storeToRefs(exchangeStore)
+
+const filters = ref({
+  company_id: route.query.company_id || '',
+  department_id: route.query.department_id || 'all',
+  type: route.query.type || 'all',
+  employee_id: route.query.employee_id || '',
+  category: '',
+})
+
 onMounted( async () => {
   loading.value = true
   await userStore.fetchUsers()
-  selectedUser.value = userStore.users.find((user) => user.id == route?.query?.user_id)
+  selectedUser.value = userStore.users.find((user) => user.id == route?.query?.company_id)
   await fetchOffDayExchangeByUser()
 })
 
 const fetchOffDayExchangeByUser = async () => {
-  if (selectedUserId.value) {
+  if (filters.value.employee_id) {
     await exchangeStore.fetchAllExchanges({
-      user_id: selectedUserId.value,
+      company_id: filters.value.company_id,
+      department_id: filters.value.department_id,
+      user_id: filters.value.employee_id,
       type: type,
       selectedMonth: selectedMonth.value,
       selectedStatus: exchangeStore.selectedStatus,
@@ -34,6 +44,8 @@ const fetchOffDayExchangeByUser = async () => {
   } else {
     // Fetch all short leaves if no user is selected
     await exchangeStore.fetchAllExchanges({
+      company_id: filters.value.company_id,
+      department_id: filters.value.department_id,
       type: type,
       selectedMonth: selectedMonth.value,
       selectedStatus: exchangeStore.selectedStatus,
@@ -41,16 +53,20 @@ const fetchOffDayExchangeByUser = async () => {
   }
 }
 
-watch([selectedUserId], fetchOffDayExchangeByUser)
+// watch([selectedUserId], fetchOffDayExchangeByUser)
 
-watch(selectedUserId, (user) => {
-  router.replace({
-    query: {
-      ...route.query,
-      user_id: user,
-    },
-  })
-})
+watch(
+  () => [
+    filters.value.company_id,
+    filters.value.department_id,
+    filters.value.employee_id,
+    selectedMonth.value
+  ],
+  async () => {
+    await fetchOffDayExchangeByUser()
+  }
+)
+
 
 watch(selectedMonth, (date) => {
   router.replace({
@@ -69,6 +85,20 @@ const deleteApplication = async (applicationId) => {
     exchangeStore.deleteExchange(applicationId)
   }
 }
+
+
+const handleFilterChange = () => {
+  router.replace({
+    query: {
+      ...route.query,
+      company_id: filters.value.company_id,
+      department_id: filters.value.department_id,
+      type: filters.value.type,
+      employee_id: filters.value.employee_id,
+    },
+  })
+}
+
 </script>
 
 <template>
@@ -82,16 +112,14 @@ const deleteApplication = async (applicationId) => {
       <h1 class="title-md md:title-lg flex-wrap text-center">Offday Exchanges</h1>
       <div></div>
     </div>
-    <div class="flex gap-4">
-      <div style="width: 300px">
-        <MultiselectDropdown
-          v-model="selectedUser"
-          :options="userStore.users"
-          :multiple="false"
-          label="label"
-          placeholder="Select user"
+    <div class="flex flex-wrap gap-4">
+
+      <EmployeeFilter 
+          v-model="filters" 
+          :initial-value="route.query" 
+          @filter-change="handleFilterChange" 
         />
-      </div>
+
       <div>
         <input
           id="monthSelect"
