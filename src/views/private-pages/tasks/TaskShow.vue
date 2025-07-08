@@ -268,6 +268,7 @@ watch(
             @created="fetchTaskList(route.params.id)"
             @updated="fetchTaskList(route.params.id)"
             @updatePriority="fetchTaskList(route.params.id)"
+            @assignUser="fetchTaskList(route.params.id)"
           />
         </section>
 

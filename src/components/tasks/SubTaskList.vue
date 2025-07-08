@@ -4,6 +4,7 @@ import OverlyModal from '../common/OverlyModal.vue'
 import TaskAddForm from './TaskAddForm.vue'
 import TaskEditForm from './TaskEditForm.vue'
 import TaskList from './TaskList.vue'
+import TaskUserAssignForm from './TaskUserAssignForm.vue'
 
 const props = defineProps({
   subTasks: Array,
@@ -11,7 +12,12 @@ const props = defineProps({
   treeLevel: { type: Number, required: true },
 })
 
-const emit = defineEmits(['created', 'error', 'updatePriority'])
+const employeeAssignForm = reactive({
+  taskId: 0,
+  isOpen: false,
+})
+
+const emit = defineEmits(['created', 'error', 'updatePriority', 'assignUser'])
 
 const editingId = ref()
 
@@ -32,6 +38,10 @@ function handleTaskCreate() {
   addForm.show = false
   addForm.parentId = props.parentId
   emit('created')
+}
+
+function handleUserAssignUpdate() {
+  emit('assignUser')
 }
 
 function handleTaskUpdate() {
@@ -59,6 +69,25 @@ function handleTaskAddClose() {
       />
     </OverlyModal>
 
+    <OverlyModal v-if="employeeAssignForm.isOpen">
+      <TaskUserAssignForm
+        :taskId="employeeAssignForm.taskId"
+        @cancelClick="
+          () => {
+            employeeAssignForm.isOpen = false
+            employeeAssignForm.taskId = 0
+          }
+        "
+        @success="
+          () => {
+            employeeAssignForm.isOpen = false
+            employeeAssignForm.taskId = 0
+            handleUserAssignUpdate()
+          }
+        "
+      />
+    </OverlyModal>
+
     <TaskList
       :tasks="subTasks"
       :parentId="parentId"
@@ -66,6 +95,12 @@ function handleTaskAddClose() {
       @addClick="(taskId) => goToAdd(taskId)"
       @editClick="(taskId) => (editingId = taskId)"
       @updatePriority="emit('updatePriority')"
+      @employeeAssignClick="
+        (taskId) => {
+          employeeAssignForm.taskId = taskId
+          employeeAssignForm.isOpen = true
+        }
+      "
     >
       <template #task:header>
         <div class="flex justify-between mt-5">

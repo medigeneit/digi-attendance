@@ -79,6 +79,7 @@ const handleTaskPrioritySave = async () => {
           @commentButtonClick="emit('commentButtonClick', item.id)"
           @editClick="(taskId) => emit('editClick', taskId)"
           @addClick="(taskId) => emit('addClick', taskId)"
+          @employeeAssignClick="(taskId) => emit('employeeAssignClick', taskId)"
         />
       </DraggableList>
 

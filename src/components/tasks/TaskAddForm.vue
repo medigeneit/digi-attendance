@@ -92,8 +92,8 @@ async function submit() {
   }
 
   try {
-    await store.createTask(payload, { loadingBeforeCreate: false })
-    emit('taskCreated')
+    const taskResponse = await store.createTask(payload, { loadingBeforeCreate: false })
+    emit('taskCreated', taskResponse)
     state.value = 'taskCreated'
   } catch (err) {
     emit('error', store.error)
@@ -257,7 +257,7 @@ async function submit() {
 
           <button
             type="button"
-            @click="emit('close')"
+            @click.prevent="emit('close')"
             class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-5 py-2 rounded transition"
           >
             Cancel

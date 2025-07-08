@@ -3,6 +3,7 @@ import GuestLayout from '@/layouts/GuestLayout.vue'
 import { useAuthStore } from '@/stores/auth'
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/public-pages/HomeView.vue'
+import { useRouteHistory } from './history'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -778,5 +779,13 @@ router.afterEach((to) => {
     document.title = 'Digi Attendance'
   }
 })
+
+
+router.afterEach((to) => {
+  const routeHistory = useRouteHistory()
+  console.log({to})
+  routeHistory.addToHistory(to)
+})
+ 
 
 export default router
