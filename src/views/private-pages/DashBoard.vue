@@ -15,6 +15,9 @@
         <p>Loading...</p>
       </div>
     </div>
+
+    
+
     <div class="grid gap-4 md:grid-cols-3 mt-4" v-if="isAdmin && authStore.isAdminMood">
       <RouterLink
         :to="{ name: 'TodayAttendanceReport', query: { search: 'all' } }"
@@ -174,8 +177,48 @@
                 View
               </RouterLink>
             </div>
+
+            <OverlyModal v-if="unreadNotice" :show="true" @close="unreadNotice = null">
+              <template #default>
+                <div class="text-xl font-bold text-gray-800 flex items-center gap-2 p-4">
+                  <i class="fas fa-bell text-blue-500"></i>
+                  {{ unreadNotice.title }}
+                </div>
+
+                <div class="space-y-5 px-4 md:px-6 py-4 ">
+                  <!-- Published Info -->
+                  <p class="text-sm text-gray-500 flex items-center gap-2">
+                    <i class="fas fa-calendar-alt text-gray-400"></i>
+                    Published: {{ unreadNotice.published_at }}
+                  </p>
+
+                  <!-- Instruction -->
+                  <p class="text-base text-gray-700 leading-relaxed">
+                    You must read this notice before proceeding.
+                  </p>
+
+                  <!-- Actions -->
+                  <div class="flex justify-end gap-3 mt-6">
+                    <button
+                      @click="unreadNotice = null"
+                      class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-5 py-2 rounded-lg transition"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      @click="goToDetails"
+                      class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-lg shadow transition"
+                    >
+                      Read Details
+                    </button>
+                  </div>
+                </div>
+              </template>
+            </OverlyModal>
+
           </div>
         </div>
+        
 
         <!-- Quick Actions -->
         <div class="bg-white shadow-md rounded-lg">
@@ -216,13 +259,21 @@
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import OverlyModal from '@/components/common/OverlyModal.vue'
+
 const authStore = useAuthStore()
 const userStore = useUserStore()
 const { dashboardInfo, selectedDate, userDashboard } = storeToRefs(userStore)
 const { user } = storeToRefs(authStore)
+const router = useRouter()
 
-const isAdmin = computed(() => ['admin', 'super_admin', 'developer'].includes(user?.value?.role))
+const isAdmin = computed(() =>
+  ['admin', 'super_admin', 'developer'].includes(user?.value?.role)
+)
+
+const unreadNotice = ref(null)
 
 onMounted(async () => {
   if (!user.value) {
@@ -232,5 +283,23 @@ onMounted(async () => {
   if (isAdmin.value) {
     await userStore.fetchAdminDashboardData()
   }
+
+  // Get first unread notice
+  const firstUnread = userDashboard.value?.notices?.find(n => !n.user_feedback)
+  if (firstUnread) {
+    unreadNotice.value = firstUnread
+  }
 })
+
+const goToDetails = () => {
+  if (!unreadNotice.value) return
+
+  const path =
+    unreadNotice.value.type === 1
+      ? `/notice-details/${unreadNotice.value.id}`
+      : `/policy-details/${unreadNotice.value.id}`
+
+  router.push(path)
+}
 </script>
+
