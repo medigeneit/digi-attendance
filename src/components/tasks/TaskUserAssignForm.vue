@@ -1,12 +1,14 @@
 <script setup>
-import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
-import UserChip from '@/components/user/UserChip.vue'
 import { getYearMonthDayFormat } from '@/libs/datetime'
 import { useAuthStore } from '@/stores/auth'
 import { useCompanyStore } from '@/stores/company'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { useUserStore } from '@/stores/user'
 import { computed, onMounted, ref } from 'vue'
+import TextWithHr from '../TextWithHr.vue'
+import IsTargetTaskInput from './IsTargetTaskInput.vue'
+import TaskAssignEmployeesInput from './TaskAssignEmployeesInput.vue'
+import TaskUrgencyInput from './TaskUrgencyInput.vue'
 
 const taskStore = useTaskStore()
 const companyStore = useCompanyStore()
@@ -114,24 +116,9 @@ function setTaskOnFormData(taskData) {
   }
 }
 
-const setting_editable = computed(() => {
-  return Object.values(editable.value).reduce((status, value) => value || status, false)
-})
-
-const is_regular_task = computed({
-  set: () => {
-    form.value.is_important = false
-    form.value.is_urgent = false
-  },
-  get: () => {
-    return !(form.value.is_important || form.value.is_urgent)
-  },
-})
-
 const editable = computed(() => {
   let _editable = {
-    is_important: false,
-    is_urgent: false,
+    urgency: false,
     is_target: false,
     started_at: false,
     deadline: false,
@@ -141,8 +128,7 @@ const editable = computed(() => {
     return _editable
   }
 
-  _editable.is_important = auth.isAdminMood
-  _editable.is_urgent = auth.isAdminMood
+  _editable.urgency = auth.isAdminMood
   _editable.is_target = auth.isAdminMood
   _editable.started_at = auth.isAdminMood
   _editable.deadline = auth.isAdminMood
@@ -164,111 +150,30 @@ const editable = computed(() => {
     <div v-if="state === 'loading'" class="text-center text-gray-500 py-4">Loading users...</div>
 
     <form v-else @submit.prevent="submit">
+      {{ selectedUsers.map((u) => u.name) }}
       <div class="mb-4">
         <label class="block uppercase text-xs text-gray-600">Employees</label>
-
-        <MultiselectDropdown
-          v-model="selectedUsers"
-          :options="userOptions"
-          :multiple="true"
-          track-by="id"
-          label="label"
-          placeholder="Select users"
-        >
-          <template #selection="{ ...attrs }">
-            <div class="mb-2 flex flex-wrap gap-2">
-              <UserChip v-for="user in attrs?.values || []" :key="user.id" :user="user">
-                <template #after="{ user }">
-                  <button
-                    class="size-6 border rounded-full hover:bg-red-400 hover:text-white"
-                    @click.prevent="selectedUsers = selectedUsers.filter((su) => su.id !== user.id)"
-                  >
-                    &times;
-                  </button>
-                </template>
-              </UserChip>
-            </div>
-            <!-- <pre>{{ attrs }}</pre> -->
-          </template>
-          <template #option="{ option: user }">
-            <UserChip :user="user" />
-          </template>
-        </MultiselectDropdown>
+        <TaskAssignEmployeesInput :employees="userOptions" v-model="selectedUsers" />
       </div>
 
-      <h3 class="my-6 text-center w-full relative" v-if="setting_editable">
-        <div class="inline-block bg-white px-4">
+      <TextWithHr class="mb-4">
+        <div class="px-2">
           <b class="fas fa-cog text-gray-400"></b>
           <span class="text-gray-700 ml-2">Task Settings for Employee</span>
         </div>
-        <hr class="bottom-0 border-gray-300 -mt-3" />
-      </h3>
+      </TextWithHr>
 
-      <div class="flex gap-16 items-center mb-8">
-        <label
-          v-if="editable.is_important && editable.is_urgent"
-          class="border px-2 py-0.5 rounded cursor-pointer"
-          :class="{
-            'border-blue-500 bg-green-200': is_regular_task,
-            'bg-gray-50 hover:bg-green-50': !is_regular_task,
-          }"
-        >
-          <div class="flex gap-1 items-center">
-            <input
-              type="checkbox"
-              v-model="is_regular_task"
-              class="size-4"
-              :disabled="is_regular_task"
-            />
-            <span class="block text-gray-600 text-base font-medium">Regular Task</span>
-          </div>
-          <div class="text-sm text-gray-500">Usually: 1-30 Days</div>
-        </label>
+      <TaskUrgencyInput
+        v-if="editable.urgency"
+        v-model:isImportant="form.is_important"
+        v-model:isUrgent="form.is_urgent"
+      />
 
-        <label
-          v-if="editable.is_important"
-          class="border px-2 py-0.5 rounded cursor-pointer"
-          :class="{
-            'border-yellow-500 bg-yellow-200': form.is_important,
-            'bg-gray-50 hover:bg-yellow-50': !form.is_important,
-          }"
-        >
-          <div class="flex gap-1 items-center">
-            <input type="checkbox" v-model="form.is_important" class="size-4" />
-            <span class="block text-gray-600 text-base font-medium">Important Task</span>
-          </div>
-          <div class="text-sm text-gray-500">Usually: 1-7 Days</div>
-        </label>
-
-        <label
-          v-if="editable.is_urgent"
-          class="border px-2 py-0.5 rounded cursor-pointer"
-          :class="{
-            'border-red-500 bg-red-200': form.is_urgent,
-            'bg-gray-50 hover:bg-red-50': !form.is_urgent,
-          }"
-        >
-          <div class="flex gap-1 items-center">
-            <input type="checkbox" v-model="form.is_urgent" class="size-4" />
-            <span class="block text-gray-600 text-base font-medium">Urgent Task</span>
-          </div>
-          <div class="text-sm text-gray-500">Usually: 1-3 Days</div>
-        </label>
-      </div>
-
-      <div class="mt-8" v-if="editable.is_target">
-        <label
-          class="flex gap-1 items-center mt-4 border rounded py-2 px-2 cursor-pointer"
-          :class="{ 'bg-yellow-100/80 border-yellow-300': form.is_target }"
-        >
-          <input type="checkbox" v-model="form.is_target" class="size-6" />
-          <span class="block text-gray-600 text-base font-medium">Is Target Task</span>
-        </label>
-      </div>
+      <IsTargetTaskInput v-model="form.is_target" class="mt-8" v-if="editable.is_target" />
 
       <div class="grid grid-cols-2 gap-4 mb-4 mt-12">
         <div class="mb-4" v-if="editable.started_at">
-          <label class="block text-gray-600 text-sm mb-1 font-medium"> Start Date </label>
+          <label class="block text-gray-600 text-sm mb-1 font-medium">Start Date</label>
           <input
             v-model="form.started_at"
             type="date"
@@ -278,7 +183,7 @@ const editable = computed(() => {
         </div>
 
         <div class="mb-4" v-if="editable.deadline">
-          <label class="block text-gray-600 text-sm mb-1 font-medium"> Deadline </label>
+          <label class="block text-gray-600 text-sm mb-1 font-medium">Deadline</label>
           <input
             v-model="form.deadline"
             type="date"
@@ -288,31 +193,31 @@ const editable = computed(() => {
         </div>
       </div>
 
-      <div
-        class="flex justify-between items-center gap-4 sticky bottom-0 bg-white border-t px-4 -mx-4 py-3"
-      >
+      <div class="sticky bottom-0 bg-white border-t px-4 -mx-4 py-3">
         <div v-if="error" class="mb-4 text-red-500 font-medium">
           {{ error }}
         </div>
         <div v-if="state == 'submitting'" class="mb-4 text-blue-500 font-medium">
           Saving changes...
         </div>
-        <!-- {{ form }} -->
-        <button
-          :disabled="state == 'submitting' || state == 'loading'"
-          type="submit"
-          class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-5 py-2 rounded transition"
-        >
-          {{ state == 'submitting' ? 'Saving...' : 'Save' }}
-        </button>
+        <div class="flex justify-between items-center gap-4">
+          <!-- {{ form }} -->
+          <button
+            :disabled="state == 'submitting' || state == 'loading'"
+            type="submit"
+            class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-5 py-2 rounded transition"
+          >
+            {{ state == 'submitting' ? 'Saving...' : 'Save' }}
+          </button>
 
-        <button
-          type="button"
-          @click="emit('cancelClick')"
-          class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-5 py-2 rounded transition"
-        >
-          Cancel
-        </button>
+          <button
+            type="button"
+            @click="emit('cancelClick')"
+            class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-5 py-2 rounded transition"
+          >
+            Cancel
+          </button>
+        </div>
       </div>
     </form>
   </div>

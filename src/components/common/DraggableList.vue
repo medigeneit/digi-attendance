@@ -19,9 +19,9 @@ watch(
 
 const emit = defineEmits(['itemsUpdate'])
 watch(
-  () => list.value,
+  () => [...list.value],
   function (val) {
-    emit('itemsUpdate', val)
+    emit('itemsUpdate', [...val])
   },
 )
 
