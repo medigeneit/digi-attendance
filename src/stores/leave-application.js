@@ -9,6 +9,8 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
   const loading = ref(false)
   const error = ref(null)
   const selectedMonth = ref(new Date().toISOString().substring(0, 7))
+  const selectedYear = ref(new Date().getFullYear())
+  const user = ref(null)
   const selectedStatus = ref('')
 
   async function fetchLeaveApplications(filters = {}) {
@@ -20,6 +22,25 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
         leaveApplications.value = response.data
       } else {
         leaveApplications.value = []
+      }
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to fetch leave applications'
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function fetchYearlyUserLeaveApplications(filters = {}) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await apiClient.get('/yearly-user-leave-applications', { params: filters })
+      if (response.data) {
+        leaveApplications.value = response?.data?.leave_applications
+        user.value = response?.data?.user
+      } else {
+        leaveApplications.value = []
+        user.value = []
       }
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch leave applications'
@@ -301,6 +322,8 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
     loading,
     error,
     selectedMonth,
+    selectedYear,
+    user,
     selectedStatus,
     fetchLeaveApplications,
     storeLeaveApplication,
@@ -316,6 +339,7 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
     fetchMyLeaveApplications,
     deleteLeaveApplication,
     fetchFileUpload,
-    uploadLeaveApplicationAttachment
+    uploadLeaveApplicationAttachment,
+    fetchYearlyUserLeaveApplications
   }
 })
