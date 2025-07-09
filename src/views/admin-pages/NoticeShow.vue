@@ -18,16 +18,20 @@ const isLoading = ref(true)
 const error = ref(null)
 
 const formatDate = (dateString) => {
-  const date = new Date(dateString)
-  return date.toLocaleString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  })
+  if(dateString) {
+    const date = new Date(dateString)
+    return date.toLocaleString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    })
+  }
+
+  return 'N/A'
 }
 
 const fetchNotice = async () => {

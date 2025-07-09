@@ -169,12 +169,10 @@ onMounted(async () => {
       <LoaderView v-if="isLoading" class="bg-gray-100 border shadow-none" />
       <form v-else @submit.prevent="updateNotice" class="space-y-4">
         <div class="grid gap-4">
-          <div class="border p-4 rounded-md bg-gray-100">
-            <p class="title-md">Notice Info</p>
-            <hr class="my-2" />
-
-            <div class="grid md:grid-cols-2 gap-4">
-              <div class="w-full">
+          <div class="space-y-6 ">
+            <div class="border p-4 rounded-md bg-white space-y-6">
+              <h2 class="text-lg">Notice Information</h2>
+              <div class="space-y-3">
                 <label>
                   <input type="checkbox" v-model="form.all_companies" @change="toggleAllCompany" />
                   Select All Companies
@@ -191,31 +189,34 @@ onMounted(async () => {
                 />
               </div>
 
-              <div>
-                <label>Type*</label>
-                <select
-                  id="type"
-                  v-model="form.type"
-                  class="w-full border rounded px-3 py-2"
-                  required
-                >
-                  <option value="1">General</option>
-                  <option value="2">Policy</option>
-                </select>
+              <div class="flex justify-between md:flex-row flex-col items-center gap-4">
+                <div class="w-full">
+                  <label>Type*</label>
+                  <select
+                    id="type"
+                    v-model="form.type"
+                    class="w-full border rounded px-3 py-2"
+                    required
+                  >
+                    <option value="1">General</option>
+                    <option value="2">Policy</option>
+                  </select>
+                </div>
+  
+                <div class="w-full" v-if="form.type !== '2'">
+                  <label>Publish Date</label>
+                  <input v-model="form.published_at" type="date" class="w-full p-2 border rounded" />
+                </div>
+  
+                <div class="w-full" v-if="form.type !== '2'">
+                  <label>Expire Date</label>
+                  <input v-model="form.expired_at" type="date" class="w-full p-2 border rounded" />
+                </div>
               </div>
 
-              <div v-if="form.type !== '2'">
-                <label>Publish Date</label>
-                <input v-model="form.published_at" type="date" class="w-full p-2 border rounded" />
-              </div>
-
-              <div v-if="form.type !== '2'">
-                <label>Expire Date</label>
-                <input v-model="form.expired_at" type="date" class="w-full p-2 border rounded" />
-              </div>
 
               <div class="col-span-3 flex justify-between gap-8">
-                <div class="w-full">
+                <div class="w-full space-y-3">
                   <label>
                     <input
                       type="checkbox"
@@ -235,7 +236,7 @@ onMounted(async () => {
                     :disabled="form.all_departments"
                   />
                 </div>
-                <div class="w-full">
+                <div class="w-full space-y-3">
                   <label>
                     <input
                       type="checkbox"
@@ -256,39 +257,43 @@ onMounted(async () => {
                   />
                 </div>
               </div>
-
-              <div>
-                <label>Title*</label>
-                <input v-model="form.title" type="text" class="w-full p-2 border rounded" />
-              </div>
-
-              <div>
-                <label>File</label>
-                <!-- Show existing file link if available -->
-                <div v-if="form.file && typeof form.file === 'string'" class="mb-2">
-                  <a :href="form.file" target="_blank" class="text-blue-500 underline">
-                    View Current File
-                  </a>
-                </div>
-                <!-- File Input -->
-                <input type="file" @change="fileUploadLink" class="w-full p-2 border rounded" />
-
-                <!-- Show Selected File Name -->
-                <!-- <p v-if="fileName" class="text-sm text-gray-600 mt-1">
-                  Selected File: {{ fileName }}
-                </p> -->
-              </div>
-
-              <div class="col-span-full">
-                <label>Description</label>
-                <TextEditor
-                  v-model="form.description"
-                  cols="30"
-                  rows="10"
-                  class="w-full px-4 py-2"
-                ></TextEditor>
-              </div>
             </div>
+
+            <div class="border p-4 rounded-md bg-white space-y-6">
+                <h2 class="text-lg">Notice Content</h2>
+                <div>
+                  <label>Title*</label>
+                  <input v-model="form.title" type="text" class="w-full p-2 border rounded" />
+                </div>
+  
+                <div>
+                  <label>File</label>
+                  <!-- Show existing file link if available -->
+                  <div v-if="form.file && typeof form.file === 'string'" class="mb-2">
+                    <a :href="form.file" target="_blank" class="text-blue-500 underline">
+                      View Current File
+                    </a>
+                  </div>
+                  <!-- File Input -->
+                  <input type="file" @change="fileUploadLink" class="w-full p-2 border rounded" />
+  
+                  <!-- Show Selected File Name -->
+                  <!-- <p v-if="fileName" class="text-sm text-gray-600 mt-1">
+                    Selected File: {{ fileName }}
+                  </p> -->
+                </div>
+  
+                <div class="col-span-full">
+                  <label>Description</label>
+                  <TextEditor
+                    v-model="form.description"
+                    cols="30"
+                    rows="10"
+                    class="w-full px-4 py-2"
+                  ></TextEditor>
+                </div>
+            </div>
+
           </div>
         </div>
 
