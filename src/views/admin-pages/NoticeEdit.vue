@@ -7,9 +7,20 @@ import { useDepartmentStore } from '@/stores/department'
 import { useNoticeStore } from '@/stores/notice'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import Multiselect from 'vue-multiselect'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
+
+const toast = useToast()
+const router = useRouter()
+const route = useRoute()
+const isLoading = ref(false)
+
+const noticeStore = useNoticeStore()
+const companyStore = useCompanyStore()
+const departmentStore = useDepartmentStore()
+const { companies } = storeToRefs(companyStore)
+const { employees } = storeToRefs(departmentStore)
+
 const form = reactive({
   title: '',
   type: '',
@@ -24,111 +35,78 @@ const form = reactive({
   all_employees: false,
 })
 
-const noticeStore = useNoticeStore()
-const companyStore = useCompanyStore()
-const departmentStore = useDepartmentStore()
-const toast = useToast()
-const route = useRoute()
-const router = useRouter()
-const isLoading = ref(false)
-const { companies } = storeToRefs(companyStore)
-const { employees } = storeToRefs(departmentStore)
-
+const selectedCompanies = ref([])
 const selectedDepartments = ref([])
-
-const department_ids = computed(() => selectedDepartments.value.map((dep) => dep.id))
-
 const selectedEmployees = ref([])
 
-const employee_ids = computed(() => selectedEmployees.value.map((dep) => dep.id))
-
-const selectedCompanies = ref([])
-
 const company_ids = computed(() => selectedCompanies.value.map((comp) => comp.id))
+const department_ids = computed(() => selectedDepartments.value.map((dep) => dep.id))
+const employee_ids = computed(() => selectedEmployees.value.map((emp) => emp.id))
 
-// const toggleAllDepartments = () => {
-//   if (form.all_departments) {
-//     department_ids.value = []
-//   }
-// }
-
-const toggleAllDepartments = () => {
-  if (form.all_departments) {
-    // Assign all departments when checked
-    selectedDepartments.value = [...departmentStore.departments]
-  } else {
-    // Clear when unchecked
-    selectedDepartments.value = []
-  }
+const toggleAllCompany = () => {
+  selectedCompanies.value = form.all_companies
+    ? [...companyStore.companies]
+    : []
 }
 
+const toggleAllDepartments = () => {
+  selectedDepartments.value = form.all_departments
+    ? [...departmentStore.departments]
+    : []
+}
 
-// Handle "Select All Employees"
 const toggleAllEmployees = () => {
   if (form.all_employees) {
     employee_ids.value = []
   }
 }
 
-onMounted(async () => {
-  isLoading.value = true
-  await companyStore.fetchCompanies()
-  await loadNotice()
-  isLoading.value = false
+watch(selectedCompanies, (newList) => {
+  form.all_companies = newList.length === companyStore.companies.length
 })
 
-watch(
-  () => company_ids.value,
-  async (newCompanyIds) => {
-    if (newCompanyIds.length) {
-      await departmentStore.fetchDepartments(newCompanyIds)
-      isLoading.value = false
-    }
-  },
-  { deep: true }, // important for array contents
-)
+watch(selectedDepartments, (newList) => {
+  form.all_departments = newList.length === departmentStore.departments.length
+})
 
-watch(
-  () => form.all_companies,
-  async (allCompany) => {
-    if (allCompany) {
-      await departmentStore.fetchDepartments()
-    }
-  },
-)
+watch(() => form.all_companies, async (allCompany) => {
+  if (allCompany) {
+    await departmentStore.fetchDepartments()
+  }
+})
 
-watch(
-  () => form.all_departments,
-  async (allDepartment) => {
-    if (allDepartment) {
-      const all_departments = 'all'
-      await departmentStore.fetchDepartmentEmployee(all_departments)
-    }
-  },
-)
+watch(() => form.all_departments, async (allDepartment) => {
+  if (allDepartment) {
+    await departmentStore.fetchDepartmentEmployee('all')
+  }
+})
+
+watch(company_ids, async (newCompanyIds) => {
+  if (newCompanyIds.length) {
+    await departmentStore.fetchDepartments(newCompanyIds)
+  }
+})
+
+watch(department_ids, async (newDepartmentIds) => {
+  if (newDepartmentIds.length) {
+    await departmentStore.fetchDepartmentEmployee(newDepartmentIds)
+  }
+})
 
 const fileUploadLink = async (event) => {
   const file = event.target.files[0]
-
   if (file) {
     const formData = new FormData()
     formData.append('file', file)
     const response = await noticeStore.fetchFileUpload(formData)
-    console.log({ response: response?.url })
     form.file = response?.url
   }
 }
 
 const updateFormattedDate = (date) => {
-  if (!date) {
-    return
-  }
+  if (!date) return
   const datePart = date.split(' ')[0]
-
-  if (!datePart.includes('-')) {
-    formattedDate.value = 'Invalid Date Format'
-    return
-  }
+  if (!datePart.includes('-')) return 'Invalid Date Format'
   return datePart
 }
 
@@ -148,17 +126,9 @@ const loadNotice = async () => {
     selectedDepartments.value = notice.departments
     selectedEmployees.value = notice.employees
 
-    if (notice.companies_notice.length == 0) {
-      form.all_companies = true
-    }
-
-    if (notice.departments.length == 0) {
-      form.all_departments = true
-    }
-
-    if (notice.employees.length == 0) {
-      form.all_employees = true
-    }
+    form.all_companies = notice.companies_notice.length === 0
+    form.all_departments = notice.departments.length === 0
+    form.all_employees = notice.employees.length === 0
   } catch (error) {
     const errorMessage = error.response?.data?.message || 'Failed to load notice data'
     toast.error(errorMessage)
@@ -182,13 +152,15 @@ const updateNotice = async () => {
     toast.error(errorMessage)
   }
 }
-watch(selectedDepartments, (newSelection) => {
-  const newDepartmentIds = newSelection.map((dep) => dep.id)
-  if (newDepartmentIds.length > 0) {
-    departmentStore.fetchDepartmentEmployee(newDepartmentIds)
-  }
+
+onMounted(async () => {
+  isLoading.value = true
+  await companyStore.fetchCompanies()
+  await loadNotice()
+  isLoading.value = false
 })
 </script>
+
 
 <template>
   <div class="my-container space-y-2">
