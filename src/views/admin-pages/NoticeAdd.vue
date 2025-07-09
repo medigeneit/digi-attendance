@@ -29,36 +29,26 @@ const form = reactive({
   all_employees: false,
 })
 
-const selectedDepartments = ref([])
-
 const selectedCompanies = ref([])
-
-const company_ids = computed(() => selectedCompanies.value.map((comp) => comp.id))
-
-const department_ids = computed(() => selectedDepartments.value.map((dep) => dep.id))
-
+const selectedDepartments = ref([])
 const selectedEmployees = ref([])
 
-const employee_ids = computed(() => selectedEmployees.value.map((dep) => dep.id))
-
-const toggleAllDepartments = () => {
-  if (form.all_departments) {
-    // Assign all departments when checked
-    selectedDepartments.value = [...departmentStore.departments]
-  } else {
-    // Clear when unchecked
-    selectedDepartments.value = []
-  }
-}
-
+const company_ids = computed(() => selectedCompanies.value.map((comp) => comp.id))
+const department_ids = computed(() => selectedDepartments.value.map((dep) => dep.id))
+const employee_ids = computed(() => selectedEmployees.value.map((emp) => emp.id))
 
 const toggleAllCompany = () => {
-  if (form.all_companies) {
-    company_ids.value = []
-  }
+  selectedCompanies.value = form.all_companies
+    ? [...companyStore.companies]
+    : []
 }
 
-// Handle "Select All Employees"
+const toggleAllDepartments = () => {
+  selectedDepartments.value = form.all_departments
+    ? [...departmentStore.departments]
+    : []
+}
+
 const toggleAllEmployees = () => {
   if (form.all_employees) {
     employee_ids.value = []
@@ -69,46 +59,45 @@ onMounted(async () => {
   await companyStore.fetchCompanies()
 })
 
-watch(
-  () => form.all_companies,
-  async (allCompany) => {
-    console.log({ allCompany })
-
+// Watch if "Select All Companies" changes
+watch(() => form.all_companies, async (allCompany) => {
+  if (allCompany) {
     await departmentStore.fetchDepartments()
-  },
-)
+  }
+})
 
-watch(
-  () => form.all_departments,
-  async (allDepartment) => {
-    if (allDepartment) {
-      const all_departments = 'all'
-      await departmentStore.fetchDepartmentEmployee(all_departments)
-    }
-  },
-)
+// Watch if "Select All Departments" changes
+watch(() => form.all_departments, async (allDepartment) => {
+  if (allDepartment) {
+    await departmentStore.fetchDepartmentEmployee('all')
+  }
+})
 
-watch(
-  () => company_ids.value,
-  async (newCompanyId) => {
-    await departmentStore.fetchDepartments(newCompanyId)
-  },
-)
+// Watch selected company change → fetch departments
+watch(company_ids, async (newCompanyIds) => {
+  await departmentStore.fetchDepartments(newCompanyIds)
+})
 
-watch(
-  () => department_ids.value,
-  async (newDepartmentIds) => {
-    await departmentStore.fetchDepartmentEmployee(newDepartmentIds)
-  },
-)
+// Watch selected department change → fetch employees
+watch(department_ids, async (newDepartmentIds) => {
+  await departmentStore.fetchDepartmentEmployee(newDepartmentIds)
+})
+
+// Auto uncheck "Select All" if any company is removed
+watch(selectedCompanies, (newList) => {
+  form.all_companies = newList.length === companyStore.companies.length
+})
+
+// Auto uncheck "Select All" if any department is removed
+watch(selectedDepartments, (newList) => {
+  form.all_departments = newList.length === departmentStore.departments.length
+})
 
 const fileUploadLink = async (event) => {
   const file = event.target.files[0]
-
   if (file) {
     const formData = new FormData()
     formData.append('file', file)
-    console.log({ file })
     const response = await noticeStore.fetchFileUpload(formData)
     form.file = response?.data?.url
   }
@@ -135,12 +124,13 @@ const saveNotice = async () => {
     await noticeStore.fetchNotices()
     router.replace('/hrd/notice')
   } catch (error) {
-    const errorMessage = error.response?.data?.message || 'Failed to save user'
+    const errorMessage = error.response?.data?.message || 'Failed to save notice'
     toast.error(errorMessage)
     console.error(errorMessage)
   }
 }
 </script>
+
 
 <template>
   <div class="my-container space-y-2">

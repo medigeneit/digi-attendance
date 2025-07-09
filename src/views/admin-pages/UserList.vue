@@ -125,7 +125,9 @@ function modalClose() {
 async function excelDownload() {
   await userStore.fetchUsersExcelExport({
     data: {
-      companyName: selectedCompany.value,
+      company_id: selectedCompany.value,
+      department_id:selectedDepartment.value,
+      line_type:selectedLineType.value
     },
   })
 }

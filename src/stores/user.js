@@ -40,7 +40,9 @@ export const useUserStore = defineStore('user', () => {
       const response = await apiClient.get('/users', {
         params: {
           flag: 'excel',
-          companyName: payload.data.companyName,
+          company_id: payload.data.company_id,
+          department_id: payload.data.department_id,
+          line_type: payload.data.line_type,
         },
         responseType: 'blob', // This is important for file download
       })

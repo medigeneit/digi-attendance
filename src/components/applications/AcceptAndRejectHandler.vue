@@ -14,7 +14,7 @@ const props = defineProps({
   },
   onSuccess: {
     type: Function,
-    default: () => {},
+    default: null,
   },
   variant: {
     type: Number,
@@ -63,7 +63,11 @@ async function handleConfirm() {
     note.value,
   )
 
-  props.onSuccess()
+  if (props.onSuccess) {
+    props.onSuccess()
+  } else {
+    notificationStore.fetchCountNotifications()
+  }
 
   closeModal()
 }
