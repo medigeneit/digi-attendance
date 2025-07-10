@@ -17,6 +17,7 @@ const auth = useAuthStore()
 const selectedUsers = ref([])
 const selectedSupervisors = ref([])
 const user_ids = computed(() => selectedUsers.value.map((u) => u.id))
+const supervisor_ids = computed(() => selectedSupervisors.value.map((u) => u.id))
 // const taskId = route.params.id
 const state = ref('')
 const error = ref(null)
@@ -107,6 +108,7 @@ const submit = async () => {
       {
         ...form.value,
         user_ids: user_ids.value,
+        supervisor_ids: supervisor_ids.value,
       },
       { loadingBeforeFetch: false },
     )

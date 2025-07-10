@@ -58,6 +58,22 @@
         <div
           class="col-span-full flex items-center my-2 lg:my-0 justify-center flex-wrap gap-x-3 gap-y-2"
         >
+          <TaskAssignedUsers
+            class="flex items-center justify-center flex-wrap gap-x-3"
+            :users="task.supervisors || []"
+            :isTargetTask="task.is_target"
+            listType="supervisors"
+            :routeTo="
+              (user) => ({
+                query: {
+                  ...route.query,
+                  view: 'userwise',
+                  'company-id': user.company_id,
+                  'user-ids': user.id,
+                },
+              })
+            "
+          />
           <template v-if="treeLevel === 0">
             <div class="text-xs px-2 py-0.5 rounded-full border bg-sky-500 text-white">
               {{ task?.from_department?.name || '--' }}

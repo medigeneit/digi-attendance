@@ -43,7 +43,22 @@ function handlePriorityUpdate(a) {
     placeholder="Select users"
   >
     <template #selection="{ ...attrs }">
+      <template v-if="listType == 'supervisor'">
+        <div class="mb-2 flex flex-wrap gap-x-4 gap-y-3 pb-0.5">
+          <TaskUserChip
+            v-for="user in attrs?.values || []"
+            :key="user.id"
+            :user="user"
+            userType="supervisor"
+            isRemovable
+            @removeClick="() => handleUserRemove(user)"
+            class="h-10 items-center flex *:h-8"
+          />
+        </div>
+      </template>
+
       <DraggableList
+        v-else
         :items="attrs?.values || []"
         handle="handle"
         class="mb-2 flex flex-wrap gap-x-4 gap-y-3"
