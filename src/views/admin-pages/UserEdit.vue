@@ -23,6 +23,7 @@ const form = reactive({
   role: 'employee',
   type: '',
   address: '',
+  note:'',
   device_user_id: null,
   is_active: true,
   company_id: '',
@@ -372,6 +373,16 @@ const computedDesignations = computed(() => {
                   <option :value="false">Inactive</option>
                 </select>
               </div>
+             <div class="col-span-full" v-if="!form.is_active">
+              <label>InActive Note</label>
+              <input
+                v-model="form.note"
+                type="text"
+                class="w-full p-2 border rounded"
+                placeholder="Note ..."
+                :required="!form.is_active"
+              />
+            </div>
             </div>
           </div>
 

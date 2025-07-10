@@ -1,6 +1,7 @@
 <script setup>
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
+import { useAuthStore } from '@/stores/auth'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
@@ -11,6 +12,7 @@ const router = useRouter()
 const route = useRoute()
 const leaveApplicationStore = useLeaveApplicationStore()
 const userStore = useUserStore()
+const authStore = useAuthStore()
 
 const { leaveApplications, loading } = storeToRefs(leaveApplicationStore)
 
@@ -217,12 +219,12 @@ const handleFilterChange = () => {
                     <i class="far fa-eye"></i>
                   </RouterLink>
                   <RouterLink
-                    v-if="application?.status !== 'Approved'"
-                    :to="{ name: 'LeaveApplicationEdit', params: { id: application?.id } }"
-                    class="btn-icon"
-                  >
-                    <i class="far fa-edit text-orange-600"></i>
-                  </RouterLink>
+                  v-if="authStore.user.role === 'super_admin' || application?.status !== 'Approved'"
+                  :to="{ name: 'LeaveApplicationEdit', params: { id: application?.id } }"
+                  class="btn-icon"
+                >
+                  <i class="far fa-edit text-orange-600"></i>
+                </RouterLink>
                   <button @click="deleteApplication(application?.id)" class="btn-icon text-red-500">
                     <i class="far fa-trash"></i>
                   </button>

@@ -8,6 +8,7 @@ const props = defineProps({
   maxItems: { type: Number, default: 2 },
   routeTo: { type: Function, default: () => null },
   isTargetTask: { Boolean, default: false },
+  listType: { String, default: 'employee' },
 })
 
 const slicedUsers = computed(() => {
@@ -33,7 +34,9 @@ const ItemComponent = computed(() => {
 </script>
 <template>
   <div class="relative">
-    <div v-if="props.users.length === 0" class="text-gray-500 text-xs">Not Assigned To Anyone</div>
+    <div v-if="props.users.length === 0" class="text-gray-500 text-xs">
+      {{ listType == 'supervisors' ? 'No Supervisor assigned' : 'Not Assigned To Anyone' }}
+    </div>
     <component
       v-else
       :is="ItemComponent"
@@ -43,9 +46,21 @@ const ItemComponent = computed(() => {
     >
       <UserChip
         class="flex items-center gap-2 border rounded-full border-gray-300 shadow-sm"
-        :class="{ '!bg-yellow-400': isTargetTask }"
+        :class="{
+          '!bg-yellow-400': isTargetTask,
+          ' !bg-blue-100': !isTargetTask && listType == 'employee' && index === 0,
+        }"
         :user="item"
-      />
+      >
+        <template #after v-if="index === 0 || listType == 'supervisors'">
+          <div
+            class="border rounded-full size-6 flex justify-center items-center border-blue-300 bg-blue-100"
+          >
+            <i class="fas fa-user-cowboy text-blue-500" v-if="listType == 'supervisors'"></i>
+            <i class="fas fa-user-crown text-blue-300" v-else></i>
+          </div>
+        </template>
+      </UserChip>
     </component>
 
     <div v-if="hiddenUsers.length > 0" class="text-sm text-gray-500 group/users">

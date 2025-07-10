@@ -79,8 +79,10 @@ const subTaskProgressUsers = computed(() =>
     </caption>
     <thead class="bg-gray-50">
       <tr>
-        <th class="px-2 py-1 border-y font-semibold text-xs uppercase text-left">#</th>
-        <th class="px-2 py-1 border-y font-semibold text-xs uppercase text-left lg:w-[200px]">
+        <th class="px-2 py-1 border-y font-semibold text-xs uppercase w-[50px] text-center">#</th>
+        <th
+          class="px-2 py-1 border-y font-semibold text-xs uppercase text-left sm:w-[250px] mx:w-[300px] border-r"
+        >
           User
         </th>
         <th class="px-2 py-1 border-y font-semibold text-xs uppercase text-center">Started</th>
@@ -93,8 +95,8 @@ const subTaskProgressUsers = computed(() =>
         :key="progressUser.id"
         class="border-t hover:bg-gray-50 cursor-pointer"
       >
-        <td class="px-2 py-1 border-y">{{ index + 1 }}</td>
-        <td class="px-2 py-1 border-y">
+        <td class="px-2 py-1 border-y text-center">{{ index + 1 }}</td>
+        <td class="px-2 py-1 border-y border-r">
           <UserChip :user="progressUser" />
         </td>
         <td class="px-2 py-1 border-y text-center">

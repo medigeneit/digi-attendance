@@ -58,6 +58,22 @@
         <div
           class="col-span-full flex items-center my-2 lg:my-0 justify-center flex-wrap gap-x-3 gap-y-2"
         >
+          <TaskAssignedUsers
+            class="flex items-center justify-center flex-wrap gap-x-3"
+            :users="task.supervisors || []"
+            :isTargetTask="task.is_target"
+            listType="supervisors"
+            :routeTo="
+              (user) => ({
+                query: {
+                  ...route.query,
+                  view: 'userwise',
+                  'company-id': user.company_id,
+                  'user-ids': user.id,
+                },
+              })
+            "
+          />
           <template v-if="treeLevel === 0">
             <div class="text-xs px-2 py-0.5 rounded-full border bg-sky-500 text-white">
               {{ task?.from_department?.name || '--' }}
@@ -83,19 +99,11 @@
               })
             "
           />
-
-          <a
-            :href="`/tasks/${task.id}/assign-users`"
-            @click.stop.prevent="emits('employeeAssignClick', task.id)"
-            class="border-gray-400 bg-gray-50 text-gray-500 hover:bg-indigo-600 hover:text-white font-semibold px-3 py-0.5 rounded-full transition border"
-          >
-            <i class="fas fa-users-cog"></i> Manage Employee
-          </a>
         </div>
       </div>
 
       <div
-        class="ml-auto text-right text-sm flex items-center justify-center sm:justify-start gap-4"
+        class="ml-auto text-right text-sm flex items-center justify-center sm:justify-start gap-4 mt-4"
       >
         <div v-if="task.is_target" class="bg-yellow-200 px-2 py-0.5 rounded-lg text-yellow-900">
           TARGET TASK
@@ -140,6 +148,14 @@
 
           <div class="flex items-center sm:ml-auto order-0 sm:order-1">
             <div class="flex gap-2 ml-4 items-center text-xs" v-if="!hideButtons">
+              <a
+                :href="`/tasks/${task.id}/assign-users`"
+                @click.stop.prevent="emits('employeeAssignClick', task.id)"
+                class="border-gray-400 bg-gray-50 text-gray-500 hover:bg-indigo-600 hover:text-white font-semibold px-3 py-0.5 rounded-full transition border"
+              >
+                <i class="fas fa-users-cog"></i> Manage Employee & Supervisor
+              </a>
+
               <a
                 :href="`/tasks/edit/${task.id}`"
                 @click.stop.prevent="emits('editClick', task.id)"

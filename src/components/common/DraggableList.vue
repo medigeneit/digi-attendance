@@ -7,41 +7,74 @@ const props = defineProps({
   handle: String,
 })
 
-const el = useTemplateRef<HTMLElement>('el')
-const list = shallowRef([...props.items])
-
-watch(
-  () => props.items,
-  (val) => {
-    list.value = [...val]
-  },
-)
-
 const emit = defineEmits(['itemsUpdate'])
-watch(
-  () => list.value,
-  function (val) {
-    emit('itemsUpdate', val)
-  },
-)
 
-useSortable(el, list, {
+const el = useTemplateRef<HTMLElement>('el')
+const _items = shallowRef([...props.items])
+
+useSortable(el, _items, {
   animation: 150,
   ...(props.handle ? { handle: '.handle' } : {}),
 })
 
+watch(
+  () => props.items,
+  (newItems) => {
+    _items.value = [...newItems]
+  },
+)
+
+watch(
+  () => _items.value,
+  (newItems, oldItems) => {
+    if (!isEqual(newItems, oldItems)) {
+      emit('itemsUpdate', [...newItems])
+    }
+  },
+  { deep: true },
+)
+
+function isEqual(a: any, b: any): boolean {
+  if (a === b) return true
+
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false
+
+    for (let i = 0; i < a.length; i++) {
+      if (!isEqual(a[i], b[i])) return false
+    }
+    return true
+  }
+
+  if (typeof a === 'object' && a !== null && b !== null) {
+    const keysA = Object.keys(a)
+    const keysB = Object.keys(b)
+
+    if (keysA.length !== keysB.length) return false
+
+    for (let key of keysA) {
+      if (!keysB.includes(key)) return false
+      if (!isEqual(a[key], b[key])) return false
+    }
+
+    return true
+  }
+
+  return false
+}
+
 defineExpose({
   resetItems: () => {
-    list.value = [...props.items]
-    emit('itemsUpdate', props.items)
+    _items.value = [...props.items]
+    emit('itemsUpdate', [...props.items])
   },
-  list: list.value,
+  items: _items.value,
 })
 </script>
 
 <template>
   <div ref="el">
-    <template v-for="(item, index) in list" :key="item.id">
+    <template v-for="(item, index) in _items" :key="item.id">
       <slot name="item" :item="item" :index="index"></slot>
     </template>
   </div>
