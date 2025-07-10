@@ -153,7 +153,11 @@ const editable = computed(() => {
       {{ selectedUsers.map((u) => u.name) }}
       <div class="mb-4">
         <label class="block uppercase text-xs text-gray-600">Employees</label>
-        <TaskAssignEmployeesInput :employees="userOptions" v-model="selectedUsers" />
+        <TaskAssignEmployeesInput
+          :employees="userOptions"
+          :selected="task?.users || []"
+          @updateValues="(values) => (selectedUsers = values)"
+        />
       </div>
 
       <TextWithHr class="mb-4">

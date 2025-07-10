@@ -1,24 +1,46 @@
 <script setup>
+import { ref, watch } from 'vue'
 import DraggableList from '../common/DraggableList.vue'
 import MultiselectDropdown from '../MultiselectDropdown.vue'
 import UserChip from '../user/UserChip.vue'
 
 const props = defineProps({
-  selectedUsers: { type: Array, default: () => [] },
+  selected: { type: Array, default: () => [] },
   employees: { type: Array, required: true },
 })
 
 const emit = defineEmits(['updateValues'])
 
-function handlePriorityUpdate(items) {
-  emit('updateValues', items)
+function handlePriorityUpdate(_items) {
+  console.log({ _items })
+  emit('updateValues', _items)
 }
+
+function handleUserRemove(user) {
+  selectedUsers.value = selectedUsers.value.filter((su) => su.id !== user.id)
+  emit('updateValues', selectedUsers.value)
+}
+
+const selectedUsers = ref([...props.selected])
+
+watch(
+  () => props.selected,
+  (newUsers) => {
+    selectedUsers.value = newUsers
+  },
+)
+
+watch(
+  () => selectedUsers.value,
+  function (newUsers) {
+    emit('updateValues', newUsers)
+  },
+)
 </script>
 
 <template>
   <MultiselectDropdown
-    :modelValue="selectedUsers"
-    @update="handlePriorityUpdate"
+    v-model="selectedUsers"
     :options="employees"
     :multiple="true"
     track-by="id"
@@ -37,9 +59,8 @@ function handlePriorityUpdate(items) {
         <template #item="{ item: user, index }">
           <UserChip
             :user="user"
-            class=""
-            :avatarClass="{ '!h-8 !w-8 !bg-green-500': index == 0 }"
             :class="{ 'mr-auto w-full h-10 border-blue-500 !bg-blue-100': index == 0 }"
+            :avatarClass="{ '!h-8 !w-8 !bg-green-500': index == 0 }"
           >
             <template #name-bottom v-if="index == 0">
               <div class="text-blue-500">Responsible Employee</div>
@@ -55,7 +76,7 @@ function handlePriorityUpdate(items) {
               <div class="ml-auto flex gap-1" v-if="index > 0">
                 <button
                   class="size-6 border rounded-full hover:bg-red-400 hover:text-white"
-                  @click.prevent="selectedUsers = selectedUsers.filter((su) => su.id !== user.id)"
+                  @click.prevent="() => handleUserRemove(user)"
                 >
                   &times;
                 </button>

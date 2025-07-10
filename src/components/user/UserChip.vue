@@ -3,8 +3,8 @@ import UserAvatar from '@/components/UserAvatar.vue'
 defineProps({
   user: Object,
   hideEmployeeId: { type: Boolean, default: false },
-  avatarClass: { type: String, default: '' },
-  titleClass: { type: String, default: '' },
+  avatarClass: { type: [String, Object], default: '' },
+  titleClass: { type: [String, Object], default: '' },
 })
 </script>
 <template>
