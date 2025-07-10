@@ -136,7 +136,7 @@ const deleteApplication = async (applicationId) => {
               </th>
               <th class="border border-gray-300 py-2 text-center" colspan="4">
                   <div class="">
-                    <h2 class="text-lg font-semibold text-center py-2">Leave Balance</h2>
+                    <!-- <h2 class="text-lg font-semibold text-center py-2">Leave Balance</h2> -->
                     <div class="overflow-x-auto min-h-max">
                       <table class="min-w-full text-sm text-left text-gray-500">
                         <thead class="text-xs text-gray-700 uppercase bg-gray-50">
