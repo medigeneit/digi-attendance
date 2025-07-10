@@ -52,7 +52,7 @@ const ItemComponent = computed(() => {
         }"
         :user="item"
       >
-        <template #after v-if="index === 0">
+        <template #after v-if="index === 0 || listType == 'supervisors'">
           <div
             class="border rounded-full size-6 flex justify-center items-center border-blue-300 bg-blue-100"
           >
