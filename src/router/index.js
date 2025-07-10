@@ -550,6 +550,13 @@ const router = createRouter({
         },
 
         {
+          path: '/hrd/admin-leave-application',
+          name: 'HrdAdminLeaveApplication',
+          component: () => import('@/views/admin-pages/AdminLeaveApplication.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] , title:'Hrd Admin Leave Application'},
+        },
+
+        {
           path: '/profile',
           name: 'MyProfile',
           component: () => import('@/views/private-pages/MyProfile.vue'),
