@@ -60,16 +60,11 @@ onMounted(async () => {
 
   task.value = taskData.task
 
-  if (task.value.parent) {
-    users.value = task.value?.parent?.users || []
+  if (auth.user?.role === 'employee') {
+    users.value = (await companyStore.fetchEmployees(auth.user?.company_id))?.data?.employees || []
   } else {
-    if (auth.user?.role === 'employee') {
-      users.value =
-        (await companyStore.fetchEmployees(auth.user?.company_id))?.data?.employees || []
-    } else {
-      await userStore.fetchUsers() // all available users
-      users.value = userStore.users
-    }
+    await userStore.fetchUsers() // all available users
+    users.value = userStore.users
   }
 
   setTaskOnFormData(task.value)
@@ -79,13 +74,14 @@ onMounted(async () => {
 })
 
 const employees = computed(() => {
-  // return users.value.filter((u) => {
-  //   return !selectedUsers.value.find((selectedUser) => selectedUser.id === u.id)
-  // })
+  if (task.value?.parent) {
+    return (task.value?.parent?.users || []).filter((u) => {
+      return selectedUsers.value.find((selectedUser) => selectedUser.id === u.id)
+    })
+  }
 
   return users.value.filter((u) => {
     const selected = selectedUsers.value.find((selectedUser) => selectedUser.id === u.id)
-
     if (u.department_id == task.value?.to_department?.id) {
       return true && !selected
     }
@@ -95,7 +91,16 @@ const employees = computed(() => {
 
 const supervisors = computed(() => {
   return users.value.filter((u) => {
-    return !selectedSupervisors.value.find((selectedUser) => selectedUser.id === u.id)
+    const selected = selectedUsers.value.find((selectedUser) => selectedUser.id === u.id)
+    let dept_id = task.value?.from_department?.id
+    if (task.value?.parent) {
+      dept_id = task.value?.parent?.from_department_id
+    }
+
+    if (u.department_id == dept_id) {
+      return true && !selected
+    }
+    return false
   })
 })
 

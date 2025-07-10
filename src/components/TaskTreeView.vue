@@ -151,7 +151,7 @@
               <a
                 :href="`/tasks/${task.id}/assign-users`"
                 @click.stop.prevent="emits('employeeAssignClick', task.id)"
-                class="border-gray-400 bg-gray-50 text-gray-500 hover:bg-indigo-600 hover:text-white font-semibold px-3 py-0.5 rounded-full transition border"
+                class="border-blue-500 bg-gray-50 text-blue-500 hover:bg-indigo-600 hover:text-white font-semibold px-3 py-0.5 rounded-full transition border"
               >
                 <i class="fas fa-users-cog"></i> Manage Employee & Supervisor
               </a>
