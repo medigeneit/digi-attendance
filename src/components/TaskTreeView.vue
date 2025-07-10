@@ -99,14 +99,6 @@
               })
             "
           />
-
-          <a
-            :href="`/tasks/${task.id}/assign-users`"
-            @click.stop.prevent="emits('employeeAssignClick', task.id)"
-            class="border-gray-400 bg-gray-50 text-gray-500 hover:bg-indigo-600 hover:text-white font-semibold px-3 py-0.5 rounded-full transition border"
-          >
-            <i class="fas fa-users-cog"></i> Manage Employee
-          </a>
         </div>
       </div>
 
@@ -156,6 +148,14 @@
 
           <div class="flex items-center sm:ml-auto order-0 sm:order-1">
             <div class="flex gap-2 ml-4 items-center text-xs" v-if="!hideButtons">
+              <a
+                :href="`/tasks/${task.id}/assign-users`"
+                @click.stop.prevent="emits('employeeAssignClick', task.id)"
+                class="border-gray-400 bg-gray-50 text-gray-500 hover:bg-indigo-600 hover:text-white font-semibold px-3 py-0.5 rounded-full transition border"
+              >
+                <i class="fas fa-users-cog"></i> Manage Employee & Supervisor
+              </a>
+
               <a
                 :href="`/tasks/edit/${task.id}`"
                 @click.stop.prevent="emits('editClick', task.id)"

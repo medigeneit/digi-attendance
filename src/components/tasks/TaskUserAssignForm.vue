@@ -9,6 +9,7 @@ import TextWithHr from '../TextWithHr.vue'
 import IsTargetTaskInput from './IsTargetTaskInput.vue'
 import TaskAssignUserInput from './TaskAssignUserInput.vue'
 import TaskUrgencyInput from './TaskUrgencyInput.vue'
+import TaskUserChip from './TaskUserChip.vue'
 
 const taskStore = useTaskStore()
 const companyStore = useCompanyStore()
@@ -181,8 +182,17 @@ const editable = computed(() => {
         <TaskAssignUserInput
           :employees="supervisors"
           list-type="supervisor"
+          v-if="auth?.user?.role !== 'employee' && auth.isAdminMood"
           v-model="selectedSupervisors"
         />
+        <div v-else class="flex gap-2">
+          <TaskUserChip
+            v-for="user in selectedSupervisors"
+            :key="user.id"
+            :user="user"
+          ></TaskUserChip>
+          <!-- {{ supervisors }} -->
+        </div>
       </div>
       <div class="mb-4 col-span-2 flex justify-center">
         <div class="max-w-sm w-full">
@@ -198,49 +208,51 @@ const editable = computed(() => {
         </div>
       </div>
 
-      <TextWithHr class="col-span-full">
-        <div class="px-2">
-          <b class="fas fa-cog text-gray-400"></b>
-          <span class="text-gray-700 ml-2">Task Settings for Employee</span>
+      <template v-if="auth?.user?.role !== 'employee' && auth.isAdminMood">
+        <TextWithHr class="col-span-full">
+          <div class="px-2">
+            <b class="fas fa-cog text-gray-400"></b>
+            <span class="text-gray-700 ml-2">Task Settings for Employee</span>
+          </div>
+        </TextWithHr>
+
+        <TaskUrgencyInput
+          class="col-span-full"
+          v-if="editable.urgency"
+          v-model:isImportant="form.is_important"
+          v-model:isUrgent="form.is_urgent"
+        />
+
+        <IsTargetTaskInput
+          v-model="form.is_target"
+          class="col-span-full md:col-span-2 mt-4"
+          v-if="editable.is_target"
+        />
+
+        <div class="flex items-end col-span-full md:col-span-2 gap-4">
+          <div class="w-1/2" v-if="editable.started_at">
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Start Date</label>
+            <input
+              v-model="form.started_at"
+              type="date"
+              placeholder="Enter Start Date"
+              class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div class="w-1/2" v-if="editable.deadline">
+            <label class="block text-gray-600 text-sm mb-1 font-medium"
+              >{{ form.is_target ? 'Target' : '' }} Deadline</label
+            >
+            <input
+              v-model="form.deadline"
+              type="date"
+              placeholder="Enter Start Date"
+              class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
         </div>
-      </TextWithHr>
-
-      <TaskUrgencyInput
-        class="col-span-full"
-        v-if="editable.urgency"
-        v-model:isImportant="form.is_important"
-        v-model:isUrgent="form.is_urgent"
-      />
-
-      <IsTargetTaskInput
-        v-model="form.is_target"
-        class="col-span-full md:col-span-2 mt-4"
-        v-if="editable.is_target"
-      />
-      <div class="flex items-end col-span-full md:col-span-2 gap-4">
-        <div class="w-1/2" v-if="editable.started_at">
-          <label class="block text-gray-600 text-sm mb-1 font-medium">Start Date</label>
-          <input
-            v-model="form.started_at"
-            type="date"
-            placeholder="Enter Start Date"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        <div class="w-1/2" v-if="editable.deadline">
-          <label class="block text-gray-600 text-sm mb-1 font-medium"
-            >{{ form.is_target ? 'Target' : '' }} Deadline</label
-          >
-          <input
-            v-model="form.deadline"
-            type="date"
-            placeholder="Enter Start Date"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-      </div>
-
+      </template>
       <div class="sticky bottom-0 bg-white border-t px-4 -mx-4 py-3 col-span-full">
         <div v-if="error" class="mb-4 text-red-500 font-medium">
           {{ error }}

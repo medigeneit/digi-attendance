@@ -9,6 +9,7 @@ const props = defineProps({
   modelValue: { type: Array, default: () => [] },
   employees: { type: Array, required: true },
   listType: { type: String, default: 'employee' }, //employee, supervisor
+  isRemovable: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -50,7 +51,7 @@ function handlePriorityUpdate(a) {
             :key="user.id"
             :user="user"
             userType="supervisor"
-            isRemovable
+            :isRemovable="isRemovable"
             @removeClick="() => handleUserRemove(user)"
             class="h-10 items-center flex *:h-8"
           />
