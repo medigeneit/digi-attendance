@@ -235,24 +235,42 @@ const formattedName = (name) => {
                 ></td>
                 <!-- <td class="border border-gray-300 px-2">{{ user.designation?.title }}</td> -->
                 <td class="border border-gray-300 px-2">{{ user.role }}</td>
-                <td class="border border-gray-300 px-2">
-                  <button
-                    type="button"
-                    @click="toggleModal(user)"
-                    class="btn-4 text-sm"
-                    :class="user?.current_shift ? 'bg-yellow-500 hover:bg-yellow-600' : 'btn-4'"
-                  >
-                    {{ user?.current_shift ? 'Change Shift' : 'Assign Shift' }}
-                  </button>
-                  <div v-if="modalEmployeeId === user.id && shiftAssignmentModal">
-                    <ShiftAssignmentModal
-                      :isOpen="shiftAssignmentModal"
-                      :shifts="shifts"
-                      :hasShift="user?.current_shift"
-                      :employee="{ id: selectedEmployee.id, name: selectedEmployee.name }"
-                      @close="modalClose"
-                    />
+               <td class="border border-gray-300 px-2 py-3">
+                  <div class="flex  justify-center items-center gap-4">
+                    <!-- Shift Info -->
+                    <div class="text-sm text-gray-700">
+                      <span v-if="user.current_shift?.shift.name" class="text-green-600">
+                        {{ user.current_shift.shift.name }}
+                      </span>
+                      <span v-else class="text-red-500 italic">Not Assigned</span>
+                    </div>
+
+                    <!-- Action Button -->
+                    <button
+                      type="button"
+                      @click="toggleModal(user)"
+                      class="px-3 py-1 rounded text-white text-xs transition-all duration-150"
+                      :class="user?.current_shift
+                        ? 'btn-1'
+                        : 'btn-2'"
+                    >
+                      <span v-if="user?.current_shift"><i class="far fa-repeat-alt text-yellow-500 hover:text-yellow-600"></i></span>
+                      <span v-else><i class="far fa-plus"></i> </span>
+                    </button>
                   </div>
+
+                  <!-- Modal -->
+                  <Transition name="fade">
+                    <div v-if="modalEmployeeId === user.id && shiftAssignmentModal">
+                      <ShiftAssignmentModal
+                        :isOpen="shiftAssignmentModal"
+                        :shifts="shifts"
+                        :hasShift="user?.current_shift"
+                        :employee="{ id: selectedEmployee.id, name: selectedEmployee.name }"
+                        @close="modalClose"
+                      />
+                    </div>
+                  </Transition>
                 </td>
                 <td class="border border-gray-300 px-2">{{ user.phone }}</td>
                 <td class="border border-gray-300 px-2">{{ user.email || 'নেই' }}</td>
