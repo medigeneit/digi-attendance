@@ -43,9 +43,17 @@ const ItemComponent = computed(() => {
     >
       <UserChip
         class="flex items-center gap-2 border rounded-full border-gray-300 shadow-sm"
-        :class="{ '!bg-yellow-400': isTargetTask }"
+        :class="{ '!bg-yellow-400': isTargetTask, ' !bg-blue-100': !isTargetTask && index === 0 }"
         :user="item"
-      />
+      >
+        <template #after v-if="index === 0">
+          <div
+            class="border rounded-full size-6 flex justify-center items-center border-blue-300 bg-blue-100"
+          >
+            <i class="fas fa-user-crown text-blue-300"></i>
+          </div>
+        </template>
+      </UserChip>
     </component>
 
     <div v-if="hiddenUsers.length > 0" class="text-sm text-gray-500 group/users">

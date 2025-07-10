@@ -7,7 +7,7 @@ import { useUserStore } from '@/stores/user'
 import { computed, onMounted, ref } from 'vue'
 import TextWithHr from '../TextWithHr.vue'
 import IsTargetTaskInput from './IsTargetTaskInput.vue'
-import TaskAssignEmployeesInput from './TaskAssignEmployeesInput.vue'
+import TaskAssignUserInput from './TaskAssignUserInput.vue'
 import TaskUrgencyInput from './TaskUrgencyInput.vue'
 
 const taskStore = useTaskStore()
@@ -15,6 +15,7 @@ const companyStore = useCompanyStore()
 const userStore = useUserStore()
 const auth = useAuthStore()
 const selectedUsers = ref([])
+const selectedSupervisors = ref([])
 const user_ids = computed(() => selectedUsers.value.map((u) => u.id))
 // const taskId = route.params.id
 const state = ref('')
@@ -71,12 +72,28 @@ onMounted(async () => {
 
   setTaskOnFormData(task.value)
   selectedUsers.value = task.value.users
+  selectedSupervisors.value = task.value?.supervisors || []
   state.value = ''
 })
 
-const userOptions = computed(() => {
+const employees = computed(() => {
+  // return users.value.filter((u) => {
+  //   return !selectedUsers.value.find((selectedUser) => selectedUser.id === u.id)
+  // })
+
   return users.value.filter((u) => {
-    return !selectedUsers.value.find((selectedUser) => selectedUser.id === u.id)
+    const selected = selectedUsers.value.find((selectedUser) => selectedUser.id === u.id)
+
+    if (u.department_id == task.value?.to_department?.id) {
+      return true && !selected
+    }
+    return false
+  })
+})
+
+const supervisors = computed(() => {
+  return users.value.filter((u) => {
+    return !selectedSupervisors.value.find((selectedUser) => selectedUser.id === u.id)
   })
 })
 
@@ -149,18 +166,37 @@ const editable = computed(() => {
 
     <div v-if="state === 'loading'" class="text-center text-gray-500 py-4">Loading users...</div>
 
-    <form v-else @submit.prevent="submit">
-      {{ selectedUsers.map((u) => u.name) }}
-      <div class="mb-4">
-        <label class="block uppercase text-xs text-gray-600">Employees</label>
-        <TaskAssignEmployeesInput
-          :employees="userOptions"
-          :selected="task?.users || []"
-          @updateValues="(values) => (selectedUsers = values)"
+    <form v-else @submit.prevent="submit" class="grid grid-cols-4 gap-4">
+      <div class="col-span-2">
+        <div class="mb-4" v-if="task?.from_department">
+          <div class="text-sm text-gray-500">Task From Department</div>
+          <div class="text-base">
+            {{ task?.from_department?.name }}
+          </div>
+        </div>
+
+        <label class="block uppercase text-xs text-gray-600"> Supervisors </label>
+        <TaskAssignUserInput
+          :employees="supervisors"
+          list-type="supervisor"
+          v-model="selectedSupervisors"
         />
       </div>
+      <div class="mb-4 col-span-2 flex justify-center">
+        <div class="max-w-sm w-full">
+          <div class="mb-4" v-if="task?.to_department">
+            <div class="text-sm text-gray-500">Task To Department</div>
+            <div class="text-base">
+              {{ task?.to_department?.name }}
+            </div>
+          </div>
 
-      <TextWithHr class="mb-4">
+          <label class="block uppercase text-xs text-gray-600"> Employees </label>
+          <TaskAssignUserInput :employees="employees" v-model="selectedUsers" />
+        </div>
+      </div>
+
+      <TextWithHr class="col-span-full">
         <div class="px-2">
           <b class="fas fa-cog text-gray-400"></b>
           <span class="text-gray-700 ml-2">Task Settings for Employee</span>
@@ -168,15 +204,19 @@ const editable = computed(() => {
       </TextWithHr>
 
       <TaskUrgencyInput
+        class="col-span-full"
         v-if="editable.urgency"
         v-model:isImportant="form.is_important"
         v-model:isUrgent="form.is_urgent"
       />
 
-      <IsTargetTaskInput v-model="form.is_target" class="mt-8" v-if="editable.is_target" />
-
-      <div class="grid grid-cols-2 gap-4 mb-4 mt-12">
-        <div class="mb-4" v-if="editable.started_at">
+      <IsTargetTaskInput
+        v-model="form.is_target"
+        class="col-span-full md:col-span-2 mt-4"
+        v-if="editable.is_target"
+      />
+      <div class="flex items-end col-span-full md:col-span-2 gap-4">
+        <div class="w-1/2" v-if="editable.started_at">
           <label class="block text-gray-600 text-sm mb-1 font-medium">Start Date</label>
           <input
             v-model="form.started_at"
@@ -186,8 +226,10 @@ const editable = computed(() => {
           />
         </div>
 
-        <div class="mb-4" v-if="editable.deadline">
-          <label class="block text-gray-600 text-sm mb-1 font-medium">Deadline</label>
+        <div class="w-1/2" v-if="editable.deadline">
+          <label class="block text-gray-600 text-sm mb-1 font-medium"
+            >{{ form.is_target ? 'Target' : '' }} Deadline</label
+          >
           <input
             v-model="form.deadline"
             type="date"
@@ -197,7 +239,7 @@ const editable = computed(() => {
         </div>
       </div>
 
-      <div class="sticky bottom-0 bg-white border-t px-4 -mx-4 py-3">
+      <div class="sticky bottom-0 bg-white border-t px-4 -mx-4 py-3 col-span-full">
         <div v-if="error" class="mb-4 text-red-500 font-medium">
           {{ error }}
         </div>

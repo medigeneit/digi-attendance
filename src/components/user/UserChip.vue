@@ -20,7 +20,7 @@ defineProps({
         >
         <div>
           <span
-            class="text-gray-900 font-semibold w-full line-clamp-2"
+            class="text-gray-900 font-semibold w-full line-clamp-1"
             :class="{ '  ': user.employee_id && !hideEmployeeId }"
             >{{ user?.name }}
           </span>

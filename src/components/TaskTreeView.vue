@@ -95,7 +95,7 @@
       </div>
 
       <div
-        class="ml-auto text-right text-sm flex items-center justify-center sm:justify-start gap-4"
+        class="ml-auto text-right text-sm flex items-center justify-center sm:justify-start gap-4 mt-4"
       >
         <div v-if="task.is_target" class="bg-yellow-200 px-2 py-0.5 rounded-lg text-yellow-900">
           TARGET TASK
