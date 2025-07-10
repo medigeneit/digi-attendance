@@ -15,6 +15,10 @@
       <i class="fas fa-leaf text-3xl"></i>
       Employee Leave Applications
     </RouterLink>
+    <RouterLink :to="{ name: 'HrdAdminLeaveApplication' }" class="main-button">
+      <i class="fas fa-calendar-alt text-3xl"></i>
+      Admin Leave Applications
+    </RouterLink>
     <RouterLink :to="{ name: 'ShortLeaveList' }" class="main-button">
       <i class="fab fa-pagelines text-3xl"></i>
       Employee Short Leaves

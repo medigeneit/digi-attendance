@@ -20,6 +20,7 @@ const companyNames = ref([])
 const selectedCompany = ref(route.query.company || 'all')
 const selectedDepartment = ref(route.query.department || 'all')
 const selectedLineType = ref(route.query.line_type || 'all')
+const selectedStatus = ref(route.query.status || 'active')
 const selectedUser = ref('')
 const selectedEmployee = ref('')
 const shiftAssignmentModal = ref(false)
@@ -67,6 +68,15 @@ watch(selectedLineType, (newVal) => {
   })
 })
 
+watch(selectedStatus, (newVal) => {
+  router.push({
+    query: {
+      ...route.query,
+      status:newVal,
+    },
+  })
+})
+
 const onCompanyChange = async (company_id) => {
   await departmentStore.fetchDepartments(company_id)
 }
@@ -86,6 +96,12 @@ const groupedUsers = computed(() => {
   // 3. Filter by Line Type
   if (selectedLineType.value !== 'all') {
     filteredUsers = filteredUsers.filter(user => user?.type == selectedLineType.value)
+  }
+
+  // 3. Filter by Active/Inactive
+  if (selectedStatus.value) {
+    const is_active = selectedStatus.value === 'active' ? 1:0;
+    filteredUsers = filteredUsers.filter(user => user?.is_active == is_active )
   }
 
   // 4. Filter by Selected User
@@ -125,7 +141,10 @@ function modalClose() {
 async function excelDownload() {
   await userStore.fetchUsersExcelExport({
     data: {
-      companyName: selectedCompany.value,
+      company_id: selectedCompany.value,
+      department_id:selectedDepartment.value,
+      line_type:selectedLineType.value,
+      status:selectedStatus.value
     },
   })
 }
@@ -150,12 +169,18 @@ const formattedName = (name) => {
       </button>
 
       <h1 class="title-md md:title-lg flex-wrap text-center">Employee List</h1>
-      <RouterLink :to="{ name: 'UserAdd', query: { company: route.query.company } }" class="btn-2">
-        <span class="hidden md:flex">Add New</span>
-        <i class="far fa-plus"></i>
-      </RouterLink>
+
+      <div class="flex gap-4">
+        <RouterLink :to="{ name: 'UserAdd', query: { company: route.query.company } }" class="btn-2">
+          <span class="hidden md:flex">Add New</span>
+          <i class="far fa-plus"></i>
+        </RouterLink>
+        <button type="button" @click="excelDownload" class="btn-3">
+          <i class="far fa-file-excel text-2xl text-green-500"></i>Excel
+        </button>
+      </div>
     </div>
-    <div class="flex items-center gap-4">
+    <div class="flex flex-wrap items-center gap-4">
       <div>
         <select v-model="selectedCompany" class="input-1">
           <option value="all" selected>All Company</option>
@@ -177,6 +202,12 @@ const formattedName = (name) => {
           <option value="academy_body">Academy Body</option>
         </select>
       </div>
+      <div>
+        <select v-model="selectedStatus" class="input-1">
+          <option value="active">Active</option>
+          <option value="in_active">In Active</option>
+        </select>
+      </div>
       <!-- {{ userStore.users }} -->
       <MultiselectDropdown
         v-model="selectedUser"
@@ -191,9 +222,7 @@ const formattedName = (name) => {
           <UserChip :user="option" class="w-full line-clamp-1" />
         </template>
       </MultiselectDropdown>
-      <button type="button" @click="excelDownload" class="btn-3">
-        <i class="far fa-file-excel text-2xl text-green-500"></i>Excel
-      </button>
+     
     </div>
 
     <div v-if="userStore.isLoading" class="text-center py-4">
@@ -233,24 +262,42 @@ const formattedName = (name) => {
                 ></td>
                 <!-- <td class="border border-gray-300 px-2">{{ user.designation?.title }}</td> -->
                 <td class="border border-gray-300 px-2">{{ user.role }}</td>
-                <td class="border border-gray-300 px-2">
-                  <button
-                    type="button"
-                    @click="toggleModal(user)"
-                    class="btn-4 text-sm"
-                    :class="user?.current_shift ? 'bg-yellow-500 hover:bg-yellow-600' : 'btn-4'"
-                  >
-                    {{ user?.current_shift ? 'Change Shift' : 'Assign Shift' }}
-                  </button>
-                  <div v-if="modalEmployeeId === user.id && shiftAssignmentModal">
-                    <ShiftAssignmentModal
-                      :isOpen="shiftAssignmentModal"
-                      :shifts="shifts"
-                      :hasShift="user?.current_shift"
-                      :employee="{ id: selectedEmployee.id, name: selectedEmployee.name }"
-                      @close="modalClose"
-                    />
+               <td class="border border-gray-300 px-2 py-3">
+                  <div class="flex  justify-center items-center gap-4">
+                    <!-- Shift Info -->
+                    <div class="text-sm text-gray-700">
+                      <span v-if="user.current_shift?.shift.name" class="text-green-600">
+                        {{ user.current_shift.shift.name }}
+                      </span>
+                      <span v-else class="text-red-500 italic">Not Assigned</span>
+                    </div>
+
+                    <!-- Action Button -->
+                    <button
+                      type="button"
+                      @click="toggleModal(user)"
+                      class="px-3 py-1 rounded text-white text-xs transition-all duration-150"
+                      :class="user?.current_shift
+                        ? 'btn-1'
+                        : 'btn-2'"
+                    >
+                      <span v-if="user?.current_shift"><i class="far fa-repeat-alt text-yellow-500 hover:text-yellow-600"></i></span>
+                      <span v-else><i class="far fa-plus"></i> </span>
+                    </button>
                   </div>
+
+                  <!-- Modal -->
+                  <Transition name="fade">
+                    <div v-if="modalEmployeeId === user.id && shiftAssignmentModal">
+                      <ShiftAssignmentModal
+                        :isOpen="shiftAssignmentModal"
+                        :shifts="shifts"
+                        :hasShift="user?.current_shift"
+                        :employee="{ id: selectedEmployee.id, name: selectedEmployee.name }"
+                        @close="modalClose"
+                      />
+                    </div>
+                  </Transition>
                 </td>
                 <td class="border border-gray-300 px-2">{{ user.phone }}</td>
                 <td class="border border-gray-300 px-2">{{ user.email || 'নেই' }}</td>

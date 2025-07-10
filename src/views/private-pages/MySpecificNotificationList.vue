@@ -54,7 +54,7 @@ const formattedType = computed(() => {
 </script>
 
 <template>
-  <div class="space-y-6 px-4 py-4">
+  <div class="my-container space-y-6 px-4 py-4">
     <h2 class="md:text-2xl font-semibold capitalize text-gray-700">
       {{ formattedType || 'Notifications' }}
       <span
@@ -102,7 +102,10 @@ const formattedType = computed(() => {
           class="flex items-center text-red-600 text-xs md:text-sm lg:text-base"
           v-html="notification.message"
         ></div>
-        <div class="flex flex-wrap gap-y-1 gap-x-3 items-center text-xs md:text-sm lg:text-base">
+        <div
+          v-if="notification.type || notification.duration"
+          class="flex flex-wrap gap-y-1 gap-x-3 items-center text-xs md:text-sm lg:text-base"
+        >
           <div v-if="notification.type">
             <span class="text-gray-400">Type:</span>
             {{ notification.type }}
@@ -112,10 +115,22 @@ const formattedType = computed(() => {
             {{ notification.duration }}
           </div>
         </div>
-        <div class="flex flex-wrap gap-y-1 gap-x-3 items-center text-xs md:text-sm lg:text-base">
-          <div v-if="notification.reason">
+        <div
+          v-if="notification.reason"
+          class="flex flex-wrap gap-y-1 gap-x-3 items-center text-xs md:text-sm lg:text-base"
+        >
+          <div>
             <span class="text-gray-400">Reason:</span>
             {{ notification.reason }}
+          </div>
+        </div>
+        <div
+          v-if="notification.last_approver_note"
+          class="flex flex-wrap gap-y-1 gap-x-3 items-center text-xs md:text-sm lg:text-base"
+        >
+          <div>
+            <span class="text-gray-400">Last Approver Note:</span>
+            {{ notification.last_approver_note }}
           </div>
         </div>
         <div class="flex gap-3 items-center">
