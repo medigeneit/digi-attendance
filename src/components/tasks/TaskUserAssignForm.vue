@@ -183,6 +183,7 @@ const editable = computed(() => {
           :employees="supervisors"
           list-type="supervisor"
           v-if="auth?.user?.role !== 'employee' && auth.isAdminMood"
+          :isRemovable="true"
           v-model="selectedSupervisors"
         />
         <div v-else class="flex gap-2">
