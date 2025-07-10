@@ -131,6 +131,10 @@ onMounted(async () => {
               <p class="text-sm font-bold text-gray-600">Status:</p>
               <p class="text-lg text-gray-800">{{ user?.is_active ? 'Active' : 'Inactive' }}</p>
             </div>
+            <div v-if="!user?.is_active">
+              <p class="text-sm font-bold text-gray-600">InActive Note:</p>
+              <p class="text-lg text-gray-800">{{ user?.note }}</p>
+            </div>
           </div>
         </div>
         <div class="bg-gray-100 p-4 rounded-lg">

@@ -20,6 +20,7 @@ const companyNames = ref([])
 const selectedCompany = ref(route.query.company || 'all')
 const selectedDepartment = ref(route.query.department || 'all')
 const selectedLineType = ref(route.query.line_type || 'all')
+const selectedStatus = ref(route.query.status || 'active')
 const selectedUser = ref('')
 const selectedEmployee = ref('')
 const shiftAssignmentModal = ref(false)
@@ -67,6 +68,15 @@ watch(selectedLineType, (newVal) => {
   })
 })
 
+watch(selectedStatus, (newVal) => {
+  router.push({
+    query: {
+      ...route.query,
+      status:newVal,
+    },
+  })
+})
+
 const onCompanyChange = async (company_id) => {
   await departmentStore.fetchDepartments(company_id)
 }
@@ -86,6 +96,12 @@ const groupedUsers = computed(() => {
   // 3. Filter by Line Type
   if (selectedLineType.value !== 'all') {
     filteredUsers = filteredUsers.filter(user => user?.type == selectedLineType.value)
+  }
+
+  // 3. Filter by Active/Inactive
+  if (selectedStatus.value) {
+    const is_active = selectedStatus.value === 'active' ? 1:0;
+    filteredUsers = filteredUsers.filter(user => user?.is_active == is_active )
   }
 
   // 4. Filter by Selected User
@@ -127,7 +143,8 @@ async function excelDownload() {
     data: {
       company_id: selectedCompany.value,
       department_id:selectedDepartment.value,
-      line_type:selectedLineType.value
+      line_type:selectedLineType.value,
+      status:selectedStatus.value
     },
   })
 }
@@ -152,12 +169,18 @@ const formattedName = (name) => {
       </button>
 
       <h1 class="title-md md:title-lg flex-wrap text-center">Employee List</h1>
-      <RouterLink :to="{ name: 'UserAdd', query: { company: route.query.company } }" class="btn-2">
-        <span class="hidden md:flex">Add New</span>
-        <i class="far fa-plus"></i>
-      </RouterLink>
+
+      <div class="flex gap-4">
+        <RouterLink :to="{ name: 'UserAdd', query: { company: route.query.company } }" class="btn-2">
+          <span class="hidden md:flex">Add New</span>
+          <i class="far fa-plus"></i>
+        </RouterLink>
+        <button type="button" @click="excelDownload" class="btn-3">
+          <i class="far fa-file-excel text-2xl text-green-500"></i>Excel
+        </button>
+      </div>
     </div>
-    <div class="flex items-center gap-4">
+    <div class="flex flex-wrap items-center gap-4">
       <div>
         <select v-model="selectedCompany" class="input-1">
           <option value="all" selected>All Company</option>
@@ -179,6 +202,12 @@ const formattedName = (name) => {
           <option value="academy_body">Academy Body</option>
         </select>
       </div>
+      <div>
+        <select v-model="selectedStatus" class="input-1">
+          <option value="active">Active</option>
+          <option value="in_active">In Active</option>
+        </select>
+      </div>
       <!-- {{ userStore.users }} -->
       <MultiselectDropdown
         v-model="selectedUser"
@@ -193,9 +222,7 @@ const formattedName = (name) => {
           <UserChip :user="option" class="w-full line-clamp-1" />
         </template>
       </MultiselectDropdown>
-      <button type="button" @click="excelDownload" class="btn-3">
-        <i class="far fa-file-excel text-2xl text-green-500"></i>Excel
-      </button>
+     
     </div>
 
     <div v-if="userStore.isLoading" class="text-center py-4">
