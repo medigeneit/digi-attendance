@@ -13,7 +13,7 @@ const route = useRoute()
 const leaveApplicationStore = useLeaveApplicationStore()
 const userStore = useUserStore()
 
-const { user, leaveApplications, loading } = storeToRefs(leaveApplicationStore)
+const { user, leave_balances, leaveApplications, loading } = storeToRefs(leaveApplicationStore)
 
 const selectedYear = ref(route.query.year || leaveApplicationStore.selectedYear)
 const search = ref(route.query.search || '')
@@ -63,6 +63,25 @@ const handleFilterChange = async () => {
   })
   await fetchApplicationsByUser()
 }
+
+const handleFormSccessClosed = async () => {
+  console.log('test close')
+  showModal.value = false
+  await fetchApplicationsByUser()
+}
+
+const currentYear = new Date().getFullYear()
+const yearOptions = ref([])
+for (let y = 2023; y <= currentYear; y++) {
+  yearOptions.value.push(y)
+}
+
+const deleteApplication = async (applicationId) => {
+  if (confirm('Are you sure to delete this application?')) {
+    await leaveApplicationStore.deleteLeaveApplication(applicationId)
+    await fetchApplicationsByUser()
+  }
+}
 </script>
 
 <template>
@@ -84,13 +103,9 @@ const handleFilterChange = async () => {
         @filter-change="handleFilterChange" 
       />
       <div>
-        <input
-          id="yearSelect"
-          type="year"
-          v-model="selectedYear"
-          @change="fetchApplicationsByUser"
-          class="input-1"
-        />
+        <select v-model="selectedYear" @change="fetchApplicationsByUser" class="input-1">
+          <option v-for="year in yearOptions" :key="year" :value="year">{{ year }}</option>
+        </select>
       </div>
     </div>
 
@@ -105,17 +120,60 @@ const handleFilterChange = async () => {
         >
           <thead>
             <tr class="bg-sky-200/20 text-center" v-if="filters?.employee_id">
-              <th class="border border-gray-300 py-2 text-center" colspan="6">
-                <span class="text-sky-600 text-lg">{{ user?.name }}</span>
+              <th class="border border-gray-300 py-2 text-center" colspan="3">
+                <div class="">
+                  <h2 class="text-lg font-semibold text-center py-2">User Info</h2>
+                  <hr />
+                  <div class="grid md:grid-cols-2">
+                    <p class="py-1"><strong>Name:</strong> {{ user?.name }}</p>
+                    <p class="py-1"><strong>Designation:</strong> {{ user?.designation?.title }}</p>
+                    <p class="py-1"><strong>Department:</strong> {{ user?.department?.name }}</p>
+                    <p class="py-1"><strong>Company:</strong> {{ user?.company?.name }}</p>
+                    <p class="py-1"><strong>Phone:</strong> {{ user?.phone }}</p>
+                    <p class="py-1"><strong>Email:</strong> {{ user?.email }}</p>
+                  </div>
+                </div>
+              </th>
+              <th class="border border-gray-300 py-2 text-center" colspan="4">
+                  <div class="">
+                    <!-- <h2 class="text-lg font-semibold text-center py-2">Leave Balance</h2> -->
+                    <div class="overflow-x-auto min-h-max">
+                      <table class="min-w-full text-sm text-left text-gray-500">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                          <tr>
+                            <th scope="col" class="px-6 text-center py-1">Type</th>
+                            <th scope="col" class="px-6 text-center py-1">Total Days</th>
+                            <th scope="col" class="px-6 text-center py-1">Used Days</th>
+                            <th scope="col" class="px-6 text-center py-1">Remaining Days</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr
+                            v-for="leave_balance in leave_balances"
+                            :key="leave_balance.id"
+                            class="border-b hover:bg-gray-100"
+                          >
+                            <td class="px-6 text-center font-medium text-gray-900">
+                              {{ leave_balance.leave_type }}
+                            </td>
+                            <td class="px-6 text-center">{{ leave_balance.total_leave_days }}</td>
+                            <td class="px-6 text-center">{{ leave_balance.used_days }}</td>
+                            <td class="px-6 text-center">{{ leave_balance.remaining_days }}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                </div>
               </th>
             </tr>
             <tr class="bg-gray-200">
-              <th class="border border-gray-300 px-2 py-1 text-left">#</th>
-              <th class="border border-gray-300 px-2 py-1 text-left">Last Working Day</th>
-              <th class="border border-gray-300 px-2 py-1 text-left">Resumption Date</th>
-              <th class="border border-gray-300 px-2 py-1 text-left">Leave Period</th>
-              <th class="border border-gray-300 px-2 py-1 text-left">Total Days</th>
-              <th class="border border-gray-300 px-2 py-1 text-left">Status</th>
+              <th class="border border-gray-300 px-2 py-1 text-center">#</th>
+              <th class="border border-gray-300 px-2 py-1 text-center">Last Working Day</th>
+              <th class="border border-gray-300 px-2 py-1 text-center">Resumption Date</th>
+              <th class="border border-gray-300 px-2 py-1 text-center">Leave Period</th>
+              <th class="border border-gray-300 px-2 py-1 text-center">Total Days</th>
+              <th class="border border-gray-300 px-2 py-1 text-center">Status</th>
+              <th class="border border-gray-300 px-2 py-1 text-center">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -129,10 +187,32 @@ const handleFilterChange = async () => {
               <td class="border border-gray-300 px-2 py-2">{{ application?.resumption_date }}</td>
               <td class="border border-gray-300 px-2 py-2">{{ application?.leave_period }}</td>
               <td class="border border-gray-300 px-2 py-2">
-                <div v-html="application.duration || application?.total_leave_days"></div>
+                <div v-html="application?.duration || application?.total_leave_days"></div>
               </td>
               <td class="border border-gray-300 px-2 py-2">
                 {{ application?.status || 'N/A' }}
+              </td>
+              <td class="border border-gray-300 px-2">
+                <div class="flex justify-center gap-2">
+                  <RouterLink
+                    :to="{ name: 'LeaveApplicationShow', params: { id: application?.id } }"
+                    class="btn-icon"
+                    target="_blank"
+                  >
+                    <i class="far fa-eye"></i>
+                  </RouterLink>
+                  <RouterLink
+                    v-if="application?.status !== 'Approved'"
+                    :to="{ name: 'LeaveApplicationEdit', params: { id: application?.id } }"
+                    class="btn-icon"
+                    target="_blank"
+                  >
+                    <i class="far fa-edit text-orange-600"></i>
+                  </RouterLink>
+                  <button @click="deleteApplication(application?.id)" class="btn-icon text-red-500">
+                    <i class="far fa-trash"></i>
+                  </button>
+                </div>
               </td>
             </tr>
             <tr v-if="!filteredLeaveApplications.length">
@@ -169,7 +249,7 @@ const handleFilterChange = async () => {
         >
           &times;
         </button>
-        <LeaveApplicationForm  @close="showModal = false" />
+        <LeaveApplicationForm :userInfo="user" @close="showModal = false" @formSuccessClosed="handleFormSccessClosed" />
       </div>
     </div>
   </Teleport>

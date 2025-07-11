@@ -12,6 +12,7 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
   const selectedMonth = ref(new Date().toISOString().substring(0, 7))
   const selectedYear = ref(new Date().getFullYear())
   const user = ref(null)
+  const leave_balances = ref([])
   const selectedStatus = ref('')
 
   async function fetchLeaveApplications(filters = {}) {
@@ -59,6 +60,7 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
       if (response.data) {
         leaveApplications.value = response?.data?.leave_applications
         user.value = response?.data?.user
+        leave_balances.value = response?.data?.leave_balances
       } else {
         leaveApplications.value = []
         user.value = []
@@ -89,6 +91,21 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
     try {
       const response = await apiClient.post('/leave-applications/store', payload)
       leaveApplications.value.push(response?.data?.data)
+      return response?.data?.data
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to store leave application'
+      throw new Error(error.value)
+    } finally {
+      loading.value = false
+    }
+  }
+  async function storeAdminLeaveApplication(payload) {
+    loading.value = true
+    error.value = null
+    try {
+      console.log(111)
+      const response = await apiClient.post('/admin-leave-applications/store', payload)
+      console.log(response)
       return response?.data?.data
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to store leave application'
@@ -363,6 +380,8 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
     fetchFileUpload,
     uploadLeaveApplicationAttachment,
     fetchYearlyUserLeaveApplications,
-    getMonthlyApplicationLog
+    getMonthlyApplicationLog,
+    storeAdminLeaveApplication,
+    leave_balances,
   }
 })

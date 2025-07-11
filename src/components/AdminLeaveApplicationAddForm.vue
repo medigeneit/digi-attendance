@@ -10,13 +10,10 @@ import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 
 // Props
 const props = defineProps({
-  userId: {
-    type: Number,
-    required: true
-  }
+  userInfo: Object
 })
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'formSuccessClosed'])
 
 const leaveApplicationStore = useLeaveApplicationStore()
 const leaveTypeStore = useLeaveTypeStore()
@@ -25,7 +22,7 @@ const authStore = useAuthStore()
 const holidayStore = useHolidayStore()
 
 const selectUser = ref('')
-const isDirectApprove = ref(false)
+const isDirectApprove = ref(true)
 
 const form = ref({
   last_working_date: '',
@@ -41,7 +38,7 @@ const loading = ref(false)
 const error = ref(null)
 
 const weekends = computed(() => {
-  return authStore?.user?.assign_weekend?.weekends || authStore?.user?.weekends
+  return props?.userInfo?.assign_weekend?.weekends || props?.userInfo?.weekends
 })
 
 const leaveDays = computed(() => {
@@ -144,7 +141,7 @@ const submitLeaveApplication = async () => {
       .filter((leaveDay) => leaveDay.leave_type_id !== null)
 
     const payload = {
-      user_id: props.userId,
+      user_id: props?.userInfo?.id,
       last_working_date: form.value.last_working_date,
       resumption_date: form.value.resumption_date,
       reason: form.value.reason,
@@ -152,11 +149,12 @@ const submitLeaveApplication = async () => {
       handover_user_id: isDirectApprove.value ? null : form.value.handover_user_id,
       leave_days: leaveDaysPayload,
       json_data: leaveDaysJson,
+      is_direct_approve: isDirectApprove.value,
     }
 
-    const newApplication = await leaveApplicationStore.storeLeaveApplication(payload)
+    const newApplication = await leaveApplicationStore.storeAdminLeaveApplication(payload)
     if (newApplication) {
-      emit('close')
+      emit('formSuccessClosed')
     }
   } catch (err) {
     error.value = err.message || 'Failed to submit leave application'
@@ -167,7 +165,7 @@ const submitLeaveApplication = async () => {
 
 onMounted(() => {
   watchEffect(() => {
-    const companyId = authStore?.user?.company_id
+    const companyId = props?.userInfo?.company_id
     if (companyId) {
       leaveTypeStore.fetchLeaveTypes(companyId)
     }
@@ -194,10 +192,6 @@ const isHoliday = async (day) => {
 <template>
   <div class="space-y-4 p-2 md:p-4">
     <div class="flex items-center justify-between gap-2">
-      <button class="btn-3" @click="goBack">
-        <i class="far fa-arrow-left"></i>
-        <span class="hidden md:flex">Back</span>
-      </button>
       <h1 class="title-md md:title-lg flex-wrap text-center">Leave Application Form</h1>
       <div></div>
     </div>
@@ -219,7 +213,7 @@ const isHoliday = async (day) => {
       <div>
         <label class="inline-flex items-center space-x-2">
           <input type="checkbox" v-model="isDirectApprove" class="form-checkbox text-blue-600">
-          <span class="text-sm font-medium">Direct Approve</span>
+          <span class="text-lg font-sem">Direct Approve</span>
         </label>
       </div>
 
@@ -274,7 +268,16 @@ const isHoliday = async (day) => {
           class="z-50"
         />
       </div>
-
+      <div v-if="!isDirectApprove">
+        <label for="works-in-hand" class="block text-sm font-medium">Works in Hand</label>
+        <textarea
+          id="works-in-hand"
+          v-model="form.works_in_hand"
+          class="input-1 w-full"
+          placeholder="Enter details of works in hand"
+          rows="6"
+        ></textarea>
+      </div>
       <div v-if="error" class="text-red-500 text-sm">{{ error }}</div>
 
       <div class="flex justify-end">

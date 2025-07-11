@@ -1,10 +1,12 @@
 <script setup>
 import TaskAddForm from '@/components/tasks/TaskAddForm.vue'
-import { ref } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
 const router = useRouter()
+const auth = useAuthStore()
 
 const taskCreated = ref(false)
 const taskCreatedData = ref(null)

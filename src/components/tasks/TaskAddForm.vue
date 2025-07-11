@@ -1,5 +1,6 @@
 <script setup>
 import RequiredIcon from '@/components/RequiredIcon.vue'
+import { useAuthStore } from '@/stores/auth'
 import { useCompanyStore } from '@/stores/company'
 import { useRequirementStore } from '@/stores/useRequirementStore'
 import { useTaskStore } from '@/stores/useTaskStore'
@@ -7,6 +8,9 @@ import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
 import CompanyDepartmentSelectInput from '../common/CompanyDepartmentSelectInput.vue'
 import SectionLoading from '../common/SectionLoading.vue'
+import TextWithHr from '../TextWithHr.vue'
+import IsTargetTaskInput from './IsTargetTaskInput.vue'
+import TaskUrgencyInput from './TaskUrgencyInput.vue'
 
 const props = defineProps({
   parentTaskId: {
@@ -21,6 +25,7 @@ const props = defineProps({
 const emit = defineEmits(['taskCreated', 'close', 'error', 'ok'])
 
 const store = useTaskStore()
+const auth = useAuthStore()
 const companyStore = useCompanyStore()
 const requirementStore = useRequirementStore()
 const { requirement } = storeToRefs(requirementStore)
@@ -29,6 +34,8 @@ const selectedUser = ref([])
 const user_ids = computed(() => selectedUser.value.map((u) => u.id))
 
 const state = ref('')
+
+const assign_type = ref(null)
 
 const form = ref({
   title: '',
@@ -106,7 +113,7 @@ async function submit() {
   <div
     class="max-h-[90vh] overflow-auto max-w-2xl mx-auto bg-white shadow-lg rounded-lg p-6 pb-0 pt-0 relative"
   >
-    <div class="sticky top-0 pt-4 bg-white">
+    <div class="sticky top-0 pt-4 bg-white z-10">
       <h2 class="text-2xl font-semibold text-gray-800">Add New Task</h2>
 
       <hr class="mb-4" />
@@ -119,14 +126,54 @@ async function submit() {
       </div>
     </div>
 
-    <SectionLoading v-if="state === 'loading' || state === 'submitting'" />
-    <form @submit.prevent="submit">
+    <!-- <div v-if="!assign_type" class="flex justify-center items-center mt-10 mb-16">
+      <div class="flex flex-col gap-4">
+        <TextWithHr>
+          <div class="text-gray-600 text-center px-2">Task Assign Type</div>
+        </TextWithHr>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input
+            type="radio"
+            v-model="assign_type"
+            value="you-to-other"
+            name="assign_type"
+            class="size-6"
+          />
+          <span class="text-gray-600 text-lg"> আপনার Department থেকে অন্য Department </span>
+        </label>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input
+            type="radio"
+            v-model="assign_type"
+            value="other-to-you"
+            name="assign_type"
+            class="size-6"
+          />
+          <span class="text-gray-600 text-lg"> অন্য Department থেকে আপনার Department </span>
+        </label>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input
+            type="radio"
+            v-model="assign_type"
+            value="you-to-you"
+            name="assign_type"
+            class="size-6"
+          />
+          <span class="text-gray-600 text-lg"> আপনার Department থেকে আপনার Department </span>
+        </label>
+      </div>
+    </div> -->
+    <form @submit.prevent="submit" class="z-0">
       <p class="text-center mt-2 mb-6" v-if="requirementId && requirement?.title">
         Task under requirement <span class="text-sky-600">{{ requirement.title }}</span>
       </p>
       <p class="text-center mt-2 mb-6" v-if="parentTaskId && task?.title">
         Sub task under <span class="text-sky-600">{{ task.title }}</span>
       </p>
+
+      <div class="hidden">
+        {{ assign_type }}
+      </div>
 
       <div class="mb-4">
         <label class="block text-gray-600 text-sm mb-1 font-medium"
@@ -144,9 +191,10 @@ async function submit() {
         <CompanyDepartmentSelectInput
           v-model="form.from_department_id"
           :companies="companyStore?.companies || []"
+          class="mb-4"
         >
           <template #label>
-            <label class="block text-gray-600 text-sm mb-1 font-medium">
+            <label class="block text-gray-600 text-sm mb1 font-medium">
               From Department <RequiredIcon />
             </label>
           </template>
@@ -155,6 +203,7 @@ async function submit() {
         <CompanyDepartmentSelectInput
           v-model="form.to_department_id"
           :companies="companyStore?.companies || []"
+          class="mb-4"
         >
           <template #label>
             <label class="block text-gray-600 text-sm mb-1 font-medium">
@@ -164,18 +213,7 @@ async function submit() {
         </CompanyDepartmentSelectInput>
       </template>
 
-      <div class="flex gap-16 items-center justify-center my-8">
-        <label class="flex gap-1 items-center">
-          <input type="checkbox" v-model="form.is_important" class="size-4" />
-          <span class="block text-gray-600 text-base font-medium">Important</span>
-        </label>
-        <label class="flex gap-1 items-center">
-          <input type="checkbox" v-model="form.is_urgent" class="size-4" />
-          <span class="block text-gray-600 text-base font-medium">Urgent</span>
-        </label>
-      </div>
-
-      <div class="grid grid-cols-2 gap-4 mb-4">
+      <!-- <div class="grid grid-cols-2 gap-4 mb-4">
         <div>
           <label class="block text-gray-600 text-sm mb-1 font-medium"
             >Status <RequiredIcon
@@ -193,43 +231,8 @@ async function submit() {
             <option>BACK_LOG</option>
           </select>
         </div>
-      </div>
+      </div> -->
 
-      <div class="mt-8">
-        <label
-          class="flex gap-1 items-center mt-4 border rounded py-2 justify-center cursor-pointer"
-          :class="{ 'bg-yellow-200': form.is_target }"
-        >
-          <input type="checkbox" v-model="form.is_target" class="size-6" />
-          <span class="block text-gray-600 text-base mb-1 font-medium">Is Target Task</span>
-        </label>
-      </div>
-
-      <div class="grid grid-cols-2 gap-4 mb-4 mt-4">
-        <div class="mb-4">
-          <label class="block text-gray-600 text-sm mb-1 font-medium">
-            Start Date <RequiredIcon />
-          </label>
-          <input
-            v-model="form.started_at"
-            type="date"
-            placeholder="Enter Start Date"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        <div class="mb-4">
-          <label class="block text-gray-600 text-sm mb-1 font-medium">
-            Deadline <RequiredIcon />
-          </label>
-          <input
-            v-model="form.deadline"
-            type="date"
-            placeholder="Enter Start Date"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-      </div>
       <div class="mb-4">
         <label class="block text-gray-600 text-sm mb-1 font-medium">Description</label>
         <textarea
@@ -240,6 +243,48 @@ async function submit() {
         ></textarea>
       </div>
 
+      <template v-if="auth.user.role != 'employee' && auth.isAdminMood">
+        <TextWithHr class="mb-6">
+          <div class="px-2">
+            <b class="fas fa-cog text-gray-400"></b>
+            <span class="text-gray-700 ml-2">Task Settings for Employee</span>
+          </div>
+        </TextWithHr>
+
+        <TaskUrgencyInput
+          class="mb-6"
+          v-model:isImportant="form.is_important"
+          v-model:isUrgent="form.is_urgent"
+        />
+
+        <IsTargetTaskInput v-model="form.is_target" class="mb-6" />
+
+        <div class="grid grid-cols-2 gap-4 mb-4 mt-4">
+          <div class="mb-4">
+            <label class="block text-gray-600 text-sm mb-1 font-medium">
+              Start Date <RequiredIcon />
+            </label>
+            <input
+              v-model="form.started_at"
+              type="date"
+              placeholder="Enter Start Date"
+              class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-gray-600 text-sm mb-1 font-medium">
+              Deadline <RequiredIcon />
+            </label>
+            <input
+              v-model="form.deadline"
+              type="date"
+              placeholder="Enter Start Date"
+              class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+      </template>
       <div class="sticky bottom-0 bg-white py-4 border-t -mx-6 px-6">
         <div v-if="store.error" class="mb-4 text-red-500 font-medium">
           {{ store.error }}
@@ -265,5 +310,6 @@ async function submit() {
         </div>
       </div>
     </form>
+    <SectionLoading v-if="state === 'loading' || state === 'submitting'" />
   </div>
 </template>
