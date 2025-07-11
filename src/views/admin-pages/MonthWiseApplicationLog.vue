@@ -145,33 +145,25 @@ const specifications = {
       </div>
     </div>
 
-    <LoaderView v-if="leaveApplicationStore.loading" />
-
-    <!-- <div v-else class="space-y-4">
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        <div
-          v-for="(logs, date) in leaveApplicationStore.applicationLog"
-          :key="date"
-          class="bg-white shadow rounded-lg p-4"
-        >
-          <h3 class="text-sm font-semibold text-blue-700 border-b pb-1 mb-2">{{ date }}</h3>
-
-          <div
-            v-for="(log, index) in logs"
-            :key="log.id"
-            class="flex items-center justify-between text-xs mb-1"
-          >
-            <div class="flex items-center gap-1 text-gray-700">
-              <i class="far fa-clock text-blue-500"></i>
-              {{ formatTime(log.timestamp) }}
-            </div>
-            <div class="text-right text-gray-500 bg-blue-100 px-2 py-0.5 rounded text-[10px]">
-              {{ log?.device?.name || 'Unknown' }}
-            </div>
-          </div>
+    <div v-if="selectedUser" class="flex justify-between gap-4 text-sm">
+      <div class="card-bg p-4 gap-1">
+        <h2 class="title-md">Selected Employee Info</h2>
+        <hr />
+        <div class="grid md:grid-cols-2">
+          <p><strong>Name:</strong> {{ selectedUser.name }}</p>
+          <p><strong>Designation:</strong> {{ selectedUser.designation?.title || 'N/A' }}</p>
+          <p><strong>Department:</strong> {{ selectedUser.department?.name || 'N/A' }}</p>
+          <p><strong>Company:</strong> {{ selectedUser.company?.name || 'N/A' }}</p>
+          <p><strong>Phone:</strong> {{ selectedUser.phone }}</p>
+          <p><strong>Email:</strong> {{ selectedUser.email || 'N/A' }}</p>
         </div>
       </div>
-    </div> -->
+    </div>
+    <div v-else>
+      <p class="text-gray-400 text-center text-2xl italic">Select an employee, please.</p>
+    </div>
+
+    <LoaderView v-if="leaveApplicationStore.loading" />
 
     <table class="w-full border bg-white rounded">
       <thead>
@@ -213,22 +205,6 @@ const specifications = {
       </tbody>
     </table>
 
-    <div v-if="selectedUser" class="flex justify-between gap-4 text-sm">
-      <div class="card-bg p-4 gap-1">
-        <h2 class="title-md">Selected Employee Info</h2>
-        <hr />
-        <div class="grid md:grid-cols-2">
-          <p><strong>Name:</strong> {{ selectedUser.name }}</p>
-          <p><strong>Designation:</strong> {{ selectedUser.designation?.title || 'N/A' }}</p>
-          <p><strong>Department:</strong> {{ selectedUser.department?.name || 'N/A' }}</p>
-          <p><strong>Company:</strong> {{ selectedUser.company?.name || 'N/A' }}</p>
-          <p><strong>Phone:</strong> {{ selectedUser.phone }}</p>
-          <p><strong>Email:</strong> {{ selectedUser.email || 'N/A' }}</p>
-        </div>
-      </div>
-    </div>
-    <div v-else>
-      <p class="text-gray-400 text-center text-2xl italic">Select an employee, please.</p>
-    </div>
+    
   </div>
 </template>
