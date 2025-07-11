@@ -4,6 +4,7 @@ import { ref } from 'vue';
 import { useNotificationStore } from './notification';
 
 export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
+  const applicationLog = ref([])
   const leaveApplications = ref([])
   const leaveApplication = ref(null)
   const loading = ref(false)
@@ -29,6 +30,26 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
       loading.value = false
     }
   }
+
+   const getMonthlyApplicationLog = async (userId, month) => {
+      if (!userId || !month) {
+        error.value = 'Invalid user ID or month';
+        return;
+      }
+    
+      loading.value = true;
+      try {
+        const response = await apiClient.get(`/user/${userId}/application/monthly/${month}/log`);
+        console.log({response});
+        
+        applicationLog.value = response.data.applications
+      } catch (err) {
+        error.value = err.response?.data?.message || 'Something went wrong';
+        console.error(error.value);
+      } finally {
+        loading.value = false;
+      }
+    };
 
   async function fetchYearlyUserLeaveApplications(filters = {}) {
     loading.value = true
@@ -319,6 +340,7 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
   return {
     leaveApplications,
     leaveApplication,
+    applicationLog,
     loading,
     error,
     selectedMonth,
@@ -340,6 +362,7 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
     deleteLeaveApplication,
     fetchFileUpload,
     uploadLeaveApplicationAttachment,
-    fetchYearlyUserLeaveApplications
+    fetchYearlyUserLeaveApplications,
+    getMonthlyApplicationLog
   }
 })

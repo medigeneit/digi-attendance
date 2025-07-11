@@ -77,7 +77,7 @@ const handleFilterChange = async () => {
       <div></div>
     </div>
 
-    <div class="flex gap-2">
+    <div class="flex flex-wrap gap-2">
       <EmployeeFilter 
         v-model="filters" 
         :initial-value="route.query" 

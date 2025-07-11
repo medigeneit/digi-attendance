@@ -501,6 +501,13 @@ const router = createRouter({
         },
 
         {
+          path: '/hrd/month-wise-application-log',
+          name: 'MonthWiseApplicationLog',
+          component: () => import('@/views/admin-pages/MonthWiseApplicationLog.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'], title:'Employee Attendance Log' },
+        },
+
+        {
           path: '/hrd/shift-schedules',
           name: 'ShiftSchedule',
           component: () => import('@/views/admin-pages/ShiftScheduleForm.vue'),
