@@ -181,7 +181,7 @@ const specifications = {
           class="border-b hover:bg-gray-50"
         >
           <td class="p-2 capitalize">{{ item.type.replace('_', ' ') }}</td>
-          <td class="p-2">{{ item.status }}</td>
+          <td class="p-2">{{ item.status ?? 'Pending handover' }}</td>
           <td class="p-2">
             <div v-if="item.date">{{ item.date }}</div>
             <div v-else-if="item.from && item.to">From {{ item.from }} to {{ item.to }}</div>
