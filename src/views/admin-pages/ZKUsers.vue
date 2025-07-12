@@ -83,9 +83,10 @@ function toggleSelectAll(event) {
         <thead class="bg-gray-200 uppercase text-xs text-gray-600 tracking-wider">
           <tr>
             <th class="p-3"><input type="checkbox" @change="toggleSelectAll($event)" /></th>
-            <th class="p-3">UID</th>
-            <th class="p-3">Name</th>
+            <th class="p-3">ID</th>
             <th class="p-3">Device User ID</th>
+            <th class="p-3">Name (Software)</th>
+            <th class="p-3">Name (Device)</th>
             <th class="p-3">Fingers</th>
             <th class="p-3">Role</th>
             <th class="p-3">Actions</th>
@@ -99,8 +100,9 @@ function toggleSelectAll(event) {
           >
             <td class="p-3"><input type="checkbox" :value="user.id" v-model="selectedIds" /></td>
             <td class="p-3">{{ user.zk_uid }}</td>
-            <td class="p-3 font-medium">{{ user.name }}</td>
             <td class="p-3">{{ user.zk_userid }}</td>
+            <td class="p-3 font-medium">{{ user?.user?.name }}</td>
+            <td class="p-3 font-medium">{{ user.name }}</td>
             <td class="p-3">{{ user.fingerprints_count }}</td>
             <td class="p-3 space-x-6">
               <button
@@ -142,6 +144,7 @@ function toggleSelectAll(event) {
       </div>
     </div>
   </div>
+
   <ZKUserModal
     :show="showModal"
     :editUser="editUserData"
