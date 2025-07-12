@@ -228,7 +228,7 @@ watch(() => toDepartmentId.value, loadEmployeesByDepartment)
     </div>
   </div>
 
-  <div class="flex mb-4 items-end mt-5">
+  <div class="flex flex-col md:flex-row mb-2 md:mb-4 items-end mt-5 gap-2">
     <div class="text-gray-600 w-full md:w-64 lg:w-96 md:ml-auto relative">
       <label class="absolute text-xs left-2.5 -top-1.5 bg-slate-100 text-blue-500">Search</label>
       <input
@@ -241,10 +241,10 @@ watch(() => toDepartmentId.value, loadEmployeesByDepartment)
       <i class="fas fa-search absolute right-2 top-[50%] translate-y-[-50%]"></i>
     </div>
 
-    <div class="w-full flex justify-end gap-5 mb-1">
+    <div class="w-full flex justify-end gap-5 mt-4">
       <RouterLink
         v-if="route.name !== 'MyTaskList'"
-        class="text-sm btn-3 py-0.5"
+        class="text-xs sm:text-sm btn-3 py-0.5"
         :class="route.query?.view === 'userwise' ? 'bg-blue-500 text-white' : ''"
         :to="{
           query: {
@@ -257,7 +257,7 @@ watch(() => toDepartmentId.value, loadEmployeesByDepartment)
       </RouterLink>
       <RouterLink
         v-if="route.name !== 'MyTaskList'"
-        class="text-sm btn-3 py-0.5"
+        class="text-xs sm:text-sm btn-3 py-0.5"
         :class="route.query?.view !== 'userwise' ? 'bg-blue-500 text-white' : ''"
         :to="{
           query: {
