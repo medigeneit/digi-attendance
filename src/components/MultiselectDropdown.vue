@@ -51,7 +51,7 @@
 </template>
 
 <script setup>
-import { defineProps, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import Multiselect from 'vue-multiselect'
 
 const props = defineProps({
