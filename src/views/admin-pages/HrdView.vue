@@ -11,6 +11,11 @@
       Attendance Log
     </RouterLink>
 
+    <RouterLink :to="{ name: 'MonthWiseApplicationLog' }" class="main-button">
+      <i class="fas fa-calendar-alt text-3xl"></i>
+      Monthly Application Log
+    </RouterLink>
+
     <RouterLink :to="{ name: 'LeaveApplicationList' }" class="main-button">
       <i class="fas fa-leaf text-3xl"></i>
       Employee Leave Applications
