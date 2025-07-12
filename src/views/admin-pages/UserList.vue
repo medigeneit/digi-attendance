@@ -16,7 +16,6 @@ const { shifts } = storeToRefs(shiftStore)
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
-const companyNames = ref([])
 const selectedCompany = ref(route.query.company || 'all')
 const selectedDepartment = ref(route.query.department || 'all')
 const selectedLineType = ref(route.query.line_type || 'all')
@@ -28,7 +27,6 @@ const departmentStore = useDepartmentStore()
 const companyStore = useCompanyStore()
 const { companies } = storeToRefs(companyStore)
 const { departments } = storeToRefs(departmentStore)
-
 
 onMounted(() => {
   userStore.fetchUsers()
@@ -45,7 +43,7 @@ watch(selectedCompany, (newVal) => {
   router.push({
     query: {
       ...route.query,
-      company:newVal,
+      company: newVal,
     },
   })
 })
@@ -54,7 +52,7 @@ watch(selectedDepartment, (newVal) => {
   router.push({
     query: {
       ...route.query,
-      department:newVal,
+      department: newVal,
     },
   })
 })
@@ -63,7 +61,7 @@ watch(selectedLineType, (newVal) => {
   router.push({
     query: {
       ...route.query,
-      line_type:newVal,
+      line_type: newVal,
     },
   })
 })
@@ -72,7 +70,7 @@ watch(selectedStatus, (newVal) => {
   router.push({
     query: {
       ...route.query,
-      status:newVal,
+      status: newVal,
     },
   })
 })
@@ -82,36 +80,36 @@ const onCompanyChange = async (company_id) => {
 }
 
 const groupedUsers = computed(() => {
-  let filteredUsers = [...userStore?.users || []]
+  let filteredUsers = [...(userStore?.users || [])]
   // 1. Filter by Selected Company
   if (selectedCompany.value !== 'all') {
-    filteredUsers = filteredUsers.filter(user => user?.company?.id == selectedCompany.value)
+    filteredUsers = filteredUsers.filter((user) => user?.company?.id == selectedCompany.value)
   }
 
   // 2. Filter by Selected Department
   if (selectedDepartment.value !== 'all') {
-    filteredUsers = filteredUsers.filter(user => user?.department?.id == selectedDepartment.value)
+    filteredUsers = filteredUsers.filter((user) => user?.department?.id == selectedDepartment.value)
   }
 
   // 3. Filter by Line Type
   if (selectedLineType.value !== 'all') {
-    filteredUsers = filteredUsers.filter(user => user?.type == selectedLineType.value)
+    filteredUsers = filteredUsers.filter((user) => user?.type == selectedLineType.value)
   }
 
   // 3. Filter by Active/Inactive
   if (selectedStatus.value) {
-    const is_active = selectedStatus.value === 'active' ? 1:0;
-    filteredUsers = filteredUsers.filter(user => user?.is_active == is_active )
+    const is_active = selectedStatus.value === 'active' ? 1 : 0
+    filteredUsers = filteredUsers.filter((user) => user?.is_active == is_active)
   }
 
   // 4. Filter by Selected User
   if (selectedUser.value?.id) {
-    filteredUsers = filteredUsers.filter(user => user?.id == selectedUser.value.id)
+    filteredUsers = filteredUsers.filter((user) => user?.id == selectedUser.value.id)
   }
 
   // Group Users by Company Name
   const grouped = {}
-  filteredUsers.forEach(user => {
+  filteredUsers.forEach((user) => {
     const companyName = user?.company?.name || 'Unknown Company'
     if (!grouped[companyName]) {
       grouped[companyName] = []
@@ -142,9 +140,9 @@ async function excelDownload() {
   await userStore.fetchUsersExcelExport({
     data: {
       company_id: selectedCompany.value,
-      department_id:selectedDepartment.value,
-      line_type:selectedLineType.value,
-      status:selectedStatus.value
+      department_id: selectedDepartment.value,
+      line_type: selectedLineType.value,
+      status: selectedStatus.value,
     },
   })
 }
@@ -171,7 +169,10 @@ const formattedName = (name) => {
       <h1 class="title-md md:title-lg flex-wrap text-center">Employee List</h1>
 
       <div class="flex gap-4">
-        <RouterLink :to="{ name: 'UserAdd', query: { company: route.query.company } }" class="btn-2">
+        <RouterLink
+          :to="{ name: 'UserAdd', query: { company: route.query.company } }"
+          class="btn-2"
+        >
           <span class="hidden md:flex">Add New</span>
           <i class="far fa-plus"></i>
         </RouterLink>
@@ -184,13 +185,17 @@ const formattedName = (name) => {
       <div>
         <select v-model="selectedCompany" class="input-1">
           <option value="all" selected>All Company</option>
-          <option v-for="(item, index) in companies" :key="index" :value="item.id" >{{ item?.name }}</option>
+          <option v-for="(item, index) in companies" :key="index" :value="item.id">
+            {{ item?.name }}
+          </option>
         </select>
       </div>
       <div>
         <select v-model="selectedDepartment" class="input-1">
           <option value="all" selected>All Department</option>
-          <option v-for="(item, index) in departments" :key="index" :value="item.id" >{{ item?.name }}</option>
+          <option v-for="(item, index) in departments" :key="index" :value="item.id">
+            {{ item?.name }}
+          </option>
         </select>
       </div>
       <div>
@@ -222,13 +227,11 @@ const formattedName = (name) => {
           <UserChip :user="option" class="w-full line-clamp-1" />
         </template>
       </MultiselectDropdown>
-     
     </div>
 
     <div v-if="userStore.isLoading" class="text-center py-4">
       <LoaderView />
     </div>
-    
 
     <div v-else class="space-y-4">
       <div v-for="(users, companyName) in groupedUsers" :key="companyName">
@@ -262,12 +265,12 @@ const formattedName = (name) => {
                 ></td>
                 <!-- <td class="border border-gray-300 px-2">{{ user.designation?.title }}</td> -->
                 <td class="border border-gray-300 px-2">{{ user.role }}</td>
-               <td class="border border-gray-300 px-2 py-3">
-                  <div class="flex  justify-center items-center gap-4">
+                <td class="border border-gray-300 px-2 py-3">
+                  <div class="flex justify-center items-center gap-4">
                     <!-- Shift Info -->
                     <div class="text-sm text-gray-700">
-                      <span v-if="user.current_shift?.shift.name" class="text-green-600">
-                        {{ user.current_shift.shift.name }}
+                      <span v-if="user.current_shift?.shift?.name" class="text-green-600">
+                        {{ user.current_shift.shift?.name }}
                       </span>
                       <span v-else class="text-red-500 italic">Not Assigned</span>
                     </div>
@@ -277,11 +280,11 @@ const formattedName = (name) => {
                       type="button"
                       @click="toggleModal(user)"
                       class="px-3 py-1 rounded text-white text-xs transition-all duration-150"
-                      :class="user?.current_shift
-                        ? 'btn-1'
-                        : 'btn-2'"
+                      :class="user?.current_shift ? 'btn-1' : 'btn-2'"
                     >
-                      <span v-if="user?.current_shift"><i class="far fa-repeat-alt text-yellow-500 hover:text-yellow-600"></i></span>
+                      <span v-if="user?.current_shift"
+                        ><i class="far fa-repeat-alt text-yellow-500 hover:text-yellow-600"></i
+                      ></span>
                       <span v-else><i class="far fa-plus"></i> </span>
                     </button>
                   </div>
