@@ -1,7 +1,7 @@
 <script setup>
+import LeaveApplicationForm from '@/components/AdminLeaveApplicationAddForm.vue'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
-import LeaveApplicationForm from '@/components/AdminLeaveApplicationAddForm.vue'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
@@ -97,10 +97,10 @@ const deleteApplication = async (applicationId) => {
     </div>
 
     <div class="flex flex-wrap gap-2">
-      <EmployeeFilter 
-        v-model="filters" 
-        :initial-value="route.query" 
-        @filter-change="handleFilterChange" 
+      <EmployeeFilter
+        v-model="filters"
+        :initial-value="route.query"
+        @filter-change="handleFilterChange"
       />
       <div>
         <select v-model="selectedYear" @change="fetchApplicationsByUser" class="input-1">
@@ -135,34 +135,34 @@ const deleteApplication = async (applicationId) => {
                 </div>
               </th>
               <th class="border border-gray-300 py-2 text-center" colspan="4">
-                  <div class="">
-                    <!-- <h2 class="text-lg font-semibold text-center py-2">Leave Balance</h2> -->
-                    <div class="overflow-x-auto min-h-max">
-                      <table class="min-w-full text-sm text-left text-gray-500">
-                        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
-                          <tr>
-                            <th scope="col" class="px-6 text-center py-1">Type</th>
-                            <th scope="col" class="px-6 text-center py-1">Total Days</th>
-                            <th scope="col" class="px-6 text-center py-1">Used Days</th>
-                            <th scope="col" class="px-6 text-center py-1">Remaining Days</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr
-                            v-for="leave_balance in leave_balances"
-                            :key="leave_balance.id"
-                            class="border-b hover:bg-gray-100"
-                          >
-                            <td class="px-6 text-center font-medium text-gray-900">
-                              {{ leave_balance.leave_type }}
-                            </td>
-                            <td class="px-6 text-center">{{ leave_balance.total_leave_days }}</td>
-                            <td class="px-6 text-center">{{ leave_balance.used_days }}</td>
-                            <td class="px-6 text-center">{{ leave_balance.remaining_days }}</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
+                <div class="">
+                  <!-- <h2 class="text-lg font-semibold text-center py-2">Leave Balance</h2> -->
+                  <div class="overflow-x-auto min-h-max">
+                    <table class="min-w-full text-sm text-left text-gray-500">
+                      <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                        <tr>
+                          <th scope="col" class="px-6 text-center py-1">Type</th>
+                          <th scope="col" class="px-6 text-center py-1">Total Days</th>
+                          <th scope="col" class="px-6 text-center py-1">Used Days</th>
+                          <th scope="col" class="px-6 text-center py-1">Remaining Days</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr
+                          v-for="leave_balance in leave_balances"
+                          :key="leave_balance.id"
+                          class="border-b hover:bg-gray-100"
+                        >
+                          <td class="px-6 text-center font-medium text-gray-900">
+                            {{ leave_balance.leave_type }}
+                          </td>
+                          <td class="px-6 text-center">{{ leave_balance.total_leave_days }}</td>
+                          <td class="px-6 text-center">{{ leave_balance.used_days }}</td>
+                          <td class="px-6 text-center">{{ leave_balance.remaining_days }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </th>
             </tr>
@@ -172,6 +172,7 @@ const deleteApplication = async (applicationId) => {
               <th class="border border-gray-300 px-2 py-1 text-center">Resumption Date</th>
               <th class="border border-gray-300 px-2 py-1 text-center">Leave Period</th>
               <th class="border border-gray-300 px-2 py-1 text-center">Total Days</th>
+              <th class="border border-gray-300 px-2 py-1 text-center">Leave Type</th>
               <th class="border border-gray-300 px-2 py-1 text-center">Status</th>
               <th class="border border-gray-300 px-2 py-1 text-center">Action</th>
             </tr>
@@ -183,11 +184,24 @@ const deleteApplication = async (applicationId) => {
               class="border-b border-gray-200 hover:bg-blue-200"
             >
               <td class="border border-gray-300 px-2 py-2">{{ index + 1 }}</td>
-              <td class="border border-gray-300 px-2 py-2">{{ application?.last_working_date }}</td>
-              <td class="border border-gray-300 px-2 py-2">{{ application?.resumption_date }}</td>
+              <td class="border border-gray-300 px-2 py-2 text-center">
+                {{ application?.last_working_date }}
+              </td>
+              <td class="border border-gray-300 px-2 py-2 text-center">
+                {{ application?.resumption_date }}
+              </td>
               <td class="border border-gray-300 px-2 py-2">{{ application?.leave_period }}</td>
               <td class="border border-gray-300 px-2 py-2">
                 <div v-html="application?.duration || application?.total_leave_days"></div>
+              </td>
+              <td class="border border-gray-300 px-2 py-2 text-center">
+                {{
+                  [
+                    ...new Set(
+                      application?.leave_days?.map((leave_day) => leave_day?.leave_type?.name),
+                    ),
+                  ].join(',')
+                }}
               </td>
               <td class="border border-gray-300 px-2 py-2">
                 {{ application?.status || 'N/A' }}
@@ -202,7 +216,7 @@ const deleteApplication = async (applicationId) => {
                     <i class="far fa-eye"></i>
                   </RouterLink>
                   <RouterLink
-                    v-if="application?.status !== 'Approved'"
+                    v-if="!['Approved', 'Rejected'].includes(application?.status)"
                     :to="{ name: 'LeaveApplicationEdit', params: { id: application?.id } }"
                     class="btn-icon"
                     target="_blank"
@@ -240,16 +254,22 @@ const deleteApplication = async (applicationId) => {
   <Teleport to="body">
     <div
       v-if="showModal"
-      class="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center"
+      class="fixed inset-0 z-[1000] bg-black bg-opacity-50 flex items-center justify-center"
     >
-      <div class="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-lg p-4 relative">
+      <div
+        class="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-lg p-4 relative"
+      >
         <button
           class="absolute top-2 right-2 text-gray-500 hover:text-red-500 text-xl font-bold"
           @click="showModal = false"
         >
           &times;
         </button>
-        <LeaveApplicationForm :userInfo="user" @close="showModal = false" @formSuccessClosed="handleFormSccessClosed" />
+        <LeaveApplicationForm
+          :userInfo="user"
+          @close="showModal = false"
+          @formSuccessClosed="handleFormSccessClosed"
+        />
       </div>
     </div>
   </Teleport>

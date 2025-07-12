@@ -1,12 +1,29 @@
-import apiClient from '@/axios'; // Ensure Axios is properly configured
+import apiClient from '@/axios' // Ensure Axios is properly configured
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 export const useHolidayStore = defineStore('holiday', () => {
   const holidays = ref([])
   const holiday = ref(null)
   const loading = ref(false)
   const error = ref(null)
+
+  const holidayDates = computed(() => {
+    let dates = []
+
+    holidays.value.forEach((holiday) => {
+      // all dates by start_date and end_date with format YYYY-MM-DD
+      const startDate = new Date(holiday.start_date)
+      const endDate = new Date(holiday.end_date)
+
+      while (startDate <= endDate) {
+        dates.push(startDate.toISOString().split('T')[0])
+        startDate.setDate(startDate.getDate() + 1)
+      }
+    })
+
+    return dates
+  })
 
   // Fetch all holidays or filter by year/date range
   async function fetchHolidays(params = {}) {
@@ -15,7 +32,7 @@ export const useHolidayStore = defineStore('holiday', () => {
     try {
       const response = await apiClient.get('/holidays', { params })
       holidays.value = response?.data
-      return response?.data;
+      return response?.data
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch holidays'
     } finally {
@@ -87,6 +104,7 @@ export const useHolidayStore = defineStore('holiday', () => {
     holiday,
     loading,
     error,
+    holidayDates,
     fetchHolidays,
     fetchHolidayById,
     createHoliday,
