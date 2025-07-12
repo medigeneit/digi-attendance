@@ -172,11 +172,16 @@ function setTaskOnFormData(taskData) {
           v-model="selectedSupervisors"
         />
         <div v-else class="flex gap-x-3 gap-y-4 flex-wrap border p-2 rounded">
-          <TaskUserChip
-            v-for="user in selectedSupervisors"
-            :key="user.id"
-            :user="user"
-          ></TaskUserChip>
+          <template v-if="(selectedSupervisors || []).length > 0">
+            <TaskUserChip
+              v-for="user in selectedSupervisors"
+              :key="user.id"
+              :user="user"
+            ></TaskUserChip>
+          </template>
+          <div v-else class="text-center w-full text-sm text-gray-400 py-2">
+            No Supervisor assigned
+          </div>
           <!-- {{ supervisors }} -->
         </div>
       </div>
