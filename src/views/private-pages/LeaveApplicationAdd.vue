@@ -79,11 +79,17 @@ const leaveDaysMessage = computed(() => {
   return `Total leave days: ${leaveDays.value.length}`
 })
 
-watchEffect(() => {
+watchEffect(async () => {
   if (leaveDays.value.length && leaveTypeStore.leaveTypes.length) {
     if (selectedLeaveTypes.value.length !== leaveDays.value.length) {
       selectedLeaveTypes.value = leaveDays.value.map(() => leaveTypeStore.leaveTypes[0].id)
     }
+
+    await holidayStore.fetchHolidays({
+      company_id: authStore?.user?.company_id,
+      start_date: leaveDays.value[0],
+      end_date: leaveDays.value[leaveDays.value.length - 1],
+    })
 
     // Check each leave day and select "weekend" for weekends based on the weekends array
     leaveDays.value.forEach(async (day, index) => {
@@ -97,10 +103,8 @@ watchEffect(() => {
         selectedLeaveTypes.value[index] = 'weekend' // Auto-select "weekend" for matching days
       }
 
-      const holidayStatus = await isHoliday(day) // Check if the day is a holiday
-
-      if (holidayStatus) {
-        selectedLeaveTypes.value[index] = 'holiday' // Auto-select "holiday" for holiday days
+      if (holidayStore.holidayDates.includes(day)) {
+        selectedLeaveTypes.value[index] = 'holiday'
       }
     })
   }
@@ -174,21 +178,6 @@ onMounted(() => {
 
 const goBack = () => {
   router.go(-1)
-}
-
-// Helper function to check if the day is a holiday
-const isHoliday = async (day) => {
-  try {
-    // Make API call to check holidays for the specific day
-    const response = await holidayStore.fetchHolidays({
-      start_date: day,
-    })
-    const holidayDates = response[0]?.start_date || [] // Example: response could have dates
-    return holidayDates.includes(day) // Check if the day is a holiday
-  } catch (error) {
-    console.error('Error fetching holidays:', error)
-    return false // Return false if an error occurs
-  }
 }
 </script>
 

@@ -84,11 +84,17 @@ const leaveDaysMessage = computed(() => {
   return `Total leave days: ${leaveDays.value.length}`
 })
 
-watchEffect(() => {
+watchEffect(async () => {
   if (leaveDays.value.length && leaveTypeStore.leaveTypes.length) {
     if (selectedLeaveTypes.value.length !== leaveDays.value.length) {
       selectedLeaveTypes.value = leaveDays.value.map(() => leaveTypeStore.leaveTypes[0].id)
     }
+
+    await holidayStore.fetchHolidays({
+      company_id: props?.userInfo?.company_id,
+      start_date: leaveDays.value[0],
+      end_date: leaveDays.value[leaveDays.value.length - 1],
+    })
 
     leaveDays.value.forEach(async (day, index) => {
       const weekdayName = new Date(day).toLocaleString('en-us', { weekday: 'long' }).toLowerCase()
@@ -98,8 +104,7 @@ watchEffect(() => {
         selectedLeaveTypes.value[index] = 'weekend'
       }
 
-      const holidayStatus = await isHoliday(day)
-      if (holidayStatus) {
+      if (holidayStore.holidayDates.includes(day)) {
         selectedLeaveTypes.value[index] = 'holiday'
       }
     })
@@ -163,29 +168,19 @@ const submitLeaveApplication = async () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   watchEffect(() => {
     const companyId = props?.userInfo?.company_id
     if (companyId) {
       leaveTypeStore.fetchLeaveTypes(companyId)
     }
   })
-  userStore.fetchTypeWiseEmployees({ except: 'auth' })
+
+  await userStore.fetchTypeWiseEmployees({ except: 'auth' })
 })
 
 const goBack = () => {
   emit('close')
-}
-
-const isHoliday = async (day) => {
-  try {
-    const response = await holidayStore.fetchHolidays({ start_date: day })
-    const holidayDates = response[0]?.start_date || []
-    return holidayDates.includes(day)
-  } catch (error) {
-    console.error('Error fetching holidays:', error)
-    return false
-  }
 }
 </script>
 
@@ -212,7 +207,7 @@ const isHoliday = async (day) => {
 
       <div>
         <label class="inline-flex items-center space-x-2">
-          <input type="checkbox" v-model="isDirectApprove" class="form-checkbox text-blue-600">
+          <input type="checkbox" v-model="isDirectApprove" class="form-checkbox text-blue-600" />
           <span class="text-lg font-sem">Direct Approve</span>
         </label>
       </div>
@@ -236,15 +231,30 @@ const isHoliday = async (day) => {
                 :key="type.id"
                 class="flex items-center space-x-1"
               >
-                <input type="radio" :name="'leaveType-' + index" :value="type.id" v-model="selectedLeaveTypes[index]" />
+                <input
+                  type="radio"
+                  :name="'leaveType-' + index"
+                  :value="type.id"
+                  v-model="selectedLeaveTypes[index]"
+                />
                 <span>{{ type.name }}</span>
               </label>
               <label class="flex items-center space-x-1">
-                <input type="radio" :name="'leaveType-' + index" value="weekend" v-model="selectedLeaveTypes[index]" />
+                <input
+                  type="radio"
+                  :name="'leaveType-' + index"
+                  value="weekend"
+                  v-model="selectedLeaveTypes[index]"
+                />
                 <span>Weekend</span>
               </label>
               <label class="flex items-center space-x-1">
-                <input type="radio" :name="'leaveType-' + index" value="holiday" v-model="selectedLeaveTypes[index]" />
+                <input
+                  type="radio"
+                  :name="'leaveType-' + index"
+                  value="holiday"
+                  v-model="selectedLeaveTypes[index]"
+                />
                 <span>Holiday</span>
               </label>
             </div>
@@ -254,7 +264,11 @@ const isHoliday = async (day) => {
 
       <div>
         <label class="block text-sm font-medium">Reason</label>
-        <textarea v-model="form.reason" class="input-1 w-full" placeholder="Enter your reason for leave"></textarea>
+        <textarea
+          v-model="form.reason"
+          class="input-1 w-full"
+          placeholder="Enter your reason for leave"
+        ></textarea>
       </div>
 
       <div v-if="!isDirectApprove">

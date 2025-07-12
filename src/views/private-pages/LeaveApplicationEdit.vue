@@ -134,13 +134,19 @@ const leaveDaysMessage = computed(() => {
   return `Total leave days: ${leaveDays.value.length}`
 })
 
-watchEffect(() => {
-  if (isEditMode.value) return
+watchEffect(async () => {
+  // if (isEditMode.value) return
 
   if (leaveDays.value.length && leaveTypeStore.leaveTypes.length) {
     if (selectedLeaveTypes.value.length !== leaveDays.value.length) {
       selectedLeaveTypes.value = leaveDays.value.map(() => leaveTypeStore.leaveTypes[0]?.id)
     }
+
+    await holidayStore.fetchHolidays({
+      company_id: authStore?.user?.company_id,
+      start_date: leaveDays.value[0],
+      end_date: leaveDays.value[leaveDays.value.length - 1],
+    })
 
     leaveDays.value.forEach(async (day, index) => {
       const weekdayName = new Date(day).toLocaleString('en-us', { weekday: 'long' }).toLowerCase()
@@ -150,8 +156,7 @@ watchEffect(() => {
         selectedLeaveTypes.value[index] = 'weekend'
       }
 
-      const holidayStatus = await isHoliday(day)
-      if (holidayStatus) {
+      if (holidayStore.holidayDates.includes(day)) {
         selectedLeaveTypes.value[index] = 'holiday'
       }
     })
