@@ -4,7 +4,7 @@ import TaskAssignedUsers from './TaskAssignedUsers.vue'
 const props = defineProps({
   treeLevel: { type: Number, required: true },
   task: { type: Object, required: true },
-  employeeRouteTo: { type: Function, default: () => null },
+  employeeRouteTo: { type: Function, default: null },
 })
 </script>
 
