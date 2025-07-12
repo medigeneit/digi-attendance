@@ -13,7 +13,6 @@ import TaskUserChip from './TaskUserChip.vue'
 
 const taskStore = useTaskStore()
 const companyStore = useCompanyStore()
-const userStore = useUserStore()
 const auth = useAuthStore()
 const selectedUsers = ref([])
 const selectedSupervisors = ref([])
@@ -60,8 +59,7 @@ onMounted(async () => {
 
   task.value = taskData.task
 
-  await userStore.fetchUsers() // all available users
-  users.value = userStore.users
+  users.value = (await companyStore.fetchEmployees(auth.user?.company_id))?.data?.employees || []
 
   setTaskOnFormData(task.value)
   selectedUsers.value = task.value.users
