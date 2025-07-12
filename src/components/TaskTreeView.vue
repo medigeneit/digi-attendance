@@ -55,51 +55,20 @@
           </div>
         </div>
 
-        <div
-          class="col-span-full flex items-center my-2 lg:my-0 justify-center flex-wrap gap-x-3 gap-y-2"
-        >
-          <TaskAssignedUsers
-            class="flex items-center justify-center flex-wrap gap-x-3"
-            :users="task.supervisors || []"
-            :isTargetTask="task.is_target"
-            listType="supervisors"
-            :routeTo="
-              (user) => ({
-                query: {
-                  ...route.query,
-                  view: 'userwise',
-                  'company-id': user.company_id,
-                  'user-ids': user.id,
-                },
-              })
-            "
-          />
-          <template v-if="treeLevel === 0">
-            <div class="text-xs px-2 py-0.5 rounded-full border bg-sky-500 text-white">
-              {{ task?.from_department?.name || '--' }}
-            </div>
-            <span class="text-2xl text-gray-400">&rArr;</span>
-            <div class="text-xs px-2 py-0.5 rounded-full border bg-blue-500 text-white">
-              {{ task?.to_department?.name || '--' }}
-            </div>
-          </template>
-
-          <TaskAssignedUsers
-            class="flex items-center justify-center flex-wrap gap-x-3"
-            :users="task.users || []"
-            :isTargetTask="task.is_target"
-            :routeTo="
-              (user) => ({
-                query: {
-                  ...route.query,
-                  view: 'userwise',
-                  'company-id': user.company_id,
-                  'user-ids': user.id,
-                },
-              })
-            "
-          />
-        </div>
+        <TaskSupervisorAndEmployee
+          :task="task"
+          :tree-level="treeLevel"
+          :employee-route-to="
+            (user) => ({
+              query: {
+                ...route.query,
+                view: 'userwise',
+                'company-id': user.company_id,
+                'user-ids': user.id,
+              },
+            })
+          "
+        />
       </div>
 
       <div
@@ -202,8 +171,8 @@ import { getDisplayDate } from '@/libs/datetime.js'
 import { objectToQuery } from '@/libs/url'
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import TaskAssignedUsers from './tasks/TaskAssignedUsers.vue'
 import TaskImportantBadge from './tasks/TaskImportantBadge.vue'
+import TaskSupervisorAndEmployee from './tasks/TaskSupervisorAndEmployee.vue'
 import TaskTitleRouterLink from './tasks/TaskTitleRouterLink.vue'
 import TaskUrgentBadge from './tasks/TaskUrgentBadge.vue'
 

@@ -65,7 +65,8 @@ const ItemComponent = computed(() => {
 
     <div v-if="hiddenUsers.length > 0" class="text-sm text-gray-500 group/users">
       <div class="cursor-pointer hover:underline text-blue-600">
-        + {{ hiddenUsers.length }} more users
+        + {{ hiddenUsers.length }} more
+        {{ listType == 'employee' ? 'users' : listType == 'supervisors' ? 'supervisor' : '' }}
       </div>
 
       <div

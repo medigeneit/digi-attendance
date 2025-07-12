@@ -6,6 +6,7 @@ import SubTaskList from '@/components/tasks/SubTaskList.vue'
 import SubTaskProgress from '@/components/tasks/SubTaskProgress.vue'
 import TaskProgressTable from '@/components/tasks/TaskProgressTable.vue'
 import TaskStatus from '@/components/tasks/TaskStatus.vue'
+import TaskSupervisorAndEmployee from '@/components/tasks/TaskSupervisorAndEmployee.vue'
 import TaskUserDateUpdate from '@/components/tasks/TaskUserDateUpdate.vue'
 import { getDisplayDate } from '@/libs/datetime'
 import { getTaskProgressUsers } from '@/libs/task-progress'
@@ -154,6 +155,8 @@ watch(
             </button>
           </div>
 
+          <TaskSupervisorAndEmployee :task="store?.task" :tree-level="store?.task?.level" />
+
           <section class="mt-4 col-span-full mb-6">
             <TaskProgressTable
               :task-users="store.task?.users || []"
@@ -204,13 +207,13 @@ watch(
               <i class="fas fa-arrow-left"></i> Back
             </RouterLink>
 
-            <!-- 
+            <!--
               <button
                 @click="openComment($event, store.task?.id)"
                 class="bg-indigo-500 text-white px-3 py-1 rounded-full"
               >
                 <i class="fas fa-plus"></i> Comment
-              </button> 
+              </button>
             -->
 
             <div class="ml-auto flex gap-4">
@@ -283,7 +286,7 @@ watch(
 
       <LoaderView class="absolute bg-opacity-80 inset-0 z-20" v-if="state === 'changing'" />
     </div>
-    <!-- 
+    <!--
     <CommentModal
       :show="showCommentModal"
       :commentable-id="selectedTaskId"
