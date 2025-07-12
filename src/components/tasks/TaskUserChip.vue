@@ -4,7 +4,7 @@ import UserChip from '../user/UserChip.vue'
 
 const props = defineProps({
   user: Object,
-  isRemovable: { type: Boolean, default: true },
+  isRemovable: { type: Boolean, default: false },
   isSortable: { type: Boolean, default: false },
   /**
    *employee, main-employee, supervisor

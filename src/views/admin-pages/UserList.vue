@@ -282,10 +282,12 @@ const formattedName = (name) => {
                       class="px-3 py-1 rounded text-white text-xs transition-all duration-150"
                       :class="user?.current_shift ? 'btn-1' : 'btn-2'"
                     >
-                      <span v-if="user?.current_shift"
-                        ><i class="far fa-repeat-alt text-yellow-500 hover:text-yellow-600"></i
-                      ></span>
-                      <span v-else><i class="far fa-plus"></i> </span>
+                      <span v-if="user?.current_shift">
+                        <i class="far fa-repeat-alt text-yellow-500 hover:text-yellow-600"></i>
+                      </span>
+                      <span v-else>
+                        <i class="far fa-plus"></i>
+                      </span>
                     </button>
                   </div>
 

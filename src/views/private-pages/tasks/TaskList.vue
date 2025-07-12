@@ -49,17 +49,17 @@ onMounted(async () => {
       query: { ...route.query, status: 'not-completed' },
     })
   }
-  await fetchTasks({}, { loadingBeforeFetch: true })
+  await fetchTasks({ loadingBeforeFetch: true })
 })
 
-async function fetchTasks() {
+async function fetchTasks({ loadingBeforeFetch = false } = {}) {
   priorityChangingDisabled.value = !!route.query['user-ids']
 
   const data = await store.fetchTasks(
     { ...route.query },
     {
       newList: true,
-      loadingBeforeFetch: true,
+      loadingBeforeFetch,
     },
   )
 
