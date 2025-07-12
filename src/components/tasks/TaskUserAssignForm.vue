@@ -60,12 +60,8 @@ onMounted(async () => {
 
   task.value = taskData.task
 
-  if (auth.user?.role === 'employee') {
-    users.value = (await companyStore.fetchEmployees(auth.user?.company_id))?.data?.employees || []
-  } else {
-    await userStore.fetchUsers() // all available users
-    users.value = userStore.users
-  }
+  await userStore.fetchUsers() // all available users
+  users.value = userStore.users
 
   setTaskOnFormData(task.value)
   selectedUsers.value = task.value.users
@@ -198,7 +194,7 @@ const editable = computed(() => {
           :isRemovable="true"
           v-model="selectedSupervisors"
         />
-        <div v-else class="flex gap-2">
+        <div v-else class="flex gap-x-3 gap-y-4 flex-wrap border p-2 rounded">
           <TaskUserChip
             v-for="user in selectedSupervisors"
             :key="user.id"

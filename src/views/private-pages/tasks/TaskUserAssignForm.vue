@@ -17,7 +17,7 @@ const handleOnCancelClick = () => {
 
 <template>
   <div class="container mx-auto p-6">
-    <div class="max-w-xl mx-auto bg-white shadow-lg rounded-lg p-6">
+    <div class="max-w-6xl mx-auto bg-white shadow-lg rounded-lg p-6">
       <TaskUserAssignForm
         :taskId="taskId"
         @success="handleOnSuccess"
