@@ -73,32 +73,39 @@ onMounted(async () => {
   state.value = ''
 })
 
+const userIsSelected = (user) =>
+  selectedUsers.value.find((selectedUser) => selectedUser.id === user.id)
+
+const supervisorIsSelected = (user) =>
+  selectedSupervisors.value.find((selectedUser) => selectedUser.id === user.id)
+
 const employees = computed(() => {
+  console.log('PARENT_USER', task.value?.parent?.users)
+
   if (task.value?.parent) {
     return (task.value?.parent?.users || []).filter((u) => {
-      return selectedUsers.value.find((selectedUser) => selectedUser.id === u.id)
+      return !userIsSelected(u)
     })
   }
 
   return users.value.filter((u) => {
-    const selected = selectedUsers.value.find((selectedUser) => selectedUser.id === u.id)
-    if (u.department_id == task.value?.to_department?.id) {
-      return true && !selected
+    if (u.department_id === task.value?.to_department?.id) {
+      return !userIsSelected(u)
     }
     return false
   })
 })
 
 const supervisors = computed(() => {
-  return users.value.filter((u) => {
-    const selected = selectedUsers.value.find((selectedUser) => selectedUser.id === u.id)
-    let dept_id = task.value?.from_department?.id
-    if (task.value?.parent) {
-      dept_id = task.value?.parent?.from_department_id
-    }
+  if (task.value?.parent) {
+    return (task.value?.parent?.supervisors || []).filter((u) => {
+      return !supervisorIsSelected(u)
+    })
+  }
 
-    if (u.department_id == dept_id) {
-      return true && !selected
+  return users.value.filter((u) => {
+    if (u.department_id === task.value?.from_department?.id) {
+      return !supervisorIsSelected(u)
     }
     return false
   })
