@@ -159,8 +159,7 @@ export const useTaskStore = defineStore('task', () => {
       }
       return response.data.data;
     } catch (err) {
-      //error.value = err.response?.data?.message || `টাস্ক (ID: ${id}) আপডেট করতে ব্যর্থ হয়েছে।`;
-      console.error(`Error updating task with id ${id}:`, err);
+
       throw err
     } finally {
       if( loadingBeforeFetch ) {

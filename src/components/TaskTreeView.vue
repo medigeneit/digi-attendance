@@ -118,19 +118,18 @@
           <div class="flex items-center sm:ml-auto order-0 sm:order-1">
             <div class="flex gap-2 ml-4 items-center text-xs" v-if="!hideButtons">
               <a
-                :href="`/tasks/${task.id}/assign-users`"
-                @click.stop.prevent="emits('employeeAssignClick', task.id)"
-                class="border-blue-500 bg-gray-50 text-blue-500 hover:bg-indigo-600 hover:text-white font-semibold px-3 py-0.5 rounded-full transition border"
-              >
-                <i class="fas fa-users-cog"></i> Manage Employee & Supervisor
-              </a>
-
-              <a
                 :href="`/tasks/edit/${task.id}`"
                 @click.stop.prevent="emits('editClick', task.id)"
                 class="btn-2 py-0.5 text-xs"
               >
                 <i class="fas fa-edit"></i> Edit
+              </a>
+              <a
+                :href="`/tasks/${task.id}/assign-users`"
+                @click.stop.prevent="emits('employeeAssignClick', task.id)"
+                class="border-indigo-500 hover:bg-indigo-600 text-indigo-600 hover:text-white font-semibold px-3 py-0.5 rounded-full transition border-2"
+              >
+                <i class="fas fa-users-cog"></i> Manage Employee & Supervisor
               </a>
 
               <RouterLink

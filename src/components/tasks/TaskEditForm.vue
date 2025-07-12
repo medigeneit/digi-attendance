@@ -1,5 +1,6 @@
 <script setup>
 import { getYearMonthDayFormat } from '@/libs/datetime'
+import { useAuthStore } from '@/stores/auth'
 import { useCompanyStore } from '@/stores/company'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { onMounted, ref, watch } from 'vue'
@@ -16,26 +17,13 @@ const props = defineProps({
 const emit = defineEmits(['updated', 'cancel'])
 
 const store = useTaskStore()
+const auth = useAuthStore()
 const companyStore = useCompanyStore()
 const task = ref()
 const loading = ref(false)
 const selectedUsers = ref([])
 const errorMessage = ref('')
-const form = ref({
-  title: '',
-  from_department_id: '',
-  to_department_id: '',
-  requirement_id: '',
-  user_ids: [],
-  status: 'PENDING',
-  progress: 0,
-  description: '',
-  is_important: false,
-  is_urgent: false,
-  is_target: false,
-  started_at: '',
-  deadline: '',
-})
+const form = ref({})
 
 onMounted(async () => {
   loading.value = true
@@ -65,18 +53,20 @@ watch(
 function setTaskOnFormData(taskData) {
   form.value = {
     title: taskData.title,
+    description: taskData.description,
+    requirement_id: taskData.requirement_id,
     from_department_id: taskData.from_department_id,
     to_department_id: taskData.to_department_id,
-    requirement_id: taskData.requirement_id,
-    user_ids: taskData.users.map((u) => u.id).join(','),
     status: taskData.status,
-    progress: taskData.progress,
-    description: taskData.description,
-    is_important: taskData.is_important,
-    is_urgent: taskData.is_urgent,
-    is_target: taskData.is_target,
-    started_at: getYearMonthDayFormat(taskData.started_at),
-    deadline: getYearMonthDayFormat(taskData.deadline),
+    ...(auth.user?.role !== 'employee'
+      ? {
+          is_important: taskData.is_important,
+          is_urgent: taskData.is_urgent,
+          is_target: taskData.is_target,
+          started_at: getYearMonthDayFormat(taskData.started_at),
+          deadline: getYearMonthDayFormat(taskData.deadline),
+        }
+      : {}),
   }
 }
 
@@ -126,18 +116,6 @@ const update = async () => {
           <p>{{ task?.requirement?.title }}</p>
         </div>
       </div>
-
-      <!-- <div class="mb-4">
-          <label class="block text-gray-600 text-sm mb-1 font-medium">User <RequiredIcon /></label>
-          <MultiselectDropdown
-            v-model="selectedUsers"
-            :options="userStore.users"
-            :multiple="true"
-            track-by="id"
-            label="label"
-            placeholder="Select users"
-          />
-        </div> -->
 
       <template v-if="task?.parent_id === 0">
         <div class="mb-4">
@@ -192,17 +170,6 @@ const update = async () => {
         </div>
       </template>
 
-      <!-- <div class="flex gap-16 items-center justify-center my-8">
-        <label class="flex gap-1 items-center">
-          <input type="checkbox" v-model="form.is_important" class="size-4" />
-          <span class="block text-gray-600 text-base font-medium">Important</span>
-        </label>
-        <label class="flex gap-1 items-center">
-          <input type="checkbox" v-model="form.is_urgent" class="size-4" />
-          <span class="block text-gray-600 text-base font-medium">Urgent</span>
-        </label>
-      </div> -->
-
       <div class="grid grid-cols-2 gap-4 mb-4" v-if="task?.children_task_count === 0">
         <div>
           <label class="block text-gray-700 font-medium mb-2">Status</label>
@@ -217,42 +184,6 @@ const update = async () => {
           </select>
         </div>
       </div>
-
-      <!-- <div class="mt-8">
-        <label
-          class="flex gap-1 items-center mt-4 border rounded py-2 justify-center cursor-pointer"
-          :class="{ 'bg-yellow-200': form.is_target }"
-        >
-          <input type="checkbox" v-model="form.is_target" class="size-6" />
-          <span class="block text-gray-600 text-base mb-1 font-medium">Is Target Task</span>
-        </label>
-      </div>
-
-      <div class="grid grid-cols-2 gap-4 mb-4 mt-12">
-        <div class="mb-4">
-          <label class="block text-gray-600 text-sm mb-1 font-medium">
-            Start Date <RequiredIcon /> {{ form.started_at }}
-          </label>
-          <input
-            v-model="form.started_at"
-            type="date"
-            placeholder="Enter Start Date"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        <div class="mb-4">
-          <label class="block text-gray-600 text-sm mb-1 font-medium">
-            Deadline <RequiredIcon />
-          </label>
-          <input
-            v-model="form.deadline"
-            type="date"
-            placeholder="Enter Start Date"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-      </div> -->
 
       <div class="mb-4">
         <label class="block text-gray-700 font-medium mb-2">Description</label>

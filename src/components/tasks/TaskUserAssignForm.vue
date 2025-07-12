@@ -1,9 +1,7 @@
 <script setup>
 import { getYearMonthDayFormat } from '@/libs/datetime'
 import { useAuthStore } from '@/stores/auth'
-import { useCompanyStore } from '@/stores/company'
 import { useTaskStore } from '@/stores/useTaskStore'
-import { useUserStore } from '@/stores/user'
 import { computed, onMounted, ref } from 'vue'
 import TextWithHr from '../TextWithHr.vue'
 import IsTargetTaskInput from './IsTargetTaskInput.vue'
@@ -12,7 +10,6 @@ import TaskUrgencyInput from './TaskUrgencyInput.vue'
 import TaskUserChip from './TaskUserChip.vue'
 
 const taskStore = useTaskStore()
-const companyStore = useCompanyStore()
 const auth = useAuthStore()
 const selectedUsers = ref([])
 const selectedSupervisors = ref([])
@@ -21,7 +18,8 @@ const supervisor_ids = computed(() => selectedSupervisors.value.map((u) => u.id)
 // const taskId = route.params.id
 const state = ref('')
 const error = ref(null)
-const users = ref([])
+const employees = ref([])
+const supervisors = ref([])
 
 const props = defineProps({
   taskId: {
@@ -50,7 +48,10 @@ onMounted(async () => {
   state.value = 'loading'
   const taskData = await taskStore.fetchTask(
     props.taskId,
-    { with_parent: 'true' },
+    {
+      with_parent: 'true',
+      with_department_users: 'true',
+    },
     {
       loadingBeforeFetch: false,
       fetchOnly: true,
@@ -59,7 +60,15 @@ onMounted(async () => {
 
   task.value = taskData.task
 
-  users.value = (await companyStore.fetchEmployees(auth.user?.company_id))?.data?.employees || []
+  supervisors.value = task.value?.parent
+    ? task.value.parent?.supervisors
+    : taskData?.from_department_users || []
+
+  employees.value = task.value?.parent
+    ? task.value.parent?.users
+    : taskData?.to_department_users || []
+
+  // users.value = (await companyStore.fetchEmployees(auth.user?.company_id))?.data?.employees || []
 
   setTaskOnFormData(task.value)
   selectedUsers.value = task.value.users
@@ -67,22 +76,18 @@ onMounted(async () => {
   state.value = ''
 })
 
-const userIsSelected = (user) =>
-  selectedUsers.value.find((selectedUser) => selectedUser.id === user.id)
+const userIsSelected = (user) => {
+  return selectedUsers.value.find((selectedUser) => selectedUser.id === user.id)
+}
 
-const supervisorIsSelected = (user) =>
-  selectedSupervisors.value.find((selectedUser) => selectedUser.id === user.id)
+const supervisorIsSelected = (user) => {
+  return selectedSupervisors.value.find((selectedUser) => selectedUser.id === user.id)
+}
 
-const employees = computed(() => {
+const employeeOptions = computed(() => {
   console.log('PARENT_USER', task.value?.parent?.users)
 
-  if (task.value?.parent) {
-    return (task.value?.parent?.users || []).filter((u) => {
-      return !userIsSelected(u)
-    })
-  }
-
-  return users.value.filter((u) => {
+  return employees.value.filter((u) => {
     if (u.department_id === task.value?.to_department?.id) {
       return !userIsSelected(u)
     }
@@ -90,14 +95,8 @@ const employees = computed(() => {
   })
 })
 
-const supervisors = computed(() => {
-  if (task.value?.parent) {
-    return (task.value?.parent?.supervisors || []).filter((u) => {
-      return !supervisorIsSelected(u)
-    })
-  }
-
-  return users.value.filter((u) => {
+const supervisorOptions = computed(() => {
+  return supervisors.value.filter((u) => {
     if (u.department_id === task.value?.from_department?.id) {
       return !supervisorIsSelected(u)
     }
@@ -141,26 +140,6 @@ function setTaskOnFormData(taskData) {
         }),
   }
 }
-
-const editable = computed(() => {
-  let _editable = {
-    urgency: false,
-    is_target: false,
-    started_at: false,
-    deadline: false,
-  }
-
-  if (auth.user.role === 'employee') {
-    return _editable
-  }
-
-  _editable.urgency = auth.isAdminMood
-  _editable.is_target = auth.isAdminMood
-  _editable.started_at = auth.isAdminMood
-  _editable.deadline = auth.isAdminMood
-
-  return _editable
-})
 </script>
 
 <template>
@@ -186,7 +165,7 @@ const editable = computed(() => {
 
         <label class="block uppercase text-xs text-gray-600"> Supervisors </label>
         <TaskAssignUserInput
-          :employees="supervisors"
+          :employees="supervisorOptions"
           list-type="supervisor"
           v-if="auth?.user?.role !== 'employee' && auth.isAdminMood"
           :isRemovable="true"
@@ -211,7 +190,7 @@ const editable = computed(() => {
           </div>
 
           <label class="block uppercase text-xs text-gray-600"> Employees </label>
-          <TaskAssignUserInput :employees="employees" v-model="selectedUsers" />
+          <TaskAssignUserInput :employees="employeeOptions" v-model="selectedUsers" />
         </div>
       </div>
 
@@ -225,19 +204,14 @@ const editable = computed(() => {
 
         <TaskUrgencyInput
           class="col-span-full"
-          v-if="editable.urgency"
           v-model:isImportant="form.is_important"
           v-model:isUrgent="form.is_urgent"
         />
 
-        <IsTargetTaskInput
-          v-model="form.is_target"
-          class="col-span-full md:col-span-2 mt-4"
-          v-if="editable.is_target"
-        />
+        <IsTargetTaskInput v-model="form.is_target" class="col-span-full md:col-span-2 mt-4" />
 
         <div class="flex items-end col-span-full md:col-span-2 gap-4">
-          <div class="w-1/2" v-if="editable.started_at">
+          <div class="w-1/2">
             <label class="block text-gray-600 text-sm mb-1 font-medium">Start Date</label>
             <input
               v-model="form.started_at"
@@ -247,7 +221,7 @@ const editable = computed(() => {
             />
           </div>
 
-          <div class="w-1/2" v-if="editable.deadline">
+          <div class="w-1/2">
             <label class="block text-gray-600 text-sm mb-1 font-medium"
               >{{ form.is_target ? 'Target' : '' }} Deadline</label
             >
@@ -260,6 +234,7 @@ const editable = computed(() => {
           </div>
         </div>
       </template>
+
       <div class="sticky bottom-0 bg-white border-t px-4 -mx-4 py-3 col-span-full">
         <div v-if="error" class="mb-4 text-red-500 font-medium">
           {{ error }}
