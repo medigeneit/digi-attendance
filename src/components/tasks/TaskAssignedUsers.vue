@@ -6,7 +6,7 @@ import UserChip from '../user/UserChip.vue'
 const props = defineProps({
   users: { type: Array, required: true, default: () => [] },
   maxItems: { type: Number, default: 2 },
-  routeTo: { type: Function, default: () => null },
+  routeTo: { type: Function, default: null },
   isTargetTask: { Boolean, default: false },
   listType: { String, default: 'employee' },
 })
@@ -23,6 +23,7 @@ function routerLinkTo(item) {
   if (typeof props.routeTo == 'function') {
     return props.routeTo(item)
   }
+  return {}
 }
 
 const ItemComponent = computed(() => {
@@ -42,7 +43,13 @@ const ItemComponent = computed(() => {
       :is="ItemComponent"
       v-for="(item, index) in slicedUsers"
       :key="index"
-      :to="routerLinkTo(item)"
+      v-bind="{
+        ...(typeof props.routeTo == 'function'
+          ? {
+              to: routerLinkTo(item),
+            }
+          : {}),
+      }"
     >
       <UserChip
         class="flex items-center gap-2 border rounded-full border-gray-300 shadow-sm"
