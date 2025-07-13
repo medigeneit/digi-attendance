@@ -136,6 +136,7 @@ const selectedCompanies = computed(() => {
 })
 
 watch(() => toDepartmentId.value, loadEmployeesByDepartment)
+
 watch(
   () => companyId.value,
   () => {
@@ -206,7 +207,10 @@ watch(
           </template>
         </CompanyDepartmentSelectInput>
 
-        <div class="relative w-full md:w-72" v-if="route.name !== 'MyTaskList'">
+        <div
+          class="relative w-full md:w-72"
+          v-if="auth.isAdminMood && auth?.user?.role !== 'employee'"
+        >
           <Multiselect
             :modelValue="selectedEmployee"
             @select="handleUserSelect"
