@@ -38,6 +38,7 @@ const fetchAttendance = async () => {
 
 onMounted(async () => {
   await companyStore.fetchCompanies()
+  fetchAttendance()
 })
 
 watch([selectedCompanyId, selectedDate], fetchAttendance)
