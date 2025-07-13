@@ -2,7 +2,8 @@
 import TaskTreeView from '@/components/TaskTreeView.vue'
 import DraggableList from '@/components/common/DraggableList.vue'
 import useTaskPriorityUpdate from '@/libs/task-priority'
-import { ref } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+import { computed, ref } from 'vue'
 
 const props = defineProps({
   tasks: {
@@ -28,6 +29,15 @@ const props = defineProps({
   },
 })
 
+const auth = useAuthStore()
+
+const priorityUpdatable = computed(() => {
+  if (auth?.user?.role !== 'employee' && auth?.isAdminMood) {
+    return true
+  }
+  return false
+})
+
 const emit = defineEmits(['commentButtonClick', 'editClick', 'addClick', 'updatePriority'])
 
 const draggableTaskList = ref(null)
@@ -49,11 +59,13 @@ const handleTaskPrioritySave = async () => {
       <slot name="task:header"></slot>
     </div>
 
-    <div v-if="listHasRearranged" class="flex gap-2 items-center mx-auto justify-center mb-2">
-      <span class="text-red-500">Priority Changed</span>
-      <button class="btn-3" @click.prevent="handleTaskPrioritySave">Save</button>
-      <button class="btn-3" @click.prevent="draggableTaskList.resetItems">Discard</button>
-    </div>
+    <template v-if="priorityUpdatable">
+      <div v-if="listHasRearranged" class="flex gap-2 items-center mx-auto justify-center mb-2">
+        <span class="text-red-500">Priority Changed</span>
+        <button class="btn-3" @click.prevent="handleTaskPrioritySave">Save</button>
+        <button class="btn-3" @click.prevent="draggableTaskList.resetItems">Discard</button>
+      </div>
+    </template>
 
     <div v-if="loading" class="text-center py-4 text-gray-500">Loading tasks...</div>
 
@@ -73,7 +85,7 @@ const handleTaskPrioritySave = async () => {
         <TaskTreeView
           :index="index"
           :task="item"
-          :showDraggableHandle="true"
+          :showDraggableHandle="priorityUpdatable"
           :tree-level="treeLevel"
           class="!border-0"
           @commentButtonClick="emit('commentButtonClick', item.id)"

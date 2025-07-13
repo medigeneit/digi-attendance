@@ -12,18 +12,25 @@ import TaskUserAssignForm from '@/components/tasks/TaskUserAssignForm.vue'
 import UserWiseList from '@/components/tasks/UserWiseList.vue'
 import TaskTreeView from '@/components/TaskTreeView.vue'
 import useTaskPriorityUpdate from '@/libs/task-priority'
+import { useAuthStore } from '@/stores/auth'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const store = useTaskStore()
-
+const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const showCommentModal = ref(false)
 const userId = 1 // অ্যাকচুয়াল auth ইউজার আইডি
 const selectedTaskId = ref(null)
-const priorityChangingDisabled = ref(false)
+const priorityChangingDisabled = computed(() => {
+  if (auth?.user?.role === 'employee' || !auth?.isAdminMood) {
+    return true
+  }
+
+  return !!route.query['user-ids']
+})
 const editingId = ref(null)
 const addForm = ref(false)
 const addFormData = reactive({
@@ -53,8 +60,6 @@ onMounted(async () => {
 })
 
 async function fetchTasks({ loadingBeforeFetch = false } = {}) {
-  priorityChangingDisabled.value = !!route.query['user-ids']
-
   const data = await store.fetchTasks(
     { ...route.query },
     {

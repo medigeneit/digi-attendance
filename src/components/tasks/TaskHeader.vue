@@ -1,5 +1,6 @@
 <script setup>
 import Multiselect from '@/components/MultiselectDropdown.vue'
+import { useAuthStore } from '@/stores/auth'
 import { useCompanyStore } from '@/stores/company'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, watch } from 'vue'
@@ -11,6 +12,8 @@ const props = defineProps({
   modelValue: { type: Object, default: () => ({}) },
   listHasRearranged: { type: Boolean, default: false },
 })
+
+const auth = useAuthStore()
 
 const route = useRoute()
 
@@ -109,9 +112,12 @@ watch(() => toDepartmentId.value, loadEmployeesByDepartment)
 <template>
   <div class="mb-3 task-header">
     <div class="flex justify-between items-start mb-4">
-      <h2 class="text-2xl font-bold text-gray-800 leading-none">Task List</h2>
+      <h2 class="text-2xl font-bold text-gray-800 leading-none h-10">Task List</h2>
 
-      <div class="ml-auto flex gap-6 items-center">
+      <div
+        class="ml-auto flex gap-6 items-center"
+        v-if="auth?.user?.role !== 'employee' && auth?.isAdminMood"
+      >
         <div v-if="listHasRearranged" class="flex gap-2 items-center">
           <span class="text-red-500">Priority Changed</span>
           <button class="btn-3" @click.prevent="emit('clickPrioritySave')">Save</button>
