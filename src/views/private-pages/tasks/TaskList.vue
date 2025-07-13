@@ -59,14 +59,13 @@ onMounted(async () => {
   await fetchTasks({ loadingBeforeFetch: true })
 })
 
-async function fetchTasks({ loadingBeforeFetch = false } = {}) {
-  const data = await store.fetchTasks(
-    { ...route.query },
-    {
-      newList: true,
-      loadingBeforeFetch,
-    },
-  )
+async function fetchTasks() {
+  let data
+  if (route.name === 'MyTaskList') {
+    data = await store.fetchMyTasks({ ...route.query })
+  } else {
+    data = await store.fetchTasks({ ...route.query })
+  }
 
   queryLogs.value = data.query_log || []
 }
@@ -171,6 +170,7 @@ const taskFilter = computed({
       @clickPrioritySave="handleTaskPrioritySave"
       @clickPriorityDiscard="() => (listHasRearranged ? draggableTaskList.resetItems : null)"
       :list-has-rearranged="listHasRearranged"
+      :isMyTask="route.name === 'MyTaskList'"
       class="mb-6"
     />
 

@@ -8,10 +8,10 @@ defineProps({ task: Object, subTasksOpen: { type: Boolean, default: false } })
       :class="
         task?.children_task_count > 0
           ? {
-              'fa-folder-tree text-teal-300/60': !subTasksOpen,
+              'fa-folder text-teal-800/70': !subTasksOpen,
               'fa-folder-open text-teal-400': subTasksOpen,
             }
-          : 'fa-file text-blue-500'
+          : 'fa-file-alt text-green-400'
       "
     ></i>
     <RouterLink

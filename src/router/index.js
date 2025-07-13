@@ -265,9 +265,15 @@ const router = createRouter({
 
         {
           path: 'tasks',
-          name: 'MyTaskList',
+          name: 'TaskList',
           component: () => import('@/views/private-pages/tasks/TaskList.vue'),
           meta: { requiresAuth: true },
+        },
+        {
+          path: 'my-tasks',
+          name: 'MyTaskList',
+          component: () => import('@/views/private-pages/tasks/TaskList.vue'),
+          meta: { requiresAuth: true, isMyTask: true },
         },
 
         {
@@ -800,6 +806,6 @@ router.afterEach((to) => {
   console.log({to})
   routeHistory.addToHistory(to)
 })
- 
+
 
 export default router

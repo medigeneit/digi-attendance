@@ -31,27 +31,30 @@ export const useTaskStore = defineStore('task', () => {
     }
   };
 
-  const fetchTasks = async (params,{loadingBeforeFetch = true, newList=false} = {}) => {
-    if(loadingBeforeFetch ) {
-      loading.value = true;
-    }
+  const fetchTasks = async (params) => {
 
     error.value = null;
     try {
-      let response;
-      if( newList ) {
-        response = await apiClient.get('/tasks2', {params});
-      } else {
-        response = await apiClient.get('/tasks', {params});
-      }
+      const response = await apiClient.get('/tasks', {params});
+      tasks.value = response.data?.tasks || [];
+      return response.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'টাস্ক লোড করতে ব্যর্থ হয়েছে।';
+      throw err
+    }
+  };
 
+  const fetchMyTasks = async (params,{} = {}) => {
+
+    error.value = null;
+    try {
+      const response = await apiClient.get('/my-tasks', {params});
       tasks.value = response.data?.tasks || [];
       return response.data;
     } catch (err) {
       error.value = err.response?.data?.message || 'টাস্ক লোড করতে ব্যর্থ হয়েছে।';
       console.error('Error fetching tasks:', err);
-    } finally {
-      loading.value = false;
+      throw err
     }
   };
 
@@ -203,6 +206,7 @@ export const useTaskStore = defineStore('task', () => {
     taskListTree: computed(getTaskListTree),
     flattenedTasks: computed(getFlattenedTasks),
     fetchTasks,
+    fetchMyTasks,
     fetchTask,
     createTask,
     updateTask,
