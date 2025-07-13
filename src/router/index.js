@@ -16,35 +16,35 @@ const router = createRouter({
           path: '/',
           name: 'Home',
           component: HomeView,
-          meta: { title: 'Home' }
+          meta: { title: 'Home' },
         },
 
         {
           path: '/about',
           name: 'About',
           component: () => import('@/views/public-pages/AboutView.vue'),
-          meta: { title: 'About' }
+          meta: { title: 'About' },
         },
 
         {
           path: '/login',
           name: 'login',
           component: () => import('../views/public-pages/LoginView.vue'),
-          meta: { title: 'Login' }
+          meta: { title: 'Login' },
         },
 
         {
           path: '/register',
           name: 'register',
           component: () => import('@/views/public-pages/RegisterView.vue'),
-          meta: { title: 'Register' }
+          meta: { title: 'Register' },
         },
 
         {
           path: '/privacy-policy',
           name: 'PrivacyPolicy',
           component: () => import('@/views/public-pages/PrivacyPolicy.vue'),
-          meta: { title: 'Privacy Policy' }
+          meta: { title: 'Privacy Policy' },
         },
       ],
     },
@@ -56,45 +56,45 @@ const router = createRouter({
           path: '/profile',
           name: 'ProfileView',
           component: () => import('../views/private-pages/ProfileView.vue'),
-          meta: { requiresAuth: true, title: 'Profile' }
+          meta: { requiresAuth: true, title: 'Profile' },
         },
         {
           path: '/dashboard',
           name: 'Dashboard',
           component: () => import('@/views/private-pages/DashBoard.vue'),
-          meta: { requiresAuth: true, title: 'Dashboard' }
+          meta: { requiresAuth: true, title: 'Dashboard' },
         },
 
         {
           path: 'task-management',
           name: 'TaskManagementView',
           component: () => import('@/views/private-pages/TaskManagementView.vue'),
-          meta: { requiresAuth: true, title: 'Task Management' }
+          meta: { requiresAuth: true, title: 'Task Management' },
         },
         {
           path: 'projects',
           name: 'ProjectList',
           component: () => import('@/views/private-pages/projects/ProjectList.vue'),
-          meta: { requiresAuth: true, title: 'Projects' }
+          meta: { requiresAuth: true, title: 'Projects' },
         },
         {
           path: 'projects/add',
           name: 'ProjectAdd',
           component: () => import('@/views/private-pages/projects/ProjectAdd.vue'),
-          meta: { requiresAuth: true, title: 'Add Project' }
+          meta: { requiresAuth: true, title: 'Add Project' },
         },
         {
           path: 'projects/edit/:id',
           name: 'ProjectEdit',
           component: () => import('@/views/private-pages/projects/ProjectEdit.vue'),
-          meta: { requiresAuth: true, title: 'Edit Project' }
+          meta: { requiresAuth: true, title: 'Edit Project' },
         },
 
         {
           path: 'requirements',
           name: 'RequirementList',
           component: () => import('@/views/private-pages/requirements/RequirementList.vue'),
-          meta: { requiresAuth: true, title: 'Requirement List' }
+          meta: { requiresAuth: true, title: 'Requirement List' },
         },
 
         {
@@ -140,21 +140,21 @@ const router = createRouter({
               path: 'sub-tasks',
               name: 'SubTasks',
               component: () => import('@/views/private-pages/tasks/SubTasks.vue'),
-              meta: { requiresAuth: true }
+              meta: { requiresAuth: true },
             },
             {
               path: 'reports',
               name: 'TaskReports',
               component: () => import('@/views/private-pages/tasks/TaskReports.vue'),
-              meta: { requiresAuth: true }
+              meta: { requiresAuth: true },
             },
             {
               path: 'add-report',
               name: 'TaskReportAdd',
               component: () => import('@/views/private-pages/tasks/AddTaskReport.vue'),
-              meta: { requiresAuth: true }
+              meta: { requiresAuth: true },
             },
-          ]
+          ],
         },
 
         {
@@ -280,321 +280,453 @@ const router = createRouter({
           path: '/attendance',
           name: 'MyAttendance',
           component: () => import('@/views/private-pages/MyAttendance.vue'),
-          meta: { requiresAuth: true, title:'Attendance'},
+          meta: { requiresAuth: true, title: 'Attendance' },
         },
 
         {
           path: '/attendance',
           name: 'AttendanceView',
           component: () => import('@/views/private-pages/AttendanceView.vue'),
-          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] , title:'Attendance View'},
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Attendance View',
+          },
         },
 
         {
           path: '/settings',
           name: 'SettingsView',
           component: () => import('@/views/admin-pages/SettingsView.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'] , title:'Settings View'},
+          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'Settings View' },
         },
         {
           path: '/settings/permissions-add',
           name: 'PermissionsAdd',
           component: () => import('@/views/admin-pages/PermissionAdd.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title:"Permissions Add"  },
+          meta: {
+            requiresAuth: true,
+            roles: ['super_admin', 'developer'],
+            title: 'Permissions Add',
+          },
         },
         {
           path: '/settings/permissions-edit/:id',
           name: 'PermissionEdit',
           component: () => import('@/views/admin-pages/PermissionEdit.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'],  title:"Permissions Add"  },
+          meta: {
+            requiresAuth: true,
+            roles: ['super_admin', 'developer'],
+            title: 'Permissions Add',
+          },
         },
 
         {
           path: '/settings/permissions-list',
           name: 'PermissionList',
           component: () => import('@/views/admin-pages/PermissionList.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title:"Permissions List" }
+          meta: {
+            requiresAuth: true,
+            roles: ['super_admin', 'developer'],
+            title: 'Permissions List',
+          },
         },
 
         {
           path: '/settings/user-list',
           name: 'UserList',
           component: () => import('@/views/admin-pages/UserList.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'] , title:'User List'},
+          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'User List' },
         },
         {
           path: '/settings/user-add',
           name: 'UserAdd',
           component: () => import('@/views/admin-pages/UserAdd.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title:'Add User' },
+          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'Add User' },
         },
         {
           path: '/settings/user-show/:id',
           name: 'UserShow',
           component: () => import('@/views/admin-pages/UserShow.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'] , title:'Show User'},
+          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'Show User' },
         },
         {
           path: '/settings/user-edit/:id',
           name: 'UserEdit',
           component: () => import('@/views/admin-pages/UserEdit.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'] , title:'Edit User'},
+          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'Edit User' },
         },
         {
           path: '/settings/device-list',
           name: 'DeviceList',
           component: () => import('@/views/admin-pages/DeviceList.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title:"Device List" },
+          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'Device List' },
         },
         {
           path: '/settings/sync-data',
           name: 'SyncData',
           component: () => import('@/views/admin-pages/SyncData.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title:"Syn Data List"  },
+          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'Syn Data List' },
         },
         {
           path: '/settings/zk-users',
           name: 'ZKUsers',
           component: () => import('@/views/admin-pages/ZKUsers.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title:"ZKU List" },
+          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'ZKU List' },
         },
         {
           path: '/settings/company-list',
           name: 'CompanyList',
           component: () => import('@/views/admin-pages/CompanyList.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title:"Company List"},
+          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'Company List' },
         },
         {
           path: '/settings/department-list',
           name: 'DepartmentList',
           component: () => import('@/views/admin-pages/DepartmentList.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title:"Department List" },
+          meta: {
+            requiresAuth: true,
+            roles: ['super_admin', 'developer'],
+            title: 'Department List',
+          },
         },
         {
           path: '/settings/designation-list',
           name: 'DesignationList',
           component: () => import('@/views/admin-pages/DesignationList.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title:"Designation List"},
+          meta: {
+            requiresAuth: true,
+            roles: ['super_admin', 'developer'],
+            title: 'Designation List',
+          },
         },
         {
           path: '/settings/shift-list',
           name: 'ShiftList',
           component: () => import('@/views/admin-pages/ShiftList.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title:"Shift List" },
+          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'Shift List' },
         },
         {
           path: '/settings/leave-type-list',
           name: 'LeaveTypeList',
           component: () => import('@/views/admin-pages/LeaveTypeList.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title:"Leave Type List" },
+          meta: {
+            requiresAuth: true,
+            roles: ['super_admin', 'developer'],
+            title: 'Leave Type List',
+          },
         },
         {
           path: '/settings/leave-approval-list',
           name: 'LeaveApprovalList',
           component: () => import('@/views/admin-pages/LeaveApprovalList.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title:"Leave Approval List" },
+          meta: {
+            requiresAuth: true,
+            roles: ['super_admin', 'developer'],
+            title: 'Leave Approval List',
+          },
         },
         {
           path: '/settings/other-approval-list',
           name: 'OtherApprovalList',
           component: () => import('@/views/admin-pages/LeaveApprovalList.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title:"Other Approval List" },
+          meta: {
+            requiresAuth: true,
+            roles: ['super_admin', 'developer'],
+            title: 'Other Approval List',
+          },
         },
         {
           path: '/settings/holiday-list',
           name: 'HoliDayList',
           component: () => import('@/views/admin-pages/HoliDayList.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'] , title:'HoliDay List'},
+          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'HoliDay List' },
         },
         {
           path: '/hrd/notice',
           name: 'NoticeList',
           component: () => import('@/views/admin-pages/NoticeList.vue'),
-          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] , title:'Notice List'},
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Notice List',
+          },
         },
 
         {
           path: '/hrd/notice-add',
           name: 'NoticeAdd',
           component: () => import('@/views/admin-pages/NoticeAdd.vue'),
-          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'], title:'Notice Add' },
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Notice Add',
+          },
         },
         {
           path: '/hrd/notice-show/:id',
           name: 'NoticeShow',
           component: () => import('@/views/admin-pages/NoticeShow.vue'),
-          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] , title:'Notice Show'},
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Notice Show',
+          },
         },
 
         {
           path: '/hrd/notice-feedback-show/:id',
           name: 'NoticeFeedbackShow',
           component: () => import('@/views/admin-pages/NoticeFeedbackList.vue'),
-          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] , title:'Notice Feedback Show'},
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Notice Feedback Show',
+          },
         },
 
         {
           path: '/hrd/notice-edit/:id',
           name: 'NoticeEdit',
           component: () => import('@/views/admin-pages/NoticeEdit.vue'),
-          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'], title:'Notice Edit' },
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Notice Edit',
+          },
         },
 
         {
           path: '/reports',
           name: 'ReportView',
           component: () => import('@/views/admin-pages/ReportView.vue'),
-          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] , title:'Report View'},
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Report View',
+          },
         },
         {
           path: '/reports/today-attendance-report',
           name: 'TodayAttendanceReport',
           component: () => import('@/views/admin-pages/TodayAttendanceReport.vue'),
-          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] , title:'Today Attendance Report'},
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Today Attendance Report',
+          },
         },
         {
           path: '/reports/monthly-attendance-report',
           name: 'MonthlyAttendanceReport',
           component: () => import('@/views/admin-pages/MonthlyAttendanceReport.vue'),
-          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'], title:'Monthly Attendance Report' },
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Monthly Attendance Report',
+          },
         },
         {
           path: '/reports/monthly-attendance-summary-report',
           name: 'AttendanceSummaryReport',
           component: () => import('@/views/admin-pages/MonthlyAttendanceSummaryReport.vue'),
-          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] , title:'Attendance Summary Report'},
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Attendance Summary Report',
+          },
         },
 
         {
           path: '/reports/date-wise-attendance-summary-report',
           name: 'DateWiseAttendanceSummaryReport',
           component: () => import('@/views/admin-pages/DateRangeWiseAttendanceReport.vue'),
-          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] , title:'Attendance Summary Report'},
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Attendance Summary Report',
+          },
         },
 
         {
           path: '/reports/monthly-late-report-list',
           name: 'LateAttendanceReport',
           component: () => import('@/views/admin-pages/LateAttendanceReport.vue'),
-          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] , title:'Late Attendance Report'},
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Late Attendance Report',
+          },
         },
         {
           path: '/reports/daily-late-report-list',
           name: 'DailyLateAttendanceReport',
           component: () => import('@/views/admin-pages/DailyLateAttendanceReport.vue'),
-          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] , title:'Daily Late Attendance Report'},
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Daily Late Attendance Report',
+          },
         },
 
         {
           path: '/hrd',
           name: 'HrdView',
           component: () => import('@/views/admin-pages/HrdView.vue'),
-          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] , title:'Hrd View' },
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Hrd View',
+          },
         },
 
         {
           path: '/hrd/em-attendance',
           name: 'EmployeeAttendance',
           component: () => import('@/views/admin-pages/EmployeeAttendance.vue'),
-          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'], title:'Employee Attendance' },
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Employee Attendance',
+          },
         },
 
         {
           path: '/hrd/em-attendance-log',
           name: 'EmployeeAttendanceLog',
           component: () => import('@/views/admin-pages/EmployeeAttendanceLog.vue'),
-          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'], title:'Employee Attendance Log' },
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Employee Attendance Log',
+          },
         },
 
         {
           path: '/hrd/month-wise-application-log',
           name: 'MonthWiseApplicationLog',
           component: () => import('@/views/admin-pages/MonthWiseApplicationLog.vue'),
-          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'], title:'Employee Attendance Log' },
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Employee Attendance Log',
+          },
         },
 
         {
           path: '/hrd/shift-schedules',
           name: 'ShiftSchedule',
           component: () => import('@/views/admin-pages/ShiftScheduleForm.vue'),
-          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] , title:'Shift Schedule'},
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Shift Schedule',
+          },
         },
 
         {
           path: '/hrd/leave-application-list',
           name: 'LeaveApplicationList',
           component: () => import('@/views/admin-pages/LeaveApplicationList.vue'),
-          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'], title:'Leave Application List' },
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Leave Application List',
+          },
         },
 
         {
           path: '/hrd/short-leave-list',
           name: 'ShortLeaveList',
           component: () => import('@/views/admin-pages/ShortLeaveList.vue'),
-          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] , title:'Short Leave List'},
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Short Leave List',
+          },
         },
 
         {
           path: '/hrd/offday-exchange-list',
           name: 'OffdayExchangeList',
           component: () => import('@/views/admin-pages/OffdayExchangeList.vue'),
-          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] , title:'Offday Exchange List'},
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Offday Exchange List',
+          },
         },
 
         {
           path: '/hrd/shift-exchange-list',
           name: 'ShiftExchangeList',
           component: () => import('@/views/admin-pages/ShiftExchangeList.vue'),
-          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'], title:'Shift Exchange List' },
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Shift Exchange List',
+          },
         },
 
         {
           path: '/hrd/manual-attendance-list',
           name: 'ManualAttendanceList',
           component: () => import('@/views/admin-pages/ManualAttendanceList.vue'),
-          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'], title:'Manual Attendance List' },
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Manual Attendance List',
+          },
         },
 
         {
           path: '/hrd/manual-attendance-add',
           name: 'HrdManualAttendanceAdd',
           component: () => import('@/views/admin-pages/ManualAttendanceAdd.vue'),
-          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] , title:'Hrd Manual Attendance Add'},
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Hrd Manual Attendance Add',
+          },
         },
 
         {
           path: '/hrd/admin-leave-application',
           name: 'HrdAdminLeaveApplication',
           component: () => import('@/views/admin-pages/AdminLeaveApplication.vue'),
-          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'] , title:'Hrd Admin Leave Application'},
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Hrd Admin Leave Application',
+          },
         },
 
         {
           path: '/profile',
           name: 'MyProfile',
           component: () => import('@/views/private-pages/MyProfile.vue'),
-          meta: { requiresAuth: true, title:'Profile' },
+          meta: { requiresAuth: true, title: 'Profile' },
         },
 
         {
           path: '/profile/edit',
           name: 'EditProfile',
           component: () => import('@/views/private-pages/ProfileEdit.vue'),
-          meta: { requiresAuth: true, title:'Edit Profile' },
+          meta: { requiresAuth: true, title: 'Edit Profile' },
         },
 
         {
           path: '/notifications',
           name: 'MyNotificationList',
           component: () => import('@/views/private-pages/MyNotificationList.vue'),
-          meta: { requiresAuth: true, title:'Notification List' },
+          meta: { requiresAuth: true, title: 'Notification List' },
         },
 
         {
           path: '/notifications/:type',
           name: 'MySpecificNotificationList',
           component: () => import('@/views/private-pages/MySpecificNotificationList.vue'),
-          meta: { requiresAuth: true, title:'Notification List'},
+          meta: { requiresAuth: true, title: 'Notification List' },
         },
 
         {
@@ -608,20 +740,20 @@ const router = createRouter({
           path: '/notices',
           name: 'NoticeView',
           component: () => import('@/views/private-pages/NoticeView.vue'),
-          meta: { requiresAuth: true, title:'Notices'},
+          meta: { requiresAuth: true, title: 'Notices' },
         },
 
         {
           path: '/general-notices',
           name: 'MyNoticeList',
           component: () => import('@/views/private-pages/NoticeList.vue'),
-          meta: { requiresAuth: true, title:'General Notices' },
+          meta: { requiresAuth: true, title: 'General Notices' },
         },
         {
           path: '/policy',
           name: 'PolicyList',
           component: () => import('@/views/private-pages/PolicyList.vue'),
-          meta: { requiresAuth: true, title:'Polices '},
+          meta: { requiresAuth: true, title: 'Polices ' },
         },
 
         {
@@ -642,58 +774,62 @@ const router = createRouter({
           path: '/applications',
           name: 'MyApplications',
           component: () => import('@/views/private-pages/MyApplications.vue'),
-          meta: { requiresAuth: true, title:'My Applications'},
+          meta: { requiresAuth: true, title: 'My Applications' },
         },
 
         {
           path: '/applications/leave-applications',
           name: 'MyLeaveApplications',
           component: () => import('@/views/private-pages/MyLeaveApplications.vue'),
-          meta: { requiresAuth: true, title:'Leave Applications' },
+          meta: { requiresAuth: true, title: 'Leave Applications' },
         },
         {
           path: '/applications/leave-application-add',
           name: 'LeaveApplicationAdd',
           component: () => import('@/views/private-pages/LeaveApplicationAdd.vue'),
-          meta: { requiresAuth: true, title:'Add Applications'},
+          meta: { requiresAuth: true, title: 'Add Applications' },
         },
         {
           path: '/applications/leave-application-show/:id',
           name: 'MyLeaveApplicationShow',
           component: () => import('@/views/private-pages/LeaveApplicationShow.vue'),
-          meta: { requiresAuth: true, title:'Show Applications'},
+          meta: { requiresAuth: true, title: 'Show Applications' },
         },
         {
           path: '/leave-application-show/:id',
           name: 'LeaveApplicationShow',
           component: () => import('@/views/private-pages/LeaveApplicationShow.vue'),
-          meta: { requiresAuth: true, title:'Show Applications' },
+          meta: { requiresAuth: true, title: 'Show Applications' },
         },
         {
           path: '/leave-application-edit/:id',
           name: 'LeaveApplicationEdit',
           component: () => import('@/views/private-pages/LeaveApplicationEdit.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title:'Edit Applications'},
+          meta: {
+            requiresAuth: true,
+            roles: ['super_admin', 'developer'],
+            title: 'Edit Applications',
+          },
         },
         {
           path: '/applications/short-leaves',
           name: 'MyShortLeaves',
           component: () => import('@/views/private-pages/MyShortLeaves.vue'),
-          meta: { requiresAuth: true, title:'Short Leave Applications' },
+          meta: { requiresAuth: true, title: 'Short Leave Applications' },
         },
 
         {
           path: '/applications/short-leaves-add',
           name: 'ShortLeaveAdd',
           component: () => import('@/views/private-pages/ShortLeaveAdd.vue'),
-          meta: { requiresAuth: true , title:'Add Short Leave'},
+          meta: { requiresAuth: true, title: 'Add Short Leave' },
         },
 
         {
           path: '/short-leave-show/:id',
           name: 'ShortLeaveShow',
           component: () => import('@/views/private-pages/ShortLeaveShow.vue'),
-          meta: { requiresAuth: true, title:'Show Short Leave' },
+          meta: { requiresAuth: true, title: 'Show Short Leave' },
         },
 
         {
@@ -713,63 +849,63 @@ const router = createRouter({
           path: '/applications/shift-exchanges',
           name: 'MyShiftExchangeList',
           component: () => import('@/views/private-pages/MyShiftExchangeList.vue'),
-          meta: { requiresAuth: true, title:'Shift Exchange List' },
+          meta: { requiresAuth: true, title: 'Shift Exchange List' },
         },
 
         {
           path: '/applications/shift-exchanges-add',
           name: 'ShiftExchangeAdd',
           component: () => import('@/views/private-pages/ShiftExchangeAdd.vue'),
-          meta: { requiresAuth: true , title:'Add Shift Exchange'},
+          meta: { requiresAuth: true, title: 'Add Shift Exchange' },
         },
 
         {
           path: '/exchange-shift-show/:id',
           name: 'ExchangeShiftShow',
           component: () => import('@/views/private-pages/ExchangeShiftShow.vue'),
-          meta: { requiresAuth: true , title:'Show Shift Exchange'},
+          meta: { requiresAuth: true, title: 'Show Shift Exchange' },
         },
 
         {
           path: '/exchange-offday-show/:id',
           name: 'ExchangeOffdayShow',
           component: () => import('@/views/private-pages/ExchangeOffdayShow.vue'),
-          meta: { requiresAuth: true , title:'Show Shift Exchange' },
+          meta: { requiresAuth: true, title: 'Show Shift Exchange' },
         },
 
         {
           path: '/applications/manual-attendances',
           name: 'MyManualAttendanceList',
           component: () => import('@/views/private-pages/MyManualAttendanceList.vue'),
-          meta: { requiresAuth: true  , title:'Manual Attendance List'},
+          meta: { requiresAuth: true, title: 'Manual Attendance List' },
         },
 
         {
           path: '/applications/manual-attendances-add',
           name: 'ManualAttendanceAdd',
           component: () => import('@/views/private-pages/ManualAttendanceAdd.vue'),
-          meta: { requiresAuth: true  , title:'Add Manual Attendance'},
+          meta: { requiresAuth: true, title: 'Add Manual Attendance' },
         },
 
         {
           path: '/manual-attendance-show/:id',
           name: 'ManualAttendanceShow',
           component: () => import('@/views/private-pages/ManualAttendanceShow.vue'),
-          meta: { requiresAuth: true  , title:'Show Manual Attendance'},
+          meta: { requiresAuth: true, title: 'Show Manual Attendance' },
         },
 
         {
           path: '/applications/overtimes',
           name: 'MyOvertimeList',
           component: () => import('@/views/private-pages/MyOvertimeList.vue'),
-          meta: { requiresAuth: true  , title:'Overtime List'},
+          meta: { requiresAuth: true, title: 'Overtime List' },
         },
 
         {
-          path: '/applications/overtimes-add',
+          path: '/applications/overtimes/add',
           name: 'MyOvertimeAdd',
-          component: () => import('@/views/private-pages/ManualAttendanceAdd.vue'),
-          meta: { requiresAuth: true , title:'Add Overtime'},
+          component: () => import('@/views/private-pages/MyOvertimeAdd.vue'),
+          meta: { requiresAuth: true, title: 'Add Overtime' },
         },
       ],
     },
@@ -800,12 +936,10 @@ router.afterEach((to) => {
   }
 })
 
-
 router.afterEach((to) => {
   const routeHistory = useRouteHistory()
-  console.log({to})
+  console.log({ to })
   routeHistory.addToHistory(to)
 })
-
 
 export default router

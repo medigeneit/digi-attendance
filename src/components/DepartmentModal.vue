@@ -83,6 +83,10 @@ watch(
   async (company_id) => {
     if (company_id) {
       await companyStore.fetchEmployee(company_id)
+
+      selectIncharge.value = companyStore.employees.find(
+        (employee) => employee.id === props.department?.in_charge?.id,
+      )
     }
   },
 )
@@ -132,7 +136,12 @@ const fetchCompanies = async () => {
 
         <div class="mb-4">
           <label for="incharge_id" class="block text-sm font-medium mb-2">In Chare</label>
-          <Multiselect :options="employees" v-model="selectIncharge" label="label" :multiple="false" />
+          <Multiselect
+            :options="employees"
+            v-model="selectIncharge"
+            label="label"
+            :multiple="false"
+          />
           <!-- <select
             id="incharge_id"
             v-model="departmentForm.incharge_id"
