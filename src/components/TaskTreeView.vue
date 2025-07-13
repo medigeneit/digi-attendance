@@ -25,7 +25,7 @@
               {{ index + 1 }}.
             </div>
 
-            <TaskTitleRouterLink :task="task" />
+            <TaskTitleRouterLink :task="task" :sub-tasks-open="showSubTask" />
 
             <p class="text-sm text-gray-500 mt-2" v-if="task?.requirement">
               Requirement: {{ task?.requirement?.title }}
@@ -34,7 +34,8 @@
 
           <div class="justify-end items-center gap-2 ml-auto flex order-1 lg:order-0">
             <TaskStatus :status="task?.status" :progressPercent="task?.progress_percent || 0" />
-            <SubTaskProgress :task="task" ref="progress" class="text-sm" />
+
+            <SubTaskProgress ref="progress" :task="task" class="text-sm" />
           </div>
 
           <div class="flex items-center gap-6 flex-none lg:w-full order-0 lg:order-1">
@@ -45,7 +46,12 @@
 
               <span class="text-gray-500 text-sm"> #{{ task.id }} </span>
 
-              <div class="text-red-500 text-sm">{{ treeLevel }}</div>
+              <div
+                class="text-green-500 bg-green-50 text-[10px] px-[5px] py-[1px] rounded-full border border-green-200"
+                v-if="treeLevel === 0"
+              >
+                Main
+              </div>
             </div>
 
             <div class="flex items-center gap-2 text-xs text-gray-500 opacity-80 text-left">

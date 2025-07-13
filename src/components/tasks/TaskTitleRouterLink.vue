@@ -1,16 +1,29 @@
 <script setup>
-defineProps({ task: Object })
+defineProps({ task: Object, subTasksOpen: { type: Boolean, default: false } })
 </script>
 <template>
-  <RouterLink
-    :to="{
-      name: 'TaskShow',
-      params: { id: task.id },
-    }"
-    class="font-medium text-gray-700 cursor-pointer hover:text-sky-700"
-  >
-    <div>
-      {{ task.title }}
-    </div>
-  </RouterLink>
+  <div class="flex items-center gap-1">
+    <i
+      class="fad"
+      :class="
+        task?.children_task_count > 0
+          ? {
+              'fa-folder-tree text-teal-300/60': !subTasksOpen,
+              'fa-folder-open text-teal-400': subTasksOpen,
+            }
+          : 'fa-file text-blue-500'
+      "
+    ></i>
+    <RouterLink
+      :to="{
+        name: 'TaskShow',
+        params: { id: task.id },
+      }"
+      class="font-medium text-gray-700 cursor-pointer hover:text-sky-700"
+    >
+      <div>
+        {{ task.title }}
+      </div>
+    </RouterLink>
+  </div>
 </template>

@@ -1,9 +1,9 @@
 <script setup>
 import Multiselect from '@/components/MultiselectDropdown.vue'
+import { getTaskEmployees } from '@/services/task'
 import { useAuthStore } from '@/stores/auth'
 import { useCompanyStore } from '@/stores/company'
-import { storeToRefs } from 'pinia'
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import CompanyDepartmentSelectInput from '../common/CompanyDepartmentSelectInput.vue'
 import UserChip from '../user/UserChip.vue'
@@ -17,6 +17,7 @@ const auth = useAuthStore()
 
 const route = useRoute()
 
+const companyId = computed(setAndGetModelValue('company-id'))
 const fromDepartmentId = computed(setAndGetModelValue('from-department-id'))
 const toDepartmentId = computed(setAndGetModelValue('to-department-id'))
 const selectedEmployeeId = computed(setAndGetModelValue('user-ids'))
@@ -35,7 +36,9 @@ const emit = defineEmits([
 ])
 
 const companyStore = useCompanyStore()
-const { employees } = storeToRefs(companyStore)
+// const { employees } = storeToRefs(companyStore)
+
+const employees = ref([])
 
 function setAndGetModelValue(key) {
   return {
@@ -67,28 +70,49 @@ function setAndGetInputSearch() {
 
 const selectedEmployee = computed(() => getEmployee(selectedEmployeeId.value))
 
-async function loadEmployees(newCompanyId) {
-  if (newCompanyId) {
-    await companyStore.fetchEmployee(newCompanyId)
-  }
-}
-
 async function loadEmployeesByDepartment() {
-  if (toDepartmentId.value) {
-    const selectedCompany = companyStore.companies.find((company) =>
-      company.departments.some((department) => department.id == toDepartmentId.value),
-    )
+  const company_id = props.modelValue?.['company-id']
+  const department_id = toDepartmentId.value
 
-    await companyStore.fetchEmployee(selectedCompany.id)
+  const params = {
+    ...(company_id ? { company_id } : {}),
+    ...(department_id ? { department_ids: [department_id] } : {}),
   }
+
+  employees.value = (await getTaskEmployees({ params }))?.data?.employees || []
+
+  // if (toDepartmentId.value) {
+  //   const selectedCompany = companyStore.companies.find((company) =>
+  //     company.departments.some((department) => department.id == toDepartmentId.value),
+  //   )
+
+  //   if (selectedCompany.id) {
+  //     await companyStore.fetchEmployee(selectedCompany.id)
+  //   }
+  // }
 }
 
 onMounted(async () => {
-  await companyStore.fetchCompanies({ with: 'departments', ignore_permission: true })
+  await loadEmployeesByDepartment()
 
-  if (props.modelValue?.['company-id']) {
-    await loadEmployees(props.modelValue?.['company-id'])
-  }
+  await companyStore.fetchCompanies({
+    with: 'departments',
+    ignore_permission: true,
+  })
+
+  // const params = {
+  //   ...(props.modelValue?.['company-id'] ? { 'company-id': props.modelValue?.['company-id'] } : {}),
+  // }
+
+  // employees.value = (await getTaskEmployees({ params }))?.employees || []
+
+  // if (props.modelValue?.['company-id']) {
+
+  //   await loadEmployees(props.modelValue?.['company-id'])
+  // } else {
+  //   await userStore.fetchUsers()
+  //   employees.value = userStore.users
+  // }
 })
 
 function getEmployee(employeeId) {
@@ -106,7 +130,22 @@ function handleUserDeSelect() {
   selectedEmployeeId.value = ''
 }
 
+const selectedCompanies = computed(() => {
+  // return companyId.value
+  return companyStore?.companies.filter((company) => company.id == companyId.value)
+})
+
 watch(() => toDepartmentId.value, loadEmployeesByDepartment)
+watch(
+  () => companyId.value,
+  () => {
+    if (toDepartmentId.value !== '') {
+      toDepartmentId.value = ''
+    } else {
+      loadEmployeesByDepartment()
+    }
+  },
+)
 </script>
 
 <template>
@@ -125,31 +164,34 @@ watch(() => toDepartmentId.value, loadEmployeesByDepartment)
         </div>
         <button @click="emit('clickAddTask')" class="btn-1">Add Task</button>
       </div>
-      <!-- ok -->
     </div>
+    <!-- {{ employees }} -->
 
     <div class="flex flex-wrap items-center gap-2 mt-3">
       <div class="flex flex-wrap gap-4 w-full">
-        <CompanyDepartmentSelectInput
-          v-model="fromDepartmentId"
-          :companies="companyStore?.companies || []"
-          class="relative w-full md:w-64"
-          :className="{ select: 'h-10 text-sm px-2 text-gray-600 border-2 border-gray-400' }"
-          v-if="route.name !== 'MyTaskList'"
-          defaultOption="--ALL DEPARTMENT--"
-        >
-          <template #label>
-            <div
-              class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30"
+        <div class="relative w-full md:w-64">
+          <label class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 z-50">
+            Company
+          </label>
+
+          <select
+            v-model="companyId"
+            class="h-10 text-sm px-2 text-gray-600 border-2 border-gray-400 rounded-md w-full"
+          >
+            <option value="">--ALL COMPANY--</option>
+            <option
+              v-for="company in companyStore?.companies"
+              :key="company.id"
+              :value="company.id"
             >
-              Task From Department
-            </div>
-          </template>
-        </CompanyDepartmentSelectInput>
+              {{ company.name }}
+            </option>
+          </select>
+        </div>
 
         <CompanyDepartmentSelectInput
           v-model="toDepartmentId"
-          :companies="companyStore?.companies || []"
+          :companies="selectedCompanies || []"
           class="relative w-full md:w-64"
           :className="{ select: 'h-10 text-sm px-2 text-gray-600  border-2 border-gray-400' }"
           v-if="route.name !== 'MyTaskList'"
@@ -204,6 +246,23 @@ watch(() => toDepartmentId.value, loadEmployeesByDepartment)
             <option value="only-completed">Completed</option>
           </select>
         </div>
+
+        <CompanyDepartmentSelectInput
+          v-model="fromDepartmentId"
+          :companies="companyStore?.companies || []"
+          class="relative w-full md:w-64"
+          :className="{ select: 'h-10 text-sm px-2 text-gray-600 border-2 border-gray-400' }"
+          v-if="route.name !== 'MyTaskList'"
+          defaultOption="--ALL DEPARTMENT--"
+        >
+          <template #label>
+            <div
+              class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30"
+            >
+              Task From Department
+            </div>
+          </template>
+        </CompanyDepartmentSelectInput>
 
         <div class="flex gap-4 items-center flex-shrink-0">
           <label class="flex gap-2">

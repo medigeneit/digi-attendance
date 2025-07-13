@@ -44,8 +44,8 @@ const progressColor = computed<{ container: string; bar: string; text: string }>
 })
 
 defineExpose({
-  completedPercentage: completedPercentage.value,
-  completedSubTaskCount: completedSubTaskCount.value,
+  completedPercentage,
+  completedSubTaskCount,
 })
 </script>
 

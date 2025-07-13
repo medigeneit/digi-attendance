@@ -95,10 +95,9 @@ const update = async () => {
   <div class="px-4 max-h-[90vh] overflow-auto">
     <div class="sticky top-0 pt-4 -mx-4 px-4 border-b bg-white rounded-t-md">
       <h2 class="text-2xl font-semibold text-gray-800 mb-4">Edit Task</h2>
-
       <div v-if="loading" class="text-center py-4 text-gray-500">Loading form...</div>
     </div>
-    <SectionLoading v-if="loading" />
+
     <form @submit.prevent="update" class="my-4">
       <div class="mb-4">
         <label class="block text-gray-700 font-medium mb-2">Task Title</label>
@@ -220,5 +219,6 @@ const update = async () => {
         </div>
       </div>
     </form>
+    <SectionLoading v-if="loading" />
   </div>
 </template>
