@@ -6,6 +6,7 @@ import SubTaskList from '@/components/tasks/SubTaskList.vue'
 import SubTaskProgress from '@/components/tasks/SubTaskProgress.vue'
 import TaskProgressTable from '@/components/tasks/TaskProgressTable.vue'
 import TaskStatus from '@/components/tasks/TaskStatus.vue'
+import TaskStatusManager from '@/components/tasks/TaskStatusManager.vue'
 import TaskSupervisorAndEmployee from '@/components/tasks/TaskSupervisorAndEmployee.vue'
 import TaskUserDateUpdate from '@/components/tasks/TaskUserDateUpdate.vue'
 import { getDisplayDate } from '@/libs/datetime'
@@ -186,22 +187,34 @@ watch(
             </span>
           </div>
 
+          <TaskStatusManager
+            :task="store?.task || {}"
+            class="col-span-full"
+            @updateStatus="fetchTaskList(store?.task?.id)"
+          />
           <hr class="my-3 col-span-full" />
 
           <div class="py-2 flex justify-center items-center gap-2 col-span-full">
-            <button @click.stop="goToEdit(store.task?.id)" class="btn-2 py-0.5">Edit</button>
+            <button
+              @click.stop="goToEdit(store.task?.id)"
+              class="btn-2 py-0.5 disabled:opacity-30 disabled:pointer-events-none"
+              :disabled="store.task.status == 'CLOSED'"
+            >
+              Edit
+            </button>
 
             <RouterLink
               :to="{ name: 'TaskUserAssign', params: { id: store.task?.id } }"
               class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-3 py-0.5 rounded-full transition"
               @click="$event.stopPropagation()"
+              :class="store.task.status == 'CLOSED' ? 'opacity-30 pointer-events-none' : ''"
             >
               <i class="fas fa-user-plus"></i> Assign Users
             </RouterLink>
 
             <RouterLink
               :to="backLink"
-              class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-3 py-0.5 rounded-full transition"
+              class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-3 py-0.5 rounded-full transition disabled:opacity-30 disabled:pointer-events-none"
               @click="$event.stopPropagation()"
             >
               <i class="fas fa-arrow-left"></i> Back
@@ -221,7 +234,7 @@ watch(
                 <button
                   class="btn-3 px-3 py-0.5 text-sm h-8 font-semibold border disabled:opacity-30 disabled:pointer-events-none"
                   @click.prevent="() => handleDateChangeModal('start-date')"
-                  :disabled="!!authUserProgress?.started_at"
+                  :disabled="!!authUserProgress?.started_at || store.task.status == 'CLOSED'"
                 >
                   Set Started Date
                 </button>
@@ -229,7 +242,7 @@ watch(
                 <button
                   class="btn-3 px-3 py-0.5 text-sm h-8 font-semibold border disabled:opacity-30 disabled:pointer-events-none"
                   @click.prevent="() => handleDateChangeModal('finish-date')"
-                  :disabled="!!authUserProgress?.finished_at"
+                  :disabled="!!authUserProgress?.finished_at || store.task.status == 'CLOSED'"
                 >
                   Set Finish Date
                 </button>
