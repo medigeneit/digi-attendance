@@ -1,45 +1,59 @@
-import { defineStore } from 'pinia';
-import { ref } from 'vue';
-import apiClient from '../axios';
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
+import apiClient from '../axios'
 
 export const useAttendanceStore = defineStore('attendance', () => {
-  const monthlyLogs = ref([]);
-  const attendanceLogs = ref([]);
-  const dailyLogs = ref([]);
-  const dailyLateLogs = ref([]);
-  const monthlyLateLogs = ref([]);
-  const summary = ref(null);
-  const monthly_company_summary = ref(null);
-  const selectedMonth = ref(new Date().toISOString().substring(0, 7));
-  const selectedDate = ref(new Date().toISOString().substring(0, 10));
-  const error = ref(null);
-  const isLoading = ref(false);
+  const monthlyLogs = ref([])
+  const attendanceLogs = ref([])
+  const dailyLogs = ref([])
+  const dailyLateLogs = ref([])
+  const monthlyLateLogs = ref([])
+  const summary = ref(null)
+  const monthly_company_summary = ref(null)
+  const selectedMonth = ref(new Date().toISOString().substring(0, 7))
+  const selectedDate = ref(new Date().toISOString().substring(0, 10))
+  const error = ref(null)
+  const isLoading = ref(false)
+
+  const getUserDailyLogsByDate = async (userId, date) => {
+    const formattedDate = formatDateToDayMonthYear(date)
+
+    return monthlyLogs.value.find((log) => log.date === formattedDate)
+  }
+
+  const formatDateToDayMonthYear = (date) => {
+    const d = new Date(date)
+    const day = String(d.getDate()).padStart(2, '0')
+    const month = d.toLocaleString('en-US', { month: 'short' })
+    const year = d.getFullYear()
+    return `${day} ${month} ${year}`
+  }
 
   const getMonthlyAttendanceLog = async (userId, month) => {
     if (!userId || !month) {
-      error.value = 'Invalid user ID or month';
-      return;
+      error.value = 'Invalid user ID or month'
+      return
     }
-  
-    isLoading.value = true;
+
+    isLoading.value = true
     try {
-      const response = await apiClient.get(`/user/${userId}/attendance/monthly/${month}/log`);
+      const response = await apiClient.get(`/user/${userId}/attendance/monthly/${month}/log`)
       attendanceLogs.value = response.data.attendance_logs
     } catch (err) {
-      error.value = err.response?.data?.message || 'Something went wrong';
-      console.error(error.value);
+      error.value = err.response?.data?.message || 'Something went wrong'
+      console.error(error.value)
     } finally {
-      isLoading.value = false;
+      isLoading.value = false
     }
-  };
+  }
 
   const getDateRangeAttendanceSummary = async (startDate, endDate, companyId, userId) => {
     if (!companyId || !startDate || !endDate) {
-      error.value = 'Company, Start Date, and End Date are required';
-      return;
+      error.value = 'Company, Start Date, and End Date are required'
+      return
     }
 
-    isLoading.value = true;
+    isLoading.value = true
 
     try {
       const response = await apiClient.get(`/attendance/date-range-summary`, {
@@ -47,22 +61,28 @@ export const useAttendanceStore = defineStore('attendance', () => {
           company_id: companyId,
           start_date: startDate,
           end_date: endDate,
-          employee_id: userId || undefined
-        }
-      });
+          employee_id: userId || undefined,
+        },
+      })
 
-      return response.data;
+      return response.data
     } catch (err) {
-      error.value = err.response?.data?.message || 'Something went wrong';
-      console.error(error.value);
-      return null;
+      error.value = err.response?.data?.message || 'Something went wrong'
+      console.error(error.value)
+      return null
     } finally {
-      isLoading.value = false;
+      isLoading.value = false
     }
-  };
+  }
 
   // 👉 EXCEL DOWNLOAD
-  const downloadDateRangeExcel = async(startDate, endDate, companyId, userId = null, category = '') => {
+  const downloadDateRangeExcel = async (
+    startDate,
+    endDate,
+    companyId,
+    userId = null,
+    category = '',
+  ) => {
     if (!companyId || !startDate || !endDate) {
       error.value = 'Company, Start Date, and End Date are required'
       return
@@ -106,68 +126,81 @@ export const useAttendanceStore = defineStore('attendance', () => {
 
   const getMonthlyAttendanceByShift = async (userId, month) => {
     if (!userId || !month) {
-      error.value = 'Invalid user ID or month';
-      return;
+      error.value = 'Invalid user ID or month'
+      return
     }
-  
-    isLoading.value = true;
+
+    isLoading.value = true
     try {
-      const response = await apiClient.get(`/user/${userId}/attendance/monthly/${month}`);
-      monthlyLogs.value = response.data.monthly_logs; // শুধু logs
-      summary.value = response.data.summary; // শুধু summary
-      error.value = null;
+      const response = await apiClient.get(`/user/${userId}/attendance/monthly/${month}`)
+      monthlyLogs.value = response.data.monthly_logs // শুধু logs
+      summary.value = response.data.summary // শুধু summary
+      error.value = null
     } catch (err) {
-      error.value = err.response?.data?.message || 'Something went wrong';
-      console.error(error.value);
+      error.value = err.response?.data?.message || 'Something went wrong'
+      console.error(error.value)
     } finally {
-      isLoading.value = false;
+      isLoading.value = false
     }
-  };
-
-
-  const getTodayAttendanceReport = async (companyId, departmentId, employee_id , category, month, status) => {
-    isLoading.value = true;
-    try {
-      const params = {companyId, departmentId, employee_id, category, month, status}
-      const response = await apiClient.get("/attendance/today", { params });
-      dailyLogs.value = response.data; 
-      error.value = null;
-    } catch (err) {
-      error.value = err.response?.data?.message || 'Something went wrong';
-      console.error(error.value);
-    } finally {
-      isLoading.value = false;
-    }
-  };
-
- const getAttendanceLateReport = async (company_id, department_id = null, category = null, employee_id = null, value, type) => {
-  isLoading.value = true;
-  try {
-    const params = {
-      company_id,
-      department_id,
-      category,        // eg: "executive"
-      employee_id,     // eg: 5
-      type,            // 'daily'
-      ...(type === 'daily' ? { date: value } : { month: value }),
-    };
-
-    const response = await apiClient.get("/monthly/attendance/late-reports", { params });
-
-    if (type === 'daily') {
-      dailyLateLogs.value = response.data;
-    } else if (type === 'monthly') {
-      monthlyLateLogs.value = response.data;
-    }
-    
-    error.value = null;
-  } catch (err) {
-    error.value = err.response?.data?.message || 'Something went wrong';
-    console.error(error.value);
-  } finally {
-    isLoading.value = false;
   }
-};
+
+  const getTodayAttendanceReport = async (
+    companyId,
+    departmentId,
+    employee_id,
+    category,
+    month,
+    status,
+  ) => {
+    isLoading.value = true
+    try {
+      const params = { companyId, departmentId, employee_id, category, month, status }
+      const response = await apiClient.get('/attendance/today', { params })
+      dailyLogs.value = response.data
+      error.value = null
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Something went wrong'
+      console.error(error.value)
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const getAttendanceLateReport = async (
+    company_id,
+    department_id = null,
+    category = null,
+    employee_id = null,
+    value,
+    type,
+  ) => {
+    isLoading.value = true
+    try {
+      const params = {
+        company_id,
+        department_id,
+        category, // eg: "executive"
+        employee_id, // eg: 5
+        type, // 'daily'
+        ...(type === 'daily' ? { date: value } : { month: value }),
+      }
+
+      const response = await apiClient.get('/monthly/attendance/late-reports', { params })
+
+      if (type === 'daily') {
+        dailyLateLogs.value = response.data
+      } else if (type === 'monthly') {
+        monthlyLateLogs.value = response.data
+      }
+
+      error.value = null
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Something went wrong'
+      console.error(error.value)
+    } finally {
+      isLoading.value = false
+    }
+  }
 
   // const getAttendanceLateReport = async (company_id, employee_id, month) => {
   //   isLoading.value = true;
@@ -175,9 +208,9 @@ export const useAttendanceStore = defineStore('attendance', () => {
   //     const params = {company_id,employee_id, month}
 
   //     console.log({params});
-      
+
   //     const response = await apiClient.get("/attendance/late-reports", { params });
-  //     dailyLateLogs.value = response.data; 
+  //     dailyLateLogs.value = response.data;
   //     error.value = null;
   //   } catch (err) {
   //     error.value = err.response?.data?.message || 'Something went wrong';
@@ -189,174 +222,167 @@ export const useAttendanceStore = defineStore('attendance', () => {
 
   const getMonthlyAttendanceSummaryReport = async (company_id, employee_id, category, month) => {
     if (!company_id || !month) {
-      error.value = 'Invalid user ID or month';
-      return;
+      error.value = 'Invalid user ID or month'
+      return
     }
-    isLoading.value = true;
+    isLoading.value = true
     try {
-      const params = { company_id, employee_id, category, month}
-      const response = await apiClient.get(`/attendance/monthly-summary-reports`, { params });
-      monthly_company_summary.value = response.data; 
-      error.value = null;
+      const params = { company_id, employee_id, category, month }
+      const response = await apiClient.get(`/attendance/monthly-summary-reports`, { params })
+      monthly_company_summary.value = response.data
+      error.value = null
     } catch (err) {
-      error.value = err.response?.data?.message || 'Something went wrong';
-      console.error(error.value);
+      error.value = err.response?.data?.message || 'Something went wrong'
+      console.error(error.value)
     } finally {
-      isLoading.value = false;
+      isLoading.value = false
     }
-  };
+  }
 
   const downloadPDF = async (company_id, category, month, flag = 0) => {
-    
     if (!company_id || !month) {
-      error.value = 'Invalid user ID or month';
-      return;
+      error.value = 'Invalid user ID or month'
+      return
     }
 
-    isLoading.value = true;
+    isLoading.value = true
 
     try {
-      const params = { company_id, category, month}
+      const params = { company_id, category, month }
       const response = await apiClient.get(`/attendance/monthly-summary-reports?flag=pdf`, {
-          params,
-          responseType: 'blob', // Important for file downloads
-      });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `${month} attendance_summary.pdf`); // File name
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+        params,
+        responseType: 'blob', // Important for file downloads
+      })
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `${month} attendance_summary.pdf`) // File name
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
     } catch (err) {
-      error.value = err.response?.data?.message || 'Something went wrong';
-      console.error(error.value);
+      error.value = err.response?.data?.message || 'Something went wrong'
+      console.error(error.value)
     } finally {
-      isLoading.value = false;
+      isLoading.value = false
     }
-  };
+  }
 
-  const attendanceDownloadPdf = async (companyId, employee_id , category, month, status) => {
-    isLoading.value = true;
+  const attendanceDownloadPdf = async (companyId, employee_id, category, month, status) => {
+    isLoading.value = true
     try {
-      const params = { companyId, employee_id , category, month, status}
+      const params = { companyId, employee_id, category, month, status }
       const response = await apiClient.get(`/attendance/today?flag=pdf`, {
-          params,
-          responseType: 'blob', // Important for file downloads
-      });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `${month} attendance_summary.pdf`); // File name
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+        params,
+        responseType: 'blob', // Important for file downloads
+      })
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `${month} attendance_summary.pdf`) // File name
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
     } catch (err) {
-      error.value = err.response?.data?.message || 'Something went wrong';
-      console.error(error.value);
+      error.value = err.response?.data?.message || 'Something went wrong'
+      console.error(error.value)
     } finally {
-      isLoading.value = false;
+      isLoading.value = false
     }
-  };
+  }
 
   const downloadExcel = async (company_id, category, month) => {
-    
     if (!company_id || !month) {
-      error.value = 'Invalid company ID or month';
-      return;
+      error.value = 'Invalid company ID or month'
+      return
     }
-    isLoading.value = true;
-    
+    isLoading.value = true
+
     try {
-      
-      const params = { company_id, category, month };
+      const params = { company_id, category, month }
 
-        const response = await apiClient.get(`/attendance/monthly-summary-reports?flag=excel`, {
-            params,
-            responseType: 'blob', // Important for file downloads
-        });
+      const response = await apiClient.get(`/attendance/monthly-summary-reports?flag=excel`, {
+        params,
+        responseType: 'blob', // Important for file downloads
+      })
 
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', `${month} attendance_summary.xlsx`); // File name
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `${month} attendance_summary.xlsx`) // File name
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
     } catch (err) {
-        error.value = err.response?.data?.message || 'Something went wrong';
-        console.error(error.value);
+      error.value = err.response?.data?.message || 'Something went wrong'
+      console.error(error.value)
     } finally {
-        isLoading.value = false;
+      isLoading.value = false
     }
-};
-
-const attendanceDownloadExcel = async (companyId, employee_id , category, month, status) => {
-    isLoading.value = true;
-    try {
-        const params = { companyId, employee_id , category, month, status };
-        const response = await apiClient.get(`/attendance/today?flag=excel`, {
-            params,
-            responseType: 'blob', // Important for file downloads
-        });
-
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', `${month} attendance_summary.xlsx`); // File name
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-    } catch (err) {
-        error.value = err.response?.data?.message || 'Something went wrong';
-        console.error(error.value);
-    } finally {
-        isLoading.value = false;
-    }
-};
-
-const lateReportDownloadExcel = async (company_id, employee_id, value, type) => {
-  if (!company_id) {
-    error.value = 'Invalid company ID or date/month';
-    return;
   }
 
-  isLoading.value = true;
+  const attendanceDownloadExcel = async (companyId, employee_id, category, month, status) => {
+    isLoading.value = true
+    try {
+      const params = { companyId, employee_id, category, month, status }
+      const response = await apiClient.get(`/attendance/today?flag=excel`, {
+        params,
+        responseType: 'blob', // Important for file downloads
+      })
 
-  try {
-    const params = {
-      company_id,
-      ...(employee_id ? { employee_id } : {}), // only include if present
-      type,
-      ...(type === 'daily' ? { date: value } : { month: value }),
-    };
-
-    const response = await apiClient.get(`/monthly/attendance/late-reports?flag=excel`, {
-      params,
-      responseType: 'blob',
-    });
-
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.href = url;
-
-    // File name should reflect type
-    const filename = `${type === 'daily' ? value : value}-late-attendance.xlsx`;
-    link.setAttribute('download', filename);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-  } catch (err) {
-    error.value = err.response?.data?.message || 'Something went wrong';
-    console.error(error.value);
-  } finally {
-    isLoading.value = false;
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `${month} attendance_summary.xlsx`) // File name
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Something went wrong'
+      console.error(error.value)
+    } finally {
+      isLoading.value = false
+    }
   }
-};
 
+  const lateReportDownloadExcel = async (company_id, employee_id, value, type) => {
+    if (!company_id) {
+      error.value = 'Invalid company ID or date/month'
+      return
+    }
+
+    isLoading.value = true
+
+    try {
+      const params = {
+        company_id,
+        ...(employee_id ? { employee_id } : {}), // only include if present
+        type,
+        ...(type === 'daily' ? { date: value } : { month: value }),
+      }
+
+      const response = await apiClient.get(`/monthly/attendance/late-reports?flag=excel`, {
+        params,
+        responseType: 'blob',
+      })
+
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+
+      // File name should reflect type
+      const filename = `${type === 'daily' ? value : value}-late-attendance.xlsx`
+      link.setAttribute('download', filename)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Something went wrong'
+      console.error(error.value)
+    } finally {
+      isLoading.value = false
+    }
+  }
 
   return {
     monthlyLogs,
@@ -370,6 +396,7 @@ const lateReportDownloadExcel = async (company_id, employee_id, value, type) => 
     isLoading,
     dailyLogs,
     attendanceLogs,
+    getUserDailyLogsByDate,
     getMonthlyAttendanceByShift,
     getTodayAttendanceReport,
     getAttendanceLateReport,
@@ -383,6 +410,5 @@ const lateReportDownloadExcel = async (company_id, employee_id, value, type) => 
     getDateRangeAttendanceSummary,
     downloadDateRangeExcel,
     downloadDateRangePdf,
-  };
-});
-
+  }
+})
