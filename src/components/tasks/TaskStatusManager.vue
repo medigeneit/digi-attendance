@@ -17,7 +17,7 @@ const mainClass = computed(() => {
   return {
     'bg-yellow-50': props.task.status === 'IN_PROGRESS',
     'bg-green-50': props.task.status === 'COMPLETED',
-    'bg-blue-50': props.task.status === 'CLOSED',
+    'bg-blue-50': props.task.closed_at,
   }
 })
 
@@ -64,7 +64,12 @@ async function handleStatusSubmit() {
     <!-- <pre>{{ task.status }}</pre> -->
 
     <div class="flex justify-center items-center">
-      <div v-if="task.status === 'PENDING'">
+      <div v-if="task.closed_at" class="flex flex-col justify-center items-center">
+        <i class="fad fa-lock-alt fa-6x text-blue-500"></i>
+        <div class="text-blue-700 text-2xl mt-4">Task closed</div>
+      </div>
+
+      <div v-else-if="task.status === 'PENDING'">
         <button class="btn-3" @click.prevent="changingStatus = 'IN_PROGRESS'">Start Working</button>
       </div>
 
@@ -80,11 +85,6 @@ async function handleStatusSubmit() {
         <i class="fad fa-check-circle fa-6x text-green-500"></i>
         <div class="text-green-700 text-2xl">Task Has been completed</div>
         <button class="btn-3 mt-8" @click.prevent="changingStatus = 'CLOSED'">Close Task</button>
-      </div>
-
-      <div v-else-if="task.status === 'CLOSED'" class="flex flex-col justify-center items-center">
-        <i class="fad fa-lock-alt fa-6x text-blue-500"></i>
-        <div class="text-blue-700 text-2xl mt-4">Task closed</div>
       </div>
     </div>
 

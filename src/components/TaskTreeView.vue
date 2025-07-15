@@ -9,8 +9,9 @@
     <div
       class="flex-grow border-2 rounded py-3 px-3"
       :class="{
+        'bg-blue-100/30  ': task.closed_at,
         'bg-green-100  ': progress?.completedPercentage === 100,
-        'bg-white hover:bg-gray-50': progress?.completedPercentage < 100,
+        'bg-white hover:bg-gray-50': progress?.completedPercentage < 100 && !task.closed_at,
         'shadow-sm': treeLevel > 0,
         'border-sky-500': index % 2 === 0,
         'border-pink-300': index % 2 === 1,
@@ -111,14 +112,16 @@
               </span>
             </button>
 
-            <a
-              :href="`/tasks/add?parent_id=${props.task.id}&back-to=${encodeURIComponent(route.path + '?' + objectToQuery(route.query)).toLowerCase()}`"
-              class="hover:bg-indigo-600 hover:text-white text-indigo-600 font-semibold px-3 py-0.5 rounded-full transition border border-transparent"
-              @click.stop.prevent="emits('addClick', props.task.id)"
-              v-if="treeLevel < 2"
-            >
-              <i class="fas fa-plus"></i> Add Sub Task
-            </a>
+            <template v-if="task.status !== 'COMPLETED' && !task.closed_at">
+              <a
+                :href="`/tasks/add?parent_id=${props.task.id}&back-to=${encodeURIComponent(route.path + '?' + objectToQuery(route.query)).toLowerCase()}`"
+                class="hover:bg-indigo-600 hover:text-white text-indigo-600 font-semibold px-3 py-0.5 rounded-full transition border border-transparent"
+                @click.stop.prevent="emits('addClick', props.task.id)"
+                v-if="treeLevel < 2"
+              >
+                <i class="fas fa-plus"></i> Add Sub Task
+              </a>
+            </template>
           </div>
 
           <div class="flex items-center sm:ml-auto order-0 sm:order-1">

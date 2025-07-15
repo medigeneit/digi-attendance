@@ -192,13 +192,12 @@ watch(
             class="col-span-full"
             @updateStatus="fetchTaskList(store?.task?.id)"
           />
-          <hr class="my-3 col-span-full" />
 
-          <div class="py-2 flex justify-center items-center gap-2 col-span-full">
+          <div class="mt-6 py-2 flex justify-center items-center gap-2 col-span-full">
             <button
               @click.stop="goToEdit(store.task?.id)"
               class="btn-2 py-0.5 disabled:opacity-30 disabled:pointer-events-none"
-              :disabled="store.task.status == 'CLOSED'"
+              :disabled="!!store.task.closed_at"
             >
               Edit
             </button>
@@ -207,7 +206,7 @@ watch(
               :to="{ name: 'TaskUserAssign', params: { id: store.task?.id } }"
               class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-3 py-0.5 rounded-full transition"
               @click="$event.stopPropagation()"
-              :class="store.task.status == 'CLOSED' ? 'opacity-30 pointer-events-none' : ''"
+              :class="!!store.task.closed_at ? 'opacity-30 pointer-events-none' : ''"
             >
               <i class="fas fa-user-plus"></i> Assign Users
             </RouterLink>
@@ -234,7 +233,7 @@ watch(
                 <button
                   class="btn-3 px-3 py-0.5 text-sm h-8 font-semibold border disabled:opacity-30 disabled:pointer-events-none"
                   @click.prevent="() => handleDateChangeModal('start-date')"
-                  :disabled="!!authUserProgress?.started_at || store.task.status == 'CLOSED'"
+                  :disabled="!!authUserProgress?.started_at || !!store.task.closed_at"
                 >
                   Set Started Date
                 </button>
@@ -242,7 +241,7 @@ watch(
                 <button
                   class="btn-3 px-3 py-0.5 text-sm h-8 font-semibold border disabled:opacity-30 disabled:pointer-events-none"
                   @click.prevent="() => handleDateChangeModal('finish-date')"
-                  :disabled="!!authUserProgress?.finished_at || store.task.status == 'CLOSED'"
+                  :disabled="!!authUserProgress?.finished_at || !!store.task.closed_at"
                 >
                   Set Finish Date
                 </button>
@@ -276,7 +275,14 @@ watch(
           </div>
         </section>
 
-        <section v-if="route.name == 'TaskShow' && store.task?.level <= 2">
+        <section
+          v-if="
+            route.name == 'TaskShow' &&
+            store.task?.level <= 2 &&
+            store.task.status !== 'COMPLETED' &&
+            !store.task.closed_at
+          "
+        >
           <SubTaskList
             :subTasks="subTasks"
             :parent-id="route.params.id"

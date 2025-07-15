@@ -70,8 +70,7 @@ const taskReports = computed(() => {
 <template>
   <div class="mt-4">
     <hr class="mb-2" />
-    <!-- <pre>{{ taskReports }}</pre> -->
-    <hr class="mb-2" />
+
     <!-- <pre>{{ taskStore.tasks }}</pre> -->
     <div class="bg-white">
       <pre>{{ usersTaskProgress }}</pre>
@@ -80,7 +79,7 @@ const taskReports = computed(() => {
         <h3 class="text-sm font-semibold text-gray-600 uppercase mt-4">Task Reports</h3>
 
         <RouterLink
-          v-if="taskStore.task.children_task_count === 0"
+          v-if="taskStore.task?.children_task_count === 0 && !taskStore.task?.closed_at"
           :to="{
             name: 'TaskReportAdd',
             params: { id: taskStore.task?.id },
@@ -168,11 +167,11 @@ const taskReports = computed(() => {
                   </div>
                 </div>
               </td>
-              <!-- 
+              <!--
               <td class="px-4 py-2 font-medium text-center">
                 {{ task_report.duration_hour }} h {{ task_report.duration_minute }} m
               </td>
-              <td class="px-4 py-2 font-medium text-center">{{ task_report.progress }}%</td> 
+              <td class="px-4 py-2 font-medium text-center">{{ task_report.progress }}%</td>
 -->
             </tr>
           </tbody>
