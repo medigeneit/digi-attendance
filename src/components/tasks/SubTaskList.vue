@@ -10,6 +10,7 @@ const props = defineProps({
   subTasks: Array,
   parentId: { type: Number, required: true },
   treeLevel: { type: Number, required: true },
+  subTaskIsCreatable: { type: Boolean, default: true },
 })
 
 const employeeAssignForm = reactive({
@@ -108,7 +109,7 @@ function handleTaskAddClose() {
             <h2 class="text-2xl font-bold text-gray-800">Sub Tasks</h2>
           </div>
 
-          <div class="flex flex-wrap items-center gap-2 mt-3">
+          <div class="flex flex-wrap items-center gap-2 mt-3" v-if="subTaskIsCreatable">
             <button class="btn-1 ml-auto" @click.prevent="() => goToAdd(parentId)">
               Add Sub Task
             </button>
