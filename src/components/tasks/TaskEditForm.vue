@@ -57,7 +57,7 @@ function setTaskOnFormData(taskData) {
     requirement_id: taskData.requirement_id,
     from_department_id: taskData.from_department_id,
     to_department_id: taskData.to_department_id,
-    status: taskData.status,
+    // status: taskData.status,
     ...(auth.user?.role !== 'employee'
       ? {
           is_important: taskData.is_important,
@@ -78,8 +78,6 @@ const update = async () => {
       ...form.value,
       user_ids: selectedUsers.value?.map((u) => Number(u.id)) || [],
     }
-
-    console.log({ payload })
 
     await store.updateTask(props.taskId, payload, { loadingBeforeFetch: false })
     emit('updated')
@@ -169,7 +167,7 @@ const update = async () => {
         </div>
       </template>
 
-      <div class="grid grid-cols-2 gap-4 mb-4" v-if="task?.children_task_count === 0">
+      <!-- <div class="grid grid-cols-2 gap-4 mb-4" v-if="task?.children_task_count === 0">
         <div>
           <label class="block text-gray-700 font-medium mb-2">Status</label>
           <select
@@ -182,7 +180,7 @@ const update = async () => {
             <option>BLOCKED</option>
           </select>
         </div>
-      </div>
+      </div> -->
 
       <div class="mb-4">
         <label class="block text-gray-700 font-medium mb-2">Description</label>
