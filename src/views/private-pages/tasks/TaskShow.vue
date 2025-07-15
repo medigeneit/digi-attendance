@@ -275,14 +275,7 @@ watch(
           </div>
         </section>
 
-        <section
-          v-if="
-            route.name == 'TaskShow' &&
-            store.task?.level <= 2 &&
-            store.task.status !== 'COMPLETED' &&
-            !store.task.closed_at
-          "
-        >
+        <section v-if="route.name == 'TaskShow' && store.task?.level <= 2 && !store.task.closed_at">
           <SubTaskList
             :subTasks="subTasks"
             :parent-id="route.params.id"
