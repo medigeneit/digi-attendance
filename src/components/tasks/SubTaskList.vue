@@ -106,7 +106,7 @@ function handleTaskAddClose() {
       <template #task:header>
         <div class="flex justify-between mt-5">
           <div class="flex justify-between items-center">
-            <h2 class="text-2xl font-bold text-gray-800">Sub Tasks</h2>
+            <h2 class="text-xl font-semibold text-gray-800">Sub Tasks</h2>
           </div>
 
           <div class="flex flex-wrap items-center gap-2 mt-3" v-if="subTaskIsCreatable">

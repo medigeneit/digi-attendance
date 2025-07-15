@@ -34,6 +34,13 @@
           </div>
 
           <div class="justify-end items-center gap-2 ml-auto flex order-1 lg:order-0">
+            <div
+              v-if="task.closed_at"
+              class="border rounded-full px-2 bg-blue-500/60 text-white flex items-center text-sm"
+            >
+              <i class="fas fa-lock mr-2 text-sm"></i>CLOSED
+            </div>
+
             <TaskStatus :status="task?.status" :progressPercent="task?.progress_percent || 0" />
 
             <SubTaskProgress ref="progress" :task="task" class="text-sm" />
