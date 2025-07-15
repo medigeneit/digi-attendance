@@ -1,10 +1,11 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 const props = defineProps({
   modelValue: String,
 })
 
+const searchInput = ref()
 const emit = defineEmits(['update:modelValue'])
 
 const emitSearchText = (value) => {
@@ -26,6 +27,7 @@ const search = computed({
   <div class="text-gray-600 relative">
     <label class="absolute text-xs left-2.5 -top-1.5 bg-slate-100 text-blue-500">Search</label>
     <input
+      ref="searchInput"
       id="search"
       v-model="search"
       type="text"
@@ -36,7 +38,12 @@ const search = computed({
       <i
         class="fas fa-times opacity-35 hover:opacity-60 cursor-pointer"
         v-if="search"
-        @click.prevent="() => emitSearchText('')"
+        @click.prevent="
+          () => {
+            emitSearchText('')
+            searchInput.focus()
+          }
+        "
       ></i>
       <i class="fas fa-search opacity-80"></i>
     </div>

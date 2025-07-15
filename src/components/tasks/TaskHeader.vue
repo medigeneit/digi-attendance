@@ -28,7 +28,7 @@ const taskStatus = computed(setAndGetModelValue('status'))
 const isImportant = computed(setAndGetModelValue('is-important'))
 const isUrgent = computed(setAndGetModelValue('is-urgent'))
 const isTarget = computed(setAndGetModelValue('is-target'))
-const search = computed(setAndGetInputSearch('search'))
+const search = computed(setAndGetModelValue('search'))
 
 const emit = defineEmits([
   'update:modelValue',
@@ -47,25 +47,6 @@ function setAndGetModelValue(key) {
     get: () => props.modelValue[key] || '',
     set: (value) => {
       emit('update:modelValue', { ...props.modelValue, [key]: value || undefined })
-    },
-  }
-}
-
-function setAndGetInputSearch() {
-  let timeoutId = 0
-
-  const emitSearchText = (value) => {
-    emit('update:modelValue', {
-      ...props.modelValue,
-      search: value || undefined,
-    })
-  }
-
-  return {
-    get: () => props.modelValue['search'] || '',
-    set: (value) => {
-      clearTimeout(timeoutId)
-      timeoutId = setTimeout(emitSearchText, 500, value)
     },
   }
 }
@@ -219,6 +200,7 @@ watch(
             </label>
           </div>
         </template>
+
         <CompanyDepartmentSelectInput
           v-model="fromDepartmentId"
           :companies="companyStore?.companies || []"
