@@ -6,6 +6,6 @@
         class="absolute inset-0 w-full h-full border-4 border-t-transparent border-b-transparent border-l-blue-600 rounded-full animate-spin"
       ></div>
     </div>
-    <span class="text-blue-600 text-sm">Loading...</span>
+    <span class="text-blue-600 text-sm"><slot>Loading...</slot></span>
   </div>
 </template>
