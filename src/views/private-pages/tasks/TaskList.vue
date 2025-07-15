@@ -33,6 +33,7 @@ const priorityChangingDisabled = computed(() => {
 })
 const editingId = ref(null)
 const addForm = ref(false)
+
 const addFormData = reactive({
   parentId: 0,
   requirementId: 0,
@@ -42,6 +43,7 @@ const employeeAssignForm = reactive({
   taskId: 0,
   isOpen: false,
 })
+
 const draggableTaskList = ref(null)
 const queryLogs = ref([])
 
