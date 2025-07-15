@@ -72,7 +72,7 @@ onMounted(async () => {
 
   await companyStore.fetchCompanies({
     with: 'departments',
-    ignore_permission: true,
+    // ignore_permission: true,
   })
 })
 
