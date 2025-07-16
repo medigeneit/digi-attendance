@@ -54,7 +54,7 @@ function setAndGetModelValue(key) {
 const selectedEmployee = computed(() => getEmployee(selectedEmployeeId.value))
 
 async function loadEmployeesByDepartment() {
-  if (props.isMyTask) {
+  if (!props.isMyTask) {
     const company_id = props.modelValue?.['company-id']
     const department_id = toDepartmentId.value
 

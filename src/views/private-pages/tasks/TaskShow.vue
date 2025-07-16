@@ -70,10 +70,10 @@ const backLink = computed(() => {
   }
 
   if (store.task?.parent_id == 0) {
-    return { name: 'TaskList' }
+    return { name: route.name === 'MyTaskShow' ? 'MyTaskList' : 'TaskList' }
   }
 
-  return { name: 'TaskShow', params: { id: store.task?.parent_id } }
+  return { params: { id: store.task?.parent_id } }
 })
 
 watch(
@@ -249,12 +249,13 @@ watch(
 
               <RouterLink
                 :to="{
-                  name: 'TaskShow',
                   params: { id: store.task?.id },
                 }"
                 @click="$event.stopPropagation()"
                 class="py-0.5 btn-3 ml-auto text-sm h-8"
-                :class="{ 'bg-blue-500 text-white': route.name == 'TaskShow' }"
+                :class="{
+                  'bg-blue-500 text-white': route.name == 'TaskShow' || route.name === 'MyTaskShow',
+                }"
                 v-if="subTasks.length > 0"
               >
                 <i class="fal fa-list-ul"></i> Sub Tasks
@@ -275,7 +276,9 @@ watch(
           </div>
         </section>
 
-        <section v-if="route.name == 'TaskShow' && store.task?.level <= 2">
+        <section
+          v-if="(route.name == 'TaskShow' || route.name === 'MyTaskShow') && store.task?.level <= 2"
+        >
           <SubTaskList
             :subTasks="subTasks"
             :parent-id="route.params.id"

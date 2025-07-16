@@ -156,6 +156,32 @@ const router = createRouter({
             },
           ],
         },
+        {
+          path: 'my-tasks/:id',
+          name: 'MyTaskShow',
+          component: () => import('@/views/private-pages/tasks/TaskShow.vue'),
+          meta: { requiresAuth: true, title: 'Task Show' },
+          children: [
+            {
+              path: 'sub-tasks',
+              name: 'MySubTasks',
+              component: () => import('@/views/private-pages/tasks/SubTasks.vue'),
+              meta: { requiresAuth: true },
+            },
+            {
+              path: 'reports',
+              name: 'MyTaskReports',
+              component: () => import('@/views/private-pages/tasks/TaskReports.vue'),
+              meta: { requiresAuth: true },
+            },
+            {
+              path: 'add-report',
+              name: 'MyTaskReportAdd',
+              component: () => import('@/views/private-pages/tasks/AddTaskReport.vue'),
+              meta: { requiresAuth: true },
+            },
+          ],
+        },
 
         {
           path: 'tasks/:id/assign-users',

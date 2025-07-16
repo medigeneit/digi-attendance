@@ -17,6 +17,7 @@ const mainClass = computed(() => {
   return {
     'bg-yellow-50': props.task.status === 'IN_PROGRESS',
     'bg-green-50': props.task.status === 'COMPLETED',
+    'bg-red-50': props.task.status === 'PENDING',
     'bg-blue-50': props.task.closed_at,
   }
 })
@@ -58,9 +59,24 @@ async function handleStatusSubmit() {
     state.value = ''
   }
 }
+
+const actionIconClass = computed(() => {
+  if (nextAction.value == 'Start') {
+    return 'fas fa-play-circle text-blue-500'
+  } else if (nextAction.value == 'Finish') {
+    return 'fas fa-stop-circle text-blue-500'
+  }
+  return ''
+})
 </script>
 <template>
-  <div class="border py-8 px-4 rounded" v-if="task.children_task_count === 0" :class="mainClass">
+  <div
+    class="border py-8 px-4 rounded"
+    :class="mainClass"
+    v-if="
+      (task.children_task_count > 0 && task.status !== 'PENDING') || task.children_task_count === 0
+    "
+  >
     <!-- <pre>{{ task.status }}</pre> -->
 
     <div class="flex justify-center items-center">
@@ -70,12 +86,29 @@ async function handleStatusSubmit() {
       </div>
 
       <div v-else-if="task.status === 'PENDING'">
-        <button class="btn-3" @click.prevent="changingStatus = 'IN_PROGRESS'">Start Working</button>
+        <button
+          class="btn-3"
+          v-if="task.children_task_count === 0"
+          @click.prevent="changingStatus = 'IN_PROGRESS'"
+        >
+          Start Working
+        </button>
+        <div v-else>Task Pending</div>
       </div>
 
-      <div v-else-if="task.status === 'IN_PROGRESS'">
-        <div class="mb-3">Task In Progress</div>
-        <button class="btn-3" @click.prevent="changingStatus = 'COMPLETED'">Finish Task</button>
+      <div
+        v-else-if="task.status === 'IN_PROGRESS'"
+        class="flex justify-center items-center flex-col"
+      >
+        <i class="fas fa-circle fa-2x text-red-800 animate-pulse"></i>
+        <div class="mb-3 text-2xl my-4 text-red-800">Task In Progress</div>
+        <button
+          class="btn-3"
+          @click.prevent="changingStatus = 'COMPLETED'"
+          v-if="task.children_task_count === 0"
+        >
+          Finish Task
+        </button>
       </div>
 
       <div
@@ -102,8 +135,11 @@ async function handleStatusSubmit() {
           </div>
           <div class="text-center my-1 text-lg">Are you sure?</div>
           <div class="text-center my-1">
-            Want to <span class="border px-2 rounded-md bg-gray-50 mx-2">{{ nextAction }}</span> the
-            task?
+            Want to
+            <span class="border px-2 rounded-md bg-gray-50">
+              <i class="text-sm" :class="actionIconClass"></i> {{ nextAction }}</span
+            >
+            the task?
           </div>
         </div>
         <hr class="mt-3 -mx-4" />
@@ -111,7 +147,9 @@ async function handleStatusSubmit() {
           <div class="text-red-600 text-center mt-2 text-sm">{{ error }}</div>
           <div class="flex justify-between mt-3">
             <button class="btn-3" @click.prevent="changingStatus = ''">Cancel</button>
-            <button class="btn-2">{{ nextAction }} Task</button>
+            <button class="btn-2">
+              <i class="text-xl text-white" :class="actionIconClass"></i> {{ nextAction }} Task
+            </button>
           </div>
         </div>
       </form>

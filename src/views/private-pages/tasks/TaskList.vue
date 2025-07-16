@@ -213,6 +213,7 @@ const taskFilter = computed({
           <template #item="{ item, index }">
             <div class="flex items-stretched">
               <TaskTreeView
+                :is-my-task="route.name === 'MyTaskList'"
                 :task="item"
                 :index="index"
                 :showDraggableHandle="!priorityChangingDisabled"

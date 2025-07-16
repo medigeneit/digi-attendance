@@ -4,6 +4,7 @@ import DraggableList from '@/components/common/DraggableList.vue'
 import useTaskPriorityUpdate from '@/libs/task-priority'
 import { useAuthStore } from '@/stores/auth'
 import { computed, ref } from 'vue'
+import { useRoute } from 'vue-router'
 
 const props = defineProps({
   tasks: {
@@ -30,6 +31,7 @@ const props = defineProps({
 })
 
 const auth = useAuthStore()
+const route = useRoute()
 
 const priorityUpdatable = computed(() => {
   if (auth?.user?.role !== 'employee' && auth?.isAdminMood) {
@@ -83,6 +85,7 @@ const handleTaskPrioritySave = async () => {
         #item="{ item, index }"
       >
         <TaskTreeView
+          :isMyTask="route.name == 'MyTaskShow'"
           :index="index"
           :task="item"
           :showDraggableHandle="priorityUpdatable"

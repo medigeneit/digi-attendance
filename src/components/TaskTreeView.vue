@@ -26,7 +26,11 @@
               {{ index + 1 }}.
             </div>
 
-            <TaskTitleRouterLink :task="task" :sub-tasks-open="showSubTask" />
+            <TaskTitleRouterLink
+              :task="task"
+              :sub-tasks-open="showSubTask"
+              :is-my-task="isMyTask"
+            />
 
             <p class="text-sm text-gray-500 mt-2" v-if="task?.requirement">
               Requirement: {{ task?.requirement?.title }}
@@ -196,6 +200,7 @@ const props = defineProps({
   hideButtons: { type: Boolean, default: false },
   treeLevel: { type: Number, default: 0 },
   showDraggableHandle: { Boolean, default: false },
+  isMyTask: { Boolean, default: false },
   index: { type: Number },
 })
 

@@ -197,7 +197,15 @@ const update = async () => {
           {{ store.error }}
         </div>
         <hr v-if="store.error" class="mb-4" />
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-4 justify-between">
+          <button
+            type="button"
+            @click.prevent="emit('close')"
+            class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-5 py-2 rounded transition"
+          >
+            Cancel
+          </button>
+
           <button
             :disabled="loading"
             type="submit"
@@ -206,13 +214,6 @@ const update = async () => {
             {{ loading ? 'Updating...' : 'Update Task' }}
           </button>
 
-          <button
-            type="button"
-            @click="emit('close')"
-            class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-5 py-2 rounded transition"
-          >
-            Cancel
-          </button>
           <div class="text-red-500 text-sm" v-if="errorMessage">{{ errorMessage }}</div>
         </div>
       </div>

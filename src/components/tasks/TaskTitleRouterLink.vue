@@ -1,5 +1,9 @@
 <script setup>
-defineProps({ task: Object, subTasksOpen: { type: Boolean, default: false } })
+defineProps({
+  task: Object,
+  subTasksOpen: { type: Boolean, default: false },
+  isMyTask: { type: Boolean, default: false },
+})
 </script>
 <template>
   <div class="flex items-center gap-1">
@@ -16,7 +20,7 @@ defineProps({ task: Object, subTasksOpen: { type: Boolean, default: false } })
     ></i>
     <RouterLink
       :to="{
-        name: 'TaskShow',
+        name: isMyTask ? 'MyTaskShow' : 'TaskShow',
         params: { id: task.id },
       }"
       class="font-medium text-gray-700 cursor-pointer hover:text-sky-700"
