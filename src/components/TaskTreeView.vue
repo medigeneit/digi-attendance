@@ -123,7 +123,7 @@
               </span>
             </button>
 
-            <template v-if="task.status !== 'COMPLETED' && !task.closed_at">
+            <template v-if="!task.closed_at">
               <a
                 :href="`/tasks/add?parent_id=${props.task.id}&back-to=${encodeURIComponent(route.path + '?' + objectToQuery(route.query)).toLowerCase()}`"
                 class="hover:bg-indigo-600 hover:text-white text-indigo-600 font-semibold px-3 py-0.5 rounded-full transition border border-transparent"

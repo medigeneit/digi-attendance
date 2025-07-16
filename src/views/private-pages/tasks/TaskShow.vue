@@ -287,7 +287,7 @@ watch(
             @updated="fetchTaskList(route.params.id)"
             @updatePriority="fetchTaskList(route.params.id)"
             @assignUser="fetchTaskList(route.params.id)"
-            :sub-task-is-creatable="store.task.status !== 'COMPLETED' && !store.task.closed_at"
+            :sub-task-is-creatable="!store.task.closed_at"
           />
         </section>
 
