@@ -21,6 +21,7 @@ const store = useTaskStore()
 const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
+const state = ref('')
 const showCommentModal = ref(false)
 const userId = 1 // অ্যাকচুয়াল auth ইউজার আইডি
 const selectedTaskId = ref(null)
@@ -53,6 +54,7 @@ const { handleItemsPriorityUpdate, saveTaskPriority, listHasRearranged } = useTa
 )
 
 onMounted(async () => {
+  state.value = 'loading'
   if (!route.query['status']) {
     router.push({
       query: { ...route.query, status: 'not-completed' },
@@ -69,6 +71,7 @@ async function fetchTasks() {
     data = await store.fetchTasks({ ...route.query })
   }
 
+  state.value = ''
   queryLogs.value = data.query_log || []
 }
 
@@ -97,6 +100,7 @@ async function handleTaskUpdate() {
   editingId.value = null
   addForm.value = false
   addFormData.parentId = 0
+  state.value = 'loading'
   await fetchTasks()
 }
 
@@ -107,7 +111,8 @@ async function handleTaskAddClose() {
 }
 
 async function handleTaskPrioritySave() {
-  if (saveTaskPriority()) {
+  state.value = 'loading'
+  if (await saveTaskPriority()) {
     await fetchTasks()
   }
 }
@@ -117,6 +122,7 @@ watch(
     ...route.query,
   }),
   async () => {
+    state.value = 'loading'
     await fetchTasks()
   },
 )
@@ -160,6 +166,7 @@ const taskFilter = computed({
           () => {
             employeeAssignForm.isOpen = false
             employeeAssignForm.taskId = 0
+            state = 'loading'
             fetchTasks()
           }
         "
@@ -182,11 +189,7 @@ const taskFilter = computed({
       </div>
     </template>
 
-    <div v-if="store.loading">
-      <LoaderView />
-    </div>
-
-    <template v-else>
+    <div class="relative min-h-[30vh]">
       <div v-if="store.error" class="text-center py-4 text-red-500">
         {{ store.error }}
       </div>
@@ -229,12 +232,16 @@ const taskFilter = computed({
       </div>
 
       <div
-        v-else
-        class="text-center py-4 text-gray-500 border h-[100px] flex items-center justify-center text-xl rounded bg-gray-50"
+        v-else-if="state !== 'loading'"
+        class="text-center py-4 text-gray-500 border h-[30vh] flex items-center justify-center text-xl rounded bg-gray-50"
       >
         No tasks found.
       </div>
-    </template>
+      <LoaderView
+        v-if="state === 'loading'"
+        class="absolute inset-0 flex items-center z-50 bg-opacity-60"
+      ></LoaderView>
+    </div>
 
     <!-- Comment Modal -->
     <CommentModal
