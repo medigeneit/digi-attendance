@@ -64,7 +64,7 @@ const taskUsers = computed(() => {
   return users.value.map((u) => {
     // const tasks = getTreeList(getUserAllTasks(u.id), 0)
     const tasks = getUserAllTasks(u.id)
-    return { ...u, ...{ tasks } }
+    return { ...u,  tasks }
   })
 })
 </script>

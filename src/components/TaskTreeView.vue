@@ -50,23 +50,22 @@
             <SubTaskProgress ref="progress" :task="task" class="text-sm" />
           </div>
 
-          <div class="flex items-center gap-6 flex-none lg:w-full order-0 lg:order-1">
-            <div class="flex gap-4 items-center">
+          <div class="flex items-center flex-none lg:w-full order-0 lg:order-1">
+            <div class="flex gap-4 items-center mr-3">
               <button @mousedown.stop="handleDragging" class="handle" v-if="showDraggableHandle">
                 <i class="fas fa-arrows-alt text-gray-500 cursor-grab"></i>
               </button>
 
-              <span class="text-gray-500 text-sm"> #{{ task.id }} </span>
+              <span class="text-gray-500 text-sm" v-if="task.serial"> #{{ task.serial }} </span>
+            </div>
 
+            <div class="flex items-center gap-2 text-xs text-gray-500 opacity-80 text-left">
               <div
-                class="text-green-500 bg-green-50 text-[10px] px-[5px] py-[1px] rounded-full border border-green-200"
+                class="text-white bg-green-700 text-[12px] uppercase px-[5px] py-[1px] rounded-full border border-green-200 opacity-80"
                 v-if="treeLevel === 0"
               >
                 Main
               </div>
-            </div>
-
-            <div class="flex items-center gap-2 text-xs text-gray-500 opacity-80 text-left">
               <TaskImportantBadge v-if="task?.is_important" />
               <TaskUrgentBadge v-if="task?.is_urgent" />
             </div>
@@ -99,6 +98,7 @@
         <span class="text-gray-500" v-if="startedDate">
           Started: <span class="font-semibold text-green-800">{{ startedDate }}</span>
         </span>
+
         <span class="ml-4 text-gray-500" v-if="deadline">
           Deadline: <span class="text-red-500 font-semibold">{{ deadline }}</span>
         </span>

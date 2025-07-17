@@ -1,18 +1,14 @@
 <script setup>
+import CompanyDepartmentSelectInput from '@/components/common/CompanyDepartmentSelectInput.vue'
+import SectionLoading from '@/components/common/SectionLoading.vue'
 import RequiredIcon from '@/components/RequiredIcon.vue'
+import TextWithHr from '@/components/TextWithHr.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useCompanyStore } from '@/stores/company'
-
-// import { useTaskStore } from '@/stores/useTaskStore'
 import { useRequirementStore } from '@/stores/useRequirementStore'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
-import CompanyDepartmentSelectInput from '../common/CompanyDepartmentSelectInput.vue'
-import SectionLoading from '../common/SectionLoading.vue'
-import TextWithHr from '../TextWithHr.vue'
-import IsTargetTaskInput from './IsTargetTaskInput.vue'
-import TaskUrgencyInput from './TaskUrgencyInput.vue'
 
 const props = defineProps({
   parentTaskId: {
@@ -24,7 +20,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['taskCreated', 'close', 'error', 'ok'])
+const emit = defineEmits(['taskCreated', 'close', 'error'])
 
 const store = useTaskStore()
 const auth = useAuthStore()
@@ -116,10 +112,7 @@ async function submit() {
     class="max-h-[90vh] overflow-auto max-w-2xl mx-auto bg-white shadow-lg rounded-lg p-6 pb-0 pt-0 relative"
   >
     <div class="sticky top-0 pt-4 bg-white z-10">
-      <h2 class="text-2xl font-semibold text-gray-800">
-        <span v-if="parentTaskId && task?.title"> Add Sub Task </span>
-        <span> Add Main Task/Project </span>
-      </h2>
+      <h2 class="text-2xl font-semibold text-gray-800">Add New Task</h2>
 
       <hr class="mb-4" />
 
@@ -150,9 +143,7 @@ async function submit() {
         <input
           v-model="form.title"
           required
-          :placeholder="
-            parentTaskId && task?.title ? 'Add Sub Task Title' : 'Enter main task/project title'
-          "
+          placeholder="Enter task title"
           class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
         />
       </div>

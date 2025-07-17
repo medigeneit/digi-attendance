@@ -91,10 +91,6 @@ function handleUserDeSelect() {
   selectedEmployeeId.value = ''
 }
 
-const selectedCompanies = computed(() => {
-  return companyStore?.companies.filter((company) => company.id == companyId.value)
-})
-
 watch(() => toDepartmentId.value, loadEmployeesByDepartment)
 
 watch(
@@ -120,7 +116,7 @@ watch(
           <button class="btn-3" @click.prevent="emit('clickPrioritySave')">Save</button>
           <button class="btn-3" @click.prevent="emit('clickPriorityDiscard')">Discard</button>
         </div>
-        <button @click="emit('clickAddTask')" class="btn-1">Add Task</button>
+        <button @click="emit('clickAddTask')" class="btn-1">Add Main Task / Project</button>
       </div>
     </div>
     <!-- {{ employees }} -->
@@ -149,8 +145,24 @@ watch(
           </div>
 
           <CompanyDepartmentSelectInput
+            v-model="fromDepartmentId"
+            :companies="companyStore?.companies || []"
+            class="relative w-full md:w-64"
+            :className="{ select: 'h-10 text-sm px-2 text-gray-600 border-2 border-gray-400' }"
+            defaultOption="--ALL DEPARTMENT--"
+          >
+            <template #label>
+              <div
+                class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30"
+              >
+                Task From Department
+              </div>
+            </template>
+          </CompanyDepartmentSelectInput>
+
+          <CompanyDepartmentSelectInput
             v-model="toDepartmentId"
-            :companies="selectedCompanies || []"
+            :companies="companyStore?.companies || []"
             class="relative w-full md:w-64"
             :className="{ select: 'h-10 text-sm px-2 text-gray-600  border-2 border-gray-400' }"
             v-if="route.name !== 'MyTaskList'"
@@ -200,22 +212,6 @@ watch(
             </label>
           </div>
         </template>
-
-        <CompanyDepartmentSelectInput
-          v-model="fromDepartmentId"
-          :companies="companyStore?.companies || []"
-          class="relative w-full md:w-64"
-          :className="{ select: 'h-10 text-sm px-2 text-gray-600 border-2 border-gray-400' }"
-          defaultOption="--ALL DEPARTMENT--"
-        >
-          <template #label>
-            <div
-              class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30"
-            >
-              Task From Department
-            </div>
-          </template>
-        </CompanyDepartmentSelectInput>
 
         <div class="text-gray-600 w-40 relative">
           <label class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500">Status</label>
