@@ -111,7 +111,7 @@ const emits = defineEmits(['close'])
         class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
       >
         <span class="text-sm text-gray-700">
-          {{ icons.overtime_applications }} Manual Attendance
+          {{ icons.overtime_applications }} Overtime
         </span>
         <span class="text-xs bg-sky-500 text-white rounded-full px-2 py-0.5 font-semibold">
           {{ count_notifications.overtime_applications }}

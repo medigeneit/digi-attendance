@@ -100,7 +100,7 @@ const error = computed(() => notificationStore.error)
       >
         <div class="w-full flex items-center gap-2">
           <span>{{ icons.overtime_applications }}</span>
-          <span class="mr-auto">Manual Attendance</span>
+          <span class="mr-auto">Overtime</span>
           <span
             v-if="count_notifications?.overtime_applications"
             class="ml-auto text-xs bg-sky-500 text-white rounded-full px-2 py-0.5 font-semibold"
