@@ -18,6 +18,7 @@ export const useNotificationStore = defineStore('notification', () => {
     shift_exchange_applications: '🔄',
     offday_exchange_applications: '🔄',
     manual_attendance_applications: '🕒',
+    overtime_applications: '⏱️',
   })
 
   const total_notifications = computed(() => {

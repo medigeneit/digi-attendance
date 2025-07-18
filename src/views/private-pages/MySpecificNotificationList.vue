@@ -38,6 +38,7 @@ const specifications = {
   shift_exchange_applications: 'ExchangeShiftShow',
   offday_exchange_applications: 'ExchangeOffdayShow',
   manual_attendance_applications: 'ManualAttendanceShow',
+  overtime_applications: '',
 }
 
 const formattedType = computed(() => {
