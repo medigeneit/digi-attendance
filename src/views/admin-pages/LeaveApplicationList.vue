@@ -187,6 +187,7 @@ const handleFilterChange = () => {
               <th class="border border-gray-300 px-2 text-left">Resumption Date</th>
               <th class="border border-gray-300 px-2 text-left">Leave Period</th>
               <th class="border border-gray-300 px-2 text-left">Total Days</th>
+              <th class="border border-gray-300 px-2 text-left">Type</th>
               <th class="border border-gray-300 px-2 text-left">Status</th>
               <th class="border border-gray-300 px-2 text-left">Action</th>
             </tr>
@@ -206,6 +207,9 @@ const handleFilterChange = () => {
               <td class="border border-gray-300 px-2">{{ application?.leave_period }}</td>
               <td class="border border-gray-300 px-2">
                 <div v-html="application.duration || application?.total_leave_days"></div>
+              </td>
+              <td class="border border-gray-300 px-2">
+                {{ application?.application_types }}
               </td>
               <td class="border border-gray-300 px-2">
                 {{ application?.status || 'N/A' }}

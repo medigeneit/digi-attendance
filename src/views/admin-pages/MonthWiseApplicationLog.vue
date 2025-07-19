@@ -44,7 +44,6 @@ const fetchApplications = async () => {
 onMounted(async () => {
   if (filters.value.employee_id) {
     await fetchUser(filters.value.employee_id)
-    await fetchApplications()
   }
 })
 
@@ -85,6 +84,24 @@ const formatTime = (timestamp) => {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
+
+const formatDateTime = (timestamp) => {
+  const d = new Date(timestamp)
+  const date = d.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  }) // e.g., "19 Jul 2025"
+
+  // const time = d.toLocaleTimeString('en-US', {
+  //   hour: '2-digit',
+  //   minute: '2-digit',
+  //   hour12: true
+  // }) // e.g., "04:30 PM"
+
+  return `${date}`
+}
+
 // Apply filters from EmployeeFilter component
 const handleFilterChange = () => {
   router.replace({
@@ -99,11 +116,8 @@ const handleFilterChange = () => {
 }
 
 const specifications = {
-  leave_applications: 'LeaveApplicationShow',
-  short_leave: 'ShortLeaveShow',
   exchange_shift: 'ExchangeShiftShow',
   exchange_offday: 'ExchangeOffdayShow',
-  manual_attendance: 'ManualAttendanceShow',
 }
 
 </script>
@@ -156,6 +170,8 @@ const specifications = {
           <p><strong>Company:</strong> {{ selectedUser.company?.name || 'N/A' }}</p>
           <p><strong>Phone:</strong> {{ selectedUser.phone }}</p>
           <p><strong>Email:</strong> {{ selectedUser.email || 'N/A' }}</p>
+          <p><strong>Blood Group:</strong> {{ selectedUser.blood || 'N/A' }}</p>
+          <p><strong>Joining Date:</strong> {{ selectedUser.joining_date || 'N/A' }}</p>
         </div>
       </div>
     </div>
@@ -165,45 +181,212 @@ const specifications = {
 
     <LoaderView v-if="leaveApplicationStore.loading" />
 
-    <table class="w-full border bg-white rounded">
-      <thead>
-        <tr class="text-left">
-          <th class="p-2">Type</th>
-          <th class="p-2">Status</th>
-          <th class="p-2">Date(s)</th>
-          <th class="p-2">Details</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr
-          v-for="(item, index) in leaveApplicationStore.applicationLog"
-          :key="index"
-          class="border-b hover:bg-gray-50"
-        >
-          <td class="p-2 capitalize">{{ item.type.replace('_', ' ') }}</td>
-          <td class="p-2">{{ item.status ?? 'Pending handover' }}</td>
-          <td class="p-2">
-            <div v-if="item.date">{{ item.date }}</div>
-            <div v-else-if="item.from && item.to">From {{ item.from }} to {{ item.to }}</div>
-            <div v-else-if="item.current_date && item.exchange_date">
-              {{ item.current_date }} ⇄ {{ item.exchange_date }}
-            </div>
-            <div v-else>—</div>
-          </td>
-          <td class="p-2 text-sm text-gray-600">
-             <RouterLink
-              :to="{
-                name: specifications[item.type],
-                params: { id: item.id },
-              }"
-              class="btn-1 px-3"
+    <div class="space-y-5">
+    <div
+      v-for="(items, groupKey) in leaveApplicationStore.applicationLog"
+      :key="groupKey"
+      class="bg-gray-50 p-4 rounded shadow"
+    >
+      <!-- Group Title -->
+      <h2 class="text-base font-semibold text-blue-400 mb-2 text-center capitalize">
+        {{ groupKey.replaceAll('_', ' ') }} <span class="text-gray-500">({{ items.length }})</span>
+      </h2>
+
+      <!-- Group Table -->
+      <div class="overflow-x-auto rounded border bg-white" v-if="groupKey === 'leave_application'">
+        <table class="min-w-full text-sm text-left">
+          <thead class="bg-gray-100 text-gray-700 text-xs uppercase">
+            <tr>
+              <!-- <th class="p-2">Type</th> -->
+              <th class="p-2">#</th>
+              <th class="p-2">Create Date</th>
+              <th class="p-2">Last Working Date</th>
+              <th class="p-2">Resumption Date</th>
+              <th class="p-2">Type</th>
+              <th class="p-2">Status</th>
+              <th class="p-2">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="(item, index) in items"
+              :key="`${groupKey}-${index}`"
+              class="border-t hover:bg-gray-50 text-sm"
             >
-              <i class="far fa-eye"></i>
-            </RouterLink>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+              <td class="p-2">{{ index+=1 }}</td>
+              <td class="p-2">{{ formatDateTime(item.create_date)  }}</td>
+              <td class="p-2">{{ item.from  }}</td>
+              <td class="p-2">{{ item.to  }}</td>
+              <td class="p-2 whitespace-pre-line">
+                {{ item.application_types }}
+              </td>
+              <td class="p-2 whitespace-pre-line">
+                {{ item.status }}
+              </td>
+              <td class="p-2 text-sm text-gray-600">
+                <RouterLink
+                  :to="{
+                    name: 'LeaveApplicationShow',
+                    params: { id: item.id },
+                  }"
+                  class="inline-flex items-center gap-1 text-blue-600 hover:underline"
+                >
+                  <i class="far fa-eye"></i> View
+                </RouterLink>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="overflow-x-auto rounded border bg-white" v-if="groupKey === 'short_leave'">
+        <table class="min-w-full text-sm text-left">
+          <thead class="bg-gray-100 text-gray-700 text-xs uppercase">
+            <tr>
+              <!-- <th class="p-2">Type</th> -->
+              <th class="p-2">#</th>
+              <th class="p-2">Create Date</th>
+              <th class="p-2">Type</th>
+              <th class="p-2">Date</th>
+              <th class="p-2">Check In</th>
+              <th class="p-2">Check Out</th>
+              <th class="p-2">Duration</th>
+              <th class="p-2">Attachment</th>
+              <th class="p-2">Status</th>
+              <th class="p-2">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(item, index) in items"   :key="`${groupKey}-${index}`"  class="border-t hover:bg-gray-50 text-sm" >
+              <td class="p-2">{{ index+=1 }}</td>
+              <td class="p-2">{{ formatDateTime(item.create_date)  }}</td>
+              <td class="p-2">{{ item.application_types  }}</td>
+              <td class="p-2">{{ item.date  }}</td>
+              <td class="p-2 whitespace-pre-line">
+                {{ formatTime(item.start_time) }}
+                
+              </td>
+              <td class="p-2 whitespace-pre-line">
+                {{ formatTime(item.end_time) }}
+              </td>
+              <td class="p-2 whitespace-pre-line">
+                {{ item.duration }} m
+              </td>
+              <td class="p-2 whitespace-pre-line  text-center">
+                <a
+                  v-if="item.attachment"
+                  :href="item.attachment"
+                  target="_blank"
+                  rel="noopener"
+                  class="text-blue-600 hover:underline"
+                >
+                 <i class="far fa-eye"></i> 
+                </a>
+                <span v-else class="text-gray-400">No file</span>
+              </td>
+
+              <td class="p-2 whitespace-pre-line">
+                {{ item.status }}
+              </td>
+              <td class="p-2 text-sm text-gray-600">
+                <RouterLink
+                  :to="{
+                    name: 'ShortLeaveShow',
+                    params: { id: item.id },
+                  }"
+                  class="inline-flex items-center gap-1 text-blue-600 hover:underline"
+                >
+                  <i class="far fa-eye"></i> View
+                </RouterLink>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="overflow-x-auto rounded border bg-white" v-if="groupKey === 'exchange_offday' || groupKey === 'exchange_shift'">
+        <table class="min-w-full text-sm text-left">
+          <thead class="bg-gray-100 text-gray-700 text-xs uppercase">
+            <tr>
+              <!-- <th class="p-2">Type</th> -->
+              <th class="p-2">#</th>
+              <th class="p-2">Create Date</th>
+              <th class="p-2">Current Date</th>
+              <th class="p-2">Exchange Date</th>
+              <th class="p-2">Shift</th>
+              <th class="p-2">Status</th>
+              <th class="p-2">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(item, index) in items"   :key="`${groupKey}-${index}`"  class="border-t hover:bg-gray-50 text-sm" >
+              <td class="p-2">{{ index+=1 }}</td>
+              <td class="p-2">{{ formatDateTime(item.create_date)  }}</td>
+              <td class="p-2">{{ item.current_date  }}</td>
+              <td class="p-2">{{ item.exchange_date  }}</td>
+              <td class="p-2 whitespace-pre-line">
+                {{  item?.shift || 'N/A' }}
+                
+              </td>
+              <td class="p-2 whitespace-pre-line">
+                {{ item.status }}
+              </td>
+              <td class="p-2 text-sm text-gray-600">
+                <RouterLink
+                  :to="{
+                    name: specifications[item.type],
+                    params: { id: item.id },
+                  }"
+                  class="inline-flex items-center gap-1 text-blue-600 hover:underline"
+                >
+                  <i class="far fa-eye"></i> View
+                </RouterLink>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="overflow-x-auto rounded border bg-white" v-if="groupKey === 'manual_attendance'">
+        <table class="min-w-full text-sm text-left">
+          <thead class="bg-gray-100 text-gray-700 text-xs uppercase">
+            <tr>
+              <!-- <th class="p-2">Type</th> -->
+              <th class="p-2">#</th>
+              <th class="p-2">Create Date</th>
+              <th class="p-2">Date</th>
+              <th class="p-2">Type</th>
+              <th class="p-2">Check In</th>
+              <th class="p-2">Check Out</th>
+              <th class="p-2">Status</th>
+              <th class="p-2">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(item, index) in items"   :key="`${groupKey}-${index}`"  class="border-t hover:bg-gray-50 text-sm" >
+              <td class="p-2">{{ index+=1 }}</td>
+              <td class="p-2">{{ formatDateTime(item.create_date)  }}</td>
+              <td class="p-2"> {{ formatDateTime(item.check_in  || item.check_out)  }}</td>
+              <td class="p-2">{{ item.application_types  }}</td>
+              <td class="p-2">{{ formatTime(item.check_in) || 'N/A' }}</td>
+              <td class="p-2">{{ formatTime(item.check_out) || 'N/A' }}</td>
+              <td class="p-2 whitespace-pre-line">
+                {{ item.status }}
+              </td>
+              <td class="p-2 text-sm text-gray-600">
+                <RouterLink
+                  :to="{
+                    name: 'ManualAttendanceShow',
+                    params: { id: item.id },
+                  }"
+                  class="inline-flex items-center gap-1 text-blue-600 hover:underline"
+                >
+                  <i class="far fa-eye"></i> View
+                </RouterLink>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
     
   </div>
