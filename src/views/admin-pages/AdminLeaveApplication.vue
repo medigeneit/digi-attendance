@@ -114,58 +114,65 @@ const deleteApplication = async (applicationId) => {
     </div>
 
     <div v-else class="space-y-4">
+      <div v-if="filters?.employee_id" class="bg-sky-100/30 p-4 rounded-lg shadow mb-6 space-y-6">
+        <!-- Section Title -->
+        <h2 class="text-xl font-bold text-gray-800 text-center">Employee Overview</h2>
+
+        <!-- Grid for Info and Leave -->
+        <div class="grid md:grid-cols-2 gap-6">
+          <!-- User Info Card -->
+          <div class="bg-white border rounded-lg p-4 shadow">
+            <h3 class="text-lg font-semibold text-gray-700 mb-4">User Info</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-2 text-sm text-gray-600">
+              <p><strong>Name:</strong> {{ user?.name }}</p>
+              <p><strong>Designation:</strong> {{ user?.designation?.title }}</p>
+              <p><strong>Department:</strong> {{ user?.department?.name }}</p>
+              <p><strong>Company:</strong> {{ user?.company?.name }}</p>
+              <p><strong>Phone:</strong> {{ user?.phone }}</p>
+              <p><strong>Email:</strong> {{ user?.email }}</p>
+              <p><strong>Joining Date:</strong> {{ user?.joining_date }}</p>
+              <p><strong>Blood Group:</strong> {{ user?.blood || 'N/A' }}</p>
+            </div>
+          </div>
+
+          <!-- Leave Balance Card -->
+          <div class="bg-white border rounded-lg p-4 shadow">
+            <h3 class="text-lg font-semibold text-gray-700 mb-4">Leave Balance</h3>
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-sm text-left text-gray-700 border">
+                <thead class="bg-gray-100 text-xs uppercase">
+                  <tr>
+                    <th class="px-4 py-2 text-center">Type</th>
+                    <th class="px-4 py-2 text-center">Total</th>
+                    <th class="px-4 py-2 text-center">Used</th>
+                    <th class="px-4 py-2 text-center">Remaining</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="leave in leave_balances"
+                    :key="leave.id"
+                    class="border-t hover:bg-gray-50"
+                  >
+                    <td class="px-4 py-1 text-center font-medium">{{ leave.leave_type }}</td>
+                    <td class="px-4 py-1 text-center">{{ leave.total_leave_days }}</td>
+                    <td class="px-4 py-1 text-center">{{ leave.used_days }}</td>
+                    <td class="px-4 py-1 text-center">{{ leave.remaining_days }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      
+
       <div class="overflow-x-auto">
         <table
           class="min-w-full table-auto border-collapse border border-gray-200 bg-white rounded-md text-sm"
         >
           <thead>
-            <tr class="bg-sky-200/20 text-center" v-if="filters?.employee_id">
-              <th class="border border-gray-300 py-2 text-center" colspan="3">
-                <div class="">
-                  <h2 class="text-lg font-semibold text-center py-2">User Info</h2>
-                  <hr />
-                  <div class="grid md:grid-cols-2">
-                    <p class="py-1"><strong>Name:</strong> {{ user?.name }}</p>
-                    <p class="py-1"><strong>Designation:</strong> {{ user?.designation?.title }}</p>
-                    <p class="py-1"><strong>Department:</strong> {{ user?.department?.name }}</p>
-                    <p class="py-1"><strong>Company:</strong> {{ user?.company?.name }}</p>
-                    <p class="py-1"><strong>Phone:</strong> {{ user?.phone }}</p>
-                    <p class="py-1"><strong>Email:</strong> {{ user?.email }}</p>
-                  </div>
-                </div>
-              </th>
-              <th class="border border-gray-300 py-2 text-center" colspan="4">
-                <div class="">
-                  <!-- <h2 class="text-lg font-semibold text-center py-2">Leave Balance</h2> -->
-                  <div class="overflow-x-auto min-h-max">
-                    <table class="min-w-full text-sm text-left text-gray-500">
-                      <thead class="text-xs text-gray-700 uppercase bg-gray-50">
-                        <tr>
-                          <th scope="col" class="px-6 text-center py-1">Type</th>
-                          <th scope="col" class="px-6 text-center py-1">Total Days</th>
-                          <th scope="col" class="px-6 text-center py-1">Used Days</th>
-                          <th scope="col" class="px-6 text-center py-1">Remaining Days</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr
-                          v-for="leave_balance in leave_balances"
-                          :key="leave_balance.id"
-                          class="border-b hover:bg-gray-100"
-                        >
-                          <td class="px-6 text-center font-medium text-gray-900">
-                            {{ leave_balance.leave_type }}
-                          </td>
-                          <td class="px-6 text-center">{{ leave_balance.total_leave_days }}</td>
-                          <td class="px-6 text-center">{{ leave_balance.used_days }}</td>
-                          <td class="px-6 text-center">{{ leave_balance.remaining_days }}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </th>
-            </tr>
             <tr class="bg-gray-200">
               <th class="border border-gray-300 px-2 py-1 text-center">#</th>
               <th class="border border-gray-300 px-2 py-1 text-center">Last Working Day</th>

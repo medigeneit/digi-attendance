@@ -254,6 +254,8 @@ const handleFilterChange = () => {
           <p><strong>Phone:</strong> {{ selectedUser.phone }}</p>
           <p><strong>Email:</strong> {{ selectedUser.email || 'N/A' }}</p>
           <p><strong>Employee ID :</strong> {{ selectedUser.employee_id || 'N/A' }}</p>
+          <p><strong>Joining Date :</strong> {{ selectedUser.joining_date || 'N/A' }}</p>
+          <p><strong>Employee ID :</strong> {{ selectedUser.blood || 'N/A' }}</p>
         </div>
       </div>
 
