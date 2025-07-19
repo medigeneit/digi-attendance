@@ -1,34 +1,59 @@
 <script setup>
+import AcceptAndRejectHandler from '@/components/applications/AcceptAndRejectHandler.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useNotificationStore } from '@/stores/notification'
 import { useOvertimeStore } from '@/stores/overtime'
-import { computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
+
 const overtimeStore = useOvertimeStore()
+const notificationStore = useNotificationStore()
 const authStore = useAuthStore()
-
-onMounted(() => {
-  overtimeStore.fetchUserOvertimes({ month: overtimeStore.selectedMonth })
-})
-
-const goBack = () => {
-  router.go(-1)
-}
 
 const myOvertimes = computed(() => {
   return overtimeStore.overtimes
 })
 
-watch(
-  () => overtimeStore.selectedMonth,
-  (newMonth) => {
-    if (newMonth) {
-      overtimeStore.fetchUserOvertimes({ month: newMonth })
-    }
-  },
-)
+const userId = computed(() => {
+  return overtimeStore.overtimes?.[0]?.user_id
+})
+
+const applicationIds = computed(() => {
+  return overtimeStore.overtimes?.map((overtime) => overtime.id) || []
+})
+
+onMounted(async () => {
+  fetchData()
+})
+
+const fetchData = async () => {
+  await overtimeStore.fetchUserOvertimesByApplicationId(route.params.id)
+
+  await notificationStore.fetchApprovalPermissionsByUserApplicationIds(
+    userId.value,
+    'overtime_applications',
+    applicationIds.value,
+  )
+
+  await notificationStore.fetchCountNotifications()
+}
+
+const goBack = () => {
+  router.go(-1)
+}
+
+// watch(
+//   () => overtimeStore.selectedMonth,
+//   (newMonth) => {
+//     if (newMonth) {
+//       overtimeStore.fetchUserOvertimes({ month: newMonth })
+//     }
+//   },
+// )
 </script>
 
 <template>
@@ -40,17 +65,17 @@ watch(
           <span class="hidden md:flex">Back</span>
         </button>
 
-        <RouterLink :to="{ name: 'MyOvertimeAdd' }" class="btn-2">
+        <!-- <RouterLink :to="{ name: 'MyOvertimeAdd' }" class="btn-2">
           <i class="far fa-plus"></i>
           <span class="hidden md:flex">Overtime</span>
-        </RouterLink>
+        </RouterLink> -->
       </div>
 
       <h1 class="title-md md:title-lg flex-wrap text-center">
         Overtime of {{ overtimeStore.selectedMonthDisplay }}
       </h1>
 
-      <div class="flex gap-4">
+      <!-- <div class="flex gap-4">
         <div>
           <input
             id="monthSelect"
@@ -59,7 +84,7 @@ watch(
             class="input-1"
           />
         </div>
-      </div>
+      </div> -->
     </div>
 
     <div v-if="overtimeStore?.loading" class="text-center py-4">
@@ -126,7 +151,16 @@ watch(
               <td class="border border-gray-300 px-2 text-center">
                 {{ overtime.status || 'Pending' }}
               </td>
-              <td class="border border-gray-300 px-2 text-center"></td>
+              <td class="border border-gray-300 px-2 text-center">
+                <AcceptAndRejectHandler
+                  v-if="notificationStore.applicationApprovalPermissions[overtime.id]"
+                  class="ml-auto"
+                  notificationType="overtime_applications"
+                  :applicationId="overtime.id"
+                  :onSuccess="fetchData"
+                  :variant="1"
+                />
+              </td>
             </tr>
             <tr v-if="myOvertimes.length === 0">
               <td colspan="7" class="p-2 text-center text-red-500">No overtimes found</td>

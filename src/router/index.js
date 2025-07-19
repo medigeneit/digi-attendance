@@ -921,6 +921,13 @@ const router = createRouter({
         },
 
         {
+          path: '/overtime-show/:id',
+          name: 'OvertimeShow',
+          component: () => import('@/views/private-pages/OvertimeShow.vue'),
+          meta: { requiresAuth: true, title: 'Show OvertimeShow' },
+        },
+
+        {
           path: '/applications/overtimes',
           name: 'MyOvertimeList',
           component: () => import('@/views/private-pages/MyOvertimeList.vue'),

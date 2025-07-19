@@ -42,6 +42,20 @@ export const useOvertimeStore = defineStore('overtime', () => {
     }
   }
 
+  const fetchUserOvertimesByApplicationId = async (overtimeApplicationId) => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await apiClient.get(`/${overtimeApplicationId}/user-overtimes`)
+      overtimes.value = response.data
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to fetch overtimes'
+      console.error('Error fetching overtimes:', err)
+    } finally {
+      loading.value = false
+    }
+  }
+
   const createOvertime = async (data = {}) => {
     loading.value = true
     error.value = null
@@ -104,5 +118,6 @@ export const useOvertimeStore = defineStore('overtime', () => {
     updateOvertime,
     deleteOvertime,
     fetchUserOvertimes,
+    fetchUserOvertimesByApplicationId,
   }
 })
