@@ -207,15 +207,6 @@ onMounted(() => {
 const goBack = () => {
   router.go(-1)
 }
-
-const availableLeaveTypes = computed(() => {
-  const selectedIds = selectedLeaveTypes.value.filter(id => typeof id === 'number'); // ignore 'weekend' etc.
-
-  return leaveTypeStore.leaveTypes.filter(type =>
-    selectedIds.includes(type.id) && type.remaining_days > 0
-  );
-});
-
 </script>
 
 <template>
@@ -263,7 +254,7 @@ const availableLeaveTypes = computed(() => {
 
       <!-- Leave days with radio groups -->
       <div v-if="leaveDays.length" class="bg-gray-100 p-2 rounded-md">
-        <h2 class="text-lg font-semibold">Leave Days</h2>
+        <h2 class="text-lg font-semibold">Leave Days  </h2>
         <div>
           <div
             v-for="(day, index) in leaveDays"
@@ -284,7 +275,7 @@ const availableLeaveTypes = computed(() => {
                   v-model="selectedLeaveTypes[index]"
                   :disabled="selectedLeaveTypes.filter(t => t === type.id).length >= type.remaining_days"
                 />
-                <span>{{ type.name }}</span>
+                <span>{{ type.leave_type }}</span>
               </label>
 
               <label class="flex items-center space-x-1">
