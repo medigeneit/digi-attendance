@@ -18,10 +18,6 @@ const myOvertimes = computed(() => {
   return overtimeStore.overtimes
 })
 
-const userId = computed(() => {
-  return overtimeStore.overtimes?.[0]?.user_id
-})
-
 const applicationIds = computed(() => {
   return overtimeStore.overtimes?.map((overtime) => overtime.id) || []
 })
@@ -34,7 +30,6 @@ const fetchData = async () => {
   await overtimeStore.fetchUserOvertimesByApplicationId(route.params.id)
 
   await notificationStore.fetchApprovalPermissionsByUserApplicationIds(
-    userId.value,
     'overtime_applications',
     applicationIds.value,
   )

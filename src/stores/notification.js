@@ -60,23 +60,15 @@ export const useNotificationStore = defineStore('notification', () => {
   }
 
   async function fetchApprovalPermissionsByUserApplicationIds(
-    userId,
     notificationType,
     applicationIds,
   ) {
     loading.value = true
     error.value = null
 
-    console.log({
-      userId,
-      notificationType,
-      applicationIds
-    });
-    
-
     try {
       const response = await apiClient.get(
-        `/pending-notifications/${userId}/${notificationType}/${applicationIds.join(',')}/permissions`,
+        `/pending-notifications/${notificationType}/${applicationIds.join(',')}/application-permissions`,
       )
 
       applicationApprovalPermissions.value = response.data || []
