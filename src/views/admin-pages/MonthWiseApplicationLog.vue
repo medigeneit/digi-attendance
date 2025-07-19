@@ -44,7 +44,6 @@ const fetchApplications = async () => {
 onMounted(async () => {
   if (filters.value.employee_id) {
     await fetchUser(filters.value.employee_id)
-    await fetchApplications()
   }
 })
 
@@ -117,11 +116,8 @@ const handleFilterChange = () => {
 }
 
 const specifications = {
-  leave_application: 'LeaveApplicationShow',
-  short_leave: 'ShortLeaveShow',
   exchange_shift: 'ExchangeShiftShow',
   exchange_offday: 'ExchangeOffdayShow',
-  manual_attendance: 'ManualAttendanceShow',
 }
 
 </script>
@@ -294,7 +290,7 @@ const specifications = {
               <td class="p-2 text-sm text-gray-600">
                 <RouterLink
                   :to="{
-                    name: 'LeaveApplicationShow',
+                    name: 'ShortLeaveShow',
                     params: { id: item.id },
                   }"
                   class="inline-flex items-center gap-1 text-blue-600 hover:underline"
@@ -336,7 +332,7 @@ const specifications = {
               <td class="p-2 text-sm text-gray-600">
                 <RouterLink
                   :to="{
-                    name: 'LeaveApplicationShow',
+                    name: specifications[item.type],
                     params: { id: item.id },
                   }"
                   class="inline-flex items-center gap-1 text-blue-600 hover:underline"
@@ -377,7 +373,7 @@ const specifications = {
               <td class="p-2 text-sm text-gray-600">
                 <RouterLink
                   :to="{
-                    name: 'LeaveApplicationShow',
+                    name: 'ManualAttendanceShow',
                     params: { id: item.id },
                   }"
                   class="inline-flex items-center gap-1 text-blue-600 hover:underline"
