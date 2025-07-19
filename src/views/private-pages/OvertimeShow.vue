@@ -1,6 +1,7 @@
 <script setup>
 import AcceptAndRejectHandler from '@/components/applications/AcceptAndRejectHandler.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
+import OvertimeDataList from '@/components/overtime/OvertimeDataList.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notification'
 import { useOvertimeStore } from '@/stores/overtime'
@@ -14,8 +15,8 @@ const overtimeStore = useOvertimeStore()
 const notificationStore = useNotificationStore()
 const authStore = useAuthStore()
 
-const myOvertimes = computed(() => {
-  return overtimeStore.overtimes
+const user = computed(() => {
+  return overtimeStore.overtimes?.[0]?.user
 })
 
 const applicationIds = computed(() => {
@@ -86,83 +87,6 @@ const goBack = () => {
       <LoaderView />
     </div>
 
-    <div v-else class="space-y-4">
-      <div class="overflow-x-auto">
-        <table
-          class="min-w-full table-auto border-collapse border border-gray-200 bg-white rounded-md text-sm"
-        >
-          <thead>
-            <tr class="bg-gray-200 *:py-1">
-              <th class="border border-gray-300 px-2 text-center">#</th>
-              <th class="border border-gray-300 px-2 text-center">Date</th>
-              <th class="border border-gray-300 px-2 text-center">Type</th>
-              <th class="border border-gray-300 px-2 text-center">Shift</th>
-              <th class="border border-gray-300 px-2 text-center">Check-In</th>
-              <th class="border border-gray-300 px-2 text-center">Check-Out</th>
-              <th class="border border-gray-300 px-2 text-center">Working (hour)</th>
-              <th class="border border-gray-300 px-2 text-center">Request (hour)</th>
-              <th class="border border-gray-300 px-2 text-center">Approved (hour)</th>
-              <th class="border border-gray-300 px-2 text-center">Status</th>
-              <th class="border border-gray-300 px-2 text-center">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="(overtime, index) in myOvertimes"
-              :key="overtime?.id"
-              class="border-b border-gray-200 hover:bg-blue-200 *:py-2"
-            >
-              <td class="border border-gray-300 px-2 text-center">{{ index + 1 }}</td>
-              <td class="border border-gray-300 px-2 text-center">
-                {{
-                  new Date(overtime.date).toLocaleDateString('en-GB', {
-                    day: '2-digit',
-                    month: 'long',
-                    year: 'numeric',
-                  })
-                }}
-              </td>
-              <td class="border border-gray-300 px-2 text-center">
-                {{ overtime.duty_type }}
-              </td>
-              <td class="border border-gray-300 px-2 text-center">
-                {{ overtime.shift }}
-              </td>
-              <td class="border border-gray-300 px-2 text-center">
-                {{ overtime.check_in || 'N/A' }}
-              </td>
-              <td class="border border-gray-300 px-2 text-center">
-                {{ overtime.check_out || 'N/A' }}
-              </td>
-              <td class="border border-gray-300 px-2 text-center">
-                {{ overtime.working_hours || '-' }}
-              </td>
-              <td class="border border-gray-300 px-2 text-center">
-                {{ overtime.request_overtime_hours || '-' }}
-              </td>
-              <td class="border border-gray-300 px-2 text-center">
-                {{ overtime.approval_overtime_hours || '-' }}
-              </td>
-              <td class="border border-gray-300 px-2 text-center">
-                {{ overtime.status || 'Pending' }}
-              </td>
-              <td class="border border-gray-300 px-2 text-center">
-                <AcceptAndRejectHandler
-                  v-if="notificationStore.applicationApprovalPermissions[overtime.id]"
-                  class="ml-auto"
-                  notificationType="overtime_applications"
-                  :applicationId="overtime.id"
-                  :onSuccess="fetchData"
-                  :variant="1"
-                />
-              </td>
-            </tr>
-            <tr v-if="myOvertimes.length === 0">
-              <td colspan="7" class="p-2 text-center text-red-500">No overtimes found</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <OvertimeDataList v-else :user="user" />
   </div>
 </template>

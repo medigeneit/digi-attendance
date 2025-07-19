@@ -706,6 +706,17 @@ const router = createRouter({
         },
 
         {
+          path: '/hrd/overtime-list',
+          name: 'OvertimeList',
+          component: () => import('@/views/admin-pages/OvertimeList.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Overtime List',
+          },
+        },
+
+        {
           path: '/hrd/manual-attendance-add',
           name: 'HrdManualAttendanceAdd',
           component: () => import('@/views/admin-pages/ManualAttendanceAdd.vue'),

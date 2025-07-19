@@ -42,6 +42,20 @@ export const useOvertimeStore = defineStore('overtime', () => {
     }
   }
 
+  const fetchUserMonthlyOvertimes = async (userId, month) => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await apiClient.get(`/user-monthly-overtimes/${userId}/${month}`)
+      overtimes.value = response.data
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to fetch overtimes'
+      console.error('Error fetching overtimes:', err)
+    } finally {
+      loading.value = false
+    }
+  }
+
   const fetchUserOvertimesByApplicationId = async (overtimeApplicationId) => {
     loading.value = true
     error.value = null
@@ -71,6 +85,28 @@ export const useOvertimeStore = defineStore('overtime', () => {
       loading.value = false
     }
   }
+
+  const updateApprovalTime = async (overtimeId, approvalTimeAsHour) => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await apiClient.patch(`/user-overtimes/${overtimeId}/update-approval-time`, {
+        'approval_overtime_hours': approvalTimeAsHour
+      })
+      const index = overtimes.value.findIndex((attendance) => attendance.id === overtimeId)
+      if (index !== -1) {
+        overtimes.value[index] = response.data
+      }
+      return response.data.overtime
+    } catch (err) {
+      error.value = err.response?.data?.message || `Failed to update overtime (ID: ${overtimeId})`
+      console.error(`Error updating overtime with id ${overtimeId}:`, err)
+      throw new Error(error.value)
+    } finally {
+      loading.value = false
+    }
+  }
+  
 
   const updateOvertime = async (id, data) => {
     loading.value = true
@@ -115,9 +151,11 @@ export const useOvertimeStore = defineStore('overtime', () => {
     selectedMonthDisplay,
     fetchOvertimes,
     createOvertime,
+    updateApprovalTime,
     updateOvertime,
     deleteOvertime,
     fetchUserOvertimes,
+    fetchUserMonthlyOvertimes,
     fetchUserOvertimesByApplicationId,
   }
 })
