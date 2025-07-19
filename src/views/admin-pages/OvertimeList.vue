@@ -129,7 +129,7 @@ const handleFilterChange = () => {
 
     <LoaderView v-if="overtimeStore.isLoading" />
 
-    <OvertimeDataList v-else :user="selectedUser" />
+    <OvertimeDataList v-else-if="selectedUser" :user="selectedUser" />
 
     <div v-if="!selectedUser">
       <p class="text-gray-400 text-center text-2xl italic">Select an employee, please.</p>
