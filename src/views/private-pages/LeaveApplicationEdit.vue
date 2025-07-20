@@ -174,6 +174,31 @@ watch(
   },
 )
 
+watch(selectedLeaveTypes, (newSelections) => {
+  const typeCount = {};
+
+  newSelections.forEach((val) => {
+    if (typeof val === 'number') {
+      typeCount[val] = (typeCount[val] || 0) + 1;
+    }
+  });
+
+  const exceeded = leaveTypeStore.leaveTypes.filter((type) => {
+    const count = typeCount[type.id] || 0;
+    return count > type.remaining_days;
+  });
+
+  if (exceeded.length) {
+    maxedOutTypes.value = exceeded.map((t) => t.name);
+
+    alert(
+      `You have exceeded remaining days for: ${maxedOutTypes.value.join(', ')}`
+    );
+  } else {
+    maxedOutTypes.value = [];
+  }
+});
+
 const submitLeaveApplication = async () => {
   loading.value = true
   error.value = null
