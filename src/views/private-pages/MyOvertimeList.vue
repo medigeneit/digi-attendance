@@ -1,5 +1,6 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import DisplayFormattedWorkingHours from '@/components/overtime/DisplayFormattedWorkingHours.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useOvertimeStore } from '@/stores/overtime'
 import { computed, onMounted, watch } from 'vue'
@@ -126,23 +127,26 @@ const fetchOvertimeListData = async (selectedMonth = null) => {
                 {{ overtime.check_out || '- : -' }}
               </td>
               <td class="border border-gray-300 px-2 text-center">
-                {{ overtime.working_hours || '-' }}
+                <DisplayFormattedWorkingHours :workingHours="overtime.working_hours" />
               </td>
               <td class="border border-gray-300 px-2 text-center">
-                {{ overtime.request_overtime_hours || '-' }}
+                {{ parseInt(overtime.request_overtime_hours) || '-' }}
               </td>
               <td class="border border-gray-300 px-2 text-center">
-                {{ overtime.approval_overtime_hours || '-' }}
+                {{ parseInt(overtime.approval_overtime_hours) || '-' }}
               </td>
               <td class="border border-gray-300 px-2 text-center">
                 {{ overtime.status || 'Pending' }}
               </td>
               <td class="border border-gray-300 px-2 text-center">
                 <div class="flex items-center justify-center gap-2">
-                  <RouterLink :to="{
-                    name: 'MyOvertimeShow',
-                    params: {id: overtime.id}
-                  }" class="btn-1 px-3">
+                  <RouterLink
+                    :to="{
+                      name: 'MyOvertimeShow',
+                      params: { id: overtime.id },
+                    }"
+                    class="btn-1 px-3"
+                  >
                     <i class="far fa-eye"></i>
                   </RouterLink>
                 </div>

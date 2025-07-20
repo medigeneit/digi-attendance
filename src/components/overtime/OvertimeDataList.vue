@@ -5,6 +5,7 @@ import { useOvertimeStore } from '@/stores/overtime'
 import { useRoute, useRouter } from 'vue-router'
 import AcceptAndRejectHandler from '../applications/AcceptAndRejectHandler.vue'
 import UpdateApprovalTime from './UpdateApprovalTime.vue'
+import DisplayFormattedWorkingHours from './DisplayFormattedWorkingHours.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -105,7 +106,7 @@ const onSuccess = () => {
               {{ overtime.check_out || '- : -' }}
             </td>
             <td class="border border-gray-300 px-2 text-center">
-              {{ overtime.working_hours || '-' }}
+              <DisplayFormattedWorkingHours :workingHours="overtime.working_hours" />
             </td>
             <td class="border border-gray-300 px-2 text-center">
               {{ parseInt(overtime.request_overtime_hours) || '-' }}

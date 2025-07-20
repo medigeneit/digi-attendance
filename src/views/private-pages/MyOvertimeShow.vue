@@ -2,6 +2,7 @@
 import ApprovalItem from '@/components/applications/ApprovalItem.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import ShareComponent from '@/components/common/ShareComponent.vue'
+import DisplayFormattedWorkingHours from '@/components/overtime/DisplayFormattedWorkingHours.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useOvertimeStore } from '@/stores/overtime'
 import { computed, onMounted } from 'vue'
@@ -33,16 +34,6 @@ function print() {
 const onAction = async () => {
   overtimeStore.fetchOvertimeById(route.params.id)
 }
-
-const formattedWorkingHours = computed(() => {
-  if (!overtime.value.working_hours) {
-    return '-'
-  }
-
-  const h = Math.floor(overtime.value.working_hours)
-  const m = Math.round((overtime.value.working_hours - h) * 60)
-  return `${h}h ${m}m`
-})
 </script>
 
 <template>
@@ -111,7 +102,9 @@ const formattedWorkingHours = computed(() => {
           </div>
           <div>
             <span class="text-gray-500 mr-1">Working Hour:</span>
-            <b>{{ formattedWorkingHours }}</b>
+            <b>
+              <DisplayFormattedWorkingHours :workingHours="overtime.working_hours" />
+            </b>
           </div>
           <div>
             <span class="text-gray-500 mr-1">Request hour:</span>
