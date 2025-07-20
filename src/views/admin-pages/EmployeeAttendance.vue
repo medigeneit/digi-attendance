@@ -126,7 +126,8 @@ const handleFilterChange = () => {
               <th class="border p-1">Entry Time</th>
               <th class="border p-1">Exit Time</th>
               <th class="border p-1">Working Hours</th>
-              <th class="border p-1">OT Hours</th>
+              <th class="border p-1">Over Time</th>
+              <th class="border p-1">Approved OT</th>
               <th class="border p-1">Late Entry</th>
               <th class="border p-1">Early Leave</th>
               <th class="border p-1">Status</th>
@@ -162,6 +163,7 @@ const handleFilterChange = () => {
               </td>
               <td class="border px-1 py-0.5">{{ log.working_hours }}</td>
               <td class="border px-1 py-0.5">{{ log.overtime_hours }}</td>
+              <td class="border px-1 py-0.5">{{ log?.approved_over_times ? log?.approved_over_times + ' H' : '' }}</td>
               <td class="border px-1 py-0.5">
                 <div v-if="log.late_duration">
                   {{ log.late_duration }}
