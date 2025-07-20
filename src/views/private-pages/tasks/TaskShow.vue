@@ -4,6 +4,7 @@ import OverlyModal from '@/components/common/OverlyModal.vue'
 import CountdownTimer from '@/components/CountdownTimer.vue'
 import SubTaskList from '@/components/tasks/SubTaskList.vue'
 import SubTaskProgress from '@/components/tasks/SubTaskProgress.vue'
+import { default as TaskDeletingFrom } from '@/components/tasks/TaskDeletingFrom.vue'
 import TaskProgressTable from '@/components/tasks/TaskProgressTable.vue'
 import TaskStatus from '@/components/tasks/TaskStatus.vue'
 import TaskStatusManager from '@/components/tasks/TaskStatusManager.vue'
@@ -25,6 +26,10 @@ const auth = useAuthStore()
 // const subTasks = computed(() => taskTree.getTaskListTree())
 const subTasks = computed(() => store.tasks)
 const progress = ref({})
+const taskDeleting = reactive({
+  open: false,
+  task: null,
+})
 
 const full_description_hidden = ref(true)
 
@@ -73,8 +78,23 @@ const backLink = computed(() => {
     return { name: route.name === 'MyTaskShow' ? 'MyTaskList' : 'TaskList' }
   }
 
-  return { params: { id: store.task?.parent_id } }
+  return {
+    params: {
+      id: store.task?.parent_id,
+    },
+  }
 })
+
+function handleDeleteButtonClick() {
+  taskDeleting.open = true
+  taskDeleting.task = store.task
+}
+
+function handleDeleteSuccess() {
+  taskDeleting.open = false
+  console.log({ STATE: 'Deleted', backLink: backLink.value })
+  router.push(backLink.value)
+}
 
 watch(
   () => route.params.id,
@@ -98,6 +118,14 @@ watch(
       />
     </OverlyModal>
 
+    <OverlyModal v-if="taskDeleting.open">
+      <TaskDeletingFrom
+        @closeClick="taskDeleting.open = false"
+        :task="taskDeleting.task"
+        @delete="handleDeleteSuccess"
+      />
+    </OverlyModal>
+
     <LoaderView v-if="state === 'loading'" />
 
     <div class="max-w-8xl min-h-64 mx-auto bg-white shadow-lg rounded-lg p-6 relative" v-else>
@@ -110,6 +138,13 @@ watch(
               </h2>
 
               <div class="flex items-center gap-2 text-xs text-gray-500 mt-2 opacity-80 text-left">
+                <div
+                  v-if="store.task.parent_id == 0"
+                  class="text-white bg-green-700 text-[12px] uppercase px-[5px] py-[1px] rounded-full border border-green-200 opacity-80"
+                >
+                  MAIN TASK
+                </div>
+
                 <span
                   class="text-xs px-2 py-0.5 rounded-full border bg-yellow-800 text-white"
                   v-if="store.task?.is_important"
@@ -141,7 +176,7 @@ watch(
             </div>
           </div>
 
-          <div class="col-span-full">
+          <div class="col-span-full mb-4">
             <p
               v-html="store.task?.description"
               class="text-gray-700"
@@ -230,6 +265,9 @@ watch(
 
             <div class="ml-auto flex gap-4">
               <template v-if="store.task?.children_task_count === 0">
+                <button class="btn-2-red h-8" @click.prevent="handleDeleteButtonClick">
+                  Delete
+                </button>
                 <button
                   class="btn-3 px-3 py-0.5 text-sm h-8 font-semibold border disabled:opacity-30 disabled:pointer-events-none"
                   @click.prevent="() => handleDateChangeModal('start-date')"

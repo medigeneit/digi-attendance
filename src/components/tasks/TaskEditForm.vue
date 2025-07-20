@@ -2,10 +2,12 @@
 import { getYearMonthDayFormat } from '@/libs/datetime'
 import { useAuthStore } from '@/stores/auth'
 import { useCompanyStore } from '@/stores/company'
+import { useTagStore } from '@/stores/tags'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import SectionLoading from '../common/SectionLoading.vue'
+import MultiselectDropdown from '../MultiselectDropdown.vue'
 
 const props = defineProps({
   taskId: {
@@ -17,6 +19,8 @@ const props = defineProps({
 const emit = defineEmits(['updated', 'cancel'])
 
 const store = useTaskStore()
+const selectedWebsiteTags = ref([])
+const tagStore = useTagStore()
 const auth = useAuthStore()
 const companyStore = useCompanyStore()
 const task = ref()
@@ -28,6 +32,8 @@ const form = ref({})
 onMounted(async () => {
   loading.value = true
 
+  tagStore.fetchTags('website')
+
   task.value = (
     await store.fetchTask(props.taskId, {}, { fetchOnly: true, loadingBeforeFetch: false })
   )?.task
@@ -38,6 +44,8 @@ onMounted(async () => {
   })
 
   setTaskOnFormData(task.value)
+
+  selectedWebsiteTags.value = task.value?.website_tags || []
   selectedUsers.value = task.value.users
   loading.value = false
 })
@@ -77,6 +85,7 @@ const update = async () => {
     const payload = {
       ...form.value,
       user_ids: selectedUsers.value?.map((u) => Number(u.id)) || [],
+      website_tags: selectedWebsiteTags.value?.map((t) => Number(t.id)) || [],
     }
 
     await store.updateTask(props.taskId, payload, { loadingBeforeFetch: false })
@@ -96,6 +105,10 @@ const update = async () => {
       <div v-if="loading" class="text-center py-4 text-gray-500">Loading form...</div>
     </div>
 
+    <!-- <pre>
+      {{ tagStore.tags }}
+    </pre> -->
+
     <form @submit.prevent="update" class="my-4">
       <div class="mb-4">
         <label class="block text-gray-700 font-medium mb-2">Task Title</label>
@@ -104,6 +117,17 @@ const update = async () => {
           required
           placeholder="Enter task title"
           class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      <div class="mb-4">
+        <label class="text-gray-800">Websites</label>
+        <MultiselectDropdown
+          :options="tagStore.tags"
+          :multiple="true"
+          v-model="selectedWebsiteTags"
+          label="name"
+          track-by="id"
         />
       </div>
 

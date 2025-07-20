@@ -71,6 +71,15 @@
             </div>
           </div>
         </div>
+        <div class="flex gap-2 mb-2 col-span-full">
+          <div
+            class="border bg-gray-50 text-xs px-2 rounded-md text-gray-700"
+            v-for="tag in task.website_tags || []"
+            :key="tag.id"
+          >
+            {{ tag.name }}
+          </div>
+        </div>
 
         <TaskSupervisorAndEmployee
           :task="task"
