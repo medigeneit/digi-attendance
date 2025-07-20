@@ -27,9 +27,23 @@ const title = computed(() => {
     .join(' ')
 })
 
-const approvalKey = computed(() =>
-  type === 'leave_applications' ? 'leave_approval' : 'other_approval',
-)
+const approvalKey = computed(() => {
+  let key = ''
+
+  switch (type) {
+    case 'overtime_applications':
+      key = 'overtime_approval'
+      break
+    case 'leave_applications':
+      key = 'leave_approval'
+      break
+    default:
+      key = 'other_approval'
+      break
+  }
+
+  return key
+})
 
 const itemUser = computed(() => application?.[`${item}_user`])
 const itemUserId = computed(() => application?.[`${item}_user_id`])
@@ -79,7 +93,7 @@ const isPending = computed(
       :onSuccess="onAction"
     />
 
-    <hr class="w-36 md:w-44 border-black my-1" />
+    <hr class="w-36 md:w-44 border-black my-1 mx-auto" />
 
     <div class="font-bold">
       {{ title }}

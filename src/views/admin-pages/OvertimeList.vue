@@ -1,5 +1,4 @@
 <script setup>
-import AcceptAndRejectHandler from '@/components/applications/AcceptAndRejectHandler.vue'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import OvertimeDataList from '@/components/overtime/OvertimeDataList.vue'
@@ -129,7 +128,11 @@ const handleFilterChange = () => {
 
     <LoaderView v-if="overtimeStore.isLoading" />
 
-    <OvertimeDataList v-else-if="selectedUser" :user="selectedUser" />
+    <OvertimeDataList
+      v-else-if="selectedUser"
+      :user="selectedUser"
+      :onUpdate="fetchOvertimeListData"
+    />
 
     <div v-if="!selectedUser">
       <p class="text-gray-400 text-center text-2xl italic">Select an employee, please.</p>

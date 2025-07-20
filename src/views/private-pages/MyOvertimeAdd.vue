@@ -15,7 +15,6 @@ const attendanceStore = useAttendanceStore()
 const authStore = useAuthStore()
 
 const loading = ref(false)
-const error = ref(null)
 const attendanceLog = ref({})
 
 const form = ref({
@@ -167,7 +166,7 @@ onMounted(async () => {
 
       <hr />
 
-      <div v-if="error" class="text-red-500 text-sm">{{ error }}</div>
+      <div v-if="overtimeStore.error" class="text-red-500 text-sm">{{ overtimeStore.error }}</div>
 
       <div class="flex justify-center">
         <button type="submit" class="btn-2">Submit</button>

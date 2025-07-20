@@ -52,12 +52,12 @@ const router = createRouter({
       path: '/',
       component: AppLayout,
       children: [
-        {
-          path: '/profile',
-          name: 'ProfileView',
-          component: () => import('../views/private-pages/ProfileView.vue'),
-          meta: { requiresAuth: true, title: 'Profile' },
-        },
+        // {
+        //   path: '/profile',
+        //   name: 'ProfileView',
+        //   component: () => import('../views/private-pages/ProfileView.vue'),
+        //   meta: { requiresAuth: true, title: 'Profile' },
+        // },
         {
           path: '/dashboard',
           name: 'Dashboard',
@@ -613,7 +613,7 @@ const router = createRouter({
           meta: {
             requiresAuth: true,
             roles: ['admin', 'super_admin', 'developer'],
-            title: 'Employee Attendance',
+            title: 'Attendance',
           },
         },
 
@@ -624,7 +624,7 @@ const router = createRouter({
           meta: {
             requiresAuth: true,
             roles: ['admin', 'super_admin', 'developer'],
-            title: 'Employee Attendance Log',
+            title: 'Attendance Log',
           },
         },
 
@@ -635,7 +635,7 @@ const router = createRouter({
           meta: {
             requiresAuth: true,
             roles: ['admin', 'super_admin', 'developer'],
-            title: 'Employee Attendance Log',
+            title: 'Monthly Application Log',
           },
         },
 
@@ -935,7 +935,7 @@ const router = createRouter({
           path: '/overtime-show/:id',
           name: 'OvertimeShow',
           component: () => import('@/views/private-pages/OvertimeShow.vue'),
-          meta: { requiresAuth: true, title: 'Show OvertimeShow' },
+          meta: { requiresAuth: true, title: 'Monthly Overtime Show' },
         },
 
         {
@@ -946,10 +946,17 @@ const router = createRouter({
         },
 
         {
-          path: '/applications/overtimes/add',
+          path: '/applications/overtimes-add',
           name: 'MyOvertimeAdd',
           component: () => import('@/views/private-pages/MyOvertimeAdd.vue'),
           meta: { requiresAuth: true, title: 'Add Overtime' },
+        },
+
+        {
+          path: '/applications/overtimes/:id',
+          name: 'MyOvertimeShow',
+          component: () => import('@/views/private-pages/MyOvertimeShow.vue'),
+          meta: { requiresAuth: true, title: 'Overtime Show' },
         },
       ],
     },
