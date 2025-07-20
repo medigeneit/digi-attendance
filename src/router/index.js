@@ -52,12 +52,12 @@ const router = createRouter({
       path: '/',
       component: AppLayout,
       children: [
-        {
-          path: '/profile',
-          name: 'ProfileView',
-          component: () => import('../views/private-pages/ProfileView.vue'),
-          meta: { requiresAuth: true, title: 'Profile' },
-        },
+        // {
+        //   path: '/profile',
+        //   name: 'ProfileView',
+        //   component: () => import('../views/private-pages/ProfileView.vue'),
+        //   meta: { requiresAuth: true, title: 'Profile' },
+        // },
         {
           path: '/dashboard',
           name: 'Dashboard',
@@ -613,7 +613,7 @@ const router = createRouter({
           meta: {
             requiresAuth: true,
             roles: ['admin', 'super_admin', 'developer'],
-            title: 'Employee Attendance',
+            title: 'Attendance',
           },
         },
 
@@ -624,7 +624,7 @@ const router = createRouter({
           meta: {
             requiresAuth: true,
             roles: ['admin', 'super_admin', 'developer'],
-            title: 'Employee Attendance Log',
+            title: 'Attendance Log',
           },
         },
 
@@ -635,7 +635,7 @@ const router = createRouter({
           meta: {
             requiresAuth: true,
             roles: ['admin', 'super_admin', 'developer'],
-            title: 'Employee Attendance Log',
+            title: 'Monthly Application Log',
           },
         },
 
