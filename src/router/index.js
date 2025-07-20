@@ -935,7 +935,7 @@ const router = createRouter({
           path: '/overtime-show/:id',
           name: 'OvertimeShow',
           component: () => import('@/views/private-pages/OvertimeShow.vue'),
-          meta: { requiresAuth: true, title: 'Show OvertimeShow' },
+          meta: { requiresAuth: true, title: 'Monthly Overtime Show' },
         },
 
         {
@@ -946,10 +946,17 @@ const router = createRouter({
         },
 
         {
-          path: '/applications/overtimes/add',
+          path: '/applications/overtimes-add',
           name: 'MyOvertimeAdd',
           component: () => import('@/views/private-pages/MyOvertimeAdd.vue'),
           meta: { requiresAuth: true, title: 'Add Overtime' },
+        },
+
+        {
+          path: '/applications/overtimes/:id',
+          name: 'MyOvertimeShow',
+          component: () => import('@/views/private-pages/MyOvertimeShow.vue'),
+          meta: { requiresAuth: true, title: 'Overtime Show' },
         },
       ],
     },

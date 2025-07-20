@@ -1,5 +1,4 @@
 <script setup>
-import AcceptAndRejectHandler from '@/components/applications/AcceptAndRejectHandler.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import OvertimeDataList from '@/components/overtime/OvertimeDataList.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -15,7 +14,7 @@ const overtimeStore = useOvertimeStore()
 const notificationStore = useNotificationStore()
 const authStore = useAuthStore()
 
-const user = computed(() => {
+const selectedUser = computed(() => {
   return overtimeStore.overtimes?.[0]?.user
 })
 
@@ -24,10 +23,10 @@ const applicationIds = computed(() => {
 })
 
 onMounted(async () => {
-  fetchData()
+  fetchOvertimeListData()
 })
 
-const fetchData = async () => {
+const fetchOvertimeListData = async () => {
   await overtimeStore.fetchUserOvertimesByApplicationId(route.params.id)
 
   await notificationStore.fetchApprovalPermissionsByUserApplicationIds(
@@ -61,32 +60,38 @@ const goBack = () => {
           <span class="hidden md:flex">Back</span>
         </button>
 
-        <!-- <RouterLink :to="{ name: 'MyOvertimeAdd' }" class="btn-2">
-          <i class="far fa-plus"></i>
-          <span class="hidden md:flex">Overtime</span>
-        </RouterLink> -->
+        <div>
+          <button @click="fetchOvertimeListData" type="button" class="btn-3 space-x-1 py-1">
+            <i class="fas fa-sync text-lg" :class="{ 'animate-spin': overtimeStore.loading }"></i>
+            <span class="hidden md:inline"> Reload </span>
+          </button>
+        </div>
       </div>
 
       <h1 class="title-md md:title-lg flex-wrap text-center">
         Overtime of {{ overtimeStore.selectedMonthDisplay }}
       </h1>
 
-      <!-- <div class="flex gap-4">
-        <div>
+      <div class="flex gap-4">
+        <!-- <div>
           <input
             id="monthSelect"
             type="month"
             v-model="overtimeStore.selectedMonth"
             class="input-1"
           />
-        </div>
-      </div> -->
+        </div> -->
+      </div>
     </div>
 
     <div v-if="overtimeStore?.loading" class="text-center py-4">
       <LoaderView />
     </div>
 
-    <OvertimeDataList v-else :user="user" />
+    <OvertimeDataList
+      v-else-if="selectedUser"
+      :user="selectedUser"
+      :onUpdate="fetchOvertimeListData"
+    />
   </div>
 </template>

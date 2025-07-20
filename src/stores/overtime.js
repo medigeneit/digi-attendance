@@ -1,6 +1,7 @@
 import apiClient from '@/axios'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { useNotificationStore } from './notification'
 
 export const useOvertimeStore = defineStore('overtime', () => {
   const overtimes = ref([])
@@ -86,12 +87,38 @@ export const useOvertimeStore = defineStore('overtime', () => {
     }
   }
 
+  const fetchOvertimeById = async (id) => {
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await apiClient.get(`/overtimes/${id}`)
+
+      overtime.value = response.data || {}
+
+      const notificationStore = useNotificationStore()
+
+      await notificationStore.fetchApprovalPermissions(
+        'overtime_applications',
+        overtime.value.id,
+      )
+
+      return overtime.value
+    } catch (err) {
+      error.value = err.response?.data?.message || `Failed to fetch overtime (ID: ${id})`
+      console.error(`Error fetching overtime with id ${id}:`, err)
+      throw new Error(error.value)
+    } finally {
+      loading.value = false
+    }
+  }
+
   const updateApprovalTime = async (overtimeId, approvalTimeAsHour) => {
     loading.value = true
     error.value = null
     try {
       const response = await apiClient.patch(`/user-overtimes/${overtimeId}/update-approval-time`, {
-        'approval_overtime_hours': approvalTimeAsHour
+        approval_overtime_hours: approvalTimeAsHour,
       })
       const index = overtimes.value.findIndex((attendance) => attendance.id === overtimeId)
       if (index !== -1) {
@@ -106,7 +133,6 @@ export const useOvertimeStore = defineStore('overtime', () => {
       loading.value = false
     }
   }
-  
 
   const updateOvertime = async (id, data) => {
     loading.value = true
@@ -151,6 +177,7 @@ export const useOvertimeStore = defineStore('overtime', () => {
     selectedMonthDisplay,
     fetchOvertimes,
     createOvertime,
+    fetchOvertimeById,
     updateApprovalTime,
     updateOvertime,
     deleteOvertime,

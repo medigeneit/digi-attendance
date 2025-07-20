@@ -13,12 +13,20 @@ const authStore = useAuthStore()
 const overtimeStore = useOvertimeStore()
 const notificationStore = useNotificationStore()
 
-defineProps({
+const props = defineProps({
   user: Object,
+  onUpdate: {
+    type: Function,
+    default: null,
+  },
 })
 
 const onSuccess = () => {
-  router.replace({ path: route.path, query: { ...route.query, t: Date.now() } })
+  if (props.onUpdate) {
+    props.onUpdate()
+  } else {
+    notificationStore.fetchCountNotifications()
+  }
 }
 </script>
 
@@ -91,10 +99,10 @@ const onSuccess = () => {
               {{ overtime.shift }}
             </td>
             <td class="border border-gray-300 px-2 text-center">
-              {{ overtime.check_in || 'N/A' }}
+              {{ overtime.check_in || '- : -' }}
             </td>
             <td class="border border-gray-300 px-2 text-center">
-              {{ overtime.check_out || 'N/A' }}
+              {{ overtime.check_out || '- : -' }}
             </td>
             <td class="border border-gray-300 px-2 text-center">
               {{ overtime.working_hours || '-' }}
@@ -114,15 +122,30 @@ const onSuccess = () => {
             <td class="border border-gray-300 px-2 text-center">
               {{ overtime.status || 'Pending' }}
             </td>
-            <td class="border border-gray-300 px-2 text-center">
-              <AcceptAndRejectHandler
-                v-if="notificationStore.applicationApprovalPermissions[overtime.id]"
-                class="ml-auto"
-                notificationType="overtime_applications"
-                :applicationId="overtime.id"
-                :onSuccess="onSuccess"
-                :variant="1"
-              />
+            <td class="border border-gray-300 px-2 text-center !py-0.5">
+              <div class="flex items-center justify-center gap-x-4">
+                <div
+                  v-if="notificationStore.applicationApprovalPermissions[overtime.id]"
+                  class="border border-dashed px-4 rounded-xl"
+                >
+                  <AcceptAndRejectHandler
+                    class="ml-auto"
+                    notificationType="overtime_applications"
+                    :applicationId="overtime.id"
+                    :onSuccess="onSuccess"
+                    :variant="1"
+                  />
+                </div>
+                <RouterLink
+                  :to="{
+                    name: 'MyOvertimeShow',
+                    params: { id: overtime.id },
+                  }"
+                  class="text-blue-800"
+                >
+                  <i class="far fa-eye text-lg"></i>
+                </RouterLink>
+              </div>
             </td>
           </tr>
           <tr v-if="overtimeStore.overtimes?.length === 0">
