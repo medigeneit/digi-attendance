@@ -3,43 +3,54 @@
   <div class="grid gap-4 md:grid-cols-4 px-4">
     <RouterLink :to="{ name: 'EmployeeAttendance' }" class="main-button">
       <i class="fas fa-calendar-alt text-3xl"></i>
-      Employee Attendance
+      Attendance
     </RouterLink>
 
     <RouterLink :to="{ name: 'EmployeeAttendanceLog' }" class="main-button">
-      <i class="fas fa-calendar-alt text-3xl"></i>
+      <i class="fas fa-fingerprint text-3xl"></i>
       Attendance Log
     </RouterLink>
 
     <RouterLink :to="{ name: 'MonthWiseApplicationLog' }" class="main-button">
-      <i class="fas fa-calendar-alt text-3xl"></i>
+      <i class="far fa-file-contract text-3xl"></i>
       Monthly Application Log
+    </RouterLink>
+
+    <RouterLink :to="{ name: 'HrdAdminLeaveApplication' }" class="main-button">
+      <i class="far fa-file-signature text-3xl"></i>
+      Admin Leave Applications
     </RouterLink>
 
     <RouterLink :to="{ name: 'LeaveApplicationList' }" class="main-button">
       <i class="fas fa-leaf text-3xl"></i>
-      Employee Leave Applications
+      Leave Applications
     </RouterLink>
-    <RouterLink :to="{ name: 'HrdAdminLeaveApplication' }" class="main-button">
-      <i class="fas fa-calendar-alt text-3xl"></i>
-      Admin Leave Applications
-    </RouterLink>
+
     <RouterLink :to="{ name: 'ShortLeaveList' }" class="main-button">
       <i class="fab fa-pagelines text-3xl"></i>
-      Employee Short Leaves
+      Short Leaves
     </RouterLink>
+
     <RouterLink :to="{ name: 'ShiftExchangeList' }" class="main-button">
-      <i class="fas fa-exchange text-3xl"></i>
-      Employee Shift Exchanges
+      <i class="fad fa-repeat text-3xl"></i>
+      Shift Exchanges
     </RouterLink>
+
     <RouterLink :to="{ name: 'OffdayExchangeList' }" class="main-button">
-      <i class="fas fa-calendar-day text-3xl"></i>
-      Employee Offday Exchanges
+      <i class="fad fa-random text-3xl"></i>
+      Offday Exchanges
     </RouterLink>
+
     <RouterLink :to="{ name: 'ManualAttendanceList' }" class="main-button">
       <i class="fas fa-fingerprint text-3xl"></i>
       Manual Attendance List
     </RouterLink>
+  
+    <RouterLink :to="{ name: 'OvertimeList' }" class="main-button">
+      <i class="far fa-business-time text-3xl"></i>
+      Overtime List
+    </RouterLink>
+
     <RouterLink :to="{ name: 'NoticeList' }" class="main-button">
       <i class="far fa-exclamation-circle text-3xl"></i>
       Notice List

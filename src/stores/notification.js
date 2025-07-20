@@ -11,6 +11,7 @@ export const useNotificationStore = defineStore('notification', () => {
   const count_notifications = ref({})
 
   const approvalPermissions = ref({})
+  const applicationApprovalPermissions = ref([])
 
   const icons = ref({
     leave_applications: '📜',
@@ -18,6 +19,7 @@ export const useNotificationStore = defineStore('notification', () => {
     shift_exchange_applications: '🔄',
     offday_exchange_applications: '🔄',
     manual_attendance_applications: '🕒',
+    overtime_applications: '⏱️',
   })
 
   const total_notifications = computed(() => {
@@ -52,6 +54,29 @@ export const useNotificationStore = defineStore('notification', () => {
       approvalPermissions.value = response.data || {}
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch notifications'
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function fetchApprovalPermissionsByUserApplicationIds(
+    notificationType,
+    applicationIds,
+  ) {
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await apiClient.get(
+        `/pending-notifications/${notificationType}/${applicationIds.join(',')}/application-permissions`,
+      )
+
+      applicationApprovalPermissions.value = response.data || []
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to fetch notifications'
+      console.log({
+        fetchApprovalPermissionsByUserApplicationIds: err,
+      })
     } finally {
       loading.value = false
     }
@@ -122,11 +147,13 @@ export const useNotificationStore = defineStore('notification', () => {
     totalUnreadNotifications,
     grouped_counts,
     fetchApprovalPermissions,
+    fetchApprovalPermissionsByUserApplicationIds,
     updateSpecificNotification,
     fetchSpecificNotifications,
     fetchCountNotifications,
     count_notifications,
     total_notifications,
     approvalPermissions,
+    applicationApprovalPermissions,
   }
 })

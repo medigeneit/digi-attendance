@@ -30,17 +30,19 @@ onMounted(async () => {
   <div class="md:flex relative">
     <div
       :class="{ 'hidden md:block': !sidebarVisible }"
-      class="bg-white md:shadow-md shadow-2xl absolute md:static transition-transform duration-300 print:hidden z-[999]"
+      class="max-w-[240px] bg-white md:shadow-md shadow-2xl absolute md:static transition-transform duration-300 print:hidden z-[998]"
     >
       <div class="sticky top-0 print:hidden">
-        <div class="relative">
+        <div class="relative w-full">
           <SideBar :visible="sidebarVisible" :user="user" />
-          <button
-            class="md:hidden absolute -right-10 top-1/2 transform -translate-y-1/2 bg-red-500 text-white px-2 py-1 pt-2 rounded-full"
-            @click="toggleSidebar"
-          >
-            <i class="fas fa-times-circle text-xl"></i>
-          </button>
+          <div @click="toggleSidebar" class="md:hidden absolute left-full top-0 bottom-0 w-full h-full bg-gray-800/50 flex items-center justify-start p-2">
+            <button
+              class="md:hidden bg-red-500 text-white px-2 py-1 pt-2 rounded-full"
+              @click="toggleSidebar"
+            >
+              <i class="fas fa-times-circle text-xl"></i>
+            </button>
+          </div>
         </div>
       </div>
     </div>

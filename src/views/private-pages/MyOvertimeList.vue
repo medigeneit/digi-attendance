@@ -1,5 +1,6 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import DisplayFormattedWorkingHours from '@/components/overtime/DisplayFormattedWorkingHours.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useOvertimeStore } from '@/stores/overtime'
 import { computed, onMounted, watch } from 'vue'
@@ -10,7 +11,7 @@ const overtimeStore = useOvertimeStore()
 const authStore = useAuthStore()
 
 onMounted(() => {
-  overtimeStore.fetchUserOvertimes({ month: overtimeStore.selectedMonth })
+  fetchOvertimeListData()
 })
 
 const goBack = () => {
@@ -25,10 +26,14 @@ watch(
   () => overtimeStore.selectedMonth,
   (newMonth) => {
     if (newMonth) {
-      overtimeStore.fetchUserOvertimes({ month: newMonth })
+      fetchOvertimeListData(newMonth)
     }
   },
 )
+
+const fetchOvertimeListData = async (selectedMonth = null) => {
+  overtimeStore.fetchUserOvertimes({ month: selectedMonth || overtimeStore.selectedMonth })
+}
 </script>
 
 <template>
@@ -39,6 +44,13 @@ watch(
           <i class="far fa-arrow-left"></i>
           <span class="hidden md:flex">Back</span>
         </button>
+
+        <div>
+          <button @click="fetchOvertimeListData" type="button" class="btn-3 space-x-1 py-1">
+            <i class="fas fa-sync text-lg" :class="{ 'animate-spin': overtimeStore.loading }"></i>
+            <span class="hidden md:inline"> Reload </span>
+          </button>
+        </div>
 
         <RouterLink :to="{ name: 'MyOvertimeAdd' }" class="btn-2">
           <i class="far fa-plus"></i>
@@ -109,24 +121,36 @@ watch(
                 {{ overtime.shift }}
               </td>
               <td class="border border-gray-300 px-2 text-center">
-                {{ overtime.check_in || 'N/A' }}
+                {{ overtime.check_in || '- : -' }}
               </td>
               <td class="border border-gray-300 px-2 text-center">
-                {{ overtime.check_out || 'N/A' }}
+                {{ overtime.check_out || '- : -' }}
               </td>
               <td class="border border-gray-300 px-2 text-center">
-                {{ overtime.working_hours || '-' }}
+                <DisplayFormattedWorkingHours :workingHours="overtime.working_hours" />
               </td>
               <td class="border border-gray-300 px-2 text-center">
-                {{ overtime.request_overtime_hours || '-' }}
+                {{ parseInt(overtime.request_overtime_hours) || '-' }}
               </td>
               <td class="border border-gray-300 px-2 text-center">
-                {{ overtime.approved_overtime_hours || '-' }}
+                {{ parseInt(overtime.approval_overtime_hours) || '-' }}
               </td>
               <td class="border border-gray-300 px-2 text-center">
                 {{ overtime.status || 'Pending' }}
               </td>
-              <td class="border border-gray-300 px-2 text-center"></td>
+              <td class="border border-gray-300 px-2 text-center">
+                <div class="flex items-center justify-center gap-2">
+                  <RouterLink
+                    :to="{
+                      name: 'MyOvertimeShow',
+                      params: { id: overtime.id },
+                    }"
+                    class="btn-1 px-3"
+                  >
+                    <i class="far fa-eye"></i>
+                  </RouterLink>
+                </div>
+              </td>
             </tr>
             <tr v-if="myOvertimes.length === 0">
               <td colspan="7" class="p-2 text-center text-red-500">No overtimes found</td>

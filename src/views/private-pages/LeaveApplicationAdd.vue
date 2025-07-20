@@ -26,6 +26,7 @@ const form = ref({
 })
 
 const selectedLeaveTypes = ref([])
+const maxedOutTypes = ref([]);
 const loading = ref(false)
 const error = ref(null)
 
@@ -81,9 +82,9 @@ const leaveDaysMessage = computed(() => {
 
 watchEffect(async () => {
   if (leaveDays.value.length && leaveTypeStore.leaveTypes.length) {
-    if (selectedLeaveTypes.value.length !== leaveDays.value.length) {
-      selectedLeaveTypes.value = leaveDays.value.map(() => leaveTypeStore.leaveTypes[0].id)
-    }
+    // if (selectedLeaveTypes.value.length !== leaveDays.value.length) {
+    //   selectedLeaveTypes.value = leaveDays.value.map(() => leaveTypeStore.leaveTypes[0].id)
+    // }
 
     await holidayStore.fetchHolidays({
       company_id: authStore?.user?.company_id,
@@ -117,6 +118,32 @@ watch(
   },
 )
 
+watch(selectedLeaveTypes, (newSelections) => {
+  const typeCount = {};
+
+  newSelections.forEach((val) => {
+    if (typeof val === 'number') {
+      typeCount[val] = (typeCount[val] || 0) + 1;
+    }
+  });
+
+  const exceeded = leaveTypeStore.leaveTypes.filter((type) => {
+    const count = typeCount[type.id] || 0;
+    return count > type.remaining_days;
+  });
+
+  if (exceeded.length) {
+    maxedOutTypes.value = exceeded.map((t) => t.name);
+
+    alert(
+      `You have exceeded remaining days for: ${maxedOutTypes.value.join(', ')}`
+    );
+  } else {
+    maxedOutTypes.value = [];
+  }
+});
+
+
 const submitLeaveApplication = async () => {
   loading.value = true
   error.value = null
@@ -135,6 +162,7 @@ const submitLeaveApplication = async () => {
       })
       .filter((leaveDay) => leaveDay.leave_type_id !== null) // 'weekend' অপশন ফিল্টার করে সরিয়ে ফেলছে
 
+      
     const leaveDaysJson = leaveDays.value
       .map((day, index) => {
         return {
@@ -154,7 +182,7 @@ const submitLeaveApplication = async () => {
       leave_days: leaveDaysPayload,
       json_data: leaveDaysJson,
     }
-
+    
     const newApplication = await leaveApplicationStore.storeLeaveApplication(payload)
     if (newApplication) {
       router.push({ name: 'LeaveApplicationShow', params: { id: newApplication?.id } })
@@ -226,7 +254,7 @@ const goBack = () => {
 
       <!-- Leave days with radio groups -->
       <div v-if="leaveDays.length" class="bg-gray-100 p-2 rounded-md">
-        <h2 class="text-lg font-semibold">Leave Days</h2>
+        <h2 class="text-lg font-semibold">Leave Days  </h2>
         <div>
           <div
             v-for="(day, index) in leaveDays"
@@ -235,7 +263,7 @@ const goBack = () => {
           >
             <div class="font-semibold">{{ day }}</div>
             <div class="flex flex-wrap gap-2">
-              <label
+             <label
                 v-for="type in leaveTypeStore.leaveTypes"
                 :key="type.id"
                 class="flex items-center space-x-1"
@@ -245,9 +273,11 @@ const goBack = () => {
                   :name="'leaveType-' + index"
                   :value="type.id"
                   v-model="selectedLeaveTypes[index]"
+                  :disabled="selectedLeaveTypes.filter(t => t === type.id).length >= type.remaining_days"
                 />
-                <span>{{ type.name }}</span>
+                <span>{{ type.leave_type }}</span>
               </label>
+
               <label class="flex items-center space-x-1">
                 <input
                   type="radio"

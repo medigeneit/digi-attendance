@@ -1,6 +1,7 @@
 import apiClient from '@/axios'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { useNotificationStore } from './notification'
 
 export const useOvertimeStore = defineStore('overtime', () => {
   const overtimes = ref([])
@@ -42,6 +43,34 @@ export const useOvertimeStore = defineStore('overtime', () => {
     }
   }
 
+  const fetchUserMonthlyOvertimes = async (userId, month) => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await apiClient.get(`/user-monthly-overtimes/${userId}/${month}`)
+      overtimes.value = response.data
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to fetch overtimes'
+      console.error('Error fetching overtimes:', err)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const fetchUserOvertimesByApplicationId = async (overtimeApplicationId) => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await apiClient.get(`/${overtimeApplicationId}/user-overtimes`)
+      overtimes.value = response.data
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to fetch overtimes'
+      console.error('Error fetching overtimes:', err)
+    } finally {
+      loading.value = false
+    }
+  }
+
   const createOvertime = async (data = {}) => {
     loading.value = true
     error.value = null
@@ -52,6 +81,53 @@ export const useOvertimeStore = defineStore('overtime', () => {
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to create overtime'
       console.error('Error creating overtime:', err)
+      throw new Error(error.value)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const fetchOvertimeById = async (id) => {
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await apiClient.get(`/overtimes/${id}`)
+
+      overtime.value = response.data || {}
+
+      const notificationStore = useNotificationStore()
+
+      await notificationStore.fetchApprovalPermissions(
+        'overtime_applications',
+        overtime.value.id,
+      )
+
+      return overtime.value
+    } catch (err) {
+      error.value = err.response?.data?.message || `Failed to fetch overtime (ID: ${id})`
+      console.error(`Error fetching overtime with id ${id}:`, err)
+      throw new Error(error.value)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const updateApprovalTime = async (overtimeId, approvalTimeAsHour) => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await apiClient.patch(`/user-overtimes/${overtimeId}/update-approval-time`, {
+        approval_overtime_hours: approvalTimeAsHour,
+      })
+      const index = overtimes.value.findIndex((attendance) => attendance.id === overtimeId)
+      if (index !== -1) {
+        overtimes.value[index] = response.data
+      }
+      return response.data.overtime
+    } catch (err) {
+      error.value = err.response?.data?.message || `Failed to update overtime (ID: ${overtimeId})`
+      console.error(`Error updating overtime with id ${overtimeId}:`, err)
       throw new Error(error.value)
     } finally {
       loading.value = false
@@ -101,8 +177,12 @@ export const useOvertimeStore = defineStore('overtime', () => {
     selectedMonthDisplay,
     fetchOvertimes,
     createOvertime,
+    fetchOvertimeById,
+    updateApprovalTime,
     updateOvertime,
     deleteOvertime,
     fetchUserOvertimes,
+    fetchUserMonthlyOvertimes,
+    fetchUserOvertimesByApplicationId,
   }
 })

@@ -24,10 +24,10 @@ const logout = () => {
 
 <template>
   <aside class="bg-white sidebar h-screen overflow-auto scrollbar pb-24 z-[500]">
-    <div class="space-y-1">
+    <div class="space-y-1 pt-16 md:pt-0">
       <!-- Admin Mode + Toggle Menu Row -->
       <div
-        class="flex items-center justify-between gap-2 px-2 py-5 sticky top-0 z-30 bg-white border-b"
+        class="flex items-center justify-between md:gap-2 px-2 py-5 sticky top-0 z-30 bg-white border-b"
       >
         <!-- Admin Toggle -->
         <div v-if="isAdmin" class="flex items-center gap-2">
@@ -40,12 +40,12 @@ const logout = () => {
               @change="authStore.toggleAdminMode"
             />
             <div
-              class="w-11 h-6 bg-gray-200 rounded-full shadow-inner relative transition duration-200"
+              class="w-8 md:w-11 h-5 md:h-6 bg-gray-200 rounded-full shadow-inner relative transition duration-200"
               :class="{ '!bg-blue-600': authStore.isAdminMood }"
             >
               <div
-                class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition"
-                :class="{ 'translate-x-5': authStore.isAdminMood }"
+                class="dot absolute left-1 top-1 bg-white size-3 md:size-4 rounded-full transition"
+                :class="{ 'translate-x-3 md:translate-x-5': authStore.isAdminMood }"
               ></div>
             </div>
           </label>
@@ -54,10 +54,10 @@ const logout = () => {
         <!-- Menu Toggle Button -->
         <button
           @click="open = !open"
-          class="text-gray-500 hover:text-blue-600 transition"
+          class="text-gray-500 hover:text-blue-600 transition flex justify-center items-center"
           :title="open ? 'Minimize Menu' : 'Expand Menu'"
         >
-          <i :class="['fas', 'fa-chevron-left', { 'rotate-180': !open }]"></i>
+          <i :class="['fas', 'fa-chevron-left', 'text-lg', { 'rotate-180': !open }]"></i>
         </button>
       </div>
 

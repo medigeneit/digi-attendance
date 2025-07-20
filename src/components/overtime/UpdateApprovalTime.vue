@@ -1,0 +1,50 @@
+<script setup>
+import { useOvertimeStore } from '@/stores/overtime'
+import { ref } from 'vue'
+
+const props = defineProps({
+  overtime: Object,
+})
+
+const overtimeStore = useOvertimeStore()
+
+const isModalOpen = ref(false)
+const approvalTime = ref(
+  parseInt(props.overtime.approval_overtime_hours || props.overtime.request_overtime_hours || ''),
+)
+
+const handleUpdate = async () => {
+  if (!approvalTime.value) {
+    return alert('Please set approval time!')
+  }
+
+  await overtimeStore.updateApprovalTime(props.overtime.id, approvalTime.value)
+
+  closeModal()
+}
+
+const closeModal = () => {
+  isModalOpen.value = false
+}
+</script>
+
+<template>
+  <i @click="isModalOpen = !isModalOpen" class="fa fa-edit cursor-pointer text-sky-600"></i>
+
+  <!-- Single reusable modal -->
+  <div
+    v-if="isModalOpen"
+    class="fixed inset-0 z-50 flex justify-center items-center bg-black/50"
+  >
+    <div class="modal-card max-w-sm">
+      <h3 class="title-lg">Update Approval Time</h3>
+      <hr class="my-2" />
+      <input v-model="approvalTime" type="number" class="input-1" required />
+      <hr class="my-2" />
+      <div class="flex justify-between gap-2 mt-4">
+        <button class="btn-3" @click="closeModal">Cancel</button>
+        <button class="btn-2-green" @click="handleUpdate">Update Time</button>
+      </div>
+    </div>
+  </div>
+</template>

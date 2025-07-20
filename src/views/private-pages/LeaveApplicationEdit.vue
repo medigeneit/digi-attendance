@@ -30,6 +30,7 @@ const form = ref({
 })
 
 const selectedLeaveTypes = ref([])
+const maxedOutTypes = ref([]);
 const loading = ref(false)
 const error = ref(null)
 const isEditMode = ref(false)
@@ -74,6 +75,9 @@ onMounted(async () => {
       form.value.works_in_hand = leaveApplicationStore.leaveApplication?.works_in_hand
       form.value.handover_user_id = leaveApplicationStore.leaveApplication?.handover_user_id
       form.value.leave_days = leaveApplicationStore.leaveApplication?.leave_days
+
+      console.log(leaveApplicationStore.leaveApplication);
+      
 
       if (leaveApplicationStore.leaveApplication?.json_data) {
         leaveApplicationStore.leaveApplication?.json_data.forEach((item, index) => {
@@ -169,6 +173,31 @@ watch(
     form.value.handover_user_id = newValue?.id
   },
 )
+
+watch(selectedLeaveTypes, (newSelections) => {
+  const typeCount = {};
+
+  newSelections.forEach((val) => {
+    if (typeof val === 'number') {
+      typeCount[val] = (typeCount[val] || 0) + 1;
+    }
+  });
+
+  const exceeded = leaveTypeStore.leaveTypes.filter((type) => {
+    const count = typeCount[type.id] || 0;
+    return count > type.remaining_days;
+  });
+
+  if (exceeded.length) {
+    maxedOutTypes.value = exceeded.map((t) => t.name);
+
+    alert(
+      `You have exceeded remaining days for: ${maxedOutTypes.value.join(', ')}`
+    );
+  } else {
+    maxedOutTypes.value = [];
+  }
+});
 
 const submitLeaveApplication = async () => {
   loading.value = true
@@ -284,7 +313,7 @@ const isHoliday = async (day) => {
           >
             <div class="font-semibold">{{ day }}</div>
             <div class="flex flex-wrap gap-2">
-              <label
+               <label
                 v-for="type in leaveTypeStore.leaveTypes"
                 :key="type.id"
                 class="flex items-center space-x-1"
@@ -294,8 +323,9 @@ const isHoliday = async (day) => {
                   :name="'leaveType-' + index"
                   :value="type.id"
                   v-model="selectedLeaveTypes[index]"
+                  :disabled="selectedLeaveTypes.filter(t => t === type.id).length >= type.remaining_days"
                 />
-                <span>{{ type.name }}</span>
+                <span>{{ type.leave_type }}</span>
               </label>
               <label class="flex items-center space-x-1">
                 <input

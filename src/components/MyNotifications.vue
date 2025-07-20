@@ -104,6 +104,20 @@ const emits = defineEmits(['close'])
         </span>
       </RouterLink>
 
+      <RouterLink
+        v-if="count_notifications?.overtime_applications"
+        :to="{ name: 'MySpecificNotificationList', params: { type: 'overtime_applications' } }"
+        @click="emits('close')"
+        class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
+      >
+        <span class="text-sm text-gray-700">
+          {{ icons.overtime_applications }} Overtime
+        </span>
+        <span class="text-xs bg-sky-500 text-white rounded-full px-2 py-0.5 font-semibold">
+          {{ count_notifications.overtime_applications }}
+        </span>
+      </RouterLink>
+
       <div v-if="total_notifications === 0" class="px-4 py-3 text-center text-sm text-gray-400">
         No new notifications.
       </div>

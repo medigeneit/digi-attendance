@@ -187,7 +187,7 @@ const goBack = () => router.go(-1)
                 </div>
                 <div class="text-gray-600">{{ log?.total_shift_hour || 0 }}</div>
               </td>
-              <td class="border px-2 py-0.5">{{ log?.total_overtime_hours }}</td>
+              <td class="border px-2 py-0.5">{{ log?.total_overtime_hours ? log?.total_overtime_hours + ' H' :'' }}</td>
               <td class="border px-2 py-0.5">{{ log?.total_cl_leave }}</td>
               <td class="border px-2 py-0.5">{{ log?.total_ml_leave }}</td>
               <td class="border px-2 py-0.5">{{ log?.total_sl_leave }}</td>

@@ -113,10 +113,10 @@ onMounted(async () => {
           <table class="min-w-full table-auto bg-white shadow-md rounded-lg overflow-hidden">
             <thead>
               <tr class="bg-gray-200 text-gray-700 text-sm leading-normal">
-                <th class="py-3 px-2 text-left">#</th>
-                <th class="py-3 px-2 text-left">Name</th>
-                <th class="py-3 px-2 text-left">Short Name</th>
-                <th class="py-3 px-2 text-center">Employee Number</th>
+                <th class="py-3 px-2 text-center">#</th>
+                <th class="py-3 px-2 text-left">Department Name</th>
+                <th class="py-3 px-2 text-left">Coordinator & In-Charge</th>
+                <th class="py-3 px-2 text-center">Employee</th>
                 <th class="py-3 px-2 text-center">Status</th>
                 <th class="py-3 px-2 text-center">Action</th>
               </tr>
@@ -127,9 +127,21 @@ onMounted(async () => {
                 :key="index"
                 class="border-b border-gray-200 hover:bg-blue-200"
               >
-                <td class="py-3 px-2 text-left">{{ index+=1 }}</td>
-                <td class="py-3 px-2 text-left">{{ department.name }}</td>
-                <td class="py-3 px-2 text-left whitespace-nowrap">{{ department.short_name }}</td>
+                <td class="py-3 px-2 text-center">{{ index += 1 }}</td>
+                <td class="py-3 px-2 text-left">
+                  <div>{{ department.name }}</div>
+                  <strong>{{ department.short_name }}</strong>
+                </td>
+                <td class="py-3 px-2 text-left">
+                  <div>
+                    <span class="text-gray-400">Coordinator: </span>
+                    {{ department.coordinator?.name || '-' }}
+                  </div>
+                  <div>
+                    <span class="text-gray-400">In-Charge: </span>
+                    {{ department.in_charge?.name || '-' }}
+                  </div>
+                </td>
                 <td class="py-3 px-2 text-center">{{ department?.users_count }}</td>
                 <td class="py-3 px-2 text-center">{{ department.status }}</td>
                 <td class="py-3 px-2 text-center">

@@ -15,14 +15,13 @@ const attendanceStore = useAttendanceStore()
 const authStore = useAuthStore()
 
 const loading = ref(false)
-const error = ref(null)
 const attendanceLog = ref({})
 
 const form = ref({
   date: route.query.date || '',
   duty_type: '',
   request_overtime_hours: '',
-  higher_authority_user_id: '',
+  assigned_in_charge_user_id: '',
   work_details: '',
 })
 
@@ -94,6 +93,7 @@ onMounted(async () => {
             v-model="form.date"
             class="input-1 w-full"
             required
+            :max="new Date(Date.now() - 86400000).toISOString().split('T')[0]"
           />
         </div>
         <div>
@@ -138,16 +138,16 @@ onMounted(async () => {
         </div>
 
         <div>
-          <label for="higher_authority_user_id" class="block text-sm font-medium">
-            Higher Authority
+          <label for="assigned_in_charge_user_id" class="block text-sm font-medium">
+            In-Charge
           </label>
           <select
-            id="higher_authority_user_id"
-            v-model="form.higher_authority_user_id"
+            id="assigned_in_charge_user_id"
+            v-model="form.assigned_in_charge_user_id"
             class="input-1 w-full"
             required
           >
-            <option value="" selected disabled>--Higher Authority--</option>
+            <option value="" selected disabled>--In-Charge--</option>
             <template v-for="department in departmentStore.departments" :key="department.id">
               <optgroup v-if="department.in_charge" :label="department.name">
                 <option :value="department.in_charge.id">{{ department.in_charge.name }}</option>
@@ -158,7 +158,7 @@ onMounted(async () => {
       </div>
 
       <div>
-        <label for="higher_authority_user_id" class="block text-sm font-medium">
+        <label for="assigned_in_charge_user_id" class="block text-sm font-medium">
           Details (Reason / Work description)
         </label>
         <textarea rows="4" v-model="form.work_details" class="input-1 w-full"></textarea>
@@ -166,7 +166,7 @@ onMounted(async () => {
 
       <hr />
 
-      <div v-if="error" class="text-red-500 text-sm">{{ error }}</div>
+      <div v-if="overtimeStore.error" class="text-red-500 text-sm">{{ overtimeStore.error }}</div>
 
       <div class="flex justify-center">
         <button type="submit" class="btn-2">Submit</button>

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex w-full">
+  <div class="flex w-full text-gray-800">
     <div v-if="treeLevel > 0" class="border-l border-gray-200 last:border-l-0">
       <div
         class="border-l border-b w-4 rounded-bl-full border-gray-200 h-4/6 ml-[-1px] mt-[-30px]"
@@ -13,7 +13,7 @@
         'bg-green-100  ': progress?.completedPercentage === 100,
         'bg-white hover:bg-gray-50': progress?.completedPercentage < 100 && !task.closed_at,
         'shadow-sm': treeLevel > 0,
-        'border-sky-500': index % 2 === 0,
+        'border-blue-500': index % 2 === 0,
         'border-pink-300': index % 2 === 1,
       }"
     >
@@ -22,7 +22,7 @@
           <div
             class="flex items-center gap-2 w-full lg:w-auto mb-3 lg:mb-0 whitespace-break-spaces"
           >
-            <div class="text-xl font-semibold text-sky-500" v-if="index !== undefined">
+            <div class="text-xl font-semibold text-blue-500" v-if="index !== undefined">
               {{ index + 1 }}.
             </div>
 
@@ -51,7 +51,7 @@
           </div>
 
           <div class="flex items-center flex-none lg:w-full order-0 lg:order-1">
-            <div class="flex gap-4 items-center mr-3">
+            <div class="flex gap-4 items-center mr-3" v-if="showDraggableHandle || task.serial">
               <button @mousedown.stop="handleDragging" class="handle" v-if="showDraggableHandle">
                 <i class="fas fa-arrows-alt text-gray-500 cursor-grab"></i>
               </button>
@@ -61,7 +61,7 @@
 
             <div class="flex items-center gap-2 text-xs text-gray-500 opacity-80 text-left">
               <div
-                class="text-white bg-green-700 text-[12px] uppercase px-[5px] py-[1px] rounded-full border border-green-200 opacity-80"
+                class="text-white bg-blue-700 text-[12px] uppercase px-[5px] py-[1px] rounded-full border border-green-200 opacity-80"
                 v-if="treeLevel === 0"
               >
                 Main
@@ -98,27 +98,27 @@
       </div>
 
       <div
-        class="ml-auto text-right text-sm flex items-center justify-center sm:justify-start gap-4 mt-4"
+        class="ml-auto text-right text-sm flex items-center justify-center sm:justify-start gap-4 mt-4 opacity-80"
       >
         <div v-if="task.is_target" class="bg-yellow-200 px-2 py-0.5 rounded-lg text-yellow-900">
           TARGET TASK
         </div>
 
-        <span class="text-gray-500" v-if="startedDate">
-          Started: <span class="font-semibold text-green-800">{{ startedDate }}</span>
+        <span class="text-gray-500 text-sm" v-if="startedDate">
+          Started: <span class="font-semibold text-blue-800">{{ startedDate }}</span>
         </span>
 
-        <span class="ml-4 text-gray-500" v-if="deadline">
-          Deadline: <span class="text-red-500 font-semibold">{{ deadline }}</span>
+        <span class="ml-4 text-gray-500 text-sm" v-if="deadline">
+          Deadline: <span class="text-blue-500 font-semibold">{{ deadline }}</span>
         </span>
       </div>
 
       <div class="mt-4 col-span-full">
         <div class="flex flex-col sm:flex-row gap-3 items-center mt-4 w-full">
-          <div class="text-xs text-gray-500 flex gap-3 order-1 sm:order-0">
+          <div class="text-xs text-gray-400 flex gap-3 order-1 sm:order-0">
             <button
               :class="{
-                'text-yellow-600 font-semibold  inline-block  ': hasSubTask,
+                'text-blue-600 font-semibold  inline-block  ': hasSubTask,
               }"
               class="flex items-center gap-1 group"
               @click="handleSubTaskClick"
@@ -135,7 +135,7 @@
             <template v-if="!task.closed_at">
               <a
                 :href="`/tasks/add?parent_id=${props.task.id}&back-to=${encodeURIComponent(route.path + '?' + objectToQuery(route.query)).toLowerCase()}`"
-                class="hover:bg-indigo-600 hover:text-white text-indigo-600 font-semibold px-3 py-0.5 rounded-full transition border border-transparent"
+                class="hover:bg-blue-600 hover:text-white text-indigo-600 font-semibold px-3 py-0.5 rounded-full transition border border-transparent"
                 @click.stop.prevent="emits('addClick', props.task.id)"
                 v-if="treeLevel < 2"
               >

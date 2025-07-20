@@ -16,12 +16,14 @@ const companyStore = useCompanyStore()
 const { companies, employees } = storeToRefs(companyStore)
 
 const selectIncharge = ref('')
+const selectCoordinator = ref('')
 const isEditMode = ref(false)
 const isCompaniesFetched = ref(false) // Track if companies are fetched
 const departmentForm = reactive({
   id: null,
   company_id: '',
   incharge_id: '',
+  coordinator_id: '',
   name: '',
   short_name: '',
   description: '',
@@ -29,10 +31,16 @@ const departmentForm = reactive({
 })
 
 const computedInchargeId = computed(() => (selectIncharge.value ? selectIncharge.value.id : null))
+const computedCoordinatorId = computed(() =>
+  selectCoordinator.value ? selectCoordinator.value.id : null,
+)
 
-// Watcher দিয়ে `computedInchargeId` কে `departmentForm.incharge_id`-এ আপডেট করা হচ্ছে
 watch(computedInchargeId, (newVal) => {
   departmentForm.incharge_id = newVal
+})
+
+watch(computedCoordinatorId, (newVal) => {
+  departmentForm.coordinator_id = newVal
 })
 
 const resetForm = () => {
@@ -40,6 +48,7 @@ const resetForm = () => {
   departmentForm.id = null
   departmentForm.company_id = ''
   departmentForm.incharge_id = ''
+  departmentForm.coordinator_id = ''
   departmentForm.name = ''
   departmentForm.short_name = ''
   departmentForm.description = ''
@@ -58,6 +67,7 @@ watch(
       departmentForm.id = newDepartment.id || null
       departmentForm.company_id = newDepartment.company_id || ''
       departmentForm.incharge_id = newDepartment.in_charge?.id || ''
+      departmentForm.coordinator_id = newDepartment.coordinator?.id || ''
       departmentForm.name = newDepartment.name || ''
       departmentForm.short_name = newDepartment.short_name || ''
       departmentForm.description = newDepartment.description || ''
@@ -86,6 +96,10 @@ watch(
 
       selectIncharge.value = companyStore.employees.find(
         (employee) => employee.id === props.department?.in_charge?.id,
+      )
+
+      selectCoordinator.value = companyStore.employees.find(
+        (employee) => employee.id === props.department?.coordinator?.id,
       )
     }
   },
@@ -135,22 +149,23 @@ const fetchCompanies = async () => {
         </div>
 
         <div class="mb-4">
-          <label for="incharge_id" class="block text-sm font-medium mb-2">In Chare</label>
+          <label for="incharge_id" class="block text-sm font-medium mb-2">In-Charge</label>
           <Multiselect
             :options="employees"
             v-model="selectIncharge"
             label="label"
             :multiple="false"
           />
-          <!-- <select
-            id="incharge_id"
-            v-model="departmentForm.incharge_id"
-            class="w-full border rounded px-3 py-2" >
-            <option value="" disabled>Select Employee</option>
-            <option v-for="(employee, index) in employees" :key="index" :value="index">
-              {{ employee }}
-            </option>
-          </select> -->
+        </div>
+
+        <div class="mb-4">
+          <label for="coordinator_id" class="block text-sm font-medium mb-2">Coordinator</label>
+          <Multiselect
+            :options="employees"
+            v-model="selectCoordinator"
+            label="label"
+            :multiple="false"
+          />
         </div>
 
         <div class="mb-4">
