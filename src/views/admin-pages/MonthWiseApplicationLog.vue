@@ -84,6 +84,11 @@ const formatTime = (timestamp) => {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
+const formatOnlyTime = (timeStr) => {
+  const d = new Date(`1970-01-01T${timeStr}`);
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
+
 
 const formatDateTime = (timestamp) => {
   const d = new Date(timestamp)
@@ -262,11 +267,11 @@ const specifications = {
               <td class="p-2">{{ item.application_types  }}</td>
               <td class="p-2">{{ item.date  }}</td>
               <td class="p-2 whitespace-pre-line">
-                {{ formatTime(item.start_time) }}
+                {{ formatOnlyTime(item.start_time) }}
                 
               </td>
               <td class="p-2 whitespace-pre-line">
-                {{ formatTime(item.end_time) }}
+                {{ formatOnlyTime(item.end_time) }}
               </td>
               <td class="p-2 whitespace-pre-line">
                 {{ item.duration }} m
