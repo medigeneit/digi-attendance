@@ -118,7 +118,7 @@ async function submit() {
     <div class="sticky top-0 pt-4 bg-white z-10">
       <h2 class="text-2xl font-semibold text-gray-800">
         <span v-if="parentTaskId && task?.title"> Add Sub Task </span>
-        <span> Add Main Task/Project </span>
+        <span v-else> Add Main Task/Project </span>
       </h2>
 
       <hr class="mb-4" />
