@@ -21,7 +21,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['taskCreated', 'close', 'error'])
+const emit = defineEmits(['taskCreated', 'closeClick', 'error'])
 
 const store = useTaskStore()
 const tagStore = useTagStore()
@@ -155,7 +155,7 @@ async function submit() {
 
           <button
             type="button"
-            @click.prevent="emit('close')"
+            @click.prevent="emit('closeClick')"
             class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-5 py-2 rounded transition"
           >
             Cancel

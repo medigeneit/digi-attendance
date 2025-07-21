@@ -110,6 +110,12 @@ const router = createRouter({
           meta: { requiresAuth: true, title: 'Edit Requirement' },
         },
         {
+          path: 'requirements/show/:id',
+          name: 'RequirementShow',
+          component: () => import('@/views/private-pages/requirements/RequirementShow.vue'),
+          meta: { requiresAuth: true, title: 'Show Requirement' },
+        },
+        {
           path: 'tasks',
           name: 'TaskList',
           component: () => import('@/views/private-pages/tasks/TaskList.vue'),
