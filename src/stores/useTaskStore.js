@@ -7,6 +7,8 @@ export const useTaskStore = defineStore('task', () => {
   const task = ref(null);
   const loading = ref(false);
   const error = ref(null);
+  const currentPage = ref(1);
+  const hasMoreTask = ref(true);
 
 
   const assignUsers = async (taskId, user_ids, {updateStoreData = true}) => {
@@ -31,12 +33,44 @@ export const useTaskStore = defineStore('task', () => {
     }
   };
 
-  const fetchTasks = async (params) => {
+  function resetTaskList(){
+    currentPage.value = 1
+    tasks.value = []
+  }
+
+  const fetchTasks = async (params, {infiniteScrolling = false } = {}) => {
 
     error.value = null;
+    if( loading.value ) {
+      return null
+    }
+
     try {
-      const response = await apiClient.get('/tasks', {params});
-      tasks.value = response.data?.tasks || [];
+
+      const queryParams = {
+        ...params,
+        ...(infiniteScrolling
+          ? { page: currentPage.value, per_page: 50 }
+          : { per_page: 5000 }
+        )
+      }
+
+      loading.value = true
+
+      const response = await apiClient.get('/tasks', {params: queryParams});
+
+      if( infiniteScrolling ) {
+
+        const newList = (response.data?.tasks || []).filter( newTask => !tasks.value.some( task => task.id == newTask.id));
+        hasMoreTask.value = response.data?.all_status_count > 0
+        tasks.value = [ ...tasks.value, ...newList ];
+        currentPage.value++
+      } else {
+        tasks.value = response.data?.tasks || [];
+      }
+
+      loading.value = false
+
       return response.data;
     } catch (err) {
       error.value = err.response?.data?.message || 'টাস্ক লোড করতে ব্যর্থ হয়েছে।';
@@ -206,7 +240,9 @@ export const useTaskStore = defineStore('task', () => {
     taskListTree: computed(getTaskListTree),
     flattenedTasks: computed(getFlattenedTasks),
     fetchTasks,
+    hasMoreTask,
     fetchMyTasks,
+    resetTaskList,
     fetchTask,
     createTask,
     updateTask,

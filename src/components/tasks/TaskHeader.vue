@@ -103,6 +103,152 @@ watch(
     }
   },
 )
+
+function getFilteringView(filteredValue, items, { value, id, label, onCancel } = {}) {
+  if (!filteredValue) {
+    return []
+  }
+
+  const item = Array.isArray(items) ? items.find((item) => item?.[id] == filteredValue) : null
+
+  if (!item) {
+    return []
+  }
+
+  return [
+    {
+      label,
+      value: item?.[value],
+      id: item?.[id],
+      onCancel,
+    },
+  ]
+}
+
+const filteringItems = computed(() => {
+  const all_departments = companyStore.companies.reduce(
+    (departments, company) => [...departments, ...company.departments],
+    [],
+  )
+
+  ;[
+    {
+      'is-target': 'true',
+      'is-urgent': 'true',
+      'is-important': 'true',
+      status: 'only-completed',
+    },
+  ]
+
+  const checkBoxView = (checked, { label, value, id, onCancel }) => {
+    if (!checked) {
+      return []
+    }
+
+    return [
+      {
+        label,
+        value,
+        id,
+        onCancel,
+      },
+    ]
+  }
+  const monthView = (month, { label, onCancel }) => {
+    if (!month) {
+      return []
+    }
+
+    const d = new Date(month)
+
+    return [
+      {
+        label,
+        value: d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }), // e.g., "July 2025"
+        id: month,
+        onCancel,
+      },
+    ]
+  }
+
+  return [
+    ...getFilteringView(companyId.value, companyStore.companies, {
+      label: 'Company',
+      value: 'short_name',
+      id: 'id',
+      onCancel: () => {
+        companyId.value = ''
+      },
+    }),
+    ...getFilteringView(fromDepartmentId.value, all_departments, {
+      label: 'From',
+      value: 'short_name',
+      id: 'id',
+      onCancel: () => {
+        fromDepartmentId.value = ''
+      },
+    }),
+    ...getFilteringView(toDepartmentId.value, all_departments, {
+      label: 'To',
+      value: 'short_name',
+      id: 'id',
+      onCancel: () => {
+        toDepartmentId.value = ''
+      },
+    }),
+    ...getFilteringView(selectedEmployee.value?.id, employees.value, {
+      label: 'Employee',
+      value: 'name',
+      id: 'id',
+      onCancel: handleUserDeSelect,
+    }),
+    ...getFilteringView(
+      taskStatus.value,
+      [
+        { id: 'only-completed', name: 'Completed Only' },
+        { id: 'not-completed', name: 'Not Completed' },
+      ],
+      {
+        label: '',
+        value: 'name',
+        id: 'id',
+        onCancel: () => {
+          taskStatus.value = ''
+        },
+      },
+    ),
+    ...checkBoxView(isImportant.value, {
+      label: '',
+      value: 'Important ',
+      id: true,
+      onCancel: () => {
+        isImportant.value = ''
+      },
+    }),
+    ...checkBoxView(isUrgent.value, {
+      label: '',
+      value: 'Urgent ',
+      id: true,
+      onCancel: () => {
+        isUrgent.value = ''
+      },
+    }),
+    ...checkBoxView(isTarget.value, {
+      label: '',
+      value: 'Targeted Task',
+      id: true,
+      onCancel: () => {
+        isTarget.value = ''
+      },
+    }),
+    ...monthView(month.value, {
+      label: '',
+      onCancel: () => {
+        month.value = ''
+      },
+    }),
+  ]
+})
 </script>
 
 <template>
@@ -121,17 +267,17 @@ watch(
     </div>
     <!-- {{ employees }} -->
 
-    <div class="flex flex-wrap items-center gap-2 mt-3">
-      <div class="flex flex-wrap gap-4">
+    <div class="flex flex-wrap items-center justify-center gap-2 mt-3">
+      <div class="flex flex-wrap gap-x-4 gap-y-3 justify-between">
         <template v-if="!isMyTask">
-          <div class="relative w-full md:w-48">
+          <div class="relative w-full md:w-48 flex-grow">
             <label class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 z-50">
               Company
             </label>
 
             <select
               v-model="companyId"
-              class="h-10 text-sm px-2 text-gray-600 border-2 border-gray-400 rounded-md w-full"
+              class="h-8 text-xs px-2 text-gray-600 border-2 border-gray-400 rounded-md w-full"
             >
               <option value="">--ALL COMPANY--</option>
               <option
@@ -147,8 +293,8 @@ watch(
           <CompanyDepartmentSelectInput
             v-model="fromDepartmentId"
             :companies="companyStore?.companies || []"
-            class="relative w-full md:w-64"
-            :className="{ select: 'h-10 text-sm px-2 text-gray-600 border-2 border-gray-400' }"
+            class="relative w-full md:w-40 flex-grow"
+            :className="{ select: 'h-8 text-xs px-2 text-gray-600 border-2 border-gray-400' }"
             defaultOption="--ALL DEPARTMENT--"
           >
             <template #label>
@@ -163,8 +309,10 @@ watch(
           <CompanyDepartmentSelectInput
             v-model="toDepartmentId"
             :companies="companyStore?.companies || []"
-            class="relative w-full md:w-64"
-            :className="{ select: 'h-10 text-sm px-2 text-gray-600  border-2 border-gray-400' }"
+            class="relative w-full md:w-40 flex-grow"
+            :className="{
+              select: 'h-8 text-xs px-2 text-gray-600  border-2 border-gray-400  ',
+            }"
             v-if="route.name !== 'MyTaskList'"
             defaultOption="--ALL DEPARTMENT--"
           >
@@ -178,7 +326,7 @@ watch(
           </CompanyDepartmentSelectInput>
 
           <div
-            class="relative w-full md:w-72"
+            class="relative w-full md:w-56 lg:flex-grow"
             v-if="auth.isAdminMood && auth?.user?.role !== 'employee'"
           >
             <Multiselect
@@ -190,7 +338,7 @@ watch(
               label="name"
               label-prefix="id"
               placeholder="--ALL EMPLOYEES--"
-              class="text-gray-600 w-full"
+              class="text-gray-600 w-full relative text-xs"
             >
               <template #option="{ option }">
                 <UserChip :user="option" class="w-full line-clamp-1" />
@@ -213,9 +361,12 @@ watch(
           </div>
         </template>
 
-        <div class="text-gray-600 w-40 relative">
+        <div class="w-32 relative h-8">
           <label class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500">Status</label>
-          <select v-model="taskStatus" class="input-1">
+          <select
+            v-model="taskStatus"
+            class="h-8 text-xs px-2 text-gray-600 border-2 border-gray-400 rounded-md w-full"
+          >
             <option value="">--ALL TASKS--</option>
             <option value="not-completed">Not Completed</option>
             <option value="only-completed">Completed</option>
@@ -237,13 +388,13 @@ watch(
           </label>
         </div>
 
-        <div class="text-gray-600 w-full md:w-40 relative">
+        <div class="text-gray-600 w-full md:w-32 relative">
           <label class="absolute text-xs left-2.5 -top-1.5 bg-slate-100 text-blue-500">Month</label>
           <input
             id="month-filter"
             v-model="month"
             type="month"
-            class="input-1"
+            class="h-8 text-xs px-2 text-gray-600 border-2 border-gray-400 rounded-md w-full"
             placeholder="All month"
           />
         </div>
@@ -253,12 +404,35 @@ watch(
     </div>
   </div>
 
-  <div class="flex flex-col md:flex-row mb-2 md:mb-4 items-end mt-5 gap-2">
-    <SearchInput v-model="search" class="w-full md:w-64 lg:w-96 md:ml-auto" v-if="!isMyTask" />
+  <div class="flex flex-col md:flex-row mb-2 md:mb-4 items-end mt-6 gap-6">
+    <SearchInput v-model="search" class="w-full md:w-64 md:ml-auto" v-if="!isMyTask" />
 
-    <div class="w-full flex justify-end gap-5 mt-4" v-if="!isMyTask">
+    <div class="flex items-center gap-3 flex-grow flex-wrap justify-center">
+      <div
+        v-for="filtering in filteringItems"
+        :key="filtering.label || filtering.value"
+        class="flex-shrink-0 text-xs bg-gray-50 border border-gray-300 rounded-md px-2 flex gap-1"
+      >
+        <!-- <legend class="text-[9px] text-green-800">
+          {{ filtering.label }}
+        </legend> -->
+        <div>
+          <span class="text-[9px] text-green-800" v-if="filtering.label">
+            {{ filtering.label }}: </span
+          >{{ filtering.value }}
+        </div>
+        <button
+          type="button"
+          class="text-gray-400 hover:text-red-400"
+          @click.prevent="filtering.onCancel"
+        >
+          <i class="fas fa-times-circle"></i>
+        </button>
+      </div>
+    </div>
+    <div class="flex justify-end gap-5" v-if="!isMyTask">
       <RouterLink
-        class="text-xs sm:text-sm btn-3 py-0.5"
+        class="text-xs sm:text-sm btn-3 py-0.5 flex-shrink-0"
         :class="route.query?.view === 'userwise' ? 'bg-blue-500 text-white' : ''"
         :to="{
           query: {
@@ -270,7 +444,7 @@ watch(
         User Wise List
       </RouterLink>
       <RouterLink
-        class="text-xs sm:text-sm btn-3 py-0.5"
+        class="text-xs sm:text-sm btn-3 py-0.5 flex-shrink-0"
         :class="route.query?.view !== 'userwise' ? 'bg-blue-500 text-white' : ''"
         :to="{
           query: {
@@ -288,12 +462,12 @@ watch(
 
 <style>
 .task-header .input-1 {
-  @apply h-10 px-1.5 text-sm;
+  @apply h-8 px-1.5 text-sm;
 }
 
 .task-header .multiselect {
   box-sizing: border-box;
-  @apply bg-green-300 h-10;
+  @apply bg-green-300 h-8 min-h-8;
 }
 
 .task-header .multiselect .multiselect__placeholder {
@@ -301,8 +475,12 @@ watch(
 }
 
 .task-header .multiselect .multiselect__select {
-  @apply leading-none;
+  @apply leading-none h-5 w-6;
 }
+
+/* .task-header .multiselect .multiselect__select::before {
+  @apply top-0;
+} */
 
 .task-header .multiselect .multiselect__input {
   @apply text-sm;

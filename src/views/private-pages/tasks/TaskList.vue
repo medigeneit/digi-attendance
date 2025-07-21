@@ -59,16 +59,17 @@ onMounted(async () => {
     router.push({
       query: { ...route.query, status: 'not-completed' },
     })
+  } else {
+    await fetchTasks({ loadingBeforeFetch: true })
   }
-  await fetchTasks({ loadingBeforeFetch: true })
 })
 
 async function fetchTasks() {
   let data
   if (route.name === 'MyTaskList') {
-    data = await store.fetchMyTasks({ ...route.query })
+    data = await store.fetchMyTasks({ ...route.query, ...{ page: 1 } })
   } else {
-    data = await store.fetchTasks({ ...route.query })
+    data = await store.fetchTasks({ ...route.query, ...{ page: 1 } }, { infiniteScrolling: false })
   }
 
   state.value = ''
@@ -122,6 +123,7 @@ watch(
     ...route.query,
   }),
   async () => {
+    store.resetTaskList()
     state.value = 'loading'
     await fetchTasks()
   },
@@ -139,7 +141,7 @@ const taskFilter = computed({
 </script>
 
 <template>
-  <div class="container mx-auto p-6 mt-2 relative bg-white rounded-md shadow-md">
+  <div class="max-w-full mx-4 p-6 mt-2 relative bg-white rounded-md shadow-md">
     <OverlyModal v-if="editingId">
       <TaskEditForm :taskId="editingId" @close="editingId = null" @updated="handleTaskUpdate" />
     </OverlyModal>
@@ -229,6 +231,10 @@ const taskFilter = computed({
             </div>
           </template>
         </DraggableList>
+
+        <!-- <LoaderView class="mt-5" v-if="store.hasMoreTask" @click.prevent="fetchTasks"
+          >Load More</LoaderView
+        > -->
       </div>
 
       <div
