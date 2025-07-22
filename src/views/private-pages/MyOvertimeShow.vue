@@ -108,7 +108,9 @@ const onAction = async () => {
           </div>
           <div>
             <span class="text-gray-500 mr-1">Request hour:</span>
-            <b>{{ parseInt(overtime?.request_overtime_hours) }}</b>
+            <b>
+              <DisplayFormattedWorkingHours :workingHours="overtime.request_overtime_hours" />
+            </b>
           </div>
           <div>
             <span class="text-gray-500 mr-1">Details:</span>
@@ -135,7 +137,9 @@ const onAction = async () => {
         <template v-if="overtime?.status === 'Approved'">
           <div class="col-span-full space-x-1">
             <span>Approved overtime (hour):</span>
-            <b>{{ parseInt(overtime?.approval_overtime_hours) }}</b>
+            <b>
+              <DisplayFormattedWorkingHours :workingHours="overtime.approval_overtime_hours" />
+            </b>
           </div>
         </template>
         <template v-if="overtime?.status === 'Rejected'">
