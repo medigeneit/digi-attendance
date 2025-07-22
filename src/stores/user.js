@@ -21,10 +21,10 @@ export const useUserStore = defineStore('user', () => {
   // Actions
   const fetchUsers = async ( params = {}) => {
     try {
-      
+
       isLoading.value = true // লোডিং শুরু
       const response = await apiClient.get(`/users`, {params})
-      
+
       users.value = response.data
       error.value = null
     } catch (err) {
@@ -84,6 +84,7 @@ export const useUserStore = defineStore('user', () => {
       const response = await apiClient.get('/department-wise-employees')
       users.value = response.data
       error.value = null
+      return users.value
     } catch (err) {
       error.value = err.response?.data?.message || 'Something went wrong'
     } finally {

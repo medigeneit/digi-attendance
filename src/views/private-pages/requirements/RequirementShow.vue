@@ -53,7 +53,7 @@ function handleDeleteRequirementDetail(detail) {
   <div class="container mx-auto p-6">
     <OverlyModal v-if="detailAddForm.open" class="*:max-w-4xl">
       <RequirementDetailAddForm
-        :requirement-id="requirement.id"
+        :requirementId="requirement.id"
         @closeClick="detailAddForm.open = false"
         @create="
           async () => {
@@ -64,10 +64,30 @@ function handleDeleteRequirementDetail(detail) {
       />
     </OverlyModal>
     <OverlyModal v-if="detailEditForm.open">
-      <RequirementDetailEditForm @closeClick="detailEditForm.open = false" />
+      <RequirementDetailEditForm
+        :requirementId="requirement.id"
+        :detailId="detailEditForm.detail?.id"
+        @closeClick="detailEditForm.open = false"
+        @update="
+          async () => {
+            detailEditForm.open = false
+            await fetchRequirement()
+          }
+        "
+      />
     </OverlyModal>
     <OverlyModal v-if="detailDeleteForm.open">
-      <RequirementDetailDeleteForm @closeClick="detailDeleteForm.open = false" />
+      <RequirementDetailDeleteForm
+        :requirementId="requirement.id"
+        :detailId="detailDeleteForm.detail?.id"
+        @closeClick="detailDeleteForm.open = false"
+        @delete="
+          async () => {
+            detailDeleteForm.open = false
+            await fetchRequirement()
+          }
+        "
+      />
     </OverlyModal>
 
     <div class="bg-white rounded shadow p-4 relative">
@@ -99,7 +119,7 @@ function handleDeleteRequirementDetail(detail) {
           <h2 class="text-xl font-semibold">Requirement Details</h2>
           <div class="ml-auto">
             <button
-              class="btn-4 font-semibold"
+              class="btn-4 font-semibold !pl-2 !pr-4"
               v-if="(requirement?.details || []).length > 0"
               @click.prevent="handleAddRequirementDetail"
             >

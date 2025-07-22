@@ -1,4 +1,6 @@
 <script setup>
+import TaskUserChip from '../tasks/TaskUserChip.vue'
+
 const props = defineProps({
   detail: { type: Object },
   serial: { type: Number },
@@ -23,6 +25,10 @@ const emit = defineEmits(['editClick', 'deleteClick'])
 
     <div class="flex items-end">
       <div>
+        <div class="flex items-center gap-1 mb-3">
+          <span class="text-gray-500 mr-2 text-xs uppercase font-semibold">Supervisor:</span>
+          <TaskUserChip v-if="detail.supervisor" :user="detail.supervisor" />
+        </div>
         <div>
           <span class="text-gray-500 mr-2 text-xs uppercase font-semibold">Priority:</span>
           <span class="text-blue-400 font-semibold">{{ detail.priority }}</span>

@@ -1,90 +1,97 @@
 <script setup>
-import CompanyDepartmentSelectInput from '@/components/common/CompanyDepartmentSelectInput.vue'
 import RequiredIcon from '@/components/RequiredIcon.vue'
-import { addRequirement } from '@/services/requirement'
-import { useCompanyStore } from '@/stores/company'
-import { useTagStore } from '@/stores/tags'
-import { useRequirementStore } from '@/stores/useRequirementStore'
-import { useTaskStore } from '@/stores/useTaskStore'
-import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref, watch } from 'vue'
+import { findRequirementDetail, updateRequirementDetail } from '@/services/requirement-detail'
+import { useUserStore } from '@/stores/user'
+import { computed, onMounted, ref } from 'vue'
+import Multiselect from 'vue-multiselect'
 import LoaderView from '../common/LoaderView.vue'
-import MultiselectDropdown from '../MultiselectDropdown.vue'
+import UserChip from '../user/UserChip.vue'
 
 const props = defineProps({
-  parentTaskId: {
+  requirementId: {
     type: [Number, String],
     required: true,
   },
-  requirementId: {
+  detailId: {
     type: [Number, String],
+    required: true,
   },
 })
 
-const emit = defineEmits(['taskCreated', 'closeClick', 'error'])
+const emit = defineEmits(['update', 'closeClick', 'error'])
 
-const store = useTaskStore()
-const tagStore = useTagStore()
-const companyStore = useCompanyStore()
-const requirementStore = useRequirementStore()
-const { requirement } = storeToRefs(requirementStore)
-const task = ref()
-const selectedUser = ref([])
-const user_ids = computed(() => selectedUser.value.map((u) => u.id))
-
+const userStore = useUserStore()
+const detail = ref(null)
 const state = ref('')
-const selectedWebsiteTag = ref([])
-
+const error = ref()
 const form = ref({
-  from_department_id: '',
-  to_department_id: '',
-  website_tags: [],
+  title: '',
+  description: '',
+  priority: '',
+  better_to_complete_on: '',
+  supervisor_id: null,
+})
+const employees = ref([])
+
+const selectedEmployee = computed(() => {
+  if (!Array.isArray(employees.value)) {
+    return null
+  }
+  return employees.value.find((emp) => emp.id == form.value?.supervisor_id) || null
 })
 
-watch(user_ids, (val) => {
-  form.value.user_ids = val
-})
+function handleUserSelect(emp) {
+  form.value.supervisor_id = emp?.id || ''
+}
 
-onMounted(async () => {
-  state.value = 'loading'
-  tagStore.fetchTags('website')
-
-  await companyStore.fetchCompanies({
-    with: 'departments',
-    ignore_permission: true,
-  })
-  state.value = ''
-})
+function handleUserDeSelect() {
+  form.value.supervisor_id = null
+}
 
 async function submit() {
   state.value = 'submitting'
 
   const payload = {
     ...form.value,
-    website_tags: [selectedWebsiteTag.value.id],
   }
 
   console.log({ payload })
 
   try {
-    const response = await addRequirement(payload)
-    emit('create', response)
+    const response = await updateRequirementDetail(props.requirementId, props.detailId, payload)
+    emit('update', response)
     state.value = 'create'
   } catch (err) {
-    emit('error', store.error)
     state.value = 'error'
+    error.value = err.response?.data?.message || 'Failed to update requirement detail'
+    emit('error', error.value)
   }
 }
+onMounted(async () => {
+  state.value = 'loading'
+  try {
+    employees.value = await userStore.fetchDepartmentWiseEmployees()
+    detail.value = (await findRequirementDetail(props.requirementId, props.detailId)).data?.detail
+    form.value = detail.value
+    const date = new Date(detail.value.better_to_complete_on)
+    form.value.better_to_complete_on = date.toISOString().split('T')[0] // Returns "YYYY-MM-DD"
+  } catch (err) {
+    error.value = err.response?.data?.message || 'Failed to fetch requirement detail'
+  } finally {
+    state.value = ''
+  }
+})
 </script>
 
 <template>
   <div
-    class="max-h-[90vh] overflow-auto max-w-2xl mx-auto bg-white shadow-lg rounded-lg p-6 pb-0 pt-0 relative"
+    class="max-h-[90vh] overflow-auto w-full mx-auto bg-white shadow-lg rounded-lg p-6 pb-0 pt-0 relative"
   >
     <div class="sticky top-0 pt-4 bg-white z-10">
-      <h2 class="text-2xl font-semibold text-gray-800">Add New Requirement</h2>
+      <h2 class="text-2xl font-semibold text-gray-800">Add Requirement Details</h2>
 
       <hr class="mb-4" />
+      <!-- <pre>{{ form }}</pre> -->
 
       <div
         class="text-purple-600/80 mb-4 text-xs border-b border-dashed"
@@ -95,70 +102,103 @@ async function submit() {
     </div>
 
     <form @submit.prevent="submit" class="z-0">
-      <p class="text-center mt-2 mb-6" v-if="requirementId && requirement?.title">
-        Task under requirement <span class="text-sky-600">{{ requirement.title }}</span>
-      </p>
-      <p class="text-center mt-2 mb-6" v-if="parentTaskId && task?.title">
-        Sub task under <span class="text-sky-600">{{ task.title }}</span>
-      </p>
+      <template v-if="state !== 'loading'">
+        <div class="mb-4">
+          <label class="block text-gray-600 text-sm mb-1 font-medium"
+            >Title <RequiredIcon />
+          </label>
+          <input
+            v-model="form.title"
+            required
+            placeholder="EnderRequirement detail title"
+            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
 
-      <div class="mb-4">
-        <label class="text-gray-800">Websites</label>
-        <MultiselectDropdown
-          :options="tagStore.tags"
-          v-model="selectedWebsiteTag"
-          label="name"
-          track-by="id"
-        />
-      </div>
+        <div class="mb-4">
+          <label class="block text-gray-600 text-sm mb-1 font-medium">Description</label>
+          <textarea
+            rows="10"
+            v-model="form.description"
+            placeholder="Enter requirement description"
+            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+          ></textarea>
+        </div>
 
-      <template v-if="state !== 'loading' && !(parentTaskId && task?.title)">
-        <CompanyDepartmentSelectInput
-          v-model="form.from_department_id"
-          :companies="companyStore?.companies || []"
-          class="mb-4"
-        >
-          <template #label>
-            <label class="block text-gray-600 text-sm mb1 font-medium">
-              From Department <RequiredIcon />
-            </label>
-          </template>
-        </CompanyDepartmentSelectInput>
+        <div class="mb-4">
+          <label class="block text-gray-600 text-sm mb-1 font-medium">Supervisor</label>
+          <div class="relative w-full border rounded lg:flex-grow">
+            <Multiselect
+              :modelValue="selectedEmployee"
+              @select="handleUserSelect"
+              @remove="handleUserDeSelect"
+              :options="employees"
+              :multiple="false"
+              label="name"
+              label-prefix="id"
+              placeholder="--NO SUPERVISOR--"
+            >
+              <template #option="{ option }">
+                <UserChip :user="option" class="w-full line-clamp-1" />
+              </template>
+            </Multiselect>
+            <div
+              class="absolute right-8 text-xl top-0 bottom-0 flex items-center"
+              v-if="selectedEmployee"
+            >
+              <button
+                @click.prevent="handleUserDeSelect"
+                class="mt-0.5 text-gray-500 hover:text-red-700"
+              >
+                &times;
+              </button>
+            </div>
+          </div>
+        </div>
 
-        <CompanyDepartmentSelectInput
-          v-model="form.to_department_id"
-          :companies="companyStore?.companies || []"
-          class="mb-4"
-        >
-          <template #label>
-            <label class="block text-gray-600 text-sm mb-1 font-medium">
-              To Department <RequiredIcon />
-            </label>
-          </template>
-        </CompanyDepartmentSelectInput>
+        <div class="mb-4">
+          <label class="block text-gray-600 text-sm mb-1 font-medium">Priority </label>
+          <select
+            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+            v-model="form.priority"
+          >
+            <option value="">NORMAL</option>
+            <option>IMPORTANT</option>
+            <option>URGENT</option>
+          </select>
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-gray-600 text-sm mb-1 font-medium">Better to Complete </label>
+          <input
+            type="date"
+            v-model="form.better_to_complete_on"
+            placeholder="EnderRequirement detail title"
+            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
       </template>
 
       <div class="sticky bottom-0 bg-white py-4 border-t -mx-6 px-6">
-        <div v-if="store.error" class="mb-4 text-red-500 font-medium">
-          {{ store.error }}
+        <div v-if="error" class="mb-4 text-red-500 font-medium">
+          {{ error }}
         </div>
-        <hr v-if="store.error" class="mb-4" />
+        <hr v-if="error" class="mb-4" />
 
         <div class="flex items-center justify-between gap-4">
-          <button
-            :disabled="state == 'loading' || state == 'submitting'"
-            type="submit"
-            class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-5 py-2 rounded transition"
-          >
-            {{ state == 'submitting' ? 'Saving...' : 'Next' }}
-          </button>
-
           <button
             type="button"
             @click.prevent="emit('closeClick')"
             class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-5 py-2 rounded transition"
           >
             Cancel
+          </button>
+          <button
+            :disabled="state == 'loading' || state == 'submitting'"
+            type="submit"
+            class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-5 py-2 rounded transition"
+          >
+            {{ state == 'submitting' ? 'Saving...' : 'Edit Detail' }}
           </button>
         </div>
       </div>

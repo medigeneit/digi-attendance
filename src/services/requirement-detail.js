@@ -20,6 +20,6 @@ export async function updateRequirementDetail(requirementId, detailId, data){
 
 export async function deleteRequirementDetail(requirementId, detailId, {params = {}} = {}){
   const query = objectToQuery(params)
-  return apiClient.delete(`/requirements/${requirementId}/details/${detailId}/${query ? '?' + query :''}`);
+  return apiClient.delete(`/requirements/${requirementId}/details/${detailId}${query ? '?' + query :''}`);
 }
 
