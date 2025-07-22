@@ -1,6 +1,7 @@
 <script setup>
 import { useOvertimeStore } from '@/stores/overtime'
 import { ref } from 'vue'
+import TimePickerAsFloatHour from '../common/TimePickerAsFloatHour.vue'
 
 const props = defineProps({
   overtime: Object,
@@ -10,7 +11,7 @@ const overtimeStore = useOvertimeStore()
 
 const isModalOpen = ref(false)
 const approvalTime = ref(
-  parseInt(props.overtime.approval_overtime_hours || props.overtime.request_overtime_hours || ''),
+  props.overtime.approval_overtime_hours || props.overtime.request_overtime_hours || '',
 )
 
 const handleUpdate = async () => {
@@ -32,14 +33,17 @@ const closeModal = () => {
   <i @click="isModalOpen = !isModalOpen" class="fa fa-edit cursor-pointer text-sky-600"></i>
 
   <!-- Single reusable modal -->
-  <div
-    v-if="isModalOpen"
-    class="fixed inset-0 z-50 flex justify-center items-center bg-black/50"
-  >
+  <div v-if="isModalOpen" class="fixed inset-0 z-50 flex justify-center items-center bg-black/50">
     <div class="modal-card max-w-sm">
       <h3 class="title-lg">Update Approval Time</h3>
       <hr class="my-2" />
-      <input v-model="approvalTime" type="number" class="input-1" required />
+      <TimePickerAsFloatHour
+        v-model="approvalTime"
+        :minute-interval="5"
+        :required="true"
+        :hour-min="2"
+        :hour-max="16"
+      />
       <hr class="my-2" />
       <div class="flex justify-between gap-2 mt-4">
         <button class="btn-3" @click="closeModal">Cancel</button>

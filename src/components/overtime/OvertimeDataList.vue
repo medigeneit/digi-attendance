@@ -109,11 +109,11 @@ const onSuccess = () => {
               <DisplayFormattedWorkingHours :workingHours="overtime.working_hours" />
             </td>
             <td class="border border-gray-300 px-2 text-center">
-              {{ parseInt(overtime.request_overtime_hours) || '-' }}
+              <DisplayFormattedWorkingHours :workingHours="overtime.request_overtime_hours" />
             </td>
             <td class="border border-gray-300 px-2 text-center">
               <div class="flex items-center justify-center gap-4">
-                <span>{{ parseInt(overtime.approval_overtime_hours) || '-' }}</span>
+                <DisplayFormattedWorkingHours :workingHours="overtime.approval_overtime_hours" />
                 <UpdateApprovalTime v-if="authStore.user?.id === 8" :overtime="overtime" />
               </div>
             </td>

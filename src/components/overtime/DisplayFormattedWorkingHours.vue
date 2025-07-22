@@ -10,7 +10,8 @@ const formattedWorkingHours = computed(() => {
 
   const h = Math.floor(props.workingHours)
   const m = Math.round((props.workingHours - h) * 60)
-  return `${h}h ${m}m`
+
+  return m ? `${h}h ${m}m` : `${h}h`
 })
 </script>
 

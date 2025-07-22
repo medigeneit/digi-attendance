@@ -1,5 +1,6 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import TimePickerAsFloatHour from '@/components/common/TimePickerAsFloatHour.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useAuthStore } from '@/stores/auth'
 import { useDepartmentStore } from '@/stores/department'
@@ -68,7 +69,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="max-w-2xl mx-auto p-4 space-y-4">
+  <div class="max-w-xl mx-auto p-4 space-y-4">
     <div class="flex items-center justify-between gap-2">
       <button class="btn-3" @click="goBack">
         <i class="far fa-arrow-left"></i>
@@ -83,7 +84,7 @@ onMounted(async () => {
     </div>
 
     <form v-else @submit.prevent="submit" class="space-y-4 card-bg md:p-8 p-4 text-sm md:text-base">
-      <div class="grid grid-cols-2 gap-4">
+      <div class="grid grid-cols-2 gap-2 md:gap-4">
         <div>
           <label for="date" class="block text-sm font-medium">Date</label>
           <input
@@ -96,6 +97,7 @@ onMounted(async () => {
             :max="new Date(Date.now() - 86400000).toISOString().split('T')[0]"
           />
         </div>
+
         <div>
           <label for="duty_type" class="block text-sm font-medium">Duty Type</label>
           <select id="duty_type" v-model="form.duty_type" class="input-1 w-full" required>
@@ -105,39 +107,44 @@ onMounted(async () => {
             <option value="OVT">OVT</option>
           </select>
         </div>
-      </div>
 
-      <div class="grid grid-cols-2 gap-4">
         <div>
           <span class="block text-sm font-medium">Check In</span>
-          <div class="input-1 w-full text-center">
+          <div class="input-1 w-full text-center px-1 bg-gray-300">
             {{ attendanceLog.entry_time || '--:--' }}
           </div>
         </div>
+
         <div>
           <span class="block text-sm font-medium">Check Out</span>
-          <div class="input-1 w-full text-center">
+          <div class="input-1 w-full text-center px-1 bg-gray-300">
             {{ attendanceLog.exit_time || '--:--' }}
           </div>
         </div>
-      </div>
 
-      <div class="grid grid-cols-2 gap-4">
         <div>
-          <label for="request_overtime_hours" class="block text-sm font-medium">
-            Overtime (Hour)
-          </label>
-          <input
-            @change="fetchAttendance"
-            type="number"
-            id="request_overtime_hours"
-            v-model="form.request_overtime_hours"
-            class="input-1 w-full"
-            required
-          />
+          <span class="block text-sm font-medium">Working Hour</span>
+          <div class="input-1 w-full text-center px-1 bg-gray-300">
+            {{ attendanceLog.working_hours || '-' }}
+          </div>
         </div>
 
         <div>
+          <label for="request_overtime_hours" class="block text-sm font-medium">
+            Request Overtime
+          </label>
+          <div class="flex items-center">
+            <TimePickerAsFloatHour
+              v-model="form.request_overtime_hours"
+              :minute-interval="5"
+              :required="true"
+              :hour-min="2"
+              :hour-max="16"
+            />
+          </div>
+        </div>
+
+        <div class="col-span-full">
           <label for="assigned_in_charge_user_id" class="block text-sm font-medium">
             In-Charge
           </label>
@@ -161,7 +168,7 @@ onMounted(async () => {
         <label for="assigned_in_charge_user_id" class="block text-sm font-medium">
           Details (Reason / Work description)
         </label>
-        <textarea rows="4" v-model="form.work_details" class="input-1 w-full"></textarea>
+        <textarea rows="6" v-model="form.work_details" class="input-1 w-full" required></textarea>
       </div>
 
       <hr />

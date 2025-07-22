@@ -95,6 +95,7 @@ const fetchOvertimeListData = async (selectedMonth = null) => {
               <th class="border border-gray-300 px-2 text-center">Request (hour)</th>
               <th class="border border-gray-300 px-2 text-center">Approved (hour)</th>
               <th class="border border-gray-300 px-2 text-center">Status</th>
+              <th class="border border-gray-300 px-2 text-center">Details</th>
               <th class="border border-gray-300 px-2 text-center">Action</th>
             </tr>
           </thead>
@@ -130,13 +131,16 @@ const fetchOvertimeListData = async (selectedMonth = null) => {
                 <DisplayFormattedWorkingHours :workingHours="overtime.working_hours" />
               </td>
               <td class="border border-gray-300 px-2 text-center">
-                {{ parseInt(overtime.request_overtime_hours) || '-' }}
+                <DisplayFormattedWorkingHours :workingHours="overtime.request_overtime_hours" />
               </td>
               <td class="border border-gray-300 px-2 text-center">
-                {{ parseInt(overtime.approval_overtime_hours) || '-' }}
+                <DisplayFormattedWorkingHours :workingHours="overtime.approval_overtime_hours" />
               </td>
               <td class="border border-gray-300 px-2 text-center">
                 {{ overtime.status || 'Pending' }}
+              </td>
+              <td class="border border-gray-300 px-2 text-center">
+                {{ overtime.work_details }}
               </td>
               <td class="border border-gray-300 px-2 text-center">
                 <div class="flex items-center justify-center gap-2">
