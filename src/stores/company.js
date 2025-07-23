@@ -4,6 +4,7 @@ import apiClient from '../axios';
 
 export const useCompanyStore = defineStore('company', () => {
   const companies = ref([]); // Company লিস্ট
+  const myCompanies = ref([]); // Company লিস্ট
   const employees = ref([]); // Company লিস্ট
   const company = ref(null); // একক Company ডিটেইল
   const loading = ref(false); // লোডিং স্টেট
@@ -15,6 +16,20 @@ export const useCompanyStore = defineStore('company', () => {
     try {
       const response = await apiClient.get('/companies', { params });
       companies.value = response.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'কোম্পানি লোড করতে ব্যর্থ হয়েছে।';
+      console.error('Error fetching companies:', err);
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const fetchMyCompanies = async (params = {}) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await apiClient.get('/companies', { params:{...params, ignore_permission: false} });
+      myCompanies.value = response.data;
     } catch (err) {
       error.value = err.response?.data?.message || 'কোম্পানি লোড করতে ব্যর্থ হয়েছে।';
       console.error('Error fetching companies:', err);
@@ -99,19 +114,21 @@ export const useCompanyStore = defineStore('company', () => {
     }
   };
 
- 
+
   const fetchEmployees = async (companyId) => {
     return  await apiClient.get(`/companies/${companyId}/employees`)
   }
 
   return {
     companies: computed(() => companies.value),
+    myCompanies: computed(() => myCompanies.value),
     company: computed(() => company.value),
     loading: computed(() => loading.value),
     error: computed(() => error.value),
     employees,
     fetchEmployee,
     fetchCompanies,
+    fetchMyCompanies,
     fetchCompany,
     createCompany,
     updateCompany,

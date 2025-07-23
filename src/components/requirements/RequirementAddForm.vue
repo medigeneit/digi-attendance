@@ -31,6 +31,10 @@ onMounted(async () => {
     with: 'departments',
     ignore_permission: true,
   })
+
+  await companyStore.fetchMyCompanies({
+    with: 'departments',
+  })
   state.value = ''
 })
 
@@ -84,7 +88,7 @@ async function submit() {
 
         <CompanyDepartmentSelectInput
           v-model="form.from_department_id"
-          :companies="companyStore?.companies || []"
+          :companies="companyStore?.myCompanies || []"
           class="mb-4"
         >
           <template #label>

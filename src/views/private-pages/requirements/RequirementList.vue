@@ -73,7 +73,7 @@ const goToAdd = () => {
                     class="text-blue-600 text-sm hover:underline hover:text-blue-800"
                   >
                     <span v-if="req?.details?.length - 1 > 0">
-                      {{ req?.details?.length - 1 }} More details
+                      {{ req?.details?.length - 1 }} More Requirement
                     </span>
                     <span v-else>Show Form</span>
                   </RouterLink>
