@@ -75,7 +75,7 @@ const goToAdd = () => {
                     <span v-if="req?.details?.length - 1 > 0">
                       {{ req?.details?.length - 1 }} More details
                     </span>
-                    <span v-else>Show Details</span>
+                    <span v-else>Show Form</span>
                   </RouterLink>
                 </div>
               </td>
