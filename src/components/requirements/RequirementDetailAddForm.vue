@@ -3,8 +3,8 @@ import RequiredIcon from '@/components/RequiredIcon.vue'
 import { addRequirementDetail } from '@/services/requirement-detail'
 import { useUserStore } from '@/stores/user'
 import { computed, onMounted, ref } from 'vue'
-import Multiselect from 'vue-multiselect'
 import LoaderView from '../common/LoaderView.vue'
+import MultiselectDropdown from '../MultiselectDropdown.vue'
 import UserChip from '../user/UserChip.vue'
 
 const props = defineProps({
@@ -111,7 +111,7 @@ onMounted(async () => {
         <div class="mb-4">
           <label class="block text-gray-600 text-sm mb-1 font-medium">Supervisor</label>
           <div class="relative w-full border rounded lg:flex-grow">
-            <Multiselect
+            <MultiselectDropdown
               :modelValue="selectedEmployee"
               @select="handleUserSelect"
               @remove="handleUserDeSelect"
@@ -124,7 +124,7 @@ onMounted(async () => {
               <template #option="{ option }">
                 <UserChip :user="option" class="w-full line-clamp-1" />
               </template>
-            </Multiselect>
+            </MultiselectDropdown>
             <div
               class="absolute right-8 text-xl top-0 bottom-0 flex items-center"
               v-if="selectedEmployee"
