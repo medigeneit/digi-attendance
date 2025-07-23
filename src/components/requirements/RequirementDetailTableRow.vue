@@ -9,7 +9,7 @@ const props = defineProps({
 const emit = defineEmits(['editClick', 'deleteClick'])
 </script>
 <template>
-  <tr class="border text-gray-800 py-4 shadow-sm mb-4 px-4 rounded-md hover:bg-blue-50">
+  <tr class="group/item border text-gray-800 py-4 shadow-sm mb-4 px-4 rounded-md hover:bg-blue-50">
     <td class="border-2 border-gray-700 p-3 align-top">
       <span class="text-2xl font-medium">{{ serial }}</span>
     </td>
@@ -22,7 +22,7 @@ const emit = defineEmits(['editClick', 'deleteClick'])
         <hr class="mb-4 -mx-4" />
         <div class="mb-5">
           <div class="text-gray-400 mr-2 text-xs uppercase font-semibold">Description</div>
-          <p class="text-justify line-clamp-2">
+          <p class="text-justify line-clamp-2 print:line-clamp-none">
             {{ detail.description }}
           </p>
         </div>
@@ -51,7 +51,9 @@ const emit = defineEmits(['editClick', 'deleteClick'])
       </div>
     </td>
 
-    <td class="border-2 border-gray-700 p-3 whitespace-nowrap text-center">
+    <td
+      class="border-2 border-gray-700 p-3 whitespace-nowrap print:whitespace-break-spaces print:px-0 text-center"
+    >
       <div>
         {{
           new Date(detail.better_to_complete_on).toLocaleDateString('en-US', {
@@ -64,7 +66,18 @@ const emit = defineEmits(['editClick', 'deleteClick'])
       </div>
     </td>
 
-    <td class="border-2 border-gray-700 p-3"></td>
-    <td class="border-2 border-gray-700 p-3"></td>
+    <template v-if="detail.task_id">
+      <td class="border-2 border-gray-700 p-3"></td>
+      <td class="border-2 border-gray-700 p-3"></td>
+    </template>
+    <template v-else>
+      <td colspan="2" class="border-2 border-gray-700 p-3 text-center">
+        <button
+          class="print:hidden hover:border-2 group-hover/item:bg-blue-200 hover:border-blue-700 text-blue-500 hover:text-white hover:!bg-blue-500 rounded-md px-4 py-1"
+        >
+          Add Task
+        </button>
+      </td>
+    </template>
   </tr>
 </template>

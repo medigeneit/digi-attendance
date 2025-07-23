@@ -9,7 +9,7 @@ import { onMounted, ref } from 'vue'
 import LoaderView from '../common/LoaderView.vue'
 import MultiselectDropdown from '../MultiselectDropdown.vue'
 
-const emit = defineEmits(['create', 'close', 'error'])
+const emit = defineEmits(['create', 'cancelClick', 'error'])
 
 const store = useTaskStore()
 const tagStore = useTagStore()
@@ -116,7 +116,7 @@ async function submit() {
         <div class="flex items-center justify-between gap-4">
           <button
             type="button"
-            @click.prevent="emit('close')"
+            @click.prevent="emit('cancelClick')"
             class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-5 py-2 rounded transition"
           >
             Cancel
