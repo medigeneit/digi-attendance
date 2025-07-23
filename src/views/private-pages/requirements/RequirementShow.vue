@@ -194,11 +194,11 @@ function handleDeleteRequirementDetail(detail) {
                 ></td>
               </tr>
               <tr>
-                <td class="whitespace-nowrap p-3 text-center border-2 border-gray-800 min-h-40">
+                <td class="whitespace-nowrap p-3 text-center border-2 border-gray-800 min-h-96">
                   &nbsp;
                 </td>
                 <td
-                  class="whitespace-nowrap p-3 text-center border-2 border-gray-800 min-h-40"
+                  class="whitespace-nowrap p-3 text-center border-2 border-gray-800 min-h-96"
                   colspan="4"
                 >
                   &nbsp;
