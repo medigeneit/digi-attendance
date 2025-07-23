@@ -46,8 +46,8 @@ const goToAdd = () => {
               class="border-t hover:bg-blue-50 odd:bg-gray-50"
             >
               <td class="px-4 py-2">{{ serial + 1 }}</td>
-              <td class="px-4 py-2 whitespace-nowrap">
-                <div class="flex items-center gap-2">
+              <td class="px-4 py-2 max-w-[60px] md:max-w-[300px]">
+                <div class="flex flex-col lg:flex-row items-start lg:items-center gap-2">
                   <span class="text-gray-500">From </span>
                   <span class="text-blue-700 font-semibold flex-shrink-0"
                     >{{ req?.from_department?.name }}
@@ -56,6 +56,27 @@ const goToAdd = () => {
                   <span class="text-blue-700 font-semibold flex-shrink-0">{{
                     req?.to_department?.name
                   }}</span>
+                </div>
+
+                <div class="">
+                  <div
+                    class="text-blue-800"
+                    v-if="req?.details?.length > 0 && Array.isArray(req?.details)"
+                  >
+                    <div class="line-clamp-3 text-sm">
+                      {{ req?.details[0].title }}
+                    </div>
+                  </div>
+                  <div v-else class="text-gray-400 text-sm">No Details added</div>
+                  <RouterLink
+                    :to="{ name: 'RequirementShow', params: { id: req?.id } }"
+                    class="text-blue-600 text-sm hover:underline hover:text-blue-800"
+                  >
+                    <span v-if="req?.details?.length - 1 > 0">
+                      {{ req?.details?.length - 1 }} More details
+                    </span>
+                    <span v-else>Show Details</span>
+                  </RouterLink>
                 </div>
               </td>
               <td class="px-4 py-2 text-center whitespace-nowrap">
