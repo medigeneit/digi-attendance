@@ -13,79 +13,85 @@ onMounted(() => {
 const goToAdd = () => {
   router.push({ name: 'RequirementAdd' })
 }
-
-const goToEdit = (id) => {
-  router.push({ name: 'RequirementEdit', params: { id } })
-}
-
-const priorityColor = (priority) => {
-  switch (priority) {
-    case 'CRITICAL':
-      return 'border-red-700 text-red-700 font-semibold'
-    case 'HIGH':
-      return 'border-red-500 text-red-500'
-    case 'MEDIUM':
-      return 'border-yellow-500 text-yellow-500'
-    default:
-      return 'border-gray-300 text-gray-500'
-  }
-}
 </script>
 
 <template>
   <div class="container mx-auto p-6">
-    <div class="flex justify-between items-center mb-6">
-      <h2 class="text-2xl font-bold text-gray-800">Requirements</h2>
-      <button @click="goToAdd" class="btn-1">Add Requirement</button>
+    <div class="bg-white shadow-md rounded-lg p-6">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">Requirements</h2>
+        <button @click="goToAdd" class="btn-1">Add Requirement</button>
+      </div>
+
+      <div v-if="store.loading" class="text-center py-4 text-gray-500">Loading requirements...</div>
+
+      <div v-else-if="store.error" class="text-center py-4 text-red-500">
+        {{ store.error }}
+      </div>
+
+      <div v-else class="overflow-x-auto">
+        <table class="min-w-full bg-white border overflow-hidden table table-fixed">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="px-4 py-2 text-left whitespace-nowrap">#</th>
+              <th class="px-4 py-2 text-left whitespace-nowrap">Department</th>
+              <th class="px-4 py-2 text-center whitespace-nowrap">Submitted On</th>
+              <th class="px-4 py-2 text-center whitespace-nowrap">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="(req, serial) in store.requirements"
+              :key="req.id"
+              class="border-t hover:bg-blue-50 odd:bg-gray-50"
+            >
+              <td class="px-4 py-2">{{ serial + 1 }}</td>
+              <td class="px-4 py-2 whitespace-nowrap">
+                <div class="flex items-center gap-2">
+                  <span class="text-gray-500">From </span>
+                  <span class="text-blue-700 font-semibold flex-shrink-0"
+                    >{{ req?.from_department?.name }}
+                  </span>
+                  <span class="text-gray-500">To </span>
+                  <span class="text-blue-700 font-semibold flex-shrink-0">{{
+                    req?.to_department?.name
+                  }}</span>
+                </div>
+              </td>
+              <td class="px-4 py-2 text-center whitespace-nowrap">
+                <div class="text-gray-600">
+                  {{
+                    new Date(req.submission_date).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })
+                  }}
+                </div>
+              </td>
+
+              <td class="px-4 py-2 text-center">
+                <div class="flex gap-4 items-center justify-center">
+                  <RouterLink
+                    :to="{ name: 'RequirementShow', params: { id: req?.id } }"
+                    class="btn-2"
+                    @click="$event.stopPropagation()"
+                  >
+                    <i class="fad fa-eye"></i> Show
+                  </RouterLink>
+                  <RouterLink
+                    :to="{ name: 'RequirementEdit', params: { id: req?.id } }"
+                    class="btn-4 border border-blue-500 hover:bg-blue-500 hover:text-white"
+                    @click="$event.stopPropagation()"
+                  >
+                    <i class="fad fa-edit"></i> Edit
+                  </RouterLink>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
-
-    <div v-if="store.loading" class="text-center py-4 text-gray-500">Loading requirements...</div>
-
-    <div v-else-if="store.error" class="text-center py-4 text-red-500">
-      {{ store.error }}
-    </div>
-
-    <table v-else class="min-w-full bg-white shadow rounded-lg overflow-hidden">
-      <thead class="bg-gray-100">
-        <tr>
-          <th class="px-4 py-2 text-left">#</th>
-          <th class="px-4 py-2 text-left">Title</th>
-          <th class="px-4 py-2 text-left">Department</th>
-          <th class="px-4 py-2 text-left">Priority</th>
-          <th class="px-4 py-2 text-left">Description</th>
-          <th class="px-4 py-2 text-left">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="req in store.requirements" :key="req.id" class="border-t hover:bg-gray-50">
-          <td class="px-4 py-2">{{ req.id }}</td>
-          <td class="px-4 py-2 font-medium">{{ req?.title }}</td>
-          <td class="px-4 py-2">{{ req?.department?.name }}</td>
-          <td class="px-4 py-2">
-            <span class="text-xs px-2 py-1 rounded border" :class="priorityColor(req.priority)">
-              {{ req.priority }}
-            </span>
-          </td>
-          <td class="px-4 py-2">
-            <div v-if="req?.description.length">
-              <div v-html="req?.description"></div>
-            </div>
-            <span v-else class="text-gray-400">No description</span>
-          </td>
-          <td class="px-4 py-2">
-            <div class="flex gap-4 items-center">
-              <button @click="goToEdit(req.id)" class="btn-2">Edit</button>
-              <RouterLink
-                :to="{ name: 'TaskAdd', query: { requirement_id: req?.id } }"
-                class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-3 py-1 rounded-full transition flex-shrink-0"
-                @click="$event.stopPropagation()"
-              >
-                + Add Task
-              </RouterLink>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
   </div>
 </template>

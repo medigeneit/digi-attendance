@@ -1,3 +1,4 @@
+import { getRequirements } from '@/services/requirement';
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import apiClient from '../axios';
@@ -12,7 +13,7 @@ export const useRequirementStore = defineStore('requirement', () => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await apiClient.get('/requirements');
+      const response = await getRequirements();
       requirements.value = response.data;
     } catch (err) {
       error.value = err.response?.data?.message || 'রিকোয়ারমেন্ট লোড করতে ব্যর্থ হয়েছে।';
