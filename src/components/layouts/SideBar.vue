@@ -130,6 +130,14 @@ const logout = () => {
       <!-- Admin Menus -->
       <template v-if="isAdmin && authStore.isAdminMood">
         <RouterLink
+          to="/requirements"
+          class="side-menu"
+          :class="{ 'side-menu-active': currentRoute.includes('/requirements') }"
+        >
+          <i class="fad fa-tasks py-2"></i>
+          <h4 v-if="open">Requirement</h4>
+        </RouterLink>
+        <RouterLink
           to="/tasks"
           class="side-menu"
           :class="{ 'side-menu-active': currentRoute.includes('/tasks') }"

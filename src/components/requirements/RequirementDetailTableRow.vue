@@ -17,7 +17,7 @@ const emit = defineEmits(['editClick', 'deleteClick'])
     <td class="border-2 border-gray-700 p-3">
       <div>
         <div class="text-lg font-semibold mb-2">
-          <span>{{ serial }}. {{ detail.title }}</span>
+          <span>{{ detail.title }}</span>
         </div>
         <hr class="mb-4 -mx-4" />
         <div class="mb-5">
