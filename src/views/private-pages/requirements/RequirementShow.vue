@@ -173,38 +173,36 @@ function handleDeleteRequirementDetail(detail) {
             </thead>
 
             <tbody>
-              <RequirementDetailTableRow
-                v-for="(detail, index) in requirement?.details || []"
-                :key="detail.id"
-                :detail="detail"
-                :serial="index + 1"
-                @editClick="handleEditRequirementDetail"
-                @deleteClick="handleDeleteRequirementDetail"
-              />
+              <template v-for="(detail, index) in requirement?.details || []" :key="detail.id">
+                <RequirementDetailTableRow
+                  :detail="detail"
+                  :serial="index + 1"
+                  @editClick="handleEditRequirementDetail"
+                  @deleteClick="handleDeleteRequirementDetail"
+                />
+                <tr>
+                  <td class="whitespace-nowrap p-3 text-center border-2 border-gray-800">
+                    <div class="text-gray-900 text-base">For IT Use</div>
+                    <div class="text-gray-800 text-xs">(Feedback)</div>
+                  </td>
+                  <td
+                    class="whitespace-nowrap p-3 text-center border-2 border-gray-800"
+                    colspan="4"
+                  ></td>
+                </tr>
+                <tr>
+                  <td class="whitespace-nowrap p-3 text-center border-2 border-gray-800 min-h-96">
+                    &nbsp;
+                  </td>
+                  <td
+                    class="whitespace-nowrap p-3 text-center border-2 border-gray-800 min-h-96"
+                    colspan="4"
+                  >
+                    &nbsp;
+                  </td>
+                </tr>
+              </template>
             </tbody>
-            <tfoot>
-              <tr>
-                <td class="whitespace-nowrap p-3 text-center border-2 border-gray-800">
-                  <div class="text-gray-900 text-base">For IT Use</div>
-                  <div class="text-gray-800 text-xs">(Feedback)</div>
-                </td>
-                <td
-                  class="whitespace-nowrap p-3 text-center border-2 border-gray-800"
-                  colspan="4"
-                ></td>
-              </tr>
-              <tr>
-                <td class="whitespace-nowrap p-3 text-center border-2 border-gray-800 min-h-96">
-                  &nbsp;
-                </td>
-                <td
-                  class="whitespace-nowrap p-3 text-center border-2 border-gray-800 min-h-96"
-                  colspan="4"
-                >
-                  &nbsp;
-                </td>
-              </tr>
-            </tfoot>
           </table>
         </div>
         <div v-else class="border min-h-28 rounded-md flex items-center justify-center">
