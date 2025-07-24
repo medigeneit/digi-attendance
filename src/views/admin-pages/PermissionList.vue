@@ -1,7 +1,8 @@
 <script setup>
+import UserChip from '@/components/user/UserChip.vue'
 import { useUserPermissionStore } from '@/stores/userPermissionStore'
 import { storeToRefs } from 'pinia'
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const userPermissionStore = useUserPermissionStore()
@@ -18,6 +19,24 @@ const deletePermission = (id) => {
 
 onMounted(() => {
   userPermissionStore.fetchUserPermissions()
+})
+
+const permissionUsers = computed(() => {
+  return permissions.value.reduce((users, permission) => {
+    const foundUser = users.find((user) => user.id === permission.user.id)
+    if (foundUser) {
+      foundUser.permissions = [...foundUser.permissions, permission]
+      return users
+    }
+
+    return [
+      ...users,
+      {
+        ...permission.user,
+        permissions: [permission],
+      },
+    ]
+  }, [])
 })
 </script>
 
@@ -44,23 +63,38 @@ onMounted(() => {
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(perm,index) in permissions" :key="perm.id" class="hover:bg-gray-50">
-          <td class="p-3 border">{{ index+=1 }}</td>
-          <td class="p-3 border">{{ perm?.user?.name }}</td>
-          <td class="p-3 border">{{ perm?.company?.name }}</td>
-          <td class="p-3 border">
-            <span v-if="perm.department_ids.includes('*')">All</span>
-            <span v-else>{{ perm.departments.join(', ') }}</span>
-          </td>
-          <td class="p-3 border flex justify-center md:gap-4">
-            <button @click="editPermission(perm.id)" class="btn-1">
-              <i class="fas fa-edit"></i>
-            </button>
-            <button @click="deletePermission(perm.id)" class="btn-1 text-red-600">
-              <i class="fas fa-trash"></i>
-            </button>
-          </td>
-        </tr>
+        <template v-for="permissionUser in permissionUsers" :key="permissionUser.id">
+          <template v-for="(perm, permIndex) in permissionUser.permissions || []" :key="perm.id">
+            <tr class="hover:bg-gray-50">
+              <td class="p-3 border">{{ permIndex + 1 }}</td>
+
+              <!-- Only show user name in the first row, with rowspan -->
+              <td
+                v-if="permIndex === 0"
+                class="p-3 border align-top"
+                :rowspan="permissionUser.permissions?.length || 1"
+              >
+                <UserChip :user="permissionUser" />
+              </td>
+
+              <td class="p-3 border">{{ perm.company?.name }}</td>
+
+              <td class="p-3 border">
+                <span v-if="perm.department_ids.includes('*')">All</span>
+                <span v-else>{{ perm.departments.join(', ') }}</span>
+              </td>
+
+              <td class="p-3 border flex justify-center md:gap-4">
+                <button @click="editPermission(perm.id)" class="btn-1">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button @click="deletePermission(perm.id)" class="btn-1 text-red-600">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </template>
+        </template>
       </tbody>
     </table>
   </div>
