@@ -72,7 +72,11 @@ onMounted(async () => {
 
   await companyStore.fetchCompanies({
     with: 'departments',
-    // ignore_permission: true,
+    ignore_permission: true,
+  })
+
+  await companyStore.fetchMyCompanies({
+    with: 'departments',
   })
 })
 
@@ -130,15 +134,6 @@ const filteringItems = computed(() => {
     (departments, company) => [...departments, ...company.departments],
     [],
   )
-
-  ;[
-    {
-      'is-target': 'true',
-      'is-urgent': 'true',
-      'is-important': 'true',
-      status: 'only-completed',
-    },
-  ]
 
   const checkBoxView = (checked, { label, value, id, onCancel }) => {
     if (!checked) {
@@ -281,7 +276,7 @@ const filteringItems = computed(() => {
             >
               <option value="">--ALL COMPANY--</option>
               <option
-                v-for="company in companyStore?.companies"
+                v-for="company in companyStore?.myCompanies"
                 :key="company.id"
                 :value="company.id"
               >
@@ -308,7 +303,7 @@ const filteringItems = computed(() => {
 
           <CompanyDepartmentSelectInput
             v-model="toDepartmentId"
-            :companies="companyStore?.companies || []"
+            :companies="companyStore?.myCompanies || []"
             class="relative w-full md:w-40 flex-grow"
             :className="{
               select: 'h-8 text-xs px-2 text-gray-600  border-2 border-gray-400  ',
