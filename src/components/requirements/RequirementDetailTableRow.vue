@@ -1,4 +1,5 @@
 <script setup>
+import { ref } from 'vue'
 import TaskUserChip from '../tasks/TaskUserChip.vue'
 
 const props = defineProps({
@@ -7,6 +8,12 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['editClick', 'deleteClick'])
+
+const descriptionLineClampClass = ref('line-clamp-2')
+
+function handleShowMoreClick() {
+  descriptionLineClampClass.value = descriptionLineClampClass.value ? '' : 'line-clamp-2'
+}
 </script>
 <template>
   <tr class="group/item border text-gray-800 py-4 shadow-sm mb-4 px-4 rounded-md hover:bg-blue-50">
@@ -22,9 +29,19 @@ const emit = defineEmits(['editClick', 'deleteClick'])
         <hr class="mb-4 -mx-4" />
         <div class="mb-5">
           <div class="text-gray-400 mr-2 text-xs uppercase font-semibold">Description</div>
-          <p class="text-justify line-clamp-2 print:line-clamp-none">
-            {{ detail.description }}
-          </p>
+          <div class="text-justify">
+            <p
+              class="print:line-clamp-none"
+              :class="descriptionLineClampClass"
+              v-html="detail.description"
+            ></p>
+            <button
+              class="text-blue-500 group-hover/item:underline hover:text-sky-400 ml-auto text-sm print:hidden"
+              @click.prevent="handleShowMoreClick"
+            >
+              {{ descriptionLineClampClass ? 'Show More' : 'Show Less' }}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -75,7 +92,7 @@ const emit = defineEmits(['editClick', 'deleteClick'])
         <button
           class="print:hidden hover:border-2 group-hover/item:bg-blue-200 hover:border-blue-700 text-blue-500 hover:text-white hover:!bg-blue-500 rounded-md px-4 py-1"
         >
-          Add Task
+          Create Task
         </button>
       </td>
     </template>

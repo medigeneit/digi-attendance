@@ -53,10 +53,9 @@ onMounted(async () => {
   <div
     class="max-h-[90vh] overflow-auto w-full mx-auto bg-white shadow-lg rounded-lg p-6 pb-0 pt-0 relative"
   >
-    <div class="sticky top-0 pt-4 bg-white z-10">
-      <h2 class="text-2xl font-semibold text-gray-800">Delete Requirement Details</h2>
-
-      <hr class="mb-4" />
+    <div class="sticky top-0 -mx-6 px-6 z-10 bg-gray-50">
+      <h2 class="text-xl font-semibold text-gray-800 py-2">Delete Requirement Details</h2>
+      <hr class="mb-4 -mx-6" />
     </div>
 
     <form @submit.prevent="submit" class="z-0">
@@ -72,6 +71,7 @@ onMounted(async () => {
 
         <div class="my-8 text-center text-xl text-red-600">Are you sure want to delete?</div>
       </template>
+      <div v-else class="min-h-40"></div>
 
       <div class="sticky bottom-0 bg-white py-4 border-t -mx-6 px-6">
         <div v-if="error" class="mb-4 text-red-500 font-medium">
@@ -97,6 +97,7 @@ onMounted(async () => {
         </div>
       </div>
     </form>
+
     <LoaderView
       v-if="state === 'loading' || state === 'submitting'"
       class="z-20 absolute inset-0 flex items-center justify-center bg-opacity-30"

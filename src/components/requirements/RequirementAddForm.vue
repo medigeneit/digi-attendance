@@ -15,7 +15,7 @@ const store = useTaskStore()
 const tagStore = useTagStore()
 const companyStore = useCompanyStore()
 const state = ref('')
-const selectedWebsiteTag = ref([])
+const selectedWebsiteTags = ref([])
 
 const form = ref({
   from_department_id: '',
@@ -43,7 +43,11 @@ async function submit() {
 
   const payload = {
     ...form.value,
-    website_tags: [selectedWebsiteTag.value.id],
+    ...(selectedWebsiteTags.value && Array.isArray(selectedWebsiteTags.value)
+      ? {
+          website_tags: selectedWebsiteTags.value.map((tag) => tag.id),
+        }
+      : {}),
   }
 
   try {
@@ -76,16 +80,6 @@ async function submit() {
 
     <form @submit.prevent="submit" class="z-0">
       <template v-if="state !== 'loading' && state !== 'submitting'">
-        <div class="mb-4">
-          <label class="text-gray-800">Websites</label>
-          <MultiselectDropdown
-            :options="tagStore.tags"
-            v-model="selectedWebsiteTag"
-            label="name"
-            track-by="id"
-          />
-        </div>
-
         <CompanyDepartmentSelectInput
           v-model="form.from_department_id"
           :companies="companyStore?.myCompanies || []"
@@ -93,7 +87,7 @@ async function submit() {
         >
           <template #label>
             <label class="block text-gray-600 text-sm mb1 font-medium">
-              From Department <RequiredIcon />
+              From <RequiredIcon />
             </label>
           </template>
         </CompanyDepartmentSelectInput>
@@ -105,10 +99,21 @@ async function submit() {
         >
           <template #label>
             <label class="block text-gray-600 text-sm mb-1 font-medium">
-              To Department <RequiredIcon />
+              To <RequiredIcon />
             </label>
           </template>
         </CompanyDepartmentSelectInput>
+
+        <div class="mb-4">
+          <label class="text-gray-800">Websites</label>
+          <MultiselectDropdown
+            :options="tagStore.tags"
+            v-model="selectedWebsiteTags"
+            :multiple="true"
+            label="name"
+            track-by="id"
+          />
+        </div>
       </template>
 
       <div class="sticky bottom-0 bg-white py-4 border-t -mx-6 px-6">

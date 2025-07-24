@@ -19,7 +19,7 @@ const emit = defineEmits(['update', 'cancelClick', 'error'])
 const tagStore = useTagStore()
 const companyStore = useCompanyStore()
 const state = ref('')
-const selectedWebsiteTag = ref([])
+const selectedWebsiteTags = ref([])
 const requirement = ref()
 const error = ref('')
 
@@ -51,7 +51,7 @@ watch(requirement, function (fetchedRequirement) {
       Array.isArray(fetchedRequirement?.website_tags) &&
       fetchedRequirement.website_tags?.length > 0
     ) {
-      selectedWebsiteTag.value = fetchedRequirement.website_tags[0]
+      selectedWebsiteTags.value = fetchedRequirement.website_tags
     }
   }
 })
@@ -61,9 +61,9 @@ async function submit() {
 
   const payload = {
     ...form.value,
-    ...(selectedWebsiteTag.value.id
+    ...(selectedWebsiteTags.value && Array.isArray(selectedWebsiteTags.value)
       ? {
-          website_tags: [selectedWebsiteTag.value.id],
+          website_tags: selectedWebsiteTags.value.map((tag) => tag.id),
         }
       : {}),
   }
@@ -106,7 +106,8 @@ async function submit() {
           <label class="text-gray-800">Websites</label>
           <MultiselectDropdown
             :options="tagStore.tags"
-            v-model="selectedWebsiteTag"
+            v-model="selectedWebsiteTags"
+            :multiple="true"
             label="name"
             track-by="id"
           />

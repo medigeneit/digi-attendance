@@ -35,7 +35,10 @@ onMounted(async () => {
       <div class="sticky top-0 print:hidden">
         <div class="relative w-full">
           <SideBar :visible="sidebarVisible" :user="user" />
-          <div @click="toggleSidebar" class="md:hidden absolute left-full top-0 bottom-0 w-full h-full bg-gray-800/50 flex items-center justify-start p-2">
+          <div
+            @click="toggleSidebar"
+            class="md:hidden absolute left-full top-0 bottom-0 w-full h-full bg-gray-800/50 flex items-center justify-start p-2"
+          >
             <button
               class="md:hidden bg-red-500 text-white px-2 py-1 pt-2 rounded-full"
               @click="toggleSidebar"
@@ -62,7 +65,7 @@ onMounted(async () => {
         </div>
       </header>
 
-      <main class="flex-grow py-4 pb-20 md:pb-10">
+      <main class="flex-grow py-4 print:py-0 pb-20 md:pb-10">
         <RouterView />
       </main>
 

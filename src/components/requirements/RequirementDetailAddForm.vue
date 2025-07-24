@@ -181,7 +181,7 @@ onMounted(async () => {
             type="submit"
             class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-5 py-2 rounded transition"
           >
-            {{ state == 'submitting' ? 'Saving...' : 'Add Detail' }}
+            {{ state == 'submitting' ? 'Saving...' : 'Add Requirement' }}
           </button>
         </div>
       </div>

@@ -99,7 +99,7 @@ function handlePrint() {
     <div class="bg-white rounded shadow print:shadow-none p-4 print:p-0 relative">
       <div class="flex items-start">
         <div class="mb-4 text-lg print:black print:font-bold">
-          <div class="text-gray-800">To</div>
+          <div class="text-gray-800 print:leading-none">To</div>
           <div>
             {{ requirement?.to_department?.name }}
           </div>
@@ -113,6 +113,7 @@ function handlePrint() {
             <i class="fad fa-print text-xl"></i>Print
           </button>
           <button class="btn-3" @click.prevent="() => router.back()">Back</button>
+          <RouterLink class="btn-2" :to="`/requirements/edit/${requirement?.id}`">Edit</RouterLink>
         </div>
       </div>
       <div class="text-center text-xl font-bold mb-2 underline">Requirement Form</div>
@@ -131,8 +132,13 @@ function handlePrint() {
       </div>
       <div class="mb-4 print:flex print:items-center print:gap-3 print:mb-1">
         <div class="text-gray-500 text-sm">Website</div>
-        <div class="print:text-gray-900">
-          <div v-for="website_tag in requirement?.website_tags || []" :key="website_tag.id">
+
+        <div class="flex items-center gap-2 print:text-gray-900">
+          <div
+            v-for="website_tag in requirement?.website_tags || []"
+            :key="website_tag.id"
+            class="border px-2 rounded-md bg-gray-50 shadow-sm"
+          >
             {{ website_tag.name }}
           </div>
         </div>
@@ -153,8 +159,8 @@ function handlePrint() {
       <hr class="mb-4" />
 
       <div>
-        <div class="flex items-center mb-6">
-          <h2 class="text-xl font-semibold">Requirement Details</h2>
+        <div class="flex items-end mb-3">
+          <h2 class="text-xl font-semibold">Requirement Task List</h2>
           <div class="ml-auto print:hidden flex gap-2 text-sm">
             <button
               class="btn-4 font-semibold !pl-2 !pr-4 border-2 border-blue-800 hover:bg-blue-800 hover:text-white"
@@ -166,7 +172,10 @@ function handlePrint() {
           </div>
         </div>
 
-        <div v-if="(requirement?.details || []).length > 0">
+        <div
+          v-if="(requirement?.details || []).length > 0"
+          class="overflow-x-auto print:overflow-visible"
+        >
           <table class="w-full table-auto print:table-fixed">
             <thead>
               <tr>
@@ -192,7 +201,9 @@ function handlePrint() {
                   colspan="2"
                   class="border-2 border-gray-800 text-center text-gray-800 print:text-black text-base font-semibold whitespace-nowrap px-3 py-1 print:whitespace-normal w-[25%]"
                 >
-                  For IT Use
+                  For '{{
+                    requirement.to_department?.short_name || requirement.to_department?.name
+                  }}' Use
                 </th>
               </tr>
               <tr>
@@ -221,7 +232,11 @@ function handlePrint() {
                   <td
                     class="whitespace-nowrap print:whitespace-break-spaces print:px-0 p-3 text-center border-2 border-gray-800"
                   >
-                    <div class="text-gray-900 text-base">For IT Use</div>
+                    <div class="text-gray-900 text-base">
+                      For '{{
+                        requirement.to_department?.short_name || requirement.to_department?.name
+                      }}' Use
+                    </div>
                     <div class="text-gray-800 text-xs">(Feedback)</div>
                   </td>
                   <td
