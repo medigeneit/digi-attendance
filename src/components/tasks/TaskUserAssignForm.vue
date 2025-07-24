@@ -12,13 +12,13 @@ import TaskUserChip from './TaskUserChip.vue'
 const taskStore = useTaskStore()
 const auth = useAuthStore()
 const selectedUsers = ref([])
-const selectedSupervisors = ref([])
 const user_ids = computed(() => selectedUsers.value.map((u) => u.id))
-const supervisor_ids = computed(() => selectedSupervisors.value.map((u) => u.id))
 // const taskId = route.params.id
 const state = ref('')
 const error = ref(null)
 const employees = ref([])
+const supervisor_ids = computed(() => selectedSupervisors.value.map((u) => u.id))
+const selectedSupervisors = ref([])
 const supervisors = ref([])
 
 const props = defineProps({
@@ -30,7 +30,8 @@ const props = defineProps({
 
 const task = ref(null)
 
-const form = ref((auth.user?.role == 'employee'
+const form = ref(
+  auth.user?.role == 'employee'
     ? {}
     : {
         is_important: false,
@@ -38,7 +39,8 @@ const form = ref((auth.user?.role == 'employee'
         is_target: false,
         started_at: '',
         deadline: '',
-      }))
+      },
+)
 
 const emit = defineEmits(['success', 'cancelClick'])
 
@@ -126,7 +128,8 @@ const submit = async () => {
 }
 
 function setTaskOnFormData(taskData) {
-  form.value = (auth.user?.role == 'employee'
+  form.value =
+    auth.user?.role == 'employee'
       ? {}
       : {
           is_important: taskData.is_important,
@@ -134,7 +137,7 @@ function setTaskOnFormData(taskData) {
           is_target: taskData.is_target,
           started_at: getYearMonthDayFormat(taskData.started_at),
           deadline: getYearMonthDayFormat(taskData.deadline),
-        })
+        }
 }
 </script>
 

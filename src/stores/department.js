@@ -39,12 +39,13 @@ export const useDepartmentStore = defineStore('department', () => {
     }
   };
 
-  const fetchDepartmentEmployee = async (payload) => {
+  const fetchDepartmentEmployee = async (department_ids) => {
     loading.value = true;
     error.value = null;
-    try {  
+    try {
+      console.log({department_ids})
       const response = await apiClient.get("department-employees", {
-        params: { department_ids: payload },
+        params: { department_ids },
       });
 
       employees.value = response?.data?.employees;
@@ -58,7 +59,7 @@ export const useDepartmentStore = defineStore('department', () => {
       loading.value = false;
     }
   };
-  
+
 
   const createDepartment = async (data) => {
     loading.value = true;
@@ -119,6 +120,6 @@ export const useDepartmentStore = defineStore('department', () => {
     createDepartment,
     updateDepartment,
     deleteDepartment,
-    
+
   };
 });

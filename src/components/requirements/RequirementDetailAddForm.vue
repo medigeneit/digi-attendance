@@ -1,8 +1,9 @@
 <script setup>
 import RequiredIcon from '@/components/RequiredIcon.vue'
+import { findRequirement } from '@/services/requirement'
 import { addRequirementDetail } from '@/services/requirement-detail'
-import { useUserStore } from '@/stores/user'
-import { computed, onMounted, ref } from 'vue'
+import { useDepartmentStore } from '@/stores/department'
+import { onMounted, ref } from 'vue'
 import LoaderView from '../common/LoaderView.vue'
 import MultiselectDropdown from '../MultiselectDropdown.vue'
 import UserChip from '../user/UserChip.vue'
@@ -16,7 +17,7 @@ const props = defineProps({
 
 const emit = defineEmits(['create', 'closeClick', 'error'])
 
-const userStore = useUserStore()
+const departmentStore = useDepartmentStore()
 const state = ref('')
 const error = ref()
 const form = ref({
@@ -26,28 +27,16 @@ const form = ref({
   better_to_complete_on: '',
   supervisor_id: null,
 })
-const employees = ref([])
 
-const selectedEmployee = computed(() => {
-  if (!Array.isArray(employees.value)) {
-    return null
-  }
-  return employees.value.find((emp) => emp.id == form.value?.supervisor_id) || null
-})
-
-function handleUserSelect(emp) {
-  form.value.supervisor_id = emp?.id || ''
-}
-
-function handleUserDeSelect() {
-  form.value.supervisor_id = null
-}
+const selectedSupervisor = ref(null)
+const supervisors = ref([])
 
 async function submit() {
   state.value = 'submitting'
 
   const payload = {
     ...form.value,
+    supervisor_id: selectedSupervisor.value?.id,
   }
 
   console.log({ payload })
@@ -62,9 +51,15 @@ async function submit() {
     emit('error', error.value)
   }
 }
+
 onMounted(async () => {
-  employees.value = await userStore.fetchDepartmentWiseEmployees()
+  const requirement = (await findRequirement(props.requirementId)).data?.requirement || {}
+  supervisors.value = await departmentStore.fetchDepartmentEmployee([
+    requirement.from_department_id,
+  ])
 })
+
+const selected = ref([])
 </script>
 
 <template>
@@ -85,6 +80,18 @@ onMounted(async () => {
     </div>
 
     <form @submit.prevent="submit" class="z-0">
+      <!-- {{ selected }}
+      <SelectDropdown
+        v-model="selectedSupervisor"
+        :options="supervisors"
+        multiple
+        placeholder="Choose a city"
+      >
+        <template #option="{ option }">
+          <UserChip :user="option"></UserChip>
+        </template>
+      </SelectDropdown> -->
+
       <template v-if="state !== 'loading'">
         <div class="mb-4">
           <label class="block text-gray-600 text-sm mb-1 font-medium"
@@ -110,12 +117,10 @@ onMounted(async () => {
 
         <div class="mb-4">
           <label class="block text-gray-600 text-sm mb-1 font-medium">Supervisor</label>
-          <div class="relative w-full border rounded lg:flex-grow">
+          <div class="relative w-full rounded lg:flex-grow">
             <MultiselectDropdown
-              :modelValue="selectedEmployee"
-              @select="handleUserSelect"
-              @remove="handleUserDeSelect"
-              :options="employees"
+              v-model="selectedSupervisor"
+              :options="supervisors"
               :multiple="false"
               label="name"
               label-prefix="id"

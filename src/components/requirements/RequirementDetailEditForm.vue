@@ -1,10 +1,12 @@
 <script setup>
 import RequiredIcon from '@/components/RequiredIcon.vue'
+import { findRequirement } from '@/services/requirement'
 import { findRequirementDetail, updateRequirementDetail } from '@/services/requirement-detail'
+import { useDepartmentStore } from '@/stores/department'
 import { useUserStore } from '@/stores/user'
-import { computed, onMounted, ref } from 'vue'
-import Multiselect from 'vue-multiselect'
+import { onMounted, ref } from 'vue'
 import LoaderView from '../common/LoaderView.vue'
+import MultiselectDropdown from '../MultiselectDropdown.vue'
 import UserChip from '../user/UserChip.vue'
 
 const props = defineProps({
@@ -21,6 +23,7 @@ const props = defineProps({
 const emit = defineEmits(['update', 'closeClick', 'error'])
 
 const userStore = useUserStore()
+const departmentStore = useDepartmentStore()
 const detail = ref(null)
 const state = ref('')
 const error = ref()
@@ -32,27 +35,15 @@ const form = ref({
   supervisor_id: null,
 })
 const employees = ref([])
-
-const selectedEmployee = computed(() => {
-  if (!Array.isArray(employees.value)) {
-    return null
-  }
-  return employees.value.find((emp) => emp.id == form.value?.supervisor_id) || null
-})
-
-function handleUserSelect(emp) {
-  form.value.supervisor_id = emp?.id || ''
-}
-
-function handleUserDeSelect() {
-  form.value.supervisor_id = null
-}
+const supervisors = ref([])
+const selectedSupervisor = ref(null)
 
 async function submit() {
   state.value = 'submitting'
 
   const payload = {
     ...form.value,
+    supervisor_id: selectedSupervisor.value?.id,
   }
 
   console.log({ payload })
@@ -71,8 +62,15 @@ onMounted(async () => {
   state.value = 'loading'
   try {
     employees.value = await userStore.fetchDepartmentWiseEmployees()
+
+    const requirement = (await findRequirement(props.requirementId)).data?.requirement || {}
+    supervisors.value = await departmentStore.fetchDepartmentEmployee([
+      requirement.from_department_id,
+    ])
+
     detail.value = (await findRequirementDetail(props.requirementId, props.detailId)).data?.detail
     form.value = detail.value
+    selectedSupervisor.value = detail.value.supervisor
     const date = new Date(detail.value.better_to_complete_on)
     form.value.better_to_complete_on = date.toISOString().split('T')[0] // Returns "YYYY-MM-DD"
   } catch (err) {
@@ -84,15 +82,10 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div
-    class="max-h-[90vh] overflow-auto w-full mx-auto bg-white shadow-lg rounded-lg p-6 pb-0 pt-0 relative"
-  >
+  <div class="max-h-[90vh] w-full mx-auto bg-white shadow-lg rounded-lg p-6 pb-0 pt-0 relative">
     <div class="sticky top-0 pt-4 bg-white z-10">
       <h2 class="text-2xl font-semibold text-gray-800">Add Requirement Details</h2>
-
       <hr class="mb-4" />
-      <!-- <pre>{{ form }}</pre> -->
-
       <div
         class="text-purple-600/80 mb-4 text-xs border-b border-dashed"
         @click.prevent="emit('ok')"
@@ -127,12 +120,10 @@ onMounted(async () => {
 
         <div class="mb-4">
           <label class="block text-gray-600 text-sm mb-1 font-medium">Supervisor</label>
-          <div class="relative w-full border rounded lg:flex-grow">
-            <Multiselect
-              :modelValue="selectedEmployee"
-              @select="handleUserSelect"
-              @remove="handleUserDeSelect"
-              :options="employees"
+          <div class="relative w-full rounded lg:flex-grow">
+            <MultiselectDropdown
+              v-model="selectedSupervisor"
+              :options="supervisors"
               :multiple="false"
               label="name"
               label-prefix="id"
@@ -141,13 +132,16 @@ onMounted(async () => {
               <template #option="{ option }">
                 <UserChip :user="option" class="w-full line-clamp-1" />
               </template>
-            </Multiselect>
+              <template #singleLabel="{ option }">
+                <UserChip :user="option" class="line-clamp-1" />
+              </template>
+            </MultiselectDropdown>
             <div
               class="absolute right-8 text-xl top-0 bottom-0 flex items-center"
-              v-if="selectedEmployee"
+              v-if="selectedSupervisor"
             >
               <button
-                @click.prevent="handleUserDeSelect"
+                @click.prevent="selectedSupervisor = null"
                 class="mt-0.5 text-gray-500 hover:text-red-700"
               >
                 &times;
