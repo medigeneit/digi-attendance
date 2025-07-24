@@ -1,13 +1,13 @@
 <template>
-  <div class="relative w-full">
+  <div class="relative w-full" :ref="dropdownRef">
     <!-- Control -->
     <div
-      class="border rounded px-3 py-2 cursor-pointer bg-white shadow-sm flex items-center justify-between"
+      class="border rounded-md px-2 py-1.5 cursor-pointer bg-white flex items-center justify-between"
       @click="toggleDropdown"
       :class="{ 'bg-gray-100': disabled }"
     >
       <!-- Display selected values or placeholder -->
-      <div class="flex flex-wrap items-center gap-1">
+      <div class="flex flex-wrap items-center gap-1 w-full">
         <template v-if="multiple">
           <template v-for="item in selectedItems" :key="getOptionKey(item)">
             <slot name="selected-option" :option="item">
@@ -19,7 +19,7 @@
           </template>
         </template>
         <template v-else>
-          <slot name="selected-option" :option="selectedItems">
+          <slot name="selected-option" :option="selectedItems" :is-selected="isSelected">
             {{ getOptionLabel(selectedItems) || placeholder }}
           </slot>
         </template>
@@ -42,7 +42,7 @@
     <transition name="fade">
       <div
         v-show="isOpen"
-        class="absolute mt-1 w-full bg-white border rounded shadow-lg z-50 max-h-60 overflow-auto"
+        class="bottom-[100%] absolute mt-1 w-full bg-white border rounded shadow-xl z-50 border-teal-500"
       >
         <div class="p-2">
           <slot name="search">
@@ -59,7 +59,7 @@
 
         <slot name="list-header"></slot>
 
-        <ul>
+        <ul class="max-h-60 overflow-auto">
           <template v-if="filteredOptions.length">
             <li
               v-for="option in filteredOptions"
@@ -85,8 +85,7 @@
 </template>
 
 <script setup>
-import { onClickOutside } from '@vueuse/core'
-import { computed, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 const props = defineProps({
   options: { type: Array, required: true },
@@ -120,8 +119,22 @@ const isOpen = ref(false)
 const search = ref('')
 const dropdownRef = ref()
 
-onClickOutside(dropdownRef, () => handleOutsideClick())
+function handleOutsideClick(event) {
+  if (dropdownRef.value && !dropdownRef.value.contains(event.target)) {
+    if (isOpen.value) {
+      isOpen.value = false
+      emit('close')
+    }
+  }
+}
 
+onMounted(() => {
+  document.addEventListener('click', handleOutsideClick)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleOutsideClick)
+})
 const selectedItems = computed(() => {
   if (props.multiple) {
     return Array.isArray(props.modelValue) ? props.modelValue : []
@@ -187,12 +200,12 @@ const filteredOptions = computed(() => {
   return props.options.filter((opt) => getOptionLabel(opt).toLowerCase().includes(term))
 })
 
-function handleOutsideClick() {
-  if (isOpen.value) {
-    isOpen.value = false
-    emit('close')
-  }
-}
+// function handleOutsideClick() {
+//   if (isOpen.value) {
+//     isOpen.value = false
+//     emit('close')
+//   }
+// }
 </script>
 
 <style scoped>

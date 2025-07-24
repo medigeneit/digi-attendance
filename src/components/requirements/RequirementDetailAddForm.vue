@@ -5,7 +5,7 @@ import { addRequirementDetail } from '@/services/requirement-detail'
 import { useDepartmentStore } from '@/stores/department'
 import { onMounted, ref } from 'vue'
 import LoaderView from '../common/LoaderView.vue'
-import MultiselectDropdown from '../MultiselectDropdown.vue'
+import SelectDropdown from '../SelectDropdown.vue'
 import UserChip from '../user/UserChip.vue'
 
 const props = defineProps({
@@ -58,8 +58,6 @@ onMounted(async () => {
     requirement.from_department_id,
   ])
 })
-
-const selected = ref([])
 </script>
 
 <template>
@@ -80,18 +78,6 @@ const selected = ref([])
     </div>
 
     <form @submit.prevent="submit" class="z-0">
-      <!-- {{ selected }}
-      <SelectDropdown
-        v-model="selectedSupervisor"
-        :options="supervisors"
-        multiple
-        placeholder="Choose a city"
-      >
-        <template #option="{ option }">
-          <UserChip :user="option"></UserChip>
-        </template>
-      </SelectDropdown> -->
-
       <template v-if="state !== 'loading'">
         <div class="mb-4">
           <label class="block text-gray-600 text-sm mb-1 font-medium"
@@ -117,31 +103,32 @@ const selected = ref([])
 
         <div class="mb-4">
           <label class="block text-gray-600 text-sm mb-1 font-medium">Supervisor</label>
-          <div class="relative w-full rounded lg:flex-grow">
-            <MultiselectDropdown
-              v-model="selectedSupervisor"
-              :options="supervisors"
-              :multiple="false"
-              label="name"
-              label-prefix="id"
-              placeholder="--NO SUPERVISOR--"
-            >
-              <template #option="{ option }">
-                <UserChip :user="option" class="w-full line-clamp-1" />
-              </template>
-            </MultiselectDropdown>
-            <div
-              class="absolute right-8 text-xl top-0 bottom-0 flex items-center"
-              v-if="selectedEmployee"
-            >
-              <button
-                @click.prevent="handleUserDeSelect"
-                class="mt-0.5 text-gray-500 hover:text-red-700"
-              >
-                &times;
-              </button>
-            </div>
-          </div>
+
+          <SelectDropdown
+            v-model="selectedSupervisor"
+            :options="supervisors"
+            placeholder="--NO SUPERVISOR--"
+          >
+            <template #option="{ option }">
+              <UserChip :user="option || {}"></UserChip>
+            </template>
+            <template #selected-option="{ option }">
+              <div v-if="option" class="relative w-full">
+                <UserChip :user="option || {}"></UserChip>
+                <div
+                  class="absolute right-1 text-xl top-0 bottom-0 flex items-center"
+                  v-if="selectedSupervisor"
+                >
+                  <button
+                    @click.prevent="selectedSupervisor = null"
+                    class="text-gray-6 font-semibold 00 hover:text-red-700"
+                  >
+                    &times;
+                  </button>
+                </div>
+              </div>
+            </template>
+          </SelectDropdown>
         </div>
 
         <div class="mb-4">
