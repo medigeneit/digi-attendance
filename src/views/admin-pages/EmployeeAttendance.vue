@@ -113,9 +113,64 @@ const handleFilterChange = () => {
       </div>
     </div>
 
+    <div v-if="selectedUser" class="grid md:grid-cols-2 gap-4 text-sm">
+      <div class="card-bg p-4 gap-1">
+        <h2 class="title-md">Selected Employee Info</h2>
+        <hr />
+        <div class="grid md:grid-cols-2">
+          <p><strong>Name:</strong> {{ selectedUser.name }}</p>
+          <p><strong>Designation:</strong> {{ selectedUser.designation?.title || 'N/A' }}</p>
+          <p><strong>Department:</strong> {{ selectedUser.department?.name || 'N/A' }}</p>
+          <p><strong>Company:</strong> {{ selectedUser.company?.name || 'N/A' }}</p>
+          <p><strong>Phone:</strong> {{ selectedUser.phone }}</p>
+          <p><strong>Email:</strong> {{ selectedUser.email || 'N/A' }}</p>
+          <p><strong>Employee ID :</strong> {{ selectedUser.employee_id || 'N/A' }}</p>
+          <p><strong>Joining Date :</strong> {{ selectedUser.joining_date || 'N/A' }}</p>
+          <p><strong>Employee ID :</strong> {{ selectedUser.blood || 'N/A' }}</p>
+        </div>
+      </div>
+
+      <div class="card-bg p-4 gap-1">
+        <div  class="flex justify-between items-center">
+          <h2 class="title-md">Attendance Summary</h2>
+          <router-link
+          :to="{ name: 'MonthWiseApplicationLog', query: { ...route.query } }"
+          class="btn-2"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Application History
+        </router-link>
+        </div>
+        <hr />
+        <div class="grid md:grid-cols-2">
+          <p>
+            <strong>Total Working Days:</strong>
+            {{ attendanceStore?.summary?.total_working_days }}
+          </p>
+          <p><strong>Present Days:</strong> {{ attendanceStore?.summary?.total_present_days }}</p>
+          <p><strong>Absent Days:</strong> {{ attendanceStore?.summary?.total_absent_days }}</p>
+          <p><strong>Late Days:</strong> {{ attendanceStore?.summary?.total_late_days }}</p>
+          <p>
+            <strong>Total Working Hours:</strong>
+            {{ attendanceStore?.summary?.total_working_hours }}
+          </p>
+          <p>
+            <strong>Total Overtime Hours:</strong>
+            {{ attendanceStore?.summary?.total_overtime_hours }}
+          </p>
+        </div>
+      </div>
+    </div>
+    <div v-else>
+      <p class="text-gray-400 text-center text-2xl italic">Select an employee, please.</p>
+    </div>
+
+
     <LoaderView v-if="attendanceStore.isLoading" />
 
     <div v-else class="space-y-4">
+
       <div class="overflow-x-auto card-bg">
         <table class="min-w-full table-auto border-collapse border border-gray-300 bg-white">
           <thead>
@@ -149,20 +204,45 @@ const handleFilterChange = () => {
               </td>
               <td
                 class="border px-1 py-0.5"
-                :class="{ 'bg-red-200': log.late_duration }"
+                :class="{ 'bg-red-200': log.late_duration, 'bg-blue-200': log?.manual_attendance?.check_in && log.entry_time }"
                 :title="`Device: ${log.entry_device}`"
               >
-                {{ log.entry_time }}
+                 {{log?.manual_attendance?.check_in && log.entry_time ? 'M: ':''}} {{ log.entry_time }}
               </td>
               <td
                 class="border px-1 py-0.5"
-                :class="{ 'bg-red-200': log.early_leave_duration }"
+                :class="{ 'bg-red-200': log.early_leave_duration , 'bg-blue-200': log?.manual_attendance?.check_out && log.exit_time }"
                 :title="`Device: ${log.exit_device}`"
               >
                 {{ log.exit_time }}
+                <!-- {{ log?.manual_attendance }} -->
               </td>
               <td class="border px-1 py-0.5">{{ log.working_hours }}</td>
-              <td class="border px-1 py-0.5">{{ log.overtime_hours }}</td>
+             <td class="border px-1 py-0.5">
+                <template v-if="log.over_time_status === 'Approved'">
+                  <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-semibold">
+                    {{ log.overtime_hours }} | Approved
+                  </span>
+                </template>
+
+                <template v-else-if="log.over_time_status === 'Pending'">
+                  <span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-semibold animate-pulse">
+                    {{ log.overtime_hours ?? '--' }} | Pending
+                  </span>
+                </template>
+
+                <template v-else-if="log.over_time_status === 'Rejected'">
+                  <span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-semibold">
+                    Rejected
+                  </span>
+                </template>
+                <template v-else-if="log.over_time_status && log.overtime_hours">
+                  <span>
+                     {{ log.overtime_hours }} 
+                  </span>
+                </template>
+              </td>
+
               <td class="border px-1 py-0.5">{{ log?.approved_over_times ? log?.approved_over_times + ' H' : '' }}</td>
               <td class="border px-1 py-0.5">
                 <div v-if="log.late_duration">
@@ -244,47 +324,6 @@ const handleFilterChange = () => {
         </table>
       </div>
     </div>
-    <div v-if="selectedUser" class="grid md:grid-cols-2 gap-4 text-sm">
-      <div class="card-bg p-4 gap-1">
-        <h2 class="title-md">Selected Employee Info</h2>
-        <hr />
-        <div class="grid md:grid-cols-2">
-          <p><strong>Name:</strong> {{ selectedUser.name }}</p>
-          <p><strong>Designation:</strong> {{ selectedUser.designation?.title || 'N/A' }}</p>
-          <p><strong>Department:</strong> {{ selectedUser.department?.name || 'N/A' }}</p>
-          <p><strong>Company:</strong> {{ selectedUser.company?.name || 'N/A' }}</p>
-          <p><strong>Phone:</strong> {{ selectedUser.phone }}</p>
-          <p><strong>Email:</strong> {{ selectedUser.email || 'N/A' }}</p>
-          <p><strong>Employee ID :</strong> {{ selectedUser.employee_id || 'N/A' }}</p>
-          <p><strong>Joining Date :</strong> {{ selectedUser.joining_date || 'N/A' }}</p>
-          <p><strong>Employee ID :</strong> {{ selectedUser.blood || 'N/A' }}</p>
-        </div>
-      </div>
-
-      <div class="card-bg p-4 gap-1">
-        <h2 class="title-md">Attendance Summary</h2>
-        <hr />
-        <div class="grid md:grid-cols-2">
-          <p>
-            <strong>Total Working Days:</strong>
-            {{ attendanceStore?.summary?.total_working_days }}
-          </p>
-          <p><strong>Present Days:</strong> {{ attendanceStore?.summary?.total_present_days }}</p>
-          <p><strong>Absent Days:</strong> {{ attendanceStore?.summary?.total_absent_days }}</p>
-          <p><strong>Late Days:</strong> {{ attendanceStore?.summary?.total_late_days }}</p>
-          <p>
-            <strong>Total Working Hours:</strong>
-            {{ attendanceStore?.summary?.total_working_hours }}
-          </p>
-          <p>
-            <strong>Total Overtime Hours:</strong>
-            {{ attendanceStore?.summary?.total_overtime_hours }}
-          </p>
-        </div>
-      </div>
-    </div>
-    <div v-else>
-      <p class="text-gray-400 text-center text-2xl italic">Select an employee, please.</p>
-    </div>
+    
   </div>
 </template>
