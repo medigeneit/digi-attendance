@@ -1,10 +1,11 @@
 <script setup>
 import RequiredIcon from '@/components/RequiredIcon.vue'
+import { findRequirement } from '@/services/requirement'
 import { addRequirementDetail } from '@/services/requirement-detail'
-import { useUserStore } from '@/stores/user'
-import { computed, onMounted, ref } from 'vue'
+import { useDepartmentStore } from '@/stores/department'
+import { onMounted, ref } from 'vue'
 import LoaderView from '../common/LoaderView.vue'
-import MultiselectDropdown from '../MultiselectDropdown.vue'
+import SelectDropdown from '../SelectDropdown.vue'
 import UserChip from '../user/UserChip.vue'
 
 const props = defineProps({
@@ -16,7 +17,7 @@ const props = defineProps({
 
 const emit = defineEmits(['create', 'closeClick', 'error'])
 
-const userStore = useUserStore()
+const departmentStore = useDepartmentStore()
 const state = ref('')
 const error = ref()
 const form = ref({
@@ -26,28 +27,16 @@ const form = ref({
   better_to_complete_on: '',
   supervisor_id: null,
 })
-const employees = ref([])
 
-const selectedEmployee = computed(() => {
-  if (!Array.isArray(employees.value)) {
-    return null
-  }
-  return employees.value.find((emp) => emp.id == form.value?.supervisor_id) || null
-})
-
-function handleUserSelect(emp) {
-  form.value.supervisor_id = emp?.id || ''
-}
-
-function handleUserDeSelect() {
-  form.value.supervisor_id = null
-}
+const selectedSupervisor = ref(null)
+const supervisors = ref([])
 
 async function submit() {
   state.value = 'submitting'
 
   const payload = {
     ...form.value,
+    supervisor_id: selectedSupervisor.value?.id,
   }
 
   console.log({ payload })
@@ -62,8 +51,12 @@ async function submit() {
     emit('error', error.value)
   }
 }
+
 onMounted(async () => {
-  employees.value = await userStore.fetchDepartmentWiseEmployees()
+  const requirement = (await findRequirement(props.requirementId)).data?.requirement || {}
+  supervisors.value = await departmentStore.fetchDepartmentEmployee([
+    requirement.from_department_id,
+  ])
 })
 </script>
 
@@ -110,33 +103,32 @@ onMounted(async () => {
 
         <div class="mb-4">
           <label class="block text-gray-600 text-sm mb-1 font-medium">Supervisor</label>
-          <div class="relative w-full border rounded lg:flex-grow">
-            <MultiselectDropdown
-              :modelValue="selectedEmployee"
-              @select="handleUserSelect"
-              @remove="handleUserDeSelect"
-              :options="employees"
-              :multiple="false"
-              label="name"
-              label-prefix="id"
-              placeholder="--NO SUPERVISOR--"
-            >
-              <template #option="{ option }">
-                <UserChip :user="option" class="w-full line-clamp-1" />
-              </template>
-            </MultiselectDropdown>
-            <div
-              class="absolute right-8 text-xl top-0 bottom-0 flex items-center"
-              v-if="selectedEmployee"
-            >
-              <button
-                @click.prevent="handleUserDeSelect"
-                class="mt-0.5 text-gray-500 hover:text-red-700"
-              >
-                &times;
-              </button>
-            </div>
-          </div>
+
+          <SelectDropdown
+            v-model="selectedSupervisor"
+            :options="supervisors"
+            placeholder="--NO SUPERVISOR--"
+          >
+            <template #option="{ option }">
+              <UserChip :user="option || {}"></UserChip>
+            </template>
+            <template #selected-option="{ option }">
+              <div v-if="option" class="relative w-full">
+                <UserChip :user="option || {}"></UserChip>
+                <div
+                  class="absolute right-1 text-xl top-0 bottom-0 flex items-center"
+                  v-if="selectedSupervisor"
+                >
+                  <button
+                    @click.prevent="selectedSupervisor = null"
+                    class="text-gray-6 font-semibold 00 hover:text-red-700"
+                  >
+                    &times;
+                  </button>
+                </div>
+              </div>
+            </template>
+          </SelectDropdown>
         </div>
 
         <div class="mb-4">

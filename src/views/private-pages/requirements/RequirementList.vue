@@ -63,7 +63,7 @@ const goToAdd = () => {
                     class="text-blue-800"
                     v-if="req?.details?.length > 0 && Array.isArray(req?.details)"
                   >
-                    <div class="line-clamp-3 text-sm">
+                    <div class="line-clamp-1 text-sm">
                       {{ req?.details[0].title }}
                     </div>
                   </div>

@@ -2,7 +2,7 @@
 import UserChip from '@/components/user/UserChip.vue'
 import { useUserPermissionStore } from '@/stores/userPermissionStore'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted } from 'vue'
+import { computed, onBeforeUpdate, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const userPermissionStore = useUserPermissionStore()
@@ -38,6 +38,12 @@ const permissionUsers = computed(() => {
     ]
   }, [])
 })
+
+let serial = 0
+
+onBeforeUpdate(() => {
+  serial = 0
+})
 </script>
 
 <template>
@@ -66,7 +72,9 @@ const permissionUsers = computed(() => {
         <template v-for="permissionUser in permissionUsers" :key="permissionUser.id">
           <template v-for="(perm, permIndex) in permissionUser.permissions || []" :key="perm.id">
             <tr class="hover:bg-gray-50">
-              <td class="p-3 border">{{ permIndex + 1 }}</td>
+              <td class="p-3 border whitespace-nowrap">
+                {{ ++serial }}
+              </td>
 
               <!-- Only show user name in the first row, with rowspan -->
               <td
