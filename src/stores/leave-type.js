@@ -25,6 +25,22 @@ export const useLeaveTypeStore = defineStore('leaveType', () => {
     }
   };
 
+  const fetchAdminLeaveTypes = async (companyId = null) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await apiClient.get('/admin-leave-types', {
+        params: { company_id: companyId },
+      });
+      leaveTypes.value = response.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'লিভ টাইপ লোড করতে ব্যর্থ হয়েছে।';
+      console.error('Error fetching leave types:', err);
+    } finally {
+      loading.value = false;
+    }
+  };
+
   const fetchLeaveType = async (id) => {
     loading.value = true;
     error.value = null;
@@ -93,7 +109,7 @@ export const useLeaveTypeStore = defineStore('leaveType', () => {
     error: computed(() => error.value),
     fetchLeaveTypes,
     fetchLeaveType,
-    
+    fetchAdminLeaveTypes,
     createLeaveType,
     updateLeaveType,
     deleteLeaveType,

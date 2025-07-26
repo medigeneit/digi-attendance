@@ -74,7 +74,7 @@ const groupedLeaveTypes = computed(() => {
 })
 
 onMounted(() => {
-  leaveTypeStore.fetchLeaveTypes()
+  leaveTypeStore.fetchAdminLeaveTypes()
 })
 </script>
 
