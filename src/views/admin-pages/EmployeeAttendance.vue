@@ -1,6 +1,7 @@
 <script setup>
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
+import StatusBadge from '@/components/common/StatusBadge.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useUserStore } from '@/stores/user'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -113,9 +114,64 @@ const handleFilterChange = () => {
       </div>
     </div>
 
+    <div v-if="selectedUser" class="grid md:grid-cols-2 gap-4 text-sm">
+      <div class="card-bg p-4 gap-1">
+        <h2 class="title-md">Selected Employee Info</h2>
+        <hr />
+        <div class="grid md:grid-cols-2">
+          <p><strong>Name:</strong> {{ selectedUser.name }}</p>
+          <p><strong>Designation:</strong> {{ selectedUser.designation?.title || 'N/A' }}</p>
+          <p><strong>Department:</strong> {{ selectedUser.department?.name || 'N/A' }}</p>
+          <p><strong>Company:</strong> {{ selectedUser.company?.name || 'N/A' }}</p>
+          <p><strong>Phone:</strong> {{ selectedUser.phone }}</p>
+          <p><strong>Email:</strong> {{ selectedUser.email || 'N/A' }}</p>
+          <p><strong>Employee ID :</strong> {{ selectedUser.employee_id || 'N/A' }}</p>
+          <p><strong>Joining Date :</strong> {{ selectedUser.joining_date || 'N/A' }}</p>
+          <p><strong>Employee ID :</strong> {{ selectedUser.blood || 'N/A' }}</p>
+        </div>
+      </div>
+
+      <div class="card-bg p-4 gap-1">
+        <div  class="flex justify-between items-center">
+          <h2 class="title-md">Attendance Summary</h2>
+          <router-link
+          :to="{ name: 'MonthWiseApplicationLog', query: { ...route.query } }"
+          class="btn-2"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Application History
+        </router-link>
+        </div>
+        <hr />
+        <div class="grid md:grid-cols-2">
+          <p>
+            <strong>Total Working Days:</strong>
+            {{ attendanceStore?.summary?.total_working_days }}
+          </p>
+          <p><strong>Present Days:</strong> {{ attendanceStore?.summary?.total_present_days }}</p>
+          <p><strong>Absent Days:</strong> {{ attendanceStore?.summary?.total_absent_days }}</p>
+          <p><strong>Late Days:</strong> {{ attendanceStore?.summary?.total_late_days }}</p>
+          <p>
+            <strong>Total Working Hours:</strong>
+            {{ attendanceStore?.summary?.total_working_hours }}
+          </p>
+          <p>
+            <strong>Total Overtime Hours:</strong>
+            {{ attendanceStore?.summary?.total_overtime_hours }}
+          </p>
+        </div>
+      </div>
+    </div>
+    <div v-else>
+      <p class="text-gray-400 text-center text-2xl italic">Select an employee, please.</p>
+    </div>
+
+
     <LoaderView v-if="attendanceStore.isLoading" />
 
     <div v-else class="space-y-4">
+
       <div class="overflow-x-auto card-bg">
         <table class="min-w-full table-auto border-collapse border border-gray-300 bg-white">
           <thead>
@@ -141,28 +197,110 @@ const handleFilterChange = () => {
             >
               <td class="border px-1 py-0.5">{{ log.date }}</td>
               <td class="border px-1 py-0.5">{{ log.weekday }}</td>
-              <td
-                class="border px-1 py-0.5"
+             <td
+                class="border px-2 py-1 text-sm whitespace-nowrap"
                 :title="`${log.shift_start_time} to ${log.shift_end_time}`"
               >
-                {{ log.shift_name }}
+                <div class="flex flex-col gap-1">
+                  <!-- Shift name -->
+                  <div class="font-semibold text-gray-800">
+                    {{ log.shift_name }}
+                  </div>
+
+                  <!-- Exchange status badge with link -->
+                  <div
+                    v-if="log.shift_exchange_application_status"
+                    class="text-xs"
+                  >
+                    <router-link
+                      :to="{ name: 'ExchangeShiftShow', params: { id: log.shift_exchange_application_id } }"
+                      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium transition hover:opacity-90"
+                      :class="{
+                        'bg-yellow-100 text-yellow-800': log.shift_exchange_application_status === 'Pending',
+                        'bg-green-100 text-green-800': log.shift_exchange_application_status === 'Approved',
+                        'bg-red-100 text-red-800': log.shift_exchange_application_status === 'Rejected',
+                      }"
+                    >
+                      <i class="far fa-eye"></i>
+                      {{ log.shift_exchange_application_status }}
+                    </router-link>
+                  </div>
+                </div>
               </td>
+
               <td
-                class="border px-1 py-0.5"
-                :class="{ 'bg-red-200': log.late_duration }"
-                :title="`Device: ${log.entry_device}`"
-              >
-                {{ log.entry_time }}
-              </td>
-              <td
-                class="border px-1 py-0.5"
-                :class="{ 'bg-red-200': log.early_leave_duration }"
-                :title="`Device: ${log.exit_device}`"
-              >
-                {{ log.exit_time }}
-              </td>
+                  class="border px-2 py-1 text-sm whitespace-nowrap"
+                  :class="{
+                    'bg-red-100 text-red-800': log.late_duration,
+                    'bg-blue-100 text-blue-800': log?.manual_attendance?.check_in && log.entry_time,
+                    'bg-gray-50': !log.entry_time
+                  }"
+                >
+                  <div class="flex items-center gap-1" :title="`Device: ${log.entry_device}`">
+                    <span v-if="log?.manual_attendance?.check_in && log.entry_time" class="font-semibold">M:</span>
+                    <span>{{ log.entry_time || '--' }}</span>
+
+                    <router-link
+                      v-if="log?.manual_attendance?.id && log?.manual_attendance?.check_in"
+                      :to="{ name: 'ManualAttendanceShow', params: { id: log.manual_attendance.id }}"
+                      class="text-blue-600 hover:text-blue-800"
+                    >
+                      <i class="far fa-eye ml-1"></i>
+                    </router-link>
+
+                    <!-- <span v-if="log.late_duration" class="ml-2 bg-red-200 text-red-700 text-xs px-1.5 py-0.5 rounded-full">Late</span> -->
+                  </div>
+                </td>
+
+                <td
+                  class="border px-2 py-1 text-sm whitespace-nowrap"
+                  :class="{
+                    'bg-red-100 text-red-800': log.early_leave_duration,
+                    'bg-blue-100 text-blue-800': log?.manual_attendance?.check_out && log.exit_time,
+                    'bg-gray-50': !log.exit_time
+                  }"
+                >
+                  <div class="flex items-center gap-1" :title="`Device: ${log.exit_device}`">
+                    <span>{{ log.exit_time || '--' }}</span>
+
+                    <router-link
+                      v-if="log?.manual_attendance?.id && log?.manual_attendance?.check_out"
+                      :to="{ name: 'ManualAttendanceShow', params: { id: log.manual_attendance.id }}"
+                      class="text-blue-600 hover:text-blue-800"
+                    >
+                      <i class="far fa-eye ml-1"></i>
+                    </router-link>
+
+                    <!-- <span v-if="log.early_leave_duration" class="ml-2 bg-red-200 text-red-700 text-xs px-1.5 py-0.5 rounded-full">Early</span> -->
+                  </div>
+                </td>
+
               <td class="border px-1 py-0.5">{{ log.working_hours }}</td>
-              <td class="border px-1 py-0.5">{{ log.overtime_hours }}</td>
+             <td class="border px-1 py-0.5">
+                <template v-if="log.over_time_status === 'Approved'">
+                  <router-link :to="{name:'MyOvertimeShow', params:{id:log.over_time_application_id}}" class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-semibold">
+                    {{ log.overtime_hours }} | Approved
+                  </router-link>
+                </template>
+
+                <template v-else-if="log.over_time_status === 'Pending'">
+                  <router-link :to="{name:'MyOvertimeShow', params:{id:log.over_time_application_id}}" class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-semibold animate-pulse">
+                    {{ log.overtime_hours ?? '--' }} | Pending
+                  </router-link>
+                </template>
+
+                <template v-else-if="log.over_time_status === 'Rejected'">
+                  <span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-semibold">
+                    Rejected
+                  </span>
+                </template>
+                <template v-else-if="log.over_time_status && log.overtime_hours">
+                  <span>
+                     {{ log.overtime_hours }} 
+                  </span>
+                </template>
+              </td>
+
               <td class="border px-1 py-0.5">{{ log?.approved_over_times ? log?.approved_over_times + ' H' : '' }}</td>
               <td class="border px-1 py-0.5">
                 <div v-if="log.late_duration">
@@ -229,62 +367,43 @@ const handleFilterChange = () => {
                   </router-link>
                 </div>
               </td>
-              <td
-                class="border px-1 py-0.5 font-semibold"
-                :class="{
-                  'text-red-600': log.status === 'Absent',
-                  'text-green-600': log.status === 'Present',
-                  'text-yellow-600': log.is_overtime_applicable,
-                }"
-              >
-                {{ log.status }}
+              <td class="border py-0.5">
+                <div class="flex  justify-center items-center gap-1">
+                  <!-- Main Attendance Status Badge -->
+                  <StatusBadge :status="log.status" />
+
+                  <!-- Leave Application ID with view link -->
+                 <div v-if="log.leave_application_id" class="flex items-center gap-2">
+                      <!-- View Button -->
+                      <router-link
+                        :to="{ name: 'LeaveApplicationShow', params: { id: log.leave_application_id } }"
+                        class="text-blue-600 text-xs inline-flex items-center gap-1 hover:underline hover:text-blue-800 transition"
+                        title="View Leave Application"
+                      >
+                        <!-- Status Badge -->
+                        <span
+                          class="text-xs font-medium px-2 py-0.5 rounded-full border transition"
+                          :class="{
+                            'bg-green-50 text-green-700 border-green-200': log.application_status === 'Approved',
+                            'bg-yellow-50 text-yellow-700 border-yellow-200': log.application_status === 'Pending',
+                            'bg-red-50 text-red-700 border-red-200': log.application_status === 'Rejected',
+                            'bg-gray-50 text-gray-600 border-gray-200': !log.application_status,
+                          }"
+                        >
+                          {{ log.application_status || 'Waiting Handover' }}
+                        </span>
+                      </router-link>
+
+                    </div>
+
+                </div>
               </td>
+
             </tr>
           </tbody>
         </table>
       </div>
     </div>
-    <div v-if="selectedUser" class="grid md:grid-cols-2 gap-4 text-sm">
-      <div class="card-bg p-4 gap-1">
-        <h2 class="title-md">Selected Employee Info</h2>
-        <hr />
-        <div class="grid md:grid-cols-2">
-          <p><strong>Name:</strong> {{ selectedUser.name }}</p>
-          <p><strong>Designation:</strong> {{ selectedUser.designation?.title || 'N/A' }}</p>
-          <p><strong>Department:</strong> {{ selectedUser.department?.name || 'N/A' }}</p>
-          <p><strong>Company:</strong> {{ selectedUser.company?.name || 'N/A' }}</p>
-          <p><strong>Phone:</strong> {{ selectedUser.phone }}</p>
-          <p><strong>Email:</strong> {{ selectedUser.email || 'N/A' }}</p>
-          <p><strong>Employee ID :</strong> {{ selectedUser.employee_id || 'N/A' }}</p>
-          <p><strong>Joining Date :</strong> {{ selectedUser.joining_date || 'N/A' }}</p>
-          <p><strong>Employee ID :</strong> {{ selectedUser.blood || 'N/A' }}</p>
-        </div>
-      </div>
-
-      <div class="card-bg p-4 gap-1">
-        <h2 class="title-md">Attendance Summary</h2>
-        <hr />
-        <div class="grid md:grid-cols-2">
-          <p>
-            <strong>Total Working Days:</strong>
-            {{ attendanceStore?.summary?.total_working_days }}
-          </p>
-          <p><strong>Present Days:</strong> {{ attendanceStore?.summary?.total_present_days }}</p>
-          <p><strong>Absent Days:</strong> {{ attendanceStore?.summary?.total_absent_days }}</p>
-          <p><strong>Late Days:</strong> {{ attendanceStore?.summary?.total_late_days }}</p>
-          <p>
-            <strong>Total Working Hours:</strong>
-            {{ attendanceStore?.summary?.total_working_hours }}
-          </p>
-          <p>
-            <strong>Total Overtime Hours:</strong>
-            {{ attendanceStore?.summary?.total_overtime_hours }}
-          </p>
-        </div>
-      </div>
-    </div>
-    <div v-else>
-      <p class="text-gray-400 text-center text-2xl italic">Select an employee, please.</p>
-    </div>
+    
   </div>
 </template>

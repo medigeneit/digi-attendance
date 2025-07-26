@@ -81,6 +81,24 @@ const fileUploadLink = async (event) => {
     uploadLeaveApplicationAttachment()
   }
 }
+
+
+const formatDateTime = (timestamp) => {
+  const d = new Date(timestamp)
+  const date = d.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  }) // e.g., "19 Jul 2025"
+
+  const time = d.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  }) // e.g., "04:30 PM"
+
+  return `${date} , ${time}`
+}
 </script>
 
 <template>
@@ -222,6 +240,7 @@ const fileUploadLink = async (event) => {
             <li><strong>Weekends:</strong> {{ leaveApplication?.user?.weekends?.join(', ') }}</li>
             <li><strong>Last Working Date:</strong> {{ leaveApplication?.last_working_date }}</li>
             <li><strong>Resumption Date:</strong> {{ leaveApplication?.resumption_date }}</li>
+            <li><strong>Create Date:</strong> {{ formatDateTime(leaveApplication?.created_at) }}</li>
           </div>
         </div>
         <div class="text-sm">
