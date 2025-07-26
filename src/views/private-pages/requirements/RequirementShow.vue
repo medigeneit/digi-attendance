@@ -99,7 +99,7 @@ function handlePrint() {
     <div class="bg-white rounded shadow print:shadow-none p-4 print:p-0 relative">
       <div class="flex items-start">
         <div class="mb-4 text-lg print:black print:font-bold">
-          <div class="text-gray-800 print:leading-none">To</div>
+          <div class="text-gray-800 leading-none">To</div>
           <div>
             {{ requirement?.to_department?.name }}
           </div>
@@ -243,17 +243,6 @@ function handlePrint() {
                     class="whitespace-nowrap p-3 text-center border-2 border-gray-800"
                     colspan="4"
                   ></td>
-                </tr>
-                <tr>
-                  <td class="whitespace-nowrap p-3 text-center border-2 border-gray-800 min-h-96">
-                    &nbsp;
-                  </td>
-                  <td
-                    class="whitespace-nowrap p-3 text-center border-2 border-gray-800 min-h-96"
-                    colspan="4"
-                  >
-                    &nbsp;
-                  </td>
                 </tr>
               </template>
             </tbody>

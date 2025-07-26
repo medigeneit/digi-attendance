@@ -6,7 +6,7 @@ import { useCompanyStore } from '@/stores/company'
 import { useTagStore } from '@/stores/tags'
 import { onMounted, ref, watch } from 'vue'
 import LoaderView from '../common/LoaderView.vue'
-import MultiselectDropdown from '../MultiselectDropdown.vue'
+import SelectDropdown from '../SelectDropdown.vue'
 
 const props = defineProps({
   requirementId: {
@@ -22,6 +22,7 @@ const state = ref('')
 const selectedWebsiteTags = ref([])
 const requirement = ref()
 const error = ref('')
+const containerRef = ref()
 
 const form = ref({
   from_department_id: '',
@@ -85,7 +86,8 @@ async function submit() {
 
 <template>
   <div
-    class="max-h-[90vh] overflow-auto max-w-2xl mx-auto bg-white shadow-lg rounded-lg p-6 pb-0 pt-0 relative"
+    ref="containerRef"
+    class="max-w-2xl mx-auto bg-white shadow-lg rounded-lg p-6 pb-0 pt-0 relative"
   >
     <div class="sticky top-0 pt-4 bg-white z-10">
       <h2 class="text-2xl font-semibold text-gray-800">Edit Requirement</h2>
@@ -104,14 +106,34 @@ async function submit() {
       <template v-if="state !== 'loading' && state !== 'submitting'">
         <div class="mb-4">
           <label class="text-gray-800">Websites</label>
-          <MultiselectDropdown
+          <SelectDropdown
             :options="tagStore.tags"
             v-model="selectedWebsiteTags"
-            :multiple="true"
+            multiple
             label="name"
-            track-by="id"
+            :containment="containerRef"
           />
         </div>
+        <!-- <div class="mb-4">
+          <label class="text-gray-800">Tags</label>
+          {{ tag_names }}
+          <SelectDropdown
+            :options="['Ok', 'Hello']"
+            v-model="tag_names"
+            taggable
+            :containment="containerRef"
+          />
+        </div>
+        <div class="mb-4">
+          <label class="text-gray-800">Website</label>
+          {{ selected_website_id }}
+          <SelectDropdown
+            :options="tagStore.tags"
+            v-model="selected_website_id"
+            label="name"
+            :containment="containerRef"
+          />
+        </div> -->
 
         <CompanyDepartmentSelectInput
           v-model="form.from_department_id"

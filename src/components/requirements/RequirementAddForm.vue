@@ -7,7 +7,8 @@ import { useTagStore } from '@/stores/tags'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { onMounted, ref } from 'vue'
 import LoaderView from '../common/LoaderView.vue'
-import MultiselectDropdown from '../MultiselectDropdown.vue'
+import SelectDropdown from '../SelectDropdown.vue'
+import RequirementFormDetailItem from './RequirementFormDetailItem.vue'
 
 const emit = defineEmits(['create', 'cancelClick', 'error'])
 
@@ -21,6 +22,7 @@ const form = ref({
   from_department_id: '',
   to_department_id: '',
   website_tags: [],
+  details: [],
 })
 
 onMounted(async () => {
@@ -59,12 +61,14 @@ async function submit() {
     state.value = 'error'
   }
 }
+
+function handleDetailUpdate(detailData) {
+  console.log({ detailData })
+}
 </script>
 
 <template>
-  <div
-    class="max-h-[90vh] overflow-auto max-w-2xl mx-auto bg-white shadow-lg rounded-lg p-6 pb-0 pt-0 relative"
-  >
+  <div class="w-full mx-auto bg-white shadow-lg rounded-lg p-6 pb-0 pt-0 relative">
     <div class="sticky top-0 pt-4 bg-white z-10">
       <h2 class="text-2xl font-semibold text-gray-800">Add New Requirement</h2>
 
@@ -106,15 +110,27 @@ async function submit() {
 
         <div class="mb-4">
           <label class="text-gray-800">Websites</label>
-          <MultiselectDropdown
+
+          <SelectDropdown
             :options="tagStore.tags"
             v-model="selectedWebsiteTags"
-            :multiple="true"
+            multiple
             label="name"
-            track-by="id"
+            value="id"
           />
         </div>
       </template>
+
+      <div class="mb-8">
+        <h3 class="font-semibold text-xl">Requirement details</h3>
+        <hr class="mb-2" />
+
+        <div>dsdf</div>
+        <RequirementFormDetailItem
+          :from-department-id="form.from_department_id"
+          @update="handleDetailUpdate"
+        />
+      </div>
 
       <div class="sticky bottom-0 bg-white py-4 border-t -mx-6 px-6">
         <div v-if="store.error" class="mb-4 text-red-500 font-medium">
@@ -136,7 +152,7 @@ async function submit() {
             type="submit"
             class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-5 py-2 rounded transition"
           >
-            {{ state == 'submitting' ? 'Saving...' : 'Next' }}
+            {{ state == 'submitting' ? 'Saving...' : 'Save' }}
           </button>
         </div>
       </div>

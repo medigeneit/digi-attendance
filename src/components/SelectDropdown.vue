@@ -7,20 +7,48 @@
       :class="{ 'bg-gray-100': disabled }"
     >
       <!-- Display selected values or placeholder -->
-      <div class="flex flex-wrap items-center gap-1 w-full">
-        <template v-if="multiple">
-          <template v-for="item in selectedItems" :key="getOptionKey(item)">
-            <slot name="selected-option" :option="item">
-              <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-sm">
-                {{ getOptionLabel(item) }}
-                <button @click.stop="removeItem(item)" class="ml-1 text-xs">×</button>
-              </span>
-            </slot>
-          </template>
+      <div class="w-full">
+        <template v-if="isMultiSelection">
+          <div class="flex flex-wrap items-center gap-1 w-full justify-items-stretch">
+            <template v-if="Array.isArray(selectedItems) && selectedItems.length > 0">
+              <template v-for="item in selectedItems" :key="getOptionKey(item)">
+                <slot
+                  name="selected-option"
+                  :option="item"
+                  :removeItem="(item) => removeItem(item)"
+                >
+                  <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-sm">
+                    {{ getSelectionLabel(item) }}
+                    <button
+                      type="button"
+                      @click.prevent.stop="removeItem(item)"
+                      class="ml-1 text-xs"
+                    >
+                      ×
+                    </button>
+                  </span>
+                </slot>
+              </template>
+            </template>
+            <span v-else-if="!taggable" class="text-gray-400">{{ placeholder }}</span>
+            <span class="flex-grow" v-if="taggable">
+              <input
+                type="text"
+                @keydown.enter="handleEnter"
+                @keydown="() => (isOpen = true)"
+                v-model="search"
+                class="w-full px-2 py-1 rounded outline-none"
+                :placeholder="placeholder"
+                @focus="$emit('search:focus')"
+                @blur="$emit('search:blur')"
+              />
+            </span>
+          </div>
         </template>
+        <!-- Single Item selection -->
         <template v-else>
           <slot name="selected-option" :option="selectedItems" :is-selected="isSelected">
-            {{ getOptionLabel(selectedItems) || placeholder }}
+            {{ getSelectionLabel(selectedItems) || placeholder }}
           </slot>
         </template>
       </div>
@@ -39,14 +67,13 @@
     </div>
 
     <!-- Dropdown -->
-
     <div
       v-show="isOpen"
       class="absolute w-full border rounded shadow-[0px_0px_10px_0px_rgba(0,0,0,0.25)] z-50 border-teal-500 bg-white"
       :class="positionClass"
       ref="dropdownMenuRef"
     >
-      <div class="p-3">
+      <div class="p-3" v-if="searchable && !taggable">
         <slot name="search">
           <input
             type="text"
@@ -55,6 +82,7 @@
             placeholder="Search..."
             @focus="$emit('search:focus')"
             @blur="$emit('search:blur')"
+            @keyup.enter="($event) => $event.preventDefault()"
           />
         </slot>
       </div>
@@ -64,26 +92,29 @@
       <ul class="max-h-60 overflow-auto">
         <template v-if="filteredOptions.length">
           <li
+            tabindex="0"
             v-for="option in filteredOptions"
             :key="getOptionKey(option)"
             :class="{ 'bg-blue-50': isSelected(option) }"
             class="px-3 py-2 hover:bg-blue-100 cursor-pointer"
             @click="selectOption(option)"
+            @keydown.space="selectOption(option)"
+            @keydown.enter="selectOption(option)"
           >
             <slot name="option" :option="option">
               {{ getOptionLabel(option) }}
             </slot>
           </li>
         </template>
-        <li v-else class="px-3 py-2 text-gray-500">
-          <slot name="no-options">No options found</slot>
+        <li v-else class="px-3 py-2 text-gray-500 min-h-24 flex justify-center items-center">
+          <slot name="no-options">{{
+            taggable ? 'No option found, Enter to add' : 'No options found'
+          }}</slot>
         </li>
       </ul>
 
       <slot name="list-footer"></slot>
     </div>
-    <!-- <transition name="fade">
-    </transition> -->
   </div>
 </template>
 
@@ -96,7 +127,7 @@ const props = defineProps({
   placeholder: { type: String, default: 'Select...' },
   multiple: { type: Boolean, default: false },
   label: { type: String, default: 'label' },
-  value: { type: String, default: 'value' },
+  value: { type: String, default: 'id' },
   clearable: { type: Boolean, default: true },
   searchable: { type: Boolean, default: true },
   disabled: { type: Boolean, default: false },
@@ -108,6 +139,8 @@ const props = defineProps({
     validator: (value) => ['top', 'left', 'right', 'bottom', 'auto'].includes(value),
   },
   containment: { type: Object, default: () => window },
+  taggable: { type: Boolean, default: false },
+  createOption: Function, // optional custom create handler
 })
 
 const emit = defineEmits([
@@ -150,6 +183,7 @@ onUnmounted(() => {
   props.containment.removeEventListener('scroll', () => calculatePosition(isOpen.value))
 })
 
+const isMultiSelection = computed(() => props.multiple || props.taggable)
 const positionClass = computed(() => {
   const map = {
     top: 'bottom-[100%] mb-0.5',
@@ -168,9 +202,31 @@ const selectedItems = computed(() => {
   }
 })
 
-const getOptionLabel = (option) => option?.[props.label] ?? option?.label ?? option
+const getOptionLabel = (option) => {
+  return option?.[props.label] ?? option?.label ?? option
+}
 
-const getOptionKey = (option) => option?.[props.value] ?? option?.value ?? option
+const getSelectionLabel = (option) => {
+  if ((!props.multiple || !props.taggable) && !Array.isArray(option)) {
+    console.log({ option })
+    const selected = props.options.find((opt) => opt[props.value] == option)
+    if (selected) {
+      return selected?.[props.label] ?? selected?.label ?? selected
+    }
+
+    return option?.[props.label] ?? option?.label ?? option
+  }
+}
+
+const getOptionKey = (option) => {
+  if (typeof option == 'object') {
+    return option?.[props.value] ?? option?.value ?? option
+  } else if (typeof option == 'string') {
+    return option
+  }
+
+  return ''
+}
 
 const toggleDropdown = () => {
   if (props.disabled) return
@@ -180,14 +236,14 @@ const toggleDropdown = () => {
 
 const isSelected = (option) => {
   const val = getOptionKey(option)
-  if (props.multiple) {
+  if (props.multiple || props.taggable) {
     return selectedItems.value.some((o) => getOptionKey(o) === val)
   }
   return getOptionKey(selectedItems.value) === val
 }
 
 const selectOption = (option) => {
-  if (props.multiple) {
+  if (props.multiple || props.taggable) {
     if (isSelected(option)) {
       emit('option:deselecting', option)
       const newSelection = selectedItems.value.filter(
@@ -203,16 +259,21 @@ const selectOption = (option) => {
     }
   } else {
     emit('option:selected', option)
-    emit('update:modelValue', option)
-    isOpen.value = false
-    emit('close')
+    if (typeof props.modelValue == 'object') {
+      emit('update:modelValue', option)
+    } else {
+      emit('update:modelValue', getOptionKey(option))
+    }
   }
+  isOpen.value = false
+  emit('close')
+
   emit('input', option)
   search.value = ''
 }
 
 const removeItem = (option) => {
-  if (!props.multiple) return
+  // if (!props.multiple || !props.taggable) return
   const newSelection = selectedItems.value.filter((o) => getOptionKey(o) !== getOptionKey(option))
   emit('update:modelValue', newSelection)
   emit('option:deselected', option)
@@ -241,12 +302,41 @@ async function calculatePosition(dropdownOpen) {
 
       console.log({ triggerRect, dropdownHeight, spaceBelow, spaceAbove })
 
-      dropdownPosition.value =
-        spaceBelow < dropdownHeight && spaceAbove > dropdownHeight ? 'top' : 'bottom'
+      if (spaceAbove < dropdownHeight) {
+        dropdownPosition.value = 'bottom'
+      } else {
+        dropdownPosition.value =
+          spaceBelow < dropdownHeight && spaceAbove > dropdownHeight ? 'top' : 'bottom'
+      }
     }
   } else {
     dropdownPosition.value = props.position
   }
+}
+
+const searchedItem = computed(() => {
+  return filteredOptions.value.find(
+    (opt) => getOptionLabel(opt).toLowerCase() === search.value.toLowerCase(),
+  )
+})
+
+function handleEnter(event) {
+  event.preventDefault()
+
+  if (!props.taggable || !search.value.trim()) return
+
+  if (!searchedItem.value) {
+    const newOption = props.createOption ? props.createOption(search.value) : search.value.trim()
+    emit('option:created', newOption)
+    emit('option:selected', newOption)
+    emit('input', newOption)
+
+    emit('update:modelValue', [...props.modelValue, { [props.label]: newOption }])
+    toggleDropdown()
+  } else {
+    selectOption(searchedItem.value)
+  }
+  search.value = ''
 }
 
 watch(isOpen, calculatePosition)
