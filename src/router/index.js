@@ -480,7 +480,7 @@ const router = createRouter({
           component: () => import('@/views/admin-pages/NoticeList.vue'),
           meta: {
             requiresAuth: true,
-            roles: ['admin', 'super_admin', 'developer'],
+            roles: ['super_admin', 'developer'],
             title: 'Notice List',
           },
         },
@@ -640,7 +640,7 @@ const router = createRouter({
           component: () => import('@/views/admin-pages/MonthWiseApplicationLog.vue'),
           meta: {
             requiresAuth: true,
-            roles: ['admin', 'super_admin', 'developer'],
+            roles: ['super_admin', 'developer'],
             title: 'Monthly Application Log',
           },
         },
@@ -651,7 +651,7 @@ const router = createRouter({
           component: () => import('@/views/admin-pages/ShiftScheduleForm.vue'),
           meta: {
             requiresAuth: true,
-            roles: ['admin', 'super_admin', 'developer'],
+            roles: ['super_admin', 'developer'],
             title: 'Shift Schedule',
           },
         },
@@ -739,7 +739,7 @@ const router = createRouter({
           component: () => import('@/views/admin-pages/AdminLeaveApplication.vue'),
           meta: {
             requiresAuth: true,
-            roles: ['admin', 'super_admin', 'developer'],
+            roles: ['super_admin', 'developer'],
             title: 'Hrd Admin Leave Application',
           },
         },
