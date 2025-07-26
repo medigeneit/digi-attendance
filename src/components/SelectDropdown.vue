@@ -1,5 +1,5 @@
 <template>
-  <div class="relative w-full" :ref="dropdownRef">
+  <div class="relative w-full" ref="dropdownRef">
     <!-- Control -->
     <div
       class="border rounded-md px-2 py-1.5 cursor-pointer bg-white flex items-center justify-between"
@@ -39,53 +39,56 @@
     </div>
 
     <!-- Dropdown -->
-    <transition name="fade">
-      <div
-        v-show="isOpen"
-        class="bottom-[100%] absolute mt-1 w-full bg-white border rounded shadow-xl z-50 border-teal-500"
-      >
-        <div class="p-2">
-          <slot name="search">
-            <input
-              type="text"
-              v-model="search"
-              class="w-full px-2 py-1 border rounded"
-              placeholder="Search..."
-              @focus="$emit('search:focus')"
-              @blur="$emit('search:blur')"
-            />
-          </slot>
-        </div>
 
-        <slot name="list-header"></slot>
-
-        <ul class="max-h-60 overflow-auto">
-          <template v-if="filteredOptions.length">
-            <li
-              v-for="option in filteredOptions"
-              :key="getOptionKey(option)"
-              class="px-3 py-2 hover:bg-blue-100 cursor-pointer"
-              @click="selectOption(option)"
-              :class="{ 'bg-blue-50': isSelected(option) }"
-            >
-              <slot name="option" :option="option">
-                {{ getOptionLabel(option) }}
-              </slot>
-            </li>
-          </template>
-          <li v-else class="px-3 py-2 text-gray-500">
-            <slot name="no-options">No options found</slot>
-          </li>
-        </ul>
-
-        <slot name="list-footer"></slot>
+    <div
+      v-show="isOpen"
+      class="absolute w-full border rounded shadow-[0px_0px_10px_0px_rgba(0,0,0,0.25)] z-50 border-teal-500 bg-white"
+      :class="positionClass"
+      ref="dropdownMenuRef"
+    >
+      <div class="p-3">
+        <slot name="search">
+          <input
+            type="text"
+            v-model="search"
+            class="w-full px-2 py-1 border rounded"
+            placeholder="Search..."
+            @focus="$emit('search:focus')"
+            @blur="$emit('search:blur')"
+          />
+        </slot>
       </div>
-    </transition>
+
+      <slot name="list-header"></slot>
+
+      <ul class="max-h-60 overflow-auto">
+        <template v-if="filteredOptions.length">
+          <li
+            v-for="option in filteredOptions"
+            :key="getOptionKey(option)"
+            :class="{ 'bg-blue-50': isSelected(option) }"
+            class="px-3 py-2 hover:bg-blue-100 cursor-pointer"
+            @click="selectOption(option)"
+          >
+            <slot name="option" :option="option">
+              {{ getOptionLabel(option) }}
+            </slot>
+          </li>
+        </template>
+        <li v-else class="px-3 py-2 text-gray-500">
+          <slot name="no-options">No options found</slot>
+        </li>
+      </ul>
+
+      <slot name="list-footer"></slot>
+    </div>
+    <!-- <transition name="fade">
+    </transition> -->
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 const props = defineProps({
   options: { type: Array, required: true },
@@ -99,6 +102,12 @@ const props = defineProps({
   disabled: { type: Boolean, default: false },
   filterBy: { type: Function, default: null },
   reduce: { type: Function, default: null },
+  position: {
+    type: String,
+    default: 'auto',
+    validator: (value) => ['top', 'left', 'right', 'bottom', 'auto'].includes(value),
+  },
+  containment: { type: Object, default: () => window },
 })
 
 const emit = defineEmits([
@@ -118,6 +127,9 @@ const emit = defineEmits([
 const isOpen = ref(false)
 const search = ref('')
 const dropdownRef = ref()
+const dropdownMenuRef = ref()
+
+const dropdownPosition = ref(props.position)
 
 function handleOutsideClick(event) {
   if (dropdownRef.value && !dropdownRef.value.contains(event.target)) {
@@ -135,6 +147,17 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener('click', handleOutsideClick)
 })
+
+const positionClass = computed(() => {
+  const map = {
+    top: 'bottom-[100%] mb-0.5',
+    left: 'right-[100%] mr-0.5',
+    right: 'left-[100%] ml-0.5',
+    bottom: 'top-[100%] mt-0.5',
+  }
+  return map[dropdownPosition.value] || map.bottom
+})
+
 const selectedItems = computed(() => {
   if (props.multiple) {
     return Array.isArray(props.modelValue) ? props.modelValue : []
@@ -196,16 +219,33 @@ const removeItem = (option) => {
 const filteredOptions = computed(() => {
   const term = search.value.toLowerCase()
   if (!props.searchable || !term) return props.options
-  if (props.filterBy) return props.filterBy(props.options, term)
+  if (typeof props.filterBy == 'function') return props.filterBy(props.options, term)
   return props.options.filter((opt) => getOptionLabel(opt).toLowerCase().includes(term))
 })
 
-// function handleOutsideClick() {
-//   if (isOpen.value) {
-//     isOpen.value = false
-//     emit('close')
-//   }
-// }
+watch(isOpen, async (val) => {
+  if (val && props.position === 'auto') {
+    await nextTick()
+    const trigger = dropdownRef.value
+    const dropdown = dropdownMenuRef.value
+    if (trigger && dropdown) {
+      console.log({ cm: props.containment })
+
+      const triggerRect = trigger.getBoundingClientRect()
+      const dropdownHeight = dropdown.offsetHeight
+      const spaceBelow =
+        (props.containment.innerHeight || props.containment.clientHeight) - triggerRect.bottom
+      const spaceAbove = triggerRect.top
+
+      console.log({ triggerRect, dropdownHeight, spaceBelow, spaceAbove })
+
+      dropdownPosition.value =
+        spaceBelow < dropdownHeight && spaceAbove > dropdownHeight ? 'top' : 'bottom'
+    }
+  } else {
+    dropdownPosition.value = props.position
+  }
+})
 </script>
 
 <style scoped>

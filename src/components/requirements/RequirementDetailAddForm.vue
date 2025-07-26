@@ -18,6 +18,7 @@ const props = defineProps({
 const emit = defineEmits(['create', 'closeClick', 'error'])
 
 const departmentStore = useDepartmentStore()
+const formContainerRef = ref()
 const state = ref('')
 const error = ref()
 const form = ref({
@@ -63,6 +64,7 @@ onMounted(async () => {
 <template>
   <div
     class="max-h-[90vh] overflow-auto w-full mx-auto bg-white shadow-lg rounded-lg p-6 pb-0 pt-0 relative"
+    ref="formContainerRef"
   >
     <div class="sticky top-0 pt-4 bg-white z-10">
       <h2 class="text-2xl font-semibold text-gray-800">Add Requirement</h2>
@@ -108,6 +110,7 @@ onMounted(async () => {
             v-model="selectedSupervisor"
             :options="supervisors"
             placeholder="--NO SUPERVISOR--"
+            :containment="formContainerRef"
           >
             <template #option="{ option }">
               <UserChip :user="option || {}"></UserChip>
