@@ -22,6 +22,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update', 'closeClick', 'error'])
 
+const formContainerRef = ref()
 const userStore = useUserStore()
 const departmentStore = useDepartmentStore()
 const detail = ref(null)
@@ -82,7 +83,10 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="max-h-[90vh] w-full mx-auto bg-white shadow-lg rounded-lg p-6 pb-0 pt-0 relative">
+  <div
+    ref="formContainerRef"
+    class="max-h-[90vh] w-full mx-auto overflow-auto bg-white shadow-lg rounded-lg p-6 pb-0 pt-0 relative"
+  >
     <div class="sticky top-0 pt-4 bg-white z-10">
       <h2 class="text-2xl font-semibold text-gray-800">Add Requirement Details</h2>
       <hr class="mb-4" />
@@ -125,6 +129,7 @@ onMounted(async () => {
             v-model="selectedSupervisor"
             :options="supervisors"
             placeholder="--NO SUPERVISOR--"
+            :containment="formContainerRef"
           >
             <template #option="{ option }">
               <UserChip :user="option || {}"></UserChip>

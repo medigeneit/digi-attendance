@@ -142,10 +142,12 @@ function handleOutsideClick(event) {
 
 onMounted(() => {
   document.addEventListener('click', handleOutsideClick)
+  props.containment.addEventListener('scroll', () => calculatePosition(isOpen.value))
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleOutsideClick)
+  props.containment.removeEventListener('scroll', () => calculatePosition(isOpen.value))
 })
 
 const positionClass = computed(() => {
@@ -223,8 +225,8 @@ const filteredOptions = computed(() => {
   return props.options.filter((opt) => getOptionLabel(opt).toLowerCase().includes(term))
 })
 
-watch(isOpen, async (val) => {
-  if (val && props.position === 'auto') {
+async function calculatePosition(dropdownOpen) {
+  if (dropdownOpen && props.position === 'auto') {
     await nextTick()
     const trigger = dropdownRef.value
     const dropdown = dropdownMenuRef.value
@@ -245,7 +247,9 @@ watch(isOpen, async (val) => {
   } else {
     dropdownPosition.value = props.position
   }
-})
+}
+
+watch(isOpen, calculatePosition)
 </script>
 
 <style scoped>
