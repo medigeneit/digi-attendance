@@ -1,6 +1,6 @@
 <script setup>
 import { useOvertimeStore } from '@/stores/overtime'
-import { ref } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import TimePickerAsFloatHour from '../common/TimePickerAsFloatHour.vue'
 
 const props = defineProps({
@@ -12,6 +12,9 @@ const props = defineProps({
 })
 
 const overtimeStore = useOvertimeStore()
+
+const confirmBtnRef = ref(null)
+const cancelBtnRef = ref(null)
 
 const isModalOpen = ref(false)
 const approvalTime = ref(
@@ -32,13 +35,43 @@ const handleUpdate = async () => {
   closeModal()
 }
 
+const openModal = () => {
+  isModalOpen.value = true
+
+  focusDefaultButton()
+}
+
 const closeModal = () => {
   isModalOpen.value = false
 }
+
+function focusDefaultButton() {
+  nextTick(() => {
+    confirmBtnRef.value?.focus()
+  })
+}
+
+function handleKeydown(e) {
+  if (!isModalOpen.value) return
+
+  if (e.key === 'ArrowLeft') {
+    cancelBtnRef.value?.focus()
+  } else if (e.key === 'ArrowRight') {
+    confirmBtnRef.value?.focus()
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeydown)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleKeydown)
+})
 </script>
 
 <template>
-  <i @click="isModalOpen = !isModalOpen" class="fa fa-edit cursor-pointer text-sky-600"></i>
+  <i @click="openModal" class="fa fa-edit cursor-pointer text-sky-600"></i>
 
   <!-- Single reusable modal -->
   <div v-if="isModalOpen" class="fixed inset-0 z-50 flex justify-center items-center bg-black/50">
@@ -54,8 +87,22 @@ const closeModal = () => {
       />
       <hr class="my-2" />
       <div class="flex justify-between gap-2 mt-4">
-        <button class="btn-3" @click="closeModal">Cancel</button>
-        <button class="btn-2-green" @click="handleUpdate">Update Time</button>
+        <button
+          type="button"
+          ref="cancelBtnRef"
+          class="btn-3 focus:ring-2 ring-offset-2"
+          @click="closeModal"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          ref="confirmBtnRef"
+          class="btn-2-green focus:ring-2 ring-offset-2"
+          @click="handleUpdate"
+        >
+          Update Time
+        </button>
       </div>
     </div>
   </div>
