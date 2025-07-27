@@ -10,12 +10,19 @@ const props = defineProps({
     type: [Number, String],
     required: true,
   },
+  serial: {
+    type: Number,
+    required: true,
+  },
+  uuid: {
+    type: String,
+    required: true,
+  },
 })
 
-const emit = defineEmits(['update', 'onRemoveClick'])
+const emit = defineEmits(['update', 'removeClick'])
 
 const departmentStore = useDepartmentStore()
-const state = ref('')
 
 const form = ref({
   title: '',
@@ -41,44 +48,54 @@ watch(
 watch(
   () => ({ ...form.value }),
   (updatedData) => {
-    emit('update', updatedData)
+    emit('update', { ...updatedData, uuid: props.uuid })
   },
 )
 </script>
 
 <template>
-  <div>
-    <form @submit.prevent="submit" class="z-0">
-      <template v-if="state !== 'loading'">
-        <div class="mb-4">
-          <label class="block text-gray-600 text-sm mb-1 font-medium"
-            >Requirement Title <RequiredIcon />
-          </label>
-          <input
-            v-model="form.title"
-            required
-            placeholder="EnderRequirement detail title"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+  <tr>
+    <td
+      class="border-2 border-gray-800 text-left px-4 py-4 text-gray-800 print:text-black align-top"
+    >
+      <div class="font-semibold whitespace-nowrap text-2xl">
+        {{ props.serial }}
+      </div>
+      <button type="button" @click.prevent="emit('removeClick', uuid)" class="btn-2-red mt-8">
+        Remove
+      </button>
+    </td>
+    <td
+      class="border-2 border-gray-800 px-2 py-8 text-gray-800 print:text-black text-base whitespace-nowrap"
+    >
+      <div class="mb-4">
+        <label class="block text-gray-600 text-sm mb-1 font-medium"> Title <RequiredIcon /> </label>
+        <input
+          v-model="form.title"
+          required
+          placeholder="EnderRequirement detail title"
+          class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
 
-        <div class="mb-4">
-          <label class="block text-gray-600 text-sm mb-1 font-medium">Requirement Details</label>
-          <textarea
-            rows="10"
-            v-model="form.description"
-            placeholder="Enter requirement description"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-          ></textarea>
-        </div>
+      <div class="mb-4">
+        <label class="block text-gray-600 text-sm mb-1 font-medium">Description</label>
+        <textarea
+          rows="3"
+          v-model="form.description"
+          placeholder="Enter requirement description"
+          class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+        ></textarea>
+      </div>
 
-        <div class="mb-4">
+      <div class="flex items-center justify-between h-full">
+        <div class="max-w-xs w-full h-full">
           <label class="block text-gray-600 text-sm mb-1 font-medium">Supervisor </label>
-
           <SelectDropdown
             v-model="form.supervisor_id"
             :options="supervisors"
             placeholder="--NO SUPERVISOR--"
+            class="h-10"
           >
             <template #option="{ option }">
               <UserChip :user="option || {}"></UserChip>
@@ -102,10 +119,10 @@ watch(
           </SelectDropdown>
         </div>
 
-        <div class="mb-4">
+        <div>
           <label class="block text-gray-600 text-sm mb-1 font-medium">Priority </label>
           <select
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 h-10"
             v-model="form.priority"
           >
             <option value="">NORMAL</option>
@@ -113,17 +130,7 @@ watch(
             <option>URGENT</option>
           </select>
         </div>
-
-        <div class="mb-4">
-          <label class="block text-gray-600 text-sm mb-1 font-medium">Better to Complete </label>
-          <input
-            type="date"
-            v-model="form.better_to_complete_on"
-            placeholder="EnderRequirement detail title"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-      </template>
+      </div>
 
       <!-- <div class="bg-white py-4 border-t -mx-6 px-6">
         <div class="flex items-center justify-between gap-4">
@@ -136,6 +143,19 @@ watch(
           </button>
         </div>
       </div> -->
-    </form>
-  </div>
+    </td>
+    <td
+      class="border-2 border-gray-800 text-center text-gray-800 print:text-black text-base px-3 whitespace-nowrap print:whitespace-normal print:p-0"
+    >
+      <div class="mb-4">
+        <label class="block text-gray-600 text-sm mb-1 font-medium">Better to Complete </label>
+        <input
+          type="date"
+          v-model="form.better_to_complete_on"
+          placeholder="EnderRequirement detail title"
+          class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+    </td>
+  </tr>
 </template>

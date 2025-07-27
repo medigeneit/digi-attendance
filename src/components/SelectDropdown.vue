@@ -2,15 +2,15 @@
   <div class="relative w-full" ref="dropdownRef">
     <!-- Control -->
     <div
-      class="border rounded-md px-2 py-1.5 cursor-pointer bg-white flex items-center justify-between"
+      class="h-full border rounded-md px-2 py-1 cursor-pointer bg-white flex items-center justify-between"
       @click="toggleDropdown"
       :class="{ 'bg-gray-100': disabled }"
       tabindex="0"
     >
       <!-- Display selected values or placeholder -->
-      <div class="w-full">
+      <div class="w-full h-full">
         <template v-if="isMultiSelection">
-          <div class="flex flex-wrap items-center gap-1 w-full justify-items-stretch">
+          <div class="flex flex-wrap items-center gap-2 w-full h-full justify-items-stretch">
             <template v-if="Array.isArray(selectedItems) && selectedItems.length > 0">
               <template v-for="item in selectedItems" :key="getOptionKey(item)">
                 <slot
@@ -51,13 +51,15 @@
         </template>
         <!-- Single Item selection -->
         <template v-else>
-          <slot
-            name="selected-option"
-            :option="findOptionById(modelValue)"
-            :is-selected="isSelected"
-          >
-            {{ getSelectionLabel(selectedItems) || placeholder || 'Select...' }}
-          </slot>
+          <div class="flex items-center h-full">
+            <slot
+              name="selected-option"
+              :option="findOptionById(modelValue)"
+              :is-selected="isSelected"
+            >
+              {{ getSelectionLabel(selectedItems) || placeholder || 'Select...' }}
+            </slot>
+          </div>
         </template>
       </div>
 
