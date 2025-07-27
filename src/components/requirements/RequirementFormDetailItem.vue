@@ -52,7 +52,7 @@ watch(
       <template v-if="state !== 'loading'">
         <div class="mb-4">
           <label class="block text-gray-600 text-sm mb-1 font-medium"
-            >Title <RequiredIcon />
+            >Requirement Title <RequiredIcon />
           </label>
           <input
             v-model="form.title"
@@ -63,7 +63,7 @@ watch(
         </div>
 
         <div class="mb-4">
-          <label class="block text-gray-600 text-sm mb-1 font-medium">Details</label>
+          <label class="block text-gray-600 text-sm mb-1 font-medium">Requirement Details</label>
           <textarea
             rows="10"
             v-model="form.description"
@@ -73,9 +73,7 @@ watch(
         </div>
 
         <div class="mb-4">
-          <label class="block text-gray-600 text-sm mb-1 font-medium"
-            >Supervisor {{ form.supervisor_id }}</label
-          >
+          <label class="block text-gray-600 text-sm mb-1 font-medium">Supervisor </label>
 
           <SelectDropdown
             v-model="form.supervisor_id"

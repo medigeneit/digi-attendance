@@ -34,20 +34,19 @@
               </template>
             </template>
 
-            <span v-else-if="!taggable" class="text-gray-400">{{ placeholder }}</span>
-            <span class="flex-grow" v-if="taggable">
-              <input
-                v-model="search"
-                type="text"
-                class="w-full px-2 py-1 rounded outline-none"
-                :placeholder="placeholder"
-                @keydown.prevent.stop.enter="handleTagEnter"
-                @keydown.backspace="handleTagBackspace"
-                @keydown="() => (isOpen = true)"
-                @focus="$emit('search:focus')"
-                @blur="$emit('search:blur')"
-              />
-            </span>
+            <span v-else-if="!taggable" class="text-gray-400">{{ placeholder || 'Select..' }}</span>
+            <input
+              v-model="search"
+              v-if="taggable"
+              type="text"
+              class="flex-grow px-2 py-1 rounded outline-none"
+              :placeholder="placeholder || 'Type and enter to add'"
+              @keydown.prevent.stop.enter="handleTagEnter"
+              @keydown.backspace="handleTagBackspace"
+              @keyup="() => (isOpen = !!search)"
+              @focus="$emit('search:focus')"
+              @blur="$emit('search:blur')"
+            />
           </div>
         </template>
         <!-- Single Item selection -->
@@ -57,7 +56,7 @@
             :option="findOptionById(modelValue)"
             :is-selected="isSelected"
           >
-            {{ getSelectionLabel(selectedItems) || placeholder }}
+            {{ getSelectionLabel(selectedItems) || placeholder || 'Select...' }}
           </slot>
         </template>
       </div>
@@ -79,8 +78,8 @@
     <div
       v-show="isOpen"
       class="absolute w-full border rounded shadow-[0px_0px_10px_0px_rgba(0,0,0,0.25)] z-50 border-teal-500 bg-white"
-      :class="positionClass"
       ref="dropdownMenuRef"
+      :class="positionClass"
     >
       <div class="p-3" v-if="searchable && !taggable">
         <slot name="search">
@@ -133,7 +132,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 const props = defineProps({
   options: { type: Array, required: true },
   modelValue: { type: [Object, Array, String, Number, null], default: null },
-  placeholder: { type: String, default: 'Select...' },
+  placeholder: { type: String, default: null },
   multiple: { type: Boolean, default: false },
   label: { type: String, default: 'label' },
   value: { type: String, default: 'id' },
@@ -229,6 +228,10 @@ const getSelectionLabel = (optionId) => {
 
   if (selected) {
     return selected?.[props.label] ?? selected?.label ?? selected
+  }
+
+  if (props.taggable) {
+    return optionId
   }
 
   return null
@@ -354,13 +357,12 @@ function handleTagEnter(event) {
     emit('option:created', newOption)
     emit('option:selected', newOption)
     emit('input', newOption)
-
     emit('update:modelValue', [...props.modelValue, newOption])
-    toggleDropdown()
   } else {
     selectOption(searchedItem.value)
   }
   search.value = ''
+  event.target.focus()
 }
 
 watch(isOpen, calculatePosition)
