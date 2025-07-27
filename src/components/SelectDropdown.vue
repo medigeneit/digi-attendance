@@ -5,6 +5,7 @@
       class="border rounded-md px-2 py-1.5 cursor-pointer bg-white flex items-center justify-between"
       @click="toggleDropdown"
       :class="{ 'bg-gray-100': disabled }"
+      tabindex="0"
     >
       <!-- Display selected values or placeholder -->
       <div class="w-full">
@@ -14,14 +15,16 @@
               <template v-for="item in selectedItems" :key="getOptionKey(item)">
                 <slot
                   name="selected-option"
-                  :option="item"
+                  :option="findOptionById(item)"
                   :removeItem="(item) => removeItem(item)"
                 >
                   <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-sm">
-                    {{ getSelectionLabel(item) }}
+                    <span>
+                      {{ getSelectionLabel(item) }}
+                    </span>
                     <button
-                      type="button"
                       @click.prevent.stop="removeItem(item)"
+                      type="button"
                       class="ml-1 text-xs"
                     >
                       ×
@@ -30,15 +33,17 @@
                 </slot>
               </template>
             </template>
+
             <span v-else-if="!taggable" class="text-gray-400">{{ placeholder }}</span>
             <span class="flex-grow" v-if="taggable">
               <input
-                type="text"
-                @keydown.enter="handleEnter"
-                @keydown="() => (isOpen = true)"
                 v-model="search"
+                type="text"
                 class="w-full px-2 py-1 rounded outline-none"
                 :placeholder="placeholder"
+                @keydown.prevent.stop.enter="handleTagEnter"
+                @keydown.backspace="handleTagBackspace"
+                @keydown="() => (isOpen = true)"
                 @focus="$emit('search:focus')"
                 @blur="$emit('search:blur')"
               />
@@ -47,7 +52,11 @@
         </template>
         <!-- Single Item selection -->
         <template v-else>
-          <slot name="selected-option" :option="selectedItems" :is-selected="isSelected">
+          <slot
+            name="selected-option"
+            :option="findOptionById(modelValue)"
+            :is-selected="isSelected"
+          >
             {{ getSelectionLabel(selectedItems) || placeholder }}
           </slot>
         </template>
@@ -82,7 +91,7 @@
             placeholder="Search..."
             @focus="$emit('search:focus')"
             @blur="$emit('search:blur')"
-            @keyup.enter="($event) => $event.preventDefault()"
+            @keydown.stop.enter="($event) => $event.preventDefault()"
           />
         </slot>
       </div>
@@ -98,8 +107,8 @@
             :class="{ 'bg-blue-50': isSelected(option) }"
             class="px-3 py-2 hover:bg-blue-100 cursor-pointer"
             @click="selectOption(option)"
-            @keydown.space="selectOption(option)"
-            @keydown.enter="selectOption(option)"
+            @keydown.prevent.space="selectOption(option)"
+            @keydown.prevent.enter="selectOption(option)"
           >
             <slot name="option" :option="option">
               {{ getOptionLabel(option) }}
@@ -173,6 +182,10 @@ function handleOutsideClick(event) {
   }
 }
 
+function findOptionById(optionId) {
+  return props.options.find((opt) => opt?.[props.value] == optionId)
+}
+
 onMounted(() => {
   document.addEventListener('click', handleOutsideClick)
   props.containment.addEventListener('scroll', () => calculatePosition(isOpen.value))
@@ -195,7 +208,7 @@ const positionClass = computed(() => {
 })
 
 const selectedItems = computed(() => {
-  if (props.multiple) {
+  if (props.multiple || props.taggable) {
     return Array.isArray(props.modelValue) ? props.modelValue : []
   } else {
     return props.modelValue
@@ -206,22 +219,25 @@ const getOptionLabel = (option) => {
   return option?.[props.label] ?? option?.label ?? option
 }
 
-const getSelectionLabel = (option) => {
-  if ((!props.multiple || !props.taggable) && !Array.isArray(option)) {
-    console.log({ option })
-    const selected = props.options.find((opt) => opt[props.value] == option)
-    if (selected) {
-      return selected?.[props.label] ?? selected?.label ?? selected
+const getSelectionLabel = (optionId) => {
+  const selected = props.options.find((opt) => {
+    if (typeof opt == 'string' || typeof opt == 'number') {
+      return String(opt) === String(optionId)
     }
+    return opt?.[props.value] == optionId
+  })
 
-    return option?.[props.label] ?? option?.label ?? option
+  if (selected) {
+    return selected?.[props.label] ?? selected?.label ?? selected
   }
+
+  return null
 }
 
 const getOptionKey = (option) => {
   if (typeof option == 'object') {
     return option?.[props.value] ?? option?.value ?? option
-  } else if (typeof option == 'string') {
+  } else if (typeof option == 'string' || typeof option == 'number') {
     return option
   }
 
@@ -253,13 +269,13 @@ const selectOption = (option) => {
       emit('option:deselected', option)
     } else {
       emit('option:selecting', option)
-      const newSelection = [...selectedItems.value, option]
+      const newSelection = [...selectedItems.value, getOptionKey(option)]
       emit('update:modelValue', newSelection)
       emit('option:selected', option)
     }
   } else {
     emit('option:selected', option)
-    if (typeof props.modelValue == 'object') {
+    if (typeof props.modelValue == 'object' && props.modelValue) {
       emit('update:modelValue', option)
     } else {
       emit('update:modelValue', getOptionKey(option))
@@ -320,7 +336,15 @@ const searchedItem = computed(() => {
   )
 })
 
-function handleEnter(event) {
+function handleTagBackspace(_event) {
+  if (search.value.length === 0 && props.taggable && Array.isArray(props.modelValue)) {
+    const items = [...props.modelValue]
+    items.pop()
+    emit('update:modelValue', items)
+  }
+}
+
+function handleTagEnter(event) {
   event.preventDefault()
 
   if (!props.taggable || !search.value.trim()) return
@@ -331,7 +355,7 @@ function handleEnter(event) {
     emit('option:selected', newOption)
     emit('input', newOption)
 
-    emit('update:modelValue', [...props.modelValue, { [props.label]: newOption }])
+    emit('update:modelValue', [...props.modelValue, newOption])
     toggleDropdown()
   } else {
     selectOption(searchedItem.value)

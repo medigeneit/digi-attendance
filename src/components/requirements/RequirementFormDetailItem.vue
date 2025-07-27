@@ -16,12 +16,13 @@ const emit = defineEmits(['update', 'onRemoveClick'])
 
 const departmentStore = useDepartmentStore()
 const state = ref('')
+
 const form = ref({
   title: '',
   description: '',
   priority: '',
   better_to_complete_on: '',
-  supervisor_id: '',
+  supervisor_id: '4',
 })
 
 const supervisors = ref([])
@@ -72,7 +73,9 @@ watch(
         </div>
 
         <div class="mb-4">
-          <label class="block text-gray-600 text-sm mb-1 font-medium">Supervisor</label>
+          <label class="block text-gray-600 text-sm mb-1 font-medium"
+            >Supervisor {{ form.supervisor_id }}</label
+          >
 
           <SelectDropdown
             v-model="form.supervisor_id"

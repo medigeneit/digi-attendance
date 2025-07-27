@@ -19,9 +19,9 @@ const state = ref('')
 const selectedWebsiteTags = ref([])
 
 const form = ref({
-  from_department_id: '',
+  from_department_id: '1',
   to_department_id: '',
-  website_tags: [],
+  website_tags: [1, 4],
   details: [],
 })
 
@@ -65,6 +65,8 @@ async function submit() {
 function handleDetailUpdate(detailData) {
   console.log({ detailData })
 }
+
+const testingTags = ref(['India', 'Pakistan', 'Nepal', 'Japan'])
 </script>
 
 <template>
@@ -109,14 +111,25 @@ function handleDetailUpdate(detailData) {
         </CompanyDepartmentSelectInput>
 
         <div class="mb-4">
-          <label class="text-gray-800">Websites</label>
-
+          <label class="text-gray-800">Websites {{ form.website_tags }}</label>
           <SelectDropdown
             :options="tagStore.tags"
-            v-model="selectedWebsiteTags"
+            v-model="form.website_tags"
             multiple
             label="name"
             value="id"
+          />
+        </div>
+
+        <div class="mb-4">
+          <label class="text-gray-800">Tags {{ testingTags }}</label>
+
+          <SelectDropdown
+            :options="tagStore.tags"
+            v-model="testingTags"
+            taggable
+            label="name"
+            value="name"
           />
         </div>
       </template>
