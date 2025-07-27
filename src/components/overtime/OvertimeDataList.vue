@@ -22,11 +22,11 @@ const props = defineProps({
   },
 })
 
-const onSuccess = () => {
+const onSuccess = async () => {
   if (props.onUpdate) {
-    props.onUpdate()
+    await props.onUpdate()
   } else {
-    notificationStore.fetchCountNotifications()
+    await notificationStore.fetchCountNotifications()
   }
 }
 </script>
