@@ -209,14 +209,10 @@ const refreshPaycutList = async () => {
                   <UpdateApprovalTime class="mr-2" 
                     :userId="log?.user_id" 
                     :month="selectedMonth" 
-                    v-if="authStore.user?.id === 2 && !log?.paycut?.note"
+                    v-if="authStore.user?.id === 8 && !log?.paycut?.note"
                     @updated="refreshPaycutList"
                   />
-                  <!-- v-if="authStore.user?.id === 8" -->
-                   
                 </div>
-                <!-- <button type="button" v-if="authStore.user.role === 'super_admin' && log?.paycut.id" 
-                class="btn-2 py-0.5 px-1 text-xs" @click="payCutApproved(log?.paycut.id)">Approved</button> -->
               </td>
               <td class="border px-2 py-0.5">{{ log?.payable_hour }}</td>
               <td class="border px-2 py-0.5">{{ log?.total_cl_leave }}</td>

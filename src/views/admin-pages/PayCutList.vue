@@ -103,7 +103,7 @@ const deletePaycut = async (id) => {
               <UpdateOrCreate
                 :userId="cut.user_id"
                 :month="selectedMonth"
-                v-if="authStore.user?.id === 2"
+                v-if="authStore.user?.id === 8"
                 @updated="fetchPaycutListData" />
               
               <button type="button" class="text-red-500" @click="deletePaycut(cut.id)">
