@@ -160,16 +160,8 @@ function handlePrint() {
 
       <div>
         <div class="flex items-end mb-3">
-          <h2 class="text-xl font-semibold">Requirement Task List</h2>
-          <div class="ml-auto print:hidden flex gap-2 text-sm">
-            <button
-              class="btn-4 font-semibold !pl-2 !pr-4 border-2 border-blue-800 hover:bg-blue-800 hover:text-white"
-              v-if="(requirement?.details || []).length > 0"
-              @click.prevent="handleAddRequirementDetail"
-            >
-              <i class="fad fa-plus-circle text-xl"></i>Add Requirement
-            </button>
-          </div>
+          <h2 class="text-xl font-semibold">Requirements</h2>
+          <div class="ml-auto print:hidden flex gap-2 text-sm"></div>
         </div>
 
         <div
@@ -249,12 +241,9 @@ function handlePrint() {
           </table>
         </div>
 
-        <div v-else class="border min-h-64 rounded-md flex items-center justify-center group">
-          <button
-            class="btn-4 font-semibold pl-2 group-hover:border border-blue-300"
-            @click.prevent="handleAddRequirementDetail"
-          >
-            <i class="fad fa-plus-circle text-2xl"></i>Add Requirement
+        <div class="mb-8 border rounded-md p-8 flex items-center justify-center bg-gray-50">
+          <button class="btn-2 pl-2 text-base" @click.prevent="handleAddRequirementDetail">
+            <i class="fad fa-plus-circle text-2xl mr-2"></i>Add Requirement
           </button>
         </div>
       </div>

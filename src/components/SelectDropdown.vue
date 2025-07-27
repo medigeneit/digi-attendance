@@ -2,26 +2,29 @@
   <div class="relative w-full" ref="dropdownRef">
     <!-- Control -->
     <div
-      class="border rounded-md px-2 py-1.5 cursor-pointer bg-white flex items-center justify-between"
+      class="h-full border rounded-md px-2 py-1 cursor-pointer bg-white flex items-center justify-between"
       @click="toggleDropdown"
       :class="{ 'bg-gray-100': disabled }"
+      tabindex="0"
     >
       <!-- Display selected values or placeholder -->
-      <div class="w-full">
+      <div class="w-full h-full">
         <template v-if="isMultiSelection">
-          <div class="flex flex-wrap items-center gap-1 w-full justify-items-stretch">
+          <div class="flex flex-wrap items-center gap-2 w-full h-full justify-items-stretch">
             <template v-if="Array.isArray(selectedItems) && selectedItems.length > 0">
               <template v-for="item in selectedItems" :key="getOptionKey(item)">
                 <slot
                   name="selected-option"
-                  :option="item"
+                  :option="findOptionById(item)"
                   :removeItem="(item) => removeItem(item)"
                 >
                   <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-sm">
-                    {{ getSelectionLabel(item) }}
+                    <span>
+                      {{ getSelectionLabel(item) }}
+                    </span>
                     <button
-                      type="button"
                       @click.prevent.stop="removeItem(item)"
+                      type="button"
                       class="ml-1 text-xs"
                     >
                       ×
@@ -30,26 +33,33 @@
                 </slot>
               </template>
             </template>
-            <span v-else-if="!taggable" class="text-gray-400">{{ placeholder }}</span>
-            <span class="flex-grow" v-if="taggable">
-              <input
-                type="text"
-                @keydown.enter="handleEnter"
-                @keydown="() => (isOpen = true)"
-                v-model="search"
-                class="w-full px-2 py-1 rounded outline-none"
-                :placeholder="placeholder"
-                @focus="$emit('search:focus')"
-                @blur="$emit('search:blur')"
-              />
-            </span>
+
+            <span v-else-if="!taggable" class="text-gray-400">{{ placeholder || 'Select..' }}</span>
+            <input
+              v-model="search"
+              v-if="taggable"
+              type="text"
+              class="flex-grow px-2 py-1 rounded outline-none"
+              :placeholder="placeholder || 'Type and enter to add'"
+              @keydown.prevent.stop.enter="handleTagEnter"
+              @keydown.backspace="handleTagBackspace"
+              @keyup="() => (isOpen = !!search)"
+              @focus="$emit('search:focus')"
+              @blur="$emit('search:blur')"
+            />
           </div>
         </template>
         <!-- Single Item selection -->
         <template v-else>
-          <slot name="selected-option" :option="selectedItems" :is-selected="isSelected">
-            {{ getSelectionLabel(selectedItems) || placeholder }}
-          </slot>
+          <div class="flex items-center h-full">
+            <slot
+              name="selected-option"
+              :option="findOptionById(modelValue)"
+              :is-selected="isSelected"
+            >
+              {{ getSelectionLabel(selectedItems) || placeholder || 'Select...' }}
+            </slot>
+          </div>
         </template>
       </div>
 
@@ -70,8 +80,8 @@
     <div
       v-show="isOpen"
       class="absolute w-full border rounded shadow-[0px_0px_10px_0px_rgba(0,0,0,0.25)] z-50 border-teal-500 bg-white"
-      :class="positionClass"
       ref="dropdownMenuRef"
+      :class="positionClass"
     >
       <div class="p-3" v-if="searchable && !taggable">
         <slot name="search">
@@ -82,7 +92,7 @@
             placeholder="Search..."
             @focus="$emit('search:focus')"
             @blur="$emit('search:blur')"
-            @keyup.enter="($event) => $event.preventDefault()"
+            @keydown.stop.enter="($event) => $event.preventDefault()"
           />
         </slot>
       </div>
@@ -98,8 +108,8 @@
             :class="{ 'bg-blue-50': isSelected(option) }"
             class="px-3 py-2 hover:bg-blue-100 cursor-pointer"
             @click="selectOption(option)"
-            @keydown.space="selectOption(option)"
-            @keydown.enter="selectOption(option)"
+            @keydown.prevent.space="selectOption(option)"
+            @keydown.prevent.enter="selectOption(option)"
           >
             <slot name="option" :option="option">
               {{ getOptionLabel(option) }}
@@ -124,7 +134,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 const props = defineProps({
   options: { type: Array, required: true },
   modelValue: { type: [Object, Array, String, Number, null], default: null },
-  placeholder: { type: String, default: 'Select...' },
+  placeholder: { type: String, default: null },
   multiple: { type: Boolean, default: false },
   label: { type: String, default: 'label' },
   value: { type: String, default: 'id' },
@@ -173,6 +183,10 @@ function handleOutsideClick(event) {
   }
 }
 
+function findOptionById(optionId) {
+  return props.options.find((opt) => opt?.[props.value] == optionId)
+}
+
 onMounted(() => {
   document.addEventListener('click', handleOutsideClick)
   props.containment.addEventListener('scroll', () => calculatePosition(isOpen.value))
@@ -195,7 +209,7 @@ const positionClass = computed(() => {
 })
 
 const selectedItems = computed(() => {
-  if (props.multiple) {
+  if (props.multiple || props.taggable) {
     return Array.isArray(props.modelValue) ? props.modelValue : []
   } else {
     return props.modelValue
@@ -206,22 +220,29 @@ const getOptionLabel = (option) => {
   return option?.[props.label] ?? option?.label ?? option
 }
 
-const getSelectionLabel = (option) => {
-  if ((!props.multiple || !props.taggable) && !Array.isArray(option)) {
-    console.log({ option })
-    const selected = props.options.find((opt) => opt[props.value] == option)
-    if (selected) {
-      return selected?.[props.label] ?? selected?.label ?? selected
+const getSelectionLabel = (optionId) => {
+  const selected = props.options.find((opt) => {
+    if (typeof opt == 'string' || typeof opt == 'number') {
+      return String(opt) === String(optionId)
     }
+    return opt?.[props.value] == optionId
+  })
 
-    return option?.[props.label] ?? option?.label ?? option
+  if (selected) {
+    return selected?.[props.label] ?? selected?.label ?? selected
   }
+
+  if (props.taggable) {
+    return optionId
+  }
+
+  return null
 }
 
 const getOptionKey = (option) => {
   if (typeof option == 'object') {
     return option?.[props.value] ?? option?.value ?? option
-  } else if (typeof option == 'string') {
+  } else if (typeof option == 'string' || typeof option == 'number') {
     return option
   }
 
@@ -253,13 +274,13 @@ const selectOption = (option) => {
       emit('option:deselected', option)
     } else {
       emit('option:selecting', option)
-      const newSelection = [...selectedItems.value, option]
+      const newSelection = [...selectedItems.value, getOptionKey(option)]
       emit('update:modelValue', newSelection)
       emit('option:selected', option)
     }
   } else {
     emit('option:selected', option)
-    if (typeof props.modelValue == 'object') {
+    if (typeof props.modelValue == 'object' && props.modelValue) {
       emit('update:modelValue', option)
     } else {
       emit('update:modelValue', getOptionKey(option))
@@ -320,7 +341,15 @@ const searchedItem = computed(() => {
   )
 })
 
-function handleEnter(event) {
+function handleTagBackspace(_event) {
+  if (search.value.length === 0 && props.taggable && Array.isArray(props.modelValue)) {
+    const items = [...props.modelValue]
+    items.pop()
+    emit('update:modelValue', items)
+  }
+}
+
+function handleTagEnter(event) {
   event.preventDefault()
 
   if (!props.taggable || !search.value.trim()) return
@@ -330,13 +359,12 @@ function handleEnter(event) {
     emit('option:created', newOption)
     emit('option:selected', newOption)
     emit('input', newOption)
-
-    emit('update:modelValue', [...props.modelValue, { [props.label]: newOption }])
-    toggleDropdown()
+    emit('update:modelValue', [...props.modelValue, newOption])
   } else {
     selectOption(searchedItem.value)
   }
   search.value = ''
+  event.target.focus()
 }
 
 watch(isOpen, calculatePosition)

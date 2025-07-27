@@ -37,7 +37,6 @@ async function submit() {
 
   const payload = {
     ...form.value,
-    supervisor_id: selectedSupervisor.value?.id,
   }
 
   console.log({ payload })
@@ -107,7 +106,7 @@ onMounted(async () => {
           <label class="block text-gray-600 text-sm mb-1 font-medium">Supervisor</label>
 
           <SelectDropdown
-            v-model="selectedSupervisor"
+            v-model="form.supervisor_id"
             :options="supervisors"
             placeholder="--NO SUPERVISOR--"
             :containment="formContainerRef"
