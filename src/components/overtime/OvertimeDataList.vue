@@ -4,6 +4,7 @@ import { useNotificationStore } from '@/stores/notification'
 import { useOvertimeStore } from '@/stores/overtime'
 import { useRoute, useRouter } from 'vue-router'
 import AcceptAndRejectHandler from '../applications/AcceptAndRejectHandler.vue'
+import DeleteOvertime from './DeleteOvertime.vue'
 import DisplayFormattedWorkingHours from './DisplayFormattedWorkingHours.vue'
 import UpdateApprovalTime from './UpdateApprovalTime.vue'
 
@@ -158,6 +159,7 @@ const onSuccess = async () => {
                 >
                   <i class="far fa-eye text-lg"></i>
                 </RouterLink>
+                <DeleteOvertime :overtime="overtime" :onSuccess="onSuccess" />
               </div>
             </td>
           </tr>
