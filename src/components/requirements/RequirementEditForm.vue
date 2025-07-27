@@ -19,7 +19,6 @@ const emit = defineEmits(['update', 'cancelClick', 'error'])
 const tagStore = useTagStore()
 const companyStore = useCompanyStore()
 const state = ref('')
-const selectedWebsiteTags = ref([])
 const requirement = ref()
 const error = ref('')
 const containerRef = ref()
@@ -52,7 +51,7 @@ watch(requirement, function (fetchedRequirement) {
       Array.isArray(fetchedRequirement?.website_tags) &&
       fetchedRequirement.website_tags?.length > 0
     ) {
-      selectedWebsiteTags.value = fetchedRequirement.website_tags
+      form.value.website_tags = fetchedRequirement.website_tags.map((tag) => tag.name)
     }
   }
 })
@@ -62,11 +61,6 @@ async function submit() {
 
   const payload = {
     ...form.value,
-    ...(selectedWebsiteTags.value && Array.isArray(selectedWebsiteTags.value)
-      ? {
-          website_tags: selectedWebsiteTags.value.map((tag) => tag.id),
-        }
-      : {}),
   }
 
   console.log({ payload })
@@ -106,34 +100,15 @@ async function submit() {
       <template v-if="state !== 'loading' && state !== 'submitting'">
         <div class="mb-4">
           <label class="text-gray-800">Websites</label>
+
           <SelectDropdown
             :options="tagStore.tags"
-            v-model="selectedWebsiteTags"
-            multiple
-            label="name"
-            :containment="containerRef"
-          />
-        </div>
-        <!-- <div class="mb-4">
-          <label class="text-gray-800">Tags</label>
-          {{ tag_names }}
-          <SelectDropdown
-            :options="['Ok', 'Hello']"
-            v-model="tag_names"
+            v-model="form.website_tags"
             taggable
-            :containment="containerRef"
+            label="name"
+            value="name"
           />
         </div>
-        <div class="mb-4">
-          <label class="text-gray-800">Website</label>
-          {{ selected_website_id }}
-          <SelectDropdown
-            :options="tagStore.tags"
-            v-model="selected_website_id"
-            label="name"
-            :containment="containerRef"
-          />
-        </div> -->
 
         <CompanyDepartmentSelectInput
           v-model="form.from_department_id"

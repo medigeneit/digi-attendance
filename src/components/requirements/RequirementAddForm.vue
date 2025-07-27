@@ -4,24 +4,23 @@ import RequiredIcon from '@/components/RequiredIcon.vue'
 import { addRequirement } from '@/services/requirement'
 import { useCompanyStore } from '@/stores/company'
 import { useTagStore } from '@/stores/tags'
-import { useTaskStore } from '@/stores/useTaskStore'
 import { onMounted, ref } from 'vue'
 import LoaderView from '../common/LoaderView.vue'
 import SelectDropdown from '../SelectDropdown.vue'
+import TextWithHr from '../TextWithHr.vue'
 import RequirementFormDetailItem from './RequirementFormDetailItem.vue'
 
 const emit = defineEmits(['create', 'cancelClick', 'error'])
 
-const store = useTaskStore()
 const tagStore = useTagStore()
 const companyStore = useCompanyStore()
 const state = ref('')
-const selectedWebsiteTags = ref([])
+const error = ref('')
 
 const form = ref({
-  from_department_id: '1',
+  from_department_id: '',
   to_department_id: '',
-  website_tags: [1, 4],
+  website_tags: [],
   details: [],
 })
 
@@ -45,11 +44,6 @@ async function submit() {
 
   const payload = {
     ...form.value,
-    ...(selectedWebsiteTags.value && Array.isArray(selectedWebsiteTags.value)
-      ? {
-          website_tags: selectedWebsiteTags.value.map((tag) => tag.id),
-        }
-      : {}),
   }
 
   try {
@@ -57,16 +51,16 @@ async function submit() {
     emit('create', response)
     state.value = 'create'
   } catch (err) {
-    emit('error', store.error)
+    emit('error', err.response?.data?.message)
+    error.value = err.response?.data?.message
     state.value = 'error'
   }
 }
 
 function handleDetailUpdate(detailData) {
   console.log({ detailData })
+  form.value.details = [detailData]
 }
-
-const testingTags = ref(['India', 'Pakistan', 'Nepal', 'Japan'])
 </script>
 
 <template>
@@ -83,7 +77,6 @@ const testingTags = ref(['India', 'Pakistan', 'Nepal', 'Japan'])
         Fields that must be filled in will be marked with an asterisk.
       </div>
     </div>
-
     <form @submit.prevent="submit" class="z-0">
       <template v-if="state !== 'loading' && state !== 'submitting'">
         <CompanyDepartmentSelectInput
@@ -111,22 +104,10 @@ const testingTags = ref(['India', 'Pakistan', 'Nepal', 'Japan'])
         </CompanyDepartmentSelectInput>
 
         <div class="mb-4">
-          <label class="text-gray-800">Websites {{ form.website_tags }}</label>
+          <label class="text-gray-800">Websites</label>
           <SelectDropdown
             :options="tagStore.tags"
             v-model="form.website_tags"
-            multiple
-            label="name"
-            value="id"
-          />
-        </div>
-
-        <div class="mb-4">
-          <label class="text-gray-800">Tags {{ testingTags }}</label>
-
-          <SelectDropdown
-            :options="tagStore.tags"
-            v-model="testingTags"
             taggable
             label="name"
             value="name"
@@ -134,11 +115,11 @@ const testingTags = ref(['India', 'Pakistan', 'Nepal', 'Japan'])
         </div>
       </template>
 
-      <div class="mb-8">
-        <h3 class="font-semibold text-xl">Requirement details</h3>
-        <hr class="mb-2" />
+      <div class="mb-8 mt-10">
+        <TextWithHr class="mb-5">
+          <h3 class="font-semibold text-xl text-gray-800 mx-2">Requirement details</h3>
+        </TextWithHr>
 
-        <div>dsdf</div>
         <RequirementFormDetailItem
           :from-department-id="form.from_department_id"
           @update="handleDetailUpdate"
@@ -146,10 +127,10 @@ const testingTags = ref(['India', 'Pakistan', 'Nepal', 'Japan'])
       </div>
 
       <div class="sticky bottom-0 bg-white py-4 border-t -mx-6 px-6">
-        <div v-if="store.error" class="mb-4 text-red-500 font-medium">
-          {{ store.error }}
+        <div v-if="error" class="mb-4 text-red-500 font-medium">
+          {{ error }}
         </div>
-        <hr v-if="store.error" class="mb-4" />
+        <hr v-if="error" class="mb-4" />
 
         <div class="flex items-center justify-between gap-4">
           <button
