@@ -29,7 +29,7 @@ const form = ref({
   description: '',
   priority: '',
   better_to_complete_on: '',
-  supervisor_id: '4',
+  supervisor_id: '',
 })
 
 const supervisors = ref([])

@@ -150,7 +150,7 @@ function handleDetailAdd() {
       </template>
 
       <div class="col-span-full">
-        <div class="mb-8 mt-10">
+        <div class="mb-8 mt-5">
           <TextWithHr class="mb-5">
             <h3 class="font-semibold text-xl text-gray-800 mx-2">Requirement details</h3>
           </TextWithHr>
