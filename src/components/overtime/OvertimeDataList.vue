@@ -4,8 +4,8 @@ import { useNotificationStore } from '@/stores/notification'
 import { useOvertimeStore } from '@/stores/overtime'
 import { useRoute, useRouter } from 'vue-router'
 import AcceptAndRejectHandler from '../applications/AcceptAndRejectHandler.vue'
-import UpdateApprovalTime from './UpdateApprovalTime.vue'
 import DisplayFormattedWorkingHours from './DisplayFormattedWorkingHours.vue'
+import UpdateApprovalTime from './UpdateApprovalTime.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -114,7 +114,14 @@ const onSuccess = async () => {
             <td class="border border-gray-300 px-2 text-center">
               <div class="flex items-center justify-center gap-4">
                 <DisplayFormattedWorkingHours :workingHours="overtime.approval_overtime_hours" />
-                <UpdateApprovalTime v-if="authStore.user?.id === 8" :overtime="overtime" />
+                <UpdateApprovalTime
+                  v-if="
+                    notificationStore.applicationApprovalPermissions?.[overtime.id]
+                      ?.allow_recommend_by
+                  "
+                  :overtime="overtime"
+                  :onSuccess="onSuccess"
+                />
               </div>
             </td>
             <td class="border border-gray-300 px-2 text-center">
@@ -126,7 +133,12 @@ const onSuccess = async () => {
             <td class="border border-gray-300 px-2 text-center !py-0.5">
               <div class="flex items-center justify-center gap-x-4">
                 <div
-                  v-if="notificationStore.applicationApprovalPermissions[overtime.id]"
+                  v-if="
+                    overtime.approval_overtime_hours &&
+                    Object.values(
+                      notificationStore.applicationApprovalPermissions?.[overtime.id] || {},
+                    ).some((val) => val)
+                  "
                   class="border border-dashed px-4 rounded-xl"
                 >
                   <AcceptAndRejectHandler
