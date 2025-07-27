@@ -38,6 +38,10 @@ onMounted(async () => {
   supervisors.value = await departmentStore.fetchDepartmentEmployee([props.fromDepartmentId])
 })
 
+const handleRemoveClick = () => {
+  confirm('Are you sure?') ? emit('removeClick', props.uuid) : null
+}
+
 watch(
   () => props.fromDepartmentId,
   async () => {
@@ -61,7 +65,7 @@ watch(
       <div class="font-semibold whitespace-nowrap text-2xl">
         {{ props.serial }}
       </div>
-      <button type="button" @click.prevent="emit('removeClick', uuid)" class="btn-2-red mt-8">
+      <button type="button" @click.prevent="handleRemoveClick" class="btn-2-red mt-8">
         Remove
       </button>
     </td>
