@@ -6,7 +6,9 @@ import { useNotificationStore } from './notification'
 export const useManualAttendanceStore = defineStore('manualAttendance', () => {
   const manualAttendances = ref([])
   const manualAttendance = ref(null)
+  const attendances = ref(null)
   const loading = ref(false)
+  const user = ref(null)
   const error = ref(null)
   const selectedMonth = ref(new Date().toISOString().substring(0, 7))
   const selectedStatus = ref('')
@@ -17,6 +19,21 @@ export const useManualAttendanceStore = defineStore('manualAttendance', () => {
     try {
       const response = await apiClient.get('/manual-attendances', { params: filters })
       manualAttendances.value = response?.data
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to fetch manual attendances'
+      console.error('Error fetching manual attendances:', err)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const fetchAdminManualAttendances = async (filters = {}) => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await apiClient.get('/admin-manual-attendances', { params: filters })
+      attendances.value = response?.data?.attendances
+      user.value = response?.data?.user
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch manual attendances'
       console.error('Error fetching manual attendances:', err)
@@ -229,7 +246,10 @@ export const useManualAttendanceStore = defineStore('manualAttendance', () => {
     error: computed(() => error.value),
     selectedMonth,
     selectedStatus,
+    user,
+    attendances,
     fetchManualAttendances,
+    fetchAdminManualAttendances,
     fetchManualAttendanceById,
     createManualAttendance,
     updateManualAttendance,
@@ -239,6 +259,6 @@ export const useManualAttendanceStore = defineStore('manualAttendance', () => {
     approvedByAccept,
     rejectManualAttendance,
     fetchUserManualAttendances,
-    createBulkManualAttendance
+    createBulkManualAttendance,
   }
 })
