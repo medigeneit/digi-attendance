@@ -77,8 +77,6 @@ function handleDetailUpdate(detailData) {
         Fields that must be filled in will be marked with an asterisk.
       </div>
     </div>
-    {{ form }}
-
     <form @submit.prevent="submit" class="z-0">
       <template v-if="state !== 'loading' && state !== 'submitting'">
         <CompanyDepartmentSelectInput
