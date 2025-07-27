@@ -142,10 +142,10 @@ const refreshPaycutList = async () => {
               <th colspan="2" class="border px-1 py-0.5">Actual Early</th>
               <th colspan="2" class="border px-1 py-0.5">Remaining Early</th>
               <th rowspan="2" class="border px-1 py-0.5">Working Hour</th>
-              <th rowspan="2" class="border px-1 py-0.5">OT Hour</th>
-              <th colspan="3" class="border px-1 py-0.5">Deduction</th>
               <th colspan="4" class="border px-1 py-0.5">Leave Day</th>
               <th colspan="2" class="border px-1 py-0.5">Short Leave</th>
+              <th rowspan="2" class="border px-1 py-0.5">OT Hour</th>
+              <th colspan="3" class="border px-1 py-0.5">Deduction</th>
               <!-- <th rowspan="2" class="border px-2 py-0.5">Comment</th> -->
             </tr>
             <tr class="bg-gray-100 text-xs">
@@ -161,16 +161,16 @@ const refreshPaycutList = async () => {
               <th class="border px-1 py-0.5">Day</th>
               <th class="border px-2 py-0.5">Hour</th>
               <th class="border px-2 py-0.5">Day</th>
-              <th class="border px-2 py-0.5">Hour</th>
-              <th class="border px-2 py-0.5">WPL(Hour)</th>
-              <th class="border px-2 py-0.5">Pay Cut</th>
-              <th class="border px-2 py-0.5">Payable Hour</th>
               <th class="border px-2 py-0.5">CL</th>
               <th class="border px-2 py-0.5">ML</th>
               <th class="border px-2 py-0.5">SL</th>
               <th class="border px-2 py-0.5">WPL</th>
               <th class="border px-2 py-0.5">Delay</th>
               <th class="border px-2 py-0.5">Early</th>
+              <th class="border px-2 py-0.5">Hour</th>
+              <th class="border px-2 py-0.5">WPL(Hour)</th>
+              <th class="border px-2 py-0.5">Pay Cut</th>
+              <th class="border px-2 py-0.5">Payable Hour</th>
             </tr>
           </thead>
           <tbody class="text-center text-sm">
@@ -201,6 +201,13 @@ const refreshPaycutList = async () => {
                 </div>
                 <div class="text-gray-600">{{ log?.total_shift_hour || 0 }}</div>
               </td>
+              
+              <td class="border px-2 py-0.5">{{ log?.total_cl_leave }}</td>
+              <td class="border px-2 py-0.5">{{ log?.total_ml_leave }}</td>
+              <td class="border px-2 py-0.5">{{ log?.total_sl_leave }}</td>
+              <td class="border px-2 py-0.5">{{ log?.total_wpl_leave }}</td>
+              <td class="border px-2 py-0.5">{{ log?.total_first_short_leave }}</td>
+              <td class="border px-2 py-0.5">{{ log?.total_last_short_leave }}</td>
               <td class="border px-2 py-0.5">{{ log?.total_overtime_hours ? log?.total_overtime_hours + ' H' :'' }}</td>
               <td class="border px-2 py-0.5">{{ log.total_wpl_hour }}</td>
               <td class="border px-2 py-0.5">
@@ -209,18 +216,12 @@ const refreshPaycutList = async () => {
                   <UpdateApprovalTime class="mr-2" 
                     :userId="log?.user_id" 
                     :month="selectedMonth" 
-                    v-if="authStore.user?.id === 8 && !log?.paycut?.note"
+                    v-if="authStore.user?.id === 8"
                     @updated="refreshPaycutList"
                   />
                 </div>
               </td>
               <td class="border px-2 py-0.5">{{ log?.payable_hour }}</td>
-              <td class="border px-2 py-0.5">{{ log?.total_cl_leave }}</td>
-              <td class="border px-2 py-0.5">{{ log?.total_ml_leave }}</td>
-              <td class="border px-2 py-0.5">{{ log?.total_sl_leave }}</td>
-              <td class="border px-2 py-0.5">{{ log?.total_wpl_leave }}</td>
-              <td class="border px-2 py-0.5">{{ log?.total_first_short_leave }}</td>
-              <td class="border px-2 py-0.5">{{ log?.total_last_short_leave }}</td>
           
               <!-- <td class="border px-2 py-0.5"></td> -->
             </tr>
