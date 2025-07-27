@@ -37,17 +37,13 @@ const form = ref({
 })
 const employees = ref([])
 const supervisors = ref([])
-const selectedSupervisor = ref(null)
 
 async function submit() {
   state.value = 'submitting'
 
   const payload = {
     ...form.value,
-    supervisor_id: selectedSupervisor.value?.id,
   }
-
-  console.log({ payload })
 
   try {
     const response = await updateRequirementDetail(props.requirementId, props.detailId, payload)
@@ -71,7 +67,7 @@ onMounted(async () => {
 
     detail.value = (await findRequirementDetail(props.requirementId, props.detailId)).data?.detail
     form.value = detail.value
-    selectedSupervisor.value = detail.value.supervisor
+
     const date = new Date(detail.value.better_to_complete_on)
     form.value.better_to_complete_on = date.toISOString().split('T')[0] // Returns "YYYY-MM-DD"
   } catch (err) {
@@ -88,7 +84,7 @@ onMounted(async () => {
     class="max-h-[90vh] w-full mx-auto overflow-auto bg-white shadow-lg rounded-lg p-6 pb-0 pt-0 relative"
   >
     <div class="sticky top-0 pt-4 bg-white z-10">
-      <h2 class="text-2xl font-semibold text-gray-800">Add Requirement Details</h2>
+      <h2 class="text-2xl font-semibold text-gray-800">Edit Requirement</h2>
       <hr class="mb-4" />
       <div
         class="text-purple-600/80 mb-4 text-xs border-b border-dashed"
@@ -126,10 +122,15 @@ onMounted(async () => {
           <label class="block text-gray-600 text-sm mb-1 font-medium">Supervisor</label>
 
           <SelectDropdown
-            v-model="selectedSupervisor"
-            :options="supervisors"
-            placeholder="--NO SUPERVISOR--"
+            v-model="form.supervisor_id"
+            :options="[
+              ...supervisors,
+              ...(!supervisors.find((sup) => sup.id == detail?.supervisor?.id)
+                ? [detail?.supervisor]
+                : []),
+            ]"
             :containment="formContainerRef"
+            placeholder="--NO SUPERVISOR--"
           >
             <template #option="{ option }">
               <UserChip :user="option || {}"></UserChip>
@@ -139,10 +140,10 @@ onMounted(async () => {
                 <UserChip :user="option || {}"></UserChip>
                 <div
                   class="absolute right-1 text-xl top-0 bottom-0 flex items-center"
-                  v-if="selectedSupervisor"
+                  v-if="form.supervisor_id"
                 >
                   <button
-                    @click.prevent="selectedSupervisor = null"
+                    @click.prevent="form.supervisor_id = null"
                     class="text-gray-6 font-semibold 00 hover:text-red-700"
                   >
                     &times;

@@ -27,12 +27,14 @@ onMounted(async () => {
 })
 
 const fetchOvertimeListData = async () => {
-  await overtimeStore.fetchUserOvertimesByApplicationId(route.params.id)
+  if(!overtimeStore.loading) {
+    await overtimeStore.fetchUserOvertimesByApplicationId(route.params.id)
 
-  await notificationStore.fetchApprovalPermissionsByUserApplicationIds(
-    'overtime_applications',
-    applicationIds.value,
-  )
+    await notificationStore.fetchApprovalPermissionsByUserApplicationIds(
+      'overtime_applications',
+      applicationIds.value,
+    )
+  }
 
   await notificationStore.fetchCountNotifications()
 }

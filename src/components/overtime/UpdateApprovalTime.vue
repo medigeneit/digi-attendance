@@ -5,6 +5,10 @@ import TimePickerAsFloatHour from '../common/TimePickerAsFloatHour.vue'
 
 const props = defineProps({
   overtime: Object,
+  onSuccess: {
+    type: Function,
+    default: null,
+  },
 })
 
 const overtimeStore = useOvertimeStore()
@@ -20,6 +24,10 @@ const handleUpdate = async () => {
   }
 
   await overtimeStore.updateApprovalTime(props.overtime.id, approvalTime.value)
+
+  if (props.onSuccess) {
+    await props.onSuccess()
+  }
 
   closeModal()
 }
