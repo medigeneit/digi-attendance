@@ -111,6 +111,15 @@ const hasAccessTo = (routeName) => {
     </RouterLink>
 
     <RouterLink
+      v-if="hasAccessTo('PayCutList')"
+      :to="{ name: 'PayCutList' }"
+      class="main-button"
+    >
+      <i class="far fa-business-time text-3xl"></i>
+      PayCut List
+    </RouterLink>
+
+    <RouterLink
       v-if="hasAccessTo('NoticeList')"
       :to="{ name: 'NoticeList' }"
       class="main-button"

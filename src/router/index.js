@@ -723,6 +723,17 @@ const router = createRouter({
         },
 
         {
+          path: '/hrd/paycut-list',
+          name: 'PayCutList',
+          component: () => import('@/views/admin-pages/PayCutList.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Overtime List',
+          },
+        },
+
+        {
           path: '/hrd/manual-attendance-add',
           name: 'HrdManualAttendanceAdd',
           component: () => import('@/views/admin-pages/ManualAttendanceAdd.vue'),
