@@ -1,6 +1,6 @@
 <script setup>
 import { useNotificationStore } from '@/stores/notification'
-import { computed, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useToast } from 'vue-toastification'
 
 const props = defineProps({
@@ -26,6 +26,9 @@ const toast = useToast()
 
 const notificationStore = useNotificationStore()
 
+const confirmBtnRef = ref(null)
+const cancelBtnRef = ref(null)
+
 const currentAction = ref(null)
 const note = ref('')
 
@@ -43,6 +46,7 @@ function openModal(action) {
   if (action === 'accept' || action === 'reject') {
     currentAction.value = action
     note.value = ''
+    focusDefaultButton()
   }
 }
 
@@ -52,6 +56,10 @@ function closeModal() {
 }
 
 async function handleConfirm() {
+  if (notificationStore.loading) {
+    return
+  }
+
   if (currentAction.value === 'reject' && !note.value) {
     return toast.error('Rejection Reason is required!')
   }
@@ -71,6 +79,30 @@ async function handleConfirm() {
 
   closeModal()
 }
+
+function handleKeydown(e) {
+  if (!isModalOpen.value) return
+
+  if (e.key === 'ArrowLeft') {
+    cancelBtnRef.value?.focus()
+  } else if (e.key === 'ArrowRight') {
+    confirmBtnRef.value?.focus()
+  }
+}
+
+function focusDefaultButton() {
+  nextTick(() => {
+    confirmBtnRef.value?.focus()
+  })
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeydown)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleKeydown)
+})
 </script>
 
 <template>
@@ -108,8 +140,12 @@ async function handleConfirm() {
           :required="currentAction === 'reject'"
         ></textarea>
         <div class="flex justify-between gap-2 mt-4">
-          <button class="btn-3" @click="closeModal">Cancel</button>
+          <button ref="cancelBtnRef" class="btn-3 focus:ring-2 ring-offset-2" @click="closeModal">
+            Cancel
+          </button>
           <button
+            ref="confirmBtnRef"
+            class="focus:ring-2 ring-offset-2"
             :class="currentAction === 'reject' ? 'btn-2-red' : 'btn-2-green'"
             @click="handleConfirm"
           >
