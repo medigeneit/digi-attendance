@@ -41,12 +41,11 @@ const fetchAttendance = async () => {
 }
 
 // Initial load
-onMounted(async () => {
-  if (filters.value.employee_id) {
-    await fetchUser(filters.value.employee_id)
-    await fetchAttendance()
-  }
-})
+// onMounted(async () => {
+//   if (filters.value.employee_id) {
+//     await fetchUser(filters.value.employee_id)
+//   }
+// })
 
 // Watch selectedMonth change
 watch(selectedMonth, (date) => {
