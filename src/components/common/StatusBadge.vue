@@ -90,7 +90,7 @@ const badgeInfo = computed(() => {
   <div class="flex items-center gap-2">
     <!-- Main status badge -->
     <div :class="[baseClasses, badgeInfo.classes]">
-      <i :class="[badgeInfo.iconClass, 'h-3 w-3']"></i>
+      <!-- <i :class="[badgeInfo.iconClass, 'h-3 w-3']"></i> -->
       {{ status }}
     </div>
 
