@@ -2,6 +2,8 @@
 import LeaveApplicationForm from '@/components/AdminLeaveApplicationAddForm.vue'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
+import LeaveTypeModal from '@/components/LeaveTypeModal.vue'
+import UserLeaveBalanceModal from '@/components/UserLeaveBalanceModal.vue'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
@@ -26,6 +28,7 @@ const filters = ref({
 })
 
 const showModal = ref(false)
+const showLeaveTypeModal = ref(false)
 
 const fetchApplicationsByUser = async () => {
   const payload = {
@@ -64,6 +67,10 @@ const handleFilterChange = async () => {
   await fetchApplicationsByUser()
 }
 
+const openAddModal = () => {
+  showLeaveTypeModal.value = true
+}
+
 const handleFormSccessClosed = async () => {
   console.log('test close')
   showModal.value = false
@@ -82,6 +89,11 @@ const deleteApplication = async (applicationId) => {
     await fetchApplicationsByUser()
   }
 }
+
+const closeLeaveTypeModal = () => {
+  showLeaveTypeModal.value = false
+}
+
 </script>
 
 <template>
@@ -137,7 +149,10 @@ const deleteApplication = async (applicationId) => {
 
           <!-- Leave Balance Card -->
           <div class="bg-white border rounded-lg p-4 shadow">
-            <h3 class="text-lg font-semibold text-gray-700 mb-4">Leave Balance</h3>
+            <div class="flex justify-between items-center">
+              <h3 class="text-lg font-semibold text-gray-700 mb-4">Leave Balance</h3>
+              <button @click="openAddModal" type="button" class="btn-2">Set Leave Balance</button>
+            </div>
             <div class="overflow-x-auto">
               <table class="min-w-full text-sm text-left text-gray-700 border">
                 <thead class="bg-gray-100 text-xs uppercase">
@@ -256,6 +271,16 @@ const deleteApplication = async (applicationId) => {
       </div>
     </div>
   </div>
+
+  <UserLeaveBalanceModal
+      :show="showLeaveTypeModal"
+      :user="user"
+      @close="closeLeaveTypeModal"
+    />
+
+
+
+
 
   <!-- ✅ MODAL -->
   <Teleport to="body">

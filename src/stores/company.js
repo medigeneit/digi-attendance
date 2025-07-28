@@ -119,6 +119,10 @@ export const useCompanyStore = defineStore('company', () => {
     return  await apiClient.get(`/companies/${companyId}/employees`)
   }
 
+  const fetchCompanyLeaveTypes = async (companyId) => {
+    return  await apiClient.get(`/company-leave-types/${companyId}`)
+  }
+
   return {
     companies: computed(() => companies.value),
     myCompanies: computed(() => myCompanies.value),
@@ -133,6 +137,7 @@ export const useCompanyStore = defineStore('company', () => {
     createCompany,
     updateCompany,
     deleteCompany,
-    fetchEmployees
+    fetchEmployees,
+    fetchCompanyLeaveTypes
   };
 });
