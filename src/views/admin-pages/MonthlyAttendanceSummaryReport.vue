@@ -94,6 +94,10 @@ const refreshPaycutList = async () => {
   await fetchAttendance()
 }
 
+const refreshSnapshot = async(userId) => {
+  attendanceStore.refreshSnapshot(userId)
+}
+
 
 </script>
 
@@ -180,7 +184,10 @@ const refreshPaycutList = async () => {
               class="border-b border-gray-200 hover:bg-blue-200"
             >
               <td class="border px-2 py-0.5">{{ index += 1 }}</td>
-              <td class="border px-2 py-0.5">{{ log?.user }}</td>
+              <td class="border px-2 py-0.5">
+                {{ log?.user }}
+                <Button @click="refreshSnapshot(log.user_id)" class="ml-2"><i class="far fa-sync text-green-500"></i></Button>
+              </td>
               <td class="border px-2 py-0.5">{{ log?.designation }}</td>
               <td class="border px-2 py-0.5">{{ log?.total_monthly_days }}</td>
               <td class="border px-2 py-0.5">{{ log?.total_present }}</td>

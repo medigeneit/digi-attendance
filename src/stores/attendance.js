@@ -384,6 +384,30 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   }
 
+  const refreshSnapshot = async (userId) => {
+    const res = await apiClient.post('/attendance/refresh-snapshot', {
+      user_id: userId,
+      month: selectedMonth.value,
+    });
+
+    const updatedData = res.data.data;
+
+    // summary item খুঁজে বের করে update করো
+    const index = monthly_company_summary.value.findIndex(
+      (item) => item.user_id === updatedData.user_id
+    );
+
+    if (index !== -1) {
+      monthly_company_summary.value[index] = {
+        ...monthly_company_summary.value[index],
+        ...updatedData,
+      };
+    }
+
+    alert(res.data.message);
+  };
+
+
   return {
     monthlyLogs,
     dailyLateLogs,
@@ -410,5 +434,6 @@ export const useAttendanceStore = defineStore('attendance', () => {
     getDateRangeAttendanceSummary,
     downloadDateRangeExcel,
     downloadDateRangePdf,
+    refreshSnapshot,
   }
 })
