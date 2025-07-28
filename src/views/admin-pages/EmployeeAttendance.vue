@@ -396,25 +396,28 @@ const handleFilterChange = () => {
                     </div>
                  <div v-if="log.day_exchange_id" class="flex items-center gap-2">
                       <!-- View Button -->
-                      <router-link
-                        :to="{ name: 'ExchangeOffdayShow', params: { id: log.day_exchange_id } }"
-                        class="text-blue-600 text-xs inline-flex items-center gap-1 hover:underline hover:text-blue-800 transition"
-                        title="View Leave Application"
-                      >
-                        <!-- Status Badge -->
-                        <span
-                          class="text-xs font-medium py-0.5  transition"
-                          :class="{
-                            ' text-green-700 border-green-200': log.day_exchange_status === 'Approved',
-                            ' text-yellow-700 border-yellow-200': log.day_exchange_status === 'Pending',
-                            ' text-red-700 border-red-200': log.day_exchange_status === 'Rejected',
-                            ' text-gray-600 border-gray-200': !log.day_exchange_status,
-                          }"
+                     <router-link
+                          :to="{ name: 'ExchangeOffdayShow', params: { id: log.day_exchange_id } }"
+                          class="text-blue-600 text-xs inline-flex items-center gap-1 hover:underline hover:text-blue-800 transition"
+                          title="View Exchange Offday Application"
                         >
-                          Offday ( {{ log.day_exchange_status || 'Waiting Handover' }} )
-                        </span>
-                      </router-link>
-
+                          <span
+                            class="text-xs font-medium py-0.5 transition"
+                            :class="{
+                              'text-green-700 border-green-200': log.day_exchange_status === 'Approved',
+                              'text-yellow-700 border-yellow-200': log.day_exchange_status === 'Pending',
+                              'text-red-700 border-red-200': log.day_exchange_status === 'Rejected',
+                              'text-gray-600 border-gray-200': !log.day_exchange_status,
+                            }"
+                          >
+                            <template v-if="log.status === 'Absent' || log.status === 'Present'">
+                              Offday ({{ log.day_exchange_status || 'Waiting Handover' }})
+                            </template>
+                            <template v-else>
+                              {{ log.day_exchange_status || 'Waiting Handover' }}
+                            </template>
+                          </span>
+                        </router-link>
                     </div>
 
                 </div>
