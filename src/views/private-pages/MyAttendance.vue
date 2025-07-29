@@ -1,5 +1,6 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import ApplicationMenu from '@/components/ApplicationMenu.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useAuthStore } from '@/stores/auth'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -17,14 +18,6 @@ const showModal = ref(false)
 function openModal() {
   showModal.value = true
 }
-
-const actions = [
-  { label: 'Add Leave Application', route: 'LeaveApplicationAdd' },
-  { label: 'Add Offday Exchange', route: 'OffdayExchangeAdd' },
-  { label: 'Add Shift Exchange', route: 'ShiftExchangeAdd' },
-  { label: 'Add Manual Attendance', route: 'ManualAttendanceAdd' },
-  { label: 'Add  Overtime', route: 'MyOvertimeAdd' },
-]
 
 const formattedMonthName = computed(() => {
   if (!selectedMonth.value) return ''
@@ -123,6 +116,13 @@ const getInitials = (name) => {
           >
             Apply Application
         </button>
+
+        <ApplicationMenu
+          v-if="showModal"
+          @close="showModal = false"
+        />
+
+
         </div>
         <hr />
         <div class="grid md:grid-cols-2">
@@ -155,43 +155,6 @@ const getInitials = (name) => {
     <LoaderView v-if="attendanceStore.isLoading" />
 
     <div v-else class="space-y-4">
-
-          <div
-          v-if="showModal"
-          class="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm flex items-center justify-center z-50"
-        >
-          <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-fade-in">
-            <!-- Header -->
-            <div class="flex items-center justify-between mb-4">
-              <h2 class="text-xl font-bold text-red-600">Application Category</h2>
-              <button @click="showModal = false" class="text-gray-500 hover:text-red-500 text-xl">&times;</button>
-            </div>
-            <!-- Action Buttons -->
-            <div class="space-y-3">
-              <router-link
-                v-for="(item, i) in actions"
-                :key="i"
-                :to="{ name: item.route }"
-                class="block w-full text-center bg-gradient-to-r from-blue-100 to-blue-200 text-blue-700 font-semibold py-2 rounded-lg hover:from-blue-200 hover:to-blue-300 transition"
-              >
-                {{ item.label }}
-              </router-link>
-            </div>
-
-            <!-- Close Button -->
-            <button
-              @click="showModal = false"
-              class="mt-6 w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg font-semibold transition"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-
-
-          
-
-
       <div class="overflow-x-auto card-bg">
         <table class="min-w-full table-auto border-collapse border border-gray-300 bg-white">
           <thead>
@@ -345,18 +308,3 @@ const getInitials = (name) => {
     </div>
   </div>
 </template>
-<style scoped>
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-.animate-fade-in {
-  animation: fade-in 0.3s ease-out;
-}
-</style>
