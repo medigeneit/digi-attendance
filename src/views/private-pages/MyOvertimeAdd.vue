@@ -138,8 +138,8 @@ onMounted(async () => {
               v-model="form.request_overtime_hours"
               :minute-interval="5"
               :required="true"
-              :hour-min="2"
-              :hour-max="16"
+              :hour-min="1"
+              :hour-max="24"
             />
           </div>
         </div>

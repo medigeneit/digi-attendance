@@ -117,6 +117,7 @@ const onSuccess = async () => {
                 <DisplayFormattedWorkingHours :workingHours="overtime.approval_overtime_hours" />
                 <UpdateApprovalTime
                   v-if="
+                    overtime.recommend_by_user_id === authStore.user?.id ||
                     notificationStore.applicationApprovalPermissions?.[overtime.id]
                       ?.allow_recommend_by
                   "
