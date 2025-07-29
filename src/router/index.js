@@ -1028,13 +1028,10 @@ router.onError((error, to) => {
     error.message.includes('Failed to fetch dynamically imported module') ||
     error.message.includes('Importing a module script failed')
   ) {
+    console.log('need reload');
     if (to?.fullPath) {
-      console.log('need reload');
       window.location = to.fullPath;
 
-      // const app = useAppStore();
-
-      // app.showWarningModal();
     }
   }
 });
