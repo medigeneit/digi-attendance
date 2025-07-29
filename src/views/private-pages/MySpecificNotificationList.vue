@@ -116,10 +116,6 @@ const formattedType = computed(() => {
             {{ notification.duration }}
           </div>
           </div>
-          <div v-if="notification.application_types">
-            <span class="text-gray-400">Leave Type:</span>
-            {{ notification.application_types }}
-          </div>
         <div
           v-if="notification.reason"
           class="flex flex-wrap gap-y-1 gap-x-3 items-center text-xs md:text-sm lg:text-base"
