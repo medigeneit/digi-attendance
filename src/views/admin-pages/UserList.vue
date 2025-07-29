@@ -243,6 +243,9 @@ const formattedName = (name) => {
                 <th class="border border-gray-300 px-2 text-left">#</th>
                 <th class="border border-gray-300 px-2 text-left">Name</th>
                 <th class="border border-gray-300 px-2 text-left">Designation</th>
+                <th class="border border-gray-300 px-2 text-left">Finger ID</th>
+                <th class="border border-gray-300 px-2 text-left">Employee ID</th>
+                <th class="border border-gray-300 px-2 text-left">Joining Date</th>
                 <th class="border border-gray-300 px-2 text-left">Role</th>
                 <th class="border border-gray-300 px-2 text-left">Shift</th>
                 <th class="border border-gray-300 px-2 text-left">Phone</th>
@@ -264,6 +267,9 @@ const formattedName = (name) => {
                   v-html="formattedName(user?.designation?.title)"
                 ></td>
                 <!-- <td class="border border-gray-300 px-2">{{ user.designation?.title }}</td> -->
+                <td class="border border-gray-300 px-2">{{ user?.device_user_id }}</td>
+                <td class="border border-gray-300 px-2">{{ user?.employee_id }}</td>
+                <td class="border border-gray-300 px-2">{{ user.joining_date }}</td>
                 <td class="border border-gray-300 px-2">{{ user.role }}</td>
                 <td class="border border-gray-300 px-2 py-3">
                   <div class="flex justify-center items-center gap-4">
