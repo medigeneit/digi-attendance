@@ -1,6 +1,7 @@
 <script setup>
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
+import DisplayFormattedWorkingHours from '@/components/overtime/DisplayFormattedWorkingHours.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
 import { useUserStore } from '@/stores/user'
@@ -198,6 +199,84 @@ const specifications = {
       </h2>
 
       <!-- Group Table -->
+       <div class="overflow-x-auto rounded border bg-white" v-if="groupKey === 'overtime'">
+          <table
+                  class="min-w-full table-auto border-collapse border border-gray-200 bg-white rounded-md text-sm"
+                >
+                  <thead>
+                    <tr class="bg-gray-200 *:py-1">
+                      <th class="border border-gray-300 px-2 text-center">#</th>
+                      <th class="border border-gray-300 px-2 text-center">Date</th>
+                      <th class="border border-gray-300 px-2 text-center">Type</th>
+                      <th class="border border-gray-300 px-2 text-center">Shift</th>
+                      <th class="border border-gray-300 px-2 text-center">Check-In</th>
+                      <th class="border border-gray-300 px-2 text-center">Check-Out</th>
+                      <th class="border border-gray-300 px-2 text-center">Working (hour)</th>
+                      <th class="border border-gray-300 px-2 text-center">Request (hour)</th>
+                      <th class="border border-gray-300 px-2 text-center">Approved (hour)</th>
+                      <th class="border border-gray-300 px-2 text-center">Details</th>
+                      <th class="border border-gray-300 px-2 text-center">Status</th>
+                      <th class="border border-gray-300 px-2 text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      v-for="(overtime, index) in items"
+                        :key="`${groupKey}-${index}`"
+                      class="border-b border-gray-200 hover:bg-blue-200 *:py-2"
+                    >
+                      <td class="border border-gray-300 px-2 text-center">{{ index + 1 }}</td>
+                      <td class="border border-gray-300 px-2 text-center">
+                        {{
+                          new Date(overtime.date).toLocaleDateString('en-GB', {
+                            day: '2-digit',
+                            month: 'long',
+                            year: 'numeric',
+                          })
+                        }}
+                      </td>
+                      <td class="border border-gray-300 px-2 text-center">
+                        {{ overtime.duty_type }}
+                      </td>
+                      <td class="border border-gray-300 px-2 text-center">
+                        {{ overtime.shift }}
+                      </td>
+                      <td class="border border-gray-300 px-2 text-center">
+                        {{ overtime.check_in || '- : -' }}
+                      </td>
+                      <td class="border border-gray-300 px-2 text-center">
+                        {{ overtime.check_out || '- : -' }}
+                      </td>
+                      <td class="border border-gray-300 px-2 text-center">
+                        <DisplayFormattedWorkingHours :workingHours="overtime.working_hours" />
+                      </td>
+                      <td class="border border-gray-300 px-2 text-center">
+                        <DisplayFormattedWorkingHours :workingHours="overtime.request_overtime_hours" />
+                      </td>
+                      <td class="border border-gray-300 px-2 text-center">
+                        <DisplayFormattedWorkingHours :workingHours="overtime.approval_overtime_hours" />
+                      </td>
+                      <td class="border border-gray-300 px-2 text-center">
+                        {{ overtime.work_details || '' }}
+                      </td>
+                      <td class="border border-gray-300 px-2 text-center">
+                        {{ overtime.status || 'Pending' }}
+                      </td>
+                      <td class="border border-gray-300 px-2 text-center !py-0.5">
+                        <RouterLink
+                          :to="{
+                            name: 'MyOvertimeShow',
+                            params: { id: overtime.id },
+                          }"
+                          class="text-blue-800"
+                        >
+                          <i class="far fa-eye text-lg"></i>
+                        </RouterLink>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+       </div>
       <div class="overflow-x-auto rounded border bg-white" v-if="groupKey === 'leave_application'">
         <table class="min-w-full text-sm text-left">
           <thead class="bg-gray-100 text-gray-700 text-xs uppercase">
