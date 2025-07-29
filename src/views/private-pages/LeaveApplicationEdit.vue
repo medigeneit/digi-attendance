@@ -36,7 +36,10 @@ const error = ref(null)
 const isEditMode = ref(false)
 
 const weekends = computed(() => {
-  return authStore?.user?.assign_weekend?.weekends || authStore?.user?.weekends
+  return (
+    leaveApplicationStore?.leaveApplication?.user?.assign_weekend?.weekends ||
+    leaveApplicationStore?.leaveApplication?.user?.weekends || []
+  )
 })
 
 onMounted(async () => {

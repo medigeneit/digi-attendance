@@ -100,6 +100,15 @@ const hasAccessTo = (routeName) => {
       <i class="fas fa-fingerprint text-3xl"></i>
       Manual Attendance List
     </RouterLink>
+    
+    <RouterLink
+      v-if="hasAccessTo('HrdAdminManualAttendanceApplication')"
+      :to="{ name: 'HrdAdminManualAttendanceApplication' }"
+      class="main-button"
+    >
+      <i class="fas fa-fingerprint text-3xl"></i>
+      Admin Manual Attendance Application
+    </RouterLink>
 
     <RouterLink
       v-if="hasAccessTo('OvertimeList')"
@@ -108,6 +117,15 @@ const hasAccessTo = (routeName) => {
     >
       <i class="far fa-business-time text-3xl"></i>
       Overtime List
+    </RouterLink>
+
+    <RouterLink
+      v-if="hasAccessTo('PayCutList')"
+      :to="{ name: 'PayCutList' }"
+      class="main-button"
+    >
+      <i class="far fa-business-time text-3xl"></i>
+      PayCut List
     </RouterLink>
 
     <RouterLink

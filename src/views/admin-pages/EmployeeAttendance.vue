@@ -41,12 +41,11 @@ const fetchAttendance = async () => {
 }
 
 // Initial load
-onMounted(async () => {
-  if (filters.value.employee_id) {
-    await fetchUser(filters.value.employee_id)
-    await fetchAttendance()
-  }
-})
+// onMounted(async () => {
+//   if (filters.value.employee_id) {
+//     await fetchUser(filters.value.employee_id)
+//   }
+// })
 
 // Watch selectedMonth change
 watch(selectedMonth, (date) => {
@@ -371,7 +370,6 @@ const handleFilterChange = () => {
                 <div class="flex  justify-center items-center gap-1">
                   <!-- Main Attendance Status Badge -->
                   <StatusBadge :status="log.status" />
-
                   <!-- Leave Application ID with view link -->
                  <div v-if="log.leave_application_id" class="flex items-center gap-2">
                       <!-- View Button -->
@@ -382,18 +380,43 @@ const handleFilterChange = () => {
                       >
                         <!-- Status Badge -->
                         <span
-                          class="text-xs font-medium px-2 py-0.5 rounded-full border transition"
+                          class="text-xs font-medium py-0.5  transition"
                           :class="{
-                            'bg-green-50 text-green-700 border-green-200': log.application_status === 'Approved',
-                            'bg-yellow-50 text-yellow-700 border-yellow-200': log.application_status === 'Pending',
-                            'bg-red-50 text-red-700 border-red-200': log.application_status === 'Rejected',
-                            'bg-gray-50 text-gray-600 border-gray-200': !log.application_status,
+                            ' text-green-700 border-green-200': log.application_status === 'Approved',
+                            ' text-yellow-700 border-yellow-200': log.application_status === 'Pending',
+                            ' text-red-700 border-red-200': log.application_status === 'Rejected',
+                            ' text-gray-600 border-gray-200': !log.application_status,
                           }"
                         >
-                          {{ log.application_status || 'Waiting Handover' }}
+                           {{ log.status == 'Absent' ? log.leave_application_type : ''  }}( {{ log.application_status || 'Waiting Handover' }} )
                         </span>
                       </router-link>
 
+                    </div>
+                 <div v-if="log.day_exchange_id" class="flex items-center gap-2">
+                      <!-- View Button -->
+                     <router-link
+                          :to="{ name: 'ExchangeOffdayShow', params: { id: log.day_exchange_id } }"
+                          class="text-blue-600 text-xs inline-flex items-center gap-1 hover:underline hover:text-blue-800 transition"
+                          title="View Exchange Offday Application"
+                        >
+                          <span
+                            class="text-xs font-medium py-0.5 transition"
+                            :class="{
+                              'text-green-700 border-green-200': log.day_exchange_status === 'Approved',
+                              'text-yellow-700 border-yellow-200': log.day_exchange_status === 'Pending',
+                              'text-red-700 border-red-200': log.day_exchange_status === 'Rejected',
+                              'text-gray-600 border-gray-200': !log.day_exchange_status,
+                            }"
+                          >
+                            <template v-if="log.status === 'Absent' || log.status === 'Present'">
+                              Offday ({{ log.day_exchange_status || 'Waiting Handover' }})
+                            </template>
+                            <template v-else>
+                              {{ log.day_exchange_status || 'Waiting Handover' }}
+                            </template>
+                          </span>
+                        </router-link>
                     </div>
 
                 </div>

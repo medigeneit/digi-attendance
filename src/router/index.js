@@ -710,11 +710,32 @@ const router = createRouter({
             title: 'Manual Attendance List',
           },
         },
+        {
+          path: '/hrd/admin-manual-attendance-application',
+          name: 'HrdAdminManualAttendanceApplication',
+          component: () => import('@/views/admin-pages/AdminManualAttendanceApplication.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['super_admin', 'developer'],
+            title: 'Hrd Admin Manual Attendace Application',
+          },
+        },
 
         {
           path: '/hrd/overtime-list',
           name: 'OvertimeList',
           component: () => import('@/views/admin-pages/OvertimeList.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Overtime List',
+          },
+        },
+
+        {
+          path: '/hrd/paycut-list',
+          name: 'PayCutList',
+          component: () => import('@/views/admin-pages/PayCutList.vue'),
           meta: {
             requiresAuth: true,
             roles: ['admin', 'super_admin', 'developer'],

@@ -1,7 +1,7 @@
 <script setup>
 import { useOvertimeStore } from '@/stores/overtime'
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
-import TimePickerAsFloatHour from '../common/TimePickerAsFloatHour.vue'
+import DisplayFormattedWorkingHours from './DisplayFormattedWorkingHours.vue'
 
 const props = defineProps({
   overtime: Object,
@@ -17,16 +17,9 @@ const confirmBtnRef = ref(null)
 const cancelBtnRef = ref(null)
 
 const isModalOpen = ref(false)
-const approvalTime = ref(
-  props.overtime.approval_overtime_hours || props.overtime.request_overtime_hours || '',
-)
 
-const handleUpdate = async () => {
-  if (!approvalTime.value) {
-    return alert('Please set approval time!')
-  }
-
-  await overtimeStore.updateApprovalTime(props.overtime.id, approvalTime.value)
+const handleDelete = async () => {
+  await overtimeStore.deleteOvertime(props.overtime.id)
 
   if (props.onSuccess) {
     await props.onSuccess()
@@ -71,22 +64,35 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <i @click="openModal" class="fa fa-edit cursor-pointer text-sky-600"></i>
+  <i @click="openModal" class="fa fa-trash cursor-pointer text-red-600"></i>
 
   <!-- Single reusable modal -->
   <div v-if="isModalOpen" class="fixed inset-0 z-50 flex justify-center items-center bg-black/50">
-    <div class="modal-card max-w-sm">
-      <h3 class="title-lg">Update Approval Time</h3>
-      <hr class="my-2" />
-      <TimePickerAsFloatHour
-        v-model="approvalTime"
-        :minute-interval="5"
-        :required="true"
-        :hour-min="2"
-        :hour-max="16"
-      />
-      <hr class="my-2" />
-      <div class="flex justify-between gap-2 mt-4">
+    <div class="modal-card max-w-sm p-4">
+      <h3 class="title-lg">Delete Overtime</h3>
+      <div class="grid grid-cols-3 gap-2 border p-3">
+        <div>
+          <b>{{
+            new Date(overtime.date).toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: 'long',
+              year: 'numeric',
+            })
+          }}</b>
+        </div>
+        <div class="border-x">
+          <b>{{ overtime.duty_type }}</b>
+        </div>
+        <div>
+          <b>
+            <DisplayFormattedWorkingHours :workingHours="overtime.request_overtime_hours" />
+          </b>
+        </div>
+        <div class="col-span-full text-xs md:text-sm border-t pt-3">
+          {{ overtime.work_details }}
+        </div>
+      </div>
+      <div class="flex justify-between gap-2 mt-2">
         <button
           type="button"
           ref="cancelBtnRef"
@@ -98,10 +104,10 @@ onBeforeUnmount(() => {
         <button
           type="button"
           ref="confirmBtnRef"
-          class="btn-2-green focus:ring-2 ring-offset-2"
-          @click="handleUpdate"
+          class="btn-2-red focus:ring-2 ring-offset-2"
+          @click="handleDelete"
         >
-          Update Time
+          Delete
         </button>
       </div>
     </div>
