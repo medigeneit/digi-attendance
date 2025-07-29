@@ -99,14 +99,14 @@
 
       <slot name="list-header"></slot>
 
-      <ul class="max-h-60 overflow-auto">
+      <ul class="max-h-60 overflow-y-auto py-2">
         <template v-if="filteredOptions.length">
           <li
             tabindex="0"
             v-for="option in filteredOptions"
             :key="getOptionKey(option)"
             :class="{ 'bg-blue-50': isSelected(option) }"
-            class="px-3 py-2 hover:bg-blue-100 cursor-pointer"
+            class="px-3 py-1 my-0.5 hover:bg-blue-100 focus:bg-blue-100 focus:outline-blue-500 cursor-pointer"
             @click="selectOption(option)"
             @keydown.prevent.space="selectOption(option)"
             @keydown.prevent.enter="selectOption(option)"

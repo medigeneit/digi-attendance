@@ -171,7 +171,7 @@ function handleDetailAdd() {
                 <th
                   class="border-2 border-gray-800 text-center text-gray-800 print:text-black text-base px-3 font-semibold whitespace-nowrap print:whitespace-normal print:p-0 w-[15%]"
                 >
-                  Better To Complete
+                  Options
                 </th>
               </tr>
             </thead>
