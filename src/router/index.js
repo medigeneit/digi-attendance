@@ -999,4 +999,23 @@ router.afterEach((to) => {
   routeHistory.addToHistory(to)
 })
 
+
+router.onError((error, to) => {
+  console.log("__ERROR__",{error,to})
+
+  if (
+    error.message.includes('Failed to fetch dynamically imported module') ||
+    error.message.includes('Importing a module script failed')
+  ) {
+    if (to?.fullPath) {
+      console.log('need reload');
+      window.location = to.fullPath;
+
+      // const app = useAppStore();
+
+      // app.showWarningModal();
+    }
+  }
+});
+
 export default router
