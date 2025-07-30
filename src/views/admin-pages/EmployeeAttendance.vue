@@ -192,7 +192,7 @@ const handleFilterChange = () => {
             <tr
               v-for="log in attendanceStore?.monthlyLogs"
               :key="log?.date"
-              class="hover:border-b-2 hover:border-gray-200 hover:bg-blue-200"
+              class="hover:border-b-2 hover:border-gray-200 hover:z-50 hover:bg-blue-200"
             >
               <td class="border px-1 py-0.5">{{ log.date }}</td>
               <td class="border px-1 py-0.5">{{ log.weekday }}</td>
@@ -230,9 +230,8 @@ const handleFilterChange = () => {
               <td
                   class="border px-2 py-1 text-sm whitespace-nowrap"
                   :class="{
-                    'bg-red-100 text-red-800': log.late_duration,
-                    'bg-blue-100 text-blue-800': log?.manual_attendance?.check_in && log.entry_time,
-                    'bg-gray-50': !log.entry_time
+                    'bg-red-50 text-red-800': log.late_duration,
+                    'bg-blue-50 text-blue-800': log?.manual_attendance?.check_in && log.entry_time,
                   }"
                 >
                   <div class="flex items-center gap-1" :title="`Device: ${log.entry_device}`">
@@ -254,9 +253,8 @@ const handleFilterChange = () => {
                 <td
                   class="border px-2 py-1 text-sm whitespace-nowrap"
                   :class="{
-                    'bg-red-100 text-red-800': log.early_leave_duration,
-                    'bg-blue-100 text-blue-800': log?.manual_attendance?.check_out && log.exit_time,
-                    'bg-gray-50': !log.exit_time
+                    'bg-red-50 text-red-800': log.early_leave_duration,
+                    'bg-blue-50 text-blue-800': log?.manual_attendance?.check_out && log.exit_time,
                   }"
                 >
                   <div class="flex items-center gap-1" :title="`Device: ${log.exit_device}`">
