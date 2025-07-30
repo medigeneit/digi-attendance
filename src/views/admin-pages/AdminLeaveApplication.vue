@@ -7,7 +7,7 @@ import UserLeaveBalanceModal from '@/components/UserLeaveBalanceModal.vue'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -50,9 +50,21 @@ const fetchApplicationsByUser = async () => {
 
 onMounted(async () => {
   await fetchApplicationsByUser()
-  await userStore.fetchUserLeaveBalances(route.query.employee_id)
 
+  if (route.query.employee_id) {
+    await userStore.fetchUserLeaveBalances(route.query.employee_id)
+  }
 })
+
+watch(
+  () => route.query.employee_id,
+  async (id) => {
+    if (id) {
+      await userStore.fetchUserLeaveBalances(id)
+    }
+  }
+)
+
 
 const filteredLeaveApplications = computed(() => leaveApplications.value || [])
 

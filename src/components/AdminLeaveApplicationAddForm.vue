@@ -6,6 +6,7 @@ import { useHolidayStore } from '@/stores/holiday'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
 import { useLeaveTypeStore } from '@/stores/leave-type'
 import { useUserStore } from '@/stores/user'
+import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 
 // Props
@@ -20,7 +21,7 @@ const leaveTypeStore = useLeaveTypeStore()
 const userStore = useUserStore()
 const authStore = useAuthStore()
 const holidayStore = useHolidayStore()
-
+const { userLeaveBalance } = storeToRefs(userStore)
 const selectUser = ref('')
 const isDirectApprove = ref(true)
 
@@ -85,9 +86,9 @@ const leaveDaysMessage = computed(() => {
 })
 
 watchEffect(async () => {
-  if (leaveDays.value.length && leaveTypeStore.leaveTypes.length) {
+  if (leaveDays.value.length && userLeaveBalance.value.length) {
     if (selectedLeaveTypes.value.length !== leaveDays.value.length) {
-      selectedLeaveTypes.value = leaveDays.value.map(() => leaveTypeStore.leaveTypes[0].id)
+      selectedLeaveTypes.value = leaveDays.value.map(() => userLeaveBalance.value[0].id)
     }
 
     await holidayStore.fetchHolidays({
@@ -170,9 +171,9 @@ const submitLeaveApplication = async () => {
 
 onMounted(async () => {
   watchEffect(() => {
-    const companyId = props?.userInfo?.company_id
-    if (companyId) {
-      leaveTypeStore.fetchLeaveTypes(companyId)
+    const userId = props?.userInfo?.id
+    if (userId) {
+      userStore.fetchUserLeaveBalances(userId)
     }
   })
 
@@ -227,7 +228,7 @@ const goBack = () => {
             <div class="font-semibold">{{ day }}</div>
             <div class="flex flex-wrap gap-2">
               <label
-                v-for="type in leaveTypeStore.leaveTypes"
+                v-for="type in userLeaveBalance"
                 :key="type.id"
                 class="flex items-center space-x-1"
               >
@@ -237,7 +238,7 @@ const goBack = () => {
                   :value="type.id"
                   v-model="selectedLeaveTypes[index]"
                 />
-                <span>{{ type.name }}</span>
+                <span>{{ type.leave_type }}</span>
               </label>
               <label class="flex items-center space-x-1">
                 <input
