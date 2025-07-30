@@ -242,7 +242,7 @@
                   <td class="px-6 py-4 font-medium text-gray-900">
                     {{ leave_balance.leave_type }}
                   </td>
-                  <td class="px-6 py-4">{{ leave_balance.total_leave_days }}</td>
+                  <td class="px-6 py-4">{{ leave_balance.annual_quota }}</td>
                   <td class="px-6 py-4">{{ leave_balance.used_days }}</td>
                   <td class="px-6 py-4">{{ leave_balance.remaining_days }}</td>
                 </tr>

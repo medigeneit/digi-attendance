@@ -5,7 +5,8 @@ import apiClient from '../axios'
 export const useUserStore = defineStore('user', () => {
   // State
   const users = ref([])
-  const balances = ref([])
+  const userLeaveBalance = ref([])
+  const userLeaveTypes = ref([])
   const handoverUsers = ref([])
   const user = ref({})
   const userDashboard = ref({})
@@ -212,10 +213,20 @@ export const useUserStore = defineStore('user', () => {
       }
     }
 
-    const fetchUserLeaveBalances = async(userId) => {
+    const fetchUserLeaveTypes = async(userId) => {
       try {
         const res = await apiClient.get(`/leave-balances/${userId}`)
-        balances.value = res.data
+        userLeaveTypes.value = res.data
+        return res.data;
+      } catch (err) {
+        console.error('Failed to fetch balances', err)
+      }
+    }
+
+    const fetchUserLeaveBalances = async(userId) => {
+      try {
+        const res = await apiClient.get(`/user-leave-balance/${userId}`)
+        userLeaveBalance.value = res.data
         return res.data;
       } catch (err) {
         console.error('Failed to fetch balances', err)
@@ -230,7 +241,8 @@ export const useUserStore = defineStore('user', () => {
     error,
     isLoading, // লোডিং স্টেট রিটার্ন করা
     allUsers,
-    balances,
+    userLeaveTypes,
+    userLeaveBalance,
     singleUser,
     errorMessage,
     dashboardInfo,
@@ -248,6 +260,7 @@ export const useUserStore = defineStore('user', () => {
     fetchHandoverDepartmentWiseEmployees,
     fetchUsersExcelExport,
     saveLeaveBalances,
-    fetchUserLeaveBalances
+    fetchUserLeaveBalances,
+    fetchUserLeaveTypes
   }
 })

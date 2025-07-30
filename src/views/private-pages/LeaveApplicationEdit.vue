@@ -6,6 +6,7 @@ import { useHolidayStore } from '@/stores/holiday'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
 import { useLeaveTypeStore } from '@/stores/leave-type'
 import { useUserStore } from '@/stores/user'
+import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -15,6 +16,7 @@ const router = useRouter()
 const route = useRoute()
 const leaveTypeStore = useLeaveTypeStore()
 const userStore = useUserStore()
+const { userLeaveBalance } = storeToRefs(userStore)
 const holidayStore = useHolidayStore()
 const leaveApplication = computed(() => leaveApplicationStore.leaveApplication)
 const leaveApplicationId = computed(() => route.params.id)
@@ -43,6 +45,7 @@ const weekends = computed(() => {
 })
 
 onMounted(async () => {
+  userStore.fetchUserLeaveBalances(leaveApplicationStore.leaveApplication?.user?.id);
   const { id } = route.params
   isEditMode.value = !!id
   try {
@@ -79,12 +82,12 @@ onMounted(async () => {
       form.value.handover_user_id = leaveApplicationStore.leaveApplication?.handover_user_id
       form.value.leave_days = leaveApplicationStore.leaveApplication?.leave_days
 
-      console.log(leaveApplicationStore.leaveApplication);
       
-
+      
       if (leaveApplicationStore.leaveApplication?.json_data) {
         leaveApplicationStore.leaveApplication?.json_data.forEach((item, index) => {
-          selectedLeaveTypes.value[index] = item.leave_type_id || leaveTypeStore.leaveTypes[0]?.id
+          console.log(leaveApplicationStore.leaveApplication);
+          selectedLeaveTypes.value[index] = item.leave_type_id || userLeaveBalance.value[0]?.id
         })
       }
     }
@@ -144,9 +147,9 @@ const leaveDaysMessage = computed(() => {
 watchEffect(async () => {
   // if (isEditMode.value) return
 
-  if (leaveDays.value.length && leaveTypeStore.leaveTypes.length) {
+  if (leaveDays.value.length && userLeaveBalance.value.length) {
     if (selectedLeaveTypes.value.length !== leaveDays.value.length) {
-      selectedLeaveTypes.value = leaveDays.value.map(() => leaveTypeStore.leaveTypes[0]?.id)
+      selectedLeaveTypes.value = leaveDays.value.map(() => userLeaveBalance.value[0]?.id)
     }
 
     await holidayStore.fetchHolidays({
@@ -186,7 +189,7 @@ watch(selectedLeaveTypes, (newSelections) => {
     }
   });
 
-  const exceeded = leaveTypeStore.leaveTypes.filter((type) => {
+  const exceeded = userLeaveBalance.value.filter((type) => {
     const count = typeCount[type.id] || 0;
     return count > type.remaining_days;
   });
@@ -269,7 +272,7 @@ const isHoliday = async (day) => {
         <i class="far fa-arrow-left"></i>
         <span class="hidden md:flex">Back</span>
       </button>
-      <h1 class="title-md md:title-lg flex-wrap text-center">Leave Application Form</h1>
+      <h1 class="title-md md:title-lg flex-wrap text-center">Leave Application Edit Form</h1>
       <div>
         <RouterLink to="/applications" class="btn-2">Home</RouterLink>
       </div>
@@ -317,7 +320,7 @@ const isHoliday = async (day) => {
             <div class="font-semibold">{{ day }}</div>
             <div class="flex flex-wrap gap-2">
                <label
-                v-for="type in leaveTypeStore.leaveTypes"
+                v-for="type in userLeaveBalance"
                 :key="type.id"
                 class="flex items-center space-x-1"
               >

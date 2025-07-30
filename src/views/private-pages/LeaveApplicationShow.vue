@@ -296,7 +296,7 @@ const formatDateTime = (timestamp) => {
                     {{ balance.leave_type }}
                   </td>
                   <td class="border border-gray-500 px-4 py-0.5 text-center">
-                    {{ balance.total_leave_days }}
+                    {{ balance?.annual_quota }}
                   </td>
                   <td class="border border-gray-500 px-4 py-0.5 text-center">
                     {{ balance.used_days }}

@@ -6,16 +6,18 @@ import { useHolidayStore } from '@/stores/holiday'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
 import { useLeaveTypeStore } from '@/stores/leave-type'
 import { useUserStore } from '@/stores/user'
+import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const leaveApplicationStore = useLeaveApplicationStore()
+const authStore = useAuthStore()
 const leaveTypeStore = useLeaveTypeStore()
 const userStore = useUserStore()
-const authStore = useAuthStore()
 const holidayStore = useHolidayStore()
 const selectUser = ref('')
+const { userLeaveBalance } = storeToRefs(userStore)
 const form = ref({
   last_working_date: '',
   resumption_date: '',
@@ -29,6 +31,37 @@ const selectedLeaveTypes = ref([])
 const maxedOutTypes = ref([]);
 const loading = ref(false)
 const error = ref(null)
+
+onMounted(async () => {
+  try {
+    if (authStore?.user?.id && userStore.userLeaveBalance.length === 0) {
+      await userStore.fetchUserLeaveBalances(authStore.user.id)
+    }
+    await userStore.fetchTypeWiseEmployees({ except: 'auth' })
+  } catch (error) {
+    console.error('Error while initializing leave form:', error)
+  }
+})
+
+// Watch user change (if login info is loaded async later)
+watch(
+  () => authStore.user?.id,
+  async (userId) => {
+    if (userId && userStore.userLeaveBalance.length === 0) {
+      await userStore.fetchUserLeaveBalances(userId)
+    }
+  }
+)
+
+
+
+// onMounted(async () => {
+//   console.log(authStore?.user);
+//   if(authStore?.user?.id) {
+//     await userStore.fetchUserLeaveBalances(authStore?.user?.id)
+//   }
+//   await userStore.fetchTypeWiseEmployees({ except: 'auth' })
+// })
 
 const weekends = computed(() => {
   return authStore?.user?.assign_weekend?.weekends || authStore?.user?.weekends
@@ -81,11 +114,7 @@ const leaveDaysMessage = computed(() => {
 })
 
 watchEffect(async () => {
-  if (leaveDays.value.length && leaveTypeStore.leaveTypes.length) {
-    // if (selectedLeaveTypes.value.length !== leaveDays.value.length) {
-    //   selectedLeaveTypes.value = leaveDays.value.map(() => leaveTypeStore.leaveTypes[0].id)
-    // }
-
+  if (leaveDays.value.length && userLeaveBalance.value.length) {
     await holidayStore.fetchHolidays({
       company_id: authStore?.user?.company_id,
       start_date: leaveDays.value[0],
@@ -127,7 +156,7 @@ watch(selectedLeaveTypes, (newSelections) => {
     }
   });
 
-  const exceeded = leaveTypeStore.leaveTypes.filter((type) => {
+  const exceeded = userLeaveBalance.value.filter((type) => {
     const count = typeCount[type.id] || 0;
     return count > type.remaining_days;
   });
@@ -194,15 +223,7 @@ const submitLeaveApplication = async () => {
   }
 }
 
-onMounted(() => {
-  watchEffect(() => {
-    const companyId = authStore?.user?.company_id
-    if (companyId) {
-      leaveTypeStore.fetchLeaveTypes(companyId)
-    }
-  })
-  userStore.fetchTypeWiseEmployees({ except: 'auth' })
-})
+
 
 const goBack = () => {
   router.go(-1)
@@ -260,11 +281,12 @@ const goBack = () => {
             v-for="(day, index) in leaveDays"
             :key="index"
             class="flex gap-4 mb-2 bg-white p-2 rounded-md"
+            :class="{ '!bg-red-500': selectedLeaveTypes[index] === 'Weekend'}"
           >
             <div class="font-semibold">{{ day }}</div>
             <div class="flex flex-wrap gap-2">
              <label
-                v-for="type in leaveTypeStore.leaveTypes"
+                v-for="type in userLeaveBalance"
                 :key="type.id"
                 class="flex items-center space-x-1"
               >
@@ -277,7 +299,6 @@ const goBack = () => {
                 />
                 <span>{{ type.leave_type }}</span>
               </label>
-
               <label class="flex items-center space-x-1">
                 <input
                   type="radio"
@@ -294,7 +315,7 @@ const goBack = () => {
                   value="holiday"
                   v-model="selectedLeaveTypes[index]"
                 />
-                <span> Holiday</span>
+                <span>Holiday</span>
               </label>
             </div>
           </div>

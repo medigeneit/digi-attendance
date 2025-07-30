@@ -35,14 +35,14 @@ watch(
 
 const loadUserLeaveBalancesOrFallback = async () => {
   try {
-    const userRes = await userStore.fetchUserLeaveBalances(props.user.id)
-    console.log(userRes);
+    const userRes = await userStore.fetchUserLeaveTypes(props.user.id)
 
     if (userRes?.length) {
       balances.value = userRes
     } else {
       const companyRes = await companyStore.fetchCompanyLeaveTypes(props.user.company_id)
       balances.value = companyRes.data.map((item) => ({
+        id: item.id,
         name: item.name,
         annual_quota: item.annual_quota || 0,
         max_consecutive_days: item.max_consecutive_days || null,
@@ -85,13 +85,13 @@ const closeModal = () => {
               <th class="p-2">Leave Type</th>
               <th class="p-2">Annual Quota</th>
               <th class="p-2">Max Consecutive Days</th>
-              <th class="p-2">Category</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="(balance, index) in balances" :key="index">
               <td class="p-2">
-                <input v-model="balance.name" class="input-1 w-full" />
+                <input type="hidden" v-model="balance.id" class="input-1 w-full" />
+                <input v-model="balance.name" class="input-1 w-full" disabled />
               </td>
               <td class="p-2">
                 <input
@@ -108,12 +108,6 @@ const closeModal = () => {
                   min="0"
                   class="input-1 w-full"
                 />
-              </td>
-              <td class="p-2">
-                <select v-model="balance.type" class="input-1 w-full">
-                  <option value="Paid">Paid</option>
-                  <option value="Unpaid">Unpaid</option>
-                </select>
               </td>
             </tr>
           </tbody>

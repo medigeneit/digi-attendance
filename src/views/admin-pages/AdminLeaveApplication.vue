@@ -17,6 +17,8 @@ const userStore = useUserStore()
 
 const { user, leave_balances, leaveApplications, loading } = storeToRefs(leaveApplicationStore)
 
+const { userLeaveBalance } = storeToRefs(userStore)
+
 const selectedYear = ref(route.query.year || leaveApplicationStore.selectedYear)
 const search = ref(route.query.search || '')
 
@@ -48,6 +50,8 @@ const fetchApplicationsByUser = async () => {
 
 onMounted(async () => {
   await fetchApplicationsByUser()
+  await userStore.fetchUserLeaveBalances(route.query.employee_id)
+
 })
 
 const filteredLeaveApplications = computed(() => leaveApplications.value || [])
@@ -92,6 +96,7 @@ const deleteApplication = async (applicationId) => {
 
 const closeLeaveTypeModal = () => {
   showLeaveTypeModal.value = false
+  userStore.fetchUserLeaveBalances(route.query.employee_id)
 }
 
 </script>
@@ -165,12 +170,12 @@ const closeLeaveTypeModal = () => {
                 </thead>
                 <tbody>
                   <tr
-                    v-for="leave in leave_balances"
+                    v-for="leave in userLeaveBalance"
                     :key="leave.id"
                     class="border-t hover:bg-gray-50"
                   >
                     <td class="px-4 py-1 text-center font-medium">{{ leave.leave_type }}</td>
-                    <td class="px-4 py-1 text-center">{{ leave.total_leave_days }}</td>
+                    <td class="px-4 py-1 text-center">{{ leave.annual_quota }}</td>
                     <td class="px-4 py-1 text-center">{{ leave.used_days }}</td>
                     <td class="px-4 py-1 text-center">{{ leave.remaining_days }}</td>
                   </tr>
