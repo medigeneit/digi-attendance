@@ -5,6 +5,7 @@ import { useNotificationStore } from './notification'
 
 export const useOvertimeStore = defineStore('overtime', () => {
   const overtimes = ref([])
+  const reports = ref([])
   const overtime = ref(null)
   const loading = ref(false)
   const error = ref(null)
@@ -167,9 +168,70 @@ export const useOvertimeStore = defineStore('overtime', () => {
       loading.value = false
     }
   }
+  const getCompanyDepartmentOvertimeReport = async (month,filters = {}) => {
+    loading.value = true
+    error.value = null
+    try {
+      console.log(month,filters);
+      const response = await apiClient.get(`/user-monthly-overtimes-report/${month}`, { params: filters })
+      reports.value = response?.data
+      return response?.data
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to fetch overtimes'
+      console.error('Error fetching overtimes:', err)
+    } finally {
+      loading.value = false
+    }
+  }
+
+ const exportCompanyDepartmentOvertimeExcel = async (month, filters = {}) => {
+  try {
+    const res = await apiClient.get(`/user-monthly-overtimes-report/${month}?flag=excel`, {
+      responseType: 'blob',
+      params: {
+        ...filters,
+        excel: true, // match Laravel's `$request->excel`
+      },
+    });
+
+    downloadBlob(res.data, `CompanyDepartmentOvertime-${month}.xlsx`);
+  } catch (err) {
+    console.error('Excel export failed:', err);
+  }
+};
+
+
+const exportCompanyDepartmentOvertimePdf = async (month, filters = {}) => {
+  try {
+    const queryParams = new URLSearchParams({
+      ...filters,
+      flag: 'pdf'
+    }).toString()
+
+    const res = await apiClient.get(`/user-monthly-overtimes-report/${month}?${queryParams}`, {
+      responseType: 'blob',
+    })
+
+    downloadBlob(res.data, `CompanyDepartmentOvertime-${month}.pdf`)
+  } catch (err) {
+    console.error('PDF Export Error:', err)
+  }
+}
+
+
+function downloadBlob(blobData, filename) {
+  const url = window.URL.createObjectURL(new Blob([blobData]))
+  const link = document.createElement('a')
+  link.href = url
+  link.setAttribute('download', filename)
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
 
   return {
     overtimes,
+    reports,
     overtime,
     loading,
     error,
@@ -184,5 +246,8 @@ export const useOvertimeStore = defineStore('overtime', () => {
     fetchUserOvertimes,
     fetchUserMonthlyOvertimes,
     fetchUserOvertimesByApplicationId,
+    getCompanyDepartmentOvertimeReport,
+    exportCompanyDepartmentOvertimeExcel,
+    exportCompanyDepartmentOvertimePdf
   }
 })

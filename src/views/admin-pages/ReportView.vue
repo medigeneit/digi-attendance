@@ -21,5 +21,11 @@
       <i class="fas fa-calendar-day text-3xl"></i>
       Date Range Attendance Report
     </RouterLink>
+
+    <RouterLink :to="{ name: 'OvertimeReport' }" class="main-button">
+      <i class="fas fa-calendar-day text-3xl"></i>
+      Overtime Report
+    </RouterLink>
+
   </div>
 </template>

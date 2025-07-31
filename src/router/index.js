@@ -590,6 +590,18 @@ const router = createRouter({
             title: 'Late Attendance Report',
           },
         },
+
+        {
+          path: '/reports/overtime-report',
+          name: 'OvertimeReport',
+          component: () => import('@/views/admin-pages/OvertimeReport.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Late Attendance Report',
+          },
+        },
+
         {
           path: '/reports/daily-late-report-list',
           name: 'DailyLateAttendanceReport',
