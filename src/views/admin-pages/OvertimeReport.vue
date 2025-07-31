@@ -121,7 +121,8 @@ onMounted(() => {
               <th class="border p-2 text-left">Company</th>
               <th class="border p-2 text-left">Department</th>
               <th class="border p-2 text-left">Overtime Entries</th>
-              <th class="border p-2 text-left">Total Hours</th>
+              <th class="border p-2 text-left">Total Request Hours</th>
+              <th class="border p-2 text-left">Total Approval Hours</th>
             </tr>
           </thead>
           <tbody>
@@ -134,6 +135,7 @@ onMounted(() => {
               <td class="border p-2">{{ report.user_name || 'N/A' }}</td>
               <td class="border p-2">{{ report.company_name || 'N/A' }}</td>
               <td class="border p-2">{{ report.department_name || 'N/A' }}</td>
+              <td class="border p-2">{{ report.total_overtime_entries }}</td>
               <td class="border p-2">{{ report.total_request_overtime_hours }}</td>
               <td class="border p-2">{{ report.total_approval_overtime_hours }}</td>
             </tr>
