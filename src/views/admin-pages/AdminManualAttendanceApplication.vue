@@ -199,6 +199,9 @@ const submitManualAttendance = async () => {
       </div>
 
       <div class="overflow-x-auto">
+        <div :class="error ? 'py-2': ''">
+          <div v-if="error" class="text-red-500 text-sm text-left">{{ error }}</div>
+        </div>
         <table
           class="min-w-full table-auto border-collapse border border-gray-200 bg-white rounded-md text-sm"
         >
