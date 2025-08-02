@@ -153,7 +153,7 @@ const submitManualAttendance = async () => {
         <span class="hidden md:flex">Back</span>
       </button>
 
-      <h1 class="title-md md:title-lg flex-wrap text-center">Leave Applications</h1>
+      <h1 class="title-md md:title-lg flex-wrap text-center">Admin Bulk Manual Attendance Applications</h1>
       <div></div>
     </div>
 
