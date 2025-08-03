@@ -167,7 +167,7 @@ const refreshPaycutList = async () => {
               <th class="border px-2 py-0.5">WPL</th>
               <th class="border px-2 py-0.5">Delay</th>
               <th class="border px-2 py-0.5">Early</th>
-              <th class="border px-2 py-0.5">Hour</th>
+              <!-- <th class="border px-2 py-0.5">Hour</th> -->
               <th class="border px-2 py-0.5">WPL(Hour)</th>
               <th class="border px-2 py-0.5">Pay Cut</th>
               <th class="border px-2 py-0.5">Payable Hour</th>
