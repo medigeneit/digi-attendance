@@ -15,13 +15,7 @@ const authStore = useAuthStore()
 const overtimeStore = useOvertimeStore()
 const notificationStore = useNotificationStore()
 
-const props = defineProps({
-  user: Object,
-  onUpdate: {
-    type: Function,
-    default: null,
-  },
-})
+const props = defineProps({ user: Object, onUpdate: { type: Function, default: null } })
 
 const onSuccess = async () => {
   if (props.onUpdate) {
@@ -112,7 +106,16 @@ const onSuccess = async () => {
             <td class="border border-gray-300 px-2 text-center">
               <DisplayFormattedWorkingHours :workingHours="overtime.request_overtime_hours" />
             </td>
-            <td class="border border-gray-300 px-2 text-center">
+            <td
+              class="border border-gray-300 px-2 text-center"
+              :class="{
+                'bg-red-500/50':
+                  !overtime.approval_overtime_hours &&
+                  (overtime.recommend_by_user_id === authStore.user?.id ||
+                    notificationStore.applicationApprovalPermissions?.[overtime.id]
+                      ?.allow_recommend_by),
+              }"
+            >
               <div class="flex items-center justify-center gap-4">
                 <DisplayFormattedWorkingHours :workingHours="overtime.approval_overtime_hours" />
                 <UpdateApprovalTime
@@ -152,10 +155,7 @@ const onSuccess = async () => {
                   />
                 </div>
                 <RouterLink
-                  :to="{
-                    name: 'MyOvertimeShow',
-                    params: { id: overtime.id },
-                  }"
+                  :to="{ name: 'MyOvertimeShow', params: { id: overtime.id } }"
                   class="text-blue-800"
                 >
                   <i class="far fa-eye text-lg"></i>

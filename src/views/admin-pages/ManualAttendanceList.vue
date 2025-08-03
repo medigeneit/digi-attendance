@@ -128,9 +128,9 @@ const handleFilterChange = () => {
 
       <h1 class="title-md md:title-lg flex-wrap text-center">Manual Attendances</h1>
       <div>
-        <RouterLink :to="{ name: 'HrdManualAttendanceAdd' }" class="btn-3">
+        <RouterLink :to="{ name: 'HrdAdminManualAttendanceApplication' }" class="btn-3">
           <i class="far fa-plus"></i>
-          <span class="hidden md:flex">Add Manual Attendance</span>
+          <span class="hidden md:flex">Add Bulk Manual Attendance</span>
         </RouterLink>
       </div>
     </div>
