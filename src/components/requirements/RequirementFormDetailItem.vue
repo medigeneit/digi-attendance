@@ -77,7 +77,7 @@ watch(
         <input
           v-model="form.title"
           required
-          placeholder="EnderRequirement detail title"
+          placeholder="Ender Requirement detail title"
           class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
         />
       </div>
@@ -87,7 +87,7 @@ watch(
         <textarea
           rows="5"
           v-model="form.description"
-          placeholder="Enter requirement description"
+          placeholder="Enter Requirement description"
           class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
         ></textarea>
       </div>

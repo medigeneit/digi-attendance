@@ -1,6 +1,6 @@
 <template>
   <div class="my-container">
-    <div class="card-bg p-4 md:p-8">
+    <!-- <div class="card-bg p-4 md:p-8">
       <div v-if="user">
         <p>
           Hello <span class="title-md">{{ user.name }}!</span>
@@ -14,9 +14,7 @@
       <div v-else>
         <p>Loading...</p>
       </div>
-    </div>
-
-    
+    </div> -->
 
     <div class="grid gap-4 md:grid-cols-3 mt-4" v-if="isAdmin && authStore.isAdminMood">
       <RouterLink
@@ -185,7 +183,7 @@
                   {{ unreadNotice.title }}
                 </div>
 
-                <div class="space-y-5 px-4 md:px-6 py-4 ">
+                <div class="space-y-5 px-4 md:px-6 py-4">
                   <!-- Published Info -->
                   <p class="text-sm text-gray-500 flex items-center gap-2">
                     <i class="fas fa-calendar-alt text-gray-400"></i>
@@ -215,10 +213,8 @@
                 </div>
               </template>
             </OverlyModal>
-
           </div>
         </div>
-        
 
         <!-- Quick Actions -->
         <div class="bg-white shadow-md rounded-lg">
@@ -251,17 +247,21 @@
           </div>
         </div>
       </div>
+      <div class="card-bg mt-4 gap-0 shadow-md border border-gray-300">
+        <TaskInMonth />
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
+import OverlyModal from '@/components/common/OverlyModal.vue'
+import TaskInMonth from '@/components/tasks/TaskInMonth.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import OverlyModal from '@/components/common/OverlyModal.vue'
 
 const authStore = useAuthStore()
 const userStore = useUserStore()
@@ -269,9 +269,7 @@ const { dashboardInfo, selectedDate, userDashboard } = storeToRefs(userStore)
 const { user } = storeToRefs(authStore)
 const router = useRouter()
 
-const isAdmin = computed(() =>
-  ['admin', 'super_admin', 'developer'].includes(user?.value?.role)
-)
+const isAdmin = computed(() => ['admin', 'super_admin', 'developer'].includes(user?.value?.role))
 
 const unreadNotice = ref(null)
 
@@ -285,7 +283,7 @@ onMounted(async () => {
   }
 
   // Get first unread notice
-  const firstUnread = userDashboard.value?.notices?.find(n => !n.user_feedback)
+  const firstUnread = userDashboard.value?.notices?.find((n) => !n.user_feedback)
   if (firstUnread) {
     unreadNotice.value = firstUnread
   }
@@ -302,4 +300,3 @@ const goToDetails = () => {
   router.push(path)
 }
 </script>
-
