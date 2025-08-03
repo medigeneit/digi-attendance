@@ -3,9 +3,7 @@ import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import { useOvertimeStore } from '@/stores/overtime'
 import { storeToRefs } from 'pinia'
-import Swal from 'sweetalert2'
-import { computed, onMounted } from 'vue'
-import { ref, watch } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -16,13 +14,13 @@ const { reports, loading, selectedMonth } = storeToRefs(overtimeStore)
 const month = ref(route.query.date || selectedMonth.value)
 
 const filters = ref({
-  company_id:  '',
-  department_id: 'all',
-  type:  'all',
-  employee_id: '',
+  company_id: route.query.company_id || '',
+  department_id: route.query.department_id || 'all',
+  type: route.query.type || 'all',
+  employee_id: route.query.employee_id || '',
 })
 
-const handleFilterChange = async() => {
+const handleFilterChange = async () => {
   // You can trigger your fetch here
   router.replace({
     query: {
@@ -74,7 +72,7 @@ onMounted(() => {
       </button>
 
       <h1 class="title-md md:title-lg flex-wrap text-center">Monthly Overtime Report</h1>
-       <div class="flex gap-2">
+      <div class="flex gap-2">
         <button @click="exportExcel" class="btn-3" title="Download Excel">
           <i class="far fa-file-excel text-2xl text-green-500"></i>
         </button>
@@ -83,13 +81,12 @@ onMounted(() => {
         </button>
       </div>
     </div>
-    
+
     <div class="flex flex-wrap items-center gap-2">
-      
-      <EmployeeFilter 
-        v-model="filters" 
-        :initial-value="route.query" 
-        @filter-change="handleFilterChange" 
+      <EmployeeFilter
+        v-model="filters"
+        :initial-value="route.query"
+        @filter-change="handleFilterChange"
       />
       <div>
         <input
@@ -106,10 +103,6 @@ onMounted(() => {
       <LoaderView />
     </div>
 
-     <div v-if="loading" class="text-center py-4">
-      <LoaderView />
-    </div>
-
     <!-- Table -->
     <div v-else class="space-y-4">
       <div class="overflow-x-auto" v-if="reports.length">
@@ -120,24 +113,34 @@ onMounted(() => {
               <th class="border p-2 text-left">Employee</th>
               <th class="border p-2 text-left">Company</th>
               <th class="border p-2 text-left">Department</th>
-              <th class="border p-2 text-left">Overtime Entries</th>
-              <th class="border p-2 text-left">Total Request Hours</th>
-              <th class="border p-2 text-left">Total Approval Hours</th>
+              <th class="border p-2 text-center">Overtime Entries</th>
+              <th class="border p-2 text-center">Total Request Hours</th>
+              <th class="border p-2 text-center">Total Approval Hours</th>
+              <th class="border p-2 text-center print:hidden">Action</th>
             </tr>
           </thead>
           <tbody>
-            <tr
-              v-for="(report, index) in reports"
-              :key="index"
-              class="hover:bg-blue-50"
-            >
+            <tr v-for="(report, index) in reports" :key="index" class="hover:bg-blue-50">
               <td class="border p-2">{{ index + 1 }}</td>
               <td class="border p-2">{{ report.user_name || 'N/A' }}</td>
               <td class="border p-2">{{ report.company_name || 'N/A' }}</td>
               <td class="border p-2">{{ report.department_name || 'N/A' }}</td>
-              <td class="border p-2">{{ report.total_overtime_entries }}</td>
-              <td class="border p-2">{{ report.total_request_overtime_hours }}</td>
-              <td class="border p-2">{{ report.total_approval_overtime_hours }}</td>
+              <td class="border p-2 text-center">{{ report.total_overtime_entries }}</td>
+              <td class="border p-2 text-center">{{ report.total_request_overtime_hours }}</td>
+              <td class="border p-2 text-center">{{ report.total_approval_overtime_hours }}</td>
+              <td class="border p-2 text-center print:hidden">
+                <div class="flex justify-center items-center gap-4">
+                  <RouterLink
+                    :to="{
+                      name: 'OvertimeList',
+                      query: { ...filters, employee_id: report.user_id, date: month },
+                    }"
+                    class="text-blue-800"
+                  >
+                    <i class="far fa-eye text-lg"></i>
+                  </RouterLink>
+                </div>
+              </td>
             </tr>
           </tbody>
         </table>
