@@ -146,7 +146,6 @@ const refreshPaycutList = async () => {
               <th colspan="2" class="border px-1 py-0.5">Short Leave</th>
               <th rowspan="2" class="border px-1 py-0.5">OT Hour</th>
               <th colspan="3" class="border px-1 py-0.5">Deduction</th>
-              <!-- <th rowspan="2" class="border px-2 py-0.5">Comment</th> -->
             </tr>
             <tr class="bg-gray-100 text-xs">
               <th class="border px-2 py-0.5">TD</th>
@@ -160,7 +159,8 @@ const refreshPaycutList = async () => {
               <th class="border px-2 py-0.5">Hour</th>
               <th class="border px-1 py-0.5">Day</th>
               <th class="border px-2 py-0.5">Hour</th>
-              <th class="border px-2 py-0.5">Day</th>
+              <th class="border px-1 py-0.5">Day</th>
+              <th class="border px-2 py-0.5">Hour</th>
               <th class="border px-2 py-0.5">CL</th>
               <th class="border px-2 py-0.5">ML</th>
               <th class="border px-2 py-0.5">SL</th>
@@ -179,7 +179,7 @@ const refreshPaycutList = async () => {
               :key="log?.date"
               class="border-b border-gray-200 hover:bg-blue-200"
             >
-              <td class="border px-2 py-0.5">{{ index += 1 }}</td>
+              <td class="border px-2 py-0.5">{{ index + 1 }}</td>
               <td class="border px-2 py-0.5">{{ log?.user }}</td>
               <td class="border px-2 py-0.5">{{ log?.designation }}</td>
               <td class="border px-2 py-0.5">{{ log?.total_monthly_days }}</td>
@@ -201,29 +201,29 @@ const refreshPaycutList = async () => {
                 </div>
                 <div class="text-gray-600">{{ log?.total_shift_hour || 0 }}</div>
               </td>
-              
               <td class="border px-2 py-0.5">{{ log?.total_cl_leave }}</td>
               <td class="border px-2 py-0.5">{{ log?.total_ml_leave }}</td>
               <td class="border px-2 py-0.5">{{ log?.total_sl_leave }}</td>
               <td class="border px-2 py-0.5">{{ log?.total_wpl_leave }}</td>
               <td class="border px-2 py-0.5">{{ log?.total_first_short_leave }}</td>
               <td class="border px-2 py-0.5">{{ log?.total_last_short_leave }}</td>
-              <td class="border px-2 py-0.5">{{ log?.total_overtime_hours ? log?.total_overtime_hours + ' H' :'' }}</td>
-              <td class="border px-2 py-0.5">{{ log.total_wpl_hour }}</td>
+              <td class="border px-2 py-0.5">
+                {{ log?.total_overtime_hours ? log?.total_overtime_hours + ' H' : '' }}
+              </td>
+              <td class="border px-2 py-0.5">{{ log?.total_wpl_hour }}</td>
               <td class="border px-2 py-0.5">
                 <div class="flex gap-2 items-center">
                   <DisplayFormattedWorkingHours :workingHours="log?.paycut?.paycut_hours" />
-                  <UpdateApprovalTime class="mr-2" 
-                    :userId="log?.user_id" 
-                    :month="selectedMonth" 
+                  <UpdateApprovalTime
+                    class="mr-2"
+                    :userId="log?.user_id"
+                    :month="selectedMonth"
                     v-if="authStore.user?.id === 8"
                     @updated="refreshPaycutList"
                   />
                 </div>
               </td>
               <td class="border px-2 py-0.5">{{ log?.payable_hour }}</td>
-          
-              <!-- <td class="border px-2 py-0.5"></td> -->
             </tr>
           </tbody>
         </table>
