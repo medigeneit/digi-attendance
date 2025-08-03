@@ -14,8 +14,9 @@ const notificationStore = useNotificationStore()
 const overtimeStore = useOvertimeStore()
 const userStore = useUserStore()
 
+const loading = ref(false)
 const selectedUser = ref(null)
-const selectedMonth = ref(route.query.month || new Date().toISOString().slice(0, 7))
+const selectedMonth = ref(route.query.date || new Date().toISOString().slice(0, 7))
 
 const filters = ref({
   company_id: route.query.company_id || '',
@@ -27,8 +28,14 @@ const filters = ref({
 
 onMounted(async () => {
   if (filters.value.employee_id) {
-    await fetchUser(filters.value.employee_id)
-    await fetchOvertimeListData()
+    loading.value = true
+    try {
+      await fetchUser(filters.value.employee_id)
+      await fetchOvertimeListData()
+    } catch (error) {
+      console.log(error)
+    }
+    loading.value = false
   }
 })
 
@@ -62,12 +69,7 @@ const fetchOvertimeListData = async () => {
 
 // Watch selectedMonth change
 watch(selectedMonth, (date) => {
-  router.replace({
-    query: {
-      ...route.query,
-      date,
-    },
-  })
+  router.replace({ query: { ...route.query, date } })
   fetchOvertimeListData()
 })
 
@@ -109,7 +111,10 @@ const handleFilterChange = () => {
       <h1 class="title-md md:title-lg flex-wrap text-center">Monthly Overtime</h1>
       <div></div>
     </div>
-    <div class="w-full flex flex-wrap gap-4 items-center md:w-auto">
+    <div
+      class="w-full flex flex-wrap gap-4 items-center md:w-auto relative"
+      :class="{ 'opacity-50': loading }"
+    >
       <EmployeeFilter
         v-model="filters"
         :initial-value="route.query"
@@ -124,9 +129,10 @@ const handleFilterChange = () => {
           class="input-1"
         />
       </div>
+      <div v-if="loading" class="absolute inset-0 w-full h-full"></div>
     </div>
 
-    <LoaderView v-if="overtimeStore.isLoading" />
+    <LoaderView v-if="overtimeStore.isLoading || loading" />
 
     <OvertimeDataList
       v-else-if="selectedUser"
