@@ -145,7 +145,7 @@ const refreshPaycutList = async () => {
               <th colspan="4" class="border px-1 py-0.5">Leave Day</th>
               <th colspan="2" class="border px-1 py-0.5">Short Leave</th>
               <th rowspan="2" class="border px-1 py-0.5">OT Hour</th>
-              <th colspan="3" class="border px-1 py-0.5">Deduction</th>
+              <th colspan="4" class="border px-1 py-0.5">Deduction</th>
             </tr>
             <tr class="bg-gray-100 text-xs">
               <th class="border px-2 py-0.5">TD</th>
@@ -167,7 +167,7 @@ const refreshPaycutList = async () => {
               <th class="border px-2 py-0.5">WPL</th>
               <th class="border px-2 py-0.5">Delay</th>
               <th class="border px-2 py-0.5">Early</th>
-              <!-- <th class="border px-2 py-0.5">Hour</th> -->
+              <th class="border px-2 py-0.5">Absent Hour</th>
               <th class="border px-2 py-0.5">WPL(Hour)</th>
               <th class="border px-2 py-0.5">Pay Cut</th>
               <th class="border px-2 py-0.5">Payable Hour</th>
@@ -210,7 +210,8 @@ const refreshPaycutList = async () => {
               <td class="border px-2 py-0.5">
                 {{ log?.total_overtime_hours ? log?.total_overtime_hours + ' H' : '' }}
               </td>
-              <td class="border px-2 py-0.5">{{ log?.total_wpl_hour }}</td>
+              <td class="border px-2 py-0.5">{{ log?.remain_total_absent * 9 }}H</td>
+              <td class="border px-2 py-0.5">{{ log?.total_wpl_hour }}H</td>
               <td class="border px-2 py-0.5">
                 <div class="flex gap-2 items-center">
                   <DisplayFormattedWorkingHours :workingHours="log?.paycut?.paycut_hours" />
@@ -223,7 +224,7 @@ const refreshPaycutList = async () => {
                   />
                 </div>
               </td>
-              <td class="border px-2 py-0.5">{{ log?.payable_hour }}</td>
+              <td class="border px-2 py-0.5">{{ log?.payable_hour }}H</td>
             </tr>
           </tbody>
         </table>
