@@ -33,15 +33,25 @@ const fetchAttendance = async () => {
   const companyId = filters.value.company_id
   const employeeId = filters.value.employee_id || ''
   const category = filters.value.type !== 'all' ? filters.value.type : ''
-  if (companyId) {
+
+  if (!companyId) {
+    alert('⚠️ Please select a company first.')
+    return
+  }
+
+  try {
     await attendanceStore.getMonthlyAttendanceSummaryReport(
       companyId,
       employeeId,
       category,
       selectedMonth.value
     )
+  } catch (error) {
+    console.error('❌ Failed to load attendance:', error)
+    alert('❌ Failed to load attendance data.')
   }
 }
+
 
 // ✅ Sync filters with query only when changed
 const handleFilterChange = () => {
@@ -63,23 +73,7 @@ const handleFilterChange = () => {
   if (isDifferent) {
     router.replace({ query: newQuery })
   }
-
-  fetchAttendance()
 }
-
-// ✅ Watchers
-watch(
-  () => [
-    filters.value.company_id,
-    filters.value.department_id,
-    filters.value.type,
-    filters.value.employee_id,
-  ],
-  () => {
-    handleFilterChange()
-  },
-  { deep: true }
-)
 
 watch(selectedMonth, (date) => {
   if (route.query.date !== date) {
@@ -90,7 +84,6 @@ watch(selectedMonth, (date) => {
       }
     })
   }
-  fetchAttendance()
 })
 
 // ✅ Initial load
@@ -156,8 +149,9 @@ const refreshPaycutList = async () => {
         :initial-value="route.query" 
         @filter-change="handleFilterChange" 
       />
-      <div>
-        <input type="month" v-model="selectedMonth" @change="fetchAttendance" class="input-1" />
+      <div class="flex gap-4">
+        <input type="month" v-model="selectedMonth" class="input-1" />
+        <button type="button" @click="fetchAttendance()" class="btn-2">Search</button>
       </div>
     </div>
 
