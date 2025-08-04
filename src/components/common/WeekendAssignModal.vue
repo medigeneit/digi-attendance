@@ -1,14 +1,15 @@
 <script setup>
 import dayjs from 'dayjs'
 import { ref, watch } from 'vue'
-
-const emit = defineEmits(['close', 'update'])
+import { useUserStore } from '@/stores/user' // Import the store
+const emit = defineEmits(['close'])
 const props = defineProps({
   isOpen: Boolean,
   assign_weekend: {
     type: Object,
     default: () => null,
   },
+  userId: String,
 })
 
 const form = ref({
@@ -16,6 +17,8 @@ const form = ref({
   start_month: new Date().toISOString().substring(0, 7),
   end_month: '',
 })
+
+const userStore = useUserStore() // Access the user store
 
 // Watch modal open state to initialize form
 watch(
@@ -52,6 +55,23 @@ watch(
 const closeModal = () => {
   emit('close', false)
 }
+
+// Function to handle form submission: either update or create the weekend data
+const submitWeekend = async () => {
+  const weekendData = {
+    weekends: form.value.weekends,
+    start_month: form.value.start_month,
+    end_month: form.value.end_month,
+  }
+
+  try {
+    const message = await userStore.updateOrCreateWeekend(props.userId, weekendData);
+    closeModal(); // Close modal after successful operation
+    console.log({message}); // Optionally show a success message or handle UI feedback
+  } catch (error) {
+    console.error(error.message); // Handle error (e.g., show error message)
+  }
+}
 </script>
 
 <template>
@@ -59,7 +79,7 @@ const closeModal = () => {
     v-if="isOpen"
     class="flex items-center justify-center fixed top-0 left-0 w-full h-full z-50 bg-opacity-40 bg-black"
   >
-    <div class="modal-card relative bg-white p-6 rounded w-full max-w-xl">
+  <div class="modal-card relative bg-white p-6 rounded w-full max-w-xl">
       <div class="flex flex-wrap gap-2 md:gap-4 bg-white p-2 border rounded">
         <label class="flex items-center gap-1.5 md:gap-2">
           <input type="checkbox" value="Saturday" v-model="form.weekends" class="form-checkbox" />
@@ -101,7 +121,7 @@ const closeModal = () => {
       </div>
 
       <div class="flex justify-end gap-3 mt-4">
-        <button @click="closeModal" class="btn-1">Done</button>
+        <button @click="submitWeekend" class="btn-1">Done</button>
       </div>
 
       <button type="button" @click="closeModal" class="absolute top-1 right-2 text-red-500 text-xl">

@@ -233,6 +233,18 @@ export const useUserStore = defineStore('user', () => {
       }
     }
 
+    const updateOrCreateWeekend = async(userId, weekendData) => {
+      try {
+        const response = await apiClient.post(`/employee/weekend/update-or-create/${userId}`, {
+          selected_weekend: weekendData,
+        });
+       fetchUsers()
+        return response.data.message;
+      } catch (error) {
+        throw new Error(error.response?.data?.message || error.message);
+      }
+    }
+
   // Return state, getters, and actions
   return {
     users,
@@ -261,6 +273,7 @@ export const useUserStore = defineStore('user', () => {
     fetchUsersExcelExport,
     saveLeaveBalances,
     fetchUserLeaveBalances,
-    fetchUserLeaveTypes
+    fetchUserLeaveTypes,
+    updateOrCreateWeekend
   }
 })

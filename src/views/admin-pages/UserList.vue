@@ -1,6 +1,7 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
 import ShiftAssignmentModal from '@/components/common/ShiftAssignmentModal.vue'
+import ShiftWeekendModal from '@/components/common/WeekendAssignModal.vue'
 import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import UserChip from '@/components/user/UserChip.vue'
 import { useCompanyStore } from '@/stores/company'
@@ -23,6 +24,7 @@ const selectedStatus = ref(route.query.status || 'active')
 const selectedUser = ref('')
 const selectedEmployee = ref('')
 const shiftAssignmentModal = ref(false)
+const modalOpen = ref(false)
 const departmentStore = useDepartmentStore()
 const companyStore = useCompanyStore()
 const { companies } = storeToRefs(companyStore)
@@ -130,6 +132,15 @@ function toggleModal(user) {
   }
   shiftStore.fetchShifts(user?.company_id)
   shiftAssignmentModal.value = !shiftAssignmentModal.value
+}
+function toggleWeekendModal(user) {
+  modalEmployeeId.value = user.id
+  selectedEmployee.value = user
+  if (user?.company_id === undefined) {
+    return
+  }
+  shiftStore.fetchShifts(user?.company_id)
+  modalOpen.value = !modalOpen.value
 }
 
 function modalClose() {
@@ -248,6 +259,7 @@ const formattedName = (name) => {
                 <th class="border border-gray-300 px-2 text-left">Joining Date</th>
                 <th class="border border-gray-300 px-2 text-left">Role</th>
                 <th class="border border-gray-300 px-2 text-left">Shift</th>
+                <th class="border border-gray-300 px-2 text-left">Weekend</th>
                 <th class="border border-gray-300 px-2 text-left">Phone</th>
                 <th class="border border-gray-300 px-2 text-left">Email</th>
                 <th class="border border-gray-300 px-2 text-left">Status</th>
@@ -306,6 +318,44 @@ const formattedName = (name) => {
                         :hasShift="user?.current_shift"
                         :employee="{ id: selectedEmployee.id, name: selectedEmployee.name }"
                         @close="modalClose"
+                      />
+                    </div>
+                  </Transition>
+                </td>
+                <td class="border border-gray-300 px-2 py-3">
+                  <div class="flex justify-center items-center gap-4">
+                    <!-- Shift Info -->
+                    <div class="text-sm text-gray-700">
+                      <span v-if="user?.assign_weekend?.weekends.length" class="text-green-600">
+                        {{ user?.assign_weekend?.weekends?.join(', ') }}
+                      </span>
+                      <span v-else class="text-red-500 italic">Not Assigned</span>
+                    </div>
+
+                    <!-- Action Button -->
+                    <button
+                      type="button"
+                      @click="toggleWeekendModal(user)"
+                      class="px-3 py-1 rounded text-white text-xs transition-all duration-150"
+                      :class="user?.assign_weekend?.weekends.length ? 'btn-1' : 'btn-2'"
+                    >
+                      <span v-if="user?.assign_weekend?.weekends.length">
+                        <i class="far fa-repeat-alt text-yellow-500 hover:text-yellow-600"></i>
+                      </span>
+                      <span v-else>
+                        <i class="far fa-plus"></i>
+                      </span>
+                    </button>
+                  </div>
+
+                  <!-- Modal -->
+                  <Transition name="fade">
+                    <div v-if="modalEmployeeId === user.id && modalOpen">
+                      <ShiftWeekendModal
+                        :isOpen="modalOpen"
+                        :assign_weekend="user?.assign_weekend"
+                        :userId="user.id"
+                        @close="modalOpen = false"
                       />
                     </div>
                   </Transition>
