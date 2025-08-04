@@ -55,17 +55,55 @@ const dateWiseTaskList = (_day, _month, _year) => {
   const selectedDate = new Date(_year, _month - 1, _day)
   return taskStore?.tasks
     .filter((t) => {
-      if (t.started_at) {
-        const taskDate = new Date(t.started_at)
-        return taskDate <= selectedDate
+      if (!t.users.some((u) => u.id === 4)) {
+        //Saif Vai
+        return false
+      }
+
+      // if (!t.users.some((u) => u.id === 49)) {
+      //   //Asif Vai
+      //   return false
+      // }
+
+      const deadline = t.deadline ? new Date(t.deadline) : null
+      const today = new Date()
+
+      console.log({ today })
+
+      if (t.assigned_at || t.created_at) {
+        let assignDate = new Date(t.assigned_at)
+
+        if (!t.assigned_at && t.created_at) {
+          const createdDate = new Date(t.created_at)
+          assignDate = new Date(
+            createdDate.getFullYear(),
+            createdDate.getMonth(),
+            createdDate.getDate(),
+          )
+        }
+
+        let taskCompletedDate = null
+        if (t.completed_at) {
+          taskCompletedDate = new Date(t.completed_at)
+        }
+
+        return (
+          assignDate <= selectedDate &&
+          (!taskCompletedDate || taskCompletedDate >= selectedDate) &&
+          (!deadline || deadline >= selectedDate || selectedDate <= today)
+        )
       }
       return false
     })
-    .map((t) => {
+    .map((task) => {
+      let deadline_crossed = false
+      if (task.deadline) {
+        deadline_crossed = new Date(task.deadline) < selectedDate
+      }
+
       return {
-        id: t.id,
-        // title: `${t.id} - ${t.started_at}`,
-        title: t.title,
+        ...task,
+        deadline_crossed,
       }
     })
 }

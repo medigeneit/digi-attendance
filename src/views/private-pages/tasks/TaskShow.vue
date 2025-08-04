@@ -287,6 +287,7 @@ watch(
 
               <RouterLink
                 :to="{
+                  name: 'TaskShow',
                   params: { id: store.task?.id },
                 }"
                 @click="$event.stopPropagation()"
