@@ -95,11 +95,7 @@ watch(
   () => departmentForm.company_id,
   async (company_id) => {
     if (company_id) {
-      await companyStore.fetchEmployee(company_id)
-
-      selectIncharge.value = companyStore.employees.find(
-        (employee) => employee.id === props.department?.in_charge?.id,
-      )
+      await fetchEmployee(company_id)
     }
   },
 )
@@ -124,7 +120,25 @@ const fetchCompanies = async () => {
   }
 }
 
+const fetchEmployee = async (companyId) => {
+  if (!companyId) return
+
+  await companyStore.fetchEmployee(companyId)
+
+  selectIncharge.value = companyStore.employees.find(
+    (employee) => employee.id === props.department?.in_charge?.id,
+  )
+}
+
 onMounted(async () => {
+  console.log(`DepartmentModal: onMounted`)
+
+  await fetchCompanies()
+
+  if (props.department.company_id) {
+    await fetchEmployee(props.department.company_id)
+  }
+
   await userStore.fetchTypeWiseEmployees({ type: 'academy_body,doctor' })
 
   selectCoordinator.value = userStore.users?.find(
