@@ -1,5 +1,5 @@
 <template>
-  <div class="my-container">
+  <div class="container px-6 mx-auto">
     <!-- <div class="card-bg p-4 md:p-8">
       <div v-if="user">
         <p>
@@ -256,7 +256,7 @@
 
 <script setup>
 import OverlyModal from '@/components/common/OverlyModal.vue'
-import TaskInMonth from '@/components/tasks/TaskInMonth.vue'
+import TaskInMonth from '@/components/tasks/monthly-task-view/TaskInMonth.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
