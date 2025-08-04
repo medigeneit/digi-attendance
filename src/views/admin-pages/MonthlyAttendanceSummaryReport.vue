@@ -4,19 +4,23 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useAuthStore } from '@/stores/auth'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import UpdateApprovalTime from '@/components/paycut/UpdateOrCreate.vue'
 import DisplayFormattedWorkingHours from '@/components/paycut/DisplayFormattedWorkingHours.vue'
 import { usePaycutStore } from '@/stores/paycut'
+
 const router = useRouter()
 const route = useRoute()
+
 const authStore = useAuthStore()
 const attendanceStore = useAttendanceStore()
 const paycutStore = usePaycutStore()
+
 const selectedMonth = ref(route.query.date || attendanceStore.selectedMonth)
+
 const { monthly_company_summary } = storeToRefs(attendanceStore)
-const category = ref('')
+
 const filters = ref({
   company_id: route.query.company_id || '',
   department_id: route.query.department_id || 'all',
@@ -24,22 +28,85 @@ const filters = ref({
   employee_id: route.query.employee_id || '',
 })
 
+// ✅ Fetch attendance data
 const fetchAttendance = async () => {
-  if (filters.value.company_id) {
+  const companyId = filters.value.company_id
+  const employeeId = filters.value.employee_id || ''
+  const category = filters.value.type !== 'all' ? filters.value.type : ''
+  if (companyId) {
     await attendanceStore.getMonthlyAttendanceSummaryReport(
-      filters.value.company_id,
-      filters.value.employee_id,
-      filters.value.type,
+      companyId,
+      employeeId,
+      category,
       selectedMonth.value
     )
   }
 }
 
+// ✅ Sync filters with query only when changed
+const handleFilterChange = () => {
+  const currentQuery = route.query
+  const newQuery = {
+    ...currentQuery,
+    company_id: filters.value.company_id,
+    department_id: filters.value.department_id,
+    type: filters.value.type,
+    employee_id: filters.value.employee_id,
+    date: selectedMonth.value
+  }
+
+  // only replace if query actually changed
+  const isDifferent = Object.keys(newQuery).some(
+    (key) => currentQuery[key] !== String(newQuery[key])
+  )
+
+  if (isDifferent) {
+    router.replace({ query: newQuery })
+  }
+
+  fetchAttendance()
+}
+
+// ✅ Watchers
+watch(
+  () => [
+    filters.value.company_id,
+    filters.value.department_id,
+    filters.value.type,
+    filters.value.employee_id,
+  ],
+  () => {
+    handleFilterChange()
+  },
+  { deep: true }
+)
+
+watch(selectedMonth, (date) => {
+  if (route.query.date !== date) {
+    router.replace({
+      query: {
+        ...route.query,
+        date
+      }
+    })
+  }
+  fetchAttendance()
+})
+
+// ✅ Initial load
+onMounted(() => {
+  if (filters.value.company_id) {
+    fetchAttendance()
+  }
+})
+
+// Export handlers
 const getExportExcel = async () => {
   if (filters.value.company_id) {
+    const category = filters.value.type !== 'all' ? filters.value.type : ''
     await attendanceStore.downloadExcel(
       filters.value.company_id,
-      category.value,
+      category,
       selectedMonth.value
     )
   }
@@ -47,45 +114,13 @@ const getExportExcel = async () => {
 
 const getDownloadPDF = async () => {
   if (filters.value.company_id) {
+    const category = filters.value.type !== 'all' ? filters.value.type : ''
     await attendanceStore.downloadPDF(
       filters.value.company_id,
-      category.value,
+      category,
       selectedMonth.value
     )
   }
-}
-
-// onMounted(async () => {
-//   await fetchAttendance()
-// })
-
-watch(() => filters.value.company_id, async (newCompanyId) => {
-  if (newCompanyId) {
-    await fetchAttendance()
-  }
-})
-
-watch(selectedMonth, (date) => {
-  router.replace({
-    query: {
-      ...route.query,
-      date
-    }
-  })
-  fetchAttendance()
-})
-
-const handleFilterChange = () => {
-  router.replace({
-    query: {
-      ...route.query,
-      company_id: filters.value.company_id,
-      department_id: filters.value.department_id,
-      type: filters.value.type,
-      employee_id: filters.value.employee_id,
-    }
-  })
-  fetchAttendance()
 }
 
 const goBack = () => router.go(-1)
@@ -93,9 +128,9 @@ const goBack = () => router.go(-1)
 const refreshPaycutList = async () => {
   await fetchAttendance()
 }
-
-
 </script>
+
+
 
 <template>
   <div class="px-4 space-y-4">
@@ -131,7 +166,7 @@ const refreshPaycutList = async () => {
     <div v-else class="space-y-4">
       <div class="overflow-x-auto card-bg" v-if="filters.company_id">
         <table class="min-w-full table-auto border-collapse border border-gray-300 bg-white">
-          <thead>
+          <thead class="sticky top-0 z-10 bg-white shadow-sm">
             <tr class="bg-gray-100 text-sm">
               <th rowspan="2" class="border px-1 py-0.5">#</th>
               <th rowspan="2" class="border px-1 py-0.5">Employee Name</th>
@@ -233,3 +268,11 @@ const refreshPaycutList = async () => {
     </div>
   </div>
 </template>
+
+
+<style setup>
+.card-bg {
+  max-height: 80vh;
+  overflow: auto;
+}
+</style>
