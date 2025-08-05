@@ -30,6 +30,34 @@ export const getDisplayDate = (dateTime) => {
   }
 }
 
+export const getDisplayDateTime = (dateTime) => {
+  if (!dateTime) {
+    return ''
+  }
+
+  try {
+    const date = new Date(dateTime)
+    if (isNaN(date)) return ''
+
+    const day = String(date.getDate()).padStart(2, '0')
+    const monthNames = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ]
+    const month = monthNames[date.getMonth()]
+    const year = date.getFullYear()
+
+    let hours = date.getHours()
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    const ampm = hours >= 12 ? 'PM' : 'AM'
+    hours = hours % 12 || 12 // convert to 12-hour format
+
+    return `${day}-${month}-${year} ${hours}:${minutes} ${ampm}`
+  } catch (e) {
+    return ''
+  }
+}
+
 export const getYearMonthDayFormat = (dateTime) => {
   if (!dateTime) {
     return ''
@@ -48,3 +76,4 @@ export const getYearMonthDayFormat = (dateTime) => {
     return ''
   }
 }
+

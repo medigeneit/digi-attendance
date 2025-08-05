@@ -157,24 +157,23 @@ const dateWiseTaskList = (_day, _month, _year) => {
       <template #calender-bottom>
         <div class="absolute inset-0 bg-white bg-opacity-90" v-if="selected.day">
           <div
-            class="absolute inset-16 bg-white border border-blue-500 rounded z-20 overflow-y-auto p-4"
+            class="absolute inset-16 bg-white border border-blue-500 rounded-md z-20 overflow-y-auto"
           >
-            <h3 class="text-lg font-semibold mb-4">
+            <div
+              class="text-lg font-semibold mb-4 sticky top-0 border-b border-blue-200 px-4 z-30 py-3 bg-white flex items-center"
+            >
               Tasks for {{ selected.day }}/{{ selected.month }}/{{ selected.year }}
-            </h3>
+              <button class="ml-auto" type="button" @click.prevent="handleCloseClick">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
             <TaskListOnDay
+              class="p-4"
               :is-current-month="isCurrentMonth"
               :tasks="dateWiseTaskList(selected.day, selected.month, selected.year)"
               :tree="true"
             />
           </div>
-          <button
-            class="btn-icon absolute right-[86px] top-[86px] z-30"
-            type="button"
-            @click.prevent="handleCloseClick"
-          >
-            <i class="fas fa-times"></i>
-          </button>
         </div>
       </template>
     </CalenderView>
