@@ -1,4 +1,5 @@
 <script setup>
+import AttendanceTable from '@/components/AttendanceTable.vue'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
@@ -171,7 +172,9 @@ const handleFilterChange = () => {
 
     <div v-else class="space-y-4">
 
-      <div class="overflow-x-auto card-bg">
+      <AttendanceTable :logs="attendanceStore.monthlyLogs" />
+
+      <!-- <div class="overflow-x-auto card-bg">
         <table class="min-w-full table-auto border-collapse border border-gray-300 bg-white">
           <thead>
             <tr class="bg-gray-200 text-xs">
@@ -201,12 +204,10 @@ const handleFilterChange = () => {
                 :title="`${log.shift_start_time} to ${log.shift_end_time}`"
               >
                 <div class="flex flex-col gap-1">
-                  <!-- Shift name -->
                   <div class="font-semibold text-gray-800">
                     {{ log.shift_name }}
                   </div>
 
-                  <!-- Exchange status badge with link -->
                   <div
                     v-if="log.shift_exchange_application_status"
                     class="text-xs"
@@ -246,7 +247,6 @@ const handleFilterChange = () => {
                       <i class="far fa-eye ml-1"></i>
                     </router-link>
 
-                    <!-- <span v-if="log.late_duration" class="ml-2 bg-red-200 text-red-700 text-xs px-1.5 py-0.5 rounded-full">Late</span> -->
                   </div>
                 </td>
 
@@ -268,7 +268,6 @@ const handleFilterChange = () => {
                       <i class="far fa-eye ml-1"></i>
                     </router-link>
 
-                    <!-- <span v-if="log.early_leave_duration" class="ml-2 bg-red-200 text-red-700 text-xs px-1.5 py-0.5 rounded-full">Early</span> -->
                   </div>
                 </td>
 
@@ -302,16 +301,7 @@ const handleFilterChange = () => {
               <td class="border px-1 py-0.5">
                 <div v-if="log.late_duration">
                   {{ log.late_duration }}
-                  <!-- <span
-                    v-if="log.first_short_leave"
-                    :class="{
-                      'text-green-500': log.first_short_leave === 'Approved',
-                      'text-yellow-500': log.first_short_leave === 'Pending',
-                      'text-red-500': log.first_short_leave === 'Rejected',
-                    }"
-                  >
-                    ({{ log.first_short_leave }})
-                  </span> -->
+                 
                   <router-link
                     v-if="log.first_short_leave"
                     :to="{
@@ -333,18 +323,7 @@ const handleFilterChange = () => {
               <td class="border px-1 py-0.5">
                 <div v-if="log.early_leave_duration">
                   {{ log.early_leave_duration }}
-                  <!-- 
-                  <span
-                    v-if="log.last_short_leave"
-                    class="px-1"
-                    :class="{
-                      'text-green-500': log.last_short_leave === 'Approved',
-                      'text-yellow-500': log.last_short_leave === 'Pending',
-                      'text-red-500': log.last_short_leave === 'Rejected',
-                    }"
-                  >
-                    ({{ log.last_short_leave }})
-                  </span> -->
+                
                   <router-link
                     v-if="log.last_short_leave"
                     :to="{
@@ -366,17 +345,13 @@ const handleFilterChange = () => {
               </td>
               <td class="border py-0.5">
                 <div class="flex  justify-center items-center gap-1">
-                  <!-- Main Attendance Status Badge -->
                   <StatusBadge :status="log.status" />
-                  <!-- Leave Application ID with view link -->
                  <div v-if="log.leave_application_id" class="flex items-center gap-2">
-                      <!-- View Button -->
                       <router-link
                         :to="{ name: 'LeaveApplicationShow', params: { id: log.leave_application_id } }"
                         class="text-blue-600 text-xs inline-flex items-center gap-1 hover:underline hover:text-blue-800 transition"
                         title="View Leave Application"
                       >
-                        <!-- Status Badge -->
                         <span
                           class="text-xs font-medium py-0.5  transition"
                           :class="{
@@ -392,7 +367,6 @@ const handleFilterChange = () => {
 
                     </div>
                  <div v-if="log.day_exchange_id" class="flex items-center gap-2">
-                      <!-- View Button -->
                      <router-link
                           :to="{ name: 'ExchangeOffdayShow', params: { id: log.day_exchange_id } }"
                           class="text-blue-600 text-xs inline-flex items-center gap-1 hover:underline hover:text-blue-800 transition"
@@ -423,7 +397,7 @@ const handleFilterChange = () => {
             </tr>
           </tbody>
         </table>
-      </div>
+      </div> -->
     </div>
     
   </div>

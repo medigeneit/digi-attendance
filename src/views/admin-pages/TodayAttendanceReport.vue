@@ -239,7 +239,7 @@ watch(status, (newStatus) => {
                     },
                   ]"
                 >
-                  {{ log.absent_reason }}
+                  {{ log.absent_reason }} 
                   <router-link
                     v-if="log.application_id"
                     :to="{
@@ -269,12 +269,13 @@ watch(status, (newStatus) => {
                     'font-medium',
                     {
                       'text-red-600': log.status === 'Absent',
+                      'text-blue-600': log.status === 'Holiday',
                       'text-green-600': log.status === 'Present',
                       'text-gray-600': log.status === 'Weekend' || log.status === 'Leave',
                     },
                   ]"
                 >
-                  {{ log.status }}
+                  {{ log.status }} 
                 </span>
               </td>
             </tr>
