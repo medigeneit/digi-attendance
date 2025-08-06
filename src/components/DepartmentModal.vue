@@ -1,8 +1,9 @@
 <script setup>
 import Multiselect from '@/components/MultiselectDropdown.vue'
 import { useCompanyStore } from '@/stores/company'
+import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 
 const props = defineProps({
   show: { type: Boolean, required: true },
@@ -12,8 +13,10 @@ const props = defineProps({
 const emit = defineEmits(['close', 'save'])
 
 const companyStore = useCompanyStore()
+const userStore = useUserStore()
 
 const { companies, employees } = storeToRefs(companyStore)
+const { users } = storeToRefs(userStore)
 
 const selectIncharge = ref('')
 const selectCoordinator = ref('')
@@ -92,15 +95,7 @@ watch(
   () => departmentForm.company_id,
   async (company_id) => {
     if (company_id) {
-      await companyStore.fetchEmployee(company_id)
-
-      selectIncharge.value = companyStore.employees.find(
-        (employee) => employee.id === props.department?.in_charge?.id,
-      )
-
-      selectCoordinator.value = companyStore.employees.find(
-        (employee) => employee.id === props.department?.coordinator?.id,
-      )
+      await fetchEmployee(company_id)
     }
   },
 )
@@ -124,6 +119,32 @@ const fetchCompanies = async () => {
     console.error('Failed to fetch companies:', error)
   }
 }
+
+const fetchEmployee = async (companyId) => {
+  if (!companyId) return
+
+  await companyStore.fetchEmployee(companyId)
+
+  selectIncharge.value = companyStore.employees.find(
+    (employee) => employee.id === props.department?.in_charge?.id,
+  )
+}
+
+onMounted(async () => {
+  console.log(`DepartmentModal: onMounted`)
+
+  await fetchCompanies()
+
+  if (props.department.company_id) {
+    await fetchEmployee(props.department.company_id)
+  }
+
+  await userStore.fetchTypeWiseEmployees({ type: 'academy_body,doctor' })
+
+  selectCoordinator.value = userStore.users?.find(
+    (user) => user.id === props.department?.coordinator?.id,
+  )
+})
 </script>
 
 <template>
@@ -161,7 +182,7 @@ const fetchCompanies = async () => {
         <div class="mb-4">
           <label for="coordinator_id" class="block text-sm font-medium mb-2">Coordinator</label>
           <Multiselect
-            :options="employees"
+            :options="users"
             v-model="selectCoordinator"
             label="label"
             :multiple="false"

@@ -166,7 +166,9 @@ onMounted(async () => {
         </div>
       </div>
     </div>
+
     <DepartmentModal
+      v-if="showDepartmentModal"
       :show="showDepartmentModal"
       :department="selectedDepartment"
       @close="closeDepartmentModal"
@@ -174,6 +176,7 @@ onMounted(async () => {
     />
 
     <DeleteModal
+      v-if="showDeleteModal"
       :show="showDeleteModal"
       :title="'Delete Department'"
       :message="`Are you sure you want to delete ${selectedDepartment?.name}?`"
