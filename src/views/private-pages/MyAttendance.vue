@@ -5,6 +5,7 @@ import { useAttendanceStore } from '@/stores/attendance'
 import { useAuthStore } from '@/stores/auth'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import AttendanceTable from '@/components/AttendanceTable.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -155,7 +156,8 @@ const getInitials = (name) => {
     <LoaderView v-if="attendanceStore.isLoading" />
 
     <div v-else class="space-y-4">
-      <div class="overflow-x-auto card-bg">
+      <AttendanceTable :logs="attendanceStore?.monthlyLogs" />
+      <!-- <div class="overflow-x-auto card-bg">
         <table class="min-w-full table-auto border-collapse border border-gray-300 bg-white">
           <thead>
             <tr class="bg-gray-200 text-xs">
@@ -304,7 +306,7 @@ const getInitials = (name) => {
             </tr>
           </tbody>
         </table>
-      </div>
+      </div> -->
     </div>
   </div>
 </template>
