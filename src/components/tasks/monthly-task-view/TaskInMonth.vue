@@ -76,11 +76,6 @@ const dateWiseTaskList = (_day, _month, _year) => {
 
         if (!assignDate && t.created_at) {
           assignDate = onlyDate(new Date(t.created_at))
-          // assignDate = new Date(
-          //   createdDate.getFullYear(),
-          //   createdDate.getMonth(),
-          //   createdDate.getDate(),
-          // )
         }
 
         let taskCompletedDate = null
@@ -98,17 +93,11 @@ const dateWiseTaskList = (_day, _month, _year) => {
           return false
         }
 
-        console.log(`#${_day}-${t.id}`, { assignDate, deadline, selectedDate, todayDate })
+        //console.log(`#${_day}-${t.id}`, { assignDate, deadline, selectedDate, todayDate })
 
         if (deadline && deadline < selectedDate && selectedDate > todayDate) {
           return false
         }
-
-        // return (
-        //   assignDate <= selectedDate &&
-        //   (!taskCompletedDate || taskCompletedDate >= selectedDate) &&
-        //   (!deadline || deadline >= selectedDate || selectedDate <= today)
-        // )
 
         return true
       }
