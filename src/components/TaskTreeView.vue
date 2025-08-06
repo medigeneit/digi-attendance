@@ -110,7 +110,7 @@
         </div>
 
         <span class="text-gray-500 text-sm" v-if="startedDate">
-          Started: <span class="font-semibold text-blue-800">{{ startedDate }}</span>
+          Starting: <span class="font-semibold text-blue-800">{{ startedDate }}</span>
         </span>
 
         <span class="ml-4 text-gray-500 text-sm" v-if="deadline">

@@ -52,7 +52,7 @@ const taskProgressUsers = computed(() =>
   getTaskProgressUsers(store.task.users, store.task.task_reports || []),
 )
 
-const startedDate = computed(() => getDisplayDate(store.task.started_at))
+const startedDate = computed(() => getDisplayDate(store.task.assigned_at))
 const deadline = computed(() => getDisplayDate(store.task.deadline))
 
 function handleDateChangeModal(type) {
@@ -215,7 +215,7 @@ watch(
               class="text-lg font-semibold italic text-green-600"
             />
             <span class="text-gray-500" v-if="startedDate">
-              Started: <span class="font-semibold text-green-800">{{ startedDate }}</span>
+              Starting: <span class="font-semibold text-green-800">{{ startedDate }}</span>
             </span>
             <span class="ml-4 text-gray-500" v-if="deadline">
               Deadline: <span class="text-red-500 font-semibold">{{ deadline }}</span>
@@ -271,7 +271,7 @@ watch(
                 <button
                   class="btn-3 px-3 py-0.5 text-sm h-8 font-semibold border disabled:opacity-30 disabled:pointer-events-none"
                   @click.prevent="() => handleDateChangeModal('start-date')"
-                  :disabled="!!authUserProgress?.started_at || !!store.task.closed_at"
+                  :disabled="!!authUserProgress?.assigned_at || !!store.task.closed_at"
                 >
                   Set Started Date
                 </button>

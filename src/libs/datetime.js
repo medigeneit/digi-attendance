@@ -77,3 +77,7 @@ export const getYearMonthDayFormat = (dateTime) => {
   }
 }
 
+
+export const onlyDate = (date) => {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+}

@@ -49,6 +49,8 @@ const form = ref({
   description: '',
   is_important: false,
   is_urgent: false,
+  assigned_at: null,
+  deadline: null,
 })
 
 watch(user_ids, (val) => {
@@ -211,11 +213,9 @@ async function submit() {
 
         <div class="grid grid-cols-2 gap-4 mb-4 mt-4">
           <div class="mb-4">
-            <label class="block text-gray-600 text-sm mb-1 font-medium">
-              Start Date <RequiredIcon />
-            </label>
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Starting</label>
             <input
-              v-model="form.started_at"
+              v-model="form.assigned_at"
               type="date"
               placeholder="Enter Start Date"
               class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
@@ -223,9 +223,7 @@ async function submit() {
           </div>
 
           <div class="mb-4">
-            <label class="block text-gray-600 text-sm mb-1 font-medium">
-              Deadline <RequiredIcon />
-            </label>
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Deadline</label>
             <input
               v-model="form.deadline"
               type="date"

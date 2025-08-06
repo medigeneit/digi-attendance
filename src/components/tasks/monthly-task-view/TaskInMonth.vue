@@ -1,4 +1,5 @@
 <script setup>
+import { onlyDate } from '@/libs/datetime'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { reactive, ref } from 'vue'
 import CalenderView from '../../Calender/CalenderView.vue'
@@ -26,9 +27,9 @@ function handleSelection(event, day, month, year) {
 }
 
 async function handleCalenderChange({ gridStartDate, gridEndDate, startOfMonth, endOfMonth }) {
-  console.log({ gridStartDate, gridEndDate, startOfMonth, endOfMonth })
+  // console.log({ gridStartDate, gridEndDate, startOfMonth, endOfMonth })
 
-  await taskStore.fetchTasks()
+  await taskStore.fetchMyTasks()
 }
 
 const dateIsToday = (day, month, year) => {
@@ -55,43 +56,61 @@ const dateWiseTaskList = (_day, _month, _year) => {
   const selectedDate = new Date(_year, _month - 1, _day)
   return taskStore?.tasks
     .filter((t) => {
-      if (!t.users.some((u) => u.id === 4)) {
-        //Saif Vai
-        return false
-      }
-
-      // if (!t.users.some((u) => u.id === 49)) {
-      //   //Asif Vai
+      // if (!t.users.some((u) => u.id === 4)) {
+      //   //Saif Vai
       //   return false
       // }
 
-      const deadline = t.deadline ? new Date(t.deadline) : null
-      const today = new Date()
+      // // if (!t.users.some((u) => u.id === 49)) {
+      // //   //Asif Vai
+      // //   return false
+      // // }
 
-      console.log({ today })
+      const deadline = t.deadline ? new Date(t.deadline) : null
+      const todayDate = onlyDate(new Date())
+
+      // console.log({ today })
 
       if (t.assigned_at || t.created_at) {
-        let assignDate = new Date(t.assigned_at)
+        let assignDate = onlyDate(new Date(t.assigned_at))
 
-        if (!t.assigned_at && t.created_at) {
-          const createdDate = new Date(t.created_at)
-          assignDate = new Date(
-            createdDate.getFullYear(),
-            createdDate.getMonth(),
-            createdDate.getDate(),
-          )
+        if (!assignDate && t.created_at) {
+          assignDate = onlyDate(new Date(t.created_at))
+          // assignDate = new Date(
+          //   createdDate.getFullYear(),
+          //   createdDate.getMonth(),
+          //   createdDate.getDate(),
+          // )
         }
 
         let taskCompletedDate = null
-        if (t.completed_at) {
-          taskCompletedDate = new Date(t.completed_at)
+
+        console.log(`#${_day}-${t.id}`, { assignDate, selectedDate })
+        if (selectedDate < assignDate) {
+          return false
         }
 
-        return (
-          assignDate <= selectedDate &&
-          (!taskCompletedDate || taskCompletedDate >= selectedDate) &&
-          (!deadline || deadline >= selectedDate || selectedDate <= today)
-        )
+        if (t.completed_at) {
+          taskCompletedDate = onlyDate(new Date(t.completed_at))
+        }
+
+        if (taskCompletedDate && taskCompletedDate < selectedDate) {
+          return false
+        }
+
+        console.log(`#${_day}-${t.id}`, { assignDate, deadline, selectedDate, todayDate })
+
+        if (deadline && deadline < selectedDate && selectedDate > todayDate) {
+          return false
+        }
+
+        // return (
+        //   assignDate <= selectedDate &&
+        //   (!taskCompletedDate || taskCompletedDate >= selectedDate) &&
+        //   (!deadline || deadline >= selectedDate || selectedDate <= today)
+        // )
+
+        return true
       }
       return false
     })
@@ -147,7 +166,7 @@ const dateWiseTaskList = (_day, _month, _year) => {
           <TaskListOnDay
             :is-current-month="isCurrentMonth"
             :tasks="dateWiseTaskList(day, month, year)"
-            limit="3"
+            :limit="3"
             class="text-xs mt-4"
             @clickOnMore="(event) => handleSelection(event, day, month, year)"
           />

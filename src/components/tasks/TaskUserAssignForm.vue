@@ -37,7 +37,7 @@ const form = ref(
         is_important: false,
         is_urgent: false,
         is_target: false,
-        started_at: '',
+        assigned_at: '',
         deadline: '',
       },
 )
@@ -135,7 +135,7 @@ function setTaskOnFormData(taskData) {
           is_important: taskData.is_important,
           is_urgent: taskData.is_urgent,
           is_target: taskData.is_target,
-          started_at: getYearMonthDayFormat(taskData.started_at),
+          assigned_at: getYearMonthDayFormat(taskData.assigned_at),
           deadline: getYearMonthDayFormat(taskData.deadline),
         }
 }
@@ -216,9 +216,9 @@ function setTaskOnFormData(taskData) {
 
         <div class="flex items-end col-span-full md:col-span-2 gap-4">
           <div class="w-1/2">
-            <label class="block text-gray-600 text-sm mb-1 font-medium">Start Date</label>
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Starting</label>
             <input
-              v-model="form.started_at"
+              v-model="form.assigned_at"
               type="date"
               placeholder="Enter Start Date"
               class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"

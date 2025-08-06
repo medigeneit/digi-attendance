@@ -78,8 +78,14 @@ const actionIconClass = computed(() => {
     "
   >
     <!-- <pre>{{ task.status }}</pre> -->
+    <div v-if="task.status === 'BLOCKED'">
+      <div class="flex flex-col items-center">
+        <i class="fas fa-lock-alt fa-4x text-violet-500"></i>
+        <div class="text-3xl mb-2 text-violet-500 mt-4">Task Blocked</div>
+      </div>
+    </div>
 
-    <div class="flex justify-center items-center">
+    <div v-else class="flex justify-center items-center">
       <div v-if="task.closed_at" class="flex flex-col justify-center items-center">
         <i class="fad fa-lock-alt fa-6x text-blue-500"></i>
         <div class="text-blue-700 text-2xl mt-4">Task closed</div>
