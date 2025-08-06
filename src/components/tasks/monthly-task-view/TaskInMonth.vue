@@ -56,23 +56,13 @@ const dateWiseTaskList = (_day, _month, _year) => {
   const selectedDate = new Date(_year, _month - 1, _day)
   return taskStore?.tasks
     .filter((t) => {
-      // if (!t.users.some((u) => u.id === 4)) {
-      //   //Saif Vai
-      //   return false
-      // }
-
-      // // if (!t.users.some((u) => u.id === 49)) {
-      // //   //Asif Vai
-      // //   return false
-      // // }
-
       const deadline = t.deadline ? new Date(t.deadline) : null
       const todayDate = onlyDate(new Date())
 
       // console.log({ today })
 
       if (t.assigned_at || t.created_at) {
-        let assignDate = onlyDate(new Date(t.assigned_at))
+        let assignDate = t.assigned_at ? onlyDate(new Date(t.assigned_at)) : null
 
         if (!assignDate && t.created_at) {
           assignDate = onlyDate(new Date(t.created_at))
@@ -80,7 +70,7 @@ const dateWiseTaskList = (_day, _month, _year) => {
 
         let taskCompletedDate = null
 
-        console.log(`#${_day}-${t.id}`, { assignDate, selectedDate })
+        // console.log(`#${_day}-${t.id}`, { assignDate, selectedDate })
         if (selectedDate < assignDate) {
           return false
         }
