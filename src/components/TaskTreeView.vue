@@ -71,6 +71,11 @@
             </div>
           </div>
         </div>
+        <div class="text-gray-400 text-xs col-span-full">
+          <i class="fas fa-clock"></i>
+          {{ getDisplayDateTime(task.created_at) }}
+        </div>
+
         <div class="flex flex-wrap gap-2 mb-2 col-span-full">
           <div
             class="border bg-gray-50 text-xs px-2 rounded-lg shadow-sm text-gray-700 bg-gradient-to-b to-slate-50 from-blue-100"
@@ -197,7 +202,7 @@
 import TaskTreeChildren from '@/components/TaskTreeChildren.vue'
 import SubTaskProgress from '@/components/tasks/SubTaskProgress.vue'
 import TaskStatus from '@/components/tasks/TaskStatus.vue'
-import { getDisplayDate } from '@/libs/datetime.js'
+import { getDisplayDate, getDisplayDateTime } from '@/libs/datetime.js'
 import { objectToQuery } from '@/libs/url'
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
