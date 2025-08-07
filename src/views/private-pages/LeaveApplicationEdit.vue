@@ -44,8 +44,8 @@ const weekends = computed(() => {
   )
 })
 
-onMounted(async () => {
-  userStore.fetchUserLeaveBalances(leaveApplicationStore.leaveApplication?.user?.id);
+onMounted(async () => {  
+  userStore.fetchUserLeaveBalances(leaveApplicationStore.leaveApplication?.user_id);
   const { id } = route.params
   isEditMode.value = !!id
   try {
