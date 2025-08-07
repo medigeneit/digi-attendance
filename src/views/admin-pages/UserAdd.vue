@@ -94,6 +94,7 @@ const saveUser = async () => {
       nid: form.nid,
       date_of_birth: form.date_of_birth,
       joining_date: form.joining_date,
+      employee_id: form.employee_id,
       employment_type: form.employment_type,
       weekends: form.weekends,
       selected_weekend: selectedWeekend.value,

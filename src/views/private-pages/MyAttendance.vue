@@ -156,7 +156,7 @@ const getInitials = (name) => {
     <LoaderView v-if="attendanceStore.isLoading" />
 
     <div v-else class="space-y-4">
-      <AttendanceTable :logs="attendanceStore?.monthlyLogs" />
+      <AttendanceTable :logs="attendanceStore?.monthlyLogs" :applyApplication="true" />
       <!-- <div class="overflow-x-auto card-bg">
         <table class="min-w-full table-auto border-collapse border border-gray-300 bg-white">
           <thead>

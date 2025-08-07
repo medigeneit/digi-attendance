@@ -45,58 +45,76 @@ const weekends = computed(() => {
 })
 
 onMounted(async () => {
-  userStore.fetchUserLeaveBalances(leaveApplicationStore.leaveApplication?.user?.id);
-  const { id } = route.params
-  isEditMode.value = !!id
+  loading.value = true
   try {
+    const { id } = route.params
+    isEditMode.value = !!id
+
+    // Step 1: Fetch leave application
     await leaveApplicationStore.fetchLeaveApplicationById(id)
 
-    const companyId = leaveApplicationStore.leaveApplication?.user?.company?.id
+    const application = leaveApplicationStore.leaveApplication
+    const user = application?.user
+
+    if (!application || !user) return
+
+    const user_id = application.user_id
+    const companyId = user?.company?.id
+
+    // Step 2: Fetch leave types for user's company
     if (companyId) {
       await leaveTypeStore.fetchLeaveTypes(companyId)
     }
 
-    if (leaveApplicationStore.leaveApplication) {
-      await userStore.fetchTypeWiseEmployees({
-        type: leaveApplicationStore.leaveApplication.user.type,
-        except: [leaveApplicationStore.leaveApplication.user.id],
-      })
-
-      userStore.users = userStore.users.map((user) => ({ ...user, label: user.name }))
-
-      if (userStore.users.length > 0) {
-        const user = computed(
-          () =>
-            userStore.users.find(
-              (user) => user.id === leaveApplicationStore.leaveApplication?.handover_user_id,
-            ) || {},
-        )
-        selectUser.value = user.value
-      }
-
-      form.value.user_id = leaveApplicationStore.leaveApplication?.user_id
-      form.value.last_working_date = leaveApplicationStore.leaveApplication?.last_working_date
-      form.value.resumption_date = leaveApplicationStore.leaveApplication?.resumption_date
-      form.value.reason = leaveApplicationStore.leaveApplication?.reason
-      form.value.works_in_hand = leaveApplicationStore.leaveApplication?.works_in_hand
-      form.value.handover_user_id = leaveApplicationStore.leaveApplication?.handover_user_id
-      form.value.leave_days = leaveApplicationStore.leaveApplication?.leave_days
-
-      
-      
-      if (leaveApplicationStore.leaveApplication?.json_data) {
-        leaveApplicationStore.leaveApplication?.json_data.forEach((item, index) => {
-          console.log(leaveApplicationStore.leaveApplication);
-          selectedLeaveTypes.value[index] = item.leave_type_id || userLeaveBalance.value[0]?.id
-        })
-      }
+    // Step 3: Fetch user leave balances
+    if (user_id) {
+      await userStore.fetchUserLeaveBalances(user_id)
     }
+
+    // Step 4: Fetch type-wise employees
+    await userStore.fetchTypeWiseEmployees({
+      type: user.type,
+      except: [user.id],
+    })
+
+    userStore.users = userStore.users.map((user) => ({
+      ...user,
+      label: user.name,
+    }))
+
+    // Set selected user if handover user exists
+    if (userStore.users.length > 0) {
+      const selected = userStore.users.find(
+        (u) => u.id === application.handover_user_id
+      )
+      if (selected) selectUser.value = selected
+    }
+
+    // Step 5: Populate form values
+    form.value = {
+      user_id: application.user_id,
+      last_working_date: application.last_working_date,
+      resumption_date: application.resumption_date,
+      reason: application.reason,
+      works_in_hand: application.works_in_hand,
+      handover_user_id: application.handover_user_id,
+      leave_days: application.leave_days,
+    }
+
+    // Step 6: Set selected leave types
+    if (application.json_data && Array.isArray(application.json_data)) {
+      application.json_data.forEach((item, index) => {
+        selectedLeaveTypes.value[index] = item.leave_type_id || userLeaveBalance.value[0]?.id
+      })
+    }
+
   } catch (error) {
     console.error('Failed to load leave application:', error)
   } finally {
     loading.value = false
   }
 })
+
 
 const leaveDays = computed(() => {
   const startDateStr = form.value.last_working_date
