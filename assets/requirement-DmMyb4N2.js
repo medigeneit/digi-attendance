@@ -1,0 +1,1 @@
+import{D as n}from"./index-CDlKFhap.js";async function u({params:e={}}={}){return n.get("/requirements",{params:e})}async function i(e){return n.post("/requirements",e)}async function s(e,{params:t={}}={}){return n.get(`/requirements/${e}`,{params:t})}async function a(e,t){return n.put(`/requirements/${e}`,t)}export{i as a,s as f,u as g,a as u};
