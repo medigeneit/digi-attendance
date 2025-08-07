@@ -168,64 +168,7 @@ const userCanReport = computed(() => {
             placeholder="Enter report title"
           />
         </div>
-        <!-- 
-          <div class="col-span-full grid grid-cols-2">
-            <div class="col-span-2">
-              <label for="durationHour" class="block">Duration (Hours)</label>
-              <input
-              id="durationHour"
-              v-model.number="durationHour"
-              type="number"
-              min="0"
-              class="border rounded p-2 w-full"
-              />
-            </div>
-            
-            <div class="col-span-2">
-              <label for="durationMinute" class="block">Duration (Minutes)</label>
-              <input
-              id="durationMinute"
-              v-model.number="durationMinute"
-              type="number"
-              min="0"
-              max="59"
-              class="border rounded p-2 w-full"
-              />
-            </div> 
-          </div>
-        -->
 
-        <!-- 
-          <div class="col-span-2">
-            <label for="durationMinute" class="block">Progress (%)</label>
-            <input
-              id="durationMinute"
-              v-model.number="progress"
-              type="number"
-              min="0"
-              max="100"
-              class="border rounded p-2 w-full"
-            />
-          </div> 
-        -->
-
-        <div class="col-span-2">
-          <label class="block text-gray-600 text-sm mb-1 font-medium">
-            Status <RequiredIcon />
-          </label>
-          <select
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-            v-model="status"
-          >
-            <option value="">--select---</option>
-            <option>PENDING</option>
-            <option>IN_PROGRESS</option>
-            <option>COMPLETED</option>
-            <option>BLOCKED</option>
-            <option>CANCELLED</option>
-            <option>BACK_LOG</option>
-          </select>
-        </div>
         <div class="col-span-2">
           <label for="report_date" class="block text-gray-600 text-sm mb-1 font-medium">
             Report Date <RequiredIcon />

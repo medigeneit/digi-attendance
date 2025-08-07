@@ -107,7 +107,7 @@
         class="ml-auto text-right text-sm flex items-center justify-center sm:justify-start gap-4 mt-4 opacity-80"
       >
         <div v-if="task.is_target" class="bg-yellow-200 px-2 py-0.5 rounded-lg text-yellow-900">
-          TARGET TASK
+          <i class="fad fa-bullseye-arrow mr-1"></i> TARGET TASK
         </div>
 
         <span class="text-gray-500 text-sm" v-if="assignedDate">
