@@ -142,7 +142,7 @@ const formattedType = computed(() => {
             >
               <template v-for="(message, index) in notification.messages" :key="index">
                 <span v-if="index" class="hidden md:inline font-bold">|</span>
-                <span v-html="message" class="text-black font-semibold"></span>
+                <span v-html="message" class="text-black"></span>
               </template>
             </p>
           </div>
