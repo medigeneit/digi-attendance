@@ -86,6 +86,21 @@
               >
                 <i class="far fa-eye ml-1"></i>
               </router-link>
+               <router-link
+                v-if="!log.exit_time && new Date(log.date) < new Date() && log.status === 'Present' && applyApplication"
+                :to="{
+                  name: 'ManualAttendanceAdd',
+                  query: {
+                    type: 'Forget Punch',
+                    date: new Date(log.date + ' UTC').toISOString().split('T')[0],
+                    entry_time: log.entry_time,
+                    exit_time: log.exit_time,
+                  },
+                }"
+                class="btn-link text-red-600"
+              >
+                (Check Out Apply)
+              </router-link>
             </div>
           </td>
 
@@ -138,6 +153,21 @@
               >
                 ({{ log.first_short_leave }})
               </router-link>
+
+              <router-link
+                v-if="applyApplication && log.late_duration && !log.first_short_leave"
+                :to="{
+                  name: 'ShortLeaveAdd',
+                  query: {
+                    type: 'Delay',
+                    start_time: log.shift_start_time,
+                    end_time: log.entry_time,
+                  },
+                }"
+                class="btn-link text-red-600"
+              >
+                (Apply)
+              </router-link>
             </div>
           </td>
 
@@ -156,6 +186,21 @@
                 }"
               >
                 ({{ log.last_short_leave }})
+              </router-link>
+
+               <router-link
+                v-if="applyApplication && log.early_leave_duration && !log.last_short_leave"
+                :to="{
+                  name: 'ShortLeaveAdd',
+                  query: {
+                    type: 'Early',
+                    start_time: log.exit_time,
+                    end_time: log.shift_end_time,
+                  },
+                }"
+                class="btn-link text-red-600"
+              >
+                (Apply)
               </router-link>
             </div>
           </td>
@@ -226,5 +271,9 @@ defineProps({
     type: Array,
     required: true,
   },
+  applyApplication: {
+    type: Boolean,
+    default: false
+  }
 });
 </script>
