@@ -6,6 +6,7 @@
         :task="childTask"
         class="mb-3"
         :hide-buttons="hideButtons"
+        :hide-assigned-users="hideAssignedUsers"
         :tree-level="parentTreeLevel + 1"
         @editClick="(taskId) => emits('editClick', taskId)"
         @addClick="(taskId) => emits('addClick', taskId)"

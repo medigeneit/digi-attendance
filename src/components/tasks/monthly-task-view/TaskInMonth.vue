@@ -1,5 +1,5 @@
 <script setup>
-import { onlyDate } from '@/libs/datetime'
+import { dateWiseTaskList } from '@/libs/task'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { reactive, ref } from 'vue'
 import CalenderView from '../../Calender/CalenderView.vue'
@@ -52,59 +52,55 @@ const dateClass = (day, month, year, isCurrentMonth) => {
   }
 }
 
-const dateWiseTaskList = (_day, _month, _year) => {
-  const selectedDate = new Date(_year, _month - 1, _day)
-  return taskStore?.tasks
-    .filter((t) => {
-      const deadline = t.deadline ? new Date(t.deadline) : null
-      const todayDate = onlyDate(new Date())
+// const dateWiseTaskList = (_day, _month, _year) => {
+//   const selectedDate = new Date(_year, _month - 1, _day)
+//   return taskStore?.tasks
+//     .filter((task) => {
+//       const deadline = task.deadline ? new Date(task.deadline) : null
+//       const todayDate = onlyDate(new Date())
 
-      // console.log({ today })
+//       if (task.assigned_at || task.created_at) {
+//         let assignDate = task.assigned_at ? onlyDate(new Date(task.assigned_at)) : null
 
-      if (t.assigned_at || t.created_at) {
-        let assignDate = t.assigned_at ? onlyDate(new Date(t.assigned_at)) : null
+//         if (!assignDate && task.created_at) {
+//           assignDate = onlyDate(new Date(task.created_at))
+//         }
 
-        if (!assignDate && t.created_at) {
-          assignDate = onlyDate(new Date(t.created_at))
-        }
+//         let taskCompletedDate = null
 
-        let taskCompletedDate = null
+//         if (selectedDate < assignDate) {
+//           return false
+//         }
 
-        // console.log(`#${_day}-${t.id}`, { assignDate, selectedDate })
-        if (selectedDate < assignDate) {
-          return false
-        }
+//         if (task.completed_at) {
+//           taskCompletedDate = onlyDate(new Date(task.completed_at))
+//         }
 
-        if (t.completed_at) {
-          taskCompletedDate = onlyDate(new Date(t.completed_at))
-        }
+//         if (taskCompletedDate && taskCompletedDate < selectedDate) {
+//           return false
+//         }
 
-        if (taskCompletedDate && taskCompletedDate < selectedDate) {
-          return false
-        }
+//         if (deadline && deadline < selectedDate && selectedDate > todayDate) {
+//           return false
+//         }
 
-        //console.log(`#${_day}-${t.id}`, { assignDate, deadline, selectedDate, todayDate })
+//         return true
+//       }
 
-        if (deadline && deadline < selectedDate && selectedDate > todayDate) {
-          return false
-        }
+//       return false
+//     })
+//     .map((task) => {
+//       let deadline_crossed = false
+//       if (task.deadline) {
+//         deadline_crossed = new Date(task.deadline) < selectedDate
+//       }
 
-        return true
-      }
-      return false
-    })
-    .map((task) => {
-      let deadline_crossed = false
-      if (task.deadline) {
-        deadline_crossed = new Date(task.deadline) < selectedDate
-      }
-
-      return {
-        ...task,
-        deadline_crossed,
-      }
-    })
-}
+//       return {
+//         ...task,
+//         deadline_crossed,
+//       }
+//     })
+// }
 </script>
 
 <template>
@@ -144,7 +140,7 @@ const dateWiseTaskList = (_day, _month, _year) => {
 
           <TaskListOnDay
             :is-current-month="isCurrentMonth"
-            :tasks="dateWiseTaskList(day, month, year)"
+            :tasks="dateWiseTaskList(taskStore.tasks, day, month, year)"
             :limit="3"
             class="text-xs mt-4"
             @clickOnMore="(event) => handleSelection(event, day, month, year)"
@@ -168,7 +164,9 @@ const dateWiseTaskList = (_day, _month, _year) => {
             <TaskListOnDay
               class="p-4"
               :is-current-month="isCurrentMonth"
-              :tasks="dateWiseTaskList(selected.day, selected.month, selected.year)"
+              :tasks="
+                dateWiseTaskList(taskStore.tasks, selected.day, selected.month, selected.year)
+              "
               :tree="true"
             />
           </div>

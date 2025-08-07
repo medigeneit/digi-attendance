@@ -87,6 +87,7 @@
         </div>
 
         <TaskSupervisorAndEmployee
+          v-if="!hideAssignedUsers"
           :task="task"
           :tree-level="treeLevel"
           :employee-route-to="
@@ -109,12 +110,19 @@
           TARGET TASK
         </div>
 
-        <span class="text-gray-500 text-sm" v-if="startedDate">
-          Starting: <span class="font-semibold text-blue-800">{{ startedDate }}</span>
+        <span class="text-gray-500 text-sm" v-if="assignedDate">
+          Assign: <span class="font-semibold text-blue-800">{{ assignedDate }}</span>
         </span>
 
         <span class="ml-4 text-gray-500 text-sm" v-if="deadline">
           Deadline: <span class="text-blue-500 font-semibold">{{ deadline }}</span>
+        </span>
+
+        <span class="text-gray-500 text-sm" v-if="startedDate">
+          Started: <span class="font-semibold text-blue-800">{{ startedDate }}</span>
+        </span>
+        <span class="text-gray-500 text-sm" v-if="completedDate">
+          Completed: <span class="font-semibold text-blue-800">{{ completedDate }}</span>
         </span>
       </div>
 
@@ -137,7 +145,7 @@
               </span>
             </button>
 
-            <template v-if="!task.closed_at">
+            <template v-if="!task.closed_at && !hideButtons">
               <a
                 :href="`/tasks/add?parent_id=${props.task.id}&back-to=${encodeURIComponent(route.path + '?' + objectToQuery(route.query)).toLowerCase()}`"
                 class="hover:bg-blue-600 hover:text-white text-indigo-600 font-semibold px-3 py-0.5 rounded-full transition border border-transparent"
@@ -183,6 +191,7 @@
             v-if="showSubTask"
             :childrenTasks="task.children_tasks"
             :hide-buttons="hideButtons"
+            :hide-assigned-users="hideAssignedUsers"
             :parent-tree-level="treeLevel"
             @editClick="handleChildEditClick"
             @addClick="handleChildAddClick"
@@ -214,6 +223,7 @@ import TaskUrgentBadge from './tasks/TaskUrgentBadge.vue'
 const props = defineProps({
   task: { type: Object, required: true },
   hideButtons: { type: Boolean, default: false },
+  hideAssignedUsers: { type: Boolean, default: false },
   treeLevel: { type: Number, default: 0 },
   showDraggableHandle: { Boolean, default: false },
   isMyTask: { Boolean, default: false },
@@ -250,8 +260,10 @@ if (stored) {
   }
 }
 
-const startedDate = computed(() => getDisplayDate(props.task.started_at))
+const assignedDate = computed(() => getDisplayDate(props.task.assigned_at || props.task.created_at))
 const deadline = computed(() => getDisplayDate(props.task.deadline))
+const startedDate = computed(() => getDisplayDate(props.task.started_at))
+const completedDate = computed(() => getDisplayDate(props.task.completed_at))
 
 const showSubTask = computed({
   get: () => {

@@ -1,7 +1,6 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
 import OverlyModal from '@/components/common/OverlyModal.vue'
-import CountdownTimer from '@/components/CountdownTimer.vue'
 import SubTaskList from '@/components/tasks/SubTaskList.vue'
 import SubTaskProgress from '@/components/tasks/SubTaskProgress.vue'
 import { default as TaskDeletingFrom } from '@/components/tasks/TaskDeletingFrom.vue'
@@ -10,9 +9,8 @@ import TaskStatus from '@/components/tasks/TaskStatus.vue'
 import TaskStatusManager from '@/components/tasks/TaskStatusManager.vue'
 import TaskSupervisorAndEmployee from '@/components/tasks/TaskSupervisorAndEmployee.vue'
 import TaskUserDateUpdate from '@/components/tasks/TaskUserDateUpdate.vue'
-import { getDisplayDate } from '@/libs/datetime'
+import { getDisplayDateTime } from '@/libs/datetime'
 import { getTaskProgressUsers } from '@/libs/task-progress'
-import { useAuthStore } from '@/stores/auth'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -21,7 +19,6 @@ const store = useTaskStore()
 const route = useRoute()
 const router = useRouter()
 const state = ref('')
-const auth = useAuthStore()
 
 // const subTasks = computed(() => taskTree.getTaskListTree())
 const subTasks = computed(() => store.tasks)
@@ -52,13 +49,6 @@ const taskProgressUsers = computed(() =>
   getTaskProgressUsers(store.task.users, store.task.task_reports || []),
 )
 
-const startedDate = computed(() => getDisplayDate(store.task.assigned_at))
-const deadline = computed(() => getDisplayDate(store.task.deadline))
-
-function handleDateChangeModal(type) {
-  dateUpdateModal.user = auth.user
-  dateUpdateModal.type = type
-}
 async function handleUpdateDate() {
   await fetchTaskList(route.params.id)
   dateUpdateModal.user = null
@@ -157,6 +147,10 @@ watch(
                   >URGENT</span
                 >
               </div>
+              <div class="text-gray-400 text-xs mt-2 col-span-full">
+                <i class="fas fa-clock"></i>
+                {{ getDisplayDateTime(store.task.created_at) }}
+              </div>
             </div>
 
             <div
@@ -193,7 +187,7 @@ watch(
 
           <TaskSupervisorAndEmployee :task="store?.task" :tree-level="store?.task?.level" />
 
-          <section class="mt-4 col-span-full mb-6">
+          <section class="mt-4 col-span-full mb-6" v-if="store.task.children_task_count > 0">
             <TaskProgressTable
               :task-users="store.task?.users || []"
               :task="store.task"
@@ -208,23 +202,18 @@ watch(
             </TaskProgressTable>
           </section>
 
-          <div class="ml-auto text-right text-sm col-span-full">
-            <CountdownTimer
-              v-if="store.task.deadline"
-              :targetDateTime="store.task.deadline"
-              class="text-lg font-semibold italic text-green-600"
-            />
-            <span class="text-gray-500" v-if="startedDate">
-              Starting: <span class="font-semibold text-green-800">{{ startedDate }}</span>
-            </span>
-            <span class="ml-4 text-gray-500" v-if="deadline">
-              Deadline: <span class="text-red-500 font-semibold">{{ deadline }}</span>
-            </span>
+          <div class="ml-auto text-right text-sm col-span-full mt-4">
+            <div
+              v-if="store.task?.is_target"
+              class="bg-yellow-200 px-2 py-0.5 rounded-lg text-yellow-900"
+            >
+              TARGET TASK
+            </div>
           </div>
 
           <TaskStatusManager
             :task="store?.task || {}"
-            class="col-span-full"
+            class="col-span-full mt-4"
             @updateStatus="fetchTaskList(store?.task?.id)"
           />
 
@@ -254,34 +243,12 @@ watch(
               <i class="fas fa-arrow-left"></i> Back
             </RouterLink>
 
-            <!--
-              <button
-                @click="openComment($event, store.task?.id)"
-                class="bg-indigo-500 text-white px-3 py-1 rounded-full"
-              >
-                <i class="fas fa-plus"></i> Comment
-              </button>
-            -->
-
             <div class="ml-auto flex gap-4">
-              <template v-if="store.task?.children_task_count === 0">
+              <template
+                v-if="store.task?.children_task_count === 0 && store.task?.status === 'PENDING'"
+              >
                 <button class="btn-2-red h-8" @click.prevent="handleDeleteButtonClick">
                   Delete
-                </button>
-                <button
-                  class="btn-3 px-3 py-0.5 text-sm h-8 font-semibold border disabled:opacity-30 disabled:pointer-events-none"
-                  @click.prevent="() => handleDateChangeModal('start-date')"
-                  :disabled="!!authUserProgress?.assigned_at || !!store.task.closed_at"
-                >
-                  Set Started Date
-                </button>
-
-                <button
-                  class="btn-3 px-3 py-0.5 text-sm h-8 font-semibold border disabled:opacity-30 disabled:pointer-events-none"
-                  @click.prevent="() => handleDateChangeModal('finish-date')"
-                  :disabled="!!authUserProgress?.finished_at || !!store.task.closed_at"
-                >
-                  Set Finish Date
                 </button>
               </template>
 
