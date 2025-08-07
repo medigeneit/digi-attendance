@@ -18,7 +18,7 @@ const employeeAssignForm = reactive({
   isOpen: false,
 })
 
-const taskStatus = ref('')
+const taskStatus = ref('not-completed')
 
 const emit = defineEmits(['created', 'error', 'updatePriority', 'assignUser'])
 
