@@ -1,21 +1,5 @@
 <template>
   <div class="container px-6 mx-auto">
-    <!-- <div class="card-bg p-4 md:p-8">
-      <div v-if="user">
-        <p>
-          Hello <span class="title-md">{{ user.name }}!</span>
-        </p>
-        <h1 class="title-xl">Welcome back</h1>
-        <p>
-          <i class="fas fa-phone mr-2"></i>
-          Your phone number is <span class="title-md">{{ user.phone }}</span>
-        </p>
-      </div>
-      <div v-else>
-        <p>Loading...</p>
-      </div>
-    </div> -->
-
     <div class="grid gap-4 md:grid-cols-3 mt-4" v-if="isAdmin && authStore.isAdminMood">
       <RouterLink
         :to="{ name: 'TodayAttendanceReport', query: { search: 'all' } }"
@@ -248,15 +232,18 @@
         </div>
       </div>
       <div class="card-bg mt-4 gap-0 shadow-md border border-gray-300">
-        <TaskInMonth />
+        <DailyTask />
       </div>
+      <!-- <div class="card-bg mt-4 gap-0 shadow-md border border-gray-300">
+        <TaskInMonth />
+      </div> -->
     </div>
   </div>
 </template>
 
 <script setup>
 import OverlyModal from '@/components/common/OverlyModal.vue'
-import TaskInMonth from '@/components/tasks/monthly-task-view/TaskInMonth.vue'
+import DailyTask from '@/components/tasks/monthly-task-view/DailyTask.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
