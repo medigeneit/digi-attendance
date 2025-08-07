@@ -4,10 +4,12 @@ import OverlyModal from '@/components/common/OverlyModal.vue'
 import SubTaskList from '@/components/tasks/SubTaskList.vue'
 import SubTaskProgress from '@/components/tasks/SubTaskProgress.vue'
 import { default as TaskDeletingFrom } from '@/components/tasks/TaskDeletingFrom.vue'
+import TaskImportantBadge from '@/components/tasks/TaskImportantBadge.vue'
 import TaskProgressTable from '@/components/tasks/TaskProgressTable.vue'
 import TaskStatus from '@/components/tasks/TaskStatus.vue'
 import TaskStatusManager from '@/components/tasks/TaskStatusManager.vue'
 import TaskSupervisorAndEmployee from '@/components/tasks/TaskSupervisorAndEmployee.vue'
+import TaskUrgentBadge from '@/components/tasks/TaskUrgentBadge.vue'
 import TaskUserDateUpdate from '@/components/tasks/TaskUserDateUpdate.vue'
 import { getDisplayDateTime } from '@/libs/datetime'
 import { getTaskProgressUsers } from '@/libs/task-progress'
@@ -130,22 +132,14 @@ watch(
               <div class="flex items-center gap-2 text-xs text-gray-500 mt-2 opacity-80 text-left">
                 <div
                   v-if="store.task.parent_id == 0"
-                  class="text-white bg-green-700 text-[12px] uppercase px-[5px] py-[1px] rounded-full border border-green-200 opacity-80"
+                  class="text-white bg-green-700 text-[12px] uppercase px-2 py-[2px] rounded-full border border-green-200 opacity-80"
                 >
                   MAIN TASK
                 </div>
 
-                <span
-                  class="text-xs px-2 py-0.5 rounded-full border bg-yellow-800 text-white"
-                  v-if="store.task?.is_important"
-                  >IMPORTANT</span
-                >
+                <TaskImportantBadge v-if="store.task?.is_important" />
 
-                <span
-                  class="text-xs px-2 py-0.5 rounded-full border bg-red-500 text-white"
-                  v-if="store.task?.is_urgent"
-                  >URGENT</span
-                >
+                <TaskUrgentBadge v-if="store.task?.is_urgent" />
               </div>
               <div class="text-gray-400 text-xs mt-2 col-span-full">
                 <i class="fas fa-clock"></i>
@@ -202,16 +196,8 @@ watch(
             </TaskProgressTable>
           </section>
 
-          <div class="ml-auto text-right text-sm col-span-full mt-4">
-            <div
-              v-if="store.task?.is_target"
-              class="bg-yellow-200 px-2 py-0.5 rounded-lg text-yellow-900"
-            >
-              TARGET TASK
-            </div>
-          </div>
-
           <TaskStatusManager
+            v-if="store?.task"
             :task="store?.task || {}"
             class="col-span-full mt-4"
             @updateStatus="fetchTaskList(store?.task?.id)"

@@ -93,7 +93,7 @@ const taskReports = computed(() => {
         <table v-if="!store.loading" class="min-w-full bg-white shadow rounded-lg overflow-hidden">
           <thead class="bg-gray-100">
             <tr>
-              <th class="px-4 py-2 text-left">#</th>
+              <th class="px-4 py-2 text-left w-2">#</th>
               <th
                 class="px-4 py-2 text-left md:w-[100px] lg:w-[220px] xl:w-[320px]"
                 v-if="taskStore.task.children_task_count > 0"
@@ -111,6 +111,7 @@ const taskReports = computed(() => {
                 NO REPORTS
               </td>
             </tr>
+
             <tr
               v-for="(task_report, index) in taskReports"
               :key="task_report.id"
@@ -118,10 +119,10 @@ const taskReports = computed(() => {
               @click.prevent="goToShow(task_report.id)"
               role="button"
             >
-              <td class="px-4 py-2">{{ index + 1 }}</td>
+              <td class="px-4 py-2 border-b">{{ index + 1 }}</td>
 
               <td
-                class="px-4 py-2 font-medium border-r"
+                class="px-4 py-2 font-medium border-r border-b"
                 v-if="taskStore.task.children_task_count > 0"
               >
                 <div>
@@ -153,7 +154,7 @@ const taskReports = computed(() => {
                   </div>
                 </div>
               </td>
-              <td class="font-medium py-2 px-4">
+              <td class="font-medium py-2 px-4 border">
                 <div class="border rounded-md bg-gray-50">
                   <UserChip :user="task_report.user" class="inline-block w-full !rounded-sm" />
                   <div class="text-sm flex items-center px-3 py-3">
@@ -167,12 +168,6 @@ const taskReports = computed(() => {
                   </div>
                 </div>
               </td>
-              <!--
-              <td class="px-4 py-2 font-medium text-center">
-                {{ task_report.duration_hour }} h {{ task_report.duration_minute }} m
-              </td>
-              <td class="px-4 py-2 font-medium text-center">{{ task_report.progress }}%</td>
--->
             </tr>
           </tbody>
         </table>
