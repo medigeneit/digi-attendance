@@ -23,7 +23,14 @@ const limitedTaskList = computed(() => {
 <template>
   <div>
     <div v-if="tree">
-      <TaskTreeView v-for="task in limitedTaskList" :task="task" :key="task.id" class="mb-6" />
+      <TaskTreeView
+        v-for="task in limitedTaskList"
+        hide-buttons
+        hide-assigned-users
+        :task="task"
+        :key="task.id"
+        class="mb-6"
+      />
     </div>
 
     <ul v-else :class="{ 'text-gray-500 group-hover:text-gray-900': !isCurrentMonth }">

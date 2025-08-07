@@ -1,33 +1,61 @@
 <script setup>
+import { getDisplayDate } from '@/libs/datetime'
 import { updateTaskStatus } from '@/services/task'
-import { computed, ref } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+import { computed, reactive, ref } from 'vue'
 import LoaderView from '../common/LoaderView.vue'
 import OverlyModal from '../common/OverlyModal.vue'
+import TaskUserDateUpdate from './TaskUserDateUpdate.vue'
 
 const props = defineProps({
   task: { type: Object },
 })
 
 const emit = defineEmits(['updateStatus', 'error'])
-
+const auth = useAuthStore()
 const changingStatus = ref('')
 const state = ref()
 const error = ref()
+const dateUpdateModal = reactive({
+  user: null,
+  type: '',
+})
+
+function handleDateChangeModal(type) {
+  dateUpdateModal.user = auth.user
+  dateUpdateModal.type = type
+}
+
+const statusSerial = {
+  PENDING: 1,
+  IN_PROGRESS: 2,
+  COMPLETED: 3,
+  CLOSED: 4,
+}
+
+const currentStatusSerial = computed(() => {
+  return statusSerial?.[taskStatus.value] || 0
+})
+
 const mainClass = computed(() => {
   return {
-    'bg-yellow-50': props.task.status === 'IN_PROGRESS',
-    'bg-green-50': props.task.status === 'COMPLETED',
-    'bg-red-50': props.task.status === 'PENDING',
+    'bg-yellow-50': taskStatus.value === 'IN_PROGRESS',
+    'bg-green-50': taskStatus.value === 'COMPLETED',
+    'bg-red-50': taskStatus.value === 'PENDING',
     'bg-blue-50': props.task.closed_at,
   }
 })
 
+const taskStatus = computed(() => {
+  return props.task?.status
+})
+
 const nextAction = computed(() => {
-  if (props.task.status == 'PENDING') {
+  if (taskStatus.value == 'PENDING') {
     return 'Start'
-  } else if (props.task.status == 'IN_PROGRESS') {
+  } else if (taskStatus.value == 'IN_PROGRESS') {
     return 'Finish'
-  } else if (props.task.status == 'COMPLETED') {
+  } else if (taskStatus.value == 'COMPLETED') {
     return 'Close'
   }
 
@@ -68,62 +96,187 @@ const actionIconClass = computed(() => {
   }
   return ''
 })
+
+const timelineItems = computed(() => {
+  return [
+    {
+      date: getDisplayDate(props.task.assigned_at || props.task.created_at),
+      title: 'Assigned',
+      description: 'Task assigned to team or employee',
+      icon: 'fas fa-user-check text-blue-500 ml-[2px]',
+      status: 'assigned',
+      serial: 1,
+      active: !!props.task.assigned_at || !!props.task.created_at,
+    },
+    {
+      date: getDisplayDate(props.task.started_at),
+      title: 'Started',
+      description: 'Work has been started',
+      icon: 'fas fa-play text text-green-500 ml-[2px]',
+      status: 'started',
+      serial: 2,
+      active: !!props.task.started_at || currentStatusSerial.value >= statusSerial.IN_PROGRESS,
+    },
+    {
+      date: getDisplayDate(props.task.completed_at),
+      title: 'Completed',
+      description: 'Task was finished successfully',
+      icon: 'fas fa-check-circle text-green-500',
+      status: 'completed',
+      serial: 3,
+      active: !!props.task.completed_at || currentStatusSerial.value >= statusSerial.COMPLETED,
+    },
+    {
+      date: getDisplayDate(props.task.deadline),
+      title: 'Deadline',
+      description: 'Deadline for the task',
+      icon: 'fas fa-clock text-yellow-500',
+      status: 'deadline',
+      serial: 4,
+      active: !!props.task.deadline,
+    },
+  ].sort((a, b) => {
+    if (a.date === null || b.date === null) {
+      return a.serial - b.serial
+    }
+
+    return new Date(a.date) - new Date(b.date)
+  })
+})
 </script>
 <template>
   <div
     class="border py-8 px-4 rounded"
     :class="mainClass"
     v-if="
-      (task.children_task_count > 0 && task.status !== 'PENDING') || task.children_task_count === 0
+      (task.children_task_count > 0 && taskStatus !== 'PENDING') || task.children_task_count === 0
     "
   >
-    <!-- <pre>{{ task.status }}</pre> -->
-    <div v-if="task.status === 'BLOCKED'">
+    <OverlyModal v-if="dateUpdateModal.user">
+      <TaskUserDateUpdate
+        :task="props.task"
+        :user="dateUpdateModal.user"
+        :type="dateUpdateModal.type"
+        @closeClick="dateUpdateModal.user = null"
+        @updateDate="
+          () => {
+            dateUpdateModal.user = null
+            dateUpdateModal.type = null
+            emit('updateStatus')
+          }
+        "
+      />
+    </OverlyModal>
+
+    <div v-if="taskStatus === 'BLOCKED'">
       <div class="flex flex-col items-center">
         <i class="fas fa-lock-alt fa-4x text-violet-500"></i>
         <div class="text-3xl mb-2 text-violet-500 mt-4">Task Blocked</div>
       </div>
     </div>
+    <div v-else class="flex">
+      <div class="border-r-2 border-dashed pr-6 border-gray-300">
+        <div class="text-right text-sm col-span-full">
+          <div
+            v-if="props.task?.is_target"
+            class="bg-yellow-200 px-2 py-0.5 rounded-lg text-yellow-900"
+          >
+            TARGET TASK
+          </div>
+        </div>
 
-    <div v-else class="flex justify-center items-center">
-      <div v-if="task.closed_at" class="flex flex-col justify-center items-center">
-        <i class="fad fa-lock-alt fa-6x text-blue-500"></i>
-        <div class="text-blue-700 text-2xl mt-4">Task closed</div>
+        <ol class="relative border-l-2 border-gray-300 ml-2 space-y-8">
+          <!-- Assigned -->
+          <li class="ml-5" v-for="(timelineItem, index) in timelineItems" :key="index">
+            <div
+              class="absolute size-5 flex items-center justify-center rounded-full -left-3 border-2 bg-white border-gray-300 opacity-100"
+            >
+              <i :class="timelineItem.icon" class="text-xs" v-if="timelineItem.active"></i>
+            </div>
+
+            <div :class="{ 'opacity-30': !timelineItem.active }">
+              <div
+                class="mb-1 text-sm font-normal leading-none text-gray-500 flex items-center gap-3 h-5 justify-between"
+              >
+                <span v-if="timelineItem.date">
+                  {{ timelineItem.date }}
+                </span>
+                <button
+                  v-if="
+                    props.task?.children_task_count === 0 &&
+                    timelineItem.status === 'started' &&
+                    timelineItem.active
+                  "
+                  class="btn-3 px-2 h-5 text-sm font-semibold !border-1 disabled:opacity-30 disabled:pointer-events-none"
+                  @click.prevent="() => handleDateChangeModal('start-date')"
+                  :disabled="!!props.task.closed_at"
+                >
+                  {{ timelineItem.date ? 'Edit' : 'Set Date' }}
+                </button>
+                <button
+                  v-if="
+                    props.task?.children_task_count === 0 &&
+                    timelineItem.active &&
+                    timelineItem.status === 'completed'
+                  "
+                  class="btn-3 px-2 h-5 text-sm font-semibold !border-1 disabled:opacity-30 disabled:pointer-events-none"
+                  @click.prevent="() => handleDateChangeModal('finish-date')"
+                  :disabled="!!props.task.closed_at"
+                >
+                  {{ timelineItem.date ? 'Edit' : 'Set Date' }}
+                </button>
+              </div>
+              <h3 class="text-lg font-semibold text-gray-700">
+                {{ timelineItem.title }}
+              </h3>
+              <p class="text-sm text-gray-500">
+                {{ timelineItem.description }}
+              </p>
+            </div>
+          </li>
+        </ol>
       </div>
 
-      <div v-else-if="task.status === 'PENDING'">
-        <button
-          class="btn-3"
-          v-if="task.children_task_count === 0"
-          @click.prevent="changingStatus = 'IN_PROGRESS'"
+      <div class="flex flex-grow justify-center items-center">
+        <div v-if="task.closed_at" class="flex flex-col justify-center items-center">
+          <i class="fad fa-lock-alt fa-6x text-blue-500"></i>
+          <div class="text-blue-700 text-2xl mt-4">Task closed</div>
+        </div>
+
+        <div v-else-if="taskStatus === 'PENDING'">
+          <button
+            class="btn-3"
+            v-if="task.children_task_count === 0"
+            @click.prevent="changingStatus = 'IN_PROGRESS'"
+          >
+            Start Working
+          </button>
+          <div v-else>Task Pending</div>
+        </div>
+
+        <div
+          v-else-if="taskStatus === 'IN_PROGRESS'"
+          class="flex justify-center items-center flex-col"
         >
-          Start Working
-        </button>
-        <div v-else>Task Pending</div>
-      </div>
+          <i class="fas fa-circle fa-2x text-red-800 animate-pulse"></i>
+          <div class="mb-3 text-2xl my-4 text-red-800">Task In Progress</div>
+          <button
+            class="btn-3"
+            @click.prevent="changingStatus = 'COMPLETED'"
+            v-if="task.children_task_count === 0"
+          >
+            Finish Task
+          </button>
+        </div>
 
-      <div
-        v-else-if="task.status === 'IN_PROGRESS'"
-        class="flex justify-center items-center flex-col"
-      >
-        <i class="fas fa-circle fa-2x text-red-800 animate-pulse"></i>
-        <div class="mb-3 text-2xl my-4 text-red-800">Task In Progress</div>
-        <button
-          class="btn-3"
-          @click.prevent="changingStatus = 'COMPLETED'"
-          v-if="task.children_task_count === 0"
+        <div
+          v-else-if="taskStatus === 'COMPLETED'"
+          class="flex flex-col justify-center items-center"
         >
-          Finish Task
-        </button>
-      </div>
-
-      <div
-        v-else-if="task.status === 'COMPLETED'"
-        class="flex flex-col justify-center items-center"
-      >
-        <i class="fad fa-check-circle fa-6x text-green-500"></i>
-        <div class="text-green-700 text-2xl">Task Has been completed</div>
-        <button class="btn-3 mt-8" @click.prevent="changingStatus = 'CLOSED'">Close Task</button>
+          <i class="fad fa-check-circle fa-6x text-green-500"></i>
+          <div class="text-green-700 text-2xl">Task Has been completed</div>
+          <button class="btn-3 mt-8" @click.prevent="changingStatus = 'CLOSED'">Close Task</button>
+        </div>
       </div>
     </div>
 
