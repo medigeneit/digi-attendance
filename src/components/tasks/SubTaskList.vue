@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import OverlyModal from '../common/OverlyModal.vue'
 import TaskAddForm from './TaskAddForm.vue'
 import TaskEditForm from './TaskEditForm.vue'
@@ -17,6 +17,8 @@ const employeeAssignForm = reactive({
   taskId: 0,
   isOpen: false,
 })
+
+const taskStatus = ref('')
 
 const emit = defineEmits(['created', 'error', 'updatePriority', 'assignUser'])
 
@@ -54,6 +56,17 @@ function handleTaskAddClose() {
   addForm.show = false
   addForm.parentId = props.parentId
 }
+
+const filteredSubTasks = computed(() =>
+  props.subTasks.filter((task) => {
+    if (taskStatus.value === 'not-completed') {
+      return task.status !== 'COMPLETED'
+    } else if (taskStatus.value === 'only-completed') {
+      return task.status === 'COMPLETED'
+    }
+    return true
+  }),
+)
 </script>
 <template>
   <div>
@@ -90,7 +103,7 @@ function handleTaskAddClose() {
     </OverlyModal>
 
     <TaskList
-      :tasks="subTasks"
+      :tasks="filteredSubTasks"
       :parentId="parentId"
       :treeLevel="treeLevel"
       @addClick="(taskId) => goToAdd(taskId)"
@@ -107,6 +120,20 @@ function handleTaskAddClose() {
         <div class="flex justify-between mt-5">
           <div class="flex justify-between items-center">
             <h2 class="text-xl font-semibold text-gray-800">Sub Tasks</h2>
+
+            <div class="w-32 relative h-8 mx-4">
+              <label class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500"
+                >Status</label
+              >
+              <select
+                v-model="taskStatus"
+                class="h-8 text-xs px-2 text-gray-600 border-2 border-gray-400 rounded-md w-full"
+              >
+                <option value="">--ALL TASKS--</option>
+                <option value="not-completed">Not Completed</option>
+                <option value="only-completed">Completed</option>
+              </select>
+            </div>
           </div>
 
           <div class="flex flex-wrap items-center gap-2 mt-3" v-if="subTaskIsCreatable">
