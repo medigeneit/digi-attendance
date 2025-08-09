@@ -144,27 +144,27 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   }
 
-  const getTodayAttendanceReport = async (
-    companyId,
-    departmentId,
-    employee_id,
-    category,
-    month,
-    status,
-  ) => {
+  const getTodayAttendanceReport = async (filter = {}) => {
     isLoading.value = true
+
+    console.log({filter});
+    
+
     try {
-      const params = { companyId, departmentId, employee_id, category, month, status }
-      const response = await apiClient.get('/attendance/today', { params })
+      const response = await apiClient.get('/attendance/today', {
+        params: filter,
+      })
+
       dailyLogs.value = response.data
       error.value = null
     } catch (err) {
       error.value = err.response?.data?.message || 'Something went wrong'
-      console.error(error.value)
+      console.error('[Attendance Error]', error.value)
     } finally {
       isLoading.value = false
     }
   }
+
 
   const getAttendanceLateReport = async (
     company_id,

@@ -1,95 +1,132 @@
 <script setup>
+import { ref, watch, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
+
 import LoaderView from '@/components/common/LoaderView.vue'
-import Multiselect from '@/components/MultiselectDropdown.vue'
+import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
-import { storeToRefs } from 'pinia'
-import { onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
 const route = useRoute()
+
+// Stores
 const companyStore = useCompanyStore()
 const departmentStore = useDepartmentStore()
 const attendanceStore = useAttendanceStore()
-const selectedCompanyId = ref('')
-const selectedDepartment = ref('')
-const selectedEmployeeId = ref('')
-const selectedDate = ref('')
-const status = ref(route?.query?.search || '')
-const category = ref('all')
-const { companies, employees } = storeToRefs(companyStore)
-const { departments } = storeToRefs(departmentStore)
+
+// Store refs
 const { dailyLogs } = storeToRefs(attendanceStore)
 
+// Filter refs
+const selectedCompanyId = ref(route.query.company_id || '')
+const selectedDepartment = ref(route.query.department_id || '')
+const selectedEmployeeId = ref(route.query.employee_id || '')
+const selectedDate = ref(route.query.date || attendanceStore.selectedDate || '')
+const status = ref(route.query.status || '')
+const category = ref(route.query.type || 'all')
+
+// Filter object for sync
+const filters = ref({
+  company_id: selectedCompanyId.value,
+  department_id: selectedDepartment.value,
+  type: category.value,
+  employee_id: selectedEmployeeId.value,
+})
+
+// Fetch attendance based on filters
 const fetchAttendance = async () => {
-  if (selectedCompanyId.value || status.value) {
-    await attendanceStore.getTodayAttendanceReport(
-      selectedCompanyId.value,
-      selectedDepartment?.value.id,
-      selectedEmployeeId?.value.id,
-      category?.value,
-      attendanceStore.selectedDate,
-      status.value,
-    )
+  const { company_id, department_id, employee_id, type } = filters.value
+
+  // Only fetch if company or status is selected
+  if (company_id || status.value) {
+    await attendanceStore.getTodayAttendanceReport({
+      companyId: filters.value.company_id,
+      departmentId: department_id,
+      employee_id: employee_id,
+      category: type,
+      month: selectedDate.value,
+      status: status.value,
+    })
+
   }
 }
 
-onMounted(async () => {
-  await companyStore.fetchCompanies()
-  fetchAttendance()
-})
 
-watch([selectedCompanyId, selectedDate], fetchAttendance)
-
-watch(selectedCompanyId, (newCompanyId) => {
-  companyStore.fetchEmployee(newCompanyId)
-  departmentStore.fetchDepartments(newCompanyId)
-})
-
-watch(selectedDepartment, (newDepartment) => {
-  if (newDepartment?.id) {
-    fetchAttendance()
+// Handle filter change → sync with query
+const handleFilterChange = () => {
+  const newQuery = {
+    company_id: filters.value.company_id,
+    department_id: filters.value.department_id,
+    type: filters.value.type,
+    employee_id: filters.value.employee_id,
+    date: selectedDate.value,
+    status: status.value,
   }
-})
 
-watch(selectedEmployeeId, (newEmployee) => {
-  if (newEmployee?.id) {
-    fetchAttendance()
-  }
-})
-
-const getExportExcel = async () => {
-  await attendanceStore.attendanceDownloadExcel(
-    selectedCompanyId.value,
-    selectedEmployeeId?.value.id,
-    category?.value,
-    attendanceStore.selectedDate,
-    status.value,
+  const isDifferent = Object.entries(newQuery).some(
+    ([key, value]) => route.query[key] !== String(value)
   )
+
+  if (isDifferent) {
+    router.replace({ query: newQuery })
+  }
 }
-const getDownloadPDF = async () => {
-  await attendanceStore.attendanceDownloadPdf(
-    selectedCompanyId.value,
-    selectedEmployeeId?.value.id,
-    category?.value,
-    attendanceStore.selectedDate,
-    status.value,
+
+// Download actions
+const getExportExcel = () =>
+  attendanceStore.attendanceDownloadExcel(
+    filters.value.company_id,
+    selectedEmployeeId.value?.id,
+    filters.value.type,
+    selectedDate.value,
+    status.value
   )
-}
+
+const getDownloadPDF = () =>
+  attendanceStore.attendanceDownloadPdf(
+    filters.value.company_id,
+    selectedEmployeeId.value?.id,
+    filters.value.type,
+    selectedDate.value,
+    status.value
+  )
 
 const goBack = () => router.go(-1)
 
-watch(status, (newStatus) => {
-  router.push({
-    query: {
-      ...route.query,
-      search: newStatus,
-    },
-  })
+// Lifecycle
+onMounted(async () => {
+  await companyStore.fetchCompanies()
+  await fetchAttendance()
 })
+
+// Watchers
+// watch(selectedCompanyId, (newCompanyId) => {
+//   filters.value.company_id = newCompanyId
+//   companyStore.fetchEmployee(newCompanyId)
+//   departmentStore.fetchDepartments(newCompanyId)
+//   handleFilterChange()
+// })
+
+watch(selectedDate, (newDate) => {
+  handleFilterChange()
+})
+
+watch(status, () => {
+  handleFilterChange()
+})
+
+// watch(
+//   () => filters.value,
+//   () => {
+//     fetchAttendance()
+//   },
+//   { deep: true }
+// )
 </script>
+
 
 <template>
   <div class="px-4 space-y-4">
@@ -99,7 +136,7 @@ watch(status, (newStatus) => {
         <span class="hidden md:flex">Back</span>
       </button>
       <h1 class="title-md md:title-lg flex-wrap text-center">
-        Daily {{ route?.query?.search === 'all' ? 'Attendance' : route?.query?.search }} Report
+        Daily {{ route?.query?.status === 'all' ? 'Attendance' : route?.query?.status }} Report
       </h1>
       <div class="flex gap-4">
         <button type="button" @click="getExportExcel" class="btn-1">
@@ -112,7 +149,33 @@ watch(status, (newStatus) => {
     </div>
 
     <div class="flex flex-wrap gap-4">
-      <div>
+      <EmployeeFilter 
+        v-model="filters" 
+        :initial-value="route.query" 
+        @filter-change="handleFilterChange" 
+      />
+      <div class="flex gap-4">
+         <div>
+          <select id="userSelect" v-model="status" class="input-1">
+            <option value="all">All Status</option>
+            <option value="Present">Present</option>
+            <option value="Absent">Absent</option>
+            <option value="Weekend">Weekend</option>
+            <option value="Holiday">Holiday</option>
+            <option value="Leave">Leave</option>
+          </select>
+        </div>
+        <div>
+          <input
+            type="date"
+            v-model="selectedDate"
+            class="input-1"
+            />
+            <!-- @change="fetchAttendance" -->
+        </div>
+          <button type="button" @click="fetchAttendance" class="btn-2">Search</button>
+        </div>
+      <!-- <div>
         <select
           id="userSelect"
           v-model="selectedCompanyId"
@@ -151,25 +214,8 @@ watch(status, (newStatus) => {
           <option value="doctor">Doctor</option>
           <option value="academy_body">Academy Body</option>
         </select>
-      </div>
-      <div>
-        <select id="userSelect" v-model="status" @change="fetchAttendance" class="input-1">
-          <option value="all">All Status</option>
-          <option value="Present">Present</option>
-          <option value="Absent">Absent</option>
-          <option value="Weekend">Weekend</option>
-          <option value="Holiday">Holiday</option>
-          <option value="Leave">Leave</option>
-        </select>
-      </div>
-      <div>
-        <input
-          type="date"
-          v-model="attendanceStore.selectedDate"
-          @change="fetchAttendance"
-          class="input-1"
-        />
-      </div>
+      </div> -->
+     
     </div>
 
     <LoaderView v-if="attendanceStore.isLoading" />
@@ -181,6 +227,7 @@ watch(status, (newStatus) => {
             <tr class="bg-gray-200 text-xs">
               <th class="border p-1">#</th>
               <th class="border p-1">Emp/Worker Name</th>
+              <th class="border p-1">Department</th>
               <th class="border p-1">Date</th>
               <th class="border p-1">Day</th>
               <th class="border p-1">Shift</th>
@@ -200,6 +247,7 @@ watch(status, (newStatus) => {
             >
               <td class="border px-1 py-0.5">{{ index += 1 }}</td>
               <td class="border px-1 py-0.5">{{ log.user_name }}</td>
+              <td class="border px-1 py-0.5">{{ log.department }}</td>
               <td class="border px-1 py-0.5">{{ log.date }}</td>
               <td class="border px-1 py-0.5">{{ log.weekday }}</td>
               <td
