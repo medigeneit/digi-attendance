@@ -1,5 +1,5 @@
 <script setup>
-import { getAllTaskReports } from '@/services/task-reports'
+import { getMyTaskReports } from '@/services/task-reports'
 import { onMounted, reactive, ref, watch } from 'vue'
 
 const props = defineProps({
@@ -16,7 +16,7 @@ async function fetchTaskReports(year, month) {
   selected.month = month
   selected.year = year
   state.value = 'loading'
-  reports.value = (await getAllTaskReports(`${year}-${month}`))?.data?.reports || []
+  reports.value = (await getMyTaskReports(`${year}-${month}`))?.data?.reports || []
   state.value = ''
 }
 
