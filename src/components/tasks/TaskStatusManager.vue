@@ -136,7 +136,7 @@ const timelineItems = computed(() => {
       active: !!props.task?.deadline,
     },
   ].sort((a, b) => {
-    if (a.date === null || b.date === null) {
+    if (a.date === null || b.date === null || new Date(a.date) == new Date(b.date)) {
       return a.serial - b.serial
     }
 
