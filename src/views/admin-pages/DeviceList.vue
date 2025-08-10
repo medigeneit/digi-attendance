@@ -1,5 +1,5 @@
 <script setup>
-import { useDeviceStore } from '@/stores/device'
+import { useDeviceStore } from '@/stores/zk-device'
 import { onMounted, ref } from 'vue'
 import { useToast } from 'vue-toastification'
 
