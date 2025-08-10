@@ -9,7 +9,6 @@ import DeleteModal from '@/components/common/DeleteModal.vue'
 
 const zkUserStore = useZKUserStore()
 const deviceStore = useDeviceStore()
-const selectedDevice = ref('')
 const selectedIds = ref([])
 const showModal = ref(false)
 const editUserData = ref(null)
@@ -53,14 +52,6 @@ async function performDelete() {
   deleteUserId.value = null
   showDeleteModal.value = false
   zkUserStore.fetchUsers()
-}
-
-async function bulkPush() {
-  const deviceId = prompt('Enter Device ID to push selected users:')
-  if (deviceId) {
-    await zkUserStore.bulkPush(Number(deviceId), selectedIds.value)
-    selectedIds.value = []
-  }
 }
 
 function toggleSelectAll(event) {
@@ -121,27 +112,6 @@ function toggleSelectAll(event) {
           </tr>
         </tbody>
       </table>
-    </div>
-    <div class="card-bg p-4 md:p-6 space-y-4">
-      <div>
-        <h2 class="text-lg font-semibold">Bulk Actions</h2>
-        <p>Selected Users: {{ selectedIds.length }}</p>
-        <!-- Select device -->
-        <label class="block text-gray-700 font-medium mb-1">Select Device</label>
-        <select v-model="selectedDevice" class="input-1" :disabled="deviceStore.loading">
-          <option disabled value="">-- Choose a device --</option>
-          <!-- We have the device store -->
-
-          <option v-for="device in deviceStore.devices" :key="device.id" :value="device.id">
-            {{ device.name }} ({{ device.ip_address }})
-          </option>
-        </select>
-      </div>
-      <div class="flex justify-center">
-        <button @click="bulkPush" class="btn-2" :disabled="selectedIds.length === 0">
-          Push Selected
-        </button>
-      </div>
     </div>
   </div>
 

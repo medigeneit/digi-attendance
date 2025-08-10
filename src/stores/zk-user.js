@@ -50,6 +50,49 @@ export const useZKUserStore = defineStore('zkUser', () => {
     }
   }
 
+    // NEW: একজন ইউজারের বেসিক ইনফো সব ডিভাইসে push
+  async function pushUser(zk_userid) {
+    try {
+      const { data } = await apiClient.post(`/users/${encodeURIComponent(zk_userid)}/push`)
+      return data // { pushed, failed, offline }
+    } catch (err) {
+      throw err.response?.data || err
+    }
+  }
+
+  // NEW: DB-ভিউ — কোন কোন ডিভাইসে আছে (লাইভ কল নয়)
+  async function getUserDevices(zk_userid) {
+    try {
+      const { data } = await apiClient.get(`/users/${encodeURIComponent(zk_userid)}/devices`)
+      return data // { devices: [...] }
+    } catch (err) {
+      throw err.response?.data || err
+    }
+  }
+
+  // NEW: ডিভাইস → সেন্ট্রাল: সব ইউজার Pull
+  async function pullUsersFromDevice(deviceId) {
+    try {
+      const { data } = await apiClient.post(`/devices/${deviceId}/pull-users`)
+      // চাইলে fetchUsers() রিফ্রেশ করতে পারেন
+      await fetchUsers()
+      return data // { users_pulled, users_updated }
+    } catch (err) {
+      throw err.response?.data || err
+    }
+  }
+
+  // NEW: Catch-up (user-only, diff=true ডিফল্ট)
+  async function syncCatchupUsers(deviceId, { diff = true } = {}) {
+    try {
+      const qs = diff ? '?diff=true' : '?diff=false'
+      const { data } = await apiClient.post(`/devices/${deviceId}/sync-catchup${qs}`)
+      return data // { usersSynced, skipped, failed, ... }
+    } catch (err) {
+      throw err.response?.data || err
+    }
+  }
+
   return {
     users,
     loading,
@@ -57,6 +100,10 @@ export const useZKUserStore = defineStore('zkUser', () => {
     fetchUsers,
     createUser,
     updateUser,
-    deleteUser
+    deleteUser,
+    pushUser,
+    getUserDevices,
+    pullUsersFromDevice,
+    syncCatchupUsers,
   }
 })
