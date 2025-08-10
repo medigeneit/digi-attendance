@@ -9,14 +9,15 @@ const props = defineProps({
   routeTo: { type: Function, default: null },
   isTargetTask: { Boolean, default: false },
   listType: { String, default: 'employee' },
+  maxItem: { Number, default: 2 },
 })
 
 const slicedUsers = computed(() => {
-  return props.users.slice(0, 2)
+  return props.users.slice(0, props.maxItem)
 })
 
 const hiddenUsers = computed(() => {
-  return props.users.slice(2)
+  return props.users.slice(props.maxItem)
 })
 
 function routerLinkTo(item) {
