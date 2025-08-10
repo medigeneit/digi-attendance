@@ -8,9 +8,9 @@ import OverlyModal from '@/components/common/OverlyModal.vue'
 import TaskAddForm from '@/components/tasks/TaskAddForm.vue'
 import TaskEditForm from '@/components/tasks/TaskEditForm.vue'
 import TaskHeader from '@/components/tasks/TaskHeader.vue'
+import TaskTreeViewWithSubTable from '@/components/tasks/TaskTreeViewWithSubTable.vue'
 import TaskUserAssignForm from '@/components/tasks/TaskUserAssignForm.vue'
 import UserWiseList from '@/components/tasks/UserWiseList.vue'
-import TaskTreeView from '@/components/TaskTreeView.vue'
 import useTaskPriorityUpdate from '@/libs/task-priority'
 import { useAuthStore } from '@/stores/auth'
 import { useTaskStore } from '@/stores/useTaskStore'
@@ -217,7 +217,7 @@ const taskFilter = computed({
         >
           <template #item="{ item, index }">
             <div class="flex items-stretched">
-              <TaskTreeView
+              <TaskTreeViewWithSubTable
                 :is-my-task="route.name === 'MyTaskList'"
                 :task="item"
                 :index="index"

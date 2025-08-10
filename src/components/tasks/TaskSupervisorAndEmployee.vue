@@ -13,7 +13,7 @@ const props = defineProps({
     class="col-span-full flex flex-col md:flex-row items-stretched my-2 lg:my-0 justify-center flex-wrap gap-x-5 gap-y-4"
   >
     <div
-      class="flex flex-col items-center justify-center gap-2 border border-dashed border-gray-100 rounded shadow shadow-gray-100 bg-gray-50/40 p-4"
+      class="flex flex-col items-start justify-center gap-2 border border-dashed border-gray-200 rounded shadow shadow-gray-100 bg-gray-50/40 p-4"
     >
       <template v-if="treeLevel === 0">
         <div class="text-xs px-2 py-0.5 rounded-full border bg-sky-500 text-white">
@@ -24,6 +24,7 @@ const props = defineProps({
         class="flex items-center justify-center flex-wrap gap-x-3 gap-y-2"
         :users="task.supervisors || []"
         listType="supervisors"
+        :maxItem="1"
       />
     </div>
 
@@ -37,7 +38,7 @@ const props = defineProps({
     </div>
 
     <div
-      class="flex flex-col items-center justify-center gap-2 border border-dashed border-gray-100 rounded shadow shadow-gray-100 bg-gray-50/40 p-4"
+      class="flex flex-col items-start justify-center gap-2 border border-dashed border-gray-200 rounded shadow shadow-gray-100 bg-gray-50/40 p-4"
     >
       <template v-if="treeLevel === 0">
         <div class="text-xs px-2 py-0.5 rounded-full border bg-blue-500 text-white">
@@ -50,6 +51,7 @@ const props = defineProps({
         :users="task.users || []"
         :isTargetTask="task.is_target"
         :routeTo="employeeRouteTo"
+        :maxItem="1"
       />
     </div>
   </div>
