@@ -128,8 +128,8 @@ const taskReports = computed(() => {
                 <div>
                   <div
                     v-for="(parentTaskTitle, index) in task_report.task_parents.reverse()"
-                    :key="index"
                     class="text-gray-400 text-sm line-clamp-1"
+                    :key="index"
                     :class="{ '-ml-1': index == 0 }"
                   >
                     <span style="font-family: monospace" v-if="index > 0">↳</span>

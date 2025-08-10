@@ -1,13 +1,13 @@
 <script setup>
-import LoaderView from '@/components/common/LoaderView.vue'
 import MonthlyTaskReport from '@/components/tasks/MonthlyTaskReport.vue'
-import { useTaskStore } from '@/stores/useTaskStore'
+import { getYearMonthDayFormat } from '@/libs/datetime'
 import { onMounted, reactive, ref, watch } from 'vue'
 
 const selected = reactive({ month: null, year: null })
 const selectedMonth = ref()
 const state = ref('loading')
-const taskStore = useTaskStore()
+
+const dateRange = ref([])
 
 function getYearMonth(date) {
   if ((!date) instanceof Date) {
@@ -25,22 +25,17 @@ onMounted(() => {
 watch(selectedMonth, (newValue) => {
   const [year, month, _day] = newValue.split('-').map(Number)
 
+  // First day of month
+  const firstDay = new Date(year, month - 1, 1)
+
+  // Last day of month
+  const lastDay = new Date(year, month, 0)
+
+  dateRange.value = [firstDay, lastDay]
+
   selected.month = month
   selected.year = year
 })
-
-watch(
-  () => selected.month,
-  async () => {
-    state.value = 'loading'
-    await fetchMyTask()
-    state.value = ''
-  },
-)
-
-async function fetchMyTask() {
-  await taskStore.fetchMyTasks({ status: 'not-completed' })
-}
 
 function handleClickOnCurrentMonth() {
   const today = new Date()
@@ -81,12 +76,11 @@ function handleClickOnPreviousMonth() {
 
     <div class="bg-gray-300 bg-opacity-90 relative">
       <div class="bg-white p-4 border-t">
-        <MonthlyTaskReport :month="selected.month" :year="selected.year" />
+        <MonthlyTaskReport
+          :start-date="dateRange.length >= 1 ? getYearMonthDayFormat(dateRange[0]) : null"
+          :end-date="dateRange.length == 2 ? getYearMonthDayFormat(dateRange[1]) : null"
+        />
       </div>
-      <LoaderView
-        class="absolute inset-0 flex items-center justify-center z-20 bg-opacity-70"
-        v-if="state === 'loading'"
-      />
     </div>
   </div>
 </template>
