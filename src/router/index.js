@@ -401,12 +401,6 @@ const router = createRouter({
           meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'Device List' },
         },
         {
-          path: '/settings/sync-data',
-          name: 'SyncData',
-          component: () => import('@/views/admin-pages/SyncData.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'Syn Data List' },
-        },
-        {
           path: '/settings/zk-users',
           name: 'ZKUsers',
           component: () => import('@/views/admin-pages/ZKUsers.vue'),

@@ -93,6 +93,26 @@ export const useDeviceStore = defineStore('device', () => {
     }
   }
 
+    const syncCatchup = async (id) => {
+    try {
+      loading.value = true
+      await apiClient.post(`/devices/${id}/sync-catchup`)
+      return true
+    } catch (e) {
+      console.error(e); return false
+    } finally { loading.value = false }
+  }
+
+  const syncAll = async () => {
+    try {
+      loading.value = true
+      await apiClient.post(`/devices/sync-all`)
+      return true
+    } catch (e) {
+      console.error(e); return false
+    } finally { loading.value = false }
+  }
+
   return {
     devices: computed(() => devices.value),
     device: computed(() => device.value),
@@ -104,5 +124,7 @@ export const useDeviceStore = defineStore('device', () => {
     updateDevice,
     deleteDevice,
     checkDeviceConnection,
+    syncCatchup,
+    syncAll,
   }
 })

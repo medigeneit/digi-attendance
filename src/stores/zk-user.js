@@ -50,18 +50,6 @@ export const useZKUserStore = defineStore('zkUser', () => {
     }
   }
 
-  async function bulkPush(deviceId, userIds) {
-    try {
-      const response = await apiClient.post('/zk-users/bulk-push', {
-        device_id: deviceId,
-        user_ids: userIds
-      })
-      return response.data
-    } catch (err) {
-      throw err.response?.data || err
-    }
-  }
-
   return {
     users,
     loading,
@@ -69,7 +57,6 @@ export const useZKUserStore = defineStore('zkUser', () => {
     fetchUsers,
     createUser,
     updateUser,
-    deleteUser,
-    bulkPush
+    deleteUser
   }
 })
