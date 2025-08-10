@@ -19,74 +19,77 @@
     >
       <div class="items-start grid grid-cols-4 gap-4 group">
         <div class="col-span-full md:col-span-full pb-3 border-b -mx-3 px-3 flex flex-wrap">
-          <div class="flex items-center gap-2 w-full mb-3 whitespace-break-spaces">
-            <div class="text-xl font-semibold text-blue-500" v-if="index !== undefined">
-              {{ index + 1 }}.
+          <div class="flex items-start gap-2 w-full">
+            <div>
+              <div class="flex gap-2">
+                <div class="text-xl font-semibold text-blue-500" v-if="index !== undefined">
+                  {{ index + 1 }}.
+                </div>
+
+                <TaskTitleRouterLink
+                  :task="task"
+                  :sub-tasks-open="showSubTask"
+                  :is-my-task="isMyTask"
+                  class="whitespace-nowrap"
+                />
+              </div>
+              <div class="flex items-center w-full mb-2">
+                <div class="flex gap-4 items-center mr-3" v-if="showDraggableHandle || task.serial">
+                  <button
+                    @mousedown.stop="handleDragging"
+                    class="handle"
+                    v-if="showDraggableHandle"
+                  >
+                    <i class="fas fa-arrows-alt text-gray-500 cursor-grab"></i>
+                  </button>
+
+                  <span class="text-gray-500 text-sm" v-if="task.serial"> #{{ task.serial }} </span>
+                </div>
+                <div class="flex items-center gap-2 text-xs text-gray-500 opacity-80 text-left">
+                  <div
+                    class="text-white bg-blue-700 text-[12px] uppercase px-[5px] py-[1px] rounded-full border border-green-200 opacity-80"
+                    v-if="treeLevel === 0"
+                  >
+                    Main
+                  </div>
+                  <TaskImportantBadge v-if="task?.is_important" class="flex-none" />
+                  <TaskUrgentBadge v-if="task?.is_urgent" class="flex-none" />
+                </div>
+              </div>
+              <div class="mb-4 text-xs text-gray-400">
+                <i class="fas fa-clock"></i>
+                {{ getDisplayDateTime(task.created_at) }}
+              </div>
             </div>
 
-            <TaskTitleRouterLink
+            <TaskSupervisorAndEmployee
+              v-if="!hideAssignedUsers"
               :task="task"
-              :sub-tasks-open="showSubTask"
-              :is-my-task="isMyTask"
+              :tree-level="treeLevel"
+              class="my-2 w-full"
+              :employee-route-to="
+                (user) => ({
+                  query: {
+                    ...route.query,
+                    view: 'userwise',
+                    'company-id': user.company_id,
+                    'user-ids': user.id,
+                  },
+                })
+              "
             />
 
-            <p class="text-sm text-gray-500 mt-2" v-if="task?.requirement">
-              Requirement: {{ task?.requirement?.title }}
-            </p>
-          </div>
+            <div class="justify-end items-center gap-2 ml-auto flex order-1 lg:order-0">
+              <TaskIsClosedBadge v-if="task.closed_at" />
 
-          <TaskSupervisorAndEmployee
-            v-if="!hideAssignedUsers"
-            :task="task"
-            :tree-level="treeLevel"
-            class="my-2"
-            :employee-route-to="
-              (user) => ({
-                query: {
-                  ...route.query,
-                  view: 'userwise',
-                  'company-id': user.company_id,
-                  'user-ids': user.id,
-                },
-              })
-            "
-          />
+              <TaskStatus :status="task?.status" :progressPercent="task?.progress_percent || 0" />
 
-          <div class="justify-end items-center gap-2 ml-auto flex order-1 lg:order-0">
-            <TaskIsClosedBadge v-if="task.closed_at" />
-
-            <TaskStatus :status="task?.status" :progressPercent="task?.progress_percent || 0" />
-
-            <SubTaskProgress ref="progress" :task="task" class="text-sm" />
-          </div>
-
-          <div class="flex items-center flex-none lg:w-full order-0 lg:order-1 mt-2">
-            <div class="flex gap-4 items-center mr-3" v-if="showDraggableHandle || task.serial">
-              <button @mousedown.stop="handleDragging" class="handle" v-if="showDraggableHandle">
-                <i class="fas fa-arrows-alt text-gray-500 cursor-grab"></i>
-              </button>
-
-              <span class="text-gray-500 text-sm" v-if="task.serial"> #{{ task.serial }} </span>
-            </div>
-
-            <div class="flex items-center gap-2 text-xs text-gray-500 opacity-80 text-left">
-              <div
-                class="text-white bg-blue-700 text-[12px] uppercase px-[5px] py-[1px] rounded-full border border-green-200 opacity-80"
-                v-if="treeLevel === 0"
-              >
-                Main
-              </div>
-              <TaskImportantBadge v-if="task?.is_important" />
-              <TaskUrgentBadge v-if="task?.is_urgent" />
+              <SubTaskProgress ref="progress" :task="task" class="text-sm" />
             </div>
           </div>
         </div>
         <div class="text-gray-400 text-xs col-span-full flex justify-between">
-          <div class="mb-4">
-            <i class="fas fa-clock"></i>
-            {{ getDisplayDateTime(task.created_at) }}
-          </div>
-          <div class="flex flex-wrap gap-2 mb-2 items-start">
+          <div class="ml-auto flex flex-wrap gap-2 mb-2 items-start">
             <div
               class="border bg-gray-50 text-xs px-2 rounded-lg shadow-sm text-gray-700 bg-gradient-to-b to-slate-50 from-blue-100"
               v-for="tag in task.website_tags || []"
