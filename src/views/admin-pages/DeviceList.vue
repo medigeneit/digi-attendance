@@ -1,5 +1,5 @@
 <script setup>
-import { useDeviceStore } from '@/stores/zk-device'
+import { useDeviceStore } from '@/stores/device'
 import { onMounted, ref } from 'vue'
 import { useToast } from 'vue-toastification'
 
@@ -81,20 +81,6 @@ onMounted(async () => {
   <div class="my-container space-y-2">
     <HeaderWithButtons title="Device List" @add="openAddModal" />
 
-    <div class="card-bg flex-row p-4">
-      <p>To sync all device user data press the button:</p>
-      <div>
-        <button
-          class="btn-4"
-          @click="
-            () => deviceStore.syncAll().then((ok) => ok && toast.success('Synced all devices'))
-          "
-        >
-          Sync All Devices
-        </button>
-      </div>
-    </div>
-
     <div class="overflow-x-auto">
       <table class="min-w-full table-auto bg-white shadow-md rounded-lg overflow-hidden">
         <thead>
@@ -105,13 +91,12 @@ onMounted(async () => {
             <th class="py-3 px-2 text-center">Port</th>
             <th class="py-3 px-2 text-center">Status</th>
             <th class="py-3 px-2 text-center">Connection</th>
-            <th class="py-3 px-2 text-center">Sync Data</th>
             <th class="py-3 px-2 text-center">Action</th>
           </tr>
         </thead>
         <tbody class="text-gray-600 text-sm">
           <tr v-if="deviceStore.loading">
-            <td colspan="8">
+            <td colspan="6">
               <LoaderView />
             </td>
           </tr>
@@ -140,19 +125,6 @@ onMounted(async () => {
                 <CheckDeviceConnection :device="device" />
               </td>
               <td class="py-3 px-2 text-center">
-                <button
-                  @click="
-                    () =>
-                      deviceStore
-                        .syncCatchup(device.id)
-                        .then((ok) => ok && toast.success('Catch-up done'))
-                  "
-                  class="text-green-600 hover:text-green-800"
-                >
-                  <i class="fas fa-sync"></i>
-                </button>
-              </td>
-              <td class="py-3 px-2 text-center">
                 <div class="flex item-center justify-center gap-4">
                   <button @click="openEditModal(device)" class="text-blue-600 hover:text-blue-800">
                     <i class="fas fa-edit"></i>
@@ -169,7 +141,7 @@ onMounted(async () => {
             </tr>
           </template>
           <tr v-else>
-            <td colspan="8" class="text-center text-red-500 py-4">No devices found</td>
+            <td colspan="5" class="text-center text-red-500 py-4">No devices found</td>
           </tr>
         </tbody>
       </table>

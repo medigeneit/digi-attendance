@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useZKUserStore } from '@/stores/zk-user'
-import { useDeviceStore } from '@/stores/zk-device'
+import { useDeviceStore } from '@/stores/device'
 import ZKUserModal from '@/components/ZKUserModal.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import HeaderWithButtons from '@/components/common/HeaderWithButtons.vue'

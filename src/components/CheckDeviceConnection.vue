@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue'
-import { useDeviceStore } from '@/stores/zk-device'
+import { useDeviceStore } from '@/stores/device'
 
 const deviceStore = useDeviceStore()
 
