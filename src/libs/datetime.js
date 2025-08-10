@@ -81,3 +81,25 @@ export const getYearMonthDayFormat = (dateTime) => {
 export const onlyDate = (date) => {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate())
 }
+
+export const  getMonthLastDate = (date) => {
+  return  new Date(date.getFullYear(), date.getMonth() + 1, 0);
+}
+
+export const  getMonthFirstDate = (date) => {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+export function getDateRangeArray(start, end) {
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  const dates = [];
+
+  let currentDate = new Date(startDate);
+  while (currentDate <= endDate) {
+    dates.push(currentDate.toISOString().split('T')[0]); // YYYY-MM-DD
+    currentDate.setDate(currentDate.getDate() + 1); // Move to next day
+  }
+
+  return dates;
+}
