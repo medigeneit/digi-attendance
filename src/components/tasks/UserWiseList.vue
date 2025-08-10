@@ -1,7 +1,7 @@
 <script setup>
-import TaskTreeView from '@/components/TaskTreeView.vue'
 import UserChip from '@/components/user/UserChip.vue'
 import { computed } from 'vue'
+import TaskTreeViewWithSubTable from './TaskTreeViewWithSubTable.vue'
 
 const props = defineProps({
   tasks: Array,
@@ -64,7 +64,7 @@ const taskUsers = computed(() => {
   return users.value.map((u) => {
     // const tasks = getTreeList(getUserAllTasks(u.id), 0)
     const tasks = getUserAllTasks(u.id)
-    return { ...u,  tasks }
+    return { ...u, tasks }
   })
 })
 </script>
@@ -90,7 +90,7 @@ const taskUsers = computed(() => {
                 'border-b': taskUser.tasks.length - 1 === taskIndex,
               }"
             >
-              <TaskTreeView
+              <TaskTreeViewWithSubTable
                 :task="task"
                 class="!border-0 my-0"
                 :index="taskIndex"

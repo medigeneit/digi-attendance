@@ -19,142 +19,155 @@
     >
       <div class="items-start grid grid-cols-4 gap-4 group">
         <div class="col-span-full md:col-span-full pb-3 border-b -mx-3 px-3 flex flex-wrap">
-          <div
-            class="flex items-center gap-2 w-full lg:w-auto mb-3 lg:mb-0 whitespace-break-spaces"
-          >
-            <div class="text-xl font-semibold text-blue-500" v-if="index !== undefined">
-              {{ index + 1 }}.
+          <div class="flex items-start gap-2 w-full">
+            <div>
+              <div class="flex gap-2">
+                <div class="text-xl font-semibold text-blue-500" v-if="index !== undefined">
+                  {{ index + 1 }}.
+                </div>
+
+                <TaskTitleRouterLink
+                  :task="task"
+                  :sub-tasks-open="showSubTask"
+                  :is-my-task="isMyTask"
+                  class="whitespace-nowrap"
+                />
+              </div>
+              <div class="flex items-center w-full mb-2">
+                <div class="flex gap-4 items-center mr-3" v-if="showDraggableHandle || task.serial">
+                  <button
+                    @mousedown.stop="handleDragging"
+                    class="handle"
+                    v-if="showDraggableHandle"
+                  >
+                    <i class="fas fa-arrows-alt text-gray-500 cursor-grab"></i>
+                  </button>
+
+                  <span class="text-gray-500 text-sm" v-if="task.serial"> #{{ task.serial }} </span>
+                </div>
+                <div class="flex items-center gap-2 text-xs text-gray-500 opacity-80 text-left">
+                  <div
+                    class="text-white bg-blue-700 text-[12px] uppercase px-[5px] py-[1px] rounded-full border border-green-200 opacity-80"
+                    v-if="treeLevel === 0"
+                  >
+                    Main
+                  </div>
+                  <TaskImportantBadge v-if="task?.is_important" class="flex-none" />
+                  <TaskUrgentBadge v-if="task?.is_urgent" class="flex-none" />
+                </div>
+              </div>
+              <div class="mb-4 text-xs text-gray-400">
+                <i class="fas fa-clock"></i>
+                {{ getDisplayDateTime(task.created_at) }}
+              </div>
             </div>
 
-            <TaskTitleRouterLink
+            <TaskSupervisorAndEmployee
+              v-if="!hideAssignedUsers"
               :task="task"
-              :sub-tasks-open="showSubTask"
-              :is-my-task="isMyTask"
+              :tree-level="treeLevel"
+              class="my-2 w-full"
+              :employee-route-to="
+                (user) => ({
+                  query: {
+                    ...route.query,
+                    view: 'userwise',
+                    'company-id': user.company_id,
+                    'user-ids': user.id,
+                  },
+                })
+              "
             />
 
-            <p class="text-sm text-gray-500 mt-2" v-if="task?.requirement">
-              Requirement: {{ task?.requirement?.title }}
-            </p>
+            <div class="justify-end items-center gap-2 ml-auto flex order-1 lg:order-0">
+              <TaskIsClosedBadge v-if="task.closed_at" />
+
+              <TaskStatus :status="task?.status" :progressPercent="task?.progress_percent || 0" />
+
+              <SubTaskProgress ref="progress" :task="task" class="text-sm" />
+            </div>
           </div>
-
-          <div class="justify-end items-center gap-2 ml-auto flex order-1 lg:order-0">
-            <TaskIsClosedBadge v-if="task.closed_at" />
-
-            <TaskStatus :status="task?.status" :progressPercent="task?.progress_percent || 0" />
-
-            <SubTaskProgress ref="progress" :task="task" class="text-sm" />
+        </div>
+        <div class="text-gray-400 text-xs col-span-full flex justify-between">
+          <div class="ml-auto flex flex-wrap gap-2 mb-2 items-start">
+            <div
+              class="border bg-gray-50 text-xs px-2 rounded-lg shadow-sm text-gray-700 bg-gradient-to-b to-slate-50 from-blue-100"
+              v-for="tag in task.website_tags || []"
+              :key="tag.id"
+            >
+              {{ tag.name }}
+            </div>
           </div>
+        </div>
 
-          <div class="flex items-center flex-none lg:w-full order-0 lg:order-1">
-            <div class="flex gap-4 items-center mr-3" v-if="showDraggableHandle || task.serial">
-              <button @mousedown.stop="handleDragging" class="handle" v-if="showDraggableHandle">
-                <i class="fas fa-arrows-alt text-gray-500 cursor-grab"></i>
+        <div class="ml-0 mt-5 col-span-full">
+          <div>
+            <div class="text-xs text-gray-400 flex gap-3 order-1 sm:order-0">
+              <button
+                :class="{
+                  'text-blue-600 font-semibold  inline-block  ': hasSubTask,
+                }"
+                class="flex items-center gap-1 group"
+              >
+                <!-- @click="handleSubTaskClick" -->
+                <!-- <i
+                  :class="showSubTask ? 'fa-caret-down' : 'fa-caret-right'"
+                  class="fas w-3 text-left text-xl"
+                ></i> -->
+                <span :class="hasSubTask ? 'group-hover:underline' : ''">
+                  Sub Tasks ({{ task.children_tasks?.length }})
+                </span>
               </button>
 
-              <span class="text-gray-500 text-sm" v-if="task.serial"> #{{ task.serial }} </span>
-            </div>
-
-            <div class="flex items-center gap-2 text-xs text-gray-500 opacity-80 text-left">
-              <div
-                class="text-white bg-blue-700 text-[12px] uppercase px-[5px] py-[1px] rounded-full border border-green-200 opacity-80"
-                v-if="treeLevel === 0"
-              >
-                Main
-              </div>
-              <TaskImportantBadge v-if="task?.is_important" />
-              <TaskUrgentBadge v-if="task?.is_urgent" />
+              <template v-if="!task.closed_at && !hideButtons">
+                <a
+                  :href="`/tasks/add?parent_id=${props.task.id}&back-to=${encodeURIComponent(route.path + '?' + objectToQuery(route.query)).toLowerCase()}`"
+                  class="hover:bg-blue-600 hover:text-white text-indigo-600 font-semibold px-3 py-0.5 rounded-full transition border border-transparent"
+                  @click.stop.prevent="emits('addClick', props.task.id)"
+                  v-if="treeLevel < 2"
+                >
+                  <i class="fas fa-plus"></i> Add Sub Task
+                </a>
+              </template>
             </div>
           </div>
+          <TaskTreeChildrenTable
+            :childrenTasks="task.children_tasks"
+            :hide-buttons="hideButtons"
+            :hide-assigned-users="hideAssignedUsers"
+            :parent-tree-level="treeLevel"
+            @editClick="handleChildEditClick"
+            @addClick="handleChildAddClick"
+            @employeeAssignClick="handleChildEmployeeAssignClick"
+          >
+            <template #tree-item-end="{ task, level }">
+              <slot name="item-end" :level="level" :task="task"></slot>
+            </template>
+          </TaskTreeChildrenTable>
         </div>
-        <div class="text-gray-400 text-xs col-span-full flex">
-          <div>
-            <div class="mb-4">
-              <i class="fas fa-clock"></i>
-              {{ getDisplayDateTime(task.created_at) }}
-            </div>
-            <div class="flex flex-wrap gap-2 mb-2 col-span-full">
-              <div
-                class="border bg-gray-50 text-xs px-2 rounded-lg shadow-sm text-gray-700 bg-gradient-to-b to-slate-50 from-blue-100"
-                v-for="tag in task.website_tags || []"
-                :key="tag.id"
-              >
-                {{ tag.name }}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="flex-grow flex">
-        <TaskSupervisorAndEmployee
-          v-if="!hideAssignedUsers"
-          :task="task"
-          :tree-level="treeLevel"
-          :employee-route-to="
-            (user) => ({
-              query: {
-                ...route.query,
-                view: 'userwise',
-                'company-id': user.company_id,
-                'user-ids': user.id,
-              },
-            })
-          "
-        />
-      </div>
-
-      <div
-        class="ml-auto text-right text-sm flex items-center justify-center sm:justify-start gap-4 mt-4 opacity-80"
-      >
-        <div v-if="task.is_target" class="bg-yellow-200 px-2 py-0.5 rounded-lg text-yellow-900">
-          <i class="fad fa-bullseye-arrow mr-1"></i> TARGET TASK
-        </div>
-
-        <span class="text-gray-500 text-sm" v-if="assignedDate">
-          Assign: <span class="font-semibold text-blue-800">{{ assignedDate }}</span>
-        </span>
-
-        <span class="ml-4 text-gray-500 text-sm" v-if="deadline">
-          Deadline: <span class="text-blue-500 font-semibold">{{ deadline }}</span>
-        </span>
-
-        <span class="text-gray-500 text-sm" v-if="startedDate">
-          Started: <span class="font-semibold text-blue-800">{{ startedDate }}</span>
-        </span>
-        <span class="text-gray-500 text-sm" v-if="completedDate">
-          Completed: <span class="font-semibold text-blue-800">{{ completedDate }}</span>
-        </span>
       </div>
 
       <div class="mt-4 col-span-full">
-        <div class="flex flex-col sm:flex-row gap-3 items-center mt-4 w-full">
-          <div class="text-xs text-gray-400 flex gap-3 order-1 sm:order-0">
-            <button
-              :class="{
-                'text-blue-600 font-semibold  inline-block  ': hasSubTask,
-              }"
-              class="flex items-center gap-1 group"
-              @click="handleSubTaskClick"
-            >
-              <i
-                :class="showSubTask ? 'fa-caret-down' : 'fa-caret-right'"
-                class="fas w-3 text-left text-xl"
-              ></i>
-              <span :class="hasSubTask ? 'group-hover:underline' : ''">
-                Sub Tasks ({{ task.children_tasks?.length }})
-              </span>
-            </button>
+        <div class="flex gap-3 items-end">
+          <div class="text-right text-sm flex gap-4 mt-4 opacity-80">
+            <div v-if="task.is_target" class="bg-yellow-200 px-2 py-0.5 rounded-lg text-yellow-900">
+              <i class="fad fa-bullseye-arrow mr-1"></i> TARGET TASK
+            </div>
 
-            <template v-if="!task.closed_at && !hideButtons">
-              <a
-                :href="`/tasks/add?parent_id=${props.task.id}&back-to=${encodeURIComponent(route.path + '?' + objectToQuery(route.query)).toLowerCase()}`"
-                class="hover:bg-blue-600 hover:text-white text-indigo-600 font-semibold px-3 py-0.5 rounded-full transition border border-transparent"
-                @click.stop.prevent="emits('addClick', props.task.id)"
-                v-if="treeLevel < 2"
-              >
-                <i class="fas fa-plus"></i> Add Sub Task
-              </a>
-            </template>
+            <span class="text-gray-500 text-sm" v-if="assignedDate">
+              Assign: <span class="font-semibold text-blue-800">{{ assignedDate }}</span>
+            </span>
+
+            <span class="ml-4 text-gray-500 text-sm" v-if="deadline">
+              Deadline: <span class="text-blue-500 font-semibold">{{ deadline }}</span>
+            </span>
+
+            <span class="text-gray-500 text-sm" v-if="startedDate">
+              Started: <span class="font-semibold text-blue-800">{{ startedDate }}</span>
+            </span>
+            <span class="text-gray-500 text-sm" v-if="completedDate">
+              Completed: <span class="font-semibold text-blue-800">{{ completedDate }}</span>
+            </span>
           </div>
 
           <div class="flex items-center sm:ml-auto order-0 sm:order-1">
@@ -184,22 +197,6 @@
               </RouterLink>
             </div>
           </div>
-        </div>
-
-        <div class="ml-0" v-if="showSubTask">
-          <TaskTreeChildrenTable
-            :childrenTasks="task.children_tasks"
-            :hide-buttons="hideButtons"
-            :hide-assigned-users="hideAssignedUsers"
-            :parent-tree-level="treeLevel"
-            @editClick="handleChildEditClick"
-            @addClick="handleChildAddClick"
-            @employeeAssignClick="handleChildEmployeeAssignClick"
-          >
-            <template #tree-item-end="{ task, level }">
-              <slot name="item-end" :level="level" :task="task"></slot>
-            </template>
-          </TaskTreeChildrenTable>
         </div>
       </div>
     </div>
@@ -295,10 +292,4 @@ watch(
 const hasSubTask = computed(() => {
   return props.task?.children_tasks?.length > 0
 })
-
-function handleSubTaskClick() {
-  if (props.task.children_tasks.length > 0) {
-    showSubTask.value = !showSubTask.value
-  }
-}
 </script>
