@@ -6,7 +6,7 @@
           <tr
             class=""
             :class="{
-              ' bg-green-100/50': task.status == 'COMPLETED',
+              ' bg-lime-400/20': task.status == 'COMPLETED',
               ' bg-slate-100 hover:bg-slate-200/60': task.status !== 'COMPLETED',
             }"
           >
@@ -57,7 +57,7 @@
         <tr v-if="childrenTasks.length > 0">
           <td colspan="10" class="py-2 px-8">
             <div class="text-sm">
-              <span v-if="hiddenTasks.length > 0" class="text-red-800">
+              <span v-if="hiddenTasks.length > 0" class="text-red-800 italic">
                 {{ hiddenTasks.length }} More sub task{{ hiddenTasks.length > 1 ? 's' : '' }}
               </span>
               <button

@@ -12,6 +12,7 @@ import TaskTreeViewWithSubTable from '@/components/tasks/TaskTreeViewWithSubTabl
 import TaskUserAssignForm from '@/components/tasks/TaskUserAssignForm.vue'
 import UserWiseList from '@/components/tasks/UserWiseList.vue'
 import useTaskPriorityUpdate from '@/libs/task-priority'
+import { mapAndFilterTask } from '@/libs/task-tree'
 import { useAuthStore } from '@/stores/auth'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
@@ -138,6 +139,10 @@ const taskFilter = computed({
     router.push({ query: { ...value } })
   },
 })
+
+const tasks = computed(() => {
+  return Array.isArray(store.tasks) ? mapAndFilterTask(store.tasks, route.query) : []
+})
 </script>
 
 <template>
@@ -199,7 +204,7 @@ const taskFilter = computed({
       <div v-else-if="store.tasks.length > 0">
         <UserWiseList
           v-if="route.query?.view == 'userwise'"
-          :tasks="store.tasks"
+          :tasks="tasks"
           :selectedUserId="route.query['user-ids']"
           @commentButtonClick="openComment($event, task.id)"
           @editClick="(taskId) => (editingId = taskId)"
@@ -209,7 +214,7 @@ const taskFilter = computed({
 
         <DraggableList
           v-else
-          :items="store.tasks"
+          :items="tasks"
           handle="handle"
           @itemsUpdate="handleItemsPriorityUpdate"
           class="space-y-4"
