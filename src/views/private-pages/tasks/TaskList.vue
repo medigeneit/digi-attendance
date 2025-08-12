@@ -222,7 +222,7 @@ const tasks = computed(() => {
           :items="tasks"
           handle="handle"
           @itemsUpdate="handleItemsPriorityUpdate"
-          class="space-y-4"
+          class="space-y-6"
           ref="draggableTaskList"
         >
           <template #item="{ item, index }">
@@ -236,7 +236,7 @@ const tasks = computed(() => {
                 @editClick="(taskId) => (editingId = taskId)"
                 @addClick="(taskId) => goToAdd(taskId)"
                 @employeeAssignClick="(taskId) => openEmployeeAssignForm(taskId)"
-                class="!border-0"
+                class="!border-0 shadow hover:shadow-md"
               />
             </div>
           </template>

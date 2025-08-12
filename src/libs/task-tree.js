@@ -85,14 +85,20 @@ function taskClientSideFilter(task, filters) {
     matched = matched && statusList.includes(task?.status)
   }
 
+
+  if( task?.children_tasks?.length > 0) {
+    return matched && task?.children_tasks.filter(
+      childTask => taskClientSideFilter( childTask, filters)
+    ).length > 0
+  }
+
   return matched
 }
 
 export function mapAndFilterTask(taskList, filters) {
   return taskList
-
     ?.filter((childTask) => taskClientSideFilter(childTask, filters))
-    .map((childTask) => {
+    ?.map((childTask) => {
       return {
         ...childTask,
         children_tasks:
@@ -100,5 +106,5 @@ export function mapAndFilterTask(taskList, filters) {
             ? mapAndFilterTask(childTask.children_tasks, filters)
             : [],
       }
-    })
+    }) || []
 }

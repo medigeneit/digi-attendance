@@ -6,168 +6,164 @@
 @tailwind utilities;
 
 @layer components {
-    .scrollbar::-webkit-scrollbar {
-      @apply w-2 h-2;
-    }
-  
-    .scrollbar::-webkit-scrollbar-track {
-      @apply bg-gradient-to-b from-rose-100 to-blue-100;
-    }
-  
-    .scrollbar::-webkit-scrollbar-thumb {
-      @apply bg-gradient-to-b from-blue-500 to-blue-700 rounded-full;
-    }
-  
-    .scrollbar::-webkit-scrollbar-thumb:hover {
-      @apply bg-gradient-to-b from-blue-400 to-blue-600 rounded-full;
-    }
-    .droped-menu {
-      @apply flex items-center gap-3 hover:bg-blue-50 font-medium text-blue-900 hover:text-blue-600 py-3 px-5 transition-all ease-in-out duration-300;
-    }
-    .menus {
-      @apply flex items-center gap-2 hover:text-blue-600 cursor-pointer;
-    }
-  
-    .has-dropdown {
-      @apply absolute bg-white shadow-xl flex flex-col min-w-max text-sm divide-y rounded-lg overflow-hidden z-50;
-    }
-  
-    .side-menu {
-      @apply flex items-center gap-4 bg-blue-100 text-blue-900 py-3 px-6 transition-all ease-in-out duration-300 cursor-pointer hover:bg-blue-600  hover:text-white;
-    }
+  .scrollbar::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
 
-    
-    .side-menu-active {
-      @apply flex items-center gap-4 bg-blue-600 py-3 px-6 transition-all ease-in-out duration-300 cursor-pointer text-white;
-    }
+  .scrollbar::-webkit-scrollbar-track {
+    @apply bg-gradient-to-b from-rose-100 to-blue-100;
+  }
 
-    
+  .scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-gradient-to-b from-blue-500 to-blue-700 rounded-full;
+  }
 
-    .side-submenu {
-      @apply flex items-center gap-2 bg-white py-3 px-4 transition-all ease-in-out duration-300 cursor-pointer text-sm;
-    }
-    .main-button {
-      @apply flex flex-col gap-2 md:gap-4 w-full items-center justify-center md:rounded-xl rounded-lg bg-gradient-to-br from-blue-100 to-white p-4 pt-5  shadow-md border-2 border-blue-600 hover:border-white hover:border-2 transition-all ease-in-out duration-300 text-blue-900 hover:text-white text-center font-bold hover:from-blue-700 hover:to-blue-700;
-    }
-  
-    .batch-category-button {
-      @apply flex items-center md:gap-6 gap-4 md:p-4 p-2 bg-white rounded-tr-full rounded-l-full shadow-md hover:shadow-xl hover:bg-blue-100 border-2 border-transparent hover:border-2 hover:border-white transition-all ease-in-out duration-300;
-    }
-  
-    .course-card {
-      @apply p-4 md:p-6 bg-white  rounded-xl grid items-center gap-2  w-full border-[2px] border-transparent border-blue-500 transition-all ease-in-out duration-300;
-    }
-    .btn-1 {
-      @apply flex items-center justify-center gap-2 bg-gradient-to-br from-orange-100 to-blue-100 md:px-6 px-4 py-1.5 rounded-full font-semibold text-sm border-[2px] border-transparent hover:border-blue-400 hover:text-blue-600 transition-all ease-in-out duration-300 text-blue-900 print:hidden;
-    }
-  
-    .btn-1:disabled {
-      background-image: none !important;
-      @apply bg-gray-200 text-gray-400 print:hidden;
-    }
-  
-    .btn-1:disabled:hover {
-      @apply border-gray-200 text-gray-400 print:hidden;
-    }
-  
-    .btn-2 {
-      @apply flex gap-2 items-center justify-center bg-gradient-to-br from-blue-900 to-blue-500 md:px-6 px-4 py-1.5 rounded-full font-semibold text-white text-sm border-[2px] border-transparent hover:border-blue-300 hover:text-blue-200 transition-all ease-in-out duration-300 print:hidden;
-    }
-  
-    .btn-2-red {
-      @apply flex gap-2 items-center justify-center bg-gradient-to-br from-red-800 to-red-500 md:px-6 px-4 py-1.5 rounded-full font-semibold text-white text-sm border-[2px] border-transparent hover:border-red-300 hover:text-red-200 transition-all ease-in-out duration-300 print:hidden;
-    }
-  
-    .btn-2-green {
-      @apply flex gap-2 items-center justify-center bg-gradient-to-br from-green-800 to-green-500 md:px-6 px-4 py-1.5 rounded-full font-semibold text-white text-sm border-[2px] border-transparent hover:border-green-300 hover:text-green-200 transition-all ease-in-out duration-300 print:hidden;
-    }
-  
-    .btn-3 {
-      @apply flex items-center justify-center gap-2 hover:text-white hover:bg-blue-500 transition-all ease-in-out duration-300 font-medium text-blue-900 border md:border-2 border-blue-900 hover:border-blue-500 md:px-6 px-4 rounded-full py-1.5 print:hidden;
-    }
-  
-    .btn-4 {
-      @apply flex items-center justify-center gap-2 py-1.5 md:px-6 px-4 
+  .scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-gradient-to-b from-blue-400 to-blue-600 rounded-full;
+  }
+  .droped-menu {
+    @apply flex items-center gap-3 hover:bg-blue-50 font-medium text-blue-900 hover:text-blue-600 py-3 px-5 transition-all ease-in-out duration-300;
+  }
+  .menus {
+    @apply flex items-center gap-2 hover:text-blue-600 cursor-pointer;
+  }
+
+  .has-dropdown {
+    @apply absolute bg-white shadow-xl flex flex-col min-w-max text-sm divide-y rounded-lg overflow-hidden z-50;
+  }
+
+  .side-menu {
+    @apply flex items-center gap-3 bg-blue-100 text-blue-900 py-3 px-5 transition-all ease-in-out duration-300 cursor-pointer hover:bg-blue-600  hover:text-white;
+  }
+
+  .side-menu-active {
+    @apply flex items-center gap-4 bg-blue-600 py-3 px-6 transition-all ease-in-out duration-300 cursor-pointer text-white;
+  }
+
+  .side-submenu {
+    @apply flex items-center gap-2 bg-white py-3 px-4 transition-all ease-in-out duration-300 cursor-pointer text-sm;
+  }
+  .main-button {
+    @apply flex flex-col gap-2 md:gap-4 w-full items-center justify-center md:rounded-xl rounded-lg bg-gradient-to-br from-blue-100 to-white p-4 pt-5  shadow-md border-2 border-blue-600 hover:border-white hover:border-2 transition-all ease-in-out duration-300 text-blue-900 hover:text-white text-center font-bold hover:from-blue-700 hover:to-blue-700;
+  }
+
+  .batch-category-button {
+    @apply flex items-center md:gap-6 gap-4 md:p-4 p-2 bg-white rounded-tr-full rounded-l-full shadow-md hover:shadow-xl hover:bg-blue-100 border-2 border-transparent hover:border-2 hover:border-white transition-all ease-in-out duration-300;
+  }
+
+  .course-card {
+    @apply p-4 md:p-6 bg-white  rounded-xl grid items-center gap-2  w-full border-[2px] border-transparent border-blue-500 transition-all ease-in-out duration-300;
+  }
+  .btn-1 {
+    @apply flex items-center justify-center gap-2 bg-gradient-to-br from-orange-100 to-blue-100 md:px-6 px-4 py-1.5 rounded-full font-semibold text-sm border-[2px] border-transparent hover:border-blue-400 hover:text-blue-600 transition-all ease-in-out duration-300 text-blue-900 print:hidden;
+  }
+
+  .btn-1:disabled {
+    background-image: none !important;
+    @apply bg-gray-200 text-gray-400 print:hidden;
+  }
+
+  .btn-1:disabled:hover {
+    @apply border-gray-200 text-gray-400 print:hidden;
+  }
+
+  .btn-2 {
+    @apply flex gap-2 items-center justify-center bg-gradient-to-br from-blue-900 to-blue-500 md:px-6 px-4 py-1.5 rounded-full font-semibold text-white text-sm border-[2px] border-transparent hover:border-blue-300 hover:text-blue-200 transition-all ease-in-out duration-300 print:hidden;
+  }
+
+  .btn-2-red {
+    @apply flex gap-2 items-center justify-center bg-gradient-to-br from-red-800 to-red-500 md:px-6 px-4 py-1.5 rounded-full font-semibold text-white text-sm border-[2px] border-transparent hover:border-red-300 hover:text-red-200 transition-all ease-in-out duration-300 print:hidden;
+  }
+
+  .btn-2-green {
+    @apply flex gap-2 items-center justify-center bg-gradient-to-br from-green-800 to-green-500 md:px-6 px-4 py-1.5 rounded-full font-semibold text-white text-sm border-[2px] border-transparent hover:border-green-300 hover:text-green-200 transition-all ease-in-out duration-300 print:hidden;
+  }
+
+  .btn-3 {
+    @apply flex items-center justify-center gap-2 hover:text-white hover:bg-blue-500 transition-all ease-in-out duration-300 font-medium text-blue-900 border md:border-2 border-blue-900 hover:border-blue-500 md:px-6 px-4 rounded-full py-1.5 print:hidden;
+  }
+
+  .btn-4 {
+    @apply flex items-center justify-center gap-2 py-1.5 md:px-6 px-4 
       bg-gray-100 rounded-full hover:bg-blue-50
       font-medium text-blue-900 hover:text-blue-600
       transition-all ease-in-out duration-300 print:hidden;
-    }
+  }
 
-    .btn-contrast {
-      @apply flex items-center justify-center gap-2 bg-gradient-to-br from-orange-700 to-orange-300 md:px-6 px-4 py-1.5 rounded-full font-semibold text-sm border-[2px] border-transparent hover:border-orange-100 hover:text-orange-200 transition-all ease-in-out duration-300 text-white print:hidden;
-    }
-  
-    .btn-link {
-      @apply underline text-blue-700 hover:text-blue-500;
-    }
+  .btn-contrast {
+    @apply flex items-center justify-center gap-2 bg-gradient-to-br from-orange-700 to-orange-300 md:px-6 px-4 py-1.5 rounded-full font-semibold text-sm border-[2px] border-transparent hover:border-orange-100 hover:text-orange-200 transition-all ease-in-out duration-300 text-white print:hidden;
+  }
 
-    .side-menu {
-      @apply flex items-center gap-4 bg-blue-100 text-blue-900 py-3 px-6 transition-all ease-in-out duration-300 cursor-pointer hover:bg-blue-600  hover:text-white;
-    }
+  .btn-link {
+    @apply underline text-blue-700 hover:text-blue-500;
+  }
 
-    
-    .side-menu-active {
-      @apply flex items-center gap-4 bg-blue-600 py-3 px-6 transition-all ease-in-out duration-300 cursor-pointer text-white;
-    }
+  .side-menu {
+    @apply flex items-center gap-4 bg-blue-100 text-blue-900 py-3 px-6 transition-all ease-in-out duration-300 cursor-pointer hover:bg-blue-600  hover:text-white;
+  }
 
-    .btn-icon {
-      @apply bg-gray-100 p-2 rounded-full size-10 flex justify-center items-center hover:text-blue-600 hover:bg-blue-100 transition-all ease-in-out duration-300;
-    }
+  .side-menu-active {
+    @apply flex items-center gap-4 bg-blue-600 py-3 px-6 transition-all ease-in-out duration-300 cursor-pointer text-white;
+  }
 
-    .card-bg {
-      @apply flex flex-col gap-2 bg-white rounded-lg overflow-hidden shadow print:shadow-none;
-    }
+  .btn-icon {
+    @apply bg-gray-100 p-2 rounded-full size-10 flex justify-center items-center hover:text-blue-600 hover:bg-blue-100 transition-all ease-in-out duration-300;
+  }
 
-    .title-bg {
-      @apply text-center text-base md:text-lg font-bold text-white md:px-4 p-2 bg-gradient-to-br from-blue-900 to-blue-400;
-    }
-    
-    .title-sm {
-      @apply font-semibold md:text-base text-blue-900 text-sm;
-    }
+  .card-bg {
+    @apply flex flex-col gap-2 bg-white rounded-lg overflow-hidden shadow print:shadow-none;
+  }
 
-    .title-md {
-      @apply md:text-lg text-blue-900 font-bold text-base;
-    }
-    .title-lg {
-      @apply md:text-2xl text-blue-900 font-bold text-xl;
-    }
-    .title-xl {
-      @apply md:text-4xl text-3xl font-bold text-blue-900;
-    }
-  
-    .title-batch {
-      @apply md:text-lg text-blue-900 font-bold text-[13px];
-    }
-  
-    .colored-bg {
-      @apply px-3 py-2 md:px-4 bg-gradient-to-br from-red-100 to-blue-100 divide-y-2 divide-white;
-    }
-  
-    .colored-bg-light {
-      @apply px-3 py-2 md:px-4 bg-gradient-to-br to-pink-100 from-white;
-    }
-  
-    .tf-unfilled {
-      @apply flex items-center justify-center border-double border-4 bg-white border-blue-900 rounded-full md:px-2 px-[6px] pt-[5px] font-bold text-sm text-blue-900 leading-none;
-    }
-    .tf-filled {
-      @apply border-double border-4 bg-blue-600 border-blue-600 rounded-full px-2 pt-1 font-bold text-sm text-white;
-    }
-    .sm-card-bg {
-      @apply w-[65px] md:w-[100px] flex flex-col items-center border-2  p-1 rounded-md;
-    }
-    .md-card-bg {
-      @apply w-[90px] md:w-[110px] flex flex-col items-center border-2  p-1 rounded-md;
-    }
+  .title-bg {
+    @apply text-center text-base md:text-lg font-bold text-white md:px-4 p-2 bg-gradient-to-br from-blue-900 to-blue-400;
+  }
 
-    .input-1{
-      @apply w-full border-2 border-gray-400   focus:border-blue-500  rounded-md shadow-sm p-2 px-4;
-    }
+  .title-sm {
+    @apply font-semibold md:text-base text-blue-900 text-sm;
+  }
 
-    .my-container{
-      @apply max-w-6xl mx-auto px-2 w-full;
-    }
+  .title-md {
+    @apply md:text-lg text-blue-900 font-bold text-base;
+  }
+  .title-lg {
+    @apply md:text-2xl text-blue-900 font-bold text-xl;
+  }
+  .title-xl {
+    @apply md:text-4xl text-3xl font-bold text-blue-900;
+  }
+
+  .title-batch {
+    @apply md:text-lg text-blue-900 font-bold text-[13px];
+  }
+
+  .colored-bg {
+    @apply px-3 py-2 md:px-4 bg-gradient-to-br from-red-100 to-blue-100 divide-y-2 divide-white;
+  }
+
+  .colored-bg-light {
+    @apply px-3 py-2 md:px-4 bg-gradient-to-br to-pink-100 from-white;
+  }
+
+  .tf-unfilled {
+    @apply flex items-center justify-center border-double border-4 bg-white border-blue-900 rounded-full md:px-2 px-[6px] pt-[5px] font-bold text-sm text-blue-900 leading-none;
+  }
+  .tf-filled {
+    @apply border-double border-4 bg-blue-600 border-blue-600 rounded-full px-2 pt-1 font-bold text-sm text-white;
+  }
+  .sm-card-bg {
+    @apply w-[65px] md:w-[100px] flex flex-col items-center border-2  p-1 rounded-md;
+  }
+  .md-card-bg {
+    @apply w-[90px] md:w-[110px] flex flex-col items-center border-2  p-1 rounded-md;
+  }
+
+  .input-1 {
+    @apply w-full border-2 border-gray-400   focus:border-blue-500  rounded-md shadow-sm p-2 px-4;
+  }
+
+  .my-container {
+    @apply max-w-6xl mx-auto px-2 w-full;
+  }
 
   .modal-bg {
     @apply flex items-center justify-center fixed top-0 left-0 w-full h-full bg-black/60 z-50;
@@ -176,11 +172,10 @@
   .modal-card {
     @apply card-bg p-4 md:p-8 w-full max-w-xl mx-4;
   }
-  }
+}
 
-
-input[type="number"]::-webkit-outer-spin-button,
-input[type="number"]::-webkit-inner-spin-button {
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }

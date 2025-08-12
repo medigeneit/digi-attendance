@@ -65,9 +65,12 @@ const logout = () => {
       <RouterLink
         to="/dashboard"
         class="side-menu md:py-5"
-        :class="{ 'side-menu-active': currentRoute.includes('/dashboard') }"
+        :class="{
+          'side-menu-active': currentRoute.includes('/dashboard'),
+          'flex justify-center': !open,
+        }"
       >
-        <i class="fad fa-table py-2"></i>
+        <i class="fad fa-table py-2 border-red-500"></i>
         <h4 v-if="open">Dashboard</h4>
       </RouterLink>
 
@@ -75,7 +78,10 @@ const logout = () => {
         <RouterLink
           :to="`/my-tasks?status=not-completed`"
           class="side-menu"
-          :class="{ 'side-menu-active': currentRoute.includes('/tasks') }"
+          :class="{
+            'flex justify-center': !open,
+            'side-menu-active': currentRoute.includes('/tasks'),
+          }"
         >
           <i class="fad fa-tasks py-2"></i>
           <h4 v-if="open">Task List</h4>
@@ -84,7 +90,10 @@ const logout = () => {
         <RouterLink
           to="/profile"
           class="side-menu"
-          :class="{ 'side-menu-active': currentRoute.includes('/profile') }"
+          :class="{
+            'flex justify-center': !open,
+            'side-menu-active': currentRoute.includes('/profile'),
+          }"
         >
           <i class="fad fa-user py-2"></i>
           <h4 v-if="open">Profile</h4>
@@ -93,7 +102,10 @@ const logout = () => {
         <RouterLink
           to="/notifications"
           class="side-menu"
-          :class="{ 'side-menu-active': currentRoute.includes('/notifications') }"
+          :class="{
+            'flex justify-center': !open,
+            'side-menu-active': currentRoute.includes('/notifications'),
+          }"
         >
           <i class="fad fa-bells py-2"></i>
           <h4 v-if="open">Notifications</h4>
@@ -102,7 +114,10 @@ const logout = () => {
         <RouterLink
           to="/notices"
           class="side-menu"
-          :class="{ 'side-menu-active': currentRoute.includes('/notices') }"
+          :class="{
+            'flex justify-center': !open,
+            'side-menu-active': currentRoute.includes('/notices'),
+          }"
         >
           <i class="fad fa-exclamation-triangle py-2"></i>
           <h4 v-if="open">Notices</h4>
@@ -111,7 +126,10 @@ const logout = () => {
         <RouterLink
           to="/attendance"
           class="side-menu"
-          :class="{ 'side-menu-active': currentRoute.includes('/attendance') }"
+          :class="{
+            'flex justify-center': !open,
+            'side-menu-active': currentRoute.includes('/attendance'),
+          }"
         >
           <i class="fad fa-list py-2"></i>
           <h4 v-if="open">Attendance</h4>
@@ -120,7 +138,10 @@ const logout = () => {
         <RouterLink
           to="/applications"
           class="side-menu"
-          :class="{ 'side-menu-active': currentRoute.includes('/applications') }"
+          :class="{
+            'flex justify-center': !open,
+            'side-menu-active': currentRoute.includes('/applications'),
+          }"
         >
           <i class="fad fa-list-alt py-2"></i>
           <h4 v-if="open">Applications</h4>
@@ -132,7 +153,10 @@ const logout = () => {
         <RouterLink
           to="/requirements"
           class="side-menu"
-          :class="{ 'side-menu-active': currentRoute.includes('/requirements') }"
+          :class="{
+            'flex justify-center': !open,
+            'side-menu-active': currentRoute.includes('/requirements'),
+          }"
         >
           <i class="fad fa-tasks py-2"></i>
           <h4 v-if="open">Requirement</h4>
@@ -140,7 +164,10 @@ const logout = () => {
         <RouterLink
           to="/tasks"
           class="side-menu"
-          :class="{ 'side-menu-active': currentRoute.includes('/tasks') }"
+          :class="{
+            'flex justify-center': !open,
+            'side-menu-active': currentRoute.includes('/tasks'),
+          }"
         >
           <i class="fad fa-tasks py-2"></i>
           <h4 v-if="open">Task Management</h4>
@@ -149,7 +176,10 @@ const logout = () => {
         <RouterLink
           to="/reports"
           class="side-menu"
-          :class="{ 'side-menu-active': currentRoute.includes('/reports') }"
+          :class="{
+            'flex justify-center': !open,
+            'side-menu-active': currentRoute.includes('/reports'),
+          }"
         >
           <i class="fas fa-file-chart-line py-2"></i>
           <h4 v-if="open">Reports</h4>
@@ -158,7 +188,10 @@ const logout = () => {
         <RouterLink
           to="/hrd"
           class="side-menu"
-          :class="{ 'side-menu-active': currentRoute.includes('/hrd') }"
+          :class="{
+            'flex justify-center': !open,
+            'side-menu-active': currentRoute.includes('/hrd'),
+          }"
         >
           <i class="fas fa-users-cog py-2"></i>
           <h4 v-if="open">HR Department</h4>
@@ -168,7 +201,10 @@ const logout = () => {
           v-if="['super_admin', 'developer'].includes(user?.role)"
           to="/settings"
           class="side-menu"
-          :class="{ 'side-menu-active': currentRoute.includes('/settings') }"
+          :class="{
+            'flex justify-center': !open,
+            'side-menu-active': currentRoute.includes('/settings'),
+          }"
         >
           <i class="fas fa-cogs py-2"></i>
           <h4 v-if="open">Settings</h4>
@@ -176,7 +212,11 @@ const logout = () => {
       </template>
 
       <!-- Logout -->
-      <button class="side-menu bg-rose-50 w-full hover:bg-rose-600 text-rose-700" @click="logout">
+      <button
+        :class="{ 'flex justify-center': !open }"
+        class="side-menu bg-rose-50 w-full hover:bg-rose-600 text-rose-700"
+        @click="logout"
+      >
         <i class="fad fa-sign-out-alt py-2"></i>
         <h4 v-show="open">Logout</h4>
       </button>
