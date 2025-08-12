@@ -9,20 +9,22 @@
     <div
       class="flex-grow border-2 rounded pb-3 px-3"
       :class="{
-        'bg-blue-100/30  ': task.closed_at,
-        'bg-green-100  ': progress?.completedPercentage === 100,
-        'bg-white hover:bg-gray-50': progress?.completedPercentage < 100 && !task.closed_at,
-        'shadow-sm': treeLevel > 0,
         'border-blue-500': index % 2 === 0,
         'border-pink-300': index % 2 === 1,
       }"
     >
       <div class="items-start grid grid-cols-4 gap-4 group">
         <div
-          class="col-span-full md:col-span-full border-b -mx-3 px-3 pt-3 shadow-md shadow-slate-100 flex flex-wrap bg-white z-30"
+          class="col-span-full md:col-span-full border-b -mx-3 px-3 pt-3 shadow-md shadow-slate-100 flex flex-wrap z-30"
+          :class="{
+            'bg-blue-100/30  ': task.closed_at,
+            'bg-green-100  ': progress?.completedPercentage === 100,
+            'bg-white hover:bg-gray-50': progress?.completedPercentage < 100 && !task.closed_at,
+            'shadow-sm': treeLevel > 0,
+          }"
         >
-          <div class="flex items-start gap-2 w-full">
-            <div>
+          <div class="flex items-start gap-6 w-full pb-4">
+            <div class="flex-grow w-6/12">
               <div class="flex gap-2">
                 <div class="text-xl font-semibold text-blue-500" v-if="index !== undefined">
                   {{ index + 1 }}.
@@ -35,7 +37,7 @@
                   class="whitespace-nowrap"
                 />
               </div>
-              <div class="flex items-center w-full mb-2">
+              <div class="flex items-center mb-2">
                 <div class="flex gap-4 items-center mr-3" v-if="showDraggableHandle || task.serial">
                   <button
                     @mousedown.stop="handleDragging"
@@ -58,7 +60,7 @@
                   <TaskUrgentBadge v-if="task?.is_urgent" class="flex-none" />
                 </div>
               </div>
-              <div class="mb-4 text-xs text-gray-400 whitespace-nowrap">
+              <div class="text-xs text-gray-400 whitespace-nowrap">
                 <i class="fas fa-clock"></i>
                 {{ getDisplayDateTime(task.created_at) }}
               </div>
@@ -68,7 +70,7 @@
               v-if="!hideAssignedUsers"
               :task="task"
               :tree-level="treeLevel"
-              class="my-2 w-full"
+              class="flex-nowrap w-1/2"
               :employee-route-to="
                 (user) => ({
                   query: {
@@ -81,12 +83,16 @@
               "
             />
 
-            <div class="justify-end items-center gap-2 ml-auto flex order-1 lg:order-0">
+            <div class="justify-end items-center gap-2 ml-auto flex flex-wrap w-[350px]">
               <TaskIsClosedBadge v-if="task.closed_at" />
 
-              <TaskStatus :status="task?.status" :progressPercent="task?.progress_percent || 0" />
+              <TaskStatus
+                :status="task?.status"
+                :progressPercent="task?.progress_percent || 0"
+                class="w-1/2"
+              />
 
-              <SubTaskProgress ref="progress" :task="task" class="text-sm" />
+              <SubTaskProgress ref="progress" :task="task" class="text-sm w-1/2" />
             </div>
           </div>
         </div>

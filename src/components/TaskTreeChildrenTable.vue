@@ -7,7 +7,7 @@
             class=""
             :class="{
               ' bg-lime-400/20': task.status == 'COMPLETED',
-              ' bg-slate-100 hover:bg-slate-200/60': task.status !== 'COMPLETED',
+              ' bg-white hover:bg-slate-50': task.status !== 'COMPLETED',
             }"
           >
             <td class="border-y pr-2 pl-8 py-4 border-gray-300">

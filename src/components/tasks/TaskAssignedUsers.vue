@@ -36,7 +36,7 @@ const ItemComponent = computed(() => {
 </script>
 <template>
   <div class="relative">
-    <div v-if="props.users.length === 0" class="text-gray-400 text-xs">
+    <div v-if="props.users.length === 0" class="text-gray-400 text-xs whitespace-nowrap">
       {{ listType == 'supervisors' ? 'No Supervisor assigned' : 'Not Assigned To Anyone' }}
     </div>
     <component
@@ -62,7 +62,7 @@ const ItemComponent = computed(() => {
       >
         <template #after v-if="index === 0 || listType == 'supervisors'">
           <div
-            class="border rounded-full size-6 flex justify-center items-center border-blue-300 bg-blue-100"
+            class="border rounded-full size-6 flex justify-center items-center border-blue-300 bg-blue-100 flex-shrink-0"
           >
             <i class="fas fa-user-cowboy text-blue-500" v-if="listType == 'supervisors'"></i>
             <i class="fas fa-user-crown text-blue-300" v-else></i>
@@ -72,7 +72,7 @@ const ItemComponent = computed(() => {
     </component>
 
     <div v-if="hiddenUsers.length > 0" class="text-sm text-gray-500 group/users">
-      <div class="cursor-pointer hover:underline text-blue-600">
+      <div class="cursor-pointer hover:underline text-blue-600 whitespace-nowrap">
         + {{ hiddenUsers.length }} more
         {{ listType == 'employee' ? 'users' : listType == 'supervisors' ? 'supervisor' : '' }}
       </div>

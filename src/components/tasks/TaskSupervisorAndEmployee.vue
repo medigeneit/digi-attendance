@@ -10,10 +10,10 @@ const props = defineProps({
 
 <template>
   <div
-    class="col-span-full flex flex-col md:flex-row items-stretched my-2 lg:my-0 justify-center flex-wrap gap-x-5 gap-y-4"
+    class="col-span-full flex flex-col md:flex-row items-stretched my-4 lg:my-0 justify-start gap-x-5 gap-y-4"
   >
     <div
-      class="flex flex-col items-center justify-start gap-2 border border-dashed border-gray-200 rounded-lg shadow shadow-gray-100 bg-gray-50/40 p-1 px-1.5"
+      class="flex flex-col items-center justify-start gap-2 border border-dashed border-gray-200 rounded-lg shadow shadow-gray-100 bg-gray-50/40 p-1 px-3"
     >
       <template v-if="treeLevel === 0">
         <div class="text-xs px-2 py-0.5 rounded-full border bg-sky-500 text-white">
@@ -38,7 +38,7 @@ const props = defineProps({
     </div>
 
     <div
-      class="flex flex-col items-center justify-start gap-2 border border-dashed border-gray-200 rounded-lg shadow shadow-gray-100 bg-gray-50/40 py-1 px-1.5"
+      class="flex flex-col items-center justify-start gap-2 border border-dashed border-gray-200 rounded-lg shadow shadow-gray-100 bg-gray-50/40 py-1 px-3"
     >
       <template v-if="treeLevel === 0">
         <div class="text-xs px-2 py-0.5 rounded-full border bg-blue-500 text-white">
@@ -47,7 +47,7 @@ const props = defineProps({
       </template>
 
       <TaskAssignedUsers
-        class="flex items-center justify-center flex-wrap gap-x-3 gap-y-2"
+        class="flex items-center justify-center gap-x-3 gap-y-2"
         :users="task.users || []"
         :isTargetTask="task.is_target"
         :routeTo="employeeRouteTo"

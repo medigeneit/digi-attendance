@@ -141,7 +141,12 @@ const taskFilter = computed({
 })
 
 const tasks = computed(() => {
-  return Array.isArray(store.tasks) ? mapAndFilterTask(store.tasks, route.query) : []
+  const filters = { ...route.query }
+  if (route.name == 'MyTaskList') {
+    filters['user-ids'] = auth?.user?.id
+  }
+
+  return Array.isArray(store.tasks) ? mapAndFilterTask(store.tasks, filters) : []
 })
 </script>
 
