@@ -1,12 +1,16 @@
 <script setup>
 import UserChip from '@/components/user/UserChip.vue'
+import { mapAndFilterTask } from '@/libs/task-tree'
 import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import TaskTreeViewWithSubTable from './TaskTreeViewWithSubTable.vue'
 
 const props = defineProps({
   tasks: Array,
   selectedUserId: { type: String, default: null },
 })
+
+const route = useRoute()
 
 const emit = defineEmits([
   'commentButtonClick',
@@ -39,25 +43,7 @@ const getUserAllTasks = (userId) => {
   // Step 1: Find tasks explicitly assigned to the given user
   const userTasks = tasks.filter((t) => t.users.some((u) => u.id === userId))
 
-  return userTasks
-
-  // for (const task of userTasks) {
-  //   if (!visited.has(task.id)) {
-  //     visited.add(task.id)
-  //     result.push(task)
-  //   }
-
-  //   // Step 2: Climb up the tree and include parent tasks (even if from another user)
-  //   let parentId = task.parent_id
-  //   while (parentId && taskMap.has(parentId) && !visited.has(parentId)) {
-  //     const parentTask = taskMap.get(parentId)
-  //     visited.add(parentTask.id)
-  //     result.push(parentTask)
-  //     parentId = parentTask.parent_id
-  //   }
-  // }
-
-  // return result
+  return mapAndFilterTask(userTasks, { ...route.query, 'user-ids': userId })
 }
 
 const taskUsers = computed(() => {
@@ -80,7 +66,7 @@ const taskUsers = computed(() => {
               v-if="taskIndex == 0"
               :rowspan="Math.max(taskUser.tasks.length, 1)"
             >
-              <UserChip :user="taskUser" class="sticky top-[80px]" />
+              <UserChip :user="taskUser" class="sticky top-[8rem]" />
             </td>
 
             <td

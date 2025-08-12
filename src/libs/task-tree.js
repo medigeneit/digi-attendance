@@ -16,7 +16,7 @@ export const useTaskTree = () => {
 
     const traverse = (nodes, depth = 0, path = '') => {
       nodes.forEach(node => {
-        
+
         result.push({
           ...node,
           depth,
@@ -64,4 +64,47 @@ export const getTreeList = (taskList, parentId) => {
   const tree = useTaskTree()
   tree.setTaskList(taskList, parentId)
   return tree.getTaskListTree()
+}
+
+function taskClientSideFilter(task, filters) {
+
+  let matched = true
+
+  if (filters?.['user-ids']) {
+    matched = matched && task.users.some((user) => user.id == filters?.['user-ids'])
+  }
+
+  if (filters?.['status']) {
+    const statusValue = {
+      'not-completed': ['IN_PROGRESS', 'PENDING'],
+      'only-completed': ['COMPLETED'],
+    }
+
+    const statusList = statusValue?.[filters?.['status']]
+
+    matched = matched && statusList.includes(task?.status)
+  }
+
+
+  if( task?.children_tasks?.length > 0) {
+    return matched && task?.children_tasks.filter(
+      childTask => taskClientSideFilter( childTask, filters)
+    ).length > 0
+  }
+
+  return matched
+}
+
+export function mapAndFilterTask(taskList, filters) {
+  return taskList
+    ?.filter((childTask) => taskClientSideFilter(childTask, filters))
+    ?.map((childTask) => {
+      return {
+        ...childTask,
+        children_tasks:
+          childTask.children_tasks.length > 0
+            ? mapAndFilterTask(childTask.children_tasks, filters)
+            : [],
+      }
+    }) || []
 }

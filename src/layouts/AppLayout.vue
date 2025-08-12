@@ -29,23 +29,33 @@ onMounted(async () => {
 <template>
   <div class="md:flex relative">
     <div
-      :class="{ 'hidden md:block': !sidebarVisible }"
+      :class="{
+        'invisible md:visible opacity-0 md:opacity-100': !sidebarVisible,
+        sidebarVisible: ' opacity-100',
+      }"
       class="max-w-[240px] bg-white md:shadow-md shadow-2xl absolute md:static transition-transform duration-300 print:hidden z-[998]"
     >
-      <div class="sticky top-0 print:hidden">
-        <div class="relative w-full">
+      <div
+        @click="toggleSidebar"
+        class="md:hidden fixed inset-0 w-full h-full bg-gray-800/50 flex items-center justify-start p-2 transition duration-500"
+        :class="{ 'opacity-100': sidebarVisible, 'opacity-0': !sidebarVisible }"
+      >
+        <button
+          class="absolute md:hidden bg-red-500 text-white px-2 py-1 pt-2 rounded-full right-4 top-16 mt-4"
+          @click.stop="toggleSidebar"
+        >
+          <i class="fas fa-times-circle text-xl"></i>
+        </button>
+      </div>
+      <div
+        class="fixed md:sticky top-0 bottom-0 transition duration-150 print:hidden"
+        :class="{
+          'translate-x-0 ': sidebarVisible,
+          '-translate-x-20 md:translate-x-0': !sidebarVisible,
+        }"
+      >
+        <div class="w-full">
           <SideBar :visible="sidebarVisible" :user="user" />
-          <div
-            @click="toggleSidebar"
-            class="md:hidden absolute left-full top-0 bottom-0 w-full h-full bg-gray-800/50 flex items-center justify-start p-2"
-          >
-            <button
-              class="md:hidden bg-red-500 text-white px-2 py-1 pt-2 rounded-full"
-              @click="toggleSidebar"
-            >
-              <i class="fas fa-times-circle text-xl"></i>
-            </button>
-          </div>
         </div>
       </div>
     </div>

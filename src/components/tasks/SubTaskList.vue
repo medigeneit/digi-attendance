@@ -1,5 +1,8 @@
 <script setup>
+import { mapAndFilterTask } from '@/libs/task-tree'
+import { useAuthStore } from '@/stores/auth'
 import { computed, reactive, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import OverlyModal from '../common/OverlyModal.vue'
 import TaskAddForm from './TaskAddForm.vue'
 import TaskEditForm from './TaskEditForm.vue'
@@ -13,6 +16,8 @@ const props = defineProps({
   subTaskIsCreatable: { type: Boolean, default: true },
 })
 
+const route = useRoute()
+const auth = useAuthStore()
 const employeeAssignForm = reactive({
   taskId: 0,
   isOpen: false,
@@ -57,16 +62,18 @@ function handleTaskAddClose() {
   addForm.parentId = props.parentId
 }
 
-const filteredSubTasks = computed(() =>
-  props.subTasks.filter((task) => {
-    if (taskStatus.value === 'not-completed') {
-      return task.status !== 'COMPLETED'
-    } else if (taskStatus.value === 'only-completed') {
-      return task.status === 'COMPLETED'
-    }
-    return true
-  }),
-)
+const filteredSubTasks = computed(() => {
+  return Array.isArray(props.subTasks)
+    ? mapAndFilterTask(props.subTasks, {
+        status: taskStatus.value,
+        ...(route.name == 'MyTaskShow'
+          ? {
+              ['user-ids']: auth?.user?.id,
+            }
+          : {}),
+      })
+    : []
+})
 </script>
 <template>
   <div>

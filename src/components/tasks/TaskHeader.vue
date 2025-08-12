@@ -399,7 +399,9 @@ const filteringItems = computed(() => {
     </div>
   </div>
 
-  <div class="flex flex-col md:flex-row mb-2 md:mb-4 items-end mt-6 gap-6">
+  <div
+    class="flex flex-col md:flex-row mb-2 md:mb-4 items-end mt-6 gap-6 sticky top-[4.1rem] z-40 bg-white/80 py-2"
+  >
     <SearchInput v-model="search" class="w-full md:w-64 md:ml-auto" v-if="!isMyTask" />
 
     <div class="flex items-center gap-3 flex-grow flex-wrap justify-center">

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex w-full text-gray-800">
+  <div class="flex w-full text-gray-800 bg-white">
     <div v-if="treeLevel > 0" class="border-l border-gray-200 last:border-l-0">
       <div
         class="border-l border-b w-4 rounded-bl-full border-gray-200 h-4/6 ml-[-1px] mt-[-30px]"
@@ -7,20 +7,24 @@
     </div>
 
     <div
-      class="flex-grow border-2 rounded py-3 px-3"
+      class="flex-grow border-2 rounded pb-3 px-3"
       :class="{
-        'bg-blue-100/30  ': task.closed_at,
-        'bg-green-100  ': progress?.completedPercentage === 100,
-        'bg-white hover:bg-gray-50': progress?.completedPercentage < 100 && !task.closed_at,
-        'shadow-sm': treeLevel > 0,
         'border-blue-500': index % 2 === 0,
         'border-pink-300': index % 2 === 1,
       }"
     >
       <div class="items-start grid grid-cols-4 gap-4 group">
-        <div class="col-span-full md:col-span-full pb-3 border-b -mx-3 px-3 flex flex-wrap">
-          <div class="flex items-start gap-2 w-full">
-            <div>
+        <div
+          class="col-span-full md:col-span-full border-b -mx-3 px-3 pt-3 shadow-md shadow-slate-100 flex flex-wrap z-30"
+          :class="{
+            'bg-blue-100/30  ': task.closed_at,
+            'bg-green-100  ': progress?.completedPercentage === 100,
+            'bg-white hover:bg-gray-50': progress?.completedPercentage < 100 && !task.closed_at,
+            'shadow-sm': treeLevel > 0,
+          }"
+        >
+          <div class="flex items-start gap-6 w-full pb-4">
+            <div class="flex-grow w-6/12">
               <div class="flex gap-2">
                 <div class="text-xl font-semibold text-blue-500" v-if="index !== undefined">
                   {{ index + 1 }}.
@@ -33,7 +37,7 @@
                   class="whitespace-nowrap"
                 />
               </div>
-              <div class="flex items-center w-full mb-2">
+              <div class="flex items-center mb-2">
                 <div class="flex gap-4 items-center mr-3" v-if="showDraggableHandle || task.serial">
                   <button
                     @mousedown.stop="handleDragging"
@@ -56,7 +60,7 @@
                   <TaskUrgentBadge v-if="task?.is_urgent" class="flex-none" />
                 </div>
               </div>
-              <div class="mb-4 text-xs text-gray-400">
+              <div class="text-xs text-gray-400 whitespace-nowrap">
                 <i class="fas fa-clock"></i>
                 {{ getDisplayDateTime(task.created_at) }}
               </div>
@@ -66,7 +70,7 @@
               v-if="!hideAssignedUsers"
               :task="task"
               :tree-level="treeLevel"
-              class="my-2 w-full"
+              class="flex-nowrap w-1/2"
               :employee-route-to="
                 (user) => ({
                   query: {
@@ -79,12 +83,16 @@
               "
             />
 
-            <div class="justify-end items-center gap-2 ml-auto flex order-1 lg:order-0">
+            <div class="justify-end items-center gap-2 ml-auto flex flex-wrap w-[350px]">
               <TaskIsClosedBadge v-if="task.closed_at" />
 
-              <TaskStatus :status="task?.status" :progressPercent="task?.progress_percent || 0" />
+              <TaskStatus
+                :status="task?.status"
+                :progressPercent="task?.progress_percent || 0"
+                class="w-[150px] text-center !border-2"
+              />
 
-              <SubTaskProgress ref="progress" :task="task" class="text-sm" />
+              <SubTaskProgress ref="progress" :task="task" class="text-sm w-[150px] text-center" />
             </div>
           </div>
         </div>
@@ -100,10 +108,10 @@
           </div>
         </div>
 
-        <div class="ml-0 mt-5 col-span-full">
-          <div>
-            <div class="text-xs text-gray-400 flex gap-3 order-1 sm:order-0">
-              <button
+        <div class="ml-0 col-span-full" :class="{ 'mt-4': hasSubTask }">
+          <div :class="{ 'ml-6': hasSubTask }">
+            <div class="text-xs text-gray-400 flex gap-3 sm:order-0">
+              <h2
                 :class="{
                   'text-blue-600 font-semibold  inline-block  ': hasSubTask,
                 }"
@@ -114,10 +122,8 @@
                   :class="showSubTask ? 'fa-caret-down' : 'fa-caret-right'"
                   class="fas w-3 text-left text-xl"
                 ></i> -->
-                <span :class="hasSubTask ? 'group-hover:underline' : ''">
-                  Sub Tasks ({{ task.children_tasks?.length }})
-                </span>
-              </button>
+                <span> Sub Tasks ({{ task.children_tasks?.length }}) </span>
+              </h2>
 
               <template v-if="!task.closed_at && !hideButtons">
                 <a
