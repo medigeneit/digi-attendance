@@ -80,7 +80,7 @@ const taskUsers = computed(() => {
               v-if="taskIndex == 0"
               :rowspan="Math.max(taskUser.tasks.length, 1)"
             >
-              <UserChip :user="taskUser" class="sticky top-[80px]" />
+              <UserChip :user="taskUser" class="sticky top-[8rem]" />
             </td>
 
             <td

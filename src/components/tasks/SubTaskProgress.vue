@@ -52,7 +52,7 @@ defineExpose({
 <template>
   <div>
     <div
-      class="rounded-full border py-0.5 relative overflow-hidden h-6"
+      class="rounded-full py-0.5 relative overflow-hidden h-6"
       :class="progressColor.container"
       v-if="task.children_task_count > 0"
     >

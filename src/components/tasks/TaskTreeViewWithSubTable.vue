@@ -1,5 +1,5 @@
 <template>
-  <div class="flex w-full text-gray-800">
+  <div class="flex w-full text-gray-800 bg-white">
     <div v-if="treeLevel > 0" class="border-l border-gray-200 last:border-l-0">
       <div
         class="border-l border-b w-4 rounded-bl-full border-gray-200 h-4/6 ml-[-1px] mt-[-30px]"
@@ -89,10 +89,10 @@
               <TaskStatus
                 :status="task?.status"
                 :progressPercent="task?.progress_percent || 0"
-                class="w-1/2"
+                class="w-[150px] text-center !border-2"
               />
 
-              <SubTaskProgress ref="progress" :task="task" class="text-sm w-1/2" />
+              <SubTaskProgress ref="progress" :task="task" class="text-sm w-[150px] text-center" />
             </div>
           </div>
         </div>

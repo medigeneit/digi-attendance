@@ -11,9 +11,9 @@ const className = computed(() => {
     case 'COMPLETED':
       return 'text-white bg-green-500  border-green-200 font-semibold'
     case 'PENDING':
-      return 'text-red-500 bg-red-200  border-red-200'
+      return 'text-red-500 bg-red-200  border-red-500'
     case 'IN_PROGRESS':
-      return 'text-yellow-600 bg-yellow-200  border-yellow-200'
+      return 'text-yellow-600 bg-yellow-200  border-yellow-300'
   }
 
   return 'bg-blue-100 text-blue-800 border-blue-200'
