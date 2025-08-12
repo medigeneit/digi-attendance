@@ -29,7 +29,10 @@ onMounted(async () => {
 <template>
   <div class="md:flex relative">
     <div
-      :class="{ 'invisible md:visible opacity-0': !sidebarVisible, sidebarVisible: ' opacity-100' }"
+      :class="{
+        'invisible md:visible opacity-0 md:opacity-100': !sidebarVisible,
+        sidebarVisible: ' opacity-100',
+      }"
       class="max-w-[240px] bg-white md:shadow-md shadow-2xl absolute md:static transition-transform duration-300 print:hidden z-[998]"
     >
       <div
@@ -46,7 +49,10 @@ onMounted(async () => {
       </div>
       <div
         class="fixed md:sticky top-0 bottom-0 transition duration-150 print:hidden"
-        :class="{ 'translate-x-0': sidebarVisible, '-translate-x-20': !sidebarVisible }"
+        :class="{
+          'translate-x-0 ': sidebarVisible,
+          '-translate-x-20 md:translate-x-0': !sidebarVisible,
+        }"
       >
         <div class="w-full">
           <SideBar :visible="sidebarVisible" :user="user" />
