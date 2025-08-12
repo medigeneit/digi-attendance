@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useZKUserStore } from '@/stores/zk-user'
 import { useDeviceStore } from '@/stores/zk-device'
 import ZKUserModal from '@/components/ZKUserModal.vue'
+import ZKUserPushModal from '@/components/ZKUserPushModal.vue' // ⬅️ নতুন
 import LoaderView from '@/components/common/LoaderView.vue'
 import HeaderWithButtons from '@/components/common/HeaderWithButtons.vue'
 import DeleteModal from '@/components/common/DeleteModal.vue'
@@ -13,8 +14,12 @@ const selectedIds = ref([])
 const showModal = ref(false)
 const editUserData = ref(null)
 
-const showDeleteModal = ref(false) // ✅ delete modal control
-const deleteUserId = ref(null) // ✅ holds user ID to delete
+const showDeleteModal = ref(false)
+const deleteUserId = ref(null)
+
+// ⬇️ নতুন: Push modal state
+const showPushModal = ref(false)
+const pushUserData = ref(null)
 
 onMounted(() => {
   zkUserStore.fetchUsers()
@@ -25,33 +30,39 @@ function openCreateModal() {
   editUserData.value = null
   showModal.value = true
 }
-
 function openEditModal(user) {
   editUserData.value = { ...user }
   showModal.value = true
 }
-
 function closeModal() {
   showModal.value = false
 }
-
 function handleSaved() {
   zkUserStore.fetchUsers()
   closeModal()
 }
 
-// ✅ show confirmation modal
+// 🔻 delete
 function confirmDelete(userId) {
   deleteUserId.value = userId
   showDeleteModal.value = true
 }
-
-// ✅ called when Confirm clicked
 async function performDelete() {
   await zkUserStore.deleteUser(deleteUserId.value)
   deleteUserId.value = null
   showDeleteModal.value = false
   zkUserStore.fetchUsers()
+}
+
+// ✅ নতুন: open/close push modal
+function openPushModal(user) {
+  pushUserData.value = { ...user }
+  showPushModal.value = true
+}
+
+function handlePushed(summary) {
+  // চাইলে এখানে summary থেকে টোস্ট/লগ করতে পারো
+  // console.log('push summary', summary)
 }
 
 function toggleSelectAll(event) {
@@ -61,6 +72,8 @@ function toggleSelectAll(event) {
     selectedIds.value = []
   }
 }
+
+const roleMap = { 0: 'User', 14: 'Admin' }
 </script>
 
 <template>
@@ -95,16 +108,29 @@ function toggleSelectAll(event) {
             <td class="p-3 font-medium">{{ user?.user?.name }}</td>
             <td class="p-3 font-medium">{{ user.name }}</td>
             <td class="p-3">{{ user.fingerprints_count }}</td>
+            <td class="p-3">{{ roleMap[user.role] ?? '—' }}</td>
             <td class="p-3 space-x-6">
               <button
                 @click="openEditModal(user)"
                 class="text-blue-600 hover:text-blue-800 font-semibold"
+                title="Edit user"
               >
                 <i class="fas fa-edit"></i>
               </button>
+
+              <!-- ✅ নতুন: Push FP button -->
+              <button
+                @click="openPushModal(user)"
+                class="text-purple-600 hover:text-purple-800 font-semibold"
+                title="Push user's fingerprints to selected devices"
+              >
+                <i class="fas fa-fingerprint"></i>
+              </button>
+
               <button
                 @click="confirmDelete(user.id)"
                 class="text-red-600 hover:text-red-800 font-semibold"
+                title="Delete user"
               >
                 <i class="fas fa-trash"></i>
               </button>
@@ -128,5 +154,14 @@ function toggleSelectAll(event) {
     message="Are you sure you want to delete this user?"
     @close="showDeleteModal = false"
     @confirm="performDelete"
+  />
+
+  <!-- ✅ নতুন: Push FP modal -->
+  <ZKUserPushModal
+    :show="showPushModal"
+    :user="pushUserData"
+    :devices="deviceStore.devices"
+    @close="showPushModal = false"
+    @pushed="handlePushed"
   />
 </template>

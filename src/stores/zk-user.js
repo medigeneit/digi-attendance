@@ -7,6 +7,7 @@ export const useZKUserStore = defineStore('zkUser', () => {
   const loading = ref(false)
   const error = ref(null)
 
+  // GET /zk-users
   async function fetchUsers() {
     loading.value = true
     error.value = null
@@ -20,6 +21,7 @@ export const useZKUserStore = defineStore('zkUser', () => {
     }
   }
 
+  // POST /zk-users
   async function createUser(data) {
     try {
       const response = await apiClient.post('/zk-users', data)
@@ -30,6 +32,7 @@ export const useZKUserStore = defineStore('zkUser', () => {
     }
   }
 
+  // PUT /zk-users/{id}
   async function updateUser(id, data) {
     try {
       const response = await apiClient.put(`/zk-users/${id}`, data)
@@ -40,6 +43,7 @@ export const useZKUserStore = defineStore('zkUser', () => {
     }
   }
 
+  // DELETE /zk-users/{id}
   async function deleteUser(id) {
     try {
       const response = await apiClient.delete(`/zk-users/${id}`)
@@ -50,7 +54,7 @@ export const useZKUserStore = defineStore('zkUser', () => {
     }
   }
 
-    // NEW: একজন ইউজারের বেসিক ইনফো সব ডিভাইসে push
+  // POST /users/{zk_userid}/push  (সব active ডিভাইসে push)
   async function pushUser(zk_userid) {
     try {
       const { data } = await apiClient.post(`/users/${encodeURIComponent(zk_userid)}/push`)
@@ -60,21 +64,38 @@ export const useZKUserStore = defineStore('zkUser', () => {
     }
   }
 
-  // NEW: DB-ভিউ — কোন কোন ডিভাইসে আছে (লাইভ কল নয়)
-  async function getUserDevices(zk_userid) {
+  // ✅ POST /users/{zk_userid}/push-user  (এক/একাধিক ডিভাইস)
+  // body: { device_ids: number[], diff: boolean }
+  async function pushUserToDevices(zk_userid, { deviceIds = [], diff = true } = {}) {
     try {
-      const { data } = await apiClient.get(`/users/${encodeURIComponent(zk_userid)}/devices`)
-      return data // { devices: [...] }
+      const payload = { device_ids: deviceIds, diff }
+      const { data } = await apiClient.post(
+        `/users/${encodeURIComponent(zk_userid)}/push-user`,
+        payload
+      )
+      return data
     } catch (err) {
       throw err.response?.data || err
     }
   }
 
-  // NEW: ডিভাইস → সেন্ট্রাল: সব ইউজার Pull
+  // ✅ POST /devices/{device}/users/{zk_userid}/push-user?diff=true|false (সিঙ্গেল ডিভাইস)
+  async function pushUserToDevice(deviceId, zk_userid, { diff = true } = {}) {
+    try {
+      const qs = diff ? '?diff=true' : '?diff=false'
+      const { data } = await apiClient.post(
+        `/devices/${encodeURIComponent(deviceId)}/users/${encodeURIComponent(zk_userid)}/push-user${qs}`
+      )
+      return data
+    } catch (err) {
+      throw err.response?.data || err
+    }
+  }
+
+  // POST /devices/{device}/pull-users
   async function pullUsersFromDevice(deviceId) {
     try {
       const { data } = await apiClient.post(`/devices/${deviceId}/pull-users`)
-      // চাইলে fetchUsers() রিফ্রেশ করতে পারেন
       await fetchUsers()
       return data // { users_pulled, users_updated }
     } catch (err) {
@@ -82,12 +103,22 @@ export const useZKUserStore = defineStore('zkUser', () => {
     }
   }
 
-  // NEW: Catch-up (user-only, diff=true ডিফল্ট)
+  // POST /devices/{device}/sync-catchup?diff=true|false
   async function syncCatchupUsers(deviceId, { diff = true } = {}) {
     try {
       const qs = diff ? '?diff=true' : '?diff=false'
       const { data } = await apiClient.post(`/devices/${deviceId}/sync-catchup${qs}`)
       return data // { usersSynced, skipped, failed, ... }
+    } catch (err) {
+      throw err.response?.data || err
+    }
+  }
+
+  // GET /devices/{device}/user-count
+  async function getDeviceUserCount(deviceId) {
+    try {
+      const { data } = await apiClient.get(`/devices/${encodeURIComponent(deviceId)}/user-count`)
+      return data // { device_id, ip_address, online, user_count }
     } catch (err) {
       throw err.response?.data || err
     }
@@ -101,9 +132,15 @@ export const useZKUserStore = defineStore('zkUser', () => {
     createUser,
     updateUser,
     deleteUser,
+
+    // push (all devices) + targeted pushes
     pushUser,
-    getUserDevices,
+    pushUserToDevices,
+    pushUserToDevice,
+
+    // device ops
     pullUsersFromDevice,
     syncCatchupUsers,
+    getDeviceUserCount,
   }
 })
