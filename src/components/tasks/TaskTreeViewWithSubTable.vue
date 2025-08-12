@@ -7,7 +7,7 @@
     </div>
 
     <div
-      class="flex-grow border-2 rounded py-3 px-3"
+      class="flex-grow border-2 rounded pb-3 px-3"
       :class="{
         'bg-blue-100/30  ': task.closed_at,
         'bg-green-100  ': progress?.completedPercentage === 100,
@@ -18,7 +18,9 @@
       }"
     >
       <div class="items-start grid grid-cols-4 gap-4 group">
-        <div class="col-span-full md:col-span-full pb-3 border-b -mx-3 px-3 flex flex-wrap">
+        <div
+          class="col-span-full md:col-span-full border-b -mx-3 px-3 pt-3 shadow-md shadow-slate-100 flex flex-wrap bg-white z-30"
+        >
           <div class="flex items-start gap-2 w-full">
             <div>
               <div class="flex gap-2">
@@ -56,7 +58,7 @@
                   <TaskUrgentBadge v-if="task?.is_urgent" class="flex-none" />
                 </div>
               </div>
-              <div class="mb-4 text-xs text-gray-400">
+              <div class="mb-4 text-xs text-gray-400 whitespace-nowrap">
                 <i class="fas fa-clock"></i>
                 {{ getDisplayDateTime(task.created_at) }}
               </div>
@@ -100,10 +102,10 @@
           </div>
         </div>
 
-        <div class="ml-0 mt-5 col-span-full">
-          <div>
-            <div class="text-xs text-gray-400 flex gap-3 order-1 sm:order-0">
-              <button
+        <div class="ml-0 col-span-full" :class="{ 'mt-4': hasSubTask }">
+          <div :class="{ 'ml-6': hasSubTask }">
+            <div class="text-xs text-gray-400 flex gap-3 sm:order-0">
+              <h2
                 :class="{
                   'text-blue-600 font-semibold  inline-block  ': hasSubTask,
                 }"
@@ -114,10 +116,8 @@
                   :class="showSubTask ? 'fa-caret-down' : 'fa-caret-right'"
                   class="fas w-3 text-left text-xl"
                 ></i> -->
-                <span :class="hasSubTask ? 'group-hover:underline' : ''">
-                  Sub Tasks ({{ task.children_tasks?.length }})
-                </span>
-              </button>
+                <span> Sub Tasks ({{ task.children_tasks?.length }}) </span>
+              </h2>
 
               <template v-if="!task.closed_at && !hideButtons">
                 <a

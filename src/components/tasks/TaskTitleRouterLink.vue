@@ -3,6 +3,7 @@ defineProps({
   task: Object,
   subTasksOpen: { type: Boolean, default: false },
   isMyTask: { type: Boolean, default: false },
+  titleClass: { type: String, default: '' },
 })
 </script>
 <template>
@@ -24,6 +25,7 @@ defineProps({
         params: { id: task.id },
       }"
       class="font-medium text-gray-700 cursor-pointer hover:text-blue-700"
+      :class="titleClass"
     >
       <div>
         {{ task.title }}

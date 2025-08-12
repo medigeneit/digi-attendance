@@ -93,22 +93,32 @@ const taskReports = computed(() => {
         <table v-if="!store.loading" class="min-w-full bg-white shadow rounded-lg overflow-hidden">
           <thead class="bg-gray-100">
             <tr>
-              <th class="px-4 py-2 text-left w-2">#</th>
+              <th class="px-4 py-2 text-left w-2 border">#</th>
               <th
-                class="px-4 py-2 text-left md:w-[100px] lg:w-[220px] xl:w-[320px]"
+                class="px-4 py-2 text-left md:w-[100px] lg:w-[220px] xl:w-[320px] border"
                 v-if="taskStore.task.children_task_count > 0"
               >
                 Task
               </th>
-              <th class="px-4 py-2 text-left lg:w-[540px]">User Report</th>
-              <!-- <th class="px-4 py-2 text-center">Duration</th>
-              <th class="px-4 py-2 text-center">Progress</th> -->
+              <th class="px-4 py-2 text-left lg:w-[540px] border">User Report</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="taskReports?.length === 0">
-              <td class="px-4 py-4 font-medium text-gray-500 text-center" colspan="10">
-                NO REPORTS
+              <td class="px-4 py-4 font-medium text-gray-500 text-center border h-28" colspan="10">
+                <div>NO REPORTS</div>
+                <div>
+                  <RouterLink
+                    v-if="taskStore.task?.children_task_count === 0 && !taskStore.task?.closed_at"
+                    :to="{
+                      name: 'TaskReportAdd',
+                      params: { id: taskStore.task?.id },
+                    }"
+                    @click="$event.stopPropagation()"
+                    class="btn-3 ml-auto inline-flex !my-1"
+                    >Add Report</RouterLink
+                  >
+                </div>
               </td>
             </tr>
 
