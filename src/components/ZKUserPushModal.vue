@@ -16,12 +16,8 @@ const zkUserStore = useZKUserStore()
 const toast = useToast()
 
 const selectedDeviceIds = ref([])
-const diff = ref(true)
-const working = ref(false)
-
-// কী কী পুশ হবে (ডিফল্ট দুইটাই অন)
-const pushUserBasic = ref(true)
-const pushFingers = ref(true)
+const workingUser = ref(false)
+const workingFingers = ref(false)
 
 const activeDevices = computed(() => (props.devices || []).filter((d) => d.status === 'active'))
 
@@ -30,15 +26,14 @@ watch(
   (v) => {
     if (v) {
       selectedDeviceIds.value = []
-      diff.value = true
-      pushUserBasic.value = true
-      pushFingers.value = true
+      workingUser.value = false
+      workingFingers.value = false
     }
   },
 )
 
 function close() {
-  if (!working.value) emit('close')
+  if (!workingUser.value && !workingFingers.value) emit('close')
 }
 
 function selectAll() {
@@ -48,74 +43,81 @@ function clearAll() {
   selectedDeviceIds.value = []
 }
 
-async function pushNow() {
-  if (!props.user) {
-    toast.error('Invalid user')
-    return
-  }
-  if (!selectedDeviceIds.value.length) {
-    toast.warning('Select at least one device')
-    return
-  }
-  if (!pushUserBasic.value && !pushFingers.value) {
-    toast.warning('Select at least one action')
-    return
-  }
+async function pushUserProfiles() {
+  if (!props.user?.zk_userid) return toast.error('Invalid user')
+  if (!selectedDeviceIds.value.length) return toast.warning('Select at least one device')
 
+  workingUser.value = true
   try {
-    working.value = true
+    const ids = [...selectedDeviceIds.value]
+    const results = await Promise.allSettled(
+      ids.map(async (id) => {
+        const res = await zkUserStore.pushSingleUserToDevice(id, props.user.zk_userid)
+        return { deviceId: id, res }
+      }),
+    )
 
-    let userRes = null
-    let fpRes = null
+    let created = 0
+    let already = 0
+    let failed = 0
 
-    // 1) User profile push (optional)
-    if (pushUserBasic.value) {
-      userRes = await zkUserStore.pushUserToDevices(props.user.zk_userid, {
-        deviceIds: selectedDeviceIds.value,
-        diff: diff.value,
-      })
-    }
+    results.forEach((r) => {
+      if (r.status === 'fulfilled') {
+        const { res } = r.value
+        created += Number(res?.pushed || 0)
+        already += Number(res?.already || 0)
+      } else {
+        failed++
+      }
+    })
 
-    // 2) Fingerprints push (optional)
-    if (pushFingers.value) {
-      fpRes = await fingerStore.pushUserFingersToDevices(props.user.zk_userid, {
-        deviceIds: selectedDeviceIds.value,
-        diff: diff.value,
-      })
-    }
-
-    // ✅ Summary toast
-    if (pushUserBasic.value && userRes) {
-      const pushed = userRes.pushed ?? (userRes.results?.filter((r) => r.pushed).length || 0)
-      const skipped = userRes.skipped ?? (userRes.results?.filter((r) => r.skipped).length || 0)
-      const offline =
-        userRes.offline ?? (userRes.results?.filter((r) => r.error === 'offline').length || 0)
-      const targets = userRes.targets ?? selectedDeviceIds.value.length
-      toast.success(
-        `User: pushed ${pushed}/${targets}` +
-          (skipped ? `, skipped ${skipped}` : '') +
-          (offline ? `, offline ${offline}` : ''),
-      )
-    }
-
-    if (pushFingers.value && fpRes) {
-      const pushedDevices = fpRes.results?.filter((r) => (r.pushed || 0) > 0).length || 0
-      const skippedTotal = (fpRes.results || []).reduce((a, r) => a + (r.skipped || 0), 0)
-      const offline = fpRes.results?.filter((r) => r.error === 'offline').length || 0
-      const targets = fpRes.targets ?? selectedDeviceIds.value.length
-      toast.success(
-        `Fingerprints: pushed to ${pushedDevices}/${targets}` +
-          (skippedTotal ? `, skipped ${skippedTotal}` : '') +
-          (offline ? `, offline ${offline}` : ''),
-      )
-    }
-
-    emit('pushed', { user: userRes, fingerprints: fpRes })
-    emit('close')
+    toast.success(`User push done → created: ${created}, already: ${already}, failed: ${failed}`)
+    emit('pushed', { type: 'user', created, already, failed })
   } catch (e) {
-    toast.error(e?.message || 'Push failed')
+    toast.error(e?.message || 'User push failed')
   } finally {
-    working.value = false
+    workingUser.value = false
+  }
+}
+
+async function pushFingerprints() {
+  if (!props.user?.zk_userid) return toast.error('Invalid user')
+  if (!selectedDeviceIds.value.length) return toast.warning('Select at least one device')
+
+  workingFingers.value = true
+  try {
+    const ids = [...selectedDeviceIds.value]
+    const results = await Promise.allSettled(
+      ids.map(async (id) => {
+        const res = await fingerStore.pushFingerprintsOne(id, props.user.zk_userid)
+        return { deviceId: id, res }
+      }),
+    )
+
+    let pushed = 0
+    let skipped = 0
+    let createdUsers = 0
+    let failed = 0
+
+    results.forEach((r) => {
+      if (r.status === 'fulfilled') {
+        const { res } = r.value
+        pushed += Number(res?.pushed || 0)
+        skipped += Number(res?.skipped || 0)
+        createdUsers += Number(res?.created_users || res?.createdUsers || 0)
+      } else {
+        failed++
+      }
+    })
+
+    toast.success(
+      `Fingerprint push done → pushed: ${pushed}, skipped: ${skipped}, created users: ${createdUsers}, failed: ${failed}`,
+    )
+    emit('pushed', { type: 'fingers', pushed, skipped, createdUsers, failed })
+  } catch (e) {
+    toast.error(e?.message || 'Fingerprint push failed')
+  } finally {
+    workingFingers.value = false
   }
 }
 </script>
@@ -128,7 +130,7 @@ async function pushNow() {
       <div class="relative w-full max-w-2xl rounded-xl bg-white p-5 shadow">
         <!-- overlay while working -->
         <div
-          v-if="working"
+          v-if="workingUser || workingFingers"
           class="absolute inset-0 grid place-items-center rounded-xl bg-white/60 z-10"
         >
           <i class="fas fa-circle-notch fa-spin text-2xl"></i>
@@ -197,39 +199,36 @@ async function pushNow() {
           </div>
         </div>
 
-        <!-- Options -->
-        <div class="mt-4 space-y-2">
-          <div class="text-sm font-medium">What to push</div>
-
-          <label class="inline-flex items-center gap-2 text-sm">
-            <input type="checkbox" v-model="pushUserBasic" />
-            <span>Push user profile (basic)</span>
-          </label>
-
-          <label class="inline-flex items-center gap-2 text-sm">
-            <input type="checkbox" v-model="pushFingers" />
-            <span>Push fingerprints</span>
-          </label>
-
-          <label class="inline-flex items-center gap-2 text-sm">
-            <input type="checkbox" v-model="diff" />
-            <span>Send missing only (diff)</span>
-          </label>
-        </div>
-
         <!-- Actions -->
-        <div class="mt-5 flex justify-end gap-2">
-          <button class="px-3 py-2 border rounded" :disabled="working" @click="close">
+        <div class="mt-5 flex flex-wrap justify-end gap-2">
+          <button
+            class="px-3 py-2 border rounded"
+            :disabled="workingUser || workingFingers"
+            @click="close"
+          >
             Cancel
           </button>
+
+          <!-- Push ONLY user profile -->
+          <button
+            class="px-3 py-2 rounded bg-blue-600 text-white"
+            :disabled="workingUser || workingFingers || !selectedDeviceIds.length"
+            @click="pushUserProfiles"
+            title="Push user profile to selected devices"
+          >
+            <i v-if="workingUser" class="fas fa-circle-notch fa-spin mr-2"></i>
+            <span>{{ workingUser ? 'Pushing user...' : 'Push user' }}</span>
+          </button>
+
+          <!-- Push ONLY fingerprints -->
           <button
             class="px-3 py-2 rounded bg-purple-600 text-white"
-            :disabled="working || !selectedDeviceIds.length || (!pushUserBasic && !pushFingers)"
-            @click="pushNow"
-            title="Push to selected devices"
+            :disabled="workingUser || workingFingers || !selectedDeviceIds.length"
+            @click="pushFingerprints"
+            title="Push fingerprints to selected devices"
           >
-            <i v-if="working" class="fas fa-circle-notch fa-spin mr-2"></i>
-            <span>{{ working ? 'Pushing...' : 'Push now' }}</span>
+            <i v-if="workingFingers" class="fas fa-circle-notch fa-spin mr-2"></i>
+            <span>{{ workingFingers ? 'Pushing fingerprints...' : 'Push fingerprints' }}</span>
           </button>
         </div>
       </div>
