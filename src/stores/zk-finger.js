@@ -7,21 +7,9 @@ export const useZKFingerStore = defineStore('zkFinger', () => {
   const loading = ref(false)
   const error = ref(null)
   const verifyResult = ref(null) // { devices: [...] }
-  const lastPullSummary = ref(null) // যেকোনো pull-এর শেষ সারাংশ দেখাতে চাইলে
+  const lastPullSummary = ref(null) // যেকোনো pull-এর শেষ সারাংশ
 
-  // একজন ইউজারের নির্দিষ্ট finger সব ডিভাইসে push
-  async function pushFinger(zk_userid, finger) {
-    try {
-      const { data } = await apiClient.post(
-        `/users/${encodeURIComponent(zk_userid)}/fingers/${finger}/push`
-      )
-      return data // { finger, pushed, offline, failed }
-    } catch (err) {
-      throw err.response?.data || err
-    }
-  }
-
-  // ডিভাইস → সেন্ট্রাল: পুরো ডিভাইসের সব ইউজারের ফিঙ্গার Pull (big batch)
+  // 🔄 ডিভাইস → সেন্ট্রাল: পুরো ডিভাইসের সব ইউজারের ফিঙ্গার Pull (big batch)
   async function pullFingerprintsFromDevice(deviceId, { limit = null, offset = null } = {}) {
     try {
       const params = new URLSearchParams()
@@ -40,20 +28,18 @@ export const useZKFingerStore = defineStore('zkFinger', () => {
     }
   }
 
-  // একটি ডিভাইসে (তোমার ম্যাপ করা) pushFingerprintsToDevice রাউট কল
+  // ⬆️ সেন্ট্রাল → ডিভাইস: যাদের ফিঙ্গার আছে সবারটা পুশ (diff=true হলে মিসিং-অনলি)
   async function pushFingerprintsToDevice(deviceId, { diff = true } = {}) {
     try {
       const qs = diff ? '?diff=true' : '?diff=false'
-      const { data } = await apiClient.post(
-        `/devices/${deviceId}/push-fingerprints${qs}`
-      )
+      const { data } = await apiClient.post(`/devices/${deviceId}/push-fingerprints${qs}`)
       return data // { device_id, diff, users_processed, users_created, ... }
     } catch (err) {
       throw err.response?.data || err
     }
   }
 
-  // ডিভাইস → সেন্ট্রাল: একজন ইউজারের সব ফিঙ্গার Pull (টার্গেটেড, ফাস্টার)
+  // 🎯 ডিভাইস → সেন্ট্রাল: একজন ইউজারের সব ফিঙ্গার Pull (টার্গেটেড, ফাস্টার)
   async function pullUserFingersFromDevice(deviceId, zk_userid) {
     try {
       const { data } = await apiClient.post(
@@ -66,7 +52,36 @@ export const useZKFingerStore = defineStore('zkFinger', () => {
     }
   }
 
-  // লাইভ Verify: কোন কোন ডিভাইসে ইউজার/ফিঙ্গার আছে — ডিভাইস হিট করে
+  // ✅ নতুন: একজন ইউজারের সব ফিঙ্গার → এক/একাধিক ডিভাইস
+  // POST /users/{zk_userid}/push-fingers   body: { device_ids: number[], diff: boolean }
+  async function pushUserFingersToDevices(zk_userid, { deviceIds = [], diff = true } = {}) {
+    try {
+      const payload = { device_ids: deviceIds, diff }
+      const { data } = await apiClient.post(
+        `/users/${encodeURIComponent(zk_userid)}/push-fingers`,
+        payload
+      )
+      return data // { zk_userid, targets, results:[...] }
+    } catch (err) {
+      throw err.response?.data || err
+    }
+  }
+
+  // ✅ নতুন: একজন ইউজারের সব ফিঙ্গার → নির্দিষ্ট (single) ডিভাইস
+  // POST /devices/{deviceId}/users/{zk_userid}/push-fingers?diff=true|false
+  async function pushUserFingersToDevice(deviceId, zk_userid, { diff = true } = {}) {
+    try {
+      const qs = diff ? '?diff=true' : '?diff=false'
+      const { data } = await apiClient.post(
+        `/devices/${deviceId}/users/${encodeURIComponent(zk_userid)}/push-fingers${qs}`
+      )
+      return data // single-device result
+    } catch (err) {
+      throw err.response?.data || err
+    }
+  }
+
+  // 🔍 লাইভ Verify: কোন কোন ডিভাইসে ইউজার/ফিঙ্গার আছে — ডিভাইস হিট করে
   async function verifyUser(zk_userid) {
     loading.value = true
     error.value = null
@@ -87,10 +102,15 @@ export const useZKFingerStore = defineStore('zkFinger', () => {
     error,
     verifyResult,
     lastPullSummary,
-    pushFinger,
+
+    // KEEP
     pullFingerprintsFromDevice,
     pushFingerprintsToDevice,
     pullUserFingersFromDevice,
     verifyUser,
+
+    // NEW
+    pushUserFingersToDevices,
+    pushUserFingersToDevice,
   }
 })

@@ -22,6 +22,8 @@ const showDeviceModal = ref(false)
 const showDeleteModal = ref(false)
 const selectedDevice = ref(null)
 
+const userCounts = ref({})
+
 // ⬇️ নতুন: অ্যাকশন লোডিং ফ্ল্যাগ
 const deviceAction = ref({ running: false, deviceId: null, label: '' })
 
@@ -194,6 +196,25 @@ const rowBusy = (device, label = null) =>
   deviceAction.value.running &&
   deviceAction.value.deviceId === device.id &&
   (label ? deviceAction.value.label === label : true)
+
+async function handleUserCount(device) {
+  try {
+    deviceAction.value = { running: true, deviceId: device.id, label: 'user-count' }
+    const res = await zkUserStore.getDeviceUserCount(device.id)
+    if (!res.online) {
+      toast.warning(`Device ${device.name} is offline`)
+    }
+    userCounts.value[device.id] = {
+      count: Number(res.user_count ?? 0),
+      online: !!res.online,
+      at: new Date().toISOString(),
+    }
+  } catch (e) {
+    toast.error(e?.message || 'User count failed')
+  } finally {
+    deviceAction.value = { running: false, deviceId: null, label: '' }
+  }
+}
 </script>
 
 <template>
@@ -293,6 +314,16 @@ const rowBusy = (device, label = null) =>
               <i v-else class="fas fa-circle-notch fa-spin"></i>
             </button>
 
+            <button
+              class="text-slate-700 hover:text-slate-900"
+              :disabled="rowBusy(device)"
+              @click="handleUserCount(device)"
+              title="User Count"
+            >
+              <i v-if="!rowBusy(device, 'user-count')" class="fas fa-list-ol"></i>
+              <i v-else class="fas fa-circle-notch fa-spin"></i>
+            </button>
+
             <!-- Edit (ডানদিকে ঠেলে দিচ্ছি) -->
             <button
               class="text-blue-600 hover:text-blue-800 ml-auto"
@@ -303,9 +334,20 @@ const rowBusy = (device, label = null) =>
             </button>
           </div>
 
-          <!-- ছোট স্টেট ট্যাগ -->
-          <div v-if="rowBusy(device)" class="mt-2 text-[11px] text-gray-500">
-            Working: {{ deviceAction.label }}
+          <!-- ছোট স্টেট ট্যাগ + User Count badge -->
+          <div class="mt-2 text-[11px] text-gray-500">
+            <span v-if="rowBusy(device)">Working: {{ deviceAction.label }}</span>
+
+            <!-- User count badge -->
+            <span
+              v-if="userCounts[device.id]"
+              class="ml-2 inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-gray-700"
+              title="Last checked at"
+            >
+              <i class="fas fa-user"></i>
+              <span>Users: {{ userCounts[device.id].count }}</span>
+              <span v-if="!userCounts[device.id].online" class="text-red-600">(offline)</span>
+            </span>
           </div>
         </div>
       </div>
