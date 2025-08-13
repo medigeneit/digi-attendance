@@ -69,7 +69,7 @@
           <path
             stroke-linecap="round"
             stroke-linejoin="round"
-            stroke-width="2"
+            stroke-width="3"
             d="M19 9l-7 7-7-7"
           />
         </svg>
@@ -83,7 +83,7 @@
       ref="dropdownMenuRef"
       :class="positionClass"
     >
-      <div class="p-3" v-if="searchable && !taggable">
+      <div class="px-2 pt-2" v-if="searchable && !taggable">
         <slot name="search">
           <input
             type="text"
@@ -116,7 +116,7 @@
             </slot>
           </li>
         </template>
-        <li v-else class="px-3 py-2 text-gray-500 min-h-24 flex justify-center items-center">
+        <li v-else class="px-3 py-2 text-gray-500 min-h-24 flex justify-center items-center -mt-2">
           <slot name="no-options">{{
             taggable ? 'No option found, Enter to add' : 'No options found'
           }}</slot>

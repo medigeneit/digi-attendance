@@ -96,6 +96,15 @@ function taskClientSideFilter(task, filters) {
 }
 
 export function mapAndFilterTask(taskList, filters) {
+
+  const getTaskPriority = (t) => {
+    if (t.is_urgent && t.is_important) return 4
+    if (t.is_urgent) return 3
+    if (t.is_important) return 2
+    if (t.is_target) return 1
+    return 0
+  }
+
   return taskList
     ?.filter((childTask) => taskClientSideFilter(childTask, filters))
     ?.map((childTask) => {
@@ -106,5 +115,23 @@ export function mapAndFilterTask(taskList, filters) {
             ? mapAndFilterTask(childTask.children_tasks, filters)
             : [],
       }
+    })
+    ?.sort((taskA, taskB) => {
+
+      const pa = getTaskPriority(taskA)
+      const pb = getTaskPriority(taskB)
+
+      if (pb !== pa) return pb - pa
+
+      if( taskB.priority !== taskA.priority) {
+        return taskB.priority - taskA.priority
+      }
+
+      if( taskB.serial !== taskA.serial) {
+        return taskB.serial - taskA.serial
+      }
+
+      return taskB.id - taskA.id
+
     }) || []
 }
