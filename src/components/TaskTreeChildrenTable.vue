@@ -10,7 +10,7 @@
               ' bg-white hover:bg-slate-50': task.status !== 'COMPLETED',
             }"
           >
-            <td class="border-y pr-2 pl-8 py-4 border-gray-300">
+            <td class="border-y pr-2 pl-8 py-2 border-gray-300">
               <div class="mb-1 flex items-center gap-3">
                 <div class="text-base font-semibold text-purple-600" v-if="index !== undefined">
                   {{ index + 1 }}.
@@ -24,15 +24,14 @@
               </div>
               <div class="flex items-center flex-none lg:w-full order-0 lg:order-1 mb-2">
                 <!-- <span class="text-gray-500 text-sm"> #{{ task }} </span> -->
+                <div class="text-gray-400 text-xs mr-4">
+                  <i class="fas fa-clock"></i>
+                  {{ getDisplayDateTime(task.created_at) }}
+                </div>
                 <div class="flex items-center gap-2 text-xs text-gray-500 opacity-80 text-left">
                   <TaskImportantBadge v-if="task?.is_important" />
                   <TaskUrgentBadge v-if="task?.is_urgent" />
                 </div>
-              </div>
-
-              <div class="text-gray-400 text-xs">
-                <i class="fas fa-clock"></i>
-                {{ getDisplayDateTime(task.created_at) }}
               </div>
             </td>
             <td class="border-y px-2 py-4 border-gray-300">

@@ -108,7 +108,7 @@
           </div>
         </div>
 
-        <div class="ml-0 col-span-full" :class="{ 'mt-4': hasSubTask }">
+        <div class="ml-0 col-span-full">
           <div :class="{ 'ml-6': hasSubTask }">
             <div class="text-xs text-gray-400 flex gap-3 sm:order-0">
               <h2
@@ -153,7 +153,7 @@
         </div>
       </div>
 
-      <div class="mt-4 col-span-full">
+      <div class="mt-2 col-span-full">
         <div class="flex gap-3 items-end">
           <div class="text-right text-sm flex gap-4 mt-4 opacity-80">
             <div v-if="task.is_target" class="bg-yellow-200 px-2 py-0.5 rounded-lg text-yellow-900">

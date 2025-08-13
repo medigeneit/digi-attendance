@@ -21,23 +21,35 @@
         <tr
           v-for="log in logs"
           :key="log.date"
-          class="hover:border-b-2 hover:border-gray-200 hover:z-50 hover:bg-blue-200"
+          class="hover:z-50 hover:bg-blue-200"
+          :class="{
+            'bg-blue-50 border-y-2 border-violet-200': isToday(log.date),
+            'hover:border-b-2 hover:border-gray-200': !isToday(log.date),
+          }"
         >
           <!-- Date & Day -->
           <td class="border px-1 py-0.5">{{ log.date }}</td>
           <td class="border px-1 py-0.5">{{ log.weekday }}</td>
 
           <!-- Shift Name + Exchange Status -->
-          <td class="border px-2 py-1 text-sm whitespace-nowrap" :title="`${log.shift_start_time} to ${log.shift_end_time}`">
+          <td
+            class="border px-2 py-1 text-sm whitespace-nowrap"
+            :title="`${log.shift_start_time} to ${log.shift_end_time}`"
+          >
             <div class="flex flex-col gap-1">
               <div class="font-semibold text-gray-800">{{ log.shift_name }}</div>
               <div v-if="log.shift_exchange_application_status" class="text-xs">
                 <router-link
-                  :to="{ name: 'ExchangeShiftShow', params: { id: log.shift_exchange_application_id } }"
+                  :to="{
+                    name: 'ExchangeShiftShow',
+                    params: { id: log.shift_exchange_application_id },
+                  }"
                   class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium transition hover:opacity-90"
                   :class="{
-                    'bg-yellow-100 text-yellow-800': log.shift_exchange_application_status === 'Pending',
-                    'bg-green-100 text-green-800': log.shift_exchange_application_status === 'Approved',
+                    'bg-yellow-100 text-yellow-800':
+                      log.shift_exchange_application_status === 'Pending',
+                    'bg-green-100 text-green-800':
+                      log.shift_exchange_application_status === 'Approved',
                     'bg-red-100 text-red-800': log.shift_exchange_application_status === 'Rejected',
                   }"
                 >
@@ -57,11 +69,13 @@
             }"
           >
             <div class="flex items-center gap-1" :title="`Device: ${log.entry_device}`">
-              <span v-if="log?.manual_attendance?.check_in && log.entry_time" class="font-semibold">M:</span>
+              <span v-if="log?.manual_attendance?.check_in && log.entry_time" class="font-semibold"
+                >M:</span
+              >
               <span>{{ log.entry_time || '--' }}</span>
               <router-link
                 v-if="log?.manual_attendance?.id && log?.manual_attendance?.check_in"
-                :to="{ name: 'ManualAttendanceShow', params: { id: log.manual_attendance.id }}"
+                :to="{ name: 'ManualAttendanceShow', params: { id: log.manual_attendance.id } }"
                 class="text-blue-600 hover:text-blue-800"
               >
                 <i class="far fa-eye ml-1"></i>
@@ -81,13 +95,18 @@
               <span>{{ log.exit_time || '--' }}</span>
               <router-link
                 v-if="log?.manual_attendance?.id && log?.manual_attendance?.check_out"
-                :to="{ name: 'ManualAttendanceShow', params: { id: log.manual_attendance.id }}"
+                :to="{ name: 'ManualAttendanceShow', params: { id: log.manual_attendance.id } }"
                 class="text-blue-600 hover:text-blue-800"
               >
                 <i class="far fa-eye ml-1"></i>
               </router-link>
-               <router-link
-                v-if="!log.exit_time && new Date(log.date) < new Date() && log.status === 'Present' && applyApplication"
+              <router-link
+                v-if="
+                  !log.exit_time &&
+                  new Date(log.date) < new Date() &&
+                  log.status === 'Present' &&
+                  applyApplication
+                "
                 :to="{
                   name: 'ManualAttendanceAdd',
                   query: {
@@ -126,7 +145,9 @@
               </router-link>
             </template>
             <template v-else-if="log.over_time_status === 'Rejected'">
-              <span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-semibold">Rejected</span>
+              <span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-semibold"
+                >Rejected</span
+              >
             </template>
             <template v-else-if="log.over_time_status && log.overtime_hours">
               <span>{{ log.overtime_hours }}</span>
@@ -188,7 +209,7 @@
                 ({{ log.last_short_leave }})
               </router-link>
 
-               <router-link
+              <router-link
                 v-if="applyApplication && log.early_leave_duration && !log.last_short_leave"
                 :to="{
                   name: 'ShortLeaveAdd',
@@ -264,7 +285,8 @@
 </template>
 
 <script setup>
-import StatusBadge from './common/StatusBadge.vue';
+import { dateIsToday } from '@/libs/datetime'
+import StatusBadge from './common/StatusBadge.vue'
 
 defineProps({
   logs: {
@@ -273,7 +295,15 @@ defineProps({
   },
   applyApplication: {
     type: Boolean,
-    default: false
+    default: false,
+  },
+})
+
+function isToday(date) {
+  try {
+    return dateIsToday(new Date(date))
+  } catch {
+    return false
   }
-});
+}
 </script>

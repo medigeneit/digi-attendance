@@ -355,7 +355,19 @@ const goBack = () => {
         ></textarea>
       </div>
 
-      <div v-if="error" class="text-red-500 text-sm">{{ error }}</div>
+      <div
+        v-if="error"
+      class="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-red-700 shadow-sm"
+    >
+      <div class="flex-shrink-0">
+        <i class="fas fa-exclamation-triangle text-red-500"></i>
+      </div>
+      <div class="flex-1 text-sm leading-5">
+        <p class="font-medium">Something went wrong!</p>
+        <p class="mt-0.5">{{ error }}</p>
+      </div>
+    </div>
+
 
       <div class="flex justify-end">
         <button type="submit" class="btn-2">Submit</button>
