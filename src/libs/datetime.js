@@ -103,3 +103,21 @@ export function getDateRangeArray(start, end) {
 
   return dates;
 }
+
+
+export function dateIsToday(givenDate){
+
+if (!givenDate || !givenDate instanceof Date) {
+    return false
+  }
+
+  // Get today's date without time
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Also remove time from given date
+  givenDate.setHours(0, 0, 0, 0);
+
+  return  givenDate.getTime() === today.getTime();
+
+}
