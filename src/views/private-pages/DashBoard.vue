@@ -125,13 +125,14 @@
                   :class="['rounded-full', !notice.user_feedback ? 'bg-red-100' : 'bg-green-100']"
                   class="h-8 w-8 flex items-center justify-center rounded-full"
                 >
-                  <span
-                    :class="[
-                      'h-3 w-3',
-                      !notice.user_feedback ? 'bg-red-600' : 'bg-green-600',
-                      'rounded-full inline-block',
-                    ]"
+                  <span 
+                    v-if="!notice.user_feedback"
+                    class="h-3 w-3 bg-red-600 rounded-full inline-block"
                   ></span>
+
+                  <span v-else class="inline-block">
+                    <i class="far fa-check text-green-600"></i>
+                  </span>
 
                   <div
                     class="absolute top-10 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition pointer-events-none z-10 whitespace-nowrap"
