@@ -17,7 +17,7 @@
           <tr
             class=""
             :class="{
-              ' bg-lime-400/20': task.status == 'COMPLETED',
+              ' bg-green-400/20': task.status == 'COMPLETED',
               ' bg-white hover:bg-slate-50': task.status !== 'COMPLETED',
             }"
           >
@@ -26,8 +26,8 @@
                 {{ index + 1 }}.
               </div>
             </td>
-            <td class="border px-4 py-2 border-gray-200">
-              <div class="mb-1 flex items-center gap-3">
+            <td class="border px-3 py-1 border-gray-200">
+              <div class="flex items-center gap-3">
                 <TaskTitleRouterLink
                   titleClass="text-sm"
                   :task="task"
@@ -35,7 +35,7 @@
                   :is-my-task="isMyTask"
                 />
               </div>
-              <div class="flex items-center flex-none lg:w-full order-0 lg:order-1 mb-2">
+              <div class="flex items-center flex-none lg:w-full order-0 lg:order-1">
                 <!-- <span class="text-gray-500 text-sm"> #{{ task }} </span> -->
                 <div class="text-gray-400 text-xs mr-4">
                   <i class="fas fa-clock"></i>
@@ -47,37 +47,37 @@
                 </div>
               </div>
             </td>
-            <td class="border px-2 py-4 border-gray-200">
-              <div class="flex">
+            <td class="border px-3 py-1 border-gray-200">
+              <div class="flex justify-center">
                 <TaskAssignedUsers
                   class="flex items-center justify-center flex-wrap gap-x-3 gap-y-2"
                   :users="task.users || []"
                   :isTargetTask="task.is_target"
                   :maxItem="1"
+                  :route-to="(user) => `/tasks?status=not-completed&view=userwise&user-ids=${user.id}`"
                 />
               </div>
             </td>
-            <td class="border px-2 py-4 border-gray-200 text-center">
+            <td class="border px-3 py-1 border-gray-200 text-center">
               <span class="text-gray-500 text-sm" v-if="task.assigned_at || task.created_at">
                 <span class="font-semibold text-blue-800">{{
                   getDisplayDate(task.assigned_at || task.created_at)
                 }}</span>
               </span>
             </td>
-            <td class="border px-2 py-4 border-gray-200 text-center">
+            <td class="border px-3 py-1 border-gray-200 text-center">
               <span class="ml-4 text-gray-500 text-sm" v-if="task.deadline">
                 <span class="text-blue-500 font-semibold">{{ getDisplayDate(task.deadline) }}</span>
               </span>
             </td>
-            <td class="border px-2 py-4 border-gray-200 text-center">
+            <td class="border px-3 py-1 border-gray-200 text-center">
               <span class="text-gray-500 text-sm" v-if="task.started_at">
                 <span class="font-semibold text-blue-800">{{
                   getDisplayDate(task.started_at)
                 }}</span>
               </span>
             </td>
-
-            <td class="border py-4 pl-2 pr-4 border-gray-200">
+            <td class="border px-3 py-1 border-gray-200">
               <div class="flex justify-end gap-2">
                 <TaskIsClosedBadge v-if="task.closed_at" />
                 <TaskStatus :status="task?.status" :progressPercent="task?.progress_percent || 0" />
@@ -88,24 +88,23 @@
         </template>
       </tbody>
     </table>
-    <div class="flex gap-1 items-center mt-4 px-4 text-sm">
+    <div class="flex gap-1 items-center mt-2 text-sm">
       <template v-if="childrenTasks.length > 0">
-        <span v-if="hiddenTasks.length > 0" class="text-red-800 italic">
-          {{ hiddenTasks.length }} More sub task{{ hiddenTasks.length > 1 ? 's' : '' }}
-        </span>
-
         <button
-          class="hover:bg-blue-600 hover:text-white text-indigo-600 font-semibold px-3 py-0.5 rounded-full transition border border-transparent ml-2"
+          class="hover:bg-blue-600 hover:text-white text-indigo-600 font-semibold px-3 py-0.5 rounded-full transition border ml-2"
           @click.prevent.stop="handleShowAllTask"
           v-if="hiddenTasks.length > 0 || showAll"
         >
           {{ showAll ? 'Hide' : 'Show' }} All
         </button>
+        <span v-if="hiddenTasks.length > 0" class="text-red-800 italic">
+          {{ hiddenTasks.length }} More sub task{{ hiddenTasks.length > 1 ? 's' : '' }}
+        </span>
       </template>
 
       <a
         :href="`/tasks/add?parent_id=${parentTask.id}&back-to=${encodeURIComponent(route.path + '?' + objectToQuery(route.query)).toLowerCase()}`"
-        class="hover:bg-blue-600 hover:text-white text-indigo-600 font-semibold px-3 py-0.5 rounded-full transition border border-transparent"
+        class="ml-5 hover:bg-blue-600 hover:text-white text-indigo-600 font-semibold px-3 py-0.5 rounded-full transition border border-indigo-300"
         @click.stop.prevent="emits('addClick', parentTask.id)"
         v-if="parentTask.level < 2"
       >
@@ -133,7 +132,7 @@ const props = defineProps({
   parentTask: { type: Object },
   hideButtons: { type: Boolean, default: false },
   parentTreeLevel: { type: Number },
-  maxItem: { Number, default: 2 },
+  maxItem: { Number, default: 5 },
 })
 
 const showAll = ref(false)

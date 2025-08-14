@@ -115,9 +115,9 @@
         </div>
       </div>
 
-      <div class="mt-2 col-span-full">
-        <div class="flex gap-3 items-end">
-          <div class="text-right text-sm flex gap-4 mt-4 opacity-80">
+      <div>
+        <div class="flex gap-3 items-center">
+          <div class="text-right text-sm flex gap-4 mt-2 opacity-80">
             <div v-if="task.is_target" class="bg-yellow-200 px-2 py-0.5 rounded-lg text-yellow-900">
               <i class="fad fa-bullseye-arrow mr-1"></i> TARGET TASK
             </div>
