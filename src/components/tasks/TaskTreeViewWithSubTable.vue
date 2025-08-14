@@ -13,9 +13,9 @@
         'border-pink-300': index % 2 === 1,
       }"
     >
-      <div class="items-start grid grid-cols-4 gap-4 group">
+      <div class="items-start group">
         <div
-          class="col-span-full md:col-span-full border-b -mx-3 px-3 pt-3 shadow-md shadow-slate-100 flex flex-wrap z-30"
+          class="-mx-3 px-3 pt-3 shadow-slate-100 flex flex-wrap z-30"
           :class="{
             'bg-blue-100/30  ': task.closed_at,
             'bg-green-100  ': progress?.completedPercentage === 100,
@@ -96,54 +96,16 @@
             </div>
           </div>
         </div>
-        <div class="text-gray-400 text-xs col-span-full flex justify-between">
-          <div class="ml-auto flex flex-wrap gap-2 mb-2 items-start">
-            <div
-              class="border bg-gray-50 text-xs px-2 rounded-lg shadow-sm text-gray-700 bg-gradient-to-b to-slate-50 from-blue-100"
-              v-for="tag in task.website_tags || []"
-              :key="tag.id"
-            >
-              {{ tag.name }}
-            </div>
-          </div>
-        </div>
 
         <div class="ml-0 col-span-full">
-          <div :class="{ 'ml-6': hasSubTask }">
-            <div class="text-xs text-gray-400 flex gap-3 sm:order-0">
-              <h2
-                :class="{
-                  'text-blue-600 font-semibold  inline-block  ': hasSubTask,
-                }"
-                class="flex items-center gap-1 group"
-              >
-                <!-- @click="handleSubTaskClick" -->
-                <!-- <i
-                  :class="showSubTask ? 'fa-caret-down' : 'fa-caret-right'"
-                  class="fas w-3 text-left text-xl"
-                ></i> -->
-                <span> Sub Tasks ({{ task.children_tasks?.length }}) </span>
-              </h2>
-
-              <template v-if="!task.closed_at && !hideButtons">
-                <a
-                  :href="`/tasks/add?parent_id=${props.task.id}&back-to=${encodeURIComponent(route.path + '?' + objectToQuery(route.query)).toLowerCase()}`"
-                  class="hover:bg-blue-600 hover:text-white text-indigo-600 font-semibold px-3 py-0.5 rounded-full transition border border-transparent"
-                  @click.stop.prevent="emits('addClick', props.task.id)"
-                  v-if="treeLevel < 2"
-                >
-                  <i class="fas fa-plus"></i> Add Sub Task
-                </a>
-              </template>
-            </div>
-          </div>
           <TaskTreeChildrenTable
             :childrenTasks="task.children_tasks"
+            :parentTask="task"
             :hide-buttons="hideButtons"
             :hide-assigned-users="hideAssignedUsers"
             :parent-tree-level="treeLevel"
             @editClick="handleChildEditClick"
-            @addClick="handleChildAddClick"
+            @addClick="(taskId) => emits('addClick', taskId)"
             @employeeAssignClick="handleChildEmployeeAssignClick"
           >
             <template #tree-item-end="{ task, level }">
@@ -213,7 +175,6 @@
 import SubTaskProgress from '@/components/tasks/SubTaskProgress.vue'
 import TaskStatus from '@/components/tasks/TaskStatus.vue'
 import { getDisplayDate, getDisplayDateTime } from '@/libs/datetime.js'
-import { objectToQuery } from '@/libs/url'
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import TaskTreeChildrenTable from '../TaskTreeChildrenTable.vue'
@@ -242,10 +203,6 @@ const route = useRoute()
 const progress = ref(null)
 
 const emits = defineEmits(['commentButtonClick', 'editClick', 'addClick', 'employeeAssignClick'])
-
-function handleChildAddClick(taskId) {
-  emits('addClick', taskId)
-}
 
 function handleChildEditClick(taskId) {
   emits('editClick', taskId)
@@ -294,8 +251,4 @@ watch(
   },
   { deep: true },
 )
-
-const hasSubTask = computed(() => {
-  return props.task?.children_tasks?.length > 0
-})
 </script>

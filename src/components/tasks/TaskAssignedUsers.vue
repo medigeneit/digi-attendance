@@ -36,7 +36,10 @@ const ItemComponent = computed(() => {
 </script>
 <template>
   <div class="relative">
-    <div v-if="props.users.length === 0" class="text-gray-400 text-xs whitespace-nowrap">
+    <div
+      v-if="props.users.length === 0"
+      class="text-gray-400 text-xs whitespace-nowrap border py-1.5 rounded-full px-3 italic border-dashed"
+    >
       {{ listType == 'supervisors' ? 'No Supervisor assigned' : 'Not Assigned To Anyone' }}
     </div>
     <component

@@ -1,6 +1,17 @@
 <template>
-  <div class="mt-3 -mx-3">
-    <table class="w-full">
+  <div class="-mx-3">
+    <table class="w-full" v-if="childrenTasks?.length > 0">
+      <thead>
+        <tr>
+          <td class="border text-center text-xs text-gray-400 bg-gray-50 w-[30px]">SL</td>
+          <td class="border text-center text-xs text-gray-400 bg-gray-50">Sub Task</td>
+          <td class="border text-center text-xs text-gray-400 bg-gray-50">Assign Person</td>
+          <td class="border text-center text-xs text-gray-400 bg-gray-50">Assign Date</td>
+          <td class="border text-center text-xs text-gray-400 bg-gray-50">Deadline</td>
+          <td class="border text-center text-xs text-gray-400 bg-gray-50">Started</td>
+          <td class="border text-center text-xs text-gray-400 bg-gray-50">Status</td>
+        </tr>
+      </thead>
       <tbody>
         <template v-for="(task, index) in slicedTasks" :key="task.id">
           <tr
@@ -10,11 +21,13 @@
               ' bg-white hover:bg-slate-50': task.status !== 'COMPLETED',
             }"
           >
-            <td class="border-y pr-2 pl-8 py-2 border-gray-300">
+            <td class="border text-center py-2 border-gray-200">
+              <div class="text-base font-semibold text-purple-600" v-if="index !== undefined">
+                {{ index + 1 }}.
+              </div>
+            </td>
+            <td class="border px-4 py-2 border-gray-200">
               <div class="mb-1 flex items-center gap-3">
-                <div class="text-base font-semibold text-purple-600" v-if="index !== undefined">
-                  {{ index + 1 }}.
-                </div>
                 <TaskTitleRouterLink
                   titleClass="text-sm"
                   :task="task"
@@ -34,7 +47,7 @@
                 </div>
               </div>
             </td>
-            <td class="border-y px-2 py-4 border-gray-300">
+            <td class="border px-2 py-4 border-gray-200">
               <div class="flex">
                 <TaskAssignedUsers
                   class="flex items-center justify-center flex-wrap gap-x-3 gap-y-2"
@@ -44,7 +57,27 @@
                 />
               </div>
             </td>
-            <td class="border-y py-4 pl-2 pr-4 border-gray-300">
+            <td class="border px-2 py-4 border-gray-200 text-center">
+              <span class="text-gray-500 text-sm" v-if="task.assigned_at || task.created_at">
+                <span class="font-semibold text-blue-800">{{
+                  getDisplayDate(task.assigned_at || task.created_at)
+                }}</span>
+              </span>
+            </td>
+            <td class="border px-2 py-4 border-gray-200 text-center">
+              <span class="ml-4 text-gray-500 text-sm" v-if="task.deadline">
+                <span class="text-blue-500 font-semibold">{{ getDisplayDate(task.deadline) }}</span>
+              </span>
+            </td>
+            <td class="border px-2 py-4 border-gray-200 text-center">
+              <span class="text-gray-500 text-sm" v-if="task.started_at">
+                <span class="font-semibold text-blue-800">{{
+                  getDisplayDate(task.started_at)
+                }}</span>
+              </span>
+            </td>
+
+            <td class="border py-4 pl-2 pr-4 border-gray-200">
               <div class="flex justify-end gap-2">
                 <TaskIsClosedBadge v-if="task.closed_at" />
                 <TaskStatus :status="task?.status" :progressPercent="task?.progress_percent || 0" />
@@ -53,30 +86,40 @@
             </td>
           </tr>
         </template>
-        <tr v-if="childrenTasks.length > 0">
-          <td colspan="10" class="py-2 px-8">
-            <div class="text-sm">
-              <span v-if="hiddenTasks.length > 0" class="text-red-800 italic">
-                {{ hiddenTasks.length }} More sub task{{ hiddenTasks.length > 1 ? 's' : '' }}
-              </span>
-              <button
-                class="hover:bg-blue-600 hover:text-white text-indigo-600 font-semibold px-3 py-0.5 rounded-full transition border border-transparent ml-2"
-                @click.prevent.stop="handleShowAllTask"
-                v-if="hiddenTasks.length > 0 || showAll"
-              >
-                {{ showAll ? 'Hide' : 'Show' }} All
-              </button>
-            </div>
-          </td>
-        </tr>
       </tbody>
     </table>
+    <div class="flex gap-1 items-center mt-4 px-4 text-sm">
+      <template v-if="childrenTasks.length > 0">
+        <span v-if="hiddenTasks.length > 0" class="text-red-800 italic">
+          {{ hiddenTasks.length }} More sub task{{ hiddenTasks.length > 1 ? 's' : '' }}
+        </span>
+
+        <button
+          class="hover:bg-blue-600 hover:text-white text-indigo-600 font-semibold px-3 py-0.5 rounded-full transition border border-transparent ml-2"
+          @click.prevent.stop="handleShowAllTask"
+          v-if="hiddenTasks.length > 0 || showAll"
+        >
+          {{ showAll ? 'Hide' : 'Show' }} All
+        </button>
+      </template>
+
+      <a
+        :href="`/tasks/add?parent_id=${parentTask.id}&back-to=${encodeURIComponent(route.path + '?' + objectToQuery(route.query)).toLowerCase()}`"
+        class="hover:bg-blue-600 hover:text-white text-indigo-600 font-semibold px-3 py-0.5 rounded-full transition border border-transparent"
+        @click.stop.prevent="emits('addClick', parentTask.id)"
+        v-if="parentTask.level < 2"
+      >
+        <i class="fas fa-plus"></i> Add Sub Task
+      </a>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { getDisplayDateTime } from '@/libs/datetime'
+import { getDisplayDate, getDisplayDateTime } from '@/libs/datetime'
+import { objectToQuery } from '@/libs/url'
 import { computed, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import SubTaskProgress from './tasks/SubTaskProgress.vue'
 import TaskAssignedUsers from './tasks/TaskAssignedUsers.vue'
 import TaskImportantBadge from './tasks/TaskImportantBadge.vue'
@@ -87,12 +130,15 @@ import TaskUrgentBadge from './tasks/TaskUrgentBadge.vue'
 
 const props = defineProps({
   childrenTasks: { type: Array, required: true, default: () => [] },
+  parentTask: { type: Object },
   hideButtons: { type: Boolean, default: false },
   parentTreeLevel: { type: Number },
   maxItem: { Number, default: 2 },
 })
 
 const showAll = ref(false)
+
+const route = useRoute()
 
 const slicedTasks = computed(() => {
   if (showAll.value) {
