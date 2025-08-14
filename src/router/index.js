@@ -1009,6 +1009,12 @@ router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore()
   const isAuthenticated = !!authStore.token || localStorage.getItem('auth_token')
 
+  // 1) Auth থাকলে public page বা '/' এ গেলে dashboard এ পাঠানো হবে
+  const guestOnly = to.meta.guestOnly || ['/', '/login', '/register', '/about', '/privacy-policy'].includes(to.path)
+  if (isAuthenticated && guestOnly) {
+    return next({ name: 'Dashboard' })
+  }
+
   if (to.matched.some((record) => record.meta.requiresAuth) && !isAuthenticated) {
     localStorage.setItem('next', to.fullPath)
 

@@ -2,10 +2,9 @@
 import AttendanceTable from '@/components/AttendanceTable.vue'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
-import StatusBadge from '@/components/common/StatusBadge.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useUserStore } from '@/stores/user'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -13,53 +12,126 @@ const route = useRoute()
 const attendanceStore = useAttendanceStore()
 const userStore = useUserStore()
 
-const selectedUser = ref(null)
-const selectedMonth = ref(route.query.date || attendanceStore.selectedMonth)
+/* -----------------------
+   Helpers
+------------------------*/
+const toMonth = (val) => {
+  // Expecting YYYY-MM; normalize if a Date or full ISO is passed
+  if (!val) return ''
+  if (typeof val === 'string') {
+    // If already YYYY-MM, return as-is
+    if (/^\d{4}-\d{2}$/.test(val)) return val
+    // If full date string, slice YYYY-MM
+    const m = val.match(/^(\d{4})-(\d{2})/)
+    return m ? `${m[1]}-${m[2]}` : ''
+  }
+  // Date object
+  try {
+    const d = new Date(val)
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    return `${y}-${m}`
+  } catch {
+    return ''
+  }
+}
+
+const q = route.query
+const selectedMonth = ref(toMonth(q.date) || toMonth(attendanceStore.selectedMonth) || toMonth(new Date()))
 
 const filters = ref({
-  company_id: route.query.company_id || '',
-  department_id: route.query.department_id || 'all',
-  type: route.query.type || 'all',
-  employee_id: route.query.employee_id || '',
-  category: '',
+  company_id: q.company_id || '',
+  department_id: q.department_id || 'all',
+  type: q.type || 'all',
+  employee_id: q.employee_id || '',
+  category: '', // not in query (yet)
 })
 
-// Fetch user when employee_id changes
+const selectedUser = ref(null)
+
+// Debounce for router.replace
+let qTimer = null
+const syncQuery = (partial = {}) => {
+  if (qTimer) clearTimeout(qTimer)
+  qTimer = setTimeout(() => {
+    const next = {
+      ...route.query,
+      company_id: filters.value.company_id || '',
+      department_id: filters.value.department_id || 'all',
+      type: filters.value.type || 'all',
+      employee_id: filters.value.employee_id || '',
+      date: selectedMonth.value || '',
+      ...partial,
+    }
+
+    // Remove empty keys for a cleaner URL
+    Object.keys(next).forEach((k) => {
+      if (next[k] === '' || next[k] === undefined || next[k] === null) delete next[k]
+    })
+
+    router.replace({ query: next }).catch(() => {})
+  }, 150)
+}
+
+/* -----------------------
+   Data Fetchers
+------------------------*/
 const fetchUser = async (employeeId) => {
-  if (employeeId) {
+  if (!employeeId) {
+    selectedUser.value = null
+    return
+  }
+  try {
     await userStore.fetchUser(employeeId)
-    selectedUser.value = userStore.user
-  } else {
+    selectedUser.value = userStore.user || null
+  } catch (e) {
+    console.error('fetchUser error:', e)
     selectedUser.value = null
   }
 }
 
-// Fetch attendance
+// Prevent duplicate attendance fetches
+const lastFetchKey = ref('')
 const fetchAttendance = async () => {
-  if (filters.value.employee_id && selectedMonth.value) {
-    await attendanceStore.getMonthlyAttendanceByShift(filters.value.employee_id, selectedMonth.value)
+  const emp = filters.value.employee_id
+  const month = selectedMonth.value
+  if (!emp || !month) return
+
+  const key = `${emp}|${month}`
+  if (key === lastFetchKey.value) return
+  lastFetchKey.value = key
+
+  try {
+    await attendanceStore.getMonthlyAttendanceByShift(emp, month)
+  } catch (e) {
+    console.error('fetchAttendance error:', e)
+    // allow retry on next attempt
+    lastFetchKey.value = ''
   }
 }
 
-// Initial load
-// onMounted(async () => {
-//   if (filters.value.employee_id) {
-//     await fetchUser(filters.value.employee_id)
-//   }
-// })
+/* -----------------------
+   Watchers
+------------------------*/
+// Keep URL in sync when month changes
+watch(
+  () => selectedMonth.value,
+  (date) => {
+    selectedMonth.value = toMonth(date)
+    syncQuery({ date: selectedMonth.value })
+    // We do NOT fetch here immediately; the employee watcher controls fetching to avoid double-calls
+  }
+)
 
-// Watch selectedMonth change
-watch(selectedMonth, (date) => {
-  router.replace({
-    query: {
-      ...route.query,
-      date,
-    },
-  })
-  fetchAttendance()
-})
+// Keep URL in sync when any filter changes (but do not fetch here)
+watch(
+  () => ({ ...filters.value }), // shallow spread avoids deep reactivity pitfalls
+  () => {
+    syncQuery()
+  }
+)
 
-// Watch employee_id change
+// Fetch user + attendance when employee changes
 watch(
   () => filters.value.employee_id,
   async (newVal, oldVal) => {
@@ -67,24 +139,41 @@ watch(
       await fetchUser(newVal)
       await fetchAttendance()
     }
+    if (!newVal) {
+      selectedUser.value = null
+      // reset lastFetchKey so future selections can trigger
+      lastFetchKey.value = ''
+    }
   }
 )
 
-// Go back handler
+/* -----------------------
+   Lifecycle
+------------------------*/
+onMounted(async () => {
+  // If URL had initial query with employee/month, fetch once.
+  if (filters.value.employee_id) {
+    await fetchUser(filters.value.employee_id)
+  }
+  if (filters.value.employee_id && selectedMonth.value) {
+    await fetchAttendance()
+  }
+  // Ensure URL is normalized on mount
+  await nextTick()
+  syncQuery()
+})
+
+/* -----------------------
+   Handlers
+------------------------*/
 const goBack = () => router.go(-1)
 
-// Filter change handler
+// From <EmployeeFilter /> to push changes to URL (no extra fetches here)
 const handleFilterChange = () => {
-  router.replace({
-    query: {
-      ...route.query,
-      company_id: filters.value.company_id,
-      department_id: filters.value.department_id,
-      type: filters.value.type,
-      employee_id: filters.value.employee_id,
-    },
-  })
+  syncQuery()
 }
+
+const hasSelection = computed(() => !!filters.value.employee_id)
 </script>
 
 <template>
@@ -97,19 +186,20 @@ const handleFilterChange = () => {
       <h1 class="title-md md:title-lg flex-wrap text-center">Monthly Attendance</h1>
       <div></div>
     </div>
-    <div class="w-full flex flex-wrap  gap-4 items-center md:w-auto">
-       <EmployeeFilter 
-        v-model="filters" 
-        :initial-value="route.query" 
-        @filter-change="handleFilterChange" 
+
+    <div class="w-full flex flex-wrap gap-4 items-center md:w-auto">
+      <EmployeeFilter
+        v-model="filters"
+        :initial-value="$route.query"
+        @filter-change="handleFilterChange"
       />
       <div>
         <input
           id="monthSelect"
           type="month"
           v-model="selectedMonth"
-          @change="fetchAttendance"
           class="input-1"
+          aria-label="Select month"
         />
       </div>
     </div>
@@ -125,280 +215,47 @@ const handleFilterChange = () => {
           <p><strong>Company:</strong> {{ selectedUser.company?.name || 'N/A' }}</p>
           <p><strong>Phone:</strong> {{ selectedUser.phone }}</p>
           <p><strong>Email:</strong> {{ selectedUser.email || 'N/A' }}</p>
-          <p><strong>Employee ID :</strong> {{ selectedUser.employee_id || 'N/A' }}</p>
-          <p><strong>Joining Date :</strong> {{ selectedUser.joining_date || 'N/A' }}</p>
-          <p><strong>Employee ID :</strong> {{ selectedUser.blood || 'N/A' }}</p>
+          <p><strong>Employee ID:</strong> {{ selectedUser.employee_id || 'N/A' }}</p>
+          <p><strong>Joining Date:</strong> {{ selectedUser.joining_date || 'N/A' }}</p>
+          <p><strong>Blood Group:</strong> {{ selectedUser.blood || 'N/A' }}</p>
         </div>
       </div>
 
       <div class="card-bg p-4 gap-1">
-        <div  class="flex justify-between items-center">
+        <div class="flex justify-between items-center">
           <h2 class="title-md">Attendance Summary</h2>
           <router-link
-          :to="{ name: 'MonthWiseApplicationLog', query: { ...route.query } }"
-          class="btn-2"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Application History
-        </router-link>
+            :to="{ name: 'MonthWiseApplicationLog', query: { ...$route.query } }"
+            class="btn-2"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Application History
+          </router-link>
         </div>
         <hr />
         <div class="grid md:grid-cols-2">
-          <p>
-            <strong>Total Working Days:</strong>
-            {{ attendanceStore?.summary?.total_working_days }}
-          </p>
+          <p><strong>Total Working Days:</strong> {{ attendanceStore?.summary?.total_working_days }}</p>
           <p><strong>Present Days:</strong> {{ attendanceStore?.summary?.total_present_days }}</p>
           <p><strong>Absent Days:</strong> {{ attendanceStore?.summary?.total_absent_days }}</p>
-          <p><strong>Late Days:</strong> {{ attendanceStore?.summary?.total_late_days }}</p>
-          <p>
-            <strong>Total Working Hours:</strong>
-            {{ attendanceStore?.summary?.total_working_hours }}
-          </p>
-          <p>
-            <strong>Total Overtime Hours:</strong>
-            {{ attendanceStore?.summary?.total_overtime_hours }}
-          </p>
+          <p><strong>Late Days:</strong> {{ attendanceStore?.summary?.actual_late_day }}</p>
+          <p><strong>Total Weekends:</strong> {{ attendanceStore?.summary?.total_weekend_days }}</p>
+          <p><strong>Total Working Hours:</strong> {{ attendanceStore?.summary?.total_working_hours }}</p>
+          <p><strong>Total Overtime Hours:</strong> {{ attendanceStore?.summary?.total_overtime_hours }}</p>
         </div>
       </div>
     </div>
-    <div v-else>
-      <p class="text-gray-400 text-center text-2xl italic">Select an employee, please.</p>
-    </div>
 
+    <div v-else>
+      <p class="text-gray-400 text-center text-2xl italic">
+        Select an employee, please.
+      </p>
+    </div>
 
     <LoaderView v-if="attendanceStore.isLoading" />
 
-    <div v-else class="space-y-4">
-
+    <div v-else class="space-y-4" v-show="hasSelection">
       <AttendanceTable :logs="attendanceStore.monthlyLogs" />
-
-      <!-- <div class="overflow-x-auto card-bg">
-        <table class="min-w-full table-auto border-collapse border border-gray-300 bg-white">
-          <thead>
-            <tr class="bg-gray-200 text-xs">
-              <th class="border p-1">Date</th>
-              <th class="border p-1">Day</th>
-              <th class="border p-1">Shift</th>
-              <th class="border p-1">Entry Time</th>
-              <th class="border p-1">Exit Time</th>
-              <th class="border p-1">Working Hours</th>
-              <th class="border p-1">Over Time</th>
-              <th class="border p-1">Approved OT</th>
-              <th class="border p-1">Late Entry</th>
-              <th class="border p-1">Early Leave</th>
-              <th class="border p-1">Status</th>
-            </tr>
-          </thead>
-          <tbody class="text-center text-xs">
-            <tr
-              v-for="log in attendanceStore?.monthlyLogs"
-              :key="log?.date"
-              class="hover:border-b-2 hover:border-gray-200 hover:z-50 hover:bg-blue-200"
-            >
-              <td class="border px-1 py-0.5">{{ log.date }}</td>
-              <td class="border px-1 py-0.5">{{ log.weekday }}</td>
-             <td
-                class="border px-2 py-1 text-sm whitespace-nowrap"
-                :title="`${log.shift_start_time} to ${log.shift_end_time}`"
-              >
-                <div class="flex flex-col gap-1">
-                  <div class="font-semibold text-gray-800">
-                    {{ log.shift_name }}
-                  </div>
-
-                  <div
-                    v-if="log.shift_exchange_application_status"
-                    class="text-xs"
-                  >
-                    <router-link
-                      :to="{ name: 'ExchangeShiftShow', params: { id: log.shift_exchange_application_id } }"
-                      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium transition hover:opacity-90"
-                      :class="{
-                        'bg-yellow-100 text-yellow-800': log.shift_exchange_application_status === 'Pending',
-                        'bg-green-100 text-green-800': log.shift_exchange_application_status === 'Approved',
-                        'bg-red-100 text-red-800': log.shift_exchange_application_status === 'Rejected',
-                      }"
-                    >
-                      <i class="far fa-eye"></i>
-                      {{ log.shift_exchange_application_status }}
-                    </router-link>
-                  </div>
-                </div>
-              </td>
-
-              <td
-                  class="border px-2 py-1 text-sm whitespace-nowrap"
-                  :class="{
-                    'bg-red-50 text-red-800': log.late_duration,
-                    'bg-blue-50 text-blue-800': log?.manual_attendance?.check_in && log.entry_time,
-                  }"
-                >
-                  <div class="flex items-center gap-1" :title="`Device: ${log.entry_device}`">
-                    <span v-if="log?.manual_attendance?.check_in && log.entry_time" class="font-semibold">M:</span>
-                    <span>{{ log.entry_time || '--' }}</span>
-
-                    <router-link
-                      v-if="log?.manual_attendance?.id && log?.manual_attendance?.check_in"
-                      :to="{ name: 'ManualAttendanceShow', params: { id: log.manual_attendance.id }}"
-                      class="text-blue-600 hover:text-blue-800"
-                    >
-                      <i class="far fa-eye ml-1"></i>
-                    </router-link>
-
-                  </div>
-                </td>
-
-                <td
-                  class="border px-2 py-1 text-sm whitespace-nowrap"
-                  :class="{
-                    'bg-red-50 text-red-800': log.early_leave_duration,
-                    'bg-blue-50 text-blue-800': log?.manual_attendance?.check_out && log.exit_time,
-                  }"
-                >
-                  <div class="flex items-center gap-1" :title="`Device: ${log.exit_device}`">
-                    <span>{{ log.exit_time || '--' }}</span>
-
-                    <router-link
-                      v-if="log?.manual_attendance?.id && log?.manual_attendance?.check_out"
-                      :to="{ name: 'ManualAttendanceShow', params: { id: log.manual_attendance.id }}"
-                      class="text-blue-600 hover:text-blue-800"
-                    >
-                      <i class="far fa-eye ml-1"></i>
-                    </router-link>
-
-                  </div>
-                </td>
-
-              <td class="border px-1 py-0.5">{{ log.working_hours }}</td>
-             <td class="border px-1 py-0.5">
-                <template v-if="log.over_time_status === 'Approved'">
-                  <router-link :to="{name:'MyOvertimeShow', params:{id:log.over_time_application_id}}" class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-semibold">
-                    {{ log.overtime_hours }} | Approved
-                  </router-link>
-                </template>
-
-                <template v-else-if="log.over_time_status === 'Pending'">
-                  <router-link :to="{name:'MyOvertimeShow', params:{id:log.over_time_application_id}}" class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-semibold animate-pulse">
-                    {{ log.overtime_hours ?? '--' }} | Pending
-                  </router-link>
-                </template>
-
-                <template v-else-if="log.over_time_status === 'Rejected'">
-                  <span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-semibold">
-                    Rejected
-                  </span>
-                </template>
-                <template v-else-if="log.over_time_status && log.overtime_hours">
-                  <span>
-                     {{ log.overtime_hours }} 
-                  </span>
-                </template>
-              </td>
-
-              <td class="border px-1 py-0.5">{{ log?.approved_over_times ? log?.approved_over_times + ' H' : '' }}</td>
-              <td class="border px-1 py-0.5">
-                <div v-if="log.late_duration">
-                  {{ log.late_duration }}
-                 
-                  <router-link
-                    v-if="log.first_short_leave"
-                    :to="{
-                      name: 'ShortLeaveShow',
-                      params: {
-                        id: log.first_short_leave_id,
-                      },
-                    }"
-                    :class="{
-                      'text-green-500': log.first_short_leave === 'Approved',
-                      'text-yellow-500': log.first_short_leave === 'Pending',
-                      'text-red-500': log.first_short_leave === 'Rejected',
-                    }"
-                  >
-                    ({{ log.first_short_leave }})
-                  </router-link>
-                </div>
-              </td>
-              <td class="border px-1 py-0.5">
-                <div v-if="log.early_leave_duration">
-                  {{ log.early_leave_duration }}
-                
-                  <router-link
-                    v-if="log.last_short_leave"
-                    :to="{
-                      name: 'ShortLeaveShow',
-                      params: {
-                        id: log.last_short_leave_id,
-                      },
-                    }"
-                    class="px-1"
-                    :class="{
-                      'text-green-500': log.last_short_leave === 'Approved',
-                      'text-yellow-500': log.last_short_leave === 'Pending',
-                      'text-red-500': log.last_short_leave === 'Rejected',
-                    }"
-                  >
-                    ({{ log.last_short_leave }})
-                  </router-link>
-                </div>
-              </td>
-              <td class="border py-0.5">
-                <div class="flex  justify-center items-center gap-1">
-                  <StatusBadge :status="log.status" />
-                 <div v-if="log.leave_application_id" class="flex items-center gap-2">
-                      <router-link
-                        :to="{ name: 'LeaveApplicationShow', params: { id: log.leave_application_id } }"
-                        class="text-blue-600 text-xs inline-flex items-center gap-1 hover:underline hover:text-blue-800 transition"
-                        title="View Leave Application"
-                      >
-                        <span
-                          class="text-xs font-medium py-0.5  transition"
-                          :class="{
-                            ' text-green-700 border-green-200': log.application_status === 'Approved',
-                            ' text-yellow-700 border-yellow-200': log.application_status === 'Pending',
-                            ' text-red-700 border-red-200': log.application_status === 'Rejected',
-                            ' text-gray-600 border-gray-200': !log.application_status,
-                          }"
-                        >
-                           {{ log.status == 'Absent' ? log.leave_application_type : ''  }}( {{ log.application_status || 'Waiting Handover' }} )
-                        </span>
-                      </router-link>
-
-                    </div>
-                 <div v-if="log.day_exchange_id" class="flex items-center gap-2">
-                     <router-link
-                          :to="{ name: 'ExchangeOffdayShow', params: { id: log.day_exchange_id } }"
-                          class="text-blue-600 text-xs inline-flex items-center gap-1 hover:underline hover:text-blue-800 transition"
-                          title="View Exchange Offday Application"
-                        >
-                          <span
-                            class="text-xs font-medium py-0.5 transition"
-                            :class="{
-                              'text-green-700 border-green-200': log.day_exchange_status === 'Approved',
-                              'text-yellow-700 border-yellow-200': log.day_exchange_status === 'Pending',
-                              'text-red-700 border-red-200': log.day_exchange_status === 'Rejected',
-                              'text-gray-600 border-gray-200': !log.day_exchange_status,
-                            }"
-                          >
-                            <template v-if="log.status === 'Absent' || log.status === 'Present'">
-                              Offday ({{ log.day_exchange_status || 'Waiting Handover' }})
-                            </template>
-                            <template v-else>
-                              {{ log.day_exchange_status || 'Waiting Handover' }}
-                            </template>
-                          </span>
-                        </router-link>
-                    </div>
-
-                </div>
-              </td>
-
-            </tr>
-          </tbody>
-        </table>
-      </div> -->
     </div>
-    
   </div>
 </template>
