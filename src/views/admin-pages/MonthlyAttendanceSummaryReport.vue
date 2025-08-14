@@ -175,6 +175,7 @@ const refreshPaycutList = async () => {
               <th colspan="2" class="border px-1 py-0.5">Short Leave</th>
               <th rowspan="2" class="border px-1 py-0.5">OT Hour</th>
               <th colspan="4" class="border px-1 py-0.5">Deduction</th>
+              <th rowspan="2" class="border px-8 py-0.5">Action</th>
             </tr>
             <tr class="bg-gray-100 text-xs">
               <th class="border px-2 py-0.5">TD</th>
@@ -254,6 +255,23 @@ const refreshPaycutList = async () => {
                 </div>
               </td>
               <td class="border px-2 py-0.5">{{ log?.payable_hour }}H</td>
+              <td class="border px-4 py-0.5">
+                <router-link
+                  :to="{
+                    name: 'EmployeeAttendance',
+                    query: {
+                      ...route.query,
+                      employee_id: log?.user_id,
+                      date: selectedMonth
+                    }
+                  }"
+                  target="_blank"
+                  class="text-blue-500 hover:underline inline-flex items-center gap-1"
+                >
+                  <i class="fas fa-calendar-check"></i>
+                  Go to 
+                </router-link>
+              </td>
             </tr>
           </tbody>
         </table>

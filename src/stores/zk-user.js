@@ -1,3 +1,4 @@
+// stores/zk-user.js
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import apiClient from '@/axios'
@@ -12,115 +13,84 @@ export const useZKUserStore = defineStore('zkUser', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await apiClient.get('/zk-users')
-      users.value = response.data
+      const { data } = await apiClient.get('/zk-users')
+      users.value = data
+      return data
     } catch (err) {
-      error.value = err.response?.data?.message || err.message
+      error.value = err?.response?.data?.message || err.message
+      return []
     } finally {
       loading.value = false
     }
   }
 
   // POST /zk-users
-  async function createUser(data) {
+  async function createUser(payload) {
     try {
-      const response = await apiClient.post('/zk-users', data)
+      const { data } = await apiClient.post('/zk-users', payload)
       await fetchUsers()
-      return response.data
+      return data
     } catch (err) {
-      throw err.response?.data || err
+      throw err?.response?.data || err
     }
   }
 
   // PUT /zk-users/{id}
-  async function updateUser(id, data) {
+  async function updateUser(id, payload) {
     try {
-      const response = await apiClient.put(`/zk-users/${id}`, data)
+      const { data } = await apiClient.put(`/zk-users/${encodeURIComponent(id)}`, payload)
       await fetchUsers()
-      return response.data
+      return data
     } catch (err) {
-      throw err.response?.data || err
+      throw err?.response?.data || err
     }
   }
 
   // DELETE /zk-users/{id}
   async function deleteUser(id) {
     try {
-      const response = await apiClient.delete(`/zk-users/${id}`)
+      const { data } = await apiClient.delete(`/zk-users/${encodeURIComponent(id)}`)
       await fetchUsers()
-      return response.data
-    } catch (err) {
-      throw err.response?.data || err
-    }
-  }
-
-  // POST /users/{zk_userid}/push  (সব active ডিভাইসে push)
-  async function pushUser(zk_userid) {
-    try {
-      const { data } = await apiClient.post(`/users/${encodeURIComponent(zk_userid)}/push`)
-      return data // { pushed, failed, offline }
-    } catch (err) {
-      throw err.response?.data || err
-    }
-  }
-
-  // ✅ POST /users/{zk_userid}/push-user  (এক/একাধিক ডিভাইস)
-  // body: { device_ids: number[], diff: boolean }
-  async function pushUserToDevices(zk_userid, { deviceIds = [], diff = true } = {}) {
-    try {
-      const payload = { device_ids: deviceIds, diff }
-      const { data } = await apiClient.post(
-        `/users/${encodeURIComponent(zk_userid)}/push-user`,
-        payload
-      )
       return data
     } catch (err) {
-      throw err.response?.data || err
-    }
-  }
-
-  // ✅ POST /devices/{device}/users/{zk_userid}/push-user?diff=true|false (সিঙ্গেল ডিভাইস)
-  async function pushUserToDevice(deviceId, zk_userid, { diff = true } = {}) {
-    try {
-      const qs = diff ? '?diff=true' : '?diff=false'
-      const { data } = await apiClient.post(
-        `/devices/${encodeURIComponent(deviceId)}/users/${encodeURIComponent(zk_userid)}/push-user${qs}`
-      )
-      return data
-    } catch (err) {
-      throw err.response?.data || err
+      throw err?.response?.data || err
     }
   }
 
   // POST /devices/{device}/pull-users
   async function pullUsersFromDevice(deviceId) {
     try {
-      const { data } = await apiClient.post(`/devices/${deviceId}/pull-users`)
+      const { data } = await apiClient.post(
+        `/devices/${encodeURIComponent(deviceId)}/pull-users`
+      )
       await fetchUsers()
-      return data // { users_pulled, users_updated }
+      return data // { seen, inserted, mapped } (আমাদের কন্ট্রোলার আউটপুট)
     } catch (err) {
-      throw err.response?.data || err
+      throw err?.response?.data || err
     }
   }
 
-  // POST /devices/{device}/sync-catchup?diff=true|false
-  async function syncCatchupUsers(deviceId, { diff = true } = {}) {
+  // POST /devices/{device}/push-users
+  async function pushAllUsersToDevice(deviceId) {
     try {
-      const qs = diff ? '?diff=true' : '?diff=false'
-      const { data } = await apiClient.post(`/devices/${deviceId}/sync-catchup${qs}`)
-      return data // { usersSynced, skipped, failed, ... }
+      const { data } = await apiClient.post(
+        `/devices/${encodeURIComponent(deviceId)}/push-users`
+      )
+      return data // { pushed, already }
     } catch (err) {
-      throw err.response?.data || err
+      throw err?.response?.data || err
     }
   }
 
-  // GET /devices/{device}/user-count
-  async function getDeviceUserCount(deviceId) {
+  // POST /devices/{device}/users/{zk_userid}/push
+  async function pushSingleUserToDevice(deviceId, zk_userid) {
     try {
-      const { data } = await apiClient.get(`/devices/${encodeURIComponent(deviceId)}/user-count`)
-      return data // { device_id, ip_address, online, user_count }
+      const { data } = await apiClient.post(
+        `/devices/${encodeURIComponent(deviceId)}/users/${encodeURIComponent(zk_userid)}/push`
+      )
+      return data // { device, userid, pushed, already }
     } catch (err) {
-      throw err.response?.data || err
+      throw err?.response?.data || err
     }
   }
 
@@ -128,19 +98,14 @@ export const useZKUserStore = defineStore('zkUser', () => {
     users,
     loading,
     error,
+
     fetchUsers,
     createUser,
     updateUser,
     deleteUser,
 
-    // push (all devices) + targeted pushes
-    pushUser,
-    pushUserToDevices,
-    pushUserToDevice,
-
-    // device ops
     pullUsersFromDevice,
-    syncCatchupUsers,
-    getDeviceUserCount,
+    pushAllUsersToDevice,
+    pushSingleUserToDevice,
   }
 })
