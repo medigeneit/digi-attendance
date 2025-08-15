@@ -3,13 +3,29 @@
     <table class="w-full" v-if="childrenTasks?.length > 0">
       <thead>
         <tr>
-          <td class="border-y text-center text-xs text-gray-400 bg-gray-50 w-[30px]">SL</td>
-          <td class="border text-center text-xs text-gray-400 bg-gray-50">Sub Task</td>
-          <td class="border text-center text-xs text-gray-400 bg-gray-50">Assign Person</td>
-          <td class="border text-center text-xs text-gray-400 bg-gray-50">Assign Date</td>
-          <td class="border text-center text-xs text-gray-400 bg-gray-50">Deadline</td>
-          <td class="border text-center text-xs text-gray-400 bg-gray-50">Started</td>
-          <td class="border-y text-center text-xs text-gray-400 bg-gray-50">Status</td>
+          <td
+            class="border-y text-center text-xs text-gray-400 bg-gray-50/80 w-[30px] sticky -top-4 z-20"
+          >
+            SL
+          </td>
+          <td class="border text-center text-xs text-gray-400 bg-gray-50/80 sticky -top-4 z-20">
+            Sub Task
+          </td>
+          <td class="border text-center text-xs text-gray-400 bg-gray-50/80 sticky -top-4 z-20">
+            Assign Person
+          </td>
+          <td class="border text-center text-xs text-gray-400 bg-gray-50/80 sticky -top-4 z-20">
+            Assign Date
+          </td>
+          <td class="border text-center text-xs text-gray-400 bg-gray-50/80 sticky -top-4 z-20">
+            Deadline
+          </td>
+          <td class="border text-center text-xs text-gray-400 bg-gray-50/80 sticky -top-4 z-20">
+            Started
+          </td>
+          <td class="border-y text-center text-xs text-gray-400 bg-gray-50/80 sticky -top-4 z-20">
+            Status
+          </td>
         </tr>
       </thead>
       <tbody>
