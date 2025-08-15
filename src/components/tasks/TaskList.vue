@@ -97,20 +97,6 @@ const handleTaskPrioritySave = async () => {
           @employeeAssignClick="(taskId) => emit('employeeAssignClick', taskId)"
         />
       </DraggableList>
-
-      <!-- <div
-        v-for="task in tasks || []"
-        :key="task.id"
-        class="rounded-lg bg-white overflow-hidden space-y-4"
-      >
-        <TaskTreeView
-          :task="task"
-          class="!border-0"
-          @commentButtonClick="emit('commentButtonClick', task.id)"
-          @editClick="(taskId) => emit('editClick', taskId)"
-          @addClick="(taskId) => emit('addClick', taskId)"
-        />
-      </div> -->
     </div>
   </div>
 </template>
