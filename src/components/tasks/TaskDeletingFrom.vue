@@ -93,7 +93,10 @@ function emitDelete() {
     </template>
 
     <div class="flex justify-between items-center">
-      <button class="btn-3" type="button" @click.prevent="handleCloseClick">Close</button>
+      <button class="btn-3" type="button" @click.prevent="handleCloseClick">
+        <span v-if="state == 'deleted'">Keep Deleted</span>
+        <span v-else> Close </span>
+      </button>
 
       <button v-if="state == 'deleted'" class="btn-2-red">
         Undo Delete in
