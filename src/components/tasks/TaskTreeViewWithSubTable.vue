@@ -117,24 +117,31 @@
 
       <div>
         <div class="flex gap-3 items-center">
-          <div class="text-right text-sm flex gap-4 mt-2 opacity-80">
+          <div class="text-right text-sm flex gap-2 mt-2 opacity-80">
             <div v-if="task.is_target" class="bg-yellow-200 px-2 py-0.5 rounded-lg text-yellow-900">
               <i class="fad fa-bullseye-arrow mr-1"></i> TARGET TASK
             </div>
 
-            <span class="text-gray-500 text-sm" v-if="assignedDate">
-              Assign: <span class="font-semibold text-blue-800">{{ assignedDate }}</span>
+            <span class="text-sm" v-if="assignedDate">
+              <span class="italic text-gray-500">Assign: </span>
+              <span class="font-semibold text-blue-800">{{ assignedDate }}</span>
+            </span>
+            <span v-if="deadline" class="text-gray-500"> ...... </span>
+            <span class="text-sm" v-if="deadline">
+              <span class="italic text-gray-500">Deadline: </span>
+              <span class="text-blue-500 font-semibold">{{ deadline }}</span>
             </span>
 
-            <span class="ml-4 text-gray-500 text-sm" v-if="deadline">
-              Deadline: <span class="text-blue-500 font-semibold">{{ deadline }}</span>
+            <span class="text-sm md:ml-10" v-if="startedDate">
+              <span class="italic text-gray-500">Started: </span>
+              <span class="font-semibold text-blue-500">{{ startedDate }}</span>
             </span>
-
-            <span class="text-gray-500 text-sm" v-if="startedDate">
-              Started: <span class="font-semibold text-blue-800">{{ startedDate }}</span>
-            </span>
-            <span class="text-gray-500 text-sm" v-if="completedDate">
-              Completed: <span class="font-semibold text-blue-800">{{ completedDate }}</span>
+            <span v-if="completedDate" class="text-gray-500">......</span>
+            <span class="text-sm" v-if="completedDate">
+              <span class="italic text-gray-500">Completed: </span>
+              <span class="font-semibold text-green-500"
+                >{{ completedDate }} <i class="fas fa-check-circle"></i
+              ></span>
             </span>
           </div>
 
@@ -148,6 +155,7 @@
               >
                 <i class="fas fa-edit"></i> Edit
               </a>
+
               <a
                 :href="`/tasks/${task.id}/assign-users`"
                 @click.stop.prevent="emits('employeeAssignClick', task.id)"
@@ -224,7 +232,7 @@ if (stored) {
   }
 }
 
-const assignedDate = computed(() => getDisplayDate(props.task.assigned_at || props.task.created_at))
+const assignedDate = computed(() => getDisplayDate(props.task.assigned_at))
 const deadline = computed(() => getDisplayDate(props.task.deadline))
 const startedDate = computed(() => getDisplayDate(props.task.started_at))
 const completedDate = computed(() => getDisplayDate(props.task.completed_at))

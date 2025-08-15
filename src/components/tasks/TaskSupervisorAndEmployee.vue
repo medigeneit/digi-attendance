@@ -25,7 +25,7 @@ const props = defineProps({
         </div>
       </template>
       <TaskAssignedUsers
-        class="flex items-center justify-center flex-wrap gap-x-3 gap-y-2"
+        class="flex items-center flex-wrap gap-x-3 gap-y-2"
         :users="task.supervisors || []"
         listType="supervisors"
         :maxItem="1"
@@ -53,7 +53,7 @@ const props = defineProps({
       </template>
 
       <TaskAssignedUsers
-        class="flex items-center justify-center gap-x-3 gap-y-2"
+        class="flex items-center gap-x-3 gap-y-2"
         :users="task.users || []"
         :isTargetTask="task.is_target"
         :routeTo="employeeRouteTo"

@@ -15,7 +15,7 @@
       <tbody>
         <template v-for="(task, index) in slicedTasks" :key="task.id">
           <tr
-            class=""
+            class="group/sub-task-row"
             :class="{
               ' bg-green-400/20': task.status == 'COMPLETED',
               ' bg-white hover:bg-slate-50': task.status !== 'COMPLETED',
@@ -26,42 +26,67 @@
                 {{ index + 1 }}.
               </div>
             </td>
-            <td class="border px-3 py-1 border-gray-200">
-              <div class="flex items-center gap-3">
-                <TaskTitleRouterLink
-                  titleClass="text-sm"
-                  :task="task"
-                  :sub-tasks-open="false"
-                  :is-my-task="isMyTask"
-                />
-              </div>
-              <div class="flex items-center flex-none lg:w-full order-0 lg:order-1">
-                <!-- <span class="text-gray-500 text-sm"> #{{ task }} </span> -->
-                <div class="text-gray-400 text-xs mr-4">
-                  <i class="fas fa-clock"></i>
-                  {{ getDisplayDateTime(task.created_at) }}
+            <td class="border px-3 py-1 border-gray-200 relative">
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="flex items-center gap-3">
+                    <TaskTitleRouterLink
+                      titleClass="text-sm"
+                      :task="task"
+                      :sub-tasks-open="false"
+                      :is-my-task="isMyTask"
+                    />
+                  </div>
+                  <div class="flex items-center flex-none lg:w-full order-0 lg:order-1">
+                    <!-- <span class="text-gray-500 text-sm"> #{{ task }} </span> -->
+                    <div class="text-gray-400 text-xs mr-4">
+                      <i class="fas fa-clock"></i>
+                      {{ getDisplayDateTime(task.created_at) }}
+                    </div>
+                    <div class="flex items-center gap-2 text-xs text-gray-500 opacity-80 text-left">
+                      <TaskImportantBadge v-if="task?.is_important" />
+                      <TaskUrgentBadge v-if="task?.is_urgent" />
+                    </div>
+                  </div>
                 </div>
-                <div class="flex items-center gap-2 text-xs text-gray-500 opacity-80 text-left">
-                  <TaskImportantBadge v-if="task?.is_important" />
-                  <TaskUrgentBadge v-if="task?.is_urgent" />
-                </div>
+
+                <a
+                  :href="`/tasks/edit/${task.id}`"
+                  @click.stop.prevent="emits('editClick', task.id)"
+                  class="btn-3 py-1.5 px-1.5 !border-0 size-7 text-sm opacity-40 group-hover/sub-task-row:opacity-100 duration-100"
+                  v-if="!task.is_closed"
+                >
+                  <i class="fas fa-edit"></i>
+                </a>
               </div>
             </td>
             <td class="border px-3 py-1 border-gray-200">
-              <div class="flex justify-center">
+              <div class="flex justify-center items-center relative">
                 <TaskAssignedUsers
                   class="flex items-center justify-center flex-wrap gap-x-3 gap-y-2"
                   :users="task.users || []"
                   :isTargetTask="task.is_target"
                   :maxItem="1"
-                  :route-to="(user) => `/tasks?status=not-completed&view=userwise&user-ids=${user.id}`"
+                  :route-to="
+                    (user) => `/tasks?status=not-completed&view=userwise&user-ids=${user.id}`
+                  "
                 />
+                <div class="absolute right-0">
+                  <a
+                    :href="`/tasks/${task.id}/assign-users`"
+                    @click.stop.prevent="emits('employeeAssignClick', task.id)"
+                    v-if="!task.is_closed"
+                    class="btn-3 py-1.5 px-1.5 !border-0 text-sm opacity-40 group-hover/sub-task-row:opacity-100 duration-100"
+                  >
+                    <i class="fas fa-users-cog"></i>
+                  </a>
+                </div>
               </div>
             </td>
             <td class="border px-3 py-1 border-gray-200 text-center">
-              <span class="text-gray-500 text-sm" v-if="task.assigned_at || task.created_at">
+              <span class="text-gray-500 text-sm" v-if="task.assigned_at">
                 <span class="font-semibold text-blue-800">{{
-                  getDisplayDate(task.assigned_at || task.created_at)
+                  getDisplayDate(task.assigned_at)
                 }}</span>
               </span>
             </td>
@@ -88,7 +113,7 @@
         </template>
       </tbody>
     </table>
-    <div class="flex gap-1 items-center mt-2 text-sm">
+    <div class="flex gap-1 items-center mt-2 mb-1 text-sm">
       <template v-if="childrenTasks.length > 0">
         <button
           class="hover:bg-blue-600 hover:text-white text-indigo-600 font-semibold px-3 py-0.5 rounded-full transition border ml-2"
@@ -104,7 +129,8 @@
 
       <a
         :href="`/tasks/add?parent_id=${parentTask.id}&back-to=${encodeURIComponent(route.path + '?' + objectToQuery(route.query)).toLowerCase()}`"
-        class="ml-5 hover:bg-blue-600 hover:text-white text-indigo-600 font-semibold px-3 py-0.5 rounded-full transition border border-indigo-300"
+        class="hover:bg-blue-600 hover:text-white text-indigo-600 font-semibold px-3 py-0.5 rounded-full transition border border-indigo-300"
+        :class="{ 'ml-2': childrenTasks.length === 0, 'ml-3': childrenTasks.length > 0 }"
         @click.stop.prevent="emits('addClick', parentTask.id)"
         v-if="parentTask.level < 2"
       >
