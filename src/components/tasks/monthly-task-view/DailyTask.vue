@@ -2,14 +2,17 @@
 import LoaderView from '@/components/common/LoaderView.vue'
 import { getDisplayDate, getYearMonthDayFormat } from '@/libs/datetime'
 import { dateWiseTaskList } from '@/libs/task'
+import { mapAndFilterTask } from '@/libs/task-tree'
+import { useAuthStore } from '@/stores/auth'
 import { useTaskStore } from '@/stores/useTaskStore'
-import { onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import TaskListOnDay from './TaskListOnDay.vue'
 
 const selected = reactive({ day: null, month: null, year: null })
 const selectedDay = ref()
 const state = ref('loading')
 const taskStore = useTaskStore()
+const auth = useAuthStore()
 
 onMounted(() => {
   selectedDay.value = getYearMonthDayFormat(new Date())
@@ -56,6 +59,14 @@ const handleReloadClick = async () => {
   await fetchMyTask()
   state.value = ''
 }
+
+const dailyTaskList = computed(() => {
+  const tasks = mapAndFilterTask(taskStore.tasks, {
+    ['user-ids']: auth?.user?.id,
+  })
+
+  return dateWiseTaskList(tasks, selected.day, selected.month, selected.year)
+})
 </script>
 
 <template>
@@ -92,7 +103,7 @@ const handleReloadClick = async () => {
         <TaskListOnDay
           class="p-4 min-h-[40vh] max-h-[60vh] overflow-y-auto"
           :is-current-month="isCurrentMonth"
-          :tasks="dateWiseTaskList(taskStore.tasks, selected.day, selected.month, selected.year)"
+          :tasks="dailyTaskList"
           :tree="true"
         />
       </div>
