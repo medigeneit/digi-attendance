@@ -94,7 +94,7 @@ function emitDelete() {
 
     <div class="flex justify-between items-center">
       <button class="btn-3" type="button" @click.prevent="handleCloseClick">
-        <span v-if="state == 'deleted'">Keep Deleted</span>
+        <span v-if="state == 'deleted'">Delete</span>
         <span v-else> Close </span>
       </button>
 
