@@ -29,7 +29,7 @@ const limitedTaskList = computed(() => {
         hide-assigned-users
         :task="task"
         :key="task.id"
-        class="mb-6"
+        class="mb-6 shadow hover:shadow-md"
       />
     </div>
 
@@ -46,7 +46,6 @@ const limitedTaskList = computed(() => {
             {{ task.title }}
           </span>
         </RouterLink>
-        <!-- <div>{{ task.deadline_crossed }}</div> -->
       </li>
     </ul>
 

@@ -94,7 +94,7 @@ const dailyTaskList = computed(() => {
     </div>
 
     <div class="bg-gray-300 bg-opacity-90 relative">
-      <div class="bg-white border rounded-md z-20">
+      <div class="bg-gray-50 border-y rounded-md z-20">
         <div
           class="text-md font-semibold sticky top-0 border-b px-4 z-30 py-3 bg-white flex items-center shadow"
         >
