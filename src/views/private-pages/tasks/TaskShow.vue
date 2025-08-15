@@ -179,7 +179,11 @@ watch(
             </button>
           </div>
 
-          <TaskSupervisorAndEmployee :task="store?.task" :tree-level="store?.task?.level" />
+          <TaskSupervisorAndEmployee
+            :task="store?.task"
+            :tree-level="store?.task?.level"
+            class="justify-center"
+          />
 
           <section class="mt-4 col-span-full mb-6" v-if="store.task.children_task_count > 0">
             <TaskProgressTable
