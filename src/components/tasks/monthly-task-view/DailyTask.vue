@@ -1,5 +1,6 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import SearchInput from '@/components/SearchInput.vue'
 import { getDisplayDate, getYearMonthDayFormat } from '@/libs/datetime'
 import { dateWiseTaskList } from '@/libs/task'
 import { mapAndFilterTask } from '@/libs/task-tree'
@@ -13,6 +14,9 @@ const selectedDay = ref()
 const state = ref('loading')
 const taskStore = useTaskStore()
 const auth = useAuthStore()
+
+const search = ref('')
+const taskStatus = ref('not-completed')
 
 onMounted(() => {
   selectedDay.value = getYearMonthDayFormat(new Date())
@@ -61,11 +65,36 @@ const handleReloadClick = async () => {
 }
 
 const dailyTaskList = computed(() => {
-  const tasks = mapAndFilterTask(taskStore.tasks, {
-    ['user-ids']: auth?.user?.id,
-  })
+  const titlePartiallyMatched = (taskTitle) => {
+    if (!search.value) {
+      return true
+    }
+    return taskTitle?.toUpperCase()?.includes(search.value?.toUpperCase())
+  }
 
-  return dateWiseTaskList(tasks, selected.day, selected.month, selected.year)
+  return mapAndFilterTask(
+    dateWiseTaskList(taskStore.tasks, selected.day, selected.month, selected.year),
+    {
+      ['user-ids']: auth?.user?.id,
+      status: taskStatus.value,
+    },
+  )
+    .filter((task) => {
+      return (
+        titlePartiallyMatched(task.title) ||
+        task.children_tasks?.some((childTask) => titlePartiallyMatched(childTask?.title))
+      )
+    })
+    .map((task) => {
+      return {
+        ...task,
+        children_tasks: task.children_tasks.filter((childTask) =>
+          titlePartiallyMatched(childTask.title),
+        ),
+      }
+    })
+
+  // return dateWiseTaskList(tasks, selected.day, selected.month, selected.year)
 })
 </script>
 
@@ -99,6 +128,27 @@ const dailyTaskList = computed(() => {
           class="text-md font-semibold sticky top-0 border-b px-4 z-30 py-3 bg-white flex items-center shadow"
         >
           Tasks
+
+          <div class="flex justify-between items-center gap-4 ml-auto">
+            <div class="w-32 relative h-8 mx-4">
+              <label class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500"
+                >Status</label
+              >
+              <select
+                v-model="taskStatus"
+                class="h-8 text-xs px-2 text-gray-600 border-2 border-gray-400 rounded-md w-full"
+              >
+                <option value="">--ALL TASKS--</option>
+                <option value="not-completed">Not Completed</option>
+                <!-- <option value="only-completed">Completed</option> -->
+              </select>
+            </div>
+            <SearchInput
+              v-model="search"
+              class="w-full md:w-48 md:ml-auto h-8"
+              :debounce-time="0"
+            />
+          </div>
         </div>
         <TaskListOnDay
           class="p-4 min-h-[40vh] max-h-[60vh] overflow-y-auto"

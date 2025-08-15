@@ -92,7 +92,12 @@
                 class="w-[150px] text-center !border-2"
               />
 
-              <SubTaskProgress ref="progress" :task="task" class="text-sm w-[150px] text-center" />
+              <SubTaskProgress
+                ref="progress"
+                v-if="task?.children_tasks?.length > 0"
+                :task="task"
+                class="text-sm w-[150px] text-center"
+              />
             </div>
           </div>
         </div>

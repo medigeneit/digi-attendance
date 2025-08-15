@@ -20,12 +20,12 @@ const props = defineProps({
 const route = useRoute()
 const auth = useAuthStore()
 const search = ref('')
+const taskStatus = ref('not-completed')
+
 const employeeAssignForm = reactive({
   taskId: 0,
   isOpen: false,
 })
-
-const taskStatus = ref('not-completed')
 
 const emit = defineEmits(['created', 'error', 'updatePriority', 'assignUser'])
 
