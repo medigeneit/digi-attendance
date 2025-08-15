@@ -1,7 +1,7 @@
 <script setup>
-import TaskTreeView from '@/components/TaskTreeView.vue'
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
+import TaskTreeViewWithSubTable from '../TaskTreeViewWithSubTable.vue'
 
 const props = defineProps({
   isCurrentMonth: { type: Boolean, default: false },
@@ -23,7 +23,7 @@ const limitedTaskList = computed(() => {
 <template>
   <div>
     <div v-if="tree">
-      <TaskTreeView
+      <TaskTreeViewWithSubTable
         v-for="task in limitedTaskList"
         hide-buttons
         hide-assigned-users

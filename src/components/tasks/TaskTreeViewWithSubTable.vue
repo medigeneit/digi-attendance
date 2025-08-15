@@ -117,7 +117,7 @@
 
       <div>
         <div class="flex gap-3 items-center">
-          <div class="text-right text-sm flex gap-2 mt-2 opacity-80">
+          <div class="text-right text-sm flex gap-1 mt-2 opacity-80">
             <div v-if="task.is_target" class="bg-yellow-200 px-2 py-0.5 rounded-lg text-yellow-900">
               <i class="fad fa-bullseye-arrow mr-1"></i> TARGET TASK
             </div>
@@ -126,13 +126,13 @@
               <span class="italic text-gray-500">Assign: </span>
               <span class="font-semibold text-blue-800">{{ assignedDate }}</span>
             </span>
-            <span v-if="deadline" class="text-gray-500"> ...... </span>
-            <span class="text-sm" v-if="deadline">
+            <span v-if="deadline" class="text-gray-500">......</span>
+            <span class="text-sm md:mr-10" v-if="deadline">
               <span class="italic text-gray-500">Deadline: </span>
               <span class="text-blue-500 font-semibold">{{ deadline }}</span>
             </span>
 
-            <span class="text-sm md:ml-10" v-if="startedDate">
+            <span class="text-sm" v-if="startedDate">
               <span class="italic text-gray-500">Started: </span>
               <span class="font-semibold text-blue-500">{{ startedDate }}</span>
             </span>

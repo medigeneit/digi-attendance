@@ -100,6 +100,7 @@
               },
             })
           "
+          class="col-span-full"
         />
       </div>
 

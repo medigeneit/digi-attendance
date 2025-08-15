@@ -9,12 +9,8 @@ const props = defineProps({
 </script>
 
 <template>
-  <div
-    class="col-span-full flex flex-col md:flex-row items-stretched my-4 lg:my-0 justify-start gap-x-5 gap-y-4"
-  >
-    <div
-      class="flex flex-col items-start justify-start gap-2 border-gray-200 bg-gray-50/40 p-1 px-3"
-    >
+  <div class="flex flex-col md:flex-row items-stretched justify-start gap-x-5 gap-y-4">
+    <div class="flex flex-col items-start justify-start gap-2 border-gray-200 py-1">
       <template v-if="treeLevel === 0">
         <div
           class="text-xs px-2 py-0.5 rounded-full border bg-sky-500/80 text-white line-clamp-1 text-center"
@@ -41,7 +37,7 @@ const props = defineProps({
       </span>
     </div>
 
-    <div class="flex flex-col items-start justify-start gap-2 py-1 px-3">
+    <div class="flex flex-col items-start justify-start gap-2 py-1">
       <template v-if="treeLevel === 0">
         <div
           class="text-xs px-2 py-0.5 rounded-full border bg-sky-500/80 text-white line-clamp-1 text-center"

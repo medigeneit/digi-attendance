@@ -3,13 +3,13 @@
     <table class="w-full" v-if="childrenTasks?.length > 0">
       <thead>
         <tr>
-          <td class="border text-center text-xs text-gray-400 bg-gray-50 w-[30px]">SL</td>
+          <td class="border-y text-center text-xs text-gray-400 bg-gray-50 w-[30px]">SL</td>
           <td class="border text-center text-xs text-gray-400 bg-gray-50">Sub Task</td>
           <td class="border text-center text-xs text-gray-400 bg-gray-50">Assign Person</td>
           <td class="border text-center text-xs text-gray-400 bg-gray-50">Assign Date</td>
           <td class="border text-center text-xs text-gray-400 bg-gray-50">Deadline</td>
           <td class="border text-center text-xs text-gray-400 bg-gray-50">Started</td>
-          <td class="border text-center text-xs text-gray-400 bg-gray-50">Status</td>
+          <td class="border-y text-center text-xs text-gray-400 bg-gray-50">Status</td>
         </tr>
       </thead>
       <tbody>
@@ -21,7 +21,7 @@
               ' bg-white hover:bg-slate-50': task.status !== 'COMPLETED',
             }"
           >
-            <td class="border text-center py-2 border-gray-200">
+            <td class="border-y text-center py-2 border-gray-200">
               <div class="text-base font-semibold text-purple-600" v-if="index !== undefined">
                 {{ index + 1 }}.
               </div>
@@ -54,14 +54,14 @@
                   :href="`/tasks/edit/${task.id}`"
                   @click.stop.prevent="emits('editClick', task.id)"
                   class="btn-3 py-1.5 px-1.5 !border-0 size-7 text-sm opacity-40 group-hover/sub-task-row:opacity-100 duration-100"
-                  v-if="!task.is_closed"
+                  v-if="!task.is_closed && !hideButtons"
                 >
                   <i class="fas fa-edit"></i>
                 </a>
               </div>
             </td>
             <td class="border px-3 py-1 border-gray-200">
-              <div class="flex justify-center items-center relative">
+              <div class="flex justify-center items-center relative pr-4">
                 <TaskAssignedUsers
                   class="flex items-center justify-center flex-wrap gap-x-3 gap-y-2"
                   :users="task.users || []"
@@ -71,12 +71,12 @@
                     (user) => `/tasks?status=not-completed&view=userwise&user-ids=${user.id}`
                   "
                 />
-                <div class="absolute right-0">
+                <div class="absolute right-0 flex-shrink-0">
                   <a
                     :href="`/tasks/${task.id}/assign-users`"
                     @click.stop.prevent="emits('employeeAssignClick', task.id)"
-                    v-if="!task.is_closed"
-                    class="btn-3 py-1.5 px-1.5 !border-0 text-sm opacity-40 group-hover/sub-task-row:opacity-100 duration-100"
+                    v-if="!task.is_closed && !hideButtons"
+                    class="btn-3 py-1.5 px-1.5 !border-0 size-7 text-sm opacity-40 group-hover/sub-task-row:opacity-100 duration-100 flex-shrink-0"
                   >
                     <i class="fas fa-users-cog"></i>
                   </a>
@@ -102,7 +102,7 @@
                 }}</span>
               </span>
             </td>
-            <td class="border px-3 py-1 border-gray-200">
+            <td class="border-y px-3 py-1 border-gray-200">
               <div class="flex justify-end gap-2">
                 <TaskIsClosedBadge v-if="task.closed_at" />
                 <TaskStatus :status="task?.status" :progressPercent="task?.progress_percent || 0" />
@@ -132,7 +132,7 @@
         class="hover:bg-blue-600 hover:text-white text-indigo-600 font-semibold px-3 py-0.5 rounded-full transition border border-indigo-300"
         :class="{ 'ml-2': childrenTasks.length === 0, 'ml-3': childrenTasks.length > 0 }"
         @click.stop.prevent="emits('addClick', parentTask.id)"
-        v-if="parentTask.level < 2"
+        v-if="parentTask.level < 2 && !hideButtons"
       >
         <i class="fas fa-plus"></i> Add Sub Task
       </a>

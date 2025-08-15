@@ -50,6 +50,12 @@ function handleClickOnPreviousDay() {
   today.setDate(today.getDate() - 1)
   selectedDay.value = getYearMonthDayFormat(today)
 }
+
+const handleReloadClick = async () => {
+  state.value = 'loading'
+  await fetchMyTask()
+  state.value = ''
+}
 </script>
 
 <template>
@@ -58,6 +64,15 @@ function handleClickOnPreviousDay() {
       <h2 class="leading-none font-semibold text-lg">Daily Task</h2>
       <div class="mx-4">{{ getDisplayDate(selectedDay) }}</div>
       <button class="btn-3 mx-4 h-7" @click.prevent="handleClickOnToday">Today</button>
+
+      <button
+        class="btn-3 px-2 py-2 mx-4 size-7 disabled:text-gray-300 disabled:border-gray-300"
+        :class="{ 'animate-spin text-gray-300 border-gray-300 !bg-opacity-0': state == 'loading' }"
+        @click.prevent="handleReloadClick"
+        :disabled="state == 'loading'"
+      >
+        <i class="fas fa-redo-alt"></i>
+      </button>
 
       <div class="ml-4 md:ml-auto flex items-center gap-2">
         <button class="btn-2 h-7" @click.prevent="handleClickOnPreviousDay">Previous Day</button>
@@ -70,7 +85,7 @@ function handleClickOnPreviousDay() {
     <div class="bg-gray-300 bg-opacity-90 relative">
       <div class="bg-white border rounded-md z-20">
         <div
-          class="text-md font-semibold mb-4 sticky top-0 border-b px-4 z-30 py-3 bg-white flex items-center"
+          class="text-md font-semibold sticky top-0 border-b px-4 z-30 py-3 bg-white flex items-center shadow"
         >
           Tasks
         </div>
