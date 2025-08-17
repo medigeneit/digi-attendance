@@ -43,14 +43,6 @@ const goBack = () => {
   router.go(-1)
 }
 
-// watch(
-//   () => overtimeStore.selectedMonth,
-//   (newMonth) => {
-//     if (newMonth) {
-//       overtimeStore.fetchUserOvertimes({ month: newMonth })
-//     }
-//   },
-// )
 </script>
 
 <template>
@@ -70,19 +62,12 @@ const goBack = () => {
         </div>
       </div>
 
-      <h1 class="title-md md:title-lg flex-wrap text-center">
+      <h1 v-if="!overtimeStore?.loading" class="title-md md:title-lg flex-wrap text-center">
         Overtime of {{ overtimeStore.selectedMonthDisplay }}
       </h1>
 
-      <div class="flex gap-4">
-        <!-- <div>
-          <input
-            id="monthSelect"
-            type="month"
-            v-model="overtimeStore.selectedMonth"
-            class="input-1"
-          />
-        </div> -->
+      <div>
+        
       </div>
     </div>
 

@@ -189,12 +189,12 @@ function findOptionById(optionId) {
 
 onMounted(() => {
   document.addEventListener('click', handleOutsideClick)
-  props.containment.addEventListener('scroll', () => calculatePosition(isOpen.value))
+  props.containment?.addEventListener('scroll', () => calculatePosition(isOpen.value))
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleOutsideClick)
-  props.containment.removeEventListener('scroll', () => calculatePosition(isOpen.value))
+  props.containment?.removeEventListener('scroll', () => calculatePosition(isOpen.value))
 })
 
 const isMultiSelection = computed(() => props.multiple || props.taggable)
@@ -308,6 +308,10 @@ const filteredOptions = computed(() => {
 })
 
 async function calculatePosition(dropdownOpen) {
+  if (!props.containment) {
+    return null
+  }
+
   if (dropdownOpen && props.position === 'auto') {
     await nextTick()
     const trigger = dropdownRef.value

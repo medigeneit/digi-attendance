@@ -139,10 +139,11 @@ function setTaskOnFormData(taskData) {
           deadline: getYearMonthDayFormat(taskData.deadline),
         }
 }
+const taskFormContainerRef = ref()
 </script>
 
 <template>
-  <div class="px-4 max-h-[90vh] overflow-auto rounded">
+  <div class="px-4 max-h-[90vh] overflow-auto rounded" ref="taskFormContainerRef">
     <div class="sticky top-0 bg-white z-20">
       <h2 class="text-xl font-semibold text-gray-800 mb-1 mt-4">Manage Employee(s) for Task</h2>
       <h3 class="mb-2 font-semibold text-gray-600 text-sm leading-none">
@@ -154,7 +155,7 @@ function setTaskOnFormData(taskData) {
     <div v-if="state === 'loading'" class="text-center text-gray-500 py-4">Loading users...</div>
 
     <form v-else @submit.prevent="submit" class="grid grid-cols-4 gap-4">
-      <div class="col-span-2">
+      <div class="col-span-2 flex flex-col">
         <div class="mb-4" v-if="task?.from_department">
           <div class="text-sm text-gray-500">Task From Department</div>
           <div class="text-base">
@@ -163,14 +164,20 @@ function setTaskOnFormData(taskData) {
         </div>
 
         <label class="block uppercase text-xs text-gray-600"> Supervisors </label>
+
         <TaskAssignUserInput
           :employees="supervisorOptions"
           list-type="supervisor"
           v-if="auth?.user?.role !== 'employee' && auth.isAdminMood"
           :isRemovable="true"
           v-model="selectedSupervisors"
+          class="flex-grow"
         />
-        <div v-else class="flex gap-x-3 gap-y-4 flex-wrap border p-2 rounded">
+
+        <div
+          v-else
+          class="flex gap-x-3 gap-y-4 flex-wrap border p-2 rounded items-center flex-grow justify-center"
+        >
           <template v-if="(selectedSupervisors || []).length > 0">
             <TaskUserChip
               v-for="user in selectedSupervisors"
@@ -184,18 +191,22 @@ function setTaskOnFormData(taskData) {
           <!-- {{ supervisors }} -->
         </div>
       </div>
-      <div class="mb-4 col-span-2 flex justify-center">
-        <div class="max-w-sm w-full">
-          <div class="mb-4" v-if="task?.to_department">
-            <div class="text-sm text-gray-500">Task To Department</div>
-            <div class="text-base">
-              {{ task?.to_department?.name }}
-            </div>
-          </div>
 
-          <label class="block uppercase text-xs text-gray-600"> Employees </label>
-          <TaskAssignUserInput :employees="employeeOptions" v-model="selectedUsers" />
+      <div class="col-span-2 w-full flex flex-col">
+        <div class="mb-4" v-if="task?.to_department">
+          <div class="text-sm text-gray-500">Task To Department</div>
+          <div class="text-base">
+            {{ task?.to_department?.name }}
+          </div>
         </div>
+
+        <label class="block uppercase text-xs text-gray-600"> Employees </label>
+        <TaskAssignUserInput
+          :employees="employeeOptions"
+          v-model="selectedUsers"
+          class="flex-grow"
+        />
+        <!-- :form-container-ref="taskFormContainerRef" -->
       </div>
 
       <template v-if="auth?.user?.role !== 'employee' && auth.isAdminMood">

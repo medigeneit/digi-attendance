@@ -44,7 +44,7 @@ const avatarClass = computed(() => {
 
         <button
           v-if="isRemovable"
-          class="size-6 border rounded-full hover:bg-red-400 hover:text-white"
+          class="size-6 border rounded-full hover:bg-red-400 hover:text-white clear-icon"
           @click.prevent="emit('removeClick', user)"
         >
           &times;

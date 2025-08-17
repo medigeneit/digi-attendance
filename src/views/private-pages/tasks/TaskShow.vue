@@ -182,7 +182,7 @@ watch(
           <TaskSupervisorAndEmployee
             :task="store?.task"
             :tree-level="store?.task?.level"
-            class="justify-center"
+            class="justify-center border col-span-full border-dashed rounded-lg"
           />
 
           <section class="mt-4 col-span-full mb-6" v-if="store.task.children_task_count > 0">
