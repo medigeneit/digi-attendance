@@ -42,6 +42,7 @@ function handlePriorityUpdate(a) {
     track-by="id"
     label="label"
     placeholder="Select users"
+    class="[&_.multiselect]:w-auto [&_.multiselect]:border [&_.multiselect]:h-full"
   >
     <template #selection="{ ...attrs }">
       <template v-if="listType == 'supervisor'">
@@ -53,7 +54,7 @@ function handlePriorityUpdate(a) {
             userType="supervisor"
             :isRemovable="isRemovable"
             @removeClick="() => handleUserRemove(user)"
-            class="h-10 items-center flex *:h-8"
+            class="h-10 items-center flex [&_.user-avatar]:h-8 [&_.clear-icon]:size-8"
           />
         </div>
       </template>
