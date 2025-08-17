@@ -82,7 +82,7 @@ onBeforeUnmount(() => {
         v-model="approvalTime"
         :minute-interval="5"
         :required="true"
-        :hour-min="2"
+        :hour-min="1"
         :hour-max="16"
       />
       <hr class="my-2" />
