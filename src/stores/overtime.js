@@ -64,6 +64,7 @@ export const useOvertimeStore = defineStore('overtime', () => {
     try {
       const response = await apiClient.get(`/${overtimeApplicationId}/user-overtimes`)
       overtimes.value = response.data
+      selectedMonth.value = new Date(overtimes.value[0].date).toISOString().substring(0, 7)
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch overtimes'
       console.error('Error fetching overtimes:', err)
@@ -99,10 +100,7 @@ export const useOvertimeStore = defineStore('overtime', () => {
 
       const notificationStore = useNotificationStore()
 
-      await notificationStore.fetchApprovalPermissions(
-        'overtime_applications',
-        overtime.value.id,
-      )
+      await notificationStore.fetchApprovalPermissions('overtime_applications', overtime.value.id)
 
       return overtime.value
     } catch (err) {
@@ -168,12 +166,14 @@ export const useOvertimeStore = defineStore('overtime', () => {
       loading.value = false
     }
   }
-  const getCompanyDepartmentOvertimeReport = async (month,filters = {}) => {
+  const getCompanyDepartmentOvertimeReport = async (month, filters = {}) => {
     loading.value = true
     error.value = null
     try {
-      console.log(month,filters);
-      const response = await apiClient.get(`/user-monthly-overtimes-report/${month}`, { params: filters })
+      console.log(month, filters)
+      const response = await apiClient.get(`/user-monthly-overtimes-report/${month}`, {
+        params: filters,
+      })
       reports.value = response?.data
       return response?.data
     } catch (err) {
@@ -184,50 +184,48 @@ export const useOvertimeStore = defineStore('overtime', () => {
     }
   }
 
- const exportCompanyDepartmentOvertimeExcel = async (month, filters = {}) => {
-  try {
-    const res = await apiClient.get(`/user-monthly-overtimes-report/${month}?flag=excel`, {
-      responseType: 'blob',
-      params: {
+  const exportCompanyDepartmentOvertimeExcel = async (month, filters = {}) => {
+    try {
+      const res = await apiClient.get(`/user-monthly-overtimes-report/${month}?flag=excel`, {
+        responseType: 'blob',
+        params: {
+          ...filters,
+          excel: true, // match Laravel's `$request->excel`
+        },
+      })
+
+      downloadBlob(res.data, `CompanyDepartmentOvertime-${month}.xlsx`)
+    } catch (err) {
+      console.error('Excel export failed:', err)
+    }
+  }
+
+  const exportCompanyDepartmentOvertimePdf = async (month, filters = {}) => {
+    try {
+      const queryParams = new URLSearchParams({
         ...filters,
-        excel: true, // match Laravel's `$request->excel`
-      },
-    });
+        flag: 'pdf',
+      }).toString()
 
-    downloadBlob(res.data, `CompanyDepartmentOvertime-${month}.xlsx`);
-  } catch (err) {
-    console.error('Excel export failed:', err);
+      const res = await apiClient.get(`/user-monthly-overtimes-report/${month}?${queryParams}`, {
+        responseType: 'blob',
+      })
+
+      downloadBlob(res.data, `CompanyDepartmentOvertime-${month}.pdf`)
+    } catch (err) {
+      console.error('PDF Export Error:', err)
+    }
   }
-};
 
-
-const exportCompanyDepartmentOvertimePdf = async (month, filters = {}) => {
-  try {
-    const queryParams = new URLSearchParams({
-      ...filters,
-      flag: 'pdf'
-    }).toString()
-
-    const res = await apiClient.get(`/user-monthly-overtimes-report/${month}?${queryParams}`, {
-      responseType: 'blob',
-    })
-
-    downloadBlob(res.data, `CompanyDepartmentOvertime-${month}.pdf`)
-  } catch (err) {
-    console.error('PDF Export Error:', err)
+  function downloadBlob(blobData, filename) {
+    const url = window.URL.createObjectURL(new Blob([blobData]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', filename)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
-}
-
-
-function downloadBlob(blobData, filename) {
-  const url = window.URL.createObjectURL(new Blob([blobData]))
-  const link = document.createElement('a')
-  link.href = url
-  link.setAttribute('download', filename)
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-}
 
   return {
     overtimes,
@@ -248,6 +246,6 @@ function downloadBlob(blobData, filename) {
     fetchUserOvertimesByApplicationId,
     getCompanyDepartmentOvertimeReport,
     exportCompanyDepartmentOvertimeExcel,
-    exportCompanyDepartmentOvertimePdf
+    exportCompanyDepartmentOvertimePdf,
   }
 })
