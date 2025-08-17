@@ -37,16 +37,18 @@ const markNotificationAndNavigate = async (notificationId, url) => {
       <ul class="flex gap-4 items-center">
         <!-- Notification Bell -->
         <button class="btn-icon relative" @click="toggleNotice">
-          <i class="fas fa-bell"></i>
-          <div v-if="total_notifications > 0" class="absolute top-0 right-0">
-            <span class="relative flex h-3 w-3">
+          <i class="fas fa-bell text-xl"></i>
+          <div
+            v-if="total_notifications > 0"
+            class="absolute -translate-x-1/2 -translate-y-1/2 -right-3 top-2.5"
+          >
+            <span class="flex size-6 relative">
               <span
-                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"
-              ></span>
-              <span
-                class="relative items-center justify-center inline-flex text-xs text-white rounded-full h-3 w-3 bg-red-500"
+                class="flex justify-center items-center size-6 text-xs text-white rounded-full bg-red-500"
               >
+                {{ total_notifications }}
               </span>
+              <span class="absolute animate-ping size-6 rounded-full bg-red-400 opacity-75"></span>
             </span>
           </div>
         </button>
