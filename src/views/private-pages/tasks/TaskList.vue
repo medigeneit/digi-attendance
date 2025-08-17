@@ -151,7 +151,7 @@ const tasks = computed(() => {
 </script>
 
 <template>
-  <div class="max-w-full mx-4 p-6 mt-2 relative bg-white rounded-md shadow-md">
+  <div class="my-container p-6 mt-2 relative bg-white rounded-md shadow-md">
     <OverlyModal v-if="editingId">
       <TaskEditForm :taskId="editingId" @close="editingId = null" @updated="handleTaskUpdate" />
     </OverlyModal>

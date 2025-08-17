@@ -62,6 +62,7 @@ const ItemComponent = computed(() => {
           ' !bg-blue-100': !isTargetTask && listType == 'employee' && index === 0,
         }"
         :user="item"
+        :hide-employee-id="true"
       >
         <template #after v-if="index === 0 || listType == 'supervisors'">
           <div
@@ -76,8 +77,7 @@ const ItemComponent = computed(() => {
 
     <div v-if="hiddenUsers.length > 0" class="text-sm text-gray-500 group/users">
       <div class="cursor-pointer hover:underline text-blue-600 whitespace-nowrap">
-        + {{ hiddenUsers.length }} more
-        {{ listType == 'employee' ? 'users' : listType == 'supervisors' ? 'supervisor' : '' }}
+        + {{ hiddenUsers.length }}
       </div>
 
       <div

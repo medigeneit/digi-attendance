@@ -43,7 +43,7 @@
               </div>
             </td>
             <td class="border px-3 py-1 border-gray-200 relative">
-              <div class="flex items-center justify-between">
+              <div class="flex items-center justify-between gap-2">
                 <div>
                   <div class="flex items-center gap-3">
                     <TaskTitleRouterLink
@@ -55,7 +55,7 @@
                   </div>
                   <div class="flex items-center flex-none lg:w-full order-0 lg:order-1">
                     <!-- <span class="text-gray-500 text-sm"> #{{ task }} </span> -->
-                    <div class="text-gray-400 text-xs mr-4">
+                    <div class="text-gray-400 text-xs mr-4 whitespace-nowrap">
                       <i class="fas fa-clock"></i>
                       {{ getDisplayDateTime(task.created_at) }}
                     </div>
@@ -77,9 +77,9 @@
               </div>
             </td>
             <td class="border px-3 py-1 border-gray-200">
-              <div class="flex justify-center items-center relative pr-4">
+              <div class="flex gap-2 justify-between items-center relative w-full">
                 <TaskAssignedUsers
-                  class="flex items-center justify-center flex-wrap gap-x-3 gap-y-2"
+                  class="flex items-center justify-center gap-x-3 gap-y-2"
                   :users="task.users || []"
                   :isTargetTask="task.is_target"
                   :maxItem="1"
@@ -87,7 +87,7 @@
                     (user) => `/tasks?status=not-completed&view=userwise&user-ids=${user.id}`
                   "
                 />
-                <div class="absolute right-0 flex-shrink-0">
+                <div class="shrink-0">
                   <a
                     :href="`/tasks/${task.id}/assign-users`"
                     @click.stop.prevent="emits('employeeAssignClick', task.id)"

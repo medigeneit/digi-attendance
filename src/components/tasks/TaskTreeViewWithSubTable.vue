@@ -11,79 +11,33 @@
       :class="{
         'border-blue-500': index % 2 === 0,
         'border-pink-300': index % 2 === 1,
+        'bg-blue-100/30  ': task.closed_at,
+        'bg-green-100  ': progress?.completedPercentage === 100,
+        'bg-white hover:bg-gray-50': progress?.completedPercentage < 100 && !task.closed_at,
       }"
     >
       <div class="items-start group">
         <div
-          class="-mx-3 px-3 pt-3 shadow-slate-100 flex flex-wrap z-30"
+          class="task-details py-3 shadow-slate-100 flex flex-wrap z-30"
           :class="{
-            'bg-blue-100/30  ': task.closed_at,
-            'bg-green-100  ': progress?.completedPercentage === 100,
-            'bg-white hover:bg-gray-50': progress?.completedPercentage < 100 && !task.closed_at,
             'shadow-sm': treeLevel > 0,
           }"
         >
-          <div class="flex items-start gap-6 w-full pb-4">
-            <div class="flex-grow w-6/12">
-              <div class="flex gap-2">
-                <div class="text-xl font-semibold text-blue-500" v-if="index !== undefined">
-                  {{ index + 1 }}.
-                </div>
+          <div class="flex items-start justify-between w-full gap-4 mb-2">
+            <div class="flex gap-2 flex-grow items-center">
+              <div class="text-xl font-semibold text-blue-500" v-if="index !== undefined">
+                {{ index + 1 }}.
+              </div>
 
-                <TaskTitleRouterLink
-                  :task="task"
-                  :sub-tasks-open="showSubTask"
-                  :is-my-task="isMyTask"
-                  class="whitespace-nowrap"
-                />
-              </div>
-              <div class="flex items-center mb-2">
-                <div class="flex gap-4 items-center mr-3" v-if="showDraggableHandle || task.serial">
-                  <button
-                    @mousedown.stop="handleDragging"
-                    class="handle"
-                    v-if="showDraggableHandle"
-                  >
-                    <i class="fas fa-arrows-alt text-gray-500 cursor-grab"></i>
-                  </button>
-
-                  <span class="text-gray-500 text-sm" v-if="task.serial"> #{{ task.serial }} </span>
-                </div>
-                <div class="flex items-center gap-2 text-xs text-gray-500 opacity-80 text-left">
-                  <div
-                    class="text-white bg-blue-700 text-[12px] uppercase px-[5px] py-[1px] rounded-full border border-green-200 opacity-80"
-                    v-if="treeLevel === 0"
-                  >
-                    Main
-                  </div>
-                  <TaskImportantBadge v-if="task?.is_important" class="flex-none" />
-                  <TaskUrgentBadge v-if="task?.is_urgent" class="flex-none" />
-                </div>
-              </div>
-              <div class="text-xs text-gray-400 whitespace-nowrap">
-                <i class="fas fa-clock"></i>
-                {{ getDisplayDateTime(task.created_at) }}
-              </div>
+              <TaskTitleRouterLink
+                :task="task"
+                :sub-tasks-open="showSubTask"
+                :is-my-task="isMyTask"
+                class="whitespace-nowrap"
+              />
             </div>
 
-            <TaskSupervisorAndEmployee
-              v-if="!hideAssignedUsers"
-              :task="task"
-              :tree-level="treeLevel"
-              class="flex-nowrap w-1/2"
-              :employee-route-to="
-                (user) => ({
-                  query: {
-                    ...route.query,
-                    view: 'userwise',
-                    'company-id': user.company_id,
-                    'user-ids': user.id,
-                  },
-                })
-              "
-            />
-
-            <div class="justify-end items-center gap-2 ml-auto flex flex-wrap w-[350px]">
+            <div class="justify-end items-center gap-2 ml-auto flex flex-wrap flex-shrink-0">
               <TaskIsClosedBadge v-if="task.closed_at" />
 
               <TaskStatus
@@ -100,9 +54,58 @@
               />
             </div>
           </div>
+
+          <div class="flex items-center justify-between gap-16 w-full">
+            <div class="flex-shrink-0">
+              <div class="flex items-center">
+                <div class="flex gap-4 items-center mr-3" v-if="showDraggableHandle || task.serial">
+                  <button
+                    @mousedown.stop="handleDragging"
+                    class="handle"
+                    v-if="showDraggableHandle"
+                  >
+                    <i class="fas fa-arrows-alt text-gray-500 cursor-grab"></i>
+                  </button>
+
+                  <span class="text-gray-500 text-sm" v-if="task.serial"> #{{ task.serial }} </span>
+                </div>
+                <div class="flex items-center gap-2 text-xs text-gray-500 opacity-80 text-left">
+                  <div class="text-xs text-gray-400 whitespace-nowrap">
+                    <i class="fas fa-clock"></i>
+                    {{ getDisplayDateTime(task.created_at) }}
+                  </div>
+                  <div
+                    class="text-white bg-blue-700 text-[12px] uppercase px-[5px] py-[1px] rounded-full border border-green-200 opacity-80"
+                    v-if="treeLevel === 0"
+                  >
+                    Main
+                  </div>
+                  <TaskImportantBadge v-if="task?.is_important" class="flex-none" />
+                  <TaskUrgentBadge v-if="task?.is_urgent" class="flex-none" />
+                </div>
+              </div>
+            </div>
+
+            <TaskSupervisorAndEmployee
+              v-if="!hideAssignedUsers"
+              :task="task"
+              :tree-level="treeLevel"
+              class="flex-nowrap grow shrink"
+              :employee-route-to="
+                (user) => ({
+                  query: {
+                    ...route.query,
+                    view: 'userwise',
+                    'company-id': user.company_id,
+                    'user-ids': user.id,
+                  },
+                })
+              "
+            />
+          </div>
         </div>
 
-        <div class="ml-0 col-span-full">
+        <div class="children-task-table ml-0 col-span-full">
           <TaskTreeChildrenTable
             :childrenTasks="task.children_tasks"
             :parentTask="task"
@@ -120,63 +123,61 @@
         </div>
       </div>
 
-      <div>
-        <div class="flex gap-3 items-center">
-          <div class="text-right text-sm flex gap-1 mt-2 opacity-80">
-            <div v-if="task.is_target" class="bg-yellow-200 px-2 py-0.5 rounded-lg text-yellow-900">
-              <i class="fad fa-bullseye-arrow mr-1"></i> TARGET TASK
-            </div>
-
-            <span class="text-sm" v-if="assignedDate">
-              <span class="italic text-gray-500">Assign: </span>
-              <span class="font-semibold text-blue-800">{{ assignedDate }}</span>
-            </span>
-            <span v-if="deadline" class="text-gray-500">......</span>
-            <span class="text-sm md:mr-10" v-if="deadline">
-              <span class="italic text-gray-500">Deadline: </span>
-              <span class="text-blue-500 font-semibold">{{ deadline }}</span>
-            </span>
-
-            <span class="text-sm" v-if="startedDate">
-              <span class="italic text-gray-500">Started: </span>
-              <span class="font-semibold text-blue-500">{{ startedDate }}</span>
-            </span>
-            <span v-if="completedDate" class="text-gray-500">......</span>
-            <span class="text-sm" v-if="completedDate">
-              <span class="italic text-gray-500">Completed: </span>
-              <span class="font-semibold text-green-500"
-                >{{ completedDate }} <i class="fas fa-check-circle"></i
-              ></span>
-            </span>
+      <div class="flex gap-3 items-center">
+        <div class="text-right text-sm flex gap-4 mt-2 opacity-80">
+          <div v-if="task.is_target" class="bg-yellow-200 px-2 py-0.5 rounded-lg text-yellow-900">
+            <i class="fad fa-bullseye-arrow mr-1"></i> TARGET TASK
           </div>
 
-          <div class="flex items-center sm:ml-auto order-0 sm:order-1">
-            <div class="flex gap-2 ml-4 items-center text-xs" v-if="!hideButtons">
-              <a
-                :href="`/tasks/edit/${task.id}`"
-                @click.stop.prevent="emits('editClick', task.id)"
-                class="btn-2 py-0.5 text-xs"
-                v-if="!task.is_closed"
-              >
-                <i class="fas fa-edit"></i> Edit
-              </a>
+          <span class="text-sm inline-flex" v-if="deadline">
+            <span class="italic text-gray-500">Deadline: </span>
+            <span class="text-blue-500 font-semibold whitespace-nowrap">{{ deadline }}</span>
+          </span>
 
-              <a
-                :href="`/tasks/${task.id}/assign-users`"
-                @click.stop.prevent="emits('employeeAssignClick', task.id)"
-                v-if="!task.is_closed"
-                class="border-indigo-500 hover:bg-indigo-600 text-indigo-600 hover:text-white font-semibold px-3 py-0.5 rounded-full transition border-2"
-              >
-                <i class="fas fa-users-cog"></i> Manage Employee & Supervisor
-              </a>
+          <span class="text-sm" v-if="assignedDate">
+            <span class="italic text-gray-500">Assign: </span>
+            <span class="font-semibold text-blue-800 whitespace-nowrap">{{ assignedDate }}</span>
+          </span>
 
-              <RouterLink
-                :to="{ name: 'TaskReports', params: { id: task?.id } }"
-                class="border-indigo-500 hover:bg-indigo-600 text-indigo-600 hover:text-white font-semibold px-3 py-0.5 rounded-full transition border-2"
-              >
-                <i class="far fa-file-alt"></i> Reports
-              </RouterLink>
-            </div>
+          <span class="text-sm" v-if="startedDate">
+            <span class="italic text-gray-500">Started: </span>
+            <span class="font-semibold text-blue-500 whitespace-nowrap">{{ startedDate }}</span>
+          </span>
+          <span v-if="completedDate" class="text-gray-500">......</span>
+          <span class="text-sm" v-if="completedDate">
+            <span class="italic text-gray-500">Completed: </span>
+            <span class="font-semibold text-green-500 whitespace-nowrap"
+              >{{ completedDate }} <i class="fas fa-check-circle"></i
+            ></span>
+          </span>
+        </div>
+
+        <div class="flex items-center sm:ml-auto order-0 sm:order-1">
+          <div class="flex gap-2 ml-4 items-center text-xs" v-if="!hideButtons">
+            <a
+              :href="`/tasks/edit/${task.id}`"
+              @click.stop.prevent="emits('editClick', task.id)"
+              class="btn-2 py-0.5 text-xs"
+              v-if="!task.is_closed"
+            >
+              <i class="fas fa-edit"></i> Edit
+            </a>
+
+            <a
+              :href="`/tasks/${task.id}/assign-users`"
+              @click.stop.prevent="emits('employeeAssignClick', task.id)"
+              v-if="!task.is_closed"
+              class="border-indigo-500 hover:bg-indigo-600 text-indigo-600 hover:text-white font-semibold px-3 py-0.5 rounded-full transition border-2"
+            >
+              <i class="fas fa-users-cog"></i> Manage
+            </a>
+
+            <RouterLink
+              :to="{ name: 'TaskReports', params: { id: task?.id } }"
+              class="border-indigo-500 hover:bg-indigo-600 text-indigo-600 hover:text-white font-semibold px-3 py-0.5 rounded-full transition border-2"
+            >
+              <i class="far fa-file-alt"></i> Reports
+            </RouterLink>
           </div>
         </div>
       </div>

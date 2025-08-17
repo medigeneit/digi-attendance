@@ -28,7 +28,7 @@ const avatarClass = computed(() => {
 </script>
 
 <template>
-  <UserChip :user="user" :class="mainClass" :avatarClass="avatarClass">
+  <UserChip :user="user" :class="mainClass" :avatarClass="avatarClass" :hide-employee-id="true">
     <template #user-bottom v-if="userType === 'main-employee'">
       <div class="text-blue-500">Responsible Employee</div>
     </template>
