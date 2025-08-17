@@ -101,18 +101,20 @@
             </td>
             <td class="border px-3 py-1 border-gray-200 text-center">
               <span class="text-gray-500 text-sm" v-if="task.assigned_at">
-                <span class="font-semibold text-blue-800">{{
+                <span class="font-semibold text-blue-800 whitespace-nowrap">{{
                   getDisplayDate(task.assigned_at)
                 }}</span>
               </span>
             </td>
             <td class="border px-3 py-1 border-gray-200 text-center">
               <span class="ml-4 text-gray-500 text-sm" v-if="task.deadline">
-                <span class="text-blue-500 font-semibold">{{ getDisplayDate(task.deadline) }}</span>
+                <span class="text-blue-500 font-semibold whitespace-nowrap">{{
+                  getDisplayDate(task.deadline)
+                }}</span>
               </span>
             </td>
             <td class="border px-3 py-1 border-gray-200 text-center">
-              <span class="text-gray-500 text-sm" v-if="task.started_at">
+              <span class="text-gray-500 text-sm whitespace-nowrap" v-if="task.started_at">
                 <span class="font-semibold text-blue-800">{{
                   getDisplayDate(task.started_at)
                 }}</span>
