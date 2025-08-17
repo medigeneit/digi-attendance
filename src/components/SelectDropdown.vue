@@ -38,6 +38,7 @@
             <input
               v-model="search"
               v-if="taggable"
+              ref="tagSearchInput"
               type="text"
               class="flex-grow px-2 py-1 rounded outline-none"
               :placeholder="placeholder || 'Type and enter to add'"
@@ -88,6 +89,7 @@
           <input
             type="text"
             v-model="search"
+            ref="searchInput"
             class="w-full px-2 py-1 border rounded"
             placeholder="Search..."
             @focus="$emit('search:focus')"
@@ -169,6 +171,8 @@ const emit = defineEmits([
 
 const isOpen = ref(false)
 const search = ref('')
+const searchInput = ref(null)
+const tagSearchInput = ref(null)
 const dropdownRef = ref()
 const dropdownMenuRef = ref()
 
@@ -190,6 +194,9 @@ function findOptionById(optionId) {
 onMounted(() => {
   document.addEventListener('click', handleOutsideClick)
   props.containment?.addEventListener('scroll', () => calculatePosition(isOpen.value))
+  setTimeout(() => {
+    tagSearchInput.value?.focus()
+  })
 })
 
 onUnmounted(() => {
@@ -252,7 +259,13 @@ const getOptionKey = (option) => {
 const toggleDropdown = () => {
   if (props.disabled) return
   isOpen.value = !isOpen.value
+
   emit(isOpen.value ? 'open' : 'close')
+  if (isOpen.value) {
+    setTimeout(() => {
+      searchInput.value?.focus()
+    }, 0)
+  }
 }
 
 const isSelected = (option) => {
