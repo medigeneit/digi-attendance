@@ -191,19 +191,22 @@ const taskFormContainerRef = ref()
           <!-- {{ supervisors }} -->
         </div>
       </div>
-      <div class="col-span-2 flex justify-center">
-        <div class="w-full">
-          <div class="mb-4" v-if="task?.to_department">
-            <div class="text-sm text-gray-500">Task To Department</div>
-            <div class="text-base">
-              {{ task?.to_department?.name }}
-            </div>
-          </div>
 
-          <label class="block uppercase text-xs text-gray-600"> Employees </label>
-          <TaskAssignUserInput :employees="employeeOptions" v-model="selectedUsers" />
-          <!-- :form-container-ref="taskFormContainerRef" -->
+      <div class="col-span-2 w-full flex flex-col">
+        <div class="mb-4" v-if="task?.to_department">
+          <div class="text-sm text-gray-500">Task To Department</div>
+          <div class="text-base">
+            {{ task?.to_department?.name }}
+          </div>
         </div>
+
+        <label class="block uppercase text-xs text-gray-600"> Employees </label>
+        <TaskAssignUserInput
+          :employees="employeeOptions"
+          v-model="selectedUsers"
+          class="flex-grow"
+        />
+        <!-- :form-container-ref="taskFormContainerRef" -->
       </div>
 
       <template v-if="auth?.user?.role !== 'employee' && auth.isAdminMood">
