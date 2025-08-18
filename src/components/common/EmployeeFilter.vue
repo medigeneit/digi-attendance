@@ -8,11 +8,21 @@ import UserChip from '../user/UserChip.vue'
 import UserAvatar from '../UserAvatar.vue'
 
 const props = defineProps({
-  modelValue: Object,
+  company_id: { type: [String, Number], default: '' },
+  department_id: { type: [String, Number], default: '' }, // '' means all/none
+  employee_id: { type: [String, Number], default: '' },
+  category: { type: String, default: 'all' }, // 'all'|'executive'|'support_staff'|'doctor'|'academy_body'
   withType: { type: Boolean, default: true },
-  initialValue: { type: Object, default: () => ({}) },
+  initialValue: { type: Object, default: () => ({}) }, // optional: prefill from route/query
 })
-const emit = defineEmits(['update:modelValue', 'filter-change'])
+
+const emit = defineEmits([
+  'update:company_id',
+  'update:department_id',
+  'update:employee_id',
+  'update:category',
+  'filter-change',
+])
 
 const companyStore = useCompanyStore()
 const departmentStore = useDepartmentStore()
@@ -20,10 +30,19 @@ const { companies } = storeToRefs(companyStore)
 const { departments } = storeToRefs(departmentStore)
 
 // ===== Local state (primitive ids) =====
-const selectedCompanyId = ref('')
-const selectedDepartmentId = ref('all')
-const selectedTypeId = ref(props.withType ? 'all' : null)
-const selectedEmployeeId = ref('')
+const selectedCompanyId = ref(String(props.company_id || props.initialValue.company_id || ''))
+const selectedDepartmentId = ref(
+  props.department_id !== '' ? String(props.department_id) :
+  props.initialValue.department_id && props.initialValue.department_id !== 'all'
+    ? String(props.initialValue.department_id)
+    : '' // keep '' to mean "no department filter"
+)
+const selectedTypeId = ref(
+  props.withType
+    ? String(props.category || props.initialValue.category || 'all')
+    : null
+)
+const selectedEmployeeId = ref(String(props.employee_id || props.initialValue.employee_id || ''))
 
 // ===== Derived option lists =====
 const companyOptions = computed(() =>
@@ -31,10 +50,9 @@ const companyOptions = computed(() =>
 )
 
 const departmentOptions = computed(() => {
-  const base = [{ id: 'all', label: 'All Departments' }]
-  if (!selectedCompanyId.value) return base
   const list = (departments.value || []).map(d => ({ id: String(d.id), label: d.name }))
-  return [...base, ...list]
+  // No 'all' sentinel here; we use '' to represent "none selected"
+  return list
 })
 
 const typeOptions = computed(() =>
@@ -57,60 +75,105 @@ const filterEmployees = ref([])
 onMounted(async () => {
   await companyStore.fetchCompanies()
 
-  if (props.initialValue?.company_id) {
-    // preselect company & load deps
-    selectedCompanyId.value = String(props.initialValue.company_id)
+  // If we have a company, load deps first
+  if (selectedCompanyId.value) {
     await loadCompanyDeps(selectedCompanyId.value)
-
-    // department preset
-    if (props.initialValue?.department_id && props.initialValue.department_id !== 'all') {
-      selectedDepartmentId.value = String(props.initialValue.department_id)
-    }
-
-    // type preset
-    if (props.withType && props.initialValue?.type && props.initialValue.type !== 'all') {
-      selectedTypeId.value = String(props.initialValue.type)
-    }
-
-    // filter & preselect employee
-    applyFilter()
-    if (props.initialValue?.employee_id) {
-      const empId = String(props.initialValue.employee_id)
-      const found = filterEmployees.value.find(e => String(e.id) === empId)
-      if (found) selectedEmployeeId.value = empId
-    }
-
-    emitFilter()
-  } else {
-    // clean emit
-    emitFilter()
   }
+
+  // Build initial employee list + selection
+  applyFilter()
+
+  // Hydrate selected employee if present
+  if (selectedEmployeeId.value) {
+    const found = filterEmployees.value.find(e => e.id === String(selectedEmployeeId.value))
+    if (!found) {
+      // employee no longer valid under current filters
+      selectedEmployeeId.value = ''
+      emit('update:employee_id', '')
+    }
+  }
+
+  // Emit the initial state
+  emitAll()
 })
 
-// ===== Watchers =====
+// ===== Watchers (props -> local sync, local -> emit) =====
+watch(
+  () => props.company_id,
+  (v) => {
+    if (String(v || '') !== selectedCompanyId.value) {
+      selectedCompanyId.value = String(v || '')
+    }
+  }
+)
+
+watch(
+  () => props.department_id,
+  (v) => {
+    const next = v === '' || v == null ? '' : String(v)
+    if (next !== selectedDepartmentId.value) {
+      selectedDepartmentId.value = next
+    }
+  }
+)
+
+watch(
+  () => props.employee_id,
+  (v) => {
+    if (String(v || '') !== selectedEmployeeId.value) {
+      selectedEmployeeId.value = String(v || '')
+    }
+  }
+)
+
+watch(
+  () => props.category,
+  (v) => {
+    if (!props.withType) return
+    const next = String(v || 'all')
+    if (next !== selectedTypeId.value) {
+      selectedTypeId.value = next
+    }
+  }
+)
+
+// When company changes (locally), reset chain and load deps
 watch(selectedCompanyId, async (newCompanyId) => {
-  // reset chain on company change
-  selectedDepartmentId.value = 'all'
-  selectedTypeId.value = props.withType ? 'all' : null
+  // Reset chain on company change
+  selectedDepartmentId.value = ''
   selectedEmployeeId.value = ''
   filterEmployees.value = []
 
+  emit('update:company_id', newCompanyId || '')
+  emit('update:department_id', '')
+  emit('update:employee_id', '')
+
   if (newCompanyId) {
     await loadCompanyDeps(newCompanyId)
-    applyFilter()
   } else {
+    // clear departments list if no company
     departments.value = []
-    applyFilter()
   }
-  emitFilter()
-})
 
-watch([selectedDepartmentId, selectedTypeId], () => {
   applyFilter()
+  emitFilterChange()
 })
 
+// Department or Type change → re-filter employees
+watch([selectedDepartmentId, selectedTypeId], () => {
+  // Emit upward before applying filter so parent query updates
+  emit('update:department_id', selectedDepartmentId.value || '')
+  if (props.withType) {
+    emit('update:category', selectedTypeId.value || 'all')
+  }
+  applyFilter()
+  emitFilterChange()
+})
+
+// Employee change → just push upward
 watch(selectedEmployeeId, () => {
-  emitFilter()
+  emit('update:employee_id', selectedEmployeeId.value || '')
+  emitFilterChange()
 })
 
 // ===== Helpers =====
@@ -124,7 +187,7 @@ async function loadCompanyDeps(companyId) {
 function applyFilter() {
   let filtered = [...rawEmployees.value]
 
-  if (selectedDepartmentId.value && selectedDepartmentId.value !== 'all') {
+  if (selectedDepartmentId.value) {
     filtered = filtered.filter(e => String(e.department_id) === String(selectedDepartmentId.value))
   }
 
@@ -142,41 +205,42 @@ function applyFilter() {
   // keep selection only if still present
   if (selectedEmployeeId.value) {
     const stillExists = filterEmployees.value.some(e => e.id === String(selectedEmployeeId.value))
-    if (!stillExists) selectedEmployeeId.value = ''
+    if (!stillExists) {
+      selectedEmployeeId.value = ''
+      emit('update:employee_id', '')
+    }
   }
 }
 
+function emitAll() {
+  emit('update:company_id', selectedCompanyId.value || '')
+  emit('update:department_id', selectedDepartmentId.value || '')
+  if (props.withType) emit('update:category', selectedTypeId.value || 'all')
+  emit('update:employee_id', selectedEmployeeId.value || '')
+  emitFilterChange()
+}
+
 let emitTimer = null
-function emitFilter() {
-  // debounce to avoid parent thrashing
+function emitFilterChange() {
   if (emitTimer) clearTimeout(emitTimer)
-  emitTimer = setTimeout(() => {
-    emit('update:modelValue', {
-      company_id: selectedCompanyId.value || '',
-      department_id: selectedDepartmentId.value || 'all',
-      type: props.withType ? (selectedTypeId.value || 'all') : null,
-      employee_id: selectedEmployeeId.value || '',
-    })
-    emit('filter-change')
-  }, 0)
+  emitTimer = setTimeout(() => emit('filter-change'), 0)
 }
 
 // ===== Clear helpers (unselect for all dropdowns) =====
 function clearCompany() {
   selectedCompanyId.value = ''
-  selectedDepartmentId.value = 'all'
-  if (props.withType) selectedTypeId.value = 'all'
+  selectedDepartmentId.value = ''
   selectedEmployeeId.value = ''
   filterEmployees.value = []
   departments.value = []
-  emitFilter()
+  // emits are handled by watchers (company watcher will emit)
 }
 
 function clearDepartment() {
-  selectedDepartmentId.value = 'all'
+  selectedDepartmentId.value = ''
   selectedEmployeeId.value = ''
   applyFilter()
-  emitFilter()
+  // emits handled by watch([selectedDepartmentId, selectedTypeId])
 }
 
 function clearType() {
@@ -184,12 +248,12 @@ function clearType() {
   selectedTypeId.value = 'all'
   selectedEmployeeId.value = ''
   applyFilter()
-  emitFilter()
+  // emits handled by watch([selectedDepartmentId, selectedTypeId])
 }
 
 function clearEmployee() {
   selectedEmployeeId.value = ''
-  emitFilter()
+  // emits handled by watch(selectedEmployeeId)
 }
 </script>
 
@@ -201,7 +265,7 @@ function clearEmployee() {
         v-model="selectedCompanyId"
         :options="companyOptions"
         placeholder="Select Company"
-        class="border-2 border-gray-300 rounded h-[44px] w-full md:w-64 bg-white"
+        class="border-2 border-gray-300 rounded h-[44px] w-full bg-white"
       >
         <template #selected-option="{ option }">
           <div v-if="option" class="relative w-full pr-6">
@@ -230,16 +294,18 @@ function clearEmployee() {
         v-model="selectedDepartmentId"
         :options="departmentOptions"
         placeholder="Select Department"
-        class="border-2 border-gray-300 rounded h-[44px] w-full md:w-64 bg-white"
+        class="border-2 border-gray-300 rounded h-[44px] w-full bg-white"
       >
         <template #selected-option="{ option }">
-          <div v-if="option" class="relative w-full pr-6">
+          <div v-if="option || selectedDepartmentId === ''" class="relative w-full pr-6">
             <div class="flex items-center gap-2 text-sm text-gray-700">
-              <div class="line-clamp-1">{{ option?.label }}</div>
+              <div class="line-clamp-1">
+                {{ option?.label || 'All Departments' }}
+              </div>
             </div>
-            <!-- Clear (hide when 'all') -->
+            <!-- Clear (hide when empty = all) -->
             <div
-              v-if="selectedDepartmentId && selectedDepartmentId !== 'all'"
+              v-if="selectedDepartmentId"
               class="absolute right-1 text-xl top-0 bottom-0 flex items-center"
             >
               <button
@@ -269,7 +335,7 @@ function clearEmployee() {
         v-model="selectedTypeId"
         :options="typeOptions"
         placeholder="Select Type"
-        class="border-2 border-gray-300 rounded h-[44px] w-full md:w-64 bg-white"
+        class="border-2 border-gray-300 rounded h-[44px] w-full bg-white"
       >
         <template #selected-option="{ option }">
           <div v-if="option" class="relative w-full pr-6">
@@ -301,18 +367,19 @@ function clearEmployee() {
         v-model="selectedEmployeeId"
         :options="filterEmployees"
         placeholder="--Select Employee--"
-        class="border-2 border-gray-300 rounded h-[44px] w-full md:w-64 bg-white"
+        class="border-2 border-gray-300 rounded h-[44px] w-full bg-white"
       >
         <template #option="{ option }">
           <UserChip :user="option || {}" class="w-full overflow-hidden border relative" />
         </template>
 
         <template #selected-option="{ option }">
-          <div v-if="option" class="relative w-full pr-6">
-            <div class="flex items-center gap-2 text-sm text-gray-700">
+          <div v-if="option || selectedEmployeeId === ''" class="relative w-full pr-6">
+            <div class="flex items-center gap-2 text-sm text-gray-700" v-if="option">
               <UserAvatar :user="option" />
               <div class="line-clamp-1">{{ option?.label }}</div>
             </div>
+            <div v-else class="text-sm text-gray-500">All Employees</div>
             <!-- Clear -->
             <div v-if="selectedEmployeeId" class="absolute right-1 text-xl top-0 bottom-0 flex items-center">
               <button

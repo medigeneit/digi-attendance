@@ -57,6 +57,15 @@
         </span>
         Today Short Leaves
       </RouterLink>
+      <RouterLink
+        :to="{ name: 'DailyLateAttendanceReport', query: { date: selectedDate } }"
+        class="main-button"
+      >
+        <span class="text-3xl">
+          {{ dashboardInfo?.todayShortLeaves }}
+        </span>
+        Today Late Report
+      </RouterLink>
     </div>
     <div class="w-full mt-4" v-else>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">

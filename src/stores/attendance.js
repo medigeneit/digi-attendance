@@ -202,6 +202,42 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   }
 
+  const getDailyLateReport = async (
+    company_id,
+    department_id = null,
+    category = null,
+    employee_id = null,
+    value,
+    type,
+  ) => {
+    isLoading.value = true
+    try {
+      const params = {
+        company_id,
+        department_id,
+        category, // eg: "executive"
+        employee_id, // eg: 5
+        type, // 'daily'
+        ...(type === 'daily' ? { date: value } : { month: value }),
+      }
+
+      const response = await apiClient.get('/attendance/late-reports', { params })
+
+      if (type === 'daily') {
+        dailyLateLogs.value = response.data
+      } else if (type === 'monthly') {
+        monthlyLateLogs.value = response.data
+      }
+
+      error.value = null
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Something went wrong'
+      console.error(error.value)
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   // const getAttendanceLateReport = async (company_id, employee_id, month) => {
   //   isLoading.value = true;
   //   try {
@@ -410,5 +446,6 @@ export const useAttendanceStore = defineStore('attendance', () => {
     getDateRangeAttendanceSummary,
     downloadDateRangeExcel,
     downloadDateRangePdf,
+    getDailyLateReport
   }
 })

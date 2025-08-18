@@ -128,8 +128,12 @@ const closeLeaveTypeModal = () => {
 
     <div class="flex flex-wrap gap-2">
       <EmployeeFilter
-        v-model="filters"
-        :initial-value="route.query"
+         v-model:company_id="filters.company_id"
+          v-model:department_id="filters.department_id"
+          v-model:employee_id="filters.employee_id"
+          v-model:category="filters.category"
+          :with-type="true"
+          :initial-value="$route.query"
         @filter-change="handleFilterChange"
       />
       <div>

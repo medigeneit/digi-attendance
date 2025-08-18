@@ -61,10 +61,15 @@ const deletePaycut = async (id) => {
     </div>
 
     <div class="flex flex-wrap gap-4 items-center">
-      <EmployeeFilter
-        v-model="filters"
-        :initial-value="route.query"
-        @filter-change="fetchPaycutListData"
+      
+        <EmployeeFilter
+         v-model:company_id="filters.company_id"
+          v-model:department_id="filters.department_id"
+          v-model:employee_id="filters.employee_id"
+          v-model:category="filters.category"
+          :with-type="true"
+          :initial-value="$route.query"
+         @filter-change="handleFilterChange"
       />
       <input type="month" v-model="selectedMonth" class="input-1" />
     </div>
