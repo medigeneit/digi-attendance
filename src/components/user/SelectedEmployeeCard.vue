@@ -15,8 +15,8 @@
             aria-hidden="true"
           >
             <img
-              v-if="user.photo"
-              :src="user.photo"
+              v-if="avatar"
+              :src="avatar"
               :alt="safe(user?.name)"
               class="h-10 w-10 rounded-full object-cover"
             />
@@ -149,7 +149,8 @@ const props = defineProps({
 
 const copiedKey = ref('')
 
-const avatar = computed(() => props.avatar || props.user?.avatar || '')
+const avatar = computed(() => props.photo || props.user?.photo || '')
+
 const initials = computed(() => {
   const name = (props.user?.name || '').trim()
   const [a = '', b = ''] = name.split(' ')

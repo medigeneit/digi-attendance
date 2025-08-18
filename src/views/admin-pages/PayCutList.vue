@@ -6,47 +6,140 @@ import { useAuthStore } from '@/stores/auth'
 import { usePaycutStore } from '@/stores/paycut'
 import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+
 const authStore = useAuthStore()
 const router = useRouter()
 const route = useRoute()
 const payCutStore = usePaycutStore()
 
+// ---------- State ----------
 const selectedMonth = ref(route.query.month || new Date().toISOString().slice(0, 7))
 const filters = ref({
   company_id: route.query.company_id || '',
-  department_id: route.query.department_id || 'all',
-  type: route.query.type || 'all',
+  department_id: route.query.department_id || '',
+  type: route.query.type || 'all',     // <-- this is the "category" coming from EmployeeFilter
   employee_id: route.query.employee_id || ''
 })
 const loading = ref(false)
 
-const fetchPaycutListData = async () => {
-  if (!selectedMonth.value || !filters.value.company_id) return
+// ---------- Helpers ----------
+async function fetchPaycutListData () {
+  // Guard: need month + company
+  if (!selectedMonth.value || !filters.value.company_id) {
+    payCutStore.paycuts = [] // optional: clear list if not fetchable
+    return
+  }
 
   const query = {
     month: selectedMonth.value,
-    company_id: filters.value.company_id
+    company_id: String(filters.value.company_id)
   }
-
-  if (filters.value.employee_id) {
-    query.user_id = filters.value.employee_id
-  }
+  if (filters.value.employee_id) query.user_id = String(filters.value.employee_id)
 
   loading.value = true
-
-  await payCutStore.fetchPaycuts(query)
-
-  loading.value = false
+  try {
+    await payCutStore.fetchPaycuts(query)
+  } finally {
+    loading.value = false
+  }
 }
 
-const deletePaycut = async (id) => {
+function buildQueryFromFilters () {
+  const q = {}
+
+  if (selectedMonth.value) q.month = String(selectedMonth.value)
+  if (filters.value.company_id) q.company_id = String(filters.value.company_id)
+  if (filters.value.department_id) q.department_id = String(filters.value.department_id) // keep only when not empty
+  if (filters.value.employee_id) q.employee_id = String(filters.value.employee_id)
+  if (filters.value.type && filters.value.type !== 'all') q.type = String(filters.value.type)
+
+  return q
+}
+
+let qTimer = null
+function syncQueryDebounced () {
+  if (qTimer) clearTimeout(qTimer)
+  qTimer = setTimeout(() => {
+    const next = buildQueryFromFilters()
+    router.replace({ query: next }).catch(() => {})
+  }, 120)
+}
+
+// Debounced apply + fetch with fetch-key guard
+let applyTimer = null
+const lastKey = ref('')
+async function runApply () {
+  // Sync URL
+  syncQueryDebounced()
+
+  // Build key for fetch guard
+  const key = JSON.stringify({
+    m: selectedMonth.value || '',
+    c: filters.value.company_id || '',
+    d: filters.value.department_id || '',
+    t: filters.value.type || 'all',
+    e: filters.value.employee_id || ''
+  })
+
+  if (key !== lastKey.value) {
+    await fetchPaycutListData()
+    lastKey.value = key
+  }
+}
+function scheduleApply () {
+  if (applyTimer) clearTimeout(applyTimer)
+  applyTimer = setTimeout(runApply, 200)
+}
+
+// ---------- Watches ----------
+watch(
+  () => ({ ...filters.value, month: selectedMonth.value }),
+  () => scheduleApply(),
+  { deep: true }
+)
+
+// Optional: if route gets changed externally, rehydrate (rare)
+watch(
+  () => route.query,
+  (q) => {
+    // Only adopt changes if different (prevents loops)
+    const nextMonth = q.month || ''
+    if (nextMonth !== selectedMonth.value) selectedMonth.value = nextMonth
+
+    const next = {
+      company_id: q.company_id || '',
+      department_id: q.department_id || '',
+      type: q.type || 'all',
+      employee_id: q.employee_id || ''
+    }
+    const cur = filters.value
+    if (
+      next.company_id !== cur.company_id ||
+      next.department_id !== cur.department_id ||
+      next.type !== cur.type ||
+      next.employee_id !== cur.employee_id
+    ) {
+      filters.value = next
+    }
+  }
+)
+
+// First load
+onMounted(async () => {
+  scheduleApply()
+})
+
+// Called from EmployeeFilter via @filter-change
+function handleFilterChange () {
+  scheduleApply()
+}
+
+async function deletePaycut (id) {
   const confirmed = confirm('Are you sure you want to delete this paycut?')
   if (!confirmed) return
   await payCutStore.deletePaycut(id)
   await fetchPaycutListData()
 }
-
-
 </script>
 
 <template>
@@ -61,27 +154,20 @@ const deletePaycut = async (id) => {
     </div>
 
     <div class="flex flex-wrap gap-4 items-center">
-      
-        <EmployeeFilter
-         v-model:company_id="filters.company_id"
-          v-model:department_id="filters.department_id"
-          v-model:employee_id="filters.employee_id"
-          v-model:category="filters.category"
-          :with-type="true"
-          :initial-value="$route.query"
-         @filter-change="handleFilterChange"
+      <EmployeeFilter
+        v-model:company_id="filters.company_id"
+        v-model:department_id="filters.department_id"
+        v-model:employee_id="filters.employee_id"
+        v-model:category="filters.type"
+        :with-type="true"
+        :initial-value="$route.query"
+        @filter-change="handleFilterChange"
+        class="w-full"
       />
-      <input type="month" v-model="selectedMonth" class="input-1" />
+      <div>
+        <input type="month" v-model="selectedMonth" class="input-1" />
+      </div>
     </div>
-
-    <!-- <button
-      type="button"
-      class="btn-2"
-      @click="openModal(filters.employee_id, selectedMonth)"
-      v-if="filters.employee_id"
-    >
-      <i class="fa fa-plus"></i> Add Paycut
-    </button> -->
 
     <LoaderView v-if="loading" />
 
@@ -106,15 +192,14 @@ const deletePaycut = async (id) => {
             <td class="p-2">{{ cut.note || '-' }}</td>
             <td class="p-2 text-center flex gap-2">
               <UpdateOrCreate
+                v-if="authStore.user?.id === 8"
                 :userId="cut.user_id"
                 :month="selectedMonth"
-                v-if="authStore.user?.id === 8"
-                @updated="fetchPaycutListData" />
-              
+                @updated="fetchPaycutListData"
+              />
               <button type="button" class="text-red-500" @click="deletePaycut(cut.id)">
                 <i class="fa fa-trash"></i>
               </button>
-             
             </td>
           </tr>
         </tbody>
