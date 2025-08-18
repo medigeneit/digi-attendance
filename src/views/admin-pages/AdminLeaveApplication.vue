@@ -3,6 +3,7 @@ import LeaveApplicationForm from '@/components/AdminLeaveApplicationAddForm.vue'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import LeaveTypeModal from '@/components/LeaveTypeModal.vue'
+import SelectedEmployeeCard from '@/components/user/SelectedEmployeeCard.vue'
 import UserLeaveBalanceModal from '@/components/UserLeaveBalanceModal.vue'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
 import { useUserStore } from '@/stores/user'
@@ -149,8 +150,8 @@ const closeLeaveTypeModal = () => {
 
         <!-- Grid for Info and Leave -->
         <div class="grid md:grid-cols-2 gap-6">
-          <!-- User Info Card -->
-          <div class="bg-white border rounded-lg p-4 shadow">
+          <SelectedEmployeeCard :user="user" />
+          <!-- <div class="bg-white border rounded-lg p-4 shadow">
             <h3 class="text-lg font-semibold text-gray-700 mb-4">User Info</h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-2 text-sm text-gray-600">
               <p><strong>Name:</strong> {{ user?.name }}</p>
@@ -162,7 +163,7 @@ const closeLeaveTypeModal = () => {
               <p><strong>Joining Date:</strong> {{ user?.joining_date }}</p>
               <p><strong>Blood Group:</strong> {{ user?.blood || 'N/A' }}</p>
             </div>
-          </div>
+          </div> -->
 
           <!-- Leave Balance Card -->
           <div class="bg-white border rounded-lg p-4 shadow">

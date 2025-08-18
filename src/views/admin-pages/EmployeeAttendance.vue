@@ -2,6 +2,7 @@
 import AttendanceTable from '@/components/AttendanceTable.vue'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
+import SelectedEmployeeCard from '@/components/user/SelectedEmployeeCard.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useUserStore } from '@/stores/user'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
@@ -205,7 +206,8 @@ const hasSelection = computed(() => !!filters.value.employee_id)
     </div>
 
     <div v-if="selectedUser" class="grid md:grid-cols-2 gap-4 text-sm">
-      <div class="card-bg p-4 gap-1">
+      <SelectedEmployeeCard :user="selectedUser"/>
+      <!-- <div class="card-bg p-4 gap-1">
         <h2 class="title-md">Selected Employee Info</h2>
         <hr />
         <div class="grid md:grid-cols-2">
@@ -219,9 +221,85 @@ const hasSelection = computed(() => !!filters.value.employee_id)
           <p><strong>Joining Date:</strong> {{ selectedUser.joining_date || 'N/A' }}</p>
           <p><strong>Blood Group:</strong> {{ selectedUser.blood || 'N/A' }}</p>
         </div>
+      </div> -->
+
+      <div class="rounded-xl border border-zinc-200 bg-white shadow-sm p-3">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold text-zinc-800">Attendance Summary</h2>
+          <router-link
+            :to="{ name: 'MonthWiseApplicationLog', query: { ...$route.query } }"
+            class="inline-flex items-center gap-2 rounded-md border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <i class="fas fa-history text-xs"></i>
+            Application History
+          </router-link>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="grid gap-2 sm:grid-cols-2">
+          <div class="flex items-center gap-3 rounded-lg bg-zinc-50 px-2 py-1">
+            <i class="fas fa-calendar-check text-indigo-500"></i>
+            <p class="text-sm text-zinc-600">
+              <strong class="block text-zinc-800">Total Working Days</strong>
+              {{ attendanceStore?.summary?.total_working_days || 0 }}
+            </p>
+          </div>
+
+          <div class="flex items-center gap-3 rounded-lg bg-green-50 px-2 py-1">
+            <i class="fas fa-user-check text-green-600"></i>
+            <p class="text-sm text-zinc-600">
+              <strong class="block text-zinc-800">Present Days</strong>
+              {{ attendanceStore?.summary?.total_present_days || 0 }}
+            </p>
+          </div>
+
+          <div class="flex items-center gap-3 rounded-lg bg-rose-50 px-2 py-1">
+            <i class="fas fa-user-times text-rose-600"></i>
+            <p class="text-sm text-zinc-600">
+              <strong class="block text-zinc-800">Absent Days</strong>
+              {{ attendanceStore?.summary?.total_absent_days || 0 }}
+            </p>
+          </div>
+
+          <div class="flex items-center gap-3 rounded-lg bg-yellow-50 px-2 py-1">
+            <i class="fas fa-clock text-yellow-600"></i>
+            <p class="text-sm text-zinc-600">
+              <strong class="block text-zinc-800">Late Days</strong>
+              {{ attendanceStore?.summary?.actual_late_day || 0 }}
+            </p>
+          </div>
+
+          <div class="flex items-center gap-3 rounded-lg bg-blue-50 px-2 py-1">
+            <i class="fas fa-calendar-week text-blue-600"></i>
+            <p class="text-sm text-zinc-600">
+              <strong class="block text-zinc-800">Total Weekends</strong>
+              {{ attendanceStore?.summary?.total_weekend_days || 0 }}
+            </p>
+          </div>
+
+          <div class="flex items-center gap-3 rounded-lg bg-purple-50 px-2 py-1">
+            <i class="fas fa-hourglass-half text-purple-600"></i>
+            <p class="text-sm text-zinc-600">
+              <strong class="block text-zinc-800">Total Working Hours</strong>
+              {{ attendanceStore?.summary?.total_working_hours || 0 }}
+            </p>
+          </div>
+
+          <div class="flex items-center gap-3 rounded-lg bg-emerald-50 px-3 sm:col-span-2">
+            <i class="fas fa-business-time text-emerald-600"></i>
+            <p class="text-sm text-zinc-600">
+              <strong class="block text-zinc-800">Total Overtime Hours</strong>
+              {{ attendanceStore?.summary?.total_overtime_hours || 0 }}
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div class="card-bg p-4 gap-1">
+
+      <!-- <div class="card-bg p-4 gap-1">
         <div class="flex justify-between items-center">
           <h2 class="title-md">Attendance Summary</h2>
           <router-link
@@ -234,7 +312,7 @@ const hasSelection = computed(() => !!filters.value.employee_id)
           </router-link>
         </div>
         <hr />
-        <div class="grid md:grid-cols-2">
+        <div class="grid md:grid-cols-2 space-y-3">
           <p><strong>Total Working Days:</strong> {{ attendanceStore?.summary?.total_working_days }}</p>
           <p><strong>Present Days:</strong> {{ attendanceStore?.summary?.total_present_days }}</p>
           <p><strong>Absent Days:</strong> {{ attendanceStore?.summary?.total_absent_days }}</p>
@@ -243,7 +321,7 @@ const hasSelection = computed(() => !!filters.value.employee_id)
           <p><strong>Total Working Hours:</strong> {{ attendanceStore?.summary?.total_working_hours }}</p>
           <p><strong>Total Overtime Hours:</strong> {{ attendanceStore?.summary?.total_overtime_hours }}</p>
         </div>
-      </div>
+      </div> -->
     </div>
 
     <div v-else>
