@@ -62,9 +62,27 @@
         class="main-button"
       >
         <span class="text-3xl">
-          {{ dashboardInfo?.todayShortLeaves }}
+          {{ dashboardInfo?.todayLateEntries }}
         </span>
         Today Late Report
+      </RouterLink>
+      <RouterLink
+        :to="{ name: 'PreviousAfterApplicationList', query: { type: 'prev', date: selectedDate } }"
+        class="main-button"
+      >
+        <span class="text-3xl">
+          {{ dashboardInfo?.prevWeekLeaves }}
+        </span>
+        Leave history of previous week
+      </RouterLink>
+      <RouterLink
+        :to="{ name: 'PreviousAfterApplicationList', query: { type: 'after', date: selectedDate } }"
+        class="main-button"
+      >
+        <span class="text-3xl">
+          {{ dashboardInfo?.nextWeekLeaves }}
+        </span>
+        Upcoming leaves
       </RouterLink>
     </div>
     <div class="w-full mt-4" v-else>

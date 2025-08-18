@@ -213,6 +213,8 @@ onMounted(async () => {
 ----------------------------- */
 async function getExportExcel() {
   try {
+    console.log('sdf');
+    
     await attendanceStore.lateReportDownloadExcel(
       filters.value.company_id || '',
       filters.value.department_id || '',
@@ -287,7 +289,6 @@ function goBack() {
     <!-- Loader -->
     <div v-if="isLoading" class="py-10 text-center">
       <LoaderView />
-      <p class="mt-2 text-sm text-zinc-500">Loading late reports…</p>
     </div>
 
     <!-- Table (ALWAYS shows — all-company supported) -->
