@@ -12,8 +12,8 @@
         'border-blue-500': index % 2 === 0,
         'border-pink-300': index % 2 === 1,
         'bg-blue-100/30  ': task.closed_at,
-        'bg-green-100  ': progress?.completedPercentage === 100,
-        'bg-white hover:bg-gray-50': progress?.completedPercentage < 100 && !task.closed_at,
+        'bg-green-100  ': task?.progress_percent === 100,
+        'bg-white hover:bg-gray-50': task?.progress_percent < 100 && !task.closed_at,
       }"
     >
       <div class="items-start group">
@@ -24,6 +24,7 @@
           }"
         >
           <div class="flex items-start justify-between w-full gap-4 mb-2">
+            {{}}
             <div class="flex gap-2 flex-grow items-center">
               <div class="text-xl font-semibold text-blue-500" v-if="index !== undefined">
                 {{ index + 1 }}.
