@@ -678,6 +678,16 @@ const router = createRouter({
             title: 'Leave Application List',
           },
         },
+        {
+          path: '/hrd/leave-applications-for-day',
+          name: 'LeaveApplicationsForDay',
+          component: () => import('@/views/admin-pages/LeaveApplicationForDays.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Leave Application List',
+          },
+        },
 
         {
           path: '/hrd/pre-after-leave-applications',
