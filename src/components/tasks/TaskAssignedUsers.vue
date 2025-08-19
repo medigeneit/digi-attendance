@@ -56,7 +56,7 @@ const ItemComponent = computed(() => {
       }"
     >
       <UserChip
-        class="flex items-center gap-2 border rounded-full border-gray-300 shadow-sm"
+        class="flex items-center border rounded-full border-gray-300 shadow-sm"
         :class="{
           '!bg-yellow-400': isTargetTask,
           ' !bg-blue-100': !isTargetTask && listType == 'employee' && index === 0,
@@ -66,7 +66,7 @@ const ItemComponent = computed(() => {
       >
         <template #after v-if="index === 0 || listType == 'supervisors'">
           <div
-            class="border rounded-full size-6 flex justify-center items-center border-blue-300 bg-blue-100 flex-shrink-0"
+            class="border rounded-full size-6 inline-flex justify-center items-center border-blue-300 bg-blue-100 flex-shrink-0"
           >
             <i class="fas fa-user-cowboy text-blue-500" v-if="listType == 'supervisors'"></i>
             <i class="fas fa-user-crown text-blue-300" v-else></i>

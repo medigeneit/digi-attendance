@@ -84,7 +84,7 @@ function handlePriorityUpdate(a) {
       </DraggableList>
     </template>
     <template #option="{ option: user }">
-      <UserChip :user="user" />
+      <UserChip :user="user" class="w-full" />
     </template>
   </MultiselectDropdown>
 </template>
