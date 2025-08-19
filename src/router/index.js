@@ -712,6 +712,17 @@ const router = createRouter({
         },
 
         {
+          path: '/hrd/date-wise-short-leave-list',
+          name: 'DateWiseShortLeaveList',
+          component: () => import('@/views/admin-pages/DateWiseShortLeaveList.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Short Leave List',
+          },
+        },
+
+        {
           path: '/hrd/offday-exchange-list',
           name: 'OffdayExchangeList',
           component: () => import('@/views/admin-pages/OffdayExchangeList.vue'),

@@ -47,7 +47,7 @@
         Tomorrow Leave
       </RouterLink>
       <RouterLink
-        :to="{ name: 'ShortLeaveList', query: { date: selectedDate } }"
+        :to="{ name: 'DateWiseShortLeaveList', query: { date: selectedDate } }"
         class="main-button"
       >
         <span class="text-3xl">
