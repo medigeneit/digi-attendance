@@ -1,21 +1,16 @@
 <script setup>
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
-import { useAuthStore } from '@/stores/auth'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-
 const router = useRouter()
 const route = useRoute()
 const leaveApplicationStore = useLeaveApplicationStore()
 const userStore = useUserStore()
-const authStore = useAuthStore()
-
 const { leaveApplications, loading } = storeToRefs(leaveApplicationStore)
-
 const selectedUser = ref(null)
 const selectedDate = ref(route.query.date || leaveApplicationStore.selectedMonth)
 const search = ref(route.query.search || '')
@@ -23,16 +18,16 @@ const search = ref(route.query.search || '')
 const filters = ref({
   company_id: route.query.company_id || '',
   department_id: route.query.department_id || 'all',
-  type: route.query.type || 'all',
+  line_type: route.query.line_type || 'all',
   employee_id: route.query.employee_id || '',
   category: '',
 })
-
 
 const fetchApplicationsByUser = async () => {
   const payload = {
     company_id: filters.value.company_id,
     department_id: filters.value.department_id,
+    line_type: filters.value.line_type,
     selectedDate: selectedDate.value,
     selectedStatus: leaveApplicationStore.selectedStatus,
     query: search.value,
@@ -56,23 +51,11 @@ onMounted(async () => {
   await fetchApplicationsByUser()
 })
 
-// Watch selectedUser and update apps + query
-// watch(
-//   () => filters.value.employee_id,
-//   async (newId) => {
-//     if (newId) {
-//       filters.value.employee_id = newId
-//     } else {
-//       filters.value.employee_id = ''
-//     }
-//     await fetchApplicationsByUser()
-//   }
-// )
-
 watch(
   () => [
     filters.value.company_id,
     filters.value.department_id,
+    filters.value.line_type,
     filters.value.employee_id,
     selectedDate.value,
   ],
@@ -112,7 +95,7 @@ const handleFilterChange = () => {
       ...route.query,
       company_id: filters.value.company_id,
       department_id: filters.value.department_id,
-      type: filters.value.type,
+      line_type: filters.value.line_type,
       employee_id: filters.value.employee_id,
     },
   })
@@ -137,7 +120,7 @@ const handleFilterChange = () => {
           v-model:company_id="filters.company_id"
           v-model:department_id="filters.department_id"
           v-model:employee_id="filters.employee_id"
-          v-model:category="filters.category"
+          v-model:line_type="filters.line_type"
           :with-type="true"
           :initial-value="$route.query"
          @filter-change="handleFilterChange"

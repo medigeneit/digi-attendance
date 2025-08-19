@@ -8,15 +8,11 @@ import { ref, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import UpdateApprovalTime from '@/components/paycut/UpdateOrCreate.vue'
 import DisplayFormattedWorkingHours from '@/components/paycut/DisplayFormattedWorkingHours.vue'
-import { usePaycutStore } from '@/stores/paycut'
-
 const router = useRouter()
 const route = useRoute()
 
 const authStore = useAuthStore()
 const attendanceStore = useAttendanceStore()
-const paycutStore = usePaycutStore()
-
 const selectedMonth = ref(route.query.date || attendanceStore.selectedMonth)
 
 const { monthly_company_summary } = storeToRefs(attendanceStore)
@@ -24,7 +20,7 @@ const { monthly_company_summary } = storeToRefs(attendanceStore)
 const filters = ref({
   company_id: route.query.company_id || '',
   department_id: route.query.department_id || 'all',
-  type: route.query.type || 'all',
+  line_type: route.query.line_type || 'all',
   employee_id: route.query.employee_id || '',
 })
 
@@ -32,7 +28,7 @@ const filters = ref({
 const fetchAttendance = async () => {
   const companyId = filters.value.company_id
   const employeeId = filters.value.employee_id || ''
-  const category = filters.value.type !== 'all' ? filters.value.type : ''
+  const line_type = filters.value.line_type !== 'all' ? filters.value.line_type : ''
 
   if (!companyId) {
     alert('⚠️ Please select a company first.')
@@ -42,8 +38,8 @@ const fetchAttendance = async () => {
   try {
     await attendanceStore.getMonthlyAttendanceSummaryReport(
       companyId,
+      line_type,
       employeeId,
-      category,
       selectedMonth.value
     )
   } catch (error) {
@@ -60,7 +56,7 @@ const handleFilterChange = () => {
     ...currentQuery,
     company_id: filters.value.company_id,
     department_id: filters.value.department_id,
-    type: filters.value.type,
+    line_type: filters.value.line_type,
     employee_id: filters.value.employee_id,
     date: selectedMonth.value
   }
@@ -96,10 +92,10 @@ onMounted(() => {
 // Export handlers
 const getExportExcel = async () => {
   if (filters.value.company_id) {
-    const category = filters.value.type !== 'all' ? filters.value.type : ''
+    const line_type = filters.value.line_type !== 'all' ? filters.value.line_type : ''
     await attendanceStore.downloadExcel(
       filters.value.company_id,
-      category,
+      line_type,
       selectedMonth.value
     )
   }
@@ -107,10 +103,10 @@ const getExportExcel = async () => {
 
 const getDownloadPDF = async () => {
   if (filters.value.company_id) {
-    const category = filters.value.type !== 'all' ? filters.value.type : ''
+    const line_type = filters.value.line_type !== 'all' ? filters.value.line_type : ''
     await attendanceStore.downloadPDF(
       filters.value.company_id,
-      category,
+      line_type,
       selectedMonth.value
     )
   }
@@ -148,7 +144,7 @@ const refreshPaycutList = async () => {
           v-model:company_id="filters.company_id"
           v-model:department_id="filters.department_id"
           v-model:employee_id="filters.employee_id"
-          v-model:category="filters.category"
+          v-model:line_type="filters.line_type"
           :with-type="true"
           :initial-value="$route.query"
          @filter-change="handleFilterChange" 

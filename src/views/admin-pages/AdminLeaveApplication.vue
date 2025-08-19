@@ -2,7 +2,6 @@
 import LeaveApplicationForm from '@/components/AdminLeaveApplicationAddForm.vue'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
-import LeaveTypeModal from '@/components/LeaveTypeModal.vue'
 import SelectedEmployeeCard from '@/components/user/SelectedEmployeeCard.vue'
 import UserLeaveBalanceModal from '@/components/UserLeaveBalanceModal.vue'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
@@ -26,7 +25,7 @@ const search = ref(route.query.search || '')
 const filters = ref({
   company_id: route.query.company_id || '',
   department_id: route.query.department_id || 'all',
-  type: route.query.type || 'all',
+  line_type: route.query.line_type || 'all',
   employee_id: route.query.employee_id || '',
 })
 
@@ -77,7 +76,7 @@ const handleFilterChange = async () => {
       ...route.query,
       company_id: filters.value.company_id,
       department_id: filters.value.department_id,
-      type: filters.value.type,
+      line_type: filters.value.line_type,
       employee_id: filters.value.employee_id,
     },
   })
@@ -89,7 +88,6 @@ const openAddModal = () => {
 }
 
 const handleFormSccessClosed = async () => {
-  console.log('test close')
   showModal.value = false
   await fetchApplicationsByUser()
 }
@@ -131,7 +129,7 @@ const closeLeaveTypeModal = () => {
          v-model:company_id="filters.company_id"
           v-model:department_id="filters.department_id"
           v-model:employee_id="filters.employee_id"
-          v-model:category="filters.category"
+          v-model:line_type="filters.line_type"
           :with-type="true"
           :initial-value="$route.query"
         @filter-change="handleFilterChange"
@@ -155,19 +153,6 @@ const closeLeaveTypeModal = () => {
         <!-- Grid for Info and Leave -->
         <div class="grid md:grid-cols-2 gap-6">
           <SelectedEmployeeCard :user="user" />
-          <!-- <div class="bg-white border rounded-lg p-4 shadow">
-            <h3 class="text-lg font-semibold text-gray-700 mb-4">User Info</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-2 text-sm text-gray-600">
-              <p><strong>Name:</strong> {{ user?.name }}</p>
-              <p><strong>Designation:</strong> {{ user?.designation?.title }}</p>
-              <p><strong>Department:</strong> {{ user?.department?.name }}</p>
-              <p><strong>Company:</strong> {{ user?.company?.name }}</p>
-              <p><strong>Phone:</strong> {{ user?.phone }}</p>
-              <p><strong>Email:</strong> {{ user?.email }}</p>
-              <p><strong>Joining Date:</strong> {{ user?.joining_date }}</p>
-              <p><strong>Blood Group:</strong> {{ user?.blood || 'N/A' }}</p>
-            </div>
-          </div> -->
 
           <!-- Leave Balance Card -->
           <div class="bg-white border rounded-lg p-4 shadow">

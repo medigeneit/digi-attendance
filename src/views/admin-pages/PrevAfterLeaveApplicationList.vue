@@ -1,7 +1,6 @@
 <script setup>
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
-import { useAuthStore } from '@/stores/auth'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
@@ -12,56 +11,43 @@ const router = useRouter()
 const route = useRoute()
 const leaveApplicationStore = useLeaveApplicationStore()
 const userStore = useUserStore()
-const authStore = useAuthStore()
-
 const { leaveApplications, loading } = storeToRefs(leaveApplicationStore)
-
 const selectedUser = ref(null)
-
 // Weekly range: 'prev' | 'after'  (default 'prev' if not given)
-const range = ref(route.query.type === 'after' ? 'after' : 'prev')
+const range = ref(route.query.applicationType === 'after' ? 'after' : 'prev')
 
-// Anchor date for the 1-week window (can be YYYY-MM or YYYY-MM-DD)
 const selectedDate = ref(route.query.date || leaveApplicationStore.selectedMonth || new Date().toISOString().slice(0,7))
 
-// Search (if you still use it for other modes)
-const search = ref('') // we will set from range during fetch
-
-// Employee/company filters
 const filters = ref({
   company_id: route.query.company_id || '',
   department_id: route.query.department_id || '',
-  type: route.query.category || 'all',   // <-- employee category comes from 'category' in URL
+  line_type: route.query.line_type || 'all',  
   employee_id: route.query.employee_id || '',
-  category: '', // not used; kept to match prop signature
 })
 
 function toAnchorDate(val) {
-  // Accept both YYYY-MM and YYYY-MM-DD; if only month provided, use mid-month for stable weekly window
   if (/^\d{4}-\d{2}$/.test(val || '')) return `${val}-15`
   return val || new Date().toISOString().slice(0,10)
 }
 
 const fetchApplicationsByUser = async () => {
-  // Map weekly range to backend-friendly query
   const weeklyQuery = range.value === 'after' ? 'next_week' : 'prev_week'
   const anchor = toAnchorDate(selectedDate.value)
 
   const payload = {
     company_id: filters.value.company_id,
     department_id: filters.value.department_id,
-    selectedDate: selectedDate.value,   // keep for monthly compatibility (not used in weekly)
+    selectedDate: selectedDate.value, 
     selectedStatus: leaveApplicationStore.selectedStatus,
-    query: weeklyQuery,                 // <-- key: prev_week / next_week
-    anchor_date: anchor,                // <-- backend will use this as the anchor
+    query: weeklyQuery,                 
+    anchor_date: anchor,               
   }
 
   if (filters.value.employee_id) {
     payload.user_id = filters.value.employee_id
   }
-  if (filters.value.type && filters.value.type !== 'all') {
-    // send employee category if needed by backend
-    payload.category = filters.value.type
+  if (filters.value.line_type && filters.value.line_type !== 'all') {
+    payload.line_type = filters.value.line_type
   }
 
   loading.value = true
@@ -89,8 +75,8 @@ function buildQuery() {
   }
   if (filters.value.company_id)    q.company_id    = String(filters.value.company_id)
   if (filters.value.department_id) q.department_id = String(filters.value.department_id)
+  if (filters.value.line_type && filters.value.line_type !== 'all') q.line_type = String(filters.value.line_type)
   if (filters.value.employee_id)   q.employee_id   = String(filters.value.employee_id)
-  if (filters.value.type && filters.value.type !== 'all') q.category = String(filters.value.type)
   return q
 }
 let qTimer = null
@@ -108,9 +94,8 @@ watch(() => route.query, (q) => {
   const nextFilters = {
     company_id: q.company_id || '',
     department_id: q.department_id || '',
-    type: q.category || 'all',
+    line_type: q.line_type || 'all',
     employee_id: q.employee_id || '',
-    category: '',
   }
 
   let changed = false
@@ -155,7 +140,6 @@ const deleteApplication = async (applicationId) => {
 const goBack = () => router.go(-1)
 
 const handleFilterChange = () => {
-  // Only sync URL; the watcher above will fetch
   syncUrlDebounced()
 }
 </script>
@@ -169,18 +153,17 @@ const handleFilterChange = () => {
       </button>
 
       <h1 class="title-md md:title-lg flex-wrap text-center">
-        {{ range === 'after' ? 'After 1 Week Leave Applications' : 'Previous 1 Week Leave Applications' }}
+        {{ range === 'after' ? 'Upcoming Leave Applications' : 'Previous 1 Week Leave Applications' }}
       </h1>
       <div></div>
     </div>
 
     <div class="flex flex-wrap gap-2 items-center">
-      <!-- Filters (employee category bound to filters.type; URL key = category) -->
       <EmployeeFilter
         v-model:company_id="filters.company_id"
         v-model:department_id="filters.department_id"
         v-model:employee_id="filters.employee_id"
-        v-model:category="filters.type"
+        v-model:line_type="filters.line_type"
         :with-type="true"
         :initial-value="$route.query"
         @filter-change="handleFilterChange"
@@ -190,7 +173,7 @@ const handleFilterChange = () => {
        <div>
          <select v-model="range" class="input-1">
            <option value="prev">Previous 1 Week</option>
-           <option value="after">After 1 Week</option>
+           <option value="after">After Applications</option>
          </select>
        </div>
 
@@ -214,6 +197,12 @@ const handleFilterChange = () => {
           <option value="Approved">Approved</option>
           <option value="Rejected">Rejected</option>
         </select>
+      </div>
+      <div>
+        <button @click="fetchApplicationsByUser" class="btn-3">
+          <i class="far fa-sync"></i>
+          <span>Refresh</span>
+        </button>
       </div>
     </div>
 

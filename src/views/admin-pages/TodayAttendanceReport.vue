@@ -7,16 +7,12 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useCompanyStore } from '@/stores/company'
-import { useDepartmentStore } from '@/stores/department'
-
 const router = useRouter()
 const route = useRoute()
 
 // Stores
 const companyStore = useCompanyStore()
-const departmentStore = useDepartmentStore()
 const attendanceStore = useAttendanceStore()
-
 // Store refs
 const { dailyLogs } = storeToRefs(attendanceStore)
 
@@ -26,19 +22,19 @@ const selectedDepartment = ref(route.query.department_id || '')
 const selectedEmployeeId = ref(route.query.employee_id || '')
 const selectedDate = ref(route.query.date || attendanceStore.selectedDate || '')
 const status = ref(route.query.status || '')
-const category = ref(route.query.type || 'all')
+const line_type = ref(route.query.line_type || 'all')
 
 // Filter object for sync
 const filters = ref({
   company_id: selectedCompanyId.value,
   department_id: selectedDepartment.value,
-  type: category.value,
+  line_type: line_type.value,
   employee_id: selectedEmployeeId.value,
 })
 
 // Fetch attendance based on filters
 const fetchAttendance = async () => {
-  const { company_id, department_id, employee_id, type } = filters.value
+  const { company_id, department_id, employee_id, line_type } = filters.value
 
   // Only fetch if company or status is selected
   if (company_id || status.value) {
@@ -46,7 +42,7 @@ const fetchAttendance = async () => {
       companyId: filters.value.company_id,
       departmentId: department_id,
       employee_id: employee_id,
-      category: type,
+      line_type: line_type,
       month: selectedDate.value,
       status: status.value,
     })
@@ -60,7 +56,7 @@ const handleFilterChange = () => {
   const newQuery = {
     company_id: filters.value.company_id,
     department_id: filters.value.department_id,
-    type: filters.value.type,
+    line_type: filters.value.line_type,
     employee_id: filters.value.employee_id,
     date: selectedDate.value,
     status: status.value,
@@ -80,7 +76,7 @@ const getExportExcel = () =>
   attendanceStore.attendanceDownloadExcel(
     filters.value.company_id,
     selectedEmployeeId.value?.id,
-    filters.value.type,
+    filters.value.line_type,
     selectedDate.value,
     status.value
   )
@@ -89,7 +85,7 @@ const getDownloadPDF = () =>
   attendanceStore.attendanceDownloadPdf(
     filters.value.company_id,
     selectedEmployeeId.value?.id,
-    filters.value.type,
+    filters.value.line_type,
     selectedDate.value,
     status.value
   )
@@ -102,14 +98,6 @@ onMounted(async () => {
   await fetchAttendance()
 })
 
-// Watchers
-// watch(selectedCompanyId, (newCompanyId) => {
-//   filters.value.company_id = newCompanyId
-//   companyStore.fetchEmployee(newCompanyId)
-//   departmentStore.fetchDepartments(newCompanyId)
-//   handleFilterChange()
-// })
-
 watch(selectedDate, (newDate) => {
   handleFilterChange()
 })
@@ -118,13 +106,6 @@ watch(status, () => {
   handleFilterChange()
 })
 
-// watch(
-//   () => filters.value,
-//   () => {
-//     fetchAttendance()
-//   },
-//   { deep: true }
-// )
 </script>
 
 
@@ -154,7 +135,7 @@ watch(status, () => {
          v-model:company_id="filters.company_id"
           v-model:department_id="filters.department_id"
           v-model:employee_id="filters.employee_id"
-          v-model:category="filters.category"
+          v-model:line_type="filters.line_type"
           :with-type="true"
           :initial-value="$route.query"
          @filter-change="handleFilterChange"

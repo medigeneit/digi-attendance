@@ -26,9 +26,8 @@ const dateRangeAttendance = ref([])
 const filters = ref({
   company_id: route.query.company_id || '',
   department_id: route.query.department_id || 'all',
-  type: route.query.type || 'all',
+  line_type: route.query.line_type || 'all',
   employee_id: route.query.employee_id || '',
-  category: '',
 })
 
 const dateList = computed(() => {
@@ -53,8 +52,8 @@ const fetchDateRangeAttendance = async () => {
     selectedDateRange.value.start,
     selectedDateRange.value.end,
     filters.value.company_id,
+    filters.value.line_type,
     filters.value.employee_id,
-    filters.value.category
   )
 
   if (res) {
@@ -67,8 +66,8 @@ const downloadDateRangeExcel = async () => {
     selectedDateRange.value.start,
     selectedDateRange.value.end,
     filters.value.company_id,
+    filters.value.line_type,
     filters.value.employee_id,
-    filters.value.category
   )
 }
 
@@ -91,7 +90,7 @@ watch(() => filters.value.company_id, async (newVal) => {
   }
 })
 
-watch([() => filters.value.company_id, () => filters.value.employee_id, () => filters.value.category, selectedDateRange], async () => {
+watch([() => filters.value.company_id, () => filters.value.employee_id, () => filters.value.line_type, selectedDateRange], async () => {
   await fetchDateRangeAttendance()
 }, { deep: true })
 
@@ -113,7 +112,7 @@ const initialFilter = computed(() => ({
   department_id: route.query.department_id || 'all',
   type: route.query.type || 'all',
   employee_id: route.query.employee_id || '',
-  category: '',
+  line_type: '',
 }))
 </script>
 <template>
@@ -126,8 +125,8 @@ const initialFilter = computed(() => ({
       </button>
 
       <!-- Page Title -->
-      <h1 class="text-xl md:text-2xl font-semibold text-center flex-1">
-        📅 Date Range Attendance Report
+      <h1 class="text-xl md:text-2xl font-semibold text-center">
+        📅 Date Range Attendance Report 
       </h1>
 
       <!-- Export Excel Button -->
@@ -164,49 +163,20 @@ const initialFilter = computed(() => ({
           v-model:company_id="filters.company_id"
           v-model:department_id="filters.department_id"
           v-model:employee_id="filters.employee_id"
-          v-model:category="filters.category"
+          v-model:line_type="filters.line_type"
           :with-type="true"
           :initial-value="$route.query"
          @filter-change="handleFilterChange"
       />
-        
-        <!-- <div class="flex flex-col">
-          <label class="text-xs font-medium text-gray-600 mb-1">Company</label>
-          <select v-model="selectedCompanyId" class="input-1 w-[200px]">
-            <option value="" disabled>Select a Company</option>
-            <option v-for="company in companies" :key="company?.id" :value="company?.id">
-              {{ company?.name }}
-            </option>
-          </select>
-        </div> -->
-
-        <!-- Category -->
-        <!-- <div class="flex flex-col">
-          <label class="text-xs font-medium text-gray-600 mb-1">Category</label>
-          <select v-model="category" class="input-1 w-[180px]">
-            <option value="">All Category</option>
-            <option value="executive">Executive</option>
-            <option value="support_staff">Support Staff</option>
-            <option value="doctor">Doctor</option>
-            <option value="academy_body">Academy Body</option>
-          </select>
-        </div> -->
-
-        <!-- Employee Multiselect -->
-        <!-- <div class="flex flex-col">
-          <label class="text-xs font-medium text-gray-600 mb-1">Employee</label>
-          <Multiselect
-            v-model="selectedEmployee"
-            :options="employees"
-            :multiple="false"
-            label="label"
-            placeholder="Select employee"
-            class="w-[220px]"
-          />
-        </div> -->
-        <!-- <div class="mt-1">
-          <button @click="fetchDateRangeAttendance" class="btn-1 h-[38px]">🔍 Get Report</button>
-        </div> -->
+        <button
+          type="button"
+          @click="fetchDateRangeAttendance"
+          class="btn-1 flex items-center gap-2 px-4 py-2"
+          title="Get Report"
+        >
+          <i class="far fa-search text-xl"></i>
+          <span class="hidden sm:inline">Get Report</span>
+        </button>
       </div>
     </div>
 

@@ -21,7 +21,7 @@ const search = ref(route.query.search || '')
 const filters = ref({
   company_id: route.query.company_id || '',
   department_id: route.query.department_id || 'all',
-  type: route.query.type || 'all',
+  line_type: route.query.line_type || 'all',
   employee_id: route.query.employee_id || '',
   category: '',
 })
@@ -31,6 +31,7 @@ const fetchApplicationsByUser = async () => {
   const payload = {
     company_id: filters.value.company_id,
     department_id: filters.value.department_id,
+    line_type: filters.value.line_type,
     selectedDate: selectedDate.value,
     selectedStatus: leaveApplicationStore.selectedStatus,
     query: search.value,
@@ -59,6 +60,7 @@ watch(
   () => [
     filters.value.company_id,
     filters.value.department_id,
+    filters.value.line_type,
     filters.value.employee_id,
     selectedDate.value,
   ],
@@ -98,7 +100,7 @@ const handleFilterChange = () => {
       ...route.query,
       company_id: filters.value.company_id,
       department_id: filters.value.department_id,
-      type: filters.value.type,
+      line_type: filters.value.line_type,
       employee_id: filters.value.employee_id,
     },
   })
@@ -123,8 +125,8 @@ const handleFilterChange = () => {
        <EmployeeFilter
           v-model:company_id="filters.company_id"
           v-model:department_id="filters.department_id"
+          v-model:line_type="filters.line_type"
           v-model:employee_id="filters.employee_id"
-          v-model:category="filters.category"
           :with-type="true"
           :initial-value="$route.query"
          @filter-change="handleFilterChange"
@@ -149,6 +151,9 @@ const handleFilterChange = () => {
           <option value="Approved">Approved</option>
           <option value="Rejected">Rejected</option>
         </select>
+      </div>
+      <div>
+        
       </div>
     </div>
 

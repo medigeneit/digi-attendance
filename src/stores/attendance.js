@@ -47,7 +47,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   }
 
-  const getDateRangeAttendanceSummary = async (startDate, endDate, companyId, userId) => {
+  const getDateRangeAttendanceSummary = async (startDate, endDate, companyId, line_type, userId) => {
     if (!companyId || !startDate || !endDate) {
       error.value = 'Company, Start Date, and End Date are required'
       return
@@ -59,6 +59,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
       const response = await apiClient.get(`/attendance/date-range-summary`, {
         params: {
           company_id: companyId,
+          line_type: line_type || 'all',
           start_date: startDate,
           end_date: endDate,
           employee_id: userId || undefined,
@@ -80,8 +81,8 @@ export const useAttendanceStore = defineStore('attendance', () => {
     startDate,
     endDate,
     companyId,
+    line_type = 'all',
     userId = null,
-    category = '',
   ) => {
     if (!companyId || !startDate || !endDate) {
       error.value = 'Company, Start Date, and End Date are required'
@@ -94,7 +95,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     let query = `flag=excel&company_id=${companyId}&start_date=${startDate}&end_date=${endDate}`
 
     if (userId) query += `&employee_id=${userId}`
-    if (category) query += `&category=${category}`
+    if (line_type) query += `&line_type=${line_type}`
 
     const fullUrl = `${baseURL}/attendance/date-range-summary?${query}`
 
@@ -104,7 +105,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
   }
 
   // 👉 PDF DOWNLOAD
-  const downloadDateRangePdf = (startDate, endDate, companyId, userId = null, category = '') => {
+  const downloadDateRangePdf = (startDate, endDate, companyId , line_type,  userId = null, category = '') => {
     if (!companyId || !startDate || !endDate) {
       error.value = 'Company, Start Date, and End Date are required'
       return
@@ -113,6 +114,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     const params = new URLSearchParams({
       flag: 'pdf',
       company_id: companyId,
+      line_type: line_type,
       start_date: startDate,
       end_date: endDate,
     })
@@ -146,9 +148,6 @@ export const useAttendanceStore = defineStore('attendance', () => {
 
   const getTodayAttendanceReport = async (filter = {}) => {
     isLoading.value = true
-
-    console.log({filter});
-    
 
     try {
       const response = await apiClient.get('/attendance/today', {
@@ -205,7 +204,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
   const getDailyLateReport = async (
     company_id,
     department_id = null,
-    category = null,
+    line_type = null,
     employee_id = null,
     value,
     type,
@@ -215,7 +214,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
       const params = {
         company_id,
         department_id,
-        category, // eg: "executive"
+        line_type, // eg: "executive"
         employee_id, // eg: 5
         type, // 'daily'
         ...(type === 'daily' ? { date: value } : { month: value }),
@@ -238,32 +237,14 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   }
 
-  // const getAttendanceLateReport = async (company_id, employee_id, month) => {
-  //   isLoading.value = true;
-  //   try {
-  //     const params = {company_id,employee_id, month}
-
-  //     console.log({params});
-
-  //     const response = await apiClient.get("/attendance/late-reports", { params });
-  //     dailyLateLogs.value = response.data;
-  //     error.value = null;
-  //   } catch (err) {
-  //     error.value = err.response?.data?.message || 'Something went wrong';
-  //     console.error(error.value);
-  //   } finally {
-  //     isLoading.value = false;
-  //   }
-  // };
-
-  const getMonthlyAttendanceSummaryReport = async (company_id, employee_id, category, month) => {
+  const getMonthlyAttendanceSummaryReport = async (company_id,line_type, employee_id,  month) => {
     if (!company_id || !month) {
       error.value = 'Invalid user ID or month'
       return
     }
     isLoading.value = true
     try {
-      const params = { company_id, employee_id, category, month }
+      const params = { company_id, line_type, employee_id,  month }
       const response = await apiClient.get(`/attendance/monthly-summary-reports`, { params })
       monthly_company_summary.value = response.data
       error.value = null

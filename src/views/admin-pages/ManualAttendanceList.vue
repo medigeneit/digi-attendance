@@ -18,7 +18,7 @@ const loading = ref(false)
 const filters = ref({
   company_id: route.query.company_id || '',
   department_id: route.query.department_id || 'all',
-  type: route.query.type || 'all',
+  line_type: route.query.line_type || 'all',
   employee_id: route.query.employee_id || '',
   category: '',
 })
@@ -27,6 +27,7 @@ const fetchManualAttendancesByUser = async () => {
   const payload = {
     company_id: filters.value.company_id,
     department_id: filters.value.department_id,
+    line_type: filters.value.line_type,
     selectedMonth: selectedMonth.value,
     selectedStatus: manualAttendanceStore.selectedStatus,
   }
@@ -52,6 +53,7 @@ watch(
   () => [
     filters.value.company_id,
     filters.value.department_id,
+    filters.value.line_type,
     filters.value.employee_id,
     selectedMonth.value,
   ],
@@ -110,7 +112,7 @@ const handleFilterChange = () => {
       ...route.query,
       company_id: filters.value.company_id,
       department_id: filters.value.department_id,
-      type: filters.value.type,
+      line_type: filters.value.line_type,
       employee_id: filters.value.employee_id,
     },
   })
@@ -140,7 +142,7 @@ const handleFilterChange = () => {
           v-model:company_id="filters.company_id"
           v-model:department_id="filters.department_id"
           v-model:employee_id="filters.employee_id"
-          v-model:category="filters.category"
+          v-model:line_type="filters.line_type"
           :with-type="true"
           :initial-value="$route.query"
          @filter-change="handleFilterChange"
@@ -166,6 +168,12 @@ const handleFilterChange = () => {
           <option value="Approved">Approved</option>
           <option value="Rejected">Rejected</option>
         </select>
+      </div>
+      <div>
+        <button @click="fetchManualAttendancesByUser" class="btn-3">
+          <i class="far fa-sync"></i>
+          <span class="hidden md:flex">Refresh</span>
+        </button>
       </div>
     </div>
 
