@@ -126,10 +126,14 @@ const initialFilter = computed(() => ({
     </div>
     
     <div class="flex flex-wrap items-center gap-2">
-      <EmployeeFilter 
-        v-model="filters" 
-        :initial-value="initialFilter" 
-        @filter-change="handleFilterChange" 
+       <EmployeeFilter
+          v-model:company_id="filters.company_id"
+          v-model:department_id="filters.department_id"
+          v-model:employee_id="filters.employee_id"
+          v-model:category="filters.category"
+          :with-type="true"
+          :initial-value="$route.query"
+         @filter-change="handleFilterChange"
       />
       <div>
         <input

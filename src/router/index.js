@@ -680,6 +680,17 @@ const router = createRouter({
         },
 
         {
+          path: '/hrd/pre-after-leave-applications',
+          name: 'PreviousAfterApplicationList',
+          component: () => import('@/views/admin-pages/PrevAfterLeaveApplicationList.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Leave Application List',
+          },
+        },
+
+        {
           path: '/hrd/short-leave-list',
           name: 'ShortLeaveList',
           component: () => import('@/views/admin-pages/ShortLeaveList.vue'),

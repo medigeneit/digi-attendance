@@ -2,7 +2,7 @@
   <div class="container px-6 mx-auto">
     <div class="grid gap-4 md:grid-cols-3 mt-4" v-if="isAdmin && authStore.isAdminMood">
       <RouterLink
-        :to="{ name: 'TodayAttendanceReport', query: { search: 'all' } }"
+        :to="{ name: 'TodayAttendanceReport', query: { status: 'all' } }"
         class="main-button"
       >
         <!-- LeaveReport -->
@@ -13,7 +13,7 @@
         Total Employees
       </RouterLink>
       <RouterLink
-        :to="{ name: 'TodayAttendanceReport', query: { search: 'Present' } }"
+        :to="{ name: 'TodayAttendanceReport', query: { status: 'Present' } }"
         class="main-button"
       >
         <span class="text-3xl">
@@ -22,7 +22,7 @@
         Today Present
       </RouterLink>
       <RouterLink
-        :to="{ name: 'TodayAttendanceReport', query: { search: 'Absent' } }"
+        :to="{ name: 'TodayAttendanceReport', query: { status: 'Absent' } }"
         class="main-button"
       >
         <span class="text-3xl">
@@ -31,7 +31,7 @@
         Today Absent
       </RouterLink>
       <RouterLink
-        :to="{ name: 'LeaveApplicationList', query: { search: 'today' } }"
+        :to="{ name: 'LeaveApplicationList', query: { status: 'today' } }"
         class="main-button"
       >
         <span class="text-3xl">
@@ -40,7 +40,7 @@
         Today Leave
       </RouterLink>
       <RouterLink
-        :to="{ name: 'LeaveApplicationList', query: { search: 'tomorrow' } }"
+        :to="{ name: 'LeaveApplicationList', query: { status: 'tomorrow' } }"
         class="main-button"
       >
         <span class="text-3xl">
@@ -49,13 +49,40 @@
         Tomorrow Leave
       </RouterLink>
       <RouterLink
-        :to="{ name: 'ShortLeaveList', query: { search: selectedDate } }"
+        :to="{ name: 'ShortLeaveList', query: { status: selectedDate } }"
         class="main-button"
       >
         <span class="text-3xl">
           {{ dashboardInfo?.todayShortLeaves }}
         </span>
         Today Short Leaves
+      </RouterLink>
+      <RouterLink
+        :to="{ name: 'DailyLateAttendanceReport', query: { date: selectedDate } }"
+        class="main-button"
+      >
+        <span class="text-3xl">
+          {{ dashboardInfo?.todayLateEntries }}
+        </span>
+        Today Late Report
+      </RouterLink>
+      <RouterLink
+        :to="{ name: 'PreviousAfterApplicationList', query: { type: 'prev', date: selectedDate } }"
+        class="main-button"
+      >
+        <span class="text-3xl">
+          {{ dashboardInfo?.prevWeekLeaves }}
+        </span>
+        Leave history of previous week
+      </RouterLink>
+      <RouterLink
+        :to="{ name: 'PreviousAfterApplicationList', query: { type: 'after', date: selectedDate } }"
+        class="main-button"
+      >
+        <span class="text-3xl">
+          {{ dashboardInfo?.nextWeekLeaves }}
+        </span>
+        Upcoming leaves
       </RouterLink>
     </div>
     <div class="w-full mt-4" v-else>

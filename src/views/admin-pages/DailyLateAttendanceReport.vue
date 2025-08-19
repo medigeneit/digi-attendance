@@ -1,6 +1,6 @@
 <script setup>
+import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
-import Multiselect from '@/components/MultiselectDropdown.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
@@ -11,316 +11,388 @@ import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
 const route = useRoute()
-const category = ref('all')
-const lateAttendanceStore = useAttendanceStore()
+
+// stores
+const attendanceStore = useAttendanceStore()
 const companyStore = useCompanyStore()
 const departmentStore = useDepartmentStore()
 
-const { dailyLateLogs, isLoading, selectedDate } = storeToRefs(lateAttendanceStore)
+const { dailyLateLogs, isLoading, selectedDate } = storeToRefs(attendanceStore)
 const { companies } = storeToRefs(companyStore)
-
-const selectedCompanyId = ref(route.query.company_id || '')
-const selectedDepartmentId = ref(route.query.department_id || '')
-const selectedEmployeeId = ref('')
 const { departments } = storeToRefs(departmentStore)
+
+// -----------------------------
+// Filters (single source of truth)
+// -----------------------------
+const filters = ref({
+  company_id: route.query.company_id || '',
+  department_id: route.query.department_id || '',
+  employee_id: route.query.employee_id || '',
+  category: route.query.category || 'all',
+  date: route.query.date || '', // ISO yyyy-mm-dd
+})
+
+// normalize types
+;['company_id','department_id','employee_id','date'].forEach(k => {
+  filters.value[k] = filters.value[k] ? String(filters.value[k]) : ''
+})
+filters.value.category = filters.value.category || 'all'
+
+// local state
+const selectedEmployee = ref(null)
 const filterEmployees = ref([])
 
-// Set selectedDate from query if exists
-if (route.query.date) {
-  selectedDate.value = route.query.date
+// keep store date in sync initially (filters → store)
+selectedDate.value = filters.value.date || ''
+
+// -----------------------------
+// Helpers
+// -----------------------------
+function ensureEmployeeIdFromObject() {
+  if (selectedEmployee.value && selectedEmployee.value.id) {
+    filters.value.employee_id = String(selectedEmployee.value.id)
+  } else if (!selectedEmployee.value) {
+    filters.value.employee_id = filters.value.employee_id || ''
+  }
 }
 
-onMounted(async () => {
-  await companyStore.fetchCompanies()
+async function fetchLateReport() {
+  await attendanceStore.getDailyLateReport(
+    filters.value.company_id || '',
+    filters.value.department_id || '',
+    filters.value.category || 'all',
+    filters.value.employee_id || '',
+    filters.value.date || '',
+    'daily'
+  )
+}
 
-  if (selectedCompanyId.value) {
-    const res = await companyStore.fetchEmployee(selectedCompanyId.value)
-    filterEmployees.value = res;
-    onCompanyChange(selectedCompanyId.value)
-    await fetchApplicationsByUser()
+// Load deps + employees when company changes
+async function onCompanyChange(companyId) {
+  if (!companyId) {
+    filterEmployees.value = []
+    selectedEmployee.value = null
+    filters.value.department_id = ''
+    return
   }
-})
+  await Promise.all([
+    departmentStore.fetchDepartments(companyId),
+    companyStore.fetchEmployee(companyId),
+  ])
+  filterEmployees.value = companyStore.employees || []
 
-// Watch company change
-watch(selectedCompanyId, async (newCompanyId) => {
-  if (newCompanyId) {
-    await companyStore.fetchEmployee(newCompanyId)
-    filterEmployees.value = companyStore.employees
-    selectedEmployeeId.value = ''
-    selectedDepartmentId.value = ''
-    onCompanyChange(newCompanyId)
+  // validate dept against new company
+  if (filters.value.department_id) {
+    const ok = (companyStore.employees || []).some(
+      e => String(e.department_id) === String(filters.value.department_id)
+    )
+    if (!ok) filters.value.department_id = ''
+  }
+
+  // hydrate selectedEmployee (if id exists)
+  if (filters.value.employee_id) {
+    const found = (companyStore.employees || []).find(
+      e => String(e.id) === String(filters.value.employee_id)
+    )
+    selectedEmployee.value = found || null
+    ensureEmployeeIdFromObject()
+  }
+}
+
+function filterEmployeesByDepartmentOrCategory() {
+  if (!filters.value.company_id) {
+    filterEmployees.value = []
+    selectedEmployee.value = null
+    filters.value.employee_id = ''
+    return
+  }
+  const base = companyStore.employees || []
+  const department_id = filters.value.department_id
+  const category = filters.value.category
+
+  let list = base
+  if (department_id) list = list.filter(e => String(e.department_id) === String(department_id))
+  if (category && category !== 'all') list = list.filter(e => String(e.type) === String(category))
+  filterEmployees.value = list
+
+  if (filters.value.employee_id) {
+    const exists = list.some(e => String(e.id) === String(filters.value.employee_id))
+    if (!exists) {
+      selectedEmployee.value = null
+      filters.value.employee_id = ''
+    }
+  }
+}
+
+// Clean URL sync (debounced from apply cycle)
+let qTimer = null
+function syncQuery() {
+  if (qTimer) clearTimeout(qTimer)
+  qTimer = setTimeout(() => {
+    const next = {}
+    if (filters.value.company_id)    next.company_id    = String(filters.value.company_id)
+    if (filters.value.department_id) next.department_id = String(filters.value.department_id)
+    if (filters.value.employee_id)   next.employee_id   = String(filters.value.employee_id)
+    if (filters.value.category && filters.value.category !== 'all') {
+      next.category = String(filters.value.category)
+    }
+    if (filters.value.date)          next.date          = String(filters.value.date)
+
+    router.replace({ query: next }).catch(() => {})
+  }, 120)
+}
+
+// -----------------------------
+// Single debounced apply cycle
+// -----------------------------
+let applyTimer = null
+const prevCompanyId = ref(filters.value.company_id || '')
+const lastFetchedKey = ref('')
+
+async function runApply() {
+  // 1) company change handling
+  if ((filters.value.company_id || '') !== (prevCompanyId.value || '')) {
+    await onCompanyChange(filters.value.company_id || '')
+    prevCompanyId.value = filters.value.company_id || ''
+  }
+
+  // 2) local employee list filter (only if a company is selected)
+  if (filters.value.company_id) {
+    filterEmployeesByDepartmentOrCategory()
   } else {
     filterEmployees.value = []
-    selectedEmployeeId.value = ''
-    selectedDepartmentId.value = ''
+    selectedEmployee.value = null
   }
-  updateFilters()
-})
 
-// Watch department change
-watch(selectedDepartmentId, (newVal) => {
-  if (newVal) {
-    // Filter from already fetched employees of the company
-    filterEmployees.value = companyStore.employees.filter(emp => emp.department_id == newVal)
-  } else {
-    // Reset to all employees of the selected company
-    filterEmployees.value = companyStore.employees
-  }
-  updateFilters()
-})
-
-// Watch category (Line) change
-watch(category, (newVal) => {
-  if (newVal !== 'all') {
-    // Filter from already fetched employees of the company
-    filterEmployees.value = companyStore.employees.filter(emp => emp.type == newVal)
-  } else {
-    // Reset to all employees of the selected company
-    filterEmployees.value = companyStore.employees
-  }
-  updateFilters()
-})
-
-// Watch employee change
-watch(selectedEmployeeId, () => {
-  updateFilters()
-})
-
-// Watch date change
-watch(selectedDate, () => {
-  updateFilters()
-})
-
-// Watch employee change
-watch(selectedEmployeeId, async (newEmployee) => {
-  if (newEmployee?.id) {
-    await fetchApplicationsByUser()
-  }
-  router.replace({
-    query: {
-      ...route.query,
-      employee_id: newEmployee?.id || '',
-    },
+  // 3) build fetch key & avoid unnecessary API calls
+  const key = JSON.stringify({
+    c: filters.value.company_id || '',
+    d: filters.value.department_id || '',
+    t: filters.value.category || 'all',
+    e: filters.value.employee_id || '',
+    dt: filters.value.date || '',
   })
-})
-
-// Watch date change (selectedDate is reactive from store)
-watch(selectedDate, (newDate) => {
-  router.replace({
-    query: {
-      ...route.query,
-      date: newDate,
-    },
-  })
-})
-watch(selectedCompanyId, (newDate) => {
-  router.replace({
-    query: {
-      ...route.query,
-      date: newDate,
-    },
-  })
-})
-
-const fetchApplicationsByUser = async () => {
-  if (!selectedCompanyId.value || !selectedDate.value) return
-
-  if (selectedCompanyId.value) {
-    await lateAttendanceStore.getAttendanceLateReport(
-      selectedCompanyId.value,
-      selectedDepartmentId.value,
-      category.value,
-      selectedEmployeeId.value.id,
-      selectedDate.value,
-      'daily',
-    )
+  if (key !== lastFetchedKey.value) {
+    await fetchLateReport()
+    lastFetchedKey.value = key
   }
+
+  // 4) update URL (debounced)
+  syncQuery()
 }
 
-const onCompanyChange = async (company_id) => {
-  await departmentStore.fetchDepartments(company_id)
+function scheduleApply() {
+  if (applyTimer) clearTimeout(applyTimer)
+  applyTimer = setTimeout(runApply, 200)
 }
 
+// Deep watcher → single entry point (debounced)
+watch(
+  () => ({ ...filters.value }),
+  () => {
+    ensureEmployeeIdFromObject()
+    scheduleApply()
+  },
+  { deep: true }
+)
 
-const getExportExcel = async () => {
-  if (selectedCompanyId.value) {
-    await lateAttendanceStore.lateReportDownloadExcel(
-      selectedCompanyId.value,
-      selectedDepartmentId.value,
-      category?.value,
-      selectedEmployeeId.value.id,
-      selectedDate.value,
-      'daily',
+// Mirror filters.date → store.selectedDate
+watch(
+  () => filters.value.date,
+  (d) => { selectedDate.value = d || '' }
+)
+
+// Initial load
+onMounted(async () => {
+  await companyStore.fetchCompanies()
+  scheduleApply()
+})
+
+/* -----------------------------
+   Export / Back / Status utils
+----------------------------- */
+async function getExportExcel() {
+  try {
+    console.log('sdf');
+    
+    await attendanceStore.lateReportDownloadExcel(
+      filters.value.company_id || '',
+      filters.value.department_id || '',
+      filters.value.category || 'all',
+      filters.value.employee_id || '',
+      filters.value.date || '',
+      'daily'
     )
-  } else {
+  } catch (e) {
     Swal.fire({
       icon: 'warning',
-      title: 'Missing Selection!',
-      text: 'Please select Company and Employee first!',
+      title: 'Heads up',
+      text: 'Exporting all companies may be restricted by backend.',
       confirmButtonText: 'OK',
     })
   }
 }
-
-const goBack = () => {
+function goBack() {
   router.go(-1)
 }
-
-const statusClass = (status) => {
-  if (status === 'Pending') return 'text-yellow-700'
-  if (status === 'Approved') return 'text-green-700'
-  return 'text-red-500'
-}
-
-
-const updateFilters = async () => {
-  if (!selectedCompanyId.value || !selectedDate.value) return
-
-  await lateAttendanceStore.getAttendanceLateReport(
-    selectedCompanyId.value,
-    selectedDepartmentId.value,
-    category.value,
-    selectedEmployeeId.value?.id || '',
-    selectedDate.value,
-    'daily',
-    selectedDepartmentId.value || ''
-  )
-
-  router.replace({
-    query: {
-      company_id: selectedCompanyId.value || '',
-      department_id: selectedDepartmentId.value || '',
-      employee_id: selectedEmployeeId.value?.id || '',
-      date: selectedDate.value || '',
-    },
-  })
-}
-
-
-
-
 </script>
 
 <template>
-  <div class="space-y-2 px-4">
-    <div class="flex items-center justify-between gap-2">
-      <button class="btn-3" @click="goBack">
-        <i class="far fa-arrow-left"></i>
-        <span class="hidden md:flex">Back</span>
+  <div class="space-y-4 px-4">
+    <!-- Header -->
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <button class="btn-3 inline-flex items-center gap-2" @click="goBack" aria-label="Go back">
+        <i class="fas fa-arrow-left"></i>
+        <span class="hidden md:inline">Back</span>
       </button>
-      <h1 class="title-md md:title-lg flex-wrap text-center">Daily Late Reports</h1>
-      <div class="flex gap-4">
-        <button type="button" @click="getExportExcel" class="btn-3">
-          <i class="far fa-file-excel text-2xl text-green-500"></i>
+
+      <h1 class="title-md md:title-lg text-center flex-1">
+        Daily Late Reports
+      </h1>
+
+      <div class="flex items-center gap-2">
+        <button type="button" @click="getExportExcel" class="btn-3 inline-flex items-center gap-2">
+          <i class="fas fa-file-excel text-green-600"></i>
+          <span class="hidden sm:inline">Export</span>
         </button>
       </div>
     </div>
-    <div class="flex flex-wrap items-center gap-2">
-      <div>
-        <select id="user-filter" v-model="selectedCompanyId" class="input-1">
-          <option value="">Select Company</option>
-          <option v-for="user in companies" :key="user.id" :value="user.id">
-            {{ user.name }}
-          </option>
-        </select>
-      </div>
-      <div>
-        <select id="user-filter" v-model="selectedDepartmentId" class="input-1">
-          <option value="">Select Department</option>
-          <option v-for="user in departments" :key="user.id" :value="user.id">
-            {{ user.name }}
-          </option>
-        </select>
+
+    <!-- Filters -->
+    <div class="rounded-xl border border-zinc-200 bg-white shadow-sm">
+      <div class="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
+        <p class="text-sm text-zinc-600">
+          <i class="fas fa-filter mr-2"></i> Filters
+        </p>
+        <div class="h-1 w-32 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-400 rounded-full"></div>
       </div>
 
-      <div>
-        <select
-          id="userSelect"
-          v-model="category"
-          @change="fetchApplicationsByUser"
-          class="input-1"
-        >
-          <option value="all">All Category</option>
-          <option value="executive">Executive</option>
-          <option value="support_staff">Support Staff</option>
-          <option value="doctor">Doctor</option>
-          <option value="academy_body">Academy Body</option>
-        </select>
-      </div>
+      <div class="flex flex-wrap gap-3 p-4">
+        <!-- Granular v-model bindings (EmployeeFilter must emit update:company_id etc.) -->
+        <EmployeeFilter
+          v-model:company_id="filters.company_id"
+          v-model:department_id="filters.department_id"
+          v-model:employee_id="filters.employee_id"
+          v-model:category="filters.category"
+          :initial-value="$route.query"
+          class="w-full"
+        />
 
-      <div>
-        <Multiselect
-          v-model="selectedEmployeeId"
-          :options="filterEmployees"
-          :multiple="false"
-          label="label"
-          placeholder="Please select employee..."
-        />
-      </div>
-      <div>
-        <input
-          id="user-filter"
-          v-model="selectedDate"
-          @change="fetchApplicationsByUser"
-          type="date"
-          class="input-1"
-        />
+        <!-- Date (filters.date is source of truth) -->
+        <div>
+          <label class="mb-1 block text-xs font-medium text-zinc-500">Date</label>
+          <input id="filter-date" v-model="filters.date" type="date" class="input-1" />
+        </div>
       </div>
     </div>
 
-    <div v-if="isLoading" class="text-center py-4">
+    <!-- Loader -->
+    <div v-if="isLoading" class="py-10 text-center">
       <LoaderView />
     </div>
 
-    <div v-else class="space-y-4">
-      <div class="overflow-x-auto" v-if="selectedCompanyId">
-        <table
-          class="min-w-full table-auto border-collapse border border-gray-200 bg-white rounded-md text-sm"
-        >
-          <thead>
-            <tr class="bg-gray-200">
-              <th class="border border-gray-300 px-2 text-left">#</th>
-              <th class="border border-gray-300 px-2 text-left">Date</th>
-              <th class="border border-gray-300 px-2 text-left">Weekday</th>
-              <th class="border border-gray-300 px-2 text-left">Employee Name</th>
-              <th class="border border-gray-300 px-2 text-left">Company</th>
-              <th class="border border-gray-300 px-2 text-left">Department</th>
-              <th class="border border-gray-300 px-2 text-left">Entry Time</th>
-              <th class="border border-gray-300 px-2 text-left">Late Duration</th>
-              <th class="border border-gray-300 px-2 text-left">Action</th>
-              <th class="border border-gray-300 px-2 text-left">Shift</th>
+    <!-- Table (ALWAYS shows — all-company supported) -->
+    <div v-else class="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-zinc-50 sticky top-0 z-10">
+            <tr class="text-left text-zinc-700">
+              <th class="px-3 py-2.5">#</th>
+              <th class="px-3 py-2.5">Date</th>
+              <th class="px-3 py-2.5">Weekday</th>
+              <th class="px-3 py-2.5">Employee</th>
+              <th class="px-3 py-2.5">Company</th>
+              <th class="px-3 py-2.5">Department</th>
+              <th class="px-3 py-2.5">Entry Time</th>
+              <th class="px-3 py-2.5">Late Duration</th>
+              <th class="px-3 py-2.5">Application</th>
+              <th class="px-3 py-2.5">Shift</th>
             </tr>
           </thead>
           <tbody>
             <tr
               v-for="(report, index) in dailyLateLogs"
               :key="report.id || index"
-              class="border-b border-gray-200 hover:bg-blue-200"
+              class="border-t border-zinc-100 odd:bg-white even:bg-zinc-50 hover:bg-sky-50 transition-colors"
             >
-              <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
-              <td class="border border-gray-300 px-2">{{ report?.date }}</td>
-              <td class="border border-gray-300 px-2">{{ report?.weekday }}</td>
-              <td class="border border-gray-300 px-2">{{ report?.user_name || 'Unknown' }}</td>
-              <td class="border border-gray-300 px-2">{{ report?.company_name || 'Unknown' }}</td>
-              <td class="border border-gray-300 px-2">
-                {{ report?.department_name || 'Unknown' }}
+              <td class="px-3 py-2 align-top">{{ index + 1 }}</td>
+              <td class="px-3 py-2 align-top">
+                <span class="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-700">
+                  <i class="far fa-calendar-alt"></i> {{ report?.date || '-' }}
+                </span>
               </td>
-              <td class="border border-gray-300 px-2">{{ report?.entry_time }}</td>
-              <td class="border border-gray-300 px-2">{{ report?.late_duration }}</td>
-              <td class="border border-gray-300 px-2">
-                <div v-if="report?.short_leave">
-                  <span :class="statusClass(report.short_leave.status)">
+              <td class="px-3 py-2 align-top">
+                <span class="inline-flex items-center gap-1 rounded-full bg-blue-50 text-blue-700 px-2 py-0.5 text-xs">
+                  <i class="far fa-calendar-check"></i> {{ report?.weekday || '-' }}
+                </span>
+              </td>
+              <td class="px-3 py-2 align-top">
+                <div class="max-w-[220px] truncate font-medium text-zinc-800">
+                  <i class="far fa-user mr-1 text-zinc-500"></i>{{ report?.user_name || 'Unknown' }}
+                </div>
+              </td>
+              <td class="px-3 py-2 align-top">
+                <div class="max-w-[220px] truncate text-zinc-700">
+                  <i class="far fa-building mr-1 text-zinc-500"></i>{{ report?.company_name || 'Unknown' }}
+                </div>
+              </td>
+              <td class="px-3 py-2 align-top">
+                <div class="max-w-[220px] truncate text-zinc-700">
+                  <i class="far fa-sitemap mr-1 text-zinc-500"></i>{{ report?.department_name || 'Unknown' }}
+                </div>
+              </td>
+              <td class="px-3 py-2 align-top">
+                <span class="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                  <i class="far fa-clock"></i>{{ report?.entry_time || '-' }}
+                </span>
+              </td>
+              <td class="px-3 py-2 align-top">
+                <span
+                  class="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold"
+                  :class="(report?.late_duration || '').trim() ? 'bg-rose-50 text-rose-700' : 'bg-zinc-100 text-zinc-500'"
+                >
+                  <i class="fas fa-stopwatch"></i>{{ report?.late_duration || '—' }}
+                </span>
+              </td>
+              <td class="px-3 py-2 align-top">
+                <template v-if="report?.short_leave">
+                  <span
+                    class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+                    :class="{
+                      'bg-green-50 text-green-700': report.short_leave.status === 'Approved',
+                      'bg-yellow-50 text-yellow-700': report.short_leave.status === 'Pending',
+                      'bg-rose-50 text-rose-700': report.short_leave.status !== 'Approved' && report.short_leave.status !== 'Pending'
+                    }"
+                  >
+                    <i
+                      :class="[
+                        report.short_leave.status === 'Approved' ? 'fas fa-check-circle' :
+                        report.short_leave.status === 'Pending'  ? 'fas fa-hourglass-half' :
+                        'fas fa-times-circle'
+                      ]"
+                    ></i>
                     {{ report.short_leave.status || 'Waiting' }}
                   </span>
-                </div>
-                <div v-else class="text-gray-500 italic text-xs">No Application</div>
+                </template>
+                <span v-else class="text-xs italic text-zinc-400">No Application</span>
               </td>
-              <td class="border border-gray-300 px-2">{{ report?.shift_name }}</td>
+              <td class="px-3 py-2 align-top">
+                <span class="inline-flex items-center gap-1 rounded-full bg-indigo-50 text-indigo-700 px-2 py-0.5 text-xs">
+                  <i class="far fa-moon"></i>{{ report?.shift_name || '-' }}
+                </span>
+              </td>
+            </tr>
+
+            <!-- Empty state -->
+            <tr v-if="!dailyLateLogs?.length">
+              <td colspan="10" class="px-3 py-8 text-center text-zinc-500">
+                <i class="far fa-folder-open mr-2"></i>No late entries found for the selected filters.
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
-      <div v-else class="text-center text-red-500 text-xl italic mt-10">Please select company</div>
     </div>
+
   </div>
 </template>

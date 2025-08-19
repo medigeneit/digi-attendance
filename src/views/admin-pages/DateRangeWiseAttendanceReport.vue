@@ -160,10 +160,14 @@ const initialFilter = computed(() => ({
       <!-- Get Report Button -->
       <div class="w-full flex flex-wrap gap-4 items-center md:w-auto">
 
-        <EmployeeFilter 
-        v-model="filters" 
-        :initial-value="initialFilter" 
-        @filter-change="handleFilterChange" 
+        <EmployeeFilter
+          v-model:company_id="filters.company_id"
+          v-model:department_id="filters.department_id"
+          v-model:employee_id="filters.employee_id"
+          v-model:category="filters.category"
+          :with-type="true"
+          :initial-value="$route.query"
+         @filter-change="handleFilterChange"
       />
         
         <!-- <div class="flex flex-col">

@@ -17,37 +17,62 @@ const authStore = useAuthStore()
 const { leaveApplications, loading } = storeToRefs(leaveApplicationStore)
 
 const selectedUser = ref(null)
-const selectedDate = ref(route.query.date || leaveApplicationStore.selectedMonth)
-const search = ref(route.query.search || '')
 
+// Weekly range: 'prev' | 'after'  (default 'prev' if not given)
+const range = ref(route.query.type === 'after' ? 'after' : 'prev')
+
+// Anchor date for the 1-week window (can be YYYY-MM or YYYY-MM-DD)
+const selectedDate = ref(route.query.date || leaveApplicationStore.selectedMonth || new Date().toISOString().slice(0,7))
+
+// Search (if you still use it for other modes)
+const search = ref('') // we will set from range during fetch
+
+// Employee/company filters
 const filters = ref({
   company_id: route.query.company_id || '',
-  department_id: route.query.department_id || 'all',
-  type: route.query.type || 'all',
+  department_id: route.query.department_id || '',
+  type: route.query.category || 'all',   // <-- employee category comes from 'category' in URL
   employee_id: route.query.employee_id || '',
-  category: '',
+  category: '', // not used; kept to match prop signature
 })
 
+function toAnchorDate(val) {
+  // Accept both YYYY-MM and YYYY-MM-DD; if only month provided, use mid-month for stable weekly window
+  if (/^\d{4}-\d{2}$/.test(val || '')) return `${val}-15`
+  return val || new Date().toISOString().slice(0,10)
+}
 
 const fetchApplicationsByUser = async () => {
+  // Map weekly range to backend-friendly query
+  const weeklyQuery = range.value === 'after' ? 'next_week' : 'prev_week'
+  const anchor = toAnchorDate(selectedDate.value)
+
   const payload = {
     company_id: filters.value.company_id,
     department_id: filters.value.department_id,
-    selectedDate: selectedDate.value,
+    selectedDate: selectedDate.value,   // keep for monthly compatibility (not used in weekly)
     selectedStatus: leaveApplicationStore.selectedStatus,
-    query: search.value,
+    query: weeklyQuery,                 // <-- key: prev_week / next_week
+    anchor_date: anchor,                // <-- backend will use this as the anchor
   }
 
   if (filters.value.employee_id) {
     payload.user_id = filters.value.employee_id
   }
+  if (filters.value.type && filters.value.type !== 'all') {
+    // send employee category if needed by backend
+    payload.category = filters.value.type
+  }
 
   loading.value = true
-  await leaveApplicationStore.fetchLeaveApplications(payload)
-  loading.value = false
+  try {
+    await leaveApplicationStore.fetchLeaveApplications(payload)
+  } finally {
+    loading.value = false
+  }
 }
 
-// On mount: load user and apps
+// Initial load
 onMounted(async () => {
   if (filters.value.employee_id) {
     await userStore.fetchUser(filters.value.employee_id)
@@ -56,43 +81,66 @@ onMounted(async () => {
   await fetchApplicationsByUser()
 })
 
-// Watch selectedUser and update apps + query
-// watch(
-//   () => filters.value.employee_id,
-//   async (newId) => {
-//     if (newId) {
-//       filters.value.employee_id = newId
-//     } else {
-//       filters.value.employee_id = ''
-//     }
-//     await fetchApplicationsByUser()
-//   }
-// )
+// Build + sync query to URL (clean: drop empty)
+function buildQuery() {
+  const q = {
+    type: range.value,                 // weekly range in URL
+    date: selectedDate.value,          // anchor
+  }
+  if (filters.value.company_id)    q.company_id    = String(filters.value.company_id)
+  if (filters.value.department_id) q.department_id = String(filters.value.department_id)
+  if (filters.value.employee_id)   q.employee_id   = String(filters.value.employee_id)
+  if (filters.value.type && filters.value.type !== 'all') q.category = String(filters.value.type)
+  return q
+}
+let qTimer = null
+function syncUrlDebounced() {
+  if (qTimer) clearTimeout(qTimer)
+  qTimer = setTimeout(() => {
+    router.replace({ query: buildQuery() }).catch(() => {})
+  }, 120)
+}
 
+// React to external URL changes (if user navigates)
+watch(() => route.query, (q) => {
+  const nextRange = q.type === 'after' ? 'after' : 'prev'
+  const nextDate  = q.date || ''
+  const nextFilters = {
+    company_id: q.company_id || '',
+    department_id: q.department_id || '',
+    type: q.category || 'all',
+    employee_id: q.employee_id || '',
+    category: '',
+  }
+
+  let changed = false
+  if (nextRange !== range.value) { range.value = nextRange; changed = true }
+  if (nextDate && nextDate !== selectedDate.value) { selectedDate.value = nextDate; changed = true }
+
+  if (
+    nextFilters.company_id !== filters.value.company_id ||
+    nextFilters.department_id !== filters.value.department_id ||
+    nextFilters.type !== filters.value.type ||
+    nextFilters.employee_id !== filters.value.employee_id
+  ) {
+    filters.value = nextFilters
+    changed = true
+  }
+  if (changed) fetchApplicationsByUser()
+})
+
+// Watch core inputs → fetch + sync URL
 watch(
-  () => [
-    filters.value.company_id,
-    filters.value.department_id,
-    filters.value.employee_id,
-    selectedDate.value,
-  ],
-  async () => {
-    await fetchApplicationsByUser()
+  () => [range.value, selectedDate.value, filters.value.company_id, filters.value.department_id, filters.value.employee_id],
+  () => {
+    syncUrlDebounced()
+    fetchApplicationsByUser()
   }
 )
 
-
 watch(
-  () => selectedDate.value,
-  (newDate) => {
-    router.replace({
-      query: {
-        ...route.query,
-        date: newDate,
-      },
-    })
-    fetchApplicationsByUser()
-  }
+  () => leaveApplicationStore.selectedStatus,
+  () => fetchApplicationsByUser()
 )
 
 const filteredLeaveApplications = computed(() => leaveApplications.value || [])
@@ -107,19 +155,10 @@ const deleteApplication = async (applicationId) => {
 const goBack = () => router.go(-1)
 
 const handleFilterChange = () => {
-  router.replace({
-    query: {
-      ...route.query,
-      company_id: filters.value.company_id,
-      department_id: filters.value.department_id,
-      type: filters.value.type,
-      employee_id: filters.value.employee_id,
-    },
-  })
+  // Only sync URL; the watcher above will fetch
+  syncUrlDebounced()
 }
 </script>
-
-
 
 <template>
   <div class="space-y-2 px-4">
@@ -129,44 +168,48 @@ const handleFilterChange = () => {
         <span class="hidden md:flex">Back</span>
       </button>
 
-      <h1 class="title-md md:title-lg flex-wrap text-center">Leave Applications</h1>
+      <h1 class="title-md md:title-lg flex-wrap text-center">
+        {{ range === 'after' ? 'After 1 Week Leave Applications' : 'Previous 1 Week Leave Applications' }}
+      </h1>
       <div></div>
     </div>
-    <div class="flex flex-wrap gap-2">
-       <EmployeeFilter
-          v-model:company_id="filters.company_id"
-          v-model:department_id="filters.department_id"
-          v-model:employee_id="filters.employee_id"
-          v-model:category="filters.category"
-          :with-type="true"
-          :initial-value="$route.query"
-         @filter-change="handleFilterChange"
+
+    <div class="flex flex-wrap gap-2 items-center">
+      <!-- Filters (employee category bound to filters.type; URL key = category) -->
+      <EmployeeFilter
+        v-model:company_id="filters.company_id"
+        v-model:department_id="filters.department_id"
+        v-model:employee_id="filters.employee_id"
+        v-model:category="filters.type"
+        :with-type="true"
+        :initial-value="$route.query"
+        @filter-change="handleFilterChange"
       />
-      <!-- <div style="width: 300px">
-        <MultiselectDropdown
-          v-model="selectedUser"
-          :options="userStore.users"
-          :multiple="false"
-          label="label"
-          placeholder="Select user"
-        />
-      </div> -->
+
+      <!-- Weekly range selector (optional UI) -->
+       <div>
+         <select v-model="range" class="input-1">
+           <option value="prev">Previous 1 Week</option>
+           <option value="after">After 1 Week</option>
+         </select>
+       </div>
+
+      <!-- Anchor date (can be YYYY-MM or YYYY-MM-DD; we pass YYYY-MM-15 if only month) -->
       <div>
         <input
-          id="monthSelect"
-          type="month"
+          id="monthOrDate"
+          type="date"
           v-model="selectedDate"
-          @change="fetchApplicationsByUser"
           class="input-1"
         />
       </div>
+
       <div>
         <select
           v-model="leaveApplicationStore.selectedStatus"
-          @change="fetchApplicationsByUser"
           class="input-1"
         >
-          <option value="" selected>All</option>
+          <option value="">All</option>
           <option value="Pending">Pending</option>
           <option value="Approved">Approved</option>
           <option value="Rejected">Rejected</option>
@@ -180,9 +223,7 @@ const handleFilterChange = () => {
 
     <div v-else class="space-y-4">
       <div class="overflow-x-auto">
-        <table
-          class="min-w-full table-auto border-collapse border border-gray-200 bg-white rounded-md text-sm"
-        >
+        <table class="min-w-full table-auto border-collapse border border-gray-200 bg-white rounded-md text-sm">
           <thead>
             <tr class="bg-gray-200">
               <th class="border border-gray-300 px-2 text-left">#</th>
@@ -227,20 +268,21 @@ const handleFilterChange = () => {
                     <i class="far fa-eye"></i>
                   </RouterLink>
                   <RouterLink
-                  v-if="application?.status !== 'Approved'"
-                  :to="{ name: 'LeaveApplicationEdit', params: { id: application?.id } }"
-                  class="btn-icon"
-                >
-                  <i class="far fa-edit text-orange-600"></i>
-                </RouterLink>
+                    v-if="application?.status !== 'Approved'"
+                    :to="{ name: 'LeaveApplicationEdit', params: { id: application?.id } }"
+                    class="btn-icon"
+                  >
+                    <i class="far fa-edit text-orange-600"></i>
+                  </RouterLink>
                   <button @click="deleteApplication(application?.id)" class="btn-icon text-red-500">
                     <i class="far fa-trash"></i>
                   </button>
                 </div>
               </td>
             </tr>
+
             <tr v-if="!filteredLeaveApplications.length">
-              <td colspan="7" class="p-1 text-center text-red-500">No application found</td>
+              <td colspan="9" class="p-1 text-center text-red-500">No application found</td>
             </tr>
           </tbody>
         </table>

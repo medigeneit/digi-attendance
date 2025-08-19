@@ -2,6 +2,7 @@
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import DisplayFormattedWorkingHours from '@/components/overtime/DisplayFormattedWorkingHours.vue'
+import SelectedEmployeeCard from '@/components/user/SelectedEmployeeCard.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
 import { useUserStore } from '@/stores/user'
@@ -142,10 +143,14 @@ const specifications = {
 
     <div class="flex flex-wrap gap-4">
 
-       <EmployeeFilter 
-        v-model="filters" 
-        :initial-value="route.query" 
-        @filter-change="handleFilterChange" 
+        <EmployeeFilter
+          v-model:company_id="filters.company_id"
+          v-model:department_id="filters.department_id"
+          v-model:employee_id="filters.employee_id"
+          v-model:category="filters.category"
+          :with-type="true"
+          :initial-value="$route.query"
+         @filter-change="handleFilterChange"
       />
       <!-- <MultiselectDropdown
         v-model="selectedUser"
@@ -166,23 +171,7 @@ const specifications = {
     </div>
 
     <div v-if="selectedUser" class="flex justify-between gap-4 text-sm">
-      <div class="card-bg p-4 gap-1">
-        <h2 class="title-md">Selected Employee Info</h2>
-        <hr />
-        <div class="grid md:grid-cols-2">
-          <p><strong>Name:</strong> {{ selectedUser.name }}</p>
-          <p><strong>Designation:</strong> {{ selectedUser.designation?.title || 'N/A' }}</p>
-          <p><strong>Department:</strong> {{ selectedUser.department?.name || 'N/A' }}</p>
-          <p><strong>Company:</strong> {{ selectedUser.company?.name || 'N/A' }}</p>
-          <p><strong>Phone:</strong> {{ selectedUser.phone }}</p>
-          <p><strong>Email:</strong> {{ selectedUser.email || 'N/A' }}</p>
-          <p><strong>Blood Group:</strong> {{ selectedUser.blood || 'N/A' }}</p>
-          <p><strong>Joining Date:</strong> {{ selectedUser.joining_date || 'N/A' }}</p>
-        </div>
-      </div>
-    </div>
-    <div v-else>
-      <p class="text-gray-400 text-center text-2xl italic">Select an employee, please.</p>
+        <SelectedEmployeeCard :user="selectedUser"/>
     </div>
 
     <LoaderView v-if="leaveApplicationStore.loading" />

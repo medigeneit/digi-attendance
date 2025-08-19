@@ -2,6 +2,7 @@
 import AttendanceTable from '@/components/AttendanceTable.vue'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
+import SelectedEmployeeCard from '@/components/user/SelectedEmployeeCard.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useUserStore } from '@/stores/user'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
@@ -183,29 +184,44 @@ const hasSelection = computed(() => !!filters.value.employee_id)
         <i class="far fa-arrow-left"></i>
         <span class="hidden md:flex">Back</span>
       </button>
-      <h1 class="title-md md:title-lg flex-wrap text-center">Monthly Attendance</h1>
+      <h1 class="title-md md:title-lg flex-wrap text-center">User Monthly Attendance</h1>
       <div></div>
     </div>
 
-    <div class="w-full flex flex-wrap gap-4 items-center md:w-auto">
-      <EmployeeFilter
-        v-model="filters"
-        :initial-value="$route.query"
-        @filter-change="handleFilterChange"
-      />
-      <div>
-        <input
-          id="monthSelect"
-          type="month"
-          v-model="selectedMonth"
-          class="input-1"
-          aria-label="Select month"
+    <div class="rounded-xl border border-zinc-200 bg-white shadow-sm p-3">
+      <div class="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
+        <p class="text-sm text-zinc-600">
+          <i class="fas fa-filter mr-2"></i> Filters
+        </p>
+        <div class="h-1 w-32 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-400 rounded-full"></div>
+      </div>
+      <div class="w-full flex flex-wrap gap-4 items-center md:w-auto">
+          <EmployeeFilter
+           v-model:company_id="filters.company_id"
+            v-model:department_id="filters.department_id"
+            v-model:employee_id="filters.employee_id"
+            v-model:category="filters.category"
+            :with-type="true"
+            :initial-value="$route.query"
+           @filter-change="handleFilterChange"
+           class="w-full"
         />
+        <div>
+          <input
+            id="monthSelect"
+            type="month"
+            v-model="selectedMonth"
+            class="input-1"
+            aria-label="Select month"
+          />
+        </div>
       </div>
     </div>
 
+
     <div v-if="selectedUser" class="grid md:grid-cols-2 gap-4 text-sm">
-      <div class="card-bg p-4 gap-1">
+      <SelectedEmployeeCard v-if="hasSelection" :user="selectedUser" />
+      <!-- <div class="card-bg p-4 gap-1">
         <h2 class="title-md">Selected Employee Info</h2>
         <hr />
         <div class="grid md:grid-cols-2">
@@ -219,7 +235,7 @@ const hasSelection = computed(() => !!filters.value.employee_id)
           <p><strong>Joining Date:</strong> {{ selectedUser.joining_date || 'N/A' }}</p>
           <p><strong>Blood Group:</strong> {{ selectedUser.blood || 'N/A' }}</p>
         </div>
-      </div>
+      </div> -->
 
       <div class="card-bg p-4 gap-1">
         <div class="flex justify-between items-center">

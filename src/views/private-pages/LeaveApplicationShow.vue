@@ -261,6 +261,7 @@ const formatDateTime = (timestamp) => {
               <p><strong>Department:</strong> {{ leaveApplication?.user?.department?.name }}</p>
               <!-- <p><strong>Email:</strong> {{ leaveApplication?.user?.email }}</p> -->
               <p><strong>Phone:</strong> {{ leaveApplication?.user?.phone }}</p>
+              <p><strong>joining Date:</strong> {{ leaveApplication?.user?.joining_date }}</p>
             </div>
           </div>
 

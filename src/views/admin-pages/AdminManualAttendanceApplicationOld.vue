@@ -1,32 +1,32 @@
 <script setup>
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
-import SelectedEmployeeCard from '@/components/user/SelectedEmployeeCard.vue'
+
 import { useManualAttendanceStore } from '@/stores/manual-attendance'
 import { useUserStore } from '@/stores/user'
-import { computed, onMounted, ref, watch } from 'vue'
+import { watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
 const route = useRoute()
 const manualAttendanceStore = useManualAttendanceStore()
 const userStore = useUserStore()
-
-const selectedMonth = ref(route.query.date || manualAttendanceStore.selectedMonth || new Date().toISOString().slice(0, 7))
+const selectedUser = ref(null)
+const selectedMonth = ref(route.query.date || manualAttendanceStore.selectedMonth)
 const forms = ref([])
 const loading = ref(false)
 const error = ref(null)
 const directApprove = ref(true)
 
-// ---- Filters: keep empty string for "unselected" so query can drop keys ----
 const filters = ref({
   company_id: route.query.company_id || '',
-  department_id: route.query.department_id || '',
-  type: route.query.type || 'all',     // from EmployeeFilter v-model:category
+  department_id: route.query.department_id || 'all',
+  type: route.query.type || 'all',
   employee_id: route.query.employee_id || '',
+  category: '',
 })
 
-// ---------- Fetch ----------
 const fetchManualAttendancesByUser = async () => {
   const payload = {
     company_id: filters.value.company_id,
@@ -38,100 +38,49 @@ const fetchManualAttendancesByUser = async () => {
   if (filters.value.employee_id) {
     payload.user_id = filters.value.employee_id
     loading.value = true
-    try {
-      await manualAttendanceStore.fetchAdminManualAttendances(payload)
-    } finally {
-      loading.value = false
-    }
+    await manualAttendanceStore.fetchAdminManualAttendances(payload)
+    loading.value = false
   } else {
-    // clear list if no employee
-    if (typeof manualAttendanceStore.setAttendances === 'function') {
-      manualAttendanceStore.setAttendances([])
-    } else {
-      manualAttendanceStore.attendances = []
-    }
+    manualAttendanceStore.manualAttendances.value = []
   }
 }
 
-// ---------- URL sync (build from scratch) ----------
-function buildQuery() {
-  const q = {}
-  if (selectedMonth.value) q.date = String(selectedMonth.value)
-  if (filters.value.company_id) q.company_id = String(filters.value.company_id)
-  if (filters.value.department_id) q.department_id = String(filters.value.department_id)
-  if (filters.value.employee_id) q.employee_id = String(filters.value.employee_id)
-  if (filters.value.type && filters.value.type !== 'all') q.type = String(filters.value.type)
-  return q
-}
-
-let qTimer = null
-function syncQueryDebounced() {
-  if (qTimer) clearTimeout(qTimer)
-  qTimer = setTimeout(() => {
-    router.replace({ query: buildQuery() }).catch(() => {})
-  }, 120)
-}
-
-// ---------- Debounced apply + fetch-key guard ----------
-let applyTimer = null
-const lastKey = ref('')
-async function runApply() {
-  // sync URL
-  syncQueryDebounced()
-
-  // fetch guard
-  const key = JSON.stringify({
-    m: selectedMonth.value || '',
-    c: filters.value.company_id || '',
-    d: filters.value.department_id || '',
-    t: filters.value.type || 'all',
-    e: filters.value.employee_id || '',
-  })
-  if (key !== lastKey.value) {
-    await fetchManualAttendancesByUser()
-    lastKey.value = key
-  }
-}
-function scheduleApply() {
-  if (applyTimer) clearTimeout(applyTimer)
-  applyTimer = setTimeout(runApply, 200)
-}
-
-// ---------- Lifecycle ----------
 onMounted(async () => {
   await userStore.fetchUsers()
-  scheduleApply()
+  selectedUser.value = userStore.users.find((user) => user.id == filters.value.employee_id) || null
+  await fetchManualAttendancesByUser()
 })
 
-// EmployeeFilter → parent notifier
-function handleFilterChange() {
-  scheduleApply()
-}
-
-function goBack() {
-  router.go(-1)
-}
-
-// Keep route.date in sync if user types month
-watch(selectedMonth, () => {
-  scheduleApply()
-})
-
-// Any filter/month change → schedule apply
 watch(
-  () => ({ ...filters.value, month: selectedMonth.value }),
-  () => scheduleApply(),
-  { deep: true }
+  () => [
+    filters.value.company_id,
+    filters.value.department_id,
+    filters.value.employee_id,
+    selectedMonth.value,
+  ],
+  async () => {
+    await fetchManualAttendancesByUser()
+  },
 )
 
-// ---------- Derived + rows builder ----------
-const filteredAttendances = computed(() => manualAttendanceStore.attendances || [])
+watch(selectedMonth, (date) => {
+  router.replace({
+    query: {
+      ...route.query,
+      date,
+    },
+  })
+})
+
+const filteredAttendances = computed(() => {
+  return manualAttendanceStore.attendances || []
+})
 
 watch(
   () => manualAttendanceStore.attendances,
-  (rows) => {
+  (newAttendances) => {
     forms.value = []
-    ;(rows || []).forEach((attendance) => {
+    newAttendances?.forEach((attendance) => {
       forms.value.push({
         date: attendance?.date,
         type: 'Forget Punch',
@@ -142,16 +91,17 @@ watch(
       })
     })
   },
-  { immediate: true, deep: true }
+  { immediate: true, deep: true },
 )
 
-// ---------- UI Actions ----------
-function toggleSelectAll() {
-  const allSelected = forms.value.every((f) => f.is_check)
-  forms.value.forEach((f) => { f.is_check = !allSelected })
+const toggleSelectAll = () => {
+  const allSelected = forms.value.every((form) => form.is_check)
+  forms.value.forEach((form) => {
+    form.is_check = !allSelected
+  })
 }
 
-async function submitManualAttendance() {
+const submitManualAttendance = async () => {
   loading.value = true
   error.value = null
 
@@ -160,27 +110,35 @@ async function submitManualAttendance() {
     loading.value = false
     return
   }
+
   try {
-    const selectedForms = forms.value.filter((f) => f.is_check && (f.check_in || f.check_out))
-    if (!selectedForms.length) {
+    // ✅ শুধুমাত্র selected (is_check === true) ফর্মগুলো নিচ্ছে
+    const selectedForms = forms.value.filter((form) => form.is_check && (form.check_in || form.check_out))
+
+    if (selectedForms.length === 0) {
       error.value = 'Please select at least one row.'
+      loading.value = false
       return
     }
-    const payload = selectedForms.map((f) => ({
+
+    const payload = selectedForms.map((form) => ({
       user_id: filters.value.employee_id,
-      type: f.type,
-      check_in: f.check_in ? `${f.date} ${f.check_in}:00` : null,
-      check_out: f.check_out ? `${f.date} ${f.check_out}:00` : null,
-      description: f.description || ''
+      type: form.type,
+      check_in: form.check_in ? `${form.date} ${form.check_in}:00` : null,
+      check_out: form.check_out ? `${form.date} ${form.check_out}:00` : null,
+      description: form.description || ''
     }))
 
-    const res = await manualAttendanceStore.createBulkManualAttendance({
+    const response = await manualAttendanceStore.createBulkManualAttendance({
       records: payload,
       direct_approve: directApprove.value,
     })
-    if (res?.data?.length) await fetchManualAttendancesByUser()
+    if(response?.data?.length)
+    {
+      await fetchManualAttendancesByUser()
+    }
   } catch (err) {
-    error.value = err?.message || 'Failed to submit manual attendance requests.'
+    error.value = err.message || 'Failed to submit manual attendance requests.'
   } finally {
     loading.value = false
   }
@@ -194,18 +152,15 @@ async function submitManualAttendance() {
         <i class="far fa-arrow-left"></i>
         <span class="hidden md:flex">Back</span>
       </button>
+
       <h1 class="title-md md:title-lg flex-wrap text-center">Admin Bulk Manual Attendance Applications</h1>
       <div></div>
     </div>
 
     <div class="flex flex-wrap gap-2">
       <EmployeeFilter
-        v-model:company_id="filters.company_id"
-        v-model:department_id="filters.department_id"
-        v-model:employee_id="filters.employee_id"
-        v-model:category="filters.type"
-        :with-type="true"
-        :initial-value="$route.query"
+        v-model="filters"
+        :initial-value="route.query"
         @filter-change="handleFilterChange"
       />
       <div>
@@ -213,6 +168,7 @@ async function submitManualAttendance() {
           id="monthSelect"
           type="month"
           v-model="selectedMonth"
+          @change="fetchManualAttendancesByUser"
           class="input-1"
         />
       </div>
@@ -223,14 +179,15 @@ async function submitManualAttendance() {
     </div>
 
     <div v-else class="space-y-4">
-      <div v-if="filters?.employee_id" class="grid grid-cols-1  md:grid-cols-2 gap-4">
-        <SelectedEmployeeCard :user="manualAttendanceStore.user" />
-        <!-- <div class="grid gap-6">
+      <div v-if="filters?.employee_id" class="bg-sky-100/30 p-4 rounded-lg shadow mb-6 space-y-4">
+        <div class="grid gap-6">
           <div class="bg-white border rounded-lg p-4 shadow">
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-y-1 text-sm text-gray-600">
               <p><strong>Name:</strong> {{ manualAttendanceStore?.user?.name }}</p>
               <p><strong>Data:</strong> {{ manualAttendanceStore?.user?.designation?.title }}</p>
-              <p><strong>Department:</strong> {{ manualAttendanceStore?.user?.department?.name }}</p>
+              <p>
+                <strong>Department:</strong> {{ manualAttendanceStore?.user?.department?.name }}
+              </p>
               <p><strong>Company:</strong> {{ manualAttendanceStore?.user?.company?.name }}</p>
               <p><strong>Phone:</strong> {{ manualAttendanceStore?.user?.phone }}</p>
               <p><strong>Email:</strong> {{ manualAttendanceStore?.user?.email }}</p>
@@ -238,19 +195,26 @@ async function submitManualAttendance() {
               <p><strong>Blood Group:</strong> {{ manualAttendanceStore?.user?.blood || 'N/A' }}</p>
             </div>
           </div>
-        </div> -->
+        </div>
       </div>
 
       <div class="overflow-x-auto">
         <div :class="error ? 'py-2': ''">
           <div v-if="error" class="text-red-500 text-sm text-left">{{ error }}</div>
         </div>
-        <table class="min-w-full table-auto border-collapse border border-gray-200 bg-white rounded-md text-sm">
+        <table
+          class="min-w-full table-auto border-collapse border border-gray-200 bg-white rounded-md text-sm"
+        >
           <thead>
             <tr class="bg-gray-200">
               <th class="border border-gray-300 px-2 text-left py-2">
                 <div class="flex items-center justify-center gap-2">
-                  <input id="allCheck" type="checkbox" @change="toggleSelectAll" class="h-5 w-5 accent-blue-600 cursor-pointer" />
+                  <input
+                    id="allCheck"
+                    type="checkbox"
+                    @change="toggleSelectAll"
+                    class="h-5 w-5 accent-blue-600 cursor-pointer"
+                  />
                   <label for="allCheck" class="text-sm cursor-pointer">All Check</label>
                 </div>
               </th>
@@ -265,14 +229,17 @@ async function submitManualAttendance() {
             <tr
               v-for="(form, index) in forms"
               :key="index"
-              :class="['border-b border-gray-200 hover:bg-blue-200 cursor-pointer', form.is_check ? 'bg-yellow-100' : '']"
+              :class="[
+                'border-b border-gray-200 hover:bg-blue-200 cursor-pointer',
+                form.is_check ? 'bg-yellow-100' : '',
+              ]"
               @click="form.is_check = !form.is_check"
             >
-              <td class="border border-gray-300 px-2 cursor-pointer text-center">
+              <td class="border border-gray-300 px-2 cursor-pointer text-center" >
                 <input type="checkbox" v-model="form.is_check" class="h-5 w-5" @click.stop />
               </td>
               <td class="border border-gray-300 px-2">
-                <input type="date" v-model="form.date" class="w-full border border-gray-600 py-1 px-2 rounded-sm" @click.stop disabled />
+                <input type="date" v-model="form.date" class="w-full border border-gray-600 py-1 px-2 rounded-sm" @click.stop disabled/>
               </td>
               <td class="border border-gray-300 px-2">
                 <select v-model="form.type" class="w-full border border-gray-600 py-1 px-2 rounded-sm" @click.stop>
@@ -305,19 +272,30 @@ async function submitManualAttendance() {
           </tbody>
         </table>
       </div>
-
       <div v-if="filters?.employee_id">
         <div class="space-y-6">
           <div v-if="error" class="text-red-500 text-sm text-left">{{ error }}</div>
 
           <div class="flex items-center justify-center gap-2 cursor-pointer">
-            <input id="directApprove" type="checkbox" v-model="directApprove" class="accent-blue-600 h-6 w-6 cursor-pointer" />
+            <input
+              id="directApprove"
+              type="checkbox"
+              v-model="directApprove"
+              class="accent-blue-600 h-6 w-6 cursor-pointer"
+            />
             <label for="directApprove" class="text-lg cursor-pointer">Direct Approve</label>
           </div>
 
           <div class="flex justify-center">
-            <button type="button" class="btn-2" :disabled="loading" @click="submitManualAttendance">
-              <span v-if="loading"><i class="fas fa-spinner fa-spin mr-2"></i>Submitting...</span>
+            <button
+              type="button"
+              class="btn-2"
+              :disabled="loading"
+              @click="submitManualAttendance"
+            >
+              <span v-if="loading">
+                <i class="fas fa-spinner fa-spin mr-2"></i>Submitting...
+              </span>
               <span v-else>Submit All</span>
             </button>
           </div>
