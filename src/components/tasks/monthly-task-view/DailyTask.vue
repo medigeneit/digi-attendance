@@ -8,7 +8,6 @@ import { useAuthStore } from '@/stores/auth'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import DailyTaskHeading from './DailyTaskHeading.vue'
-import MonthlyTaskHeading from './MonthlyTaskHeading.vue'
 import TaskListOnDay from './TaskListOnDay.vue'
 
 const selected = reactive({ day: null, month: null, year: null })
@@ -112,7 +111,7 @@ const dailyTaskList = computed(() => {
       @input-selected-day="(event) => (selectedDay = event?.target?.value)"
     />
 
-    <MonthlyTaskHeading />
+    <!-- <MonthlyTaskHeading /> -->
 
     <div class="bg-gray-300 bg-opacity-90 relative">
       <div class="bg-gray-50 border-y rounded-md z-20">
