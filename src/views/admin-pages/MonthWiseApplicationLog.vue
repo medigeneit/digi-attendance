@@ -20,7 +20,7 @@ const selectedMonth = ref(route.query.date || leaveApplicationStore.selectedMont
 const filters = ref({
   company_id: route.query.company_id || '',
   department_id: route.query.department_id || 'all',
-  type: route.query.type || 'all',
+  line_type: route.query.line_type || 'all',
   employee_id: route.query.employee_id || '',
   category: '',
 })
@@ -98,14 +98,7 @@ const formatDateTime = (timestamp) => {
     day: '2-digit',
     month: 'short',
     year: 'numeric'
-  }) // e.g., "19 Jul 2025"
-
-  // const time = d.toLocaleTimeString('en-US', {
-  //   hour: '2-digit',
-  //   minute: '2-digit',
-  //   hour12: true
-  // }) // e.g., "04:30 PM"
-
+  }) 
   return `${date}`
 }
 
@@ -116,7 +109,7 @@ const handleFilterChange = () => {
       ...route.query,
       company_id: filters.value.company_id,
       department_id: filters.value.department_id,
-      type: filters.value.type,
+      line_type: filters.value.line_type,
       employee_id: filters.value.employee_id,
     },
   })
@@ -147,7 +140,7 @@ const specifications = {
           v-model:company_id="filters.company_id"
           v-model:department_id="filters.department_id"
           v-model:employee_id="filters.employee_id"
-          v-model:category="filters.category"
+          v-model:line_type="filters.line_type"
           :with-type="true"
           :initial-value="$route.query"
          @filter-change="handleFilterChange"

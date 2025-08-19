@@ -11,7 +11,7 @@ const props = defineProps({
   company_id: { type: [String, Number], default: '' },
   department_id: { type: [String, Number], default: '' }, // '' means all/none
   employee_id: { type: [String, Number], default: '' },
-  category: { type: String, default: 'all' }, // 'all'|'executive'|'support_staff'|'doctor'|'academy_body'
+  line_type: { type: String, default: 'all' }, // 'all'|'executive'|'support_staff'|'doctor'|'academy_body'
   withType: { type: Boolean, default: true },
   initialValue: { type: Object, default: () => ({}) }, // optional: prefill from route/query
 })
@@ -20,7 +20,7 @@ const emit = defineEmits([
   'update:company_id',
   'update:department_id',
   'update:employee_id',
-  'update:category',
+  'update:line_type',
   'filter-change',
 ])
 
@@ -39,7 +39,7 @@ const selectedDepartmentId = ref(
 )
 const selectedTypeId = ref(
   props.withType
-    ? String(props.category || props.initialValue.category || 'all')
+    ? String(props.line_type || props.initialValue.line_type || 'all')
     : null
 )
 const selectedEmployeeId = ref(String(props.employee_id || props.initialValue.employee_id || ''))
@@ -127,7 +127,7 @@ watch(
 )
 
 watch(
-  () => props.category,
+  () => props.line_type,
   (v) => {
     if (!props.withType) return
     const next = String(v || 'all')
@@ -164,7 +164,7 @@ watch([selectedDepartmentId, selectedTypeId], () => {
   // Emit upward before applying filter so parent query updates
   emit('update:department_id', selectedDepartmentId.value || '')
   if (props.withType) {
-    emit('update:category', selectedTypeId.value || 'all')
+    emit('update:line_type', selectedTypeId.value || 'all')
   }
   applyFilter()
   emitFilterChange()
@@ -215,7 +215,7 @@ function applyFilter() {
 function emitAll() {
   emit('update:company_id', selectedCompanyId.value || '')
   emit('update:department_id', selectedDepartmentId.value || '')
-  if (props.withType) emit('update:category', selectedTypeId.value || 'all')
+  if (props.withType) emit('update:line_type', selectedTypeId.value || 'all')
   emit('update:employee_id', selectedEmployeeId.value || '')
   emitFilterChange()
 }

@@ -5,8 +5,6 @@
         :to="{ name: 'TodayAttendanceReport', query: { status: 'all' } }"
         class="main-button"
       >
-        <!-- LeaveReport -->
-        <!-- <i class="fas fa-calendar-alt text-3xl"></i> -->
         <span class="text-3xl">
           {{ dashboardInfo?.totalUsers }}
         </span>
@@ -31,7 +29,7 @@
         Today Absent
       </RouterLink>
       <RouterLink
-        :to="{ name: 'LeaveApplicationList', query: { status: 'today' } }"
+        :to="{ name: 'LeaveApplicationsForDay', query: { applicationType: 'today' } }"
         class="main-button"
       >
         <span class="text-3xl">
@@ -40,7 +38,7 @@
         Today Leave
       </RouterLink>
       <RouterLink
-        :to="{ name: 'LeaveApplicationList', query: { status: 'tomorrow' } }"
+        :to="{ name: 'LeaveApplicationsForDay', query: { applicationType: 'tomorrow' } }"
         class="main-button"
       >
         <span class="text-3xl">
@@ -49,7 +47,7 @@
         Tomorrow Leave
       </RouterLink>
       <RouterLink
-        :to="{ name: 'ShortLeaveList', query: { status: selectedDate } }"
+        :to="{ name: 'DateWiseShortLeaveList', query: { date: selectedDate } }"
         class="main-button"
       >
         <span class="text-3xl">
@@ -67,7 +65,7 @@
         Today Late Report
       </RouterLink>
       <RouterLink
-        :to="{ name: 'PreviousAfterApplicationList', query: { type: 'prev', date: selectedDate } }"
+        :to="{ name: 'PreviousAfterApplicationList', query: { applicationType: 'prev', date: selectedDate } }"
         class="main-button"
       >
         <span class="text-3xl">
@@ -76,7 +74,7 @@
         Leave history of previous week
       </RouterLink>
       <RouterLink
-        :to="{ name: 'PreviousAfterApplicationList', query: { type: 'after', date: selectedDate } }"
+        :to="{ name: 'PreviousAfterApplicationList', query: { applicationType: 'after', date: selectedDate } }"
         class="main-button"
       >
         <span class="text-3xl">

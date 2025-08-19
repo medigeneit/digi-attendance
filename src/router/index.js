@@ -678,6 +678,16 @@ const router = createRouter({
             title: 'Leave Application List',
           },
         },
+        {
+          path: '/hrd/leave-applications-for-day',
+          name: 'LeaveApplicationsForDay',
+          component: () => import('@/views/admin-pages/LeaveApplicationForDays.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Leave Application List',
+          },
+        },
 
         {
           path: '/hrd/pre-after-leave-applications',
@@ -694,6 +704,17 @@ const router = createRouter({
           path: '/hrd/short-leave-list',
           name: 'ShortLeaveList',
           component: () => import('@/views/admin-pages/ShortLeaveList.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Short Leave List',
+          },
+        },
+
+        {
+          path: '/hrd/date-wise-short-leave-list',
+          name: 'DateWiseShortLeaveList',
+          component: () => import('@/views/admin-pages/DateWiseShortLeaveList.vue'),
           meta: {
             requiresAuth: true,
             roles: ['admin', 'super_admin', 'developer'],

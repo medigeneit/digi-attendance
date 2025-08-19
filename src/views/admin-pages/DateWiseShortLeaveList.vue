@@ -13,7 +13,7 @@ const shortLeaveStore = useShortLeaveStore()
 const userStore = useUserStore()
 
 const selectedUser = ref(null)
-const selectedMonth = ref(route.query.date || shortLeaveStore.selectedMonth)
+const selectedDate = ref(route.query.date || shortLeaveStore.selectedDate)
 const search = ref(route.query.search || '')
 
 const filters = ref({
@@ -29,7 +29,7 @@ const fetchShortLeavesByUser = async () => {
     selectedCompany:filters.value.company_id,
     selectedDepartment:filters.value.department_id,
     line_type:filters.value.line_type,
-    selectedMonth: selectedMonth.value,
+    selectedDate: selectedDate.value,
     selectedStatus: shortLeaveStore.selectedStatus,
     query: search.value,
   }
@@ -38,7 +38,7 @@ const fetchShortLeavesByUser = async () => {
     payload.user_id = filters.value.employee_id
   }
 
-  await shortLeaveStore.fetchShortLeaves(payload)
+  await shortLeaveStore.fetchDateWiseShortLeaves(payload)
 }
 
 onMounted(async () => {
@@ -80,9 +80,9 @@ watch(
   }
 )
 
-// Watch for selectedMonth change
+// Watch for selectedDate change
 watch(
-  () => selectedMonth.value,
+  () => selectedDate.value,
   async (newDate) => {
     router.replace({
       query: {
@@ -135,9 +135,7 @@ const handleFilterChange = () => {
         <i class="far fa-arrow-left"></i>
         <span class="hidden md:flex">Back</span>
       </button>
-
-      <h1 class="title-md md:title-lg flex-wrap text-center">Short Leaves</h1>
-
+      <h1 class="title-md md:title-lg flex-wrap text-center">Date Wise Short Leaves</h1>
       <div></div>
     </div>
     <div class="flex flex-wrap gap-4">
@@ -154,8 +152,8 @@ const handleFilterChange = () => {
       <div>
         <input
           id="monthSelect"
-          type="month"
-          v-model="selectedMonth"
+          type="date"
+          v-model="selectedDate"
           @change="fetchShortLeavesByUser"
           class="input-1"
         />

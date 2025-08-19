@@ -22,7 +22,7 @@ const directApprove = ref(true)
 const filters = ref({
   company_id: route.query.company_id || '',
   department_id: route.query.department_id || '',
-  type: route.query.type || 'all',     // from EmployeeFilter v-model:category
+  line_type: route.query.line_type || 'all',  
   employee_id: route.query.employee_id || '',
 })
 
@@ -31,6 +31,7 @@ const fetchManualAttendancesByUser = async () => {
   const payload = {
     company_id: filters.value.company_id,
     department_id: filters.value.department_id,
+    line_type: filters.value.line_type,
     selectedMonth: selectedMonth.value,
     selectedStatus: manualAttendanceStore.selectedStatus,
   }
@@ -59,8 +60,8 @@ function buildQuery() {
   if (selectedMonth.value) q.date = String(selectedMonth.value)
   if (filters.value.company_id) q.company_id = String(filters.value.company_id)
   if (filters.value.department_id) q.department_id = String(filters.value.department_id)
+  if (filters.value.line_type && filters.value.line_type !== 'all') q.line_type = String(filters.value.line_type)
   if (filters.value.employee_id) q.employee_id = String(filters.value.employee_id)
-  if (filters.value.type && filters.value.type !== 'all') q.type = String(filters.value.type)
   return q
 }
 
@@ -84,7 +85,7 @@ async function runApply() {
     m: selectedMonth.value || '',
     c: filters.value.company_id || '',
     d: filters.value.department_id || '',
-    t: filters.value.type || 'all',
+    t: filters.value.line_type || 'all',
     e: filters.value.employee_id || '',
   })
   if (key !== lastKey.value) {
@@ -203,7 +204,7 @@ async function submitManualAttendance() {
         v-model:company_id="filters.company_id"
         v-model:department_id="filters.department_id"
         v-model:employee_id="filters.employee_id"
-        v-model:category="filters.type"
+        v-model:line_type="filters.line_type"
         :with-type="true"
         :initial-value="$route.query"
         @filter-change="handleFilterChange"

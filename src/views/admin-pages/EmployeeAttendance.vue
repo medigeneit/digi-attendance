@@ -17,7 +17,6 @@ const userStore = useUserStore()
    Helpers
 ------------------------*/
 const toMonth = (val) => {
-  // Expecting YYYY-MM; normalize if a Date or full ISO is passed
   if (!val) return ''
   if (typeof val === 'string') {
     // If already YYYY-MM, return as-is
@@ -43,9 +42,8 @@ const selectedMonth = ref(toMonth(q.date) || toMonth(attendanceStore.selectedMon
 const filters = ref({
   company_id: q.company_id || '',
   department_id: q.department_id || 'all',
-  type: q.type || 'all',
+  line_type: q.line_type || 'all',
   employee_id: q.employee_id || '',
-  category: '', // not in query (yet)
 })
 
 const selectedUser = ref(null)
@@ -59,7 +57,7 @@ const syncQuery = (partial = {}) => {
       ...route.query,
       company_id: filters.value.company_id || '',
       department_id: filters.value.department_id || 'all',
-      type: filters.value.type || 'all',
+      line_type: filters.value.line_type || 'all',
       employee_id: filters.value.employee_id || '',
       date: selectedMonth.value || '',
       ...partial,
@@ -200,7 +198,7 @@ const hasSelection = computed(() => !!filters.value.employee_id)
            v-model:company_id="filters.company_id"
             v-model:department_id="filters.department_id"
             v-model:employee_id="filters.employee_id"
-            v-model:category="filters.category"
+            v-model:line_type="filters.line_type"
             :with-type="true"
             :initial-value="$route.query"
            @filter-change="handleFilterChange"

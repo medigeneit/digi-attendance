@@ -21,7 +21,7 @@ const selectedMonth = ref(route.query.date || new Date().toISOString().slice(0, 
 const filters = ref({
   company_id: route.query.company_id || '',
   department_id: route.query.department_id || 'all',
-  type: route.query.type || 'all',
+  line_type: route.query.line_type || 'all',
   employee_id: route.query.employee_id || '',
   category: '',
 })
@@ -94,7 +94,7 @@ const handleFilterChange = () => {
       ...route.query,
       company_id: filters.value.company_id,
       department_id: filters.value.department_id,
-      type: filters.value.type,
+      line_type: filters.value.line_type,
       employee_id: filters.value.employee_id || route.query.employee_id,
     },
   })
@@ -120,7 +120,7 @@ const handleFilterChange = () => {
           v-model:company_id="filters.company_id"
           v-model:department_id="filters.department_id"
           v-model:employee_id="filters.employee_id"
-          v-model:category="filters.category"
+          v-model:line_type="filters.line_type"
           :with-type="true"
           :initial-value="$route.query"
          @filter-change="handleFilterChange"

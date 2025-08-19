@@ -17,7 +17,7 @@ const selectedMonth = ref(route.query.month || new Date().toISOString().slice(0,
 const filters = ref({
   company_id: route.query.company_id || '',
   department_id: route.query.department_id || '',
-  type: route.query.type || 'all',     // <-- this is the "category" coming from EmployeeFilter
+  line_type: route.query.line_type || 'all',    
   employee_id: route.query.employee_id || ''
 })
 const loading = ref(false)
@@ -51,7 +51,7 @@ function buildQueryFromFilters () {
   if (filters.value.company_id) q.company_id = String(filters.value.company_id)
   if (filters.value.department_id) q.department_id = String(filters.value.department_id) // keep only when not empty
   if (filters.value.employee_id) q.employee_id = String(filters.value.employee_id)
-  if (filters.value.type && filters.value.type !== 'all') q.type = String(filters.value.type)
+  if (filters.value.line_type && filters.value.line_type !== 'all') q.line_type = String(filters.value.line_type)
 
   return q
 }
@@ -77,7 +77,7 @@ async function runApply () {
     m: selectedMonth.value || '',
     c: filters.value.company_id || '',
     d: filters.value.department_id || '',
-    t: filters.value.type || 'all',
+    t: filters.value.line_type || 'all',
     e: filters.value.employee_id || ''
   })
 
@@ -109,14 +109,14 @@ watch(
     const next = {
       company_id: q.company_id || '',
       department_id: q.department_id || '',
-      type: q.type || 'all',
+      line_type: q.line_type || 'all',
       employee_id: q.employee_id || ''
     }
     const cur = filters.value
     if (
       next.company_id !== cur.company_id ||
       next.department_id !== cur.department_id ||
-      next.type !== cur.type ||
+      next.line_type !== cur.line_type ||
       next.employee_id !== cur.employee_id
     ) {
       filters.value = next
@@ -149,7 +149,7 @@ async function deletePaycut (id) {
         <i class="far fa-arrow-left"></i>
         <span class="hidden md:flex">Back</span>
       </button>
-      <h1 class="title-md md:title-lg text-center">Monthly Paycut</h1>
+      <h1 class="title-md md:title-lg text-center">Monthly Paycut List</h1>
       <div />
     </div>
 
@@ -158,7 +158,7 @@ async function deletePaycut (id) {
         v-model:company_id="filters.company_id"
         v-model:department_id="filters.department_id"
         v-model:employee_id="filters.employee_id"
-        v-model:category="filters.type"
+        v-model:line_type="filters.line_type"
         :with-type="true"
         :initial-value="$route.query"
         @filter-change="handleFilterChange"
@@ -166,6 +166,9 @@ async function deletePaycut (id) {
       />
       <div>
         <input type="month" v-model="selectedMonth" class="input-1" />
+      </div>
+      <div>
+
       </div>
     </div>
 

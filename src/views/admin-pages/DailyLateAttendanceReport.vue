@@ -21,14 +21,11 @@ const { dailyLateLogs, isLoading, selectedDate } = storeToRefs(attendanceStore)
 const { companies } = storeToRefs(companyStore)
 const { departments } = storeToRefs(departmentStore)
 
-// -----------------------------
-// Filters (single source of truth)
-// -----------------------------
 const filters = ref({
   company_id: route.query.company_id || '',
   department_id: route.query.department_id || '',
+  line_type: route.query.line_type || 'all',
   employee_id: route.query.employee_id || '',
-  category: route.query.category || 'all',
   date: route.query.date || '', // ISO yyyy-mm-dd
 })
 
@@ -36,7 +33,8 @@ const filters = ref({
 ;['company_id','department_id','employee_id','date'].forEach(k => {
   filters.value[k] = filters.value[k] ? String(filters.value[k]) : ''
 })
-filters.value.category = filters.value.category || 'all'
+
+filters.value.line_type = filters.value.line_type || 'all'
 
 // local state
 const selectedEmployee = ref(null)
@@ -60,7 +58,7 @@ async function fetchLateReport() {
   await attendanceStore.getDailyLateReport(
     filters.value.company_id || '',
     filters.value.department_id || '',
-    filters.value.category || 'all',
+    filters.value.line_type || 'all',
     filters.value.employee_id || '',
     filters.value.date || '',
     'daily'
@@ -108,11 +106,11 @@ function filterEmployeesByDepartmentOrCategory() {
   }
   const base = companyStore.employees || []
   const department_id = filters.value.department_id
-  const category = filters.value.category
+  const line_type = filters.value.line_type
 
   let list = base
   if (department_id) list = list.filter(e => String(e.department_id) === String(department_id))
-  if (category && category !== 'all') list = list.filter(e => String(e.type) === String(category))
+  if (line_type && line_type !== 'all') list = list.filter(e => String(e.type) === String(line_type))
   filterEmployees.value = list
 
   if (filters.value.employee_id) {
@@ -133,8 +131,8 @@ function syncQuery() {
     if (filters.value.company_id)    next.company_id    = String(filters.value.company_id)
     if (filters.value.department_id) next.department_id = String(filters.value.department_id)
     if (filters.value.employee_id)   next.employee_id   = String(filters.value.employee_id)
-    if (filters.value.category && filters.value.category !== 'all') {
-      next.category = String(filters.value.category)
+    if (filters.value.line_type && filters.value.line_type !== 'all') {
+      next.line_type = String(filters.value.line_type)
     }
     if (filters.value.date)          next.date          = String(filters.value.date)
 
@@ -168,7 +166,7 @@ async function runApply() {
   const key = JSON.stringify({
     c: filters.value.company_id || '',
     d: filters.value.department_id || '',
-    t: filters.value.category || 'all',
+    t: filters.value.line_type || 'all',
     e: filters.value.employee_id || '',
     dt: filters.value.date || '',
   })
@@ -218,7 +216,7 @@ async function getExportExcel() {
     await attendanceStore.lateReportDownloadExcel(
       filters.value.company_id || '',
       filters.value.department_id || '',
-      filters.value.category || 'all',
+      filters.value.line_type || 'all',
       filters.value.employee_id || '',
       filters.value.date || '',
       'daily'
@@ -230,6 +228,23 @@ async function getExportExcel() {
       text: 'Exporting all companies may be restricted by backend.',
       confirmButtonText: 'OK',
     })
+  }
+}
+
+const handleFilterChange = () => {
+  const newQuery = {
+    company_id: filters.value.company_id,
+    department_id: filters.value.department_id,
+    line_type: filters.value.line_type,
+    employee_id: filters.value.employee_id,
+  }
+
+  const isDifferent = Object.entries(newQuery).some(
+    ([key, value]) => route.query[key] !== String(value)
+  )
+
+  if (isDifferent) {
+    router.replace({ query: newQuery })
   }
 }
 function goBack() {
@@ -273,9 +288,10 @@ function goBack() {
           v-model:company_id="filters.company_id"
           v-model:department_id="filters.department_id"
           v-model:employee_id="filters.employee_id"
-          v-model:category="filters.category"
+          v-model:line_type="filters.line_type"
           :initial-value="$route.query"
           class="w-full"
+          @filter-change="handleFilterChange"
         />
 
         <!-- Date (filters.date is source of truth) -->
