@@ -225,12 +225,19 @@ watch(
               <i class="fas fa-user-plus"></i> Assign Users
             </RouterLink>
 
-            <RouterLink
-              :to="backLink"
-              class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-3 py-0.5 rounded-full transition disabled:opacity-30 disabled:pointer-events-none"
-              @click="$event.stopPropagation()"
+            <button
+              class="border-2 border-indigo-500 hover:bg-indigo-500 hover:text-white ml-8 text-indigo-500 font-semibold px-3 py-0.5 rounded-full transition disabled:opacity-30 disabled:pointer-events-none"
+              @click="router.back()"
             >
               <i class="fas fa-arrow-left"></i> Back
+            </button>
+
+            <RouterLink
+              :to="backLink"
+              class="border-2 border-indigo-500 hover:bg-indigo-500 hover:text-white ml-2 text-indigo-500 font-semibold px-3 py-0.5 rounded-full transition disabled:opacity-30 disabled:pointer-events-none"
+              @click="$event.stopPropagation()"
+            >
+              <i class="fas fa-arrow-left"></i> Parent Task
             </RouterLink>
 
             <div class="ml-auto flex gap-4">
