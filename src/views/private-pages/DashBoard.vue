@@ -65,7 +65,7 @@
         Today Late Report
       </RouterLink>
       <RouterLink
-        :to="{ name: 'PreviousAfterApplicationList', query: { type: 'prev', date: selectedDate } }"
+        :to="{ name: 'PreviousAfterApplicationList', query: { applicationType: 'prev', date: selectedDate } }"
         class="main-button"
       >
         <span class="text-3xl">
@@ -74,7 +74,7 @@
         Leave history of previous week
       </RouterLink>
       <RouterLink
-        :to="{ name: 'PreviousAfterApplicationList', query: { type: 'after', date: selectedDate } }"
+        :to="{ name: 'PreviousAfterApplicationList', query: { applicationType: 'after', date: selectedDate } }"
         class="main-button"
       >
         <span class="text-3xl">
