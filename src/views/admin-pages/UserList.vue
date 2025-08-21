@@ -1,9 +1,8 @@
 <script setup>
+import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import ShiftAssignmentModal from '@/components/common/ShiftAssignmentModal.vue'
 import ShiftWeekendModal from '@/components/common/WeekendAssignModal.vue'
-import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
-import UserChip from '@/components/user/UserChip.vue'
 import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
 import { useShiftStore } from '@/stores/shift'
@@ -21,7 +20,7 @@ const selectedCompany = ref(route.query.company || 'all')
 const selectedDepartment = ref(route.query.department || 'all')
 const selectedLineType = ref(route.query.line_type || 'all')
 const selectedStatus = ref(route.query.status || 'active')
-const selectedUser = ref('')
+const selectedUserId = ref('')
 const selectedEmployee = ref('')
 const shiftAssignmentModal = ref(false)
 const modalOpen = ref(false)
@@ -47,7 +46,6 @@ onMounted(async () => {
   }
 })
 
-
 const goBack = () => {
   router.go(-1)
 }
@@ -59,8 +57,7 @@ const fetchUser = () => {
     line_type: route.query.line_type,
     status: route.query.status,
     user_id: route.query.employee_id,
-  });
-
+  })
 }
 
 watch(selectedCompany, async (newVal, oldVal) => {
@@ -108,8 +105,6 @@ watch(selectedStatus, (newVal) => {
   })
 })
 
-
-
 const fetchDepartmentByCompany = async (company_id) => {
   await departmentStore.fetchDepartments(company_id)
 }
@@ -137,9 +132,14 @@ const groupedUsers = computed(() => {
     filteredUsers = filteredUsers.filter((user) => user?.is_active == is_active)
   }
 
-  // 4. Filter by Selected User
-  if (selectedUser.value?.id) {
-    filteredUsers = filteredUsers.filter((user) => user?.id == selectedUser.value.id)
+  // // 4. Filter by Selected User
+  // if (selectedUser.value?.id) {
+  //   filteredUsers = filteredUsers.filter((user) => user?.id == selectedUser.value.id)
+  // }
+
+  // // 4. Filter by Selected User
+  if (selectedUserId.value) {
+    filteredUsers = filteredUsers.filter((user) => user?.id == selectedUserId.value)
   }
 
   // Group Users by Company Name
@@ -191,7 +191,7 @@ async function excelDownload() {
   })
 }
 
-const fetchEmployees = async(companyId) => {
+const fetchEmployees = async (companyId) => {
   try {
     const res = await companyStore.fetchEmployees(companyId)
     users.value = res.data
@@ -200,8 +200,8 @@ const fetchEmployees = async(companyId) => {
   }
 }
 
-const fetchDepartmentEmployee = async(departmentId) => {
-   try {
+const fetchDepartmentEmployee = async (departmentId) => {
+  try {
     const res = await departmentStore.fetchDepartmentEmployee({
       departmentIds: [departmentId],
     })
@@ -209,7 +209,6 @@ const fetchDepartmentEmployee = async(departmentId) => {
   } catch (err) {
     console.error('Failed to fetch employees by department:', err)
   }
-
 }
 
 const formattedName = (name) => {
@@ -221,6 +220,8 @@ const formattedName = (name) => {
   }
   return ''
 }
+
+// const selectedCompanyId = ref()
 </script>
 
 <template>
@@ -246,52 +247,21 @@ const formattedName = (name) => {
         </button>
       </div>
     </div>
-    <div class="grid md:grid-cols-4 items-center gap-4">
-      <div>
-        <select v-model="selectedCompany" class="input-1">
-          <option value="all" selected>All Company</option>
-          <option v-for="(item, index) in companies" :key="index" :value="item.id">
-            {{ item?.name }}
-          </option>
-        </select>
-      </div>
-      <div>
-        <select v-model="selectedDepartment" class="input-1">
-          <option value="all" selected>All Department</option>
-          <option v-for="(item, index) in departments" :key="index" :value="item.id">
-            {{ item?.name }}
-          </option>
-        </select>
-      </div>
-      <div>
-        <select v-model="selectedLineType" class="input-1">
-          <option value="all">All Category</option>
-          <option value="executive">Executive</option>
-          <option value="support_staff">Support Staff</option>
-          <option value="doctor">Doctor</option>
-          <option value="academy_body">Academy Body</option>
-        </select>
-      </div>
-      <div>
-        <select v-model="selectedStatus" class="input-1">
-          <option value="active">Active</option>
-          <option value="in_active">In Active</option>
-        </select>
-      </div>
-      <!-- {{ userStore.users }} -->
-      <MultiselectDropdown
-        v-model="selectedUser"
-        :options="users"
-        :multiple="false"
-        label="name"
-        label-prefix="employee_id"
-        placeholder="Select user"
-      >
-        <template #option="{ option }">
-          <UserChip :user="option" class="w-full line-clamp-1" />
-        </template>
-      </MultiselectDropdown>
 
+    <div class="flex gap-4 items-center py-2">
+      <EmployeeFilter
+        v-model:company_id="selectedCompany"
+        v-model:department_id="selectedDepartment"
+        v-model:employee_id="selectedUserId"
+        v-model:line_type="selectedLineType"
+        :with-type="true"
+        :initial-value="$route.query"
+        class="w-full"
+      />
+      <select v-model="selectedStatus" class="input-1 w-auto">
+        <option value="active">Active</option>
+        <option value="in_active">In Active</option>
+      </select>
       <div class="btn-2" @click="fetchUser()">Search</div>
     </div>
 
@@ -300,8 +270,12 @@ const formattedName = (name) => {
     </div>
 
     <div v-else class="space-y-4">
-
-      <div v-if="!groupedUsers.length" class="text-center py-2 text-lg italic text-gray-500"> User not found </div>
+      <div
+        v-if="Object.keys(groupedUsers).length === 0"
+        class="text-center py-2 text-lg italic text-gray-500"
+      >
+        User not found
+      </div>
 
       <div v-for="(users, companyName) in groupedUsers" :key="companyName">
         <h2 class="title-md">{{ companyName }} ({{ users.length }})</h2>
@@ -345,7 +319,10 @@ const formattedName = (name) => {
                   <div class="flex items-center justify-between gap-2">
                     <!-- Shift Info -->
                     <div>
-                      <span v-if="user.current_shift?.shift?.name" class="text-sm font-medium text-green-700">
+                      <span
+                        v-if="user.current_shift?.shift?.name"
+                        class="text-sm font-medium text-green-700"
+                      >
                         {{ user.current_shift.shift.name }}
                       </span>
                       <span v-else class="text-sm italic text-red-500">Not Assigned</span>
@@ -356,7 +333,11 @@ const formattedName = (name) => {
                       @click="toggleModal(user)"
                       :title="user?.current_shift ? 'Change Shift' : 'Assign Shift'"
                       class="p-2 rounded-full transition hover:scale-110 focus:outline-none"
-                      :class="user?.current_shift ? 'bg-yellow-100 text-yellow-700' : 'bg-emerald-600 text-white'"
+                      :class="
+                        user?.current_shift
+                          ? 'bg-yellow-100 text-yellow-700'
+                          : 'bg-emerald-600 text-white'
+                      "
                     >
                       <i :class="user?.current_shift ? 'fas fa-pen' : 'fas fa-plus'"></i>
                     </button>
@@ -374,36 +355,49 @@ const formattedName = (name) => {
                   </Transition>
                 </td>
                 <td class="border border-gray-300 px-3 py-3">
-                <div class="flex items-center justify-between gap-2">
-                  <!-- Weekend Info -->
-                  <div>
-                    <span v-if="user?.assign_weekend?.weekends?.length" class="text-sm font-medium text-green-700">
-                      {{ user.assign_weekend.weekends.join(', ') }}
-                    </span>
-                    <span v-else class="text-sm italic text-red-500">Not Assigned</span>
+                  <div class="flex items-center justify-between gap-2">
+                    <!-- Weekend Info -->
+                    <div>
+                      <span
+                        v-if="user?.assign_weekend?.weekends?.length"
+                        class="text-sm font-medium text-green-700"
+                      >
+                        {{ user.assign_weekend.weekends.join(', ') }}
+                      </span>
+                      <span v-else class="text-sm italic text-red-500">Not Assigned</span>
+                    </div>
+
+                    <!-- Action Button -->
+                    <button
+                      @click="toggleWeekendModal(user)"
+                      :title="
+                        user?.assign_weekend?.weekends?.length ? 'Edit Weekend' : 'Assign Weekend'
+                      "
+                      class="p-2 rounded-full transition hover:scale-110 focus:outline-none"
+                      :class="
+                        user?.assign_weekend?.weekends?.length
+                          ? 'bg-yellow-100 text-yellow-700'
+                          : 'bg-emerald-600 text-white'
+                      "
+                    >
+                      <i
+                        :class="
+                          user?.assign_weekend?.weekends?.length ? 'fas fa-pen' : 'fas fa-plus'
+                        "
+                      ></i>
+                    </button>
                   </div>
 
-                  <!-- Action Button -->
-                  <button
-                    @click="toggleWeekendModal(user)"
-                    :title="user?.assign_weekend?.weekends?.length ? 'Edit Weekend' : 'Assign Weekend'"
-                    class="p-2 rounded-full transition hover:scale-110 focus:outline-none"
-                    :class="user?.assign_weekend?.weekends?.length ? 'bg-yellow-100 text-yellow-700' : 'bg-emerald-600 text-white'"
-                  >
-                    <i :class="user?.assign_weekend?.weekends?.length ? 'fas fa-pen' : 'fas fa-plus'"></i>
-                  </button>
-                </div>
-
-                <Transition name="fade">
-                  <ShiftWeekendModal
-                    v-if="modalEmployeeId === user.id && modalOpen"
-                    :isOpen="modalOpen"
-                    :assign_weekend="user.assign_weekend"
-                    :userId="user.id"
-                    @close="modalOpen = false"
-                  />
-                </Transition>
-              </td>
+                  <Transition name="fade">
+                    <ShiftWeekendModal
+                      v-if="modalEmployeeId === user.id && modalOpen"
+                      :isOpen="modalOpen"
+                      :assign_weekend="user.assign_weekend"
+                      :userId="user.id"
+                      @close="modalOpen = false"
+                    />
+                  </Transition>
+                </td>
 
                 <td class="border border-gray-300 px-2">{{ user.phone }}</td>
                 <td class="border border-gray-300 px-2">{{ user.email || 'নেই' }}</td>

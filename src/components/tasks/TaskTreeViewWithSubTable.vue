@@ -75,12 +75,7 @@
                     <i class="fas fa-clock"></i>
                     {{ getDisplayDateTime(task.created_at) }}
                   </div>
-                  <div
-                    class="text-white bg-blue-700 text-[12px] uppercase px-[5px] py-[1px] rounded-full border border-green-200 opacity-80"
-                    v-if="treeLevel === 0"
-                  >
-                    Main
-                  </div>
+
                   <TaskImportantBadge v-if="task?.is_important" class="flex-none" />
                   <TaskUrgentBadge v-if="task?.is_urgent" class="flex-none" />
                 </div>

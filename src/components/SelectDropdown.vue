@@ -1,8 +1,8 @@
 <template>
-  <div class="relative w-full" ref="dropdownRef">
+  <div class="border rounded cursor-pointer bg-white relative" ref="dropdownRef">
     <!-- Control -->
     <div
-      class="h-full border rounded-md px-2 py-1 cursor-pointer bg-white flex items-center justify-between"
+      class="flex items-center justify-between px-2 h-full"
       @click="toggleDropdown"
       :class="{ 'bg-gray-100': disabled }"
       tabindex="0"
@@ -58,23 +58,41 @@
               :option="findOptionById(modelValue)"
               :is-selected="isSelected"
             >
-              {{ getSelectionLabel(selectedItems) || placeholder || 'Select...' }}
+              <span
+                v-if="getSelectionLabel(selectedItems)"
+                class="line-clamp-1"
+                :title="getSelectionLabel(selectedItems)"
+              >
+                {{ getSelectionLabel(selectedItems) }}
+              </span>
+              <span v-else class="text-gray-500">{{ placeholder || 'Select...' }}</span>
             </slot>
           </div>
         </template>
       </div>
+      <div class="flex items-center gap-0.5">
+        <!-- Indicator -->
+        <button
+          v-if="props.modelValue && clearable"
+          @click.prevent="() => emit('update:modelValue', '')"
+          class="text-gray-600 font-semibold hover:text-red-700 text-xl"
+          title="Clear selection"
+        >
+          <slot name="clear-icon"> &times; </slot>
+        </button>
 
-      <!-- Indicator -->
-      <slot name="open-indicator">
-        <svg class="w-4 h-4 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="3"
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
-      </slot>
+        <!-- Indicator -->
+        <slot name="open-indicator">
+          <svg class="w-4 h-4 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="3"
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
+        </slot>
+      </div>
     </div>
 
     <!-- Dropdown -->
@@ -90,7 +108,7 @@
             type="text"
             v-model="search"
             ref="searchInput"
-            class="w-full px-2 py-1 border rounded"
+            class="w-full px-2 py-1 border rounded outline-blue-400 focus:outline-1"
             placeholder="Search..."
             @focus="$emit('search:focus')"
             @blur="$emit('search:blur')"
@@ -140,11 +158,10 @@ const props = defineProps({
   multiple: { type: Boolean, default: false },
   label: { type: String, default: 'label' },
   value: { type: String, default: 'id' },
-  clearable: { type: Boolean, default: true },
+  clearable: { type: Boolean, default: false },
   searchable: { type: Boolean, default: true },
   disabled: { type: Boolean, default: false },
   filterBy: { type: Function, default: null },
-  reduce: { type: Function, default: null },
   position: {
     type: String,
     default: 'auto',

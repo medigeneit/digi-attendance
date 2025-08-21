@@ -1,5 +1,6 @@
 <script setup>
-import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
+import EmployeeDropdownInput from '@/components/EmployeeDropdownInput.vue'
+import SelectDropdown from '@/components/SelectDropdown.vue'
 import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
 import { useShiftStore } from '@/stores/shift'
@@ -23,6 +24,7 @@ const selectedMonth = ref(dayjs().format('YYYY-MM'))
 const selectedCompany = ref('')
 const selectedDepartment = ref('')
 const selectedEmployee = ref('')
+const selectedEmployeeId = ref('')
 const selectedShift = ref('')
 const scheduleMap = ref({})
 const selectedEmployeeIds = ref([])
@@ -215,8 +217,8 @@ watch(selectedMonth, async (month) => {
 })
 
 const filteredEmployees = computed(() => {
-  if (!selectedEmployee.value) return employees.value
-  return employees.value.filter((emp) => emp.id === parseInt(selectedEmployee.value?.id))
+  if (!selectedEmployeeId.value) return employees.value
+  return employees.value.filter((emp) => emp.id === parseInt(selectedEmployeeId.value))
 })
 
 onMounted(async () => {
@@ -274,30 +276,43 @@ const loadScheduleData = async (companyId, departmentId, month) => {
   <div class="p-4 max-w-[1600px] mx-auto">
     <h2 class="text-center title-lg mb-4">Monthly Shift Schedule Plan</h2>
     <div class="grid grid-cols-2 md:grid-cols-6 gap-3 mb-4 items-center">
-      <select v-model="selectedCompany" class="p-2 border rounded">
-        <option value="">Select Company</option>
-        <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
-      </select>
-      <select v-model="selectedDepartment" class="p-2 border rounded">
+      <SelectDropdown
+        v-model="selectedCompany"
+        :options="companies"
+        placeholder="--Select Company--"
+        class="h-10"
+        clearable
+        label="name"
+      />
+
+      <SelectDropdown
+        v-model="selectedDepartment"
+        :options="departments"
+        placeholder="--All Department--"
+        class="h-10"
+        clearable
+        label="name"
+      />
+
+      <!-- <select v-model="selectedDepartment" class="h-10 px-2 border rounded">
         <option value="">- Department -</option>
         <option v-for="d in departments" :key="d.id" :value="d.id">{{ d.name }}</option>
-      </select>
+      </select> -->
+
       <div>
-        <MultiselectDropdown
-          v-model="selectedEmployee"
-          :options="employees"
-          :multiple="false"
-          label="name"
-          label-prefix="employee_id"
-          placeholder="Select user"
+        <EmployeeDropdownInput
+          v-model="selectedEmployeeId"
+          :employees="employees"
+          placeholder="--Select User--"
+          class="h-10"
         />
       </div>
-      <select v-model="selectedShift" class="p-2 border rounded">
+      <select v-model="selectedShift" class="h-10 px-2 border rounded">
         <option value="">- Shift -</option>
         <option v-for="s in allShifts" :key="s.id" :value="s.id">{{ s.name }}</option>
       </select>
 
-      <input type="month" v-model="selectedMonth" class="p-2 border rounded" />
+      <input type="month" v-model="selectedMonth" class="h-10 px-2 border rounded" />
     </div>
 
     <p v-if="defaultShift" class="text-yellow-600 font-medium mb-2 p-2 border rounded border-black">

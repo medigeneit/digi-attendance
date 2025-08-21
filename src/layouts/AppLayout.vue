@@ -3,7 +3,7 @@ import HeaderPrivate from '@/components/layouts/HeaderPrivate.vue'
 import SideBar from '@/components/layouts/SideBar.vue'
 import { getUserInitials } from '@/libs/user.js'
 import { useAuthStore } from '@/stores/auth'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { RouterView } from 'vue-router'
 
 const authStore = useAuthStore()
@@ -23,6 +23,10 @@ onMounted(async () => {
     await authStore.fetchUser()
   }
   user.value = authStore.user
+})
+
+onUnmounted(() => {
+  user.value = null
 })
 </script>
 
