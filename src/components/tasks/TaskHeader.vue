@@ -68,8 +68,6 @@ async function loadEmployeesByDepartment() {
 }
 
 onMounted(async () => {
-  await loadEmployeesByDepartment()
-
   await companyStore.fetchCompanies({
     with: 'departments',
     ignore_permission: true,
@@ -78,6 +76,8 @@ onMounted(async () => {
   await companyStore.fetchMyCompanies({
     with: 'departments',
   })
+
+  await loadEmployeesByDepartment()
 })
 
 function getEmployee(employeeId) {

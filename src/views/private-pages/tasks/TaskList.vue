@@ -61,9 +61,8 @@ onMounted(async () => {
     router.push({
       query: { ...route.query, status: 'not-completed' },
     })
-  } else {
-    await fetchTasks({ loadingBeforeFetch: true })
   }
+  await fetchTasks()
 })
 
 let taskAbortController
