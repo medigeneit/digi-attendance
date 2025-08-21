@@ -100,13 +100,13 @@ const actionIconClass = computed(() => {
 const timelineItems = computed(() => {
   return [
     {
-      date: getDisplayDate(props.task?.assigned_at || props.task?.created_at),
+      date: getDisplayDate(props.task?.assigned_at),
       title: 'Assigned',
       description: 'Task assigned to team or employee',
       icon: 'fas fa-user-check text-blue-500 ml-[2px]',
       status: 'assigned',
       serial: 1,
-      active: !!props.task?.assigned_at || !!props.task?.created_at,
+      active: !!props.task?.assigned_at,
     },
     {
       date: getDisplayDate(props.task?.started_at),

@@ -7,18 +7,15 @@ export const dateWiseTaskList = ( tasks, _day, _month, _year ) => {
       const deadline = task.deadline ? new Date(task.deadline) : null
       const todayDate = onlyDate(new Date())
 
-      if (task.assigned_at || task.created_at) {
-        let assignDate = task.assigned_at ? onlyDate(new Date(task.assigned_at)) : null
+      if (task.assigned_at ) {
+        const assignDate = onlyDate(new Date(task.assigned_at))
 
-        if (!assignDate && task.created_at) {
-          assignDate = onlyDate(new Date(task.created_at))
-        }
-
-        let taskCompletedDate = null
 
         if (selectedDate < assignDate) {
           return false
         }
+
+        let taskCompletedDate = null
 
         if (task.completed_at) {
           taskCompletedDate = onlyDate(new Date(task.completed_at))

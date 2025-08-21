@@ -1,14 +1,23 @@
 <script setup>
 import { dateWiseTaskList } from '@/libs/task'
-import { useTaskStore } from '@/stores/useTaskStore'
-import { reactive, ref } from 'vue'
+import { reactive } from 'vue'
 import CalenderView from '../../Calender/CalenderView.vue'
 import TaskListOnDay from './TaskListOnDay.vue'
 
-const month = ref('2025-08')
 const selected = reactive({ day: null, month: null, year: null })
 
-const taskStore = useTaskStore()
+defineProps({
+  month: {
+    type: String,
+    required: true,
+    validator: (val) => /^\d{4}-(0[1-9]|1[0-2])$/.test(val),
+  },
+  tasks: {
+    type: Array,
+    required: true,
+    default: () => [],
+  },
+})
 
 function handleCloseClick(event) {
   event.stopPropagation()
@@ -24,10 +33,6 @@ function handleSelection(event, day, month, year) {
   selected.day = day
   selected.month = month
   selected.year = year
-}
-
-async function handleCalenderChange({ gridStartDate, gridEndDate, startOfMonth, endOfMonth }) {
-  await taskStore.fetchMyTasks()
 }
 
 const dateIsToday = (day, month, year) => {
@@ -53,16 +58,7 @@ const dateClass = (day, month, year, isCurrentMonth) => {
 
 <template>
   <div class="relative">
-    <div class="px-4 py-2 flex items-center bg-gray-50 group">
-      <h2 class="leading-none font-semibold text-lg">Monthly Task</h2>
-      <input type="month" v-model="month" class="ml-auto border px-2 rounded" />
-    </div>
-
-    <CalenderView
-      :month="month"
-      class="border-t border-blue-200/50 relative"
-      @change="handleCalenderChange"
-    >
+    <CalenderView :month="month" v-if="month" class="border-t border-blue-200/50 relative">
       <template #date="{ day, month, year, isCurrentMonth }">
         <div
           tabindex="0"
@@ -88,7 +84,7 @@ const dateClass = (day, month, year, isCurrentMonth) => {
 
           <TaskListOnDay
             :is-current-month="isCurrentMonth"
-            :tasks="dateWiseTaskList(taskStore.tasks, day, month, year)"
+            :tasks="dateWiseTaskList(tasks, day, month, year)"
             :limit="3"
             class="text-xs mt-4"
             @clickOnMore="(event) => handleSelection(event, day, month, year)"
@@ -112,26 +108,12 @@ const dateClass = (day, month, year, isCurrentMonth) => {
             <TaskListOnDay
               class="p-4"
               :is-current-month="isCurrentMonth"
-              :tasks="
-                dateWiseTaskList(taskStore.tasks, selected.day, selected.month, selected.year)
-              "
+              :tasks="dateWiseTaskList(tasks, selected.day, selected.month, selected.year)"
               :tree="true"
             />
           </div>
         </div>
       </template>
     </CalenderView>
-    <!--
-    <pre>
-      {{
-        taskStore?.tasks
-          ?.map((t) => ({
-            id: t.id,
-            title: t.title,
-            started_at: t.started_at,
-          }))
-          .filter((t) => t.started_at)
-      }}
-    </pre> -->
   </div>
 </template>

@@ -93,6 +93,24 @@ export const getYearMonthDayFormat = (dateTime) => {
   }
 }
 
+export const getYearMonthFormat = (dateTime) => {
+  if (!dateTime) {
+    return ''
+  }
+
+  try {
+    const date = new Date(dateTime)
+    if (isNaN(date)) return ''
+
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0') // Months are 0-based
+
+    return `${year}-${month}`
+  } catch (e) {
+    return ''
+  }
+}
+
 
 export const onlyDate = (date) => {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate())

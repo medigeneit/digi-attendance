@@ -29,7 +29,6 @@ const form = ref({
   supervisor_id: null,
 })
 
-const selectedSupervisor = ref(null)
 const supervisors = ref([])
 
 async function submit() {
@@ -110,25 +109,19 @@ onMounted(async () => {
             :options="supervisors"
             placeholder="--NO SUPERVISOR--"
             :containment="formContainerRef"
+            clearable
+            class="h-10"
           >
+            <template #list-header>
+              <div class="px-3 pt-2 pb-1 shadow-md text-xs uppercase bg-gray-50 text-gray-500">
+                Employees
+              </div>
+            </template>
             <template #option="{ option }">
-              <UserChip :user="option || {}"></UserChip>
+              <UserChip :user="option || {}" class="pr-5 -mx-1"></UserChip>
             </template>
             <template #selected-option="{ option }">
-              <div v-if="option" class="relative w-full">
-                <UserChip :user="option || {}"></UserChip>
-                <div
-                  class="absolute right-1 text-xl top-0 bottom-0 flex items-center"
-                  v-if="selectedSupervisor"
-                >
-                  <button
-                    @click.prevent="selectedSupervisor = null"
-                    class="text-gray-6 font-semibold 00 hover:text-red-700"
-                  >
-                    &times;
-                  </button>
-                </div>
-              </div>
+              <UserChip v-if="option" :user="option || {}" class="pr-4"></UserChip>
             </template>
           </SelectDropdown>
         </div>

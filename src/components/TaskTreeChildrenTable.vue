@@ -37,7 +37,7 @@
               ' bg-white hover:bg-slate-50': task.status !== 'COMPLETED',
             }"
           >
-            <td class="border-y text-center py-2 border-gray-200">
+            <td class="border-y text-center py-2 px-1 border-gray-200">
               <div class="text-base font-semibold text-purple-600" v-if="index !== undefined">
                 {{ index + 1 }}.
               </div>

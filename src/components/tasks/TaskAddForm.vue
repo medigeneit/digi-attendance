@@ -213,7 +213,7 @@ async function submit() {
 
         <div class="grid grid-cols-2 gap-4 mb-4 mt-4">
           <div class="mb-4">
-            <label class="block text-gray-600 text-sm mb-1 font-medium">Starting</label>
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Assign Date</label>
             <input
               v-model="form.assigned_at"
               type="date"

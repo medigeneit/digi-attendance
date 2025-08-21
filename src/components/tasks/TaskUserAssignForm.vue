@@ -227,7 +227,7 @@ const taskFormContainerRef = ref()
 
         <div class="flex items-end col-span-full md:col-span-2 gap-4">
           <div class="w-1/2">
-            <label class="block text-gray-600 text-sm mb-1 font-medium">Starting</label>
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Assign Date</label>
             <input
               v-model="form.assigned_at"
               type="date"

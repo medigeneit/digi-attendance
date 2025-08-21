@@ -1,26 +1,36 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
 import SearchInput from '@/components/SearchInput.vue'
-import { getYearMonthDayFormat } from '@/libs/datetime'
+import {
+  getDisplayDate,
+  getDisplayMonth,
+  getYearMonthDayFormat,
+  getYearMonthFormat,
+} from '@/libs/datetime'
 import { dateWiseTaskList } from '@/libs/task'
 import { mapAndFilterTask } from '@/libs/task-tree'
 import { useAuthStore } from '@/stores/auth'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import DailyTaskHeading from './DailyTaskHeading.vue'
+import MonthlyTaskHeading from './MonthlyTaskHeading.vue'
+import TaskInMonth from './TaskInMonth.vue'
 import TaskListOnDay from './TaskListOnDay.vue'
 
 const selected = reactive({ day: null, month: null, year: null })
 const selectedDay = ref()
+const selectedMonth = ref()
 const state = ref('loading')
 const taskStore = useTaskStore()
 const auth = useAuthStore()
 
 const search = ref('')
+const listType = ref('day-wise')
 const taskStatus = ref('not-completed')
 
 onMounted(() => {
   selectedDay.value = getYearMonthDayFormat(new Date())
+  selectedMonth.value = getYearMonthFormat(new Date())
 })
 
 watch(selectedDay, (newValue) => {
@@ -29,6 +39,14 @@ watch(selectedDay, (newValue) => {
   selected.month = month
   selected.year = year
 })
+
+watch(selectedMonth, (newValue) => {
+  const [year, month] = newValue.split('-').map(Number)
+  selected.day = 1
+  selected.month = month
+  selected.year = year
+})
+
 watch(
   () => selected.month,
   async () => {
@@ -38,25 +56,15 @@ watch(
   },
 )
 
+watch(listType, (newType) => {
+  if (newType == 'month-wise') {
+    const [year, month] = selectedDay.value.split('-')
+    selectedMonth.value = `${year}-${month}`
+  }
+})
+
 async function fetchMyTask() {
-  await taskStore.fetchMyTasks({ status: 'not-completed' })
-}
-
-function handleClickOnToday() {
-  const today = new Date()
-  selectedDay.value = getYearMonthDayFormat(today)
-}
-
-function handleClickOnNextDay() {
-  const today = new Date(selectedDay.value)
-  today.setDate(today.getDate() + 1)
-  selectedDay.value = getYearMonthDayFormat(today)
-}
-
-function handleClickOnPreviousDay() {
-  const today = new Date(selectedDay.value)
-  today.setDate(today.getDate() - 1)
-  selectedDay.value = getYearMonthDayFormat(today)
+  await taskStore.fetchMyTasks()
 }
 
 const handleReloadClick = async () => {
@@ -65,7 +73,7 @@ const handleReloadClick = async () => {
   state.value = ''
 }
 
-const dailyTaskList = computed(() => {
+const filteredTasks = computed(() => {
   const titlePartiallyMatched = (taskTitle) => {
     if (!search.value) {
       return true
@@ -73,12 +81,19 @@ const dailyTaskList = computed(() => {
     return taskTitle?.toUpperCase()?.includes(search.value?.toUpperCase())
   }
 
+  const filters =
+    listType.value == 'day-wise'
+      ? {
+          ['user-ids']: auth?.user?.id,
+          status: taskStatus.value,
+        }
+      : {
+          ['user-ids']: auth?.user?.id,
+        }
+
   return mapAndFilterTask(
     dateWiseTaskList(taskStore.tasks, selected.day, selected.month, selected.year),
-    {
-      ['user-ids']: auth?.user?.id,
-      status: taskStatus.value,
-    },
+    filters,
   )
     .filter((task) => {
       return (
@@ -102,26 +117,42 @@ const dailyTaskList = computed(() => {
 <template>
   <div class="border">
     <DailyTaskHeading
-      :selected-day="selectedDay"
+      v-if="listType == 'day-wise'"
       :loading="state == 'loading'"
-      @todayButtonClick="handleClickOnToday"
+      :selected-day="selectedDay"
+      @change="(v) => (selectedDay = v)"
       @reload-click="handleReloadClick"
-      @previous-day-click="handleClickOnPreviousDay"
-      @next-day-click="handleClickOnNextDay"
-      @input-selected-day="(event) => (selectedDay = event?.target?.value)"
+      @month-wise-button-click="listType = 'month-wise'"
     />
 
-    <!-- <MonthlyTaskHeading /> -->
+    <MonthlyTaskHeading
+      v-if="listType == 'month-wise'"
+      :loading="state == 'loading'"
+      :selected-month="selectedMonth"
+      @change="(v) => (selectedMonth = v)"
+      @day-wise-button-click="listType = 'day-wise'"
+      @reload-click="handleReloadClick"
+    />
 
     <div class="bg-gray-300 bg-opacity-90 relative">
       <div class="bg-gray-50 border-y rounded-md z-20">
-        <div
-          class="text-md font-semibold sticky top-0 border-b px-4 z-30 py-3 bg-white flex items-center shadow"
-        >
-          Tasks
+        <div class="text-md sticky top-0 border-b px-4 z-30 py-3 bg-white flex items-center shadow">
+          <div class="flex justify-between items-center gap-6 ml-auto">
+            <div
+              class="text-blue-800 bg-blue-100 rounded-full border px-4 py-0.5 text-sm"
+              v-if="listType == 'day-wise'"
+            >
+              {{ getDisplayDate(selectedDay) }}
+            </div>
 
-          <div class="flex justify-between items-center gap-4 ml-auto">
-            <div class="w-32 relative h-8 mx-4">
+            <div
+              class="text-blue-800 bg-blue-100 rounded-full border px-4 py-0.5 text-sm"
+              v-if="listType == 'month-wise'"
+            >
+              {{ getDisplayMonth(selectedMonth) }}
+            </div>
+
+            <div class="w-32 relative h-8" v-if="listType == 'day-wise'">
               <label class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500"
                 >Status</label
               >
@@ -143,9 +174,14 @@ const dailyTaskList = computed(() => {
         </div>
         <TaskListOnDay
           class="p-4 min-h-[40vh] max-h-[60vh] overflow-y-auto"
-          :is-current-month="isCurrentMonth"
-          :tasks="dailyTaskList"
+          :tasks="filteredTasks"
           :tree="true"
+          v-if="listType == 'day-wise'"
+        />
+        <TaskInMonth
+          :tasks="filteredTasks || []"
+          :month="selectedMonth"
+          v-else-if="listType == 'month-wise'"
         />
       </div>
       <LoaderView

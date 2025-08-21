@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { getDisplayDate } from '@/libs/datetime'
+import { getYearMonthDayFormat } from '@/libs/datetime'
 
-defineProps({
+const props = defineProps({
   selectedDay: {
     type: String,
     required: true,
@@ -11,20 +11,31 @@ defineProps({
     default: false,
   },
 })
-const emit = defineEmits([
-  'todayButtonClick',
-  'reloadClick',
-  'previousDayClick',
-  'nextDayClick',
-  'inputSelectedDay',
-])
+const emit = defineEmits(['change', , 'reloadClick', 'monthWiseButtonClick'])
+
+function handleClickOnToday() {
+  const today = new Date()
+  emit('change', getYearMonthDayFormat(today))
+}
+
+function handleClickOnNextDay() {
+  const today = new Date(props.selectedDay)
+  today.setDate(today.getDate() + 1)
+  emit('change', getYearMonthDayFormat(today))
+}
+
+function handleClickOnPreviousDay() {
+  const today = new Date(props.selectedDay)
+  today.setDate(today.getDate() - 1)
+  emit('change', getYearMonthDayFormat(today))
+}
 </script>
 
 <template>
   <div class="px-4 py-2 flex items-center bg-gray-50 group">
     <h2 class="leading-none font-semibold text-lg">Daily Task</h2>
-    <div class="mx-4">{{ getDisplayDate(selectedDay) }}</div>
-    <button class="btn-3 mx-4 h-7" @click.prevent="emit('todayButtonClick')">Today</button>
+    <button class="btn-3 mx-4 h-7" @click.prevent="emit('monthWiseButtonClick')">Month Wise</button>
+    <button class="btn-3 mx-4 h-7" @click.prevent="handleClickOnToday">Today</button>
 
     <button
       class="btn-3 px-2 py-2 mx-4 size-7 disabled:text-gray-300 disabled:border-gray-300"
@@ -36,13 +47,13 @@ const emit = defineEmits([
     </button>
 
     <div class="ml-4 md:ml-auto flex items-center gap-2">
-      <button class="btn-2 h-7" @click.prevent="emit('previousDayClick')">Previous Day</button>
-      <button class="btn-2 h-7" @click.prevent="emit('nextDayClick')">Next Day</button>
+      <button class="btn-2 h-7" @click.prevent="handleClickOnPreviousDay">Previous Day</button>
+      <button class="btn-2 h-7" @click.prevent="handleClickOnNextDay">Next Day</button>
 
       <input
         type="date"
         :value="selectedDay"
-        @input="emit('inputSelectedDay', $event)"
+        @input="(e) => emit('change', e.target?.value)"
         class="border px-2 rounded"
       />
     </div>
