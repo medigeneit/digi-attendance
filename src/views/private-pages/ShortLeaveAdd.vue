@@ -127,7 +127,6 @@ const goBack = () => {
           type="date"
           id="date"
           v-model="form.date"
-          :max="today"
           class="input-1 w-full"
           required
         />
