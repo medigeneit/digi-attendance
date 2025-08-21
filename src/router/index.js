@@ -663,7 +663,7 @@ const router = createRouter({
           component: () => import('@/views/admin-pages/ShiftScheduleForm.vue'),
           meta: {
             requiresAuth: true,
-            roles: ['super_admin', 'developer'],
+            roles: ['admin', 'super_admin', 'developer'],
             title: 'Shift Schedule',
           },
         },
