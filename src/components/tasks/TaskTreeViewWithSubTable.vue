@@ -105,6 +105,7 @@
           <TaskTreeChildrenTable
             :childrenTasks="task.children_tasks"
             :parentTask="task"
+            :isMyTask="isMyTask"
             :hide-buttons="hideButtons"
             :hide-assigned-users="hideAssignedUsers"
             :parent-tree-level="treeLevel"

@@ -50,7 +50,7 @@
                       titleClass="text-sm"
                       :task="task"
                       :sub-tasks-open="false"
-                      :is-my-task="isMyTask"
+                      :isMyTask="isMyTask"
                     />
                   </div>
                   <div class="flex items-center flex-none lg:w-full order-0 lg:order-1">
@@ -177,6 +177,7 @@ const props = defineProps({
   hideButtons: { type: Boolean, default: false },
   parentTreeLevel: { type: Number },
   maxItem: { Number, default: 5 },
+  isMyTask: { type: Boolean, default: false },
 })
 
 const showAll = ref(false)

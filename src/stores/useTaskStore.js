@@ -11,6 +11,7 @@ export const useTaskStore = defineStore('task', () => {
   const hasMoreTask = ref(true);
 
 
+
   const assignUsers = async (taskId, user_ids, {updateStoreData = true}) => {
 
     if( updateStoreData == true ) {
@@ -38,36 +39,21 @@ export const useTaskStore = defineStore('task', () => {
     tasks.value = []
   }
 
-  const fetchTasks = async (params, {infiniteScrolling = false } = {}) => {
-
+  async function fetchTasks(params, config = {}) {
     error.value = null;
-    if( loading.value ) {
-      return null
-    }
 
     try {
 
       const queryParams = {
         ...params,
-        ...(infiniteScrolling
-          ? { page: currentPage.value, per_page: 50 }
-          : { per_page: 5000 }
-        )
+        per_page: 5000
       }
 
       loading.value = true
 
-      const response = await apiClient.get('/tasks', {params: queryParams});
+      const response = await apiClient.get( '/tasks', { params: queryParams, ...config } );
 
-      if( infiniteScrolling ) {
-
-        const newList = (response.data?.tasks || []).filter( newTask => !tasks.value.some( task => task.id == newTask.id));
-        hasMoreTask.value = response.data?.all_status_count > 0
-        tasks.value = [ ...tasks.value, ...newList ];
-        currentPage.value++
-      } else {
-        tasks.value = response.data?.tasks || [];
-      }
+      tasks.value = response.data?.tasks || [];
 
       loading.value = false
 
@@ -76,13 +62,14 @@ export const useTaskStore = defineStore('task', () => {
       error.value = err.response?.data?.message || 'টাস্ক লোড করতে ব্যর্থ হয়েছে।';
       throw err
     }
+    
   };
 
-  const fetchMyTasks = async (params,{} = {}) => {
+  const fetchMyTasks = async (params, config) => {
 
     error.value = null;
     try {
-      const response = await apiClient.get('/my-tasks', {params});
+      const response = await apiClient.get('/my-tasks', {params,...config});
       tasks.value = response.data?.tasks || [];
       return response.data;
     } catch (err) {

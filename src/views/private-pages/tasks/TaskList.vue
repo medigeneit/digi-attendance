@@ -15,7 +15,7 @@ import useTaskPriorityUpdate from '@/libs/task-priority'
 import { mapAndFilterTask } from '@/libs/task-tree'
 import { useAuthStore } from '@/stores/auth'
 import { useTaskStore } from '@/stores/useTaskStore'
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const store = useTaskStore()
@@ -55,6 +55,7 @@ const { handleItemsPriorityUpdate, saveTaskPriority, listHasRearranged } = useTa
 )
 
 onMounted(async () => {
+  console.log('Task List Mounted')
   state.value = 'loading'
   if (!route.query['status']) {
     router.push({
@@ -65,12 +66,25 @@ onMounted(async () => {
   }
 })
 
+let taskAbortController
+
 async function fetchTasks() {
   let data
+
+  taskAbortController = new AbortController()
+
+  console.log({ taskAbortController })
+
   if (route.name === 'MyTaskList') {
-    data = await store.fetchMyTasks({ ...route.query, ...{ page: 1 } })
+    data = await store.fetchMyTasks(
+      { ...route.query, ...{ page: 1 } },
+      { signal: taskAbortController.signal },
+    )
   } else {
-    data = await store.fetchTasks({ ...route.query, ...{ page: 1 } }, { infiniteScrolling: false })
+    data = await store.fetchTasks(
+      { ...route.query, ...{ page: 1 } },
+      { signal: taskAbortController.signal },
+    )
   }
 
   state.value = ''
@@ -124,9 +138,13 @@ watch(
     ...route.query,
   }),
   async () => {
-    store.resetTaskList()
-    state.value = 'loading'
-    await fetchTasks()
+    try {
+      store.resetTaskList()
+      state.value = 'loading'
+      await fetchTasks()
+    } catch {
+      console.warn('...')
+    }
   },
 )
 
@@ -147,6 +165,14 @@ const tasks = computed(() => {
   }
 
   return Array.isArray(store.tasks) ? mapAndFilterTask(store.tasks, filters) : []
+})
+
+onUnmounted(() => {
+  store.tasks.value = null
+
+  if (taskAbortController) {
+    taskAbortController.abort()
+  }
 })
 </script>
 
@@ -211,6 +237,7 @@ const tasks = computed(() => {
           v-if="route.query?.view == 'userwise'"
           :tasks="tasks"
           :selectedUserId="route.query['user-ids']"
+          :isMyTask="route.name === 'MyTaskList'"
           @commentButtonClick="openComment($event, task.id)"
           @editClick="(taskId) => (editingId = taskId)"
           @addClick="(taskId) => goToAdd(taskId)"
@@ -228,7 +255,7 @@ const tasks = computed(() => {
           <template #item="{ item, index }">
             <div class="flex items-stretched">
               <TaskTreeViewWithSubTable
-                :is-my-task="route.name === 'MyTaskList'"
+                :isMyTask="route.name === 'MyTaskList'"
                 :task="item"
                 :index="index"
                 :showDraggableHandle="!priorityChangingDisabled"

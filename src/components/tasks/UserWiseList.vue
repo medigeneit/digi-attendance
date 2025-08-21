@@ -8,6 +8,7 @@ import TaskTreeViewWithSubTable from './TaskTreeViewWithSubTable.vue'
 const props = defineProps({
   tasks: Array,
   selectedUserId: { type: String, default: null },
+  isMyTask: { Boolean, default: false },
 })
 
 const route = useRoute()
@@ -83,6 +84,7 @@ const taskUsers = computed(() => {
                   :task="task"
                   class="!border-0 my-4"
                   :index="taskIndex"
+                  :isMyTask="isMyTask"
                   @commentButtonClick="emit('commentButtonClick', item.id)"
                   @editClick="(taskId) => emit('editClick', taskId)"
                   @addClick="(taskId) => emit('addClick', taskId)"

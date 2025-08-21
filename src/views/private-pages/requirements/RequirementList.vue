@@ -7,6 +7,7 @@ const store = useRequirementStore()
 const router = useRouter()
 
 onMounted(() => {
+  console.log('Requirement List Mounted')
   store.fetchRequirements()
 })
 
