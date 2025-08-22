@@ -64,7 +64,7 @@
           <td
             class="border px-2 py-1 text-sm whitespace-nowrap"
             :class="{
-              'bg-red-50 text-red-800': log.late_duration,
+              'bg-red-50 text-red-800': log.late_duration && log.first_short_leave !== 'Approved',
               'bg-blue-50 text-blue-800': log?.manual_attendance?.check_in && log.entry_time,
             }"
           >
@@ -87,7 +87,7 @@
           <td
             class="border px-2 py-1 text-sm whitespace-nowrap"
             :class="{
-              'bg-red-50 text-red-800': log.early_leave_duration,
+              'bg-red-50 text-red-800': log.early_leave_duration && log.last_short_leave !== 'Approved',
               'bg-blue-50 text-blue-800': log?.manual_attendance?.check_out && log.exit_time,
             }"
           >
