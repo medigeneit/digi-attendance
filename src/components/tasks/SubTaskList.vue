@@ -40,8 +40,6 @@ const addForm = reactive({
 const goToAdd = (parentId) => {
   addForm.show = true
   addForm.parentId = parentId
-
-  console.log({ addForm })
 }
 
 function handleTaskCreate() {

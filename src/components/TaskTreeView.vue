@@ -174,11 +174,16 @@
                 v-if="!task.is_closed"
                 class="border-indigo-500 hover:bg-indigo-600 text-indigo-600 hover:text-white font-semibold px-3 py-0.5 rounded-full transition border-2"
               >
-                <i class="fas fa-users-cog"></i> Manage Employee & Supervisor
+                <i class="fas fa-users-cog"></i> Manage
               </a>
 
               <RouterLink
-                :to="{ name: 'TaskReports', params: { id: task?.id } }"
+                :to="{
+                  name: 'TaskReports',
+                  params: { id: task?.id },
+                  query: { ['is-my-task']: isMyTask },
+                  hash: '#task-reports',
+                }"
                 class="border-indigo-500 hover:bg-indigo-600 text-indigo-600 hover:text-white font-semibold px-3 py-0.5 rounded-full transition border-2"
               >
                 <i class="far fa-file-alt"></i> Reports

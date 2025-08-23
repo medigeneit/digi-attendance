@@ -15,6 +15,9 @@ const taskId = route.params.id
 onMounted(async () => {
   await taskStore.fetchTask(taskId)
   await store.fetchTaskReports({ task_id: taskId })
+  // if (route.hash) {
+  //   scrollToHash(route.hash)
+  // }
 })
 
 function collectLeafReports(tasks, parentChain = []) {
@@ -68,7 +71,7 @@ const taskReports = computed(() => {
 </script>
 
 <template>
-  <div class="mt-4">
+  <div class="mt-4" id="task-reports">
     <hr class="mb-2" />
 
     <!-- <pre>{{ taskStore.tasks }}</pre> -->
@@ -83,6 +86,7 @@ const taskReports = computed(() => {
           :to="{
             name: 'TaskReportAdd',
             params: { id: taskStore.task?.id },
+            query: route.query,
           }"
           @click="$event.stopPropagation()"
           class="btn-3 ml-auto inline-flex !my-1"
@@ -93,7 +97,7 @@ const taskReports = computed(() => {
         <table v-if="!store.loading" class="min-w-full bg-white shadow rounded-lg overflow-hidden">
           <thead class="bg-gray-100">
             <tr>
-              <th class="px-4 py-2 text-left w-2 border">#</th>
+              <th class="px-4 py-2 text-center w-2 border">#</th>
               <th
                 class="px-4 py-2 text-left md:w-[100px] lg:w-[220px] xl:w-[320px] border"
                 v-if="taskStore.task.children_task_count > 0"
@@ -113,6 +117,7 @@ const taskReports = computed(() => {
                     :to="{
                       name: 'TaskReportAdd',
                       params: { id: taskStore.task?.id },
+                      query: { id: taskStore.task?.id, ...route.query },
                     }"
                     @click="$event.stopPropagation()"
                     class="btn-3 ml-auto inline-flex !my-1"
@@ -129,7 +134,9 @@ const taskReports = computed(() => {
               @click.prevent="goToShow(task_report.id)"
               role="button"
             >
-              <td class="px-4 py-2 border-b">{{ index + 1 }}</td>
+              <td class="px-4 py-2 text-center border font-semibold text-gray-600">
+                {{ index + 1 }}
+              </td>
 
               <td
                 class="px-4 py-2 font-medium border-r border-b"
@@ -158,15 +165,26 @@ const taskReports = computed(() => {
                       }"
                       >↳</span
                     >
-                    <span class="ml-1">
+
+                    <RouterLink
+                      :to="{
+                        name: route.query['is-my-task'] ? 'MyTaskShow' : 'TaskShow',
+                        params: { id: task_report.task_id },
+                      }"
+                      class="ml-1 hover:underline hover:blue-800"
+                    >
                       {{ task_report.task_title }}
-                    </span>
+                    </RouterLink>
                   </div>
                 </div>
               </td>
               <td class="font-medium py-2 px-4 border">
                 <div class="border rounded-md bg-gray-50">
-                  <UserChip :user="task_report.user" class="inline-block w-full !rounded-sm" />
+                  <UserChip
+                    :user="task_report.user"
+                    v-if="task_report.user"
+                    class="inline-block w-full !rounded-sm"
+                  />
                   <div class="text-sm flex items-center px-3 py-3">
                     <div>
                       {{ task_report.title }}

@@ -1,18 +1,19 @@
 <script setup>
+import { scrollToHash } from '@/libs/dom'
 import { useTaskReportStore } from '@/stores/useTaskReportStore'
-import { useTaskStore } from '@/stores/useTaskStore'
 import { onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 
 const store = useTaskReportStore()
-const taskStore = useTaskStore()
 const route = useRoute()
-const router = useRouter()
 
 const taskId = route.params.id
 
 onMounted(async () => {
   await store.fetchTaskReports({ task_id: taskId })
+  if (route.hash) {
+    scrollToHash(route.hash)
+  }
 })
 </script>
 

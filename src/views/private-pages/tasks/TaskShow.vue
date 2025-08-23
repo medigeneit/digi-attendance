@@ -12,9 +12,10 @@ import TaskSupervisorAndEmployee from '@/components/tasks/TaskSupervisorAndEmplo
 import TaskUrgentBadge from '@/components/tasks/TaskUrgentBadge.vue'
 import TaskUserDateUpdate from '@/components/tasks/TaskUserDateUpdate.vue'
 import { getDisplayDateTime } from '@/libs/datetime'
+import { scrollToHash } from '@/libs/dom'
 import { getTaskProgressUsers } from '@/libs/task-progress'
 import { useTaskStore } from '@/stores/useTaskStore'
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const store = useTaskStore()
@@ -36,6 +37,12 @@ onMounted(async () => {
   state.value = 'loading'
   await fetchTaskList(route.params.id)
   state.value = ''
+  if (route.hash == '#sub-tasks') {
+    nextTick(() => {
+      console.log({ hash: document.getElementById(route.hash) })
+      scrollToHash(route.hash)
+    })
+  }
 })
 
 const dateUpdateModal = reactive({
@@ -67,13 +74,14 @@ const backLink = computed(() => {
   }
 
   if (store.task?.parent_id == 0) {
-    return { name: route.name === 'MyTaskShow' ? 'MyTaskList' : 'TaskList' }
+    return { name: isMyTask.value ? 'MyTaskList' : 'TaskList' }
   }
 
   return {
     params: {
       id: store.task?.parent_id,
     },
+    query: { ['is-my-task']: isMyTask.value },
   }
 })
 
@@ -88,6 +96,8 @@ function handleDeleteSuccess() {
   router.push(backLink.value)
 }
 
+const isMyTask = computed(() => route.name == 'MyTaskShow' || !!route.query['is-my-task'])
+
 watch(
   () => route.params.id,
   async (taskId) => {
@@ -96,10 +106,18 @@ watch(
     state.value = ''
   },
 )
+
+watch(
+  () => route.hash,
+  async function () {
+    setTimeout(scrollToHash, 0, route.hash)
+  },
+)
 </script>
 
 <template>
   <div class="container mx-auto p-6">
+    {{ route.hash }}
     <OverlyModal v-if="dateUpdateModal.user">
       <TaskUserDateUpdate
         :task="store.task"
@@ -141,6 +159,7 @@ watch(
 
                 <TaskUrgentBadge v-if="store.task?.is_urgent" />
               </div>
+
               <div class="text-gray-400 text-xs mt-2 col-span-full">
                 <i class="fas fa-clock"></i>
                 {{ getDisplayDateTime(store.task.created_at) }}
@@ -204,43 +223,46 @@ watch(
             v-if="store?.task"
             :task="store?.task || {}"
             class="col-span-full mt-4"
-            @updateStatus="fetchTaskList(store?.task?.id)"
+            @updateStatus="() => fetchTaskList(store?.task?.id)"
           />
 
-          <div class="mt-6 py-2 flex justify-center items-center gap-2 col-span-full">
-            <button
-              @click.stop="goToEdit(store.task?.id)"
-              class="btn-2 py-0.5 disabled:opacity-30 disabled:pointer-events-none"
-              :disabled="!!store.task.closed_at"
-            >
-              Edit
-            </button>
+          <div
+            class="mt-2 py-2 flex flex-col lg:flex-row gap-y-4 justify-center items-center gap-2 col-span-full"
+          >
+            <div class="flex items-center gap-4 flex-wrap justify-center">
+              <button
+                @click.stop="goToEdit(store.task?.id)"
+                class="btn-2 py-0.5 disabled:opacity-30 disabled:pointer-events-none"
+                :disabled="!!store.task.closed_at"
+              >
+                <i class="fas fa-edit"></i> Edit
+              </button>
 
-            <RouterLink
-              :to="{ name: 'TaskUserAssign', params: { id: store.task?.id } }"
-              class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-3 py-0.5 rounded-full transition"
-              @click="$event.stopPropagation()"
-              :class="!!store.task.closed_at ? 'opacity-30 pointer-events-none' : ''"
-            >
-              <i class="fas fa-user-plus"></i> Assign Users
-            </RouterLink>
+              <RouterLink
+                :to="{ name: 'TaskUserAssign', params: { id: store.task?.id } }"
+                class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-3 py-0.5 rounded-full transition whitespace-nowrap"
+                @click="$event.stopPropagation()"
+                :class="!!store.task.closed_at ? 'opacity-30 pointer-events-none' : ''"
+              >
+                <i class="fas fa-users-cog"></i> Assign Users
+              </RouterLink>
 
-            <button
-              class="border-2 border-indigo-500 hover:bg-indigo-500 hover:text-white ml-8 text-indigo-500 font-semibold px-3 py-0.5 rounded-full transition disabled:opacity-30 disabled:pointer-events-none"
-              @click="router.back()"
-            >
-              <i class="fas fa-arrow-left"></i> Back
-            </button>
+              <button
+                class="border-2 border-indigo-500 hover:bg-indigo-500 hover:text-white text-indigo-500 font-semibold px-3 py-0.5 rounded-full transition disabled:opacity-30 disabled:pointer-events-none whitespace-nowrap"
+                @click="router.back()"
+              >
+                <i class="fas fa-arrow-left"></i> Back
+              </button>
 
-            <RouterLink
-              :to="backLink"
-              class="border-2 border-indigo-500 hover:bg-indigo-500 hover:text-white ml-2 text-indigo-500 font-semibold px-3 py-0.5 rounded-full transition disabled:opacity-30 disabled:pointer-events-none"
-              @click="$event.stopPropagation()"
-            >
-              <i class="fas fa-arrow-left"></i> Parent Task
-            </RouterLink>
-
-            <div class="ml-auto flex gap-4">
+              <RouterLink
+                :to="backLink"
+                class="border-2 border-indigo-500 hover:bg-indigo-500 hover:text-white ml-2 text-indigo-500 font-semibold px-3 py-0.5 rounded-full transition disabled:opacity-30 disabled:pointer-events-none whitespace-nowrap"
+                @click="$event.stopPropagation()"
+              >
+                <i class="fas fa-arrow-left"></i> Parent Task
+              </RouterLink>
+            </div>
+            <div class="lg:ml-auto flex gap-4 items-center">
               <template
                 v-if="store.task?.children_task_count === 0 && store.task?.status === 'PENDING'"
               >
@@ -251,11 +273,12 @@ watch(
 
               <RouterLink
                 :to="{
-                  name: 'TaskShow',
+                  name: isMyTask || !!route.query['is-my-task'] ? 'MyTaskShow' : 'TaskShow',
                   params: { id: store.task?.id },
+                  hash: '#sub-tasks',
                 }"
                 @click="$event.stopPropagation()"
-                class="py-0.5 btn-3 ml-auto text-sm h-8"
+                class="py-0.5 btn-3 ml-auto text-sm h-8 whitespace-nowrap"
                 :class="{
                   'bg-blue-500 text-white': route.name == 'TaskShow' || route.name === 'MyTaskShow',
                 }"
@@ -268,6 +291,8 @@ watch(
                 :to="{
                   name: 'TaskReports',
                   params: { id: store.task?.id },
+                  query: { ['is-my-task']: isMyTask },
+                  hash: '#task-reports',
                 }"
                 @click="$event.stopPropagation()"
                 class="py-0.5 btn-3 text-sm h-8"
@@ -279,20 +304,25 @@ watch(
           </div>
         </section>
 
+        <div id="sub-tasks"></div>
         <section
           v-if="(route.name == 'TaskShow' || route.name === 'MyTaskShow') && store.task?.level <= 2"
         >
           <SubTaskList
             :subTasks="subTasks"
             :parent-id="route.params.id"
+            :sub-task-is-creatable="!store.task.closed_at"
             :tree-level="store.task.level + 1"
             @created="fetchTaskList(route.params.id)"
             @updated="fetchTaskList(route.params.id)"
             @updatePriority="fetchTaskList(route.params.id)"
             @assignUser="fetchTaskList(route.params.id)"
-            :sub-task-is-creatable="!store.task.closed_at"
           />
         </section>
+
+        <OverlyModal v-if="route.name === 'TaskReportAdd'" class="*:bg-transparent">
+          <router-view />
+        </OverlyModal>
 
         <section v-else>
           <router-view />

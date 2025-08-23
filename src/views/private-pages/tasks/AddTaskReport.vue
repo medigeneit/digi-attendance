@@ -76,18 +76,15 @@ const submitForm = async () => {
   console.log({ payload })
 
   try {
-    const response = await store.createTaskReport(payload)
-    console.log('Submitted:', response.data)
+    await store.createTaskReport(payload)
+
     // reset form
     title.value = ''
     reportDate.value = ''
     durationHour.value = 0
     durationMinute.value = 0
 
-    router.push({
-      name: 'TaskReports',
-      params: { id: taskId },
-    })
+    router.back()
   } catch (error) {
     console.error('Error submitting report:', error)
   }
@@ -122,7 +119,6 @@ const userCanReport = computed(() => {
 <template>
   <div class="mt-6">
     <div class="max-w-xl w-full mx-auto bg-white border p-4 rounded-md shadow">
-      <div class="col-span-full text-red-800 font-semibold">{{ store?.error }}</div>
       <div
         v-if="!userCanReport"
         class="w-full flex items-center justify-center h-40 text-red-500 text-xl text-center"
@@ -158,7 +154,7 @@ const userCanReport = computed(() => {
 
         <div class="col-span-full">
           <label for="title" class="block text-gray-600 text-sm mb-1 font-medium"
-            >Report <span class="text-gray-400">(optional)</span></label
+            >Report Title</label
           >
           <input
             id="title"
@@ -183,17 +179,10 @@ const userCanReport = computed(() => {
 
         <hr class="col-span-full border-dashed" />
 
-        <div class="flex justify-between col-span-full">
+        <div class="flex justify-between items-center col-span-full">
           <button type="submit" class="btn-2">Submit</button>
-          <RouterLink
-            type="submit"
-            class="btn-3"
-            :to="{
-              name: 'TaskReports',
-              params: { id: taskId },
-            }"
-            >Cancel</RouterLink
-          >
+          <div class="col-span-full text-red-800 font-semibold">{{ store?.error }}</div>
+          <button class="btn-3" @click.prevent="router.back()">Cancel</button>
         </div>
       </form>
     </div>

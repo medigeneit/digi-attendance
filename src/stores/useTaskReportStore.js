@@ -8,7 +8,7 @@ export const useTaskReportStore = defineStore('task-report', () => {
   const loading = ref(false);
   const error = ref(null);
 
- 
+
 
   const fetchTaskReports = async (params) => {
     loading.value = true;
@@ -24,8 +24,8 @@ export const useTaskReportStore = defineStore('task-report', () => {
       loading.value = false;
     }
   };
- 
- 
+
+
   const fetchTaskReport = async (id, params = {}) => {
     loading.value = true;
     error.value = null;
@@ -50,11 +50,12 @@ export const useTaskReportStore = defineStore('task-report', () => {
     } catch (err) {
       error.value = err.response?.data?.message || 'টাস্ক তৈরি করতে ব্যর্থ হয়েছে।';
       console.error('Error creating task:', err);
+      throw err
     } finally {
       loading.value = false;
     }
   };
- 
+
 
 
   return {
