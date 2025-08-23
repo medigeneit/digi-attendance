@@ -34,6 +34,13 @@ watch(
 const fetchOvertimeListData = async (selectedMonth = null) => {
   overtimeStore.fetchUserOvertimes({ month: selectedMonth || overtimeStore.selectedMonth })
 }
+
+function deleteApplication(applicationId) {
+  const confirmed = confirm('Are you sure you want to delete this application?')
+  if (confirmed) {
+    overtimeStore.deleteOvertime(applicationId)
+  }
+}
 </script>
 
 <template>
@@ -153,6 +160,15 @@ const fetchOvertimeListData = async (selectedMonth = null) => {
                   >
                     <i class="far fa-eye"></i>
                   </RouterLink>
+
+                  <button
+                    type="button"
+                    @click="deleteApplication(overtime?.id)"
+                    class="btn-icon"
+                    v-if="overtime.status == 'Pending' || !overtime.status"
+                  >
+                    <i class="far fa-trash text-red-600"></i>
+                  </button>
                 </div>
               </td>
             </tr>

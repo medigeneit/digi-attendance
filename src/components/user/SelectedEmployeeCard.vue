@@ -43,11 +43,11 @@
     <div v-if="user" class="px-5 pb-2">
       <div class="flex flex-wrap items-center gap-2">
         <span
-          v-if="user.designation?.title"
-          class="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700"
+          v-if="user.company?.name"
+          class="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700"
         >
-          <i class="far fa-id-badge text-[11px]"></i>
-          {{ user.designation.title }}
+          <i class="far fa-briefcase text-[11px]"></i>
+          {{ user.company.name }}
         </span>
 
         <span
@@ -59,11 +59,11 @@
         </span>
 
         <span
-          v-if="user.company?.name"
-          class="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700"
+          v-if="user.designation?.title"
+          class="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700"
         >
-          <i class="far fa-briefcase text-[11px]"></i>
-          {{ user.company.name }}
+          <i class="far fa-id-badge text-[11px]"></i>
+          {{ user.designation.title }}
         </span>
       </div>
     </div>

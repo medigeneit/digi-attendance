@@ -20,6 +20,14 @@ const goBack = () => {
 const myManualAttendances = computed(() => {
   return manualAttendanceStore.manualAttendances
 })
+
+function deleteApplication(applicationId) {
+  const confirmed = confirm('Are you sure you want to delete this application?')
+  if (confirmed) {
+    manualAttendanceStore.deleteManualAttendance(applicationId)
+  }
+}
+
 </script>
 
 <template>
@@ -84,6 +92,14 @@ const myManualAttendances = computed(() => {
                   >
                     <i class="far fa-eye"></i>
                   </RouterLink>
+                  <button
+                    type="button"
+                    @click="deleteApplication(attendance?.id)"
+                    class="btn-icon"
+                    v-if="attendance.status == 'Pending' || !attendance.status"
+                  >
+                    <i class="far fa-trash text-red-600"></i>
+                  </button>
                 </div>
               </td>
             </tr>

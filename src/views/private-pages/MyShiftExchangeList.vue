@@ -101,7 +101,7 @@ const goBack = () => {
                     type="button"
                     @click="deleteApplication(exchange?.id)"
                     class="btn-icon"
-                    v-if="!exchange.status"
+                    v-if="exchange.status == 'Pending' || !exchange.status"
                   >
                     <i class="far fa-trash text-red-600"></i>
                   </button>

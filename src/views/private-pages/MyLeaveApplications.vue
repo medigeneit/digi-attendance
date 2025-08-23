@@ -98,7 +98,7 @@ function deleteApplication(applicationId) {
                     type="button"
                     @click="deleteApplication(application?.id)"
                     class="btn-icon"
-                    v-if="!application.status"
+                    v-if="application.status == 'Pending' || !application.status"
                   >
                     <i class="far fa-trash text-red-600"></i>
                   </button>

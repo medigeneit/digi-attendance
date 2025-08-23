@@ -126,7 +126,7 @@ const formatTime = (timeString) => {
                     type="button"
                     @click="deleteApplication(leave?.id)"
                     class="btn-icon"
-                    v-if="!leave.status"
+                    v-if="leave.status == 'Pending' || !leave.status"
                   >
                     <i class="far fa-trash text-red-600"></i>
                   </button>
