@@ -1,23 +1,25 @@
 <script setup>
 import UserChip from '@/components/user/UserChip.vue'
 import { getDisplayDate } from '@/libs/datetime'
+import { scrollToID } from '@/libs/dom'
 import { useTaskReportStore } from '@/stores/useTaskReportStore'
 import { useTaskStore } from '@/stores/useTaskStore'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 const store = useTaskReportStore()
 const taskStore = useTaskStore()
 const route = useRoute()
-
 const taskId = route.params.id
+const state = ref()
 
 onMounted(async () => {
+  state.value = 'loading'
   await taskStore.fetchTask(taskId)
   await store.fetchTaskReports({ task_id: taskId })
-  // if (route.hash) {
-  //   scrollToHash(route.hash)
-  // }
+  state.value = ''
+
+  setTimeout(() => scrollToID('#task-reports', 66), 0)
 })
 
 function collectLeafReports(tasks, parentChain = []) {
@@ -62,6 +64,10 @@ function sortByReportDate(reportA, reportB) {
 }
 
 const taskReports = computed(() => {
+  if (state.value == 'loading') {
+    return []
+  }
+
   if (taskStore.task.children_task_count === 0) {
     return [...store.task_reports].sort(sortByReportDate)
   }
@@ -94,7 +100,10 @@ const taskReports = computed(() => {
         >
       </div>
       <div class="overflow-auto w-full">
-        <table v-if="!store.loading" class="min-w-full bg-white shadow rounded-lg overflow-hidden">
+        <table
+          v-if="state !== 'loading'"
+          class="min-w-full bg-white shadow rounded-lg overflow-hidden"
+        >
           <thead class="bg-gray-100">
             <tr>
               <th class="px-4 py-2 text-center w-2 border">#</th>
@@ -191,7 +200,7 @@ const taskReports = computed(() => {
                     </div>
 
                     <div class="text-gray-600 text-sm ml-auto whitespace-nowrap">
-                      on {{ getDisplayDate(task_report.report_date) }}
+                      {{ getDisplayDate(task_report.report_date) }}
                     </div>
                   </div>
                 </div>

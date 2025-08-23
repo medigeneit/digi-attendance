@@ -12,10 +12,10 @@ import TaskSupervisorAndEmployee from '@/components/tasks/TaskSupervisorAndEmplo
 import TaskUrgentBadge from '@/components/tasks/TaskUrgentBadge.vue'
 import TaskUserDateUpdate from '@/components/tasks/TaskUserDateUpdate.vue'
 import { getDisplayDateTime } from '@/libs/datetime'
-import { scrollToHash } from '@/libs/dom'
+import { scrollToID } from '@/libs/dom'
 import { getTaskProgressUsers } from '@/libs/task-progress'
 import { useTaskStore } from '@/stores/useTaskStore'
-import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const store = useTaskStore()
@@ -38,10 +38,7 @@ onMounted(async () => {
   await fetchTaskList(route.params.id)
   state.value = ''
   if (route.hash == '#sub-tasks') {
-    nextTick(() => {
-      console.log({ hash: document.getElementById(route.hash) })
-      scrollToHash(route.hash)
-    })
+    setTimeout(() => scrollToID(route.hash, 66), 0)
   }
 })
 
@@ -110,14 +107,13 @@ watch(
 watch(
   () => route.hash,
   async function () {
-    setTimeout(scrollToHash, 0, route.hash)
+    setTimeout(() => scrollToID(route.hash, 66), 0)
   },
 )
 </script>
 
 <template>
   <div class="container mx-auto p-6">
-    {{ route.hash }}
     <OverlyModal v-if="dateUpdateModal.user">
       <TaskUserDateUpdate
         :task="store.task"

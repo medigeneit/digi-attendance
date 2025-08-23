@@ -1,5 +1,5 @@
 <script setup>
-import { scrollToHash } from '@/libs/dom'
+import { scrollToID } from '@/libs/dom'
 import { useTaskReportStore } from '@/stores/useTaskReportStore'
 import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
@@ -12,7 +12,7 @@ const taskId = route.params.id
 onMounted(async () => {
   await store.fetchTaskReports({ task_id: taskId })
   if (route.hash) {
-    scrollToHash(route.hash)
+    scrollToID(route.hash)
   }
 })
 </script>
