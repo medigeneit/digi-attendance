@@ -1,0 +1,1 @@
+function s(t,e=0){const o=document.querySelector(t);if(o){const c=o.getBoundingClientRect(),n=window.pageYOffset||document.documentElement.scrollTop,l=c.top+n-e;window.scrollTo({top:l,behavior:"smooth"})}}export{s};
