@@ -3,6 +3,7 @@ import { getYearMonthDayFormat } from '@/libs/datetime'
 import { useAuthStore } from '@/stores/auth'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { computed, onMounted, ref } from 'vue'
+import LoaderView from '../common/LoaderView.vue'
 import TextWithHr from '../TextWithHr.vue'
 import IsTargetTaskInput from './IsTargetTaskInput.vue'
 import TaskAssignUserInput from './TaskAssignUserInput.vue'
@@ -143,114 +144,120 @@ const taskFormContainerRef = ref()
 </script>
 
 <template>
-  <div class="px-4 max-h-[90vh] overflow-auto rounded" ref="taskFormContainerRef">
-    <div class="sticky top-0 bg-white z-20">
+  <div class="px-4 rounded border max-h-[98vh] overflow-auto" ref="taskFormContainerRef">
+    <div class="bg-white z-20 sticky top-0 -mx-4 px-4">
       <h2 class="text-xl font-semibold text-gray-800 mb-1 mt-4">Manage Employee(s) for Task</h2>
-      <h3 class="mb-2 font-semibold text-gray-600 text-sm leading-none">
+
+      <hr class="mb-4 !mt-0" />
+      <h3 class="col-span-full mb-2 font-semibold text-gray-800 text-sm line-clamp-3 mb-4">
         {{ task?.title }}
       </h3>
-      <hr class="mb-4 !mt-0" />
     </div>
 
-    <div v-if="state === 'loading'" class="text-center text-gray-500 py-4">Loading users...</div>
+    <!-- <div v-if="state === 'loading'" class="text-center text-gray-500 py-4">Loading users...</div> -->
 
-    <form v-else @submit.prevent="submit" class="grid grid-cols-4 gap-4">
-      <div class="col-span-2 flex flex-col">
-        <div class="mb-4" v-if="task?.from_department">
-          <div class="text-sm text-gray-500">Task From Department</div>
-          <div class="text-base">
-            {{ task?.from_department?.name }}
-          </div>
-        </div>
+    <form @submit.prevent="submit" class="relative min-h-40">
+      <div class="min-h-[150px]">
+        <LoaderView v-if="state === 'loading'" class="absolute inset-0 border-0 shadow-none" />
+        <div v-else class="grid grid-cols-4 gap-4 mb-4 items-stretch">
+          <div class="col-span-2 flex flex-col">
+            <div class="mb-4" v-if="task?.from_department">
+              <div class="text-sm text-gray-500">Task From Department</div>
+              <div class="text-base">
+                {{ task?.from_department?.name }}
+              </div>
+            </div>
 
-        <label class="block uppercase text-xs text-gray-600"> Supervisors </label>
+            <label class="block uppercase text-xs text-gray-600"> Supervisors </label>
 
-        <TaskAssignUserInput
-          :employees="supervisorOptions"
-          list-type="supervisor"
-          v-if="auth?.user?.role !== 'employee' && auth.isAdminMood"
-          :isRemovable="true"
-          v-model="selectedSupervisors"
-          class="flex-grow"
-        />
-
-        <div
-          v-else
-          class="flex gap-x-3 gap-y-4 flex-wrap border p-2 rounded items-center flex-grow justify-center"
-        >
-          <template v-if="(selectedSupervisors || []).length > 0">
-            <TaskUserChip
-              v-for="user in selectedSupervisors"
-              :key="user.id"
-              :user="user"
-            ></TaskUserChip>
-          </template>
-          <div v-else class="text-center w-full text-sm text-gray-400 py-2">
-            No Supervisor assigned
-          </div>
-          <!-- {{ supervisors }} -->
-        </div>
-      </div>
-
-      <div class="col-span-2 w-full flex flex-col">
-        <div class="mb-4" v-if="task?.to_department">
-          <div class="text-sm text-gray-500">Task To Department</div>
-          <div class="text-base">
-            {{ task?.to_department?.name }}
-          </div>
-        </div>
-
-        <label class="block uppercase text-xs text-gray-600"> Employees </label>
-        <TaskAssignUserInput
-          :employees="employeeOptions"
-          v-model="selectedUsers"
-          class="flex-grow"
-        />
-        <!-- :form-container-ref="taskFormContainerRef" -->
-      </div>
-
-      <template v-if="auth?.user?.role !== 'employee' && auth.isAdminMood">
-        <TextWithHr class="col-span-full">
-          <div class="px-2">
-            <b class="fas fa-cog text-gray-400"></b>
-            <span class="text-gray-700 ml-2">Task Settings for Employee</span>
-          </div>
-        </TextWithHr>
-
-        <TaskUrgencyInput
-          class="col-span-full"
-          v-model:isImportant="form.is_important"
-          v-model:isUrgent="form.is_urgent"
-        />
-
-        <IsTargetTaskInput v-model="form.is_target" class="col-span-full md:col-span-2 mt-4" />
-
-        <div class="flex items-end col-span-full md:col-span-2 gap-4">
-          <div class="w-1/2">
-            <label class="block text-gray-600 text-sm mb-1 font-medium">Assign Date</label>
-            <input
-              v-model="form.assigned_at"
-              type="date"
-              placeholder="Enter Start Date"
-              class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+            <TaskAssignUserInput
+              :employees="supervisorOptions"
+              list-type="supervisor"
+              v-if="auth?.user?.role !== 'employee' && auth.isAdminMood"
+              :isRemovable="true"
+              v-model="selectedSupervisors"
+              class="flex-grow"
             />
-          </div>
 
-          <div class="w-1/2">
-            <label class="block text-gray-600 text-sm mb-1 font-medium"
-              >{{ form.is_target ? 'Target' : '' }} Deadline</label
+            <div
+              v-else
+              class="flex gap-x-3 gap-y-4 flex-wrap border p-2 rounded items-center flex-grow justify-center"
             >
-            <input
-              v-model="form.deadline"
-              type="date"
-              placeholder="Enter Start Date"
-              class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-            />
+              <template v-if="(selectedSupervisors || []).length > 0">
+                <TaskUserChip
+                  v-for="user in selectedSupervisors"
+                  :key="user.id"
+                  :user="user"
+                ></TaskUserChip>
+              </template>
+              <div v-else class="text-center w-full text-sm text-gray-400 py-2">
+                No Supervisor assigned
+              </div>
+              <!-- {{ supervisors }} -->
+            </div>
           </div>
-        </div>
-      </template>
 
-      <div class="sticky bottom-0 bg-white border-t px-4 -mx-4 py-3 col-span-full">
+          <div class="col-span-2 w-full flex flex-col">
+            <div class="mb-4" v-if="task?.to_department">
+              <div class="text-sm text-gray-500">Task To Department</div>
+              <div class="text-base">
+                {{ task?.to_department?.name }}
+              </div>
+            </div>
+
+            <label class="block uppercase text-xs text-gray-600"> Employees </label>
+            <TaskAssignUserInput
+              :employees="employeeOptions"
+              v-model="selectedUsers"
+              class="flex-grow"
+            />
+            <!-- :form-container-ref="taskFormContainerRef" -->
+          </div>
+
+          <template v-if="auth?.user?.role !== 'employee' && auth.isAdminMood">
+            <TextWithHr class="col-span-full">
+              <div class="px-2">
+                <b class="fas fa-cog text-gray-400"></b>
+                <span class="text-gray-700 ml-2">Task Settings for Employee</span>
+              </div>
+            </TextWithHr>
+
+            <TaskUrgencyInput
+              class="col-span-full"
+              v-model:isImportant="form.is_important"
+              v-model:isUrgent="form.is_urgent"
+            />
+
+            <IsTargetTaskInput v-model="form.is_target" class="col-span-full md:col-span-2 mt-4" />
+
+            <div class="flex items-end col-span-full md:col-span-2 gap-4">
+              <div class="w-1/2">
+                <label class="block text-gray-600 text-sm mb-1 font-medium">Assign Date</label>
+                <input
+                  v-model="form.assigned_at"
+                  type="date"
+                  placeholder="Enter Start Date"
+                  class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div class="w-1/2">
+                <label class="block text-gray-600 text-sm mb-1 font-medium"
+                  >{{ form.is_target ? 'Target' : '' }} Deadline</label
+                >
+                <input
+                  v-model="form.deadline"
+                  type="date"
+                  placeholder="Enter Start Date"
+                  class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <div class="bg-white border-t px-4 -mx-4 py-3 sticky bottom-0">
         <div v-if="error" class="mb-4 text-red-500 font-medium">
           {{ error }}
         </div>
