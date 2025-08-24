@@ -1,11 +1,11 @@
 <script setup>
-import LoaderView from '@/components/common/LoaderView.vue'
 import ApplicationMenu from '@/components/ApplicationMenu.vue'
+import AttendanceTable from '@/components/AttendanceTable.vue'
+import LoaderView from '@/components/common/LoaderView.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useAuthStore } from '@/stores/auth'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import AttendanceTable from '@/components/AttendanceTable.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -57,16 +57,6 @@ watch(selectedMonth, (date) => {
 })
 
 const goBack = () => router.go(-1)
-
-const getInitials = (name) => {
-  if (name) {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-  }
-}
 </script>
 
 <template>
@@ -111,7 +101,7 @@ const getInitials = (name) => {
       <div class="card-bg p-4 gap-1">
         <div class="flex justify-between items-center">
           <h2 class="title-md">Attendance Summary</h2>
-          <button @click="openModal()" class="btn-2">Apply Application</button>
+          <button @click="openModal()" class="btn-2">Add New Application</button>
 
           <ApplicationMenu v-if="showModal" @close="showModal = false" />
         </div>
