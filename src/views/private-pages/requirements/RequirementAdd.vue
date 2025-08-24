@@ -14,6 +14,6 @@ function handleRequirementCreate(response) {
 
 <template>
   <div class="container mx-auto p-6">
-    <RequirementAddForm @create="handleRequirementCreate" />
+    <RequirementAddForm @create="handleRequirementCreate" @cancelClick="router.back()" />
   </div>
 </template>

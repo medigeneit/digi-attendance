@@ -55,6 +55,7 @@ async function submit() {
     emit('error', error.value)
   }
 }
+
 onMounted(async () => {
   state.value = 'loading'
   try {
@@ -66,7 +67,14 @@ onMounted(async () => {
     ])
 
     detail.value = (await findRequirementDetail(props.requirementId, props.detailId)).data?.detail
-    form.value = detail.value
+    form.value = {
+      title: detail.value?.title,
+      description: detail.value?.title,
+      priority: detail.value?.priority,
+      supervisor_id: detail.value?.supervisor_id,
+    }
+
+    // better_to_complete_on: detail.value?.priority,
 
     const date = new Date(detail.value.better_to_complete_on)
     form.value.better_to_complete_on = date.toISOString().split('T')[0] // Returns "YYYY-MM-DD"
@@ -131,6 +139,7 @@ onMounted(async () => {
             ]"
             :containment="formContainerRef"
             placeholder="--NO SUPERVISOR--"
+            class="h-10"
           >
             <template #option="{ option }">
               <UserChip :user="option || {}"></UserChip>
@@ -160,7 +169,7 @@ onMounted(async () => {
             class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
             v-model="form.priority"
           >
-            <option value="">NORMAL</option>
+            <option :value="null">NORMAL</option>
             <option>IMPORTANT</option>
             <option>URGENT</option>
           </select>

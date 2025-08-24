@@ -137,14 +137,14 @@ function handleDetailAdd() {
         </CompanyDepartmentSelectInput>
 
         <div class="mb-4 col-span-4">
-          <label class="text-gray-800">Websites</label>
+          <label class="text-gray-800 text-sm">Websites</label>
           <SelectDropdown
             :options="tagStore.tags"
             v-model="form.website_tags"
             taggable
             label="name"
             value="name"
-            class="min-h-10"
+            class="min-h-10 py-1"
           />
         </div>
       </template>
@@ -166,7 +166,7 @@ function handleDetailAdd() {
                 <th
                   class="border-2 border-gray-800 text-center text-gray-800 print:text-black text-base font-semibold whitespace-nowrap w-[65%]"
                 >
-                  Requirement Details
+                  Requirement
                 </th>
                 <th
                   class="border-2 border-gray-800 text-center text-gray-800 print:text-black text-base px-3 font-semibold whitespace-nowrap print:whitespace-normal print:p-0 w-[15%]"

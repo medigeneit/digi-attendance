@@ -35,7 +35,7 @@ const goToAdd = () => {
           <thead class="bg-gray-100">
             <tr>
               <th class="px-4 py-2 text-left whitespace-nowrap">#</th>
-              <th class="px-4 py-2 text-left whitespace-nowrap">Department</th>
+              <th class="px-4 py-2 text-left whitespace-nowrap">Requirement</th>
               <th class="px-4 py-2 text-center whitespace-nowrap">Submitted On</th>
               <th class="px-4 py-2 text-center whitespace-nowrap">Actions</th>
             </tr>
@@ -48,18 +48,7 @@ const goToAdd = () => {
             >
               <td class="px-4 py-2">{{ serial + 1 }}</td>
               <td class="px-4 py-2 max-w-[60px] md:max-w-[300px]">
-                <div class="flex flex-col lg:flex-row items-start lg:items-center gap-2">
-                  <span class="text-gray-500">From </span>
-                  <span class="text-blue-700 font-semibold flex-shrink-0"
-                    >{{ req?.from_department?.name }}
-                  </span>
-                  <span class="text-gray-500">To </span>
-                  <span class="text-blue-700 font-semibold flex-shrink-0">{{
-                    req?.to_department?.name
-                  }}</span>
-                </div>
-
-                <div class="">
+                <div class="mb-4 space-y-4">
                   <div
                     class="text-blue-800"
                     v-if="req?.details?.length > 0 && Array.isArray(req?.details)"
@@ -76,8 +65,22 @@ const goToAdd = () => {
                     <span v-if="req?.details?.length - 1 > 0">
                       {{ req?.details?.length - 1 }} More Requirement
                     </span>
-                    <span v-else>Show Form</span>
+                    <span v-else class="">Show Form</span>
                   </RouterLink>
+                </div>
+
+                <div class="flex flex-col lg:flex-row items-start lg:items-center gap-2">
+                  <span class="text-gray-500">From </span>
+                  <span
+                    class="text-blue-700 font-semibold flex-shrink-0 border bg-blue-50 rounded-full px-2 text-xs"
+                  >
+                    {{ req?.from_department?.name }}
+                  </span>
+                  <span class="text-gray-500">To </span>
+                  <span
+                    class="text-blue-700 font-semibold flex-shrink-0 border bg-blue-50 rounded-full px-2 text-xs"
+                    >{{ req?.to_department?.name }}</span
+                  >
                 </div>
               </td>
               <td class="px-4 py-2 text-center whitespace-nowrap">

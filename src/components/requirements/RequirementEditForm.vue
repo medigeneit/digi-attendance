@@ -4,7 +4,7 @@ import RequiredIcon from '@/components/RequiredIcon.vue'
 import { findRequirement, updateRequirement } from '@/services/requirement'
 import { useCompanyStore } from '@/stores/company'
 import { useTagStore } from '@/stores/tags'
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import LoaderView from '../common/LoaderView.vue'
 import SelectDropdown from '../SelectDropdown.vue'
 
@@ -35,6 +35,10 @@ onMounted(async () => {
   await companyStore.fetchCompanies({
     with: 'departments',
     ignore_permission: true,
+  })
+
+  await companyStore.fetchMyCompanies({
+    with: 'departments',
   })
 
   requirement.value = (await findRequirement(props.requirementId)).data?.requirement
@@ -76,6 +80,20 @@ async function submit() {
     state.value = 'error'
   }
 }
+
+const hasAccessOnMyCompanyDepartment = computed(() => {
+  for (let companyIndex in companyStore.myCompanies) {
+    const companyDepartments = companyStore?.myCompanies?.[companyIndex]?.departments || []
+
+    if (companyDepartments.some((department) => department.id == form.value.from_department_id)) {
+      return true
+    }
+  }
+
+  return false
+
+  // return form.value.from_department_id
+})
 </script>
 
 <template>
@@ -107,12 +125,23 @@ async function submit() {
             taggable
             label="name"
             value="name"
+            class="py-2"
           />
         </div>
 
+        <!-- <pre>{{ hasAccessOnMyCompanyDepartment }}</pre> -->
+
+        <div v-if="!hasAccessOnMyCompanyDepartment" class="mb-4">
+          <label class="block text-gray-600 text-sm mb1 font-medium"> From Department </label>
+          <div>
+            {{ requirement?.from_department?.name }}
+          </div>
+        </div>
+
         <CompanyDepartmentSelectInput
+          v-else
           v-model="form.from_department_id"
-          :companies="companyStore?.companies || []"
+          :companies="companyStore?.myCompanies || []"
           class="mb-4"
         >
           <template #label>

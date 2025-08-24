@@ -133,11 +133,11 @@ function handlePrint() {
       <div class="mb-4 print:flex print:items-center print:gap-3 print:mb-1">
         <div class="text-gray-500 text-sm">Website</div>
 
-        <div class="flex items-center gap-2 print:text-gray-900">
+        <div class="flex items-center gap-2 print:text-gray-900 flex-wrap">
           <div
             v-for="website_tag in requirement?.website_tags || []"
             :key="website_tag.id"
-            class="border px-2 rounded-md bg-gray-50 shadow-sm"
+            class="border px-2 rounded-md bg-gray-50 shadow-sm whitespace-nowrap"
           >
             {{ website_tag.name }}
           </div>
@@ -241,7 +241,7 @@ function handlePrint() {
           </table>
         </div>
 
-        <div class="mb-8 border rounded-md p-8 flex items-center justify-center bg-gray-50">
+        <div class="mt-8 border rounded-md p-8 flex items-center justify-center bg-gray-50">
           <button class="btn-2 pl-2 text-base" @click.prevent="handleAddRequirementDetail">
             <i class="fad fa-plus-circle text-2xl mr-2"></i>Add Requirement
           </button>

@@ -119,33 +119,22 @@ watch(
         />
       </div>
 
-      <div class="mb-4 w-[250px]">
+      <div class="mb-4">
         <label class="block text-gray-600 text-sm mb-1 font-medium">Supervisor </label>
         <SelectDropdown
           v-model="form.supervisor_id"
           :options="supervisors"
           placeholder="--NO SUPERVISOR--"
-          class="h-10"
+          class="h-10 w-full"
+          clearable
         >
           <template #option="{ option }">
             <UserChip :user="option || {}" class="w-full overflow-hidden border relative">
             </UserChip>
           </template>
+
           <template #selected-option="{ option }">
-            <div v-if="option" class="relative min-w-max pr-6">
-              <UserChip class="" :user="option || {}"></UserChip>
-              <div
-                class="absolute right-1 text-xl top-0 bottom-0 flex items-center"
-                v-if="form.supervisor_id"
-              >
-                <button
-                  @click.prevent="form.supervisor_id = null"
-                  class="text-gray-6 font-semibold 00 hover:text-red-700"
-                >
-                  &times;
-                </button>
-              </div>
-            </div>
+            <UserChip :user="option || {}" v-if="option"></UserChip>
           </template>
         </SelectDropdown>
       </div>
