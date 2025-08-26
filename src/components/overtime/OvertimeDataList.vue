@@ -7,6 +7,7 @@ import AcceptAndRejectHandler from '../applications/AcceptAndRejectHandler.vue'
 import DeleteOvertime from './DeleteOvertime.vue'
 import DisplayFormattedWorkingHours from './DisplayFormattedWorkingHours.vue'
 import UpdateApprovalTime from './UpdateApprovalTime.vue'
+import { computed } from 'vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -24,6 +25,18 @@ const onSuccess = async () => {
     await notificationStore.fetchCountNotifications()
   }
 }
+
+// Totals in MINUTES
+const totalRequestedMinutes = computed(() => {
+  const list = overtimeStore.overtimes || []
+  return list.reduce((sum, o) => sum + (Number(o?.request_overtime_hours) || 0), 0)
+})
+
+const totalApprovedMinutes = computed(() => {
+  const list = overtimeStore.overtimes || []
+  return list.reduce((sum, o) => sum + (Number(o?.approval_overtime_hours) || 0), 0)
+})
+
 </script>
 
 <template>
@@ -168,6 +181,26 @@ const onSuccess = async () => {
             <td colspan="100" class="p-2 text-center text-red-500">No overtimes found</td>
           </tr>
         </tbody>
+        <tfoot v-if="overtimeStore.overtimes?.length" class="bg-gray-50">
+          <tr class="*:py-2 font-semibold">
+            <td class="border border-gray-300 px-2 text-right" colspan="7">Totals</td>
+
+            <!-- Requested total -->
+            <td class="border border-gray-300 px-2 text-center">
+              <DisplayFormattedWorkingHours :workingHours="totalRequestedMinutes" />
+            </td>
+
+            <!-- Approved total -->
+            <td class="border border-gray-300 px-2 text-center">
+              <DisplayFormattedWorkingHours :workingHours="totalApprovedMinutes" />
+            </td>
+
+            <td class="border border-gray-300 px-2 text-center">—</td>
+            <td class="border border-gray-300 px-2 text-center">—</td>
+            <td class="border border-gray-300 px-2 text-center">—</td>
+          </tr>
+        </tfoot>
+
       </table>
     </div>
   </div>
