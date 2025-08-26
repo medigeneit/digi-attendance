@@ -210,7 +210,7 @@ const handleFilterChange = () => {
                     <i class="far fa-eye"></i>
                   </RouterLink>
                   <RouterLink
-                  v-if="application?.status !== 'Approved'"
+                  v-if="application?.status !== 'Rejected'"
                   :to="{ name: 'LeaveApplicationEdit', params: { id: application?.id } }"
                   class="btn-icon"
                 >
