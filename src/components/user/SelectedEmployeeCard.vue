@@ -108,7 +108,13 @@
           </button>
         </template>
       </InfoRow>
-
+      <InfoRow label="Employee ID"  :value="safe(user.employee_id)"   icon="fa-hashtag" />
+ 
+      <!-- <InfoRow label="Designation"  :value="safe(user.designation?.title)" icon="fa-id-badge" /> -->
+      <!-- <InfoRow label="Department"   :value="safe(user.department?.name)"   icon="fa-building" /> -->
+      <!-- <InfoRow label="Company"      :value="safe(user.company?.name)"      icon="fa-briefcase" /> -->
+      <InfoRow label="Joining Date" :value="formatDate(user.joining_date)" icon="fa-calendar" />
+      <InfoRow label="Blood Group"  :value="safe(user.blood)"              icon="fa-tint" />
       <InfoRow label="Email"        :value="formatEmail(user.email)"  icon="fa-envelope">
         <template #valueRight v-if="user.email">
           <button
@@ -119,13 +125,6 @@
           </button>
         </template>
       </InfoRow>
-
-      <InfoRow label="Employee ID"  :value="safe(user.employee_id)"   icon="fa-hashtag" />
-      <!-- <InfoRow label="Designation"  :value="safe(user.designation?.title)" icon="fa-id-badge" /> -->
-      <!-- <InfoRow label="Department"   :value="safe(user.department?.name)"   icon="fa-building" /> -->
-      <!-- <InfoRow label="Company"      :value="safe(user.company?.name)"      icon="fa-briefcase" /> -->
-      <InfoRow label="Joining Date" :value="formatDate(user.joining_date)" icon="fa-calendar" />
-      <InfoRow label="Blood Group"  :value="safe(user.blood)"              icon="fa-tint" />
     </dl>
 
     <footer class="px-5 pb-5">

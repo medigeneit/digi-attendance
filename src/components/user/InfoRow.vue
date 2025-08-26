@@ -1,5 +1,5 @@
 <template>
-  <div class="grid grid-cols-[160px_1fr_auto] items-start gap-2">
+  <div class="flex gap-2">
     <dt class="flex items-center gap-2 text-sm font-bold text-zinc-600">
       <i v-if="icon" :class="['far', icon, 'text-[14px]']"></i>
       {{ label }}:
