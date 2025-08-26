@@ -122,7 +122,7 @@ function getFilteringView(filteredValue, items, { value, id, label, onCancel } =
   return [
     {
       label,
-      value: item?.[value],
+      value: typeof value == 'function' ? value(item) : item?.[value],
       id: item?.[id],
       onCancel,
     },
@@ -176,17 +176,17 @@ const filteringItems = computed(() => {
       },
     }),
     ...getFilteringView(fromDepartmentId.value, all_departments, {
-      label: 'From',
-      value: 'short_name',
       id: 'id',
+      label: 'From',
+      value: (dept) => dept.short_name || dept.name,
       onCancel: () => {
         fromDepartmentId.value = ''
       },
     }),
     ...getFilteringView(toDepartmentId.value, all_departments, {
-      label: 'To',
-      value: 'short_name',
       id: 'id',
+      label: 'To',
+      value: (dept) => dept.short_name || dept.name,
       onCancel: () => {
         toDepartmentId.value = ''
       },

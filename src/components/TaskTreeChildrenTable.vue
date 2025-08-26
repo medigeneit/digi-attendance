@@ -138,7 +138,7 @@
           @click.prevent.stop="handleShowAllTask"
           v-if="hiddenTasks.length > 0 || showAll"
         >
-          {{ showAll ? 'Hide' : 'Show' }} All
+          {{ showAll ? 'Show Less' : 'Show All' }}
         </button>
         <span v-if="hiddenTasks.length > 0" class="text-red-800 italic">
           {{ hiddenTasks.length }} More sub task{{ hiddenTasks.length > 1 ? 's' : '' }}

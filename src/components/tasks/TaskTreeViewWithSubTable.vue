@@ -121,8 +121,11 @@
       </div>
 
       <div class="flex gap-3 items-center">
-        <div class="text-right text-sm flex gap-4 mt-2 opacity-80">
-          <div v-if="task.is_target" class="bg-yellow-200 px-2 py-0.5 rounded-lg text-yellow-900">
+        <div class="text-right text-sm flex items-center gap-4 mt-2 opacity-80">
+          <div
+            v-if="task.is_target"
+            class="bg-yellow-200 px-2 py-0.5 rounded-lg text-yellow-900 whitespace-nowrap"
+          >
             <i class="fad fa-bullseye-arrow mr-1"></i> TARGET TASK
           </div>
 
@@ -140,7 +143,7 @@
             <span class="italic text-gray-500">Started: </span>
             <span class="font-semibold text-blue-500 whitespace-nowrap">{{ startedDate }}</span>
           </span>
-          <span v-if="completedDate" class="text-gray-500">......</span>
+
           <span class="text-sm" v-if="completedDate">
             <span class="italic text-gray-500">Completed: </span>
             <span class="font-semibold text-green-500 whitespace-nowrap"
