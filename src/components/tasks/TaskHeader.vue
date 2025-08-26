@@ -304,7 +304,7 @@ const filteringItems = computed(() => {
 
             <CompanyDepartmentSelectInput
               v-model="toDepartmentId"
-              :companies="companyStore?.myCompanies || []"
+              :companies="companyStore?.companies || []"
               class="relative w-full md:w-40 flex-grow"
               :className="{
                 select: 'h-8 text-xs px-2 text-gray-600  border-2 border-gray-400  ',
