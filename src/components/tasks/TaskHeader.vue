@@ -103,7 +103,7 @@ watch(
     toDepartmentId.value = ''
     fromDepartmentId.value = ''
 
-    loadEmployeesByDepartment()
+    //loadEmployeesByDepartment()
   },
 )
 
