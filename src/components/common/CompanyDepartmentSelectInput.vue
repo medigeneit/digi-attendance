@@ -8,7 +8,7 @@ const props = defineProps({
   className: {
     type: Object,
     default: () => ({
-      select: 'px-4 py-2',
+      select: '',
     }),
   },
   defaultOption: { type: String, default: '--select department--' },
@@ -39,14 +39,14 @@ function departmentFilterBy(options, term) {
     <slot name="label">Department</slot>
     <SelectDropdown
       :options="companies"
-      v-model="department_id"
       :isOptionGroup="true"
+      :class="className.select"
+      :searchBy="departmentFilterBy"
+      v-model="department_id"
       optGroupOptionKey="departments"
       label="name"
       class="w-full border rounded-md focus:ring-2 focus:ring-blue-500"
-      :class="className.select"
       clearable
-      :searchBy="departmentFilterBy"
     >
       <template #selected-option="{ option }">
         <div>
