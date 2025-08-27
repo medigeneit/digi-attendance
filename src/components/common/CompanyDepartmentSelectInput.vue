@@ -24,6 +24,14 @@ const department_id = computed({
     emit('update:modelValue', value)
   },
 })
+
+function departmentFilterBy(options, term) {
+  return options.filter((dept) => {
+    return (
+      dept?.short_name?.toLowerCase().includes(term) || dept?.name?.toLowerCase().includes(term)
+    )
+  })
+}
 </script>
 
 <template>
@@ -38,8 +46,9 @@ const department_id = computed({
       class="w-full border rounded-md focus:ring-2 focus:ring-blue-500"
       :class="className.select"
       clearable
+      :searchBy="departmentFilterBy"
     >
-      <template #selected-option="{ option, group }">
+      <template #selected-option="{ option }">
         <div>
           <span v-if="option?.name" class="text-gray-800 line-clamp-1">{{ option?.name }}</span>
           <span v-else class="text-gray-500">{{ defaultOption }}</span>

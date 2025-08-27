@@ -183,7 +183,7 @@ const props = defineProps({
   clearable: { type: Boolean, default: false },
   searchable: { type: Boolean, default: true },
   disabled: { type: Boolean, default: false },
-  filterBy: { type: Function, default: null },
+  searchBy: { type: Function, default: null },
   position: {
     type: String,
     default: 'auto',
@@ -367,37 +367,63 @@ const selectOption = (option, parentOption = null) => {
 }
 
 const removeItem = (option) => {
-  // if (!props.multiple || !props.taggable) return
   const newSelection = selectedItems.value.filter((o) => getOptionKey(o) !== getOptionKey(option))
   emit('update:modelValue', newSelection)
   emit('option:deselected', option)
 }
 
 const filteredOptions = computed(() => {
-  const term = search.value.toLowerCase()
-  if (!props.searchable || !term) return props.options
+  if (!props.searchable) return props.options
 
-  if (typeof props.filterBy == 'function') return props.filterBy(props.options, term)
+  const termRaw = (search.value || '').trim()
+  if (!termRaw) return props.options
 
-  if (props.isOptionGroup) {
-    return props.options
-      .filter((opt) => {
-        return (opt[props.optGroupOptionKey] || opt?.children || []).some((opt) =>
-          getOptionLabel(opt).toLowerCase().includes(term),
-        )
-      })
-      .map((opt) => {
-        const childKey = props.optGroupOptionKey
-        return {
-          ...opt,
-          [childKey]: opt[childKey].filter((opt) =>
-            getOptionLabel(opt).toLowerCase().includes(term),
-          ),
-        }
-      })
+  const term = termRaw.toLowerCase()
+  const { options, isOptionGroup, searchBy, optGroupOptionKey } = props
+
+  // Flat list
+  if (!isOptionGroup) {
+    return typeof searchBy === 'function'
+      ? searchBy(options, term)
+      : options.filter((opt) => {
+          const lbl = getOptionLabel(opt)
+          return lbl && lbl.toLowerCase().includes(term)
+        })
   }
 
-  return props.options.filter((opt) => getOptionLabel(opt).toLowerCase().includes(term))
+  // Grouped list
+  const childKey = optGroupOptionKey || 'children'
+  const result = []
+
+  for (let i = 0; i < options.length; i++) {
+    const group = options[i]
+    const children = group?.[childKey] || []
+
+    // Apply custom filter if provided, otherwise default filter
+    const filteredChildren =
+      typeof searchBy === 'function'
+        ? searchBy(children, term)
+        : (() => {
+            const out = []
+            for (let j = 0; j < children.length; j++) {
+              const lbl = getOptionLabel(children[j])
+              if (lbl && lbl.toLowerCase().includes(term)) out.push(children[j])
+            }
+            return out
+          })()
+
+    // Keep group only if it has matches
+    if (filteredChildren.length > 0) {
+      // If nothing changed, reuse the same group object
+      if (filteredChildren.length === children.length) {
+        result.push(group)
+      } else {
+        result.push({ ...group, [childKey]: filteredChildren })
+      }
+    }
+  }
+
+  return result
 })
 
 async function calculatePosition(dropdownOpen) {
