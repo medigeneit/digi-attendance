@@ -100,11 +100,10 @@ watch(() => toDepartmentId.value, loadEmployeesByDepartment)
 watch(
   () => companyId.value,
   () => {
-    if (toDepartmentId.value !== '') {
-      toDepartmentId.value = ''
-    } else {
-      loadEmployeesByDepartment()
-    }
+    toDepartmentId.value = ''
+    fromDepartmentId.value = ''
+
+    loadEmployeesByDepartment()
   },
 )
 
@@ -244,6 +243,14 @@ const filteringItems = computed(() => {
     }),
   ]
 })
+
+const companyDepartments = computed(() => {
+  if (!companyId.value) {
+    return companyStore?.companies
+  }
+
+  return companyStore?.companies.filter((c) => c.id == companyId.value)
+})
 </script>
 
 <template>
@@ -252,14 +259,14 @@ const filteringItems = computed(() => {
       <div class="flex justify-between items-start mb-4">
         <h2 class="text-2xl font-bold text-gray-800 leading-none h-10">Task List</h2>
 
-        <div class="ml-auto flex gap-6 items-center" v-if="!isMyTask">
+        <!-- <div class="ml-auto flex gap-6 items-center" v-if="!isMyTask">
           <div v-if="listHasRearranged" class="flex gap-2 items-center">
             <span class="text-red-500">Priority Changed</span>
             <button class="btn-3" @click.prevent="emit('clickPrioritySave')">Save</button>
             <button class="btn-3" @click.prevent="emit('clickPriorityDiscard')">Discard</button>
           </div>
           <button @click="emit('clickAddTask')" class="btn-1">Add Main Task / Project</button>
-        </div>
+        </div> -->
       </div>
       <!-- {{ employees }} -->
 
@@ -277,7 +284,7 @@ const filteringItems = computed(() => {
               >
                 <option value="">--ALL COMPANY--</option>
                 <option
-                  v-for="company in companyStore?.myCompanies"
+                  v-for="company in companyStore.companies"
                   :key="company.id"
                   :value="company.id"
                 >
@@ -288,7 +295,7 @@ const filteringItems = computed(() => {
 
             <CompanyDepartmentSelectInput
               v-model="fromDepartmentId"
-              :companies="companyStore?.companies || []"
+              :companies="companyDepartments || []"
               class="relative w-full md:w-40 flex-grow"
               :className="{ select: 'h-8 text-xs px-2 text-gray-600 border-2 border-gray-400' }"
               defaultOption="--ALL DEPARTMENT--"
@@ -304,7 +311,7 @@ const filteringItems = computed(() => {
 
             <CompanyDepartmentSelectInput
               v-model="toDepartmentId"
-              :companies="companyStore?.companies || []"
+              :companies="companyDepartments || []"
               class="relative w-full md:w-40 flex-grow"
               :className="{
                 select: 'h-8 text-xs px-2 text-gray-600  border-2 border-gray-400  ',
