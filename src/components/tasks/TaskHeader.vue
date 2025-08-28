@@ -1,13 +1,13 @@
 <script setup>
-import Multiselect from '@/components/MultiselectDropdown.vue'
 import { getTaskEmployees } from '@/services/task'
 import { useAuthStore } from '@/stores/auth'
 import { useCompanyStore } from '@/stores/company'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import CompanyDepartmentSelectInput from '../common/CompanyDepartmentSelectInput.vue'
+import EmployeeDropdownInput from '../EmployeeDropdownInput.vue'
 import SearchInput from '../SearchInput.vue'
-import UserChip from '../user/UserChip.vue'
+import SelectDropdown from '../SelectDropdown.vue'
 
 const props = defineProps({
   modelValue: { type: Object, default: () => ({}) },
@@ -87,10 +87,6 @@ function getEmployee(employeeId) {
   return employees.value.find((emp) => emp.id == employeeId) || null
 }
 
-function handleUserSelect(emp) {
-  selectedEmployeeId.value = emp?.id || ''
-}
-
 function handleUserDeSelect() {
   selectedEmployeeId.value = ''
 }
@@ -100,11 +96,10 @@ watch(() => toDepartmentId.value, loadEmployeesByDepartment)
 watch(
   () => companyId.value,
   () => {
-    if (toDepartmentId.value !== '') {
-      toDepartmentId.value = ''
-    } else {
-      loadEmployeesByDepartment()
-    }
+    fromDepartmentId.value = ''
+    toDepartmentId.value = ''
+
+    //loadEmployeesByDepartment()
   },
 )
 
@@ -244,6 +239,14 @@ const filteringItems = computed(() => {
     }),
   ]
 })
+
+const companyDepartments = computed(() => {
+  if (!companyId.value) {
+    return companyStore?.companies
+  }
+
+  return companyStore?.companies.filter((c) => c.id == companyId.value)
+})
 </script>
 
 <template>
@@ -253,11 +256,13 @@ const filteringItems = computed(() => {
         <h2 class="text-2xl font-bold text-gray-800 leading-none h-10">Task List</h2>
 
         <div class="ml-auto flex gap-6 items-center" v-if="!isMyTask">
+          <!--
           <div v-if="listHasRearranged" class="flex gap-2 items-center">
             <span class="text-red-500">Priority Changed</span>
             <button class="btn-3" @click.prevent="emit('clickPrioritySave')">Save</button>
             <button class="btn-3" @click.prevent="emit('clickPriorityDiscard')">Discard</button>
           </div>
+          -->
           <button @click="emit('clickAddTask')" class="btn-1">Add Main Task / Project</button>
         </div>
       </div>
@@ -266,31 +271,34 @@ const filteringItems = computed(() => {
       <div class="flex flex-wrap items-center justify-center gap-2 mt-3">
         <div class="flex flex-wrap gap-x-4 gap-y-3 justify-between">
           <template v-if="!isMyTask">
-            <div class="relative w-full md:w-48 flex-grow">
-              <label class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 z-50">
-                Company
-              </label>
-
-              <select
+            <div class="relative">
+              <SelectDropdown
                 v-model="companyId"
-                class="h-8 text-xs px-2 text-gray-600 border-2 border-gray-400 rounded-md w-full"
+                :options="companyStore?.companies || []"
+                label="name"
+                id="id"
+                class="border-2 border-gray-300 rounded h-[40px] w-full md:w-48 bg-white text-sm"
+                clearable
               >
-                <option value="">--ALL COMPANY--</option>
-                <option
-                  v-for="company in companyStore?.myCompanies"
-                  :key="company.id"
-                  :value="company.id"
-                >
-                  {{ company.name }}
-                </option>
-              </select>
+                <template #selected-option="{ option }">
+                  <div class="line-clamp-1 text-sm text-gray-900" :title="option?.name">
+                    <span v-if="option?.name">{{ option?.name }}</span>
+                    <span v-else class="text-gray-500 whitespace-nowrap">--Select Company--</span>
+                  </div>
+                </template>
+              </SelectDropdown>
+              <div
+                class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30"
+              >
+                Company
+              </div>
             </div>
 
             <CompanyDepartmentSelectInput
               v-model="fromDepartmentId"
-              :companies="companyStore?.companies || []"
+              :companies="companyDepartments || []"
               class="relative w-full md:w-40 flex-grow"
-              :className="{ select: 'h-8 text-xs px-2 text-gray-600 border-2 border-gray-400' }"
+              :className="{ select: 'h-10 text-sm border-2 border-gray-300' }"
               defaultOption="--ALL DEPARTMENT--"
             >
               <template #label>
@@ -304,10 +312,10 @@ const filteringItems = computed(() => {
 
             <CompanyDepartmentSelectInput
               v-model="toDepartmentId"
-              :companies="companyStore?.companies || []"
+              :companies="companyDepartments || []"
               class="relative w-full md:w-40 flex-grow"
               :className="{
-                select: 'h-8 text-xs px-2 text-gray-600  border-2 border-gray-400  ',
+                select: 'h-10 text-sm border-2 border-gray-300  ',
               }"
               v-if="route.name !== 'MyTaskList'"
               defaultOption="--ALL DEPARTMENT--"
@@ -325,45 +333,33 @@ const filteringItems = computed(() => {
               class="relative w-full md:w-56 lg:flex-grow"
               v-if="auth.isAdminMood && auth?.user?.role !== 'employee'"
             >
-              <Multiselect
-                :modelValue="selectedEmployee"
-                @select="handleUserSelect"
-                @remove="handleUserDeSelect"
-                :options="employees"
-                :multiple="false"
-                label="name"
-                label-prefix="id"
-                placeholder="--ALL EMPLOYEES--"
-                class="text-gray-600 w-full relative text-xs"
-              >
-                <template #option="{ option }">
-                  <UserChip :user="option" class="w-full line-clamp-1" />
-                </template>
-              </Multiselect>
-              <div
-                class="absolute right-8 text-xl top-0 bottom-0 flex items-center"
-                v-if="selectedEmployee"
-              >
-                <button
-                  @click.prevent="handleUserDeSelect"
-                  class="mt-0.5 text-gray-500 hover:text-red-700"
+              <!-- <SelectDropdown v-model="selectedEmployeeId" :options="employees" /> -->
+              <div class="relative">
+                <EmployeeDropdownInput
+                  :employees="employees"
+                  v-model="selectedEmployeeId"
+                  class="border-2 border-gray-300 rounded h-[40px] w-full bg-white !text-sm"
+                />
+                <div
+                  class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30"
                 >
-                  &times;
-                </button>
+                  Employee
+                </div>
               </div>
+
               <label class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 z-50">
                 Employee
               </label>
             </div>
           </template>
 
-          <div class="w-32 relative h-8">
+          <div class="w-32 relative h-10">
             <label class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500"
               >Status</label
             >
             <select
               v-model="taskStatus"
-              class="h-8 text-xs px-2 text-gray-600 border-2 border-gray-400 rounded-md w-full"
+              class="h-full text-xs px-2 text-gray-600 border-2 border-gray-400 rounded-md w-full"
             >
               <option value="">--ALL TASKS--</option>
               <option value="not-completed">Not Completed</option>
@@ -394,7 +390,7 @@ const filteringItems = computed(() => {
               id="month-filter"
               v-model="month"
               type="month"
-              class="h-8 text-xs px-2 text-gray-600 border-2 border-gray-400 rounded-md w-full"
+              class="h-10 text-xs px-2 text-gray-600 border-2 border-gray-400 rounded-md w-full"
               placeholder="All month"
             />
           </div>

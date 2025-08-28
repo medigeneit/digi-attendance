@@ -146,8 +146,8 @@ async function submit() {
       </div>
 
       <div class="mb-4">
-        <label class="block text-gray-600 text-sm mb-1 font-medium"
-          >Task Title <RequiredIcon />
+        <label class="block text-gray-600 text-sm mb-1 font-medium">
+          Task Title <RequiredIcon />
         </label>
         <input
           v-model="form.title"
@@ -164,6 +164,7 @@ async function submit() {
           v-model="form.from_department_id"
           :companies="companyStore?.companies || []"
           class="mb-4"
+          :className="{ select: 'h-10' }"
         >
           <template #label>
             <label class="block text-gray-600 text-sm mb1 font-medium">
@@ -176,10 +177,11 @@ async function submit() {
           v-model="form.to_department_id"
           :companies="companyStore?.companies || []"
           class="mb-4"
+          :className="{ select: 'h-10' }"
         >
           <template #label>
             <label class="block text-gray-600 text-sm mb-1 font-medium">
-              To Department <RequiredIcon />
+              To Department<RequiredIcon />
             </label>
           </template>
         </CompanyDepartmentSelectInput>
