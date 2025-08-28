@@ -152,8 +152,8 @@ const handleFilterChange = () => {
         <span class="hidden md:flex">Back</span>
       </button>
 
-      <h1 class="title-md md:title-lg flex-wrap text-center">
-        {{ range === 'after' ? 'Upcoming Leave Applications' : 'Previous 1 Week Leave Applications' }}
+      <h1 class="title-md md:title-lg flex-wrap text-center capitalize">
+        {{ range === 'after' ? 'Upcoming Leave Applications' : 'Leave History of Previous Week' }}
       </h1>
       <div></div>
     </div>
@@ -172,8 +172,8 @@ const handleFilterChange = () => {
       <!-- Weekly range selector (optional UI) -->
        <div>
          <select v-model="range" class="input-1">
-           <option value="prev">Previous 1 Week</option>
-           <option value="after">After Applications</option>
+           <option value="prev">Leave history of previous week</option>
+           <option value="after">Upcoming Leave Applications</option>
          </select>
        </div>
 
