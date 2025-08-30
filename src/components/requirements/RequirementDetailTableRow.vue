@@ -7,7 +7,7 @@ const props = defineProps({
   serial: { type: Number },
 })
 
-const emit = defineEmits(['editClick', 'deleteClick'])
+const emit = defineEmits(['editClick', 'deleteClick', 'taskCreateClick'])
 
 const descriptionLineClampClass = ref('line-clamp-2')
 
@@ -56,6 +56,7 @@ function handleShowMoreClick() {
             <span class="text-blue-400 font-semibold">{{ detail.priority }}</span>
           </div>
         </div>
+
         <div class="ml-auto flex gap-6 items-center">
           <button class="btn-2" @click.prevent="emit('editClick', detail)">
             <i class="fas fa-edit"></i>Edit
@@ -83,13 +84,42 @@ function handleShowMoreClick() {
       </div>
     </td>
 
-    <template v-if="detail.task_id">
-      <td class="border-2 border-gray-700 p-3"></td>
-      <td class="border-2 border-gray-700 p-3"></td>
+    <template v-if="detail?.tasks?.length > 0">
+      <td class="border-2 border-gray-700 p-3 text-center">
+        <RouterLink
+          v-for="task in detail?.tasks || []"
+          :key="task.id"
+          :to="{ name: 'TaskShow', params: { id: task.id } }"
+          class="hover:underline text-gray-900 hover:text-blue-600 whitespace-nowrap block"
+          target="_blank"
+        >
+          {{ task.id }}
+        </RouterLink>
+      </td>
+      <td class="border-2 border-gray-700 p-3">
+        <div
+          v-for="task in detail?.tasks || []"
+          :key="task.id"
+          class="whitespace-nowrap text-center print:whitespace-break-spaces"
+        >
+          <div v-if="task.deadline">
+            {{
+              new Date(task.deadline).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                weekday: 'short',
+              })
+            }}
+          </div>
+          <div v-else class="text-gray-500">-</div>
+        </div>
+      </td>
     </template>
     <template v-else>
       <td colspan="2" class="border-2 border-gray-700 p-3 text-center">
         <button
+          @click.prevent="emit('taskCreateClick', detail)"
           class="print:hidden hover:border-2 group-hover/item:bg-blue-200 hover:border-blue-700 text-blue-500 hover:text-white hover:!bg-blue-500 rounded-md px-4 py-1"
         >
           Create Task

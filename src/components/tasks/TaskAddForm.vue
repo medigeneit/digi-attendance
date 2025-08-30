@@ -4,9 +4,8 @@ import { useAuthStore } from '@/stores/auth'
 import { useCompanyStore } from '@/stores/company'
 
 // import { useTaskStore } from '@/stores/useTaskStore'
-import { useRequirementStore } from '@/stores/useRequirementStore'
+import { findRequirementDetail } from '@/services/requirement-detail'
 import { useTaskStore } from '@/stores/useTaskStore'
-import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
 import CompanyDepartmentSelectInput from '../common/CompanyDepartmentSelectInput.vue'
 import SectionLoading from '../common/SectionLoading.vue'
@@ -19,8 +18,19 @@ const props = defineProps({
     type: [Number, String],
     required: true,
   },
+  requirementDetailId: {
+    type: [Number, String],
+  },
   requirementId: {
     type: [Number, String],
+  },
+  defaultValues: {
+    type: Object,
+    default: () => {},
+  },
+  readonlyFields: {
+    type: Object,
+    default: () => {},
   },
 })
 
@@ -29,13 +39,12 @@ const emit = defineEmits(['taskCreated', 'close', 'error', 'ok'])
 const store = useTaskStore()
 const auth = useAuthStore()
 const companyStore = useCompanyStore()
-const requirementStore = useRequirementStore()
-const { requirement } = storeToRefs(requirementStore)
 const task = ref()
 const selectedUser = ref([])
 const user_ids = computed(() => selectedUser.value.map((u) => u.id))
 
 const state = ref('')
+const requirementDetail = ref()
 
 const assign_type = ref(null)
 
@@ -57,6 +66,14 @@ watch(user_ids, (val) => {
   form.value.user_ids = val
 })
 
+watch(
+  () => props.defaultValues,
+  (defaults) => {
+    form.value = { ...defaults }
+  },
+  { immediate: true },
+)
+
 onMounted(async () => {
   state.value = 'loading'
   await companyStore.fetchCompanies({
@@ -67,10 +84,13 @@ onMounted(async () => {
 })
 
 watch(
-  () => ({ parentTaskId: props.parentTaskId, requirement: props.requirementId }),
+  () => ({ parentTaskId: props.parentTaskId, requirement: props.requirementDetailId }),
   async () => {
-    if (props.requirementId > 0) {
-      await requirementStore.fetchRequirement(props.requirementId)
+    if (props.requirementDetailId > 0) {
+      console.log({ id: props.requirementDetailId })
+      requirementDetail.value = (
+        await findRequirementDetail(props.requirementId, props.requirementDetailId)
+      )?.data?.detail
     }
 
     if (props.parentTaskId > 0) {
@@ -99,7 +119,7 @@ async function submit() {
   const payload = {
     ...form.value,
     parent_id: task?.value?.id || 0,
-    requirement_id: requirement?.value?.id || null,
+    requirement_detail_id: requirementDetail?.value?.id || null,
   }
 
   try {
@@ -134,8 +154,8 @@ async function submit() {
     </div>
 
     <form @submit.prevent="submit" class="z-0">
-      <p class="text-center mt-2 mb-6" v-if="requirementId && requirement?.title">
-        Task under requirement <span class="text-sky-600">{{ requirement.title }}</span>
+      <p class="text-center mt-2 mb-6" v-if="requirementDetailId && requirementDetail?.title">
+        Task under requirement <span class="text-sky-600">{{ requirementDetail.title }}</span>
       </p>
       <p class="text-center mt-2 mb-6" v-if="parentTaskId && task?.title">
         Sub task under <span class="text-sky-600">{{ task.title }}</span>
@@ -165,6 +185,7 @@ async function submit() {
           :companies="companyStore?.companies || []"
           class="mb-4"
           :className="{ select: 'h-10' }"
+          :disabled="readonlyFields?.from_department_id"
         >
           <template #label>
             <label class="block text-gray-600 text-sm mb1 font-medium">
@@ -176,6 +197,7 @@ async function submit() {
         <CompanyDepartmentSelectInput
           v-model="form.to_department_id"
           :companies="companyStore?.companies || []"
+          :disabled="readonlyFields?.to_department_id"
           class="mb-4"
           :className="{ select: 'h-10' }"
         >

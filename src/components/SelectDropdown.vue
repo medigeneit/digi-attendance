@@ -53,6 +53,7 @@
         <!-- Single Item selection -->
         <template v-else>
           <div class="flex items-center h-full">
+            <!-- {{ modelValue }} - {{ getSelectionLabel(selectedItems) }} - -->
             <slot
               name="selected-option"
               :option="findOptionById(modelValue)"
@@ -73,7 +74,7 @@
       <div class="flex items-center gap-0.5">
         <!-- Indicator -->
         <button
-          v-if="props.modelValue && clearable"
+          v-if="props.modelValue && clearable && !props.disabled"
           @click.prevent="() => emit('update:modelValue', '')"
           class="text-gray-600 font-semibold hover:text-red-700 text-xl"
           title="Clear selection"
@@ -231,7 +232,7 @@ function handleOutsideClick(event) {
 
 function findOptionById(optionId) {
   const options = props.isOptionGroup
-    ? selectedGroup.value?.[props.optGroupOptionKey] || []
+    ? getSelectedGroupByModelValue(optionId)?.[props.optGroupOptionKey] || []
     : props.options
 
   return options.find((opt) => opt?.[props.value] == optionId)
@@ -274,9 +275,15 @@ const getOptionLabel = (option) => {
 }
 
 const getSelectionLabel = (optionId) => {
-  const options = props.isOptionGroup
-    ? selectedGroup.value?.[props.optGroupOptionKey] || []
-    : props.options
+  let options = []
+
+  if (props.isOptionGroup) {
+    const selectedOptGroup = getSelectedGroupByModelValue(optionId)
+
+    options = props.isOptionGroup
+      ? selectedOptGroup?.[props.optGroupOptionKey] || []
+      : props.options
+  }
 
   const selected = options.find((opt) => {
     if (typeof opt == 'string' || typeof opt == 'number') {
@@ -489,6 +496,21 @@ function handleTagEnter(event) {
   search.value = ''
   event.target.focus()
 }
+
+function getSelectedGroupByModelValue(value) {
+  return props.options.find((group) => {
+    return group?.[props.optGroupOptionKey]?.some((opt) => opt?.[props.value] == value)
+  })
+}
+
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    if (props.isOptionGroup) {
+      selectedGroup.value = getSelectedGroupByModelValue(newValue)
+    }
+  },
+)
 
 watch(isOpen, calculatePosition)
 </script>

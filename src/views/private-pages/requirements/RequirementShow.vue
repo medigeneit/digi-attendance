@@ -6,6 +6,7 @@ import RequirementDetailAddForm from '@/components/requirements/RequirementDetai
 import RequirementDetailDeleteForm from '@/components/requirements/RequirementDetailDeleteForm.vue'
 import RequirementDetailEditForm from '@/components/requirements/RequirementDetailEditForm.vue'
 import RequirementDetailTableRow from '@/components/requirements/RequirementDetailTableRow.vue'
+import TaskParentIdSelector from '@/components/requirements/TaskParentIdSelector.vue'
 import TaskAddForm from '@/components/tasks/TaskAddForm.vue'
 import { findRequirement } from '@/services/requirement'
 import { onMounted, reactive, ref } from 'vue'
@@ -38,6 +39,23 @@ async function fetchRequirement() {
   state.value = ''
 }
 
+function goToTaskAdd(detail) {
+  //router.push({ name: 'TaskAdd' })
+
+  console.log({ detail })
+  addFormData.modalShown = true
+  addFormData.from_department_id = requirement.value.from_department_id
+  addFormData.to_department_id = requirement.value.to_department_id
+
+  addFormData.taskDefaultValues = {
+    title: detail.title,
+    description: detail.description,
+    from_department_id: requirement.value.from_department_id,
+    to_department_id: requirement.value.to_department_id,
+  }
+  addFormData.requirementDetail = detail
+}
+
 function handleAddRequirementDetail() {
   detailAddForm.open = true
 }
@@ -57,23 +75,32 @@ function handlePrint() {
 }
 
 const addFormData = reactive({
-  parentId: 0,
+  parentId: null,
+  modalShown: false,
   requirementId: 0,
+  taskDefaultValues: {},
+  requirementDetail: null,
 })
 
 async function handleTaskUpdate() {
   addFormData.parentId = 0
+  addFormData.parentId = null
+  addFormData.modalShown = false
+  addFormData.requirementDetail = null
   state.value = 'loading'
   await fetchRequirement()
 }
 
 async function handleTaskAddClose() {
-  addFormData.parentId = 0
-  await fetchRequirement()
+  addFormData.parentId = null
+  addFormData.modalShown = false
+  addFormData.requirementDetail = null
 }
 </script>
 <template>
   <div class="container mx-auto p-6 print:p-0 w-full print:max-w-full">
+    <!-- {{ addFormData }} -->
+
     <OverlyModal v-if="detailAddForm.open" class="*:max-w-4xl">
       <RequirementDetailAddForm
         :requirementId="requirement.id"
@@ -113,12 +140,31 @@ async function handleTaskAddClose() {
       />
     </OverlyModal>
 
-    <OverlyModal v-if="addForm">
+    <OverlyModal v-if="addFormData.modalShown" class="*:relative">
+      <button
+        @click.prevent="handleTaskAddClose"
+        class="absolute right-3 top-2 text-xl text-red-500 hover:text-red-400"
+      >
+        <i class="fas fa-times-circle"></i>
+      </button>
+      <TaskParentIdSelector
+        v-if="addFormData.parentId === null"
+        :from-department-id="requirement?.from_department_id"
+        @parentIdSelect="(parentId) => (addFormData.parentId = parentId)"
+      >
+      </TaskParentIdSelector>
       <TaskAddForm
+        v-else
         :parentTaskId="addFormData.parentId"
-        :requirementId="addFormData.requirementId"
+        :requirementDetailId="addFormData?.requirementDetail?.id"
+        :requirementId="requirement.id"
         @close="handleTaskAddClose"
         @taskCreated="handleTaskUpdate"
+        :defaultValues="addFormData.taskDefaultValues"
+        :readonlyFields="{
+          from_department_id: true,
+          to_department_id: true,
+        }"
       />
     </OverlyModal>
 
@@ -245,6 +291,7 @@ async function handleTaskAddClose() {
                   :serial="index + 1"
                   @editClick="handleEditRequirementDetail"
                   @deleteClick="handleDeleteRequirementDetail"
+                  @taskCreateClick="goToTaskAdd"
                 />
                 <tr>
                   <td

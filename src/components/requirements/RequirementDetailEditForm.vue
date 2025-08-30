@@ -69,7 +69,7 @@ onMounted(async () => {
     detail.value = (await findRequirementDetail(props.requirementId, props.detailId)).data?.detail
     form.value = {
       title: detail.value?.title,
-      description: detail.value?.title,
+      description: detail.value?.description,
       priority: detail.value?.priority,
       supervisor_id: detail.value?.supervisor_id,
     }

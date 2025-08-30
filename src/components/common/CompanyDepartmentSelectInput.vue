@@ -12,6 +12,7 @@ const props = defineProps({
     }),
   },
   defaultOption: { type: String, default: '--select department--' },
+  disabled: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -36,7 +37,7 @@ function departmentFilterBy(options, term) {
 
 <template>
   <div>
-    <slot name="label">Department</slot>
+    <slot name="label">Department </slot>
     <SelectDropdown
       :options="companies"
       :isOptionGroup="true"
@@ -47,6 +48,7 @@ function departmentFilterBy(options, term) {
       label="name"
       class="w-full border rounded-md focus:ring-2 focus:ring-blue-500"
       clearable
+      :disabled="disabled"
     >
       <template #selected-option="{ option }">
         <div>
