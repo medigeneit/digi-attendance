@@ -91,6 +91,7 @@ const fetchUser = async (employeeId) => {
 
 // Prevent duplicate attendance fetches
 const lastFetchKey = ref('')
+
 const fetchAttendance = async () => {
   const emp = filters.value.employee_id
   const month = selectedMonth.value
@@ -209,6 +210,7 @@ const hasSelection = computed(() => !!filters.value.employee_id)
             id="monthSelect"
             type="month"
             v-model="selectedMonth"
+            @change="fetchAttendance"
             class="input-1"
             aria-label="Select month"
           />
