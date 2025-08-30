@@ -6,6 +6,7 @@ import RequirementDetailAddForm from '@/components/requirements/RequirementDetai
 import RequirementDetailDeleteForm from '@/components/requirements/RequirementDetailDeleteForm.vue'
 import RequirementDetailEditForm from '@/components/requirements/RequirementDetailEditForm.vue'
 import RequirementDetailTableRow from '@/components/requirements/RequirementDetailTableRow.vue'
+import TaskAddForm from '@/components/tasks/TaskAddForm.vue'
 import { findRequirement } from '@/services/requirement'
 import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -54,6 +55,22 @@ function handleDeleteRequirementDetail(detail) {
 function handlePrint() {
   window.print()
 }
+
+const addFormData = reactive({
+  parentId: 0,
+  requirementId: 0,
+})
+
+async function handleTaskUpdate() {
+  addFormData.parentId = 0
+  state.value = 'loading'
+  await fetchRequirement()
+}
+
+async function handleTaskAddClose() {
+  addFormData.parentId = 0
+  await fetchRequirement()
+}
 </script>
 <template>
   <div class="container mx-auto p-6 print:p-0 w-full print:max-w-full">
@@ -93,6 +110,15 @@ function handlePrint() {
             await fetchRequirement()
           }
         "
+      />
+    </OverlyModal>
+
+    <OverlyModal v-if="addForm">
+      <TaskAddForm
+        :parentTaskId="addFormData.parentId"
+        :requirementId="addFormData.requirementId"
+        @close="handleTaskAddClose"
+        @taskCreated="handleTaskUpdate"
       />
     </OverlyModal>
 

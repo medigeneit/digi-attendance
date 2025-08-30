@@ -57,39 +57,35 @@ const taskUsers = computed(() => {
 </script>
 
 <template>
-  <div>
+  <div class="w-full overflow-y-auto">
     <table class="w-full bg-white rounded">
       <tbody>
         <template v-for="taskUser in taskUsers" :key="taskUser.id">
           <tr>
-            <td class="border p-4 align-top border-green-300 bg-blue-50">
+            <td class="border align-top border-green-300 bg-blue-50">
               <!-- :rowspan="Math.max(taskUser.tasks.length, 1)" -->
               <div>
-                <div class="sticky top-[7rem] bg-white/80 py-2 z-40">
+                <div
+                  class="sticky top-[4.2rem] bg-white/80 py-2 px-2 z-40"
+                  v-if="taskUser.tasks?.length > 0"
+                >
                   <UserChip :user="taskUser" class="" />
                 </div>
-                <!-- </td>
 
-                <td
-                class="py-4 px-4 border-x border-green-300 bg-blue-50"
-                :class="{
-                  'border-t': taskIndex == 0,
-                  'border-b': taskUser.tasks.length - 1 === taskIndex,
-                  }"
-                  > -->
-
-                <TaskTreeViewWithSubTable
-                  v-for="(task, taskIndex) in taskUser.tasks"
-                  :key="task.id"
-                  :task="task"
-                  class="!border-0 my-4"
-                  :index="taskIndex"
-                  :isMyTask="isMyTask"
-                  @commentButtonClick="emit('commentButtonClick', item.id)"
-                  @editClick="(taskId) => emit('editClick', taskId)"
-                  @addClick="(taskId) => emit('addClick', taskId)"
-                  @employeeAssignClick="(taskId) => emit('employeeAssignClick', taskId)"
-                />
+                <div class="space-y-4">
+                  <TaskTreeViewWithSubTable
+                    v-for="(task, taskIndex) in taskUser.tasks"
+                    :key="task.id"
+                    :task="task"
+                    class="!border-0"
+                    :index="taskIndex"
+                    :isMyTask="isMyTask"
+                    @commentButtonClick="emit('commentButtonClick', item.id)"
+                    @editClick="(taskId) => emit('editClick', taskId)"
+                    @addClick="(taskId) => emit('addClick', taskId)"
+                    @employeeAssignClick="(taskId) => emit('employeeAssignClick', taskId)"
+                  />
+                </div>
               </div>
             </td>
           </tr>

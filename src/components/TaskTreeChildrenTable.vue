@@ -1,5 +1,5 @@
 <template>
-  <div class="-mx-3">
+  <div class="w-full">
     <table class="w-full" v-if="childrenTasks?.length > 0">
       <thead>
         <tr>
@@ -23,7 +23,9 @@
           <td class="border text-center text-xs text-gray-400 bg-gray-50/80 sticky -top-4 z-20">
             Started
           </td>
-          <td class="border-y text-center text-xs text-gray-400 bg-gray-50/80 sticky -top-4 z-20">
+          <td
+            class="border-y text-center text-xs text-gray-400 bg-gray-50/80 -top-4 z-20 sticky right-0 border-l bg-sky-50"
+          >
             Status
           </td>
         </tr>
@@ -120,11 +122,20 @@
                 }}</span>
               </span>
             </td>
-            <td class="border-y px-3 py-1 border-gray-200">
-              <div class="flex justify-end gap-2">
+            <td class="border-y px-3 border-gray-200 sticky right-0 border-l bg-sky-50">
+              <div class="flex justify-end flex-wrap gap-2 py-2">
                 <TaskIsClosedBadge v-if="task.closed_at" />
-                <TaskStatus :status="task?.status" :progressPercent="task?.progress_percent || 0" />
-                <SubTaskProgress ref="progress" :task="task" class="text-sm" />
+                <TaskStatus
+                  :status="task?.status"
+                  :progressPercent="task?.progress_percent || 0"
+                  class="w-full"
+                />
+                <SubTaskProgress
+                  ref="progress"
+                  :task="task"
+                  class="text-sm w-full"
+                  v-if="task?.children_tasks?.length > 0"
+                />
               </div>
             </td>
           </tr>
