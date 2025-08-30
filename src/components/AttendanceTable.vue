@@ -36,7 +36,7 @@
             class="border px-2 py-1 text-sm whitespace-nowrap"
             :title="`${log.shift_start_time} to ${log.shift_end_time}`"
           >
-            <div class="flex flex-col gap-1">
+            <div class="flex flex-col">
               <div class="font-semibold text-gray-800">{{ log.shift_name }}</div>
               <div v-if="log.shift_exchange_application_status" class="text-xs">
                 <router-link
@@ -44,16 +44,15 @@
                     name: 'ExchangeShiftShow',
                     params: { id: log.shift_exchange_application_id },
                   }"
-                  class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium transition hover:opacity-90"
+                  class="inline-flex items-center gap-1 px-2 py-0.5  font-medium transition hover:underline hover:opacity-90"
                   :class="{
-                    'bg-yellow-100 text-yellow-800':
+                    ' text-yellow-800':
                       log.shift_exchange_application_status === 'Pending',
-                    'bg-green-100 text-green-800':
+                    ' text-green-800':
                       log.shift_exchange_application_status === 'Approved',
-                    'bg-red-100 text-red-800': log.shift_exchange_application_status === 'Rejected',
+                    ' text-red-800': log.shift_exchange_application_status === 'Rejected',
                   }"
                 >
-                  <i class="far fa-eye"></i>
                   {{ log.shift_exchange_application_status }}
                 </router-link>
               </div>
@@ -131,15 +130,15 @@
             <template v-if="log.over_time_status === 'Approved'">
               <router-link
                 :to="{ name: 'MyOvertimeShow', params: { id: log.over_time_application_id } }"
-                class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-semibold"
+                class="inline-flex items-center gap-1 font-medium text-green-600 transition hover:underline hover:opacity-90"
               >
-                {{ log.overtime_hours }} | Approved
+                {{ log.overtime_hours }} (Approved)
               </router-link>
             </template>
             <template v-else-if="log.over_time_status === 'Pending'">
               <router-link
                 :to="{ name: 'MyOvertimeShow', params: { id: log.over_time_application_id } }"
-                class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-semibold animate-pulse"
+                class="inline-flex items-center gap-1 py-0.5  font-medium transition hover:underline hover:opacity-90"
               >
                 {{ log.overtime_hours ?? '--' }} | Pending
               </router-link>
@@ -166,6 +165,7 @@
               <router-link
                 v-if="log.first_short_leave"
                 :to="{ name: 'ShortLeaveShow', params: { id: log.first_short_leave_id } }"
+                class="hover:underline"
                 :class="{
                   'text-green-500': log.first_short_leave === 'Approved',
                   'text-yellow-500': log.first_short_leave === 'Pending',
