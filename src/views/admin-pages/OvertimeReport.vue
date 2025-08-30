@@ -3,7 +3,7 @@ import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import { useOvertimeStore } from '@/stores/overtime'
 import { storeToRefs } from 'pinia'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -60,6 +60,40 @@ onMounted(() => {
   if (filters.value.company_id && month.value) {
     overtimeStore.getCompanyDepartmentOvertimeReport(month.value, filters.value)
   }
+})
+
+const toMinutes = (v) => {
+  if (v == null || v === '') return 0
+  if (typeof v === 'number') return Math.round(v * 60) 
+  if (typeof v === 'string') {
+    const s = v.trim()
+    if (/^\d+:\d{1,2}$/.test(s)) {
+      const [h, m] = s.split(':').map(n => Number(n) || 0)
+      return h * 60 + m
+    }
+    const n = Number(s)
+    if (!Number.isNaN(n)) return Math.round(n * 60)
+  }
+  return 0
+}
+
+const fmtHM = (min) => {
+  const h = Math.floor(min / 60)
+  const m = min % 60
+  return `${h}h ${m}m`
+}
+
+const reportTotals = computed(() => {
+  const list = reports.value || []
+  return list.reduce(
+    (acc, r) => {
+      acc.entries += Number(r?.total_overtime_entries) || 0
+      acc.requestedMin += toMinutes(r?.total_request_overtime_hours)
+      acc.approvedMin += toMinutes(r?.total_approval_overtime_hours)
+      return acc
+    },
+    { entries: 0, requestedMin: 0, approvedMin: 0 }
+  )
 })
 </script>
 
@@ -154,6 +188,20 @@ onMounted(() => {
               </td>
             </tr>
           </tbody>
+          <tfoot>
+            <tr class="bg-gray-50 font-semibold">
+              <td class="border p-2 text-left" colspan="4">Totals</td>
+              <td class="border p-2 text-center">{{ reportTotals.entries }}</td>
+              <td class="border p-2 text-center">
+                {{ fmtHM(reportTotals.requestedMin) }}
+              </td>
+              <td class="border p-2 text-center">
+                {{ fmtHM(reportTotals.approvedMin) }}
+              </td>
+              <td class="border p-2 print:hidden"></td>
+            </tr>
+          </tfoot>
+
         </table>
       </div>
       <div v-else class="text-center text-red-500 text-xl italic mt-10">
