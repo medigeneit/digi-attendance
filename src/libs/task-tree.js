@@ -23,7 +23,7 @@ export const useTaskTree = () => {
           idPath: path + node.id
         });
 
-        if (node.children_tasks && node.children_tasks.length) {
+        if (node.children_tasks && node.children_tasks?.length) {
           traverse(node.children_tasks, depth + 1, path + node.id + '-');
         }
 
