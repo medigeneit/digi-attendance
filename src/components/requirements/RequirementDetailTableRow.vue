@@ -1,6 +1,6 @@
 <script setup>
 import { useAuthStore } from '@/stores/auth'
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import TaskUserChip from '../tasks/TaskUserChip.vue'
 
 const props = defineProps({
@@ -11,12 +11,9 @@ const props = defineProps({
 
 const emit = defineEmits(['editClick', 'deleteClick', 'taskCreateClick'])
 const auth = useAuthStore()
-
+const descriptionEl = ref(null)
+const isOverflowing = ref(false)
 const descriptionLineClampClass = ref('line-clamp-2')
-
-function handleShowMoreClick() {
-  descriptionLineClampClass.value = descriptionLineClampClass.value ? '' : 'line-clamp-2'
-}
 
 const rowsOfTask = computed(() => {
   if (props.detail?.tasks?.length > 0) {
@@ -34,6 +31,34 @@ function handleCreateAssignButtonClick() {
 
   emit('taskCreateClick', props.detail)
 }
+
+function checkOverflow() {
+  const el = descriptionEl.value[0]
+  if (!el) return
+
+  // Check if content is taller than element’s visible height
+  isOverflowing.value = el.scrollHeight > el.clientHeight
+}
+
+function handleShowMoreClick() {
+  descriptionLineClampClass.value = descriptionLineClampClass.value ? '' : 'line-clamp-2'
+}
+
+onMounted(() => {
+  checkOverflow()
+
+  // also handle window resize (line wrapping changes on smaller screens)
+  window.addEventListener('resize', checkOverflow)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', checkOverflow)
+})
+
+watch(
+  () => props.detail.description,
+  () => setTimeout(checkOverflow, 10),
+)
 </script>
 <template>
   <template v-for="(task, taskIndex) in rowsOfTask" :key="task.id">
@@ -55,11 +80,13 @@ function handleCreateAssignButtonClick() {
               <div class="text-gray-400 mr-2 text-xs uppercase font-semibold">Description</div>
               <div class="text-justify">
                 <p
+                  ref="descriptionEl"
                   class="print:line-clamp-none"
                   :class="descriptionLineClampClass"
                   v-html="detail.description"
                 ></p>
                 <button
+                  v-if="isOverflowing"
                   class="text-blue-500 group-hover/item:underline hover:text-sky-400 ml-auto text-sm print:hidden"
                   @click.prevent="handleShowMoreClick"
                 >
