@@ -40,6 +40,7 @@ function handleTaskClick(task) {
 
 async function handleAssignClick() {
   await taskStore.setTaskRequirement(selectedTask.value.id, props.requirementDetail.id)
+  emit('assignTask')
 }
 
 const taskList = computed(() => {
