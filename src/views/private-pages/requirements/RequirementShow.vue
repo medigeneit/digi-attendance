@@ -190,19 +190,23 @@ async function handleTaskAddClose() {
       </div>
       <div class="text-center text-xl font-bold mb-2 underline">Requirement Form</div>
       <div class="mb-4 flex items-center gap-1 print:mb-1">
-        <div class="text-gray-800 text-sm">Requirement ID:</div>
+        <div class="text-gray-500 text-sm">Requirement ID:</div>
         <div class="font-bold print:text-gray-900">
           {{ requirement?.id }}
         </div>
       </div>
 
-      <div class="mb-4 print:flex print:items-center print:gap-3 print:mb-1">
-        <div class="text-gray-800 text-sm">From</div>
+      <div class="mb-3 flex items-center gap-3 print:mb-1">
+        <div class="text-gray-500 text-sm">From</div>
         <div class="print:text-gray-900">
           {{ requirement?.from_department?.name }}
         </div>
       </div>
-      <div class="mb-4 print:flex print:items-center print:gap-3 print:mb-1">
+
+      <div
+        class="mb-3 flex items-center gap-3 print:mb-1"
+        v-if="requirement?.website_tags?.length > 0"
+      >
         <div class="text-gray-500 text-sm">Website</div>
 
         <div class="flex items-center gap-2 print:text-gray-900 flex-wrap">
@@ -215,7 +219,8 @@ async function handleTaskAddClose() {
           </div>
         </div>
       </div>
-      <div class="mb-4 print:flex print:items-center print:gap-3 print:mb-1">
+
+      <div class="mb-3 flex items-center gap-3 print:mb-1">
         <div class="text-gray-500 text-sm">Submission Date</div>
         <div class="print:text-gray-900">
           {{
