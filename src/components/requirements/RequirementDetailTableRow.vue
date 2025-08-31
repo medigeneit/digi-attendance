@@ -1,13 +1,16 @@
 <script setup>
+import { useAuthStore } from '@/stores/auth'
 import { computed, ref } from 'vue'
 import TaskUserChip from '../tasks/TaskUserChip.vue'
 
 const props = defineProps({
   detail: { type: Object },
+  requirement: { type: Object },
   serial: { type: Number },
 })
 
 const emit = defineEmits(['editClick', 'deleteClick', 'taskCreateClick'])
+const auth = useAuthStore()
 
 const descriptionLineClampClass = ref('line-clamp-2')
 
@@ -21,6 +24,16 @@ const rowsOfTask = computed(() => {
   }
   return [{ id: 0 }]
 })
+
+function handleCreateAssignButtonClick() {
+  if (auth.user?.department_id !== props.requirement?.to_department_id) {
+    return alert(
+      `You can't create or assign task for this requirement. \nOnly ${props.requirement?.to_department?.name}'s user can create or assign.`,
+    )
+  }
+
+  emit('taskCreateClick', props.detail)
+}
 </script>
 <template>
   <template v-for="(task, taskIndex) in rowsOfTask" :key="task.id">
@@ -137,7 +150,7 @@ const rowsOfTask = computed(() => {
       <template v-else>
         <td colspan="2" class="border-2 border-gray-700 p-3 text-center">
           <button
-            @click.prevent="emit('taskCreateClick', detail)"
+            @click.prevent="handleCreateAssignButtonClick"
             class="print:hidden border-2 border-transparent group-hover/item:bg-blue-200 hover:border-blue-700 text-blue-500 hover:text-white hover:!bg-blue-500 rounded-md px-4 py-1 whitespace-nowrap"
           >
             Create / Assign Task

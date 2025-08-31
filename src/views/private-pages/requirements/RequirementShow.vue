@@ -297,6 +297,7 @@ async function handleTaskAddClose() {
             <tbody>
               <template v-for="(detail, index) in requirement?.details || []" :key="detail.id">
                 <RequirementDetailTableRow
+                  :requirement="requirement"
                   :detail="detail"
                   :serial="index + 1"
                   @editClick="handleEditRequirementDetail"
