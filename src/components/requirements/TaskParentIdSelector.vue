@@ -113,13 +113,10 @@ const taskList = computed(() => {
               class="fad text-xl group:hover-text-white"
               :class="
                 task?.children_task_count > 0
-                  ? {
-                      'fa-folder text-blue-800/70': !subTasksOpen,
-                      'fa-folder-open text-blue-400': subTasksOpen,
-                    }
+                  ? 'fa-folder text-blue-800/70'
                   : 'fa-file-alt text-gray-400'
               "
-            ></i>
+            />
             <div class="flex items-center w-full">
               <div class="grow">
                 <div class="line-clamp-1">
