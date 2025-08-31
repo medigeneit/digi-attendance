@@ -38,7 +38,7 @@ watch(
       <div class="py-2 px-4 font-bold text-center border-b shadow">
         Click to select task or sub task
       </div>
-      <div class="flex flex-col justify-center items-start rounded-md h-[70vh] overflow-y-scroll">
+      <div class="flex flex-col justify-start items-start min-h-28 max-h-[70vh] overflow-y-auto">
         <div v-for="task in taskStore.tasks" :key="task.id" class="w-full mb-2">
           <!-- Level 1 -->
           <button
@@ -58,23 +58,6 @@ watch(
               >
                 <span class="text-gray-400">&mdash;</span>{{ subTask.title }}
               </button>
-
-              <!-- <div class="mt-[1px]">
-                <div
-                  v-for="subSubTask in subTask.children_tasks || []"
-                  :key="subSubTask.id"
-                  class="border-b"
-                >
-
-                  <button
-                    type="button"
-                    class="text-left text-xs w-full hover:bg-blue-500 hover:text-white py-2"
-                    @click.prevent="emit('parentIdSelect', subSubTask.id)"
-                  >
-                    <span class="text-gray-400">&mdash;&mdash;</span> {{ subSubTask.title }}
-                  </button>
-                </div>
-              </div> -->
             </div>
           </div>
         </div>
