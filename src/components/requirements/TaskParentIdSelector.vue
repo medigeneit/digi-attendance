@@ -16,7 +16,7 @@ watch(
   () => subTaskChosen.value,
   (chosen) => {
     if (chosen) {
-      taskStore.fetchTasks({ 'to-department-id': props.fromDepartmentId })
+      taskStore.fetchTasks({ 'from-department-id': props.fromDepartmentId })
     }
   },
   { immediate: true },
