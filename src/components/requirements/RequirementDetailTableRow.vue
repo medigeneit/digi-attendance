@@ -138,9 +138,9 @@ const rowsOfTask = computed(() => {
         <td colspan="2" class="border-2 border-gray-700 p-3 text-center">
           <button
             @click.prevent="emit('taskCreateClick', detail)"
-            class="print:hidden hover:border-2 group-hover/item:bg-blue-200 hover:border-blue-700 text-blue-500 hover:text-white hover:!bg-blue-500 rounded-md px-4 py-1"
+            class="print:hidden border-2 border-transparent group-hover/item:bg-blue-200 hover:border-blue-700 text-blue-500 hover:text-white hover:!bg-blue-500 rounded-md px-4 py-1 whitespace-nowrap"
           >
-            Create Task
+            Create / Assign Task
           </button>
         </td>
       </template>

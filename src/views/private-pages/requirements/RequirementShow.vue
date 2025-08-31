@@ -147,12 +147,17 @@ async function handleTaskAddClose() {
       >
         <i class="fas fa-times-circle"></i>
       </button>
+
       <TaskParentIdSelector
         v-if="addFormData.parentId === null"
         :from-department-id="requirement?.from_department_id"
+        :requirementDetail="addFormData?.requirementDetail"
         @parentIdSelect="(parentId) => (addFormData.parentId = parentId)"
+        @cancelClick="handleTaskAddClose"
+        @assignTask="handleTaskUpdate"
       >
       </TaskParentIdSelector>
+
       <TaskAddForm
         v-else
         :parentTaskId="addFormData.parentId"

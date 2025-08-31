@@ -143,13 +143,14 @@ watch(
                 {{ store.task.title }}
               </h2>
 
-              <div class="flex items-center gap-2 text-xs text-gray-500 mt-2 opacity-80 text-left">
+              <div class="flex items-center gap-3 text-xs text-gray-500 mt-2 opacity-80 text-left">
                 <div
                   v-if="store.task.parent_id == 0"
                   class="text-white bg-green-700 text-[12px] uppercase px-2 py-[2px] rounded-full border border-green-200 opacity-80"
                 >
                   MAIN TASK
                 </div>
+                <div class="font-semibold">#{{ store.task?.serial }}</div>
 
                 <TaskImportantBadge v-if="store.task?.is_important" />
 
