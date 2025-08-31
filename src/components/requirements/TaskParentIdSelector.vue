@@ -106,7 +106,7 @@ const taskList = computed(() => {
           <!-- Level 1 -->
           <button
             type="button"
-            class="text-left text-base w-full bg-blue-50 px-2 hover:bg-blue-500 hover:text-white py-4 text-blue-500 font-semibold group flex items-center gap-2"
+            class="text-left text-base w-full bg-blue-50 px-2 hover:bg-blue-500 hover:text-white py-2 text-blue-500 font-semibold group flex items-center gap-2"
             @click.prevent="() => handleTaskClick(task)"
           >
             <i
@@ -122,7 +122,7 @@ const taskList = computed(() => {
             ></i>
             <div class="flex items-center w-full">
               <div class="grow">
-                <div>
+                <div class="line-clamp-1">
                   {{ task.title }}
                 </div>
                 <div
