@@ -19,8 +19,8 @@ const selectedTask = ref(null)
 
 watch(
   () => assignType.value,
-  (chosen) => {
-    if (['sub-task', 'direct-assign'].includes(chosen)) {
+  (_chosen, previouslyChosen) => {
+    if (!previouslyChosen) {
       taskStore.fetchTasks({ 'from-department-id': props.fromDepartmentId })
     }
   },
@@ -32,7 +32,7 @@ function handleTaskClick(task) {
     emit('parentIdSelect', task.id)
   } else {
     if (task.requirement_detail_id) {
-      //return alert("This task already assigned to another requirement. Can't be assigned.")
+      return alert("This task already assigned to another requirement. Can't be assigned.")
     }
     selectedTask.value = task
   }
@@ -43,7 +43,7 @@ async function handleAssignClick() {
 }
 
 const taskList = computed(() => {
-  return taskStore.tasks?.filter((task) => task.requirement_detail_id)
+  return taskStore?.tasks || []
 })
 </script>
 <template>
