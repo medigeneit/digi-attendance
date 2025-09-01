@@ -1,6 +1,7 @@
 <script setup>
 import { useAuthStore } from '@/stores/auth'
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed } from 'vue'
+import DescriptionView from '../DescriptionView.vue'
 import TaskUserChip from '../tasks/TaskUserChip.vue'
 
 const props = defineProps({
@@ -11,9 +12,6 @@ const props = defineProps({
 
 const emit = defineEmits(['editClick', 'deleteClick', 'taskCreateClick'])
 const auth = useAuthStore()
-const descriptionEl = ref(null)
-const isOverflowing = ref(false)
-const descriptionLineClampClass = ref('line-clamp-2')
 
 const rowsOfTask = computed(() => {
   if (props.detail?.tasks?.length > 0) {
@@ -28,37 +26,8 @@ function handleCreateAssignButtonClick() {
       `You can't create or assign task for this requirement. \nOnly ${props.requirement?.to_department?.name}'s user can create or assign.`,
     )
   }
-
   emit('taskCreateClick', props.detail)
 }
-
-function checkOverflow() {
-  const el = descriptionEl.value[0]
-  if (!el) return
-
-  // Check if content is taller than element’s visible height
-  isOverflowing.value = el.scrollHeight > el.clientHeight
-}
-
-function handleShowMoreClick() {
-  descriptionLineClampClass.value = descriptionLineClampClass.value ? '' : 'line-clamp-2'
-}
-
-onMounted(() => {
-  checkOverflow()
-
-  // also handle window resize (line wrapping changes on smaller screens)
-  window.addEventListener('resize', checkOverflow)
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', checkOverflow)
-})
-
-watch(
-  () => props.detail.description,
-  () => setTimeout(checkOverflow, 10),
-)
 </script>
 <template>
   <template v-for="(task, taskIndex) in rowsOfTask" :key="task.id">
@@ -72,42 +41,50 @@ watch(
 
         <td class="border-2 border-gray-700 p-3" :rowspan="detail?.tasks?.length || 1">
           <div>
-            <div class="text-lg font-semibold mb-2">
-              <span>{{ detail.title }}</span>
+            <div class="text-lg font-semibold mb-2 flex items-start gap-3">
+              <DescriptionView line-clamp="3" class="grow">
+                <template #default>
+                  {{ detail.title }}
+                </template>
+                <template #btnText="{ lineClampClass }">
+                  {{ lineClampClass ? 'More' : 'Less' }}
+                </template>
+              </DescriptionView>
+              <div v-if="detail.priority">
+                <span
+                  :class="[
+                    'font-semibold text-sm',
+                    {
+                      'text-yellow-600 ': detail.priority == 'IMPORTANT',
+                      'text-red-700 ': detail.priority == 'URGENT',
+                    },
+                  ]"
+                  >{{ detail.priority }}</span
+                >
+              </div>
             </div>
             <hr class="mb-4 -mx-4" />
-            <div class="mb-5">
+
+            <div class="mb-5" v-if="detail.description">
               <div class="text-gray-400 mr-2 text-xs uppercase font-semibold">Description</div>
-              <div class="text-justify">
-                <p
-                  ref="descriptionEl"
-                  class="print:line-clamp-none"
-                  :class="descriptionLineClampClass"
-                  v-html="detail.description"
-                ></p>
-                <button
-                  v-if="isOverflowing"
-                  class="text-blue-500 group-hover/item:underline hover:text-sky-400 ml-auto text-sm print:hidden"
-                  @click.prevent="handleShowMoreClick"
-                >
-                  {{ descriptionLineClampClass ? 'Show More' : 'Show Less' }}
-                </button>
+
+              <DescriptionView
+                :line-clamp="4"
+                :class-name="{ button: 'group-hover/item:underline' }"
+              >
+                <p v-html="detail.description" class="text-justify"></p>
+              </DescriptionView>
+            </div>
+
+            <div class="mt-4 flex justify-between items-end pb-4 print:pb-0">
+              <div class="">
+                <div class="text-gray-400 mr-2 text-xs uppercase font-semibold">Supervisor:</div>
+                <TaskUserChip v-if="detail.supervisor" :user="detail.supervisor" />
               </div>
             </div>
           </div>
 
           <div class="flex items-end">
-            <div>
-              <div class="flex items-center gap-1 mb-3">
-                <span class="text-gray-400 mr-2 text-xs uppercase font-semibold">Supervisor:</span>
-                <TaskUserChip v-if="detail.supervisor" :user="detail.supervisor" />
-              </div>
-              <div>
-                <span class="text-gray-500 mr-2 text-xs uppercase font-semibold">Priority:</span>
-                <span class="text-blue-400 font-semibold">{{ detail.priority }}</span>
-              </div>
-            </div>
-
             <div class="ml-auto flex gap-6 items-center">
               <button class="btn-2" @click.prevent="emit('editClick', detail)">
                 <i class="fas fa-edit"></i>Edit
@@ -121,10 +98,10 @@ watch(
         </td>
 
         <td
-          class="border-2 border-gray-700 p-3 whitespace-nowrap print:whitespace-break-spaces print:px-0 text-center"
+          class="border-2 border-gray-700 p-3 whitespace-nowrap print:whitespace-break-spaces print:px-0"
           :rowspan="detail?.tasks?.length || 1"
         >
-          <div>
+          <div class="text-center print:text-xs">
             {{
               new Date(detail.better_to_complete_on).toLocaleDateString('en-US', {
                 year: 'numeric',
@@ -160,7 +137,7 @@ watch(
         </td>
         <td class="border-2 border-gray-700 p-3">
           <div class="whitespace-nowrap text-center print:whitespace-break-spaces">
-            <div v-if="task.deadline">
+            <div v-if="task.deadline" class="print:text-xs">
               {{
                 new Date(task.deadline).toLocaleDateString('en-US', {
                   year: 'numeric',

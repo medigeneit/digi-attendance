@@ -2,10 +2,12 @@ ii
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
 import OverlyModal from '@/components/common/OverlyModal.vue'
+import DescriptionView from '@/components/DescriptionView.vue'
 import RequirementDetailAddForm from '@/components/requirements/RequirementDetailAddForm.vue'
 import RequirementDetailDeleteForm from '@/components/requirements/RequirementDetailDeleteForm.vue'
 import RequirementDetailEditForm from '@/components/requirements/RequirementDetailEditForm.vue'
 import RequirementDetailTableRow from '@/components/requirements/RequirementDetailTableRow.vue'
+import RequirementFeedbackEditForm from '@/components/requirements/RequirementFeedbackEditForm.vue'
 import TaskParentIdSelector from '@/components/requirements/TaskParentIdSelector.vue'
 import TaskAddForm from '@/components/tasks/TaskAddForm.vue'
 import { findRequirement } from '@/services/requirement'
@@ -24,6 +26,12 @@ const detailEditForm = reactive({
   detail: null,
   open: false,
 })
+
+const feedbackEditForm = reactive({
+  detail: null,
+  open: false,
+})
+
 const detailDeleteForm = reactive({
   detail: null,
   open: false,
@@ -113,6 +121,7 @@ async function handleTaskAddClose() {
         "
       />
     </OverlyModal>
+
     <OverlyModal v-if="detailEditForm.open">
       <RequirementDetailEditForm
         :requirementId="requirement.id"
@@ -126,6 +135,21 @@ async function handleTaskAddClose() {
         "
       />
     </OverlyModal>
+
+    <OverlyModal v-if="feedbackEditForm.open">
+      <RequirementFeedbackEditForm
+        :requirementId="requirement.id"
+        :detailId="feedbackEditForm.detail?.id"
+        @closeClick="feedbackEditForm.open = false"
+        @update="
+          async () => {
+            feedbackEditForm.open = false
+            await fetchRequirement()
+          }
+        "
+      />
+    </OverlyModal>
+
     <OverlyModal v-if="detailDeleteForm.open">
       <RequirementDetailDeleteForm
         :requirementId="requirement.id"
@@ -304,7 +328,7 @@ async function handleTaskAddClose() {
                   @deleteClick="handleDeleteRequirementDetail"
                   @taskCreateClick="goToTaskAdd"
                 />
-                <tr>
+                <tr class="">
                   <td
                     class="whitespace-nowrap print:whitespace-break-spaces print:px-0 p-3 text-center border-2 border-gray-800"
                   >
@@ -315,10 +339,33 @@ async function handleTaskAddClose() {
                     </div>
                     <div class="text-gray-800 text-xs">(Feedback)</div>
                   </td>
-                  <td
-                    class="whitespace-nowrap p-3 text-center border-2 border-gray-800"
-                    colspan="4"
-                  ></td>
+                  <td class="p-3 border-2 border-gray-800" colspan="4">
+                    <div>
+                      <DescriptionView
+                        v-if="detail.feedback"
+                        lineClamp="2"
+                        :className="{ button: '  underline' }"
+                        class="mb-4 print:mb-0"
+                      >
+                        <p class="text-sky-500 text-sm">
+                          {{ detail.feedback }}
+                        </p>
+                      </DescriptionView>
+                      <div>
+                        <button
+                          class="btn-3 print:hidden"
+                          @click.prevent="
+                            () => {
+                              feedbackEditForm.open = true
+                              feedbackEditForm.detail = detail
+                            }
+                          "
+                        >
+                          {{ detail.feedback ? 'Update Feedback' : 'Add feedback' }}
+                        </button>
+                      </div>
+                    </div>
+                  </td>
                 </tr>
               </template>
             </tbody>
