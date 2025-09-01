@@ -53,7 +53,7 @@ function departmentFilterBy(options, term) {
       <template #selected-option="{ option }">
         <div>
           <span v-if="option?.name" class="text-gray-800 line-clamp-1">{{ option?.name }}</span>
-          <span v-else class="text-gray-500">{{ defaultOption }}</span>
+          <span v-else class="text-gray-500 whitespace-nowrap">{{ defaultOption }}</span>
         </div>
       </template>
     </SelectDropdown>

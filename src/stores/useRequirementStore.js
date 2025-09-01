@@ -9,11 +9,11 @@ export const useRequirementStore = defineStore('requirement', () => {
   const loading = ref(false);
   const error = ref(null);
 
-  const fetchRequirements = async () => {
+  const fetchRequirements = async ( params = {}) => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await getRequirements();
+      const response = await getRequirements({params});
       requirements.value = response.data;
     } catch (err) {
       error.value = err.response?.data?.message || 'রিকোয়ারমেন্ট লোড করতে ব্যর্থ হয়েছে।';

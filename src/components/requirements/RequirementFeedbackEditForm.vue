@@ -105,19 +105,19 @@ onMounted(async () => {
         <hr v-if="error" class="mb-4" />
 
         <div class="flex items-center justify-between gap-4">
-          <button
-            type="button"
-            @click.prevent="emit('closeClick')"
-            class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-5 py-2 rounded transition"
-          >
-            Cancel
-          </button>
+          <button type="button" @click.prevent="emit('closeClick')" class="btn-3">Cancel</button>
           <button
             :disabled="state == 'loading' || state == 'submitting'"
             type="submit"
-            class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-5 py-2 rounded transition"
+            class="btn-2"
           >
-            {{ state == 'submitting' ? 'Saving...' : 'Save' }}
+            {{
+              state == 'submitting'
+                ? 'Saving...'
+                : detail?.feedback
+                  ? 'Update Feedback'
+                  : 'Add Feedback'
+            }}
           </button>
         </div>
       </div>

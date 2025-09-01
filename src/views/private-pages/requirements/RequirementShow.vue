@@ -341,13 +341,14 @@ async function handleTaskAddClose() {
                   </td>
                   <td class="p-3 border-2 border-gray-800" colspan="4">
                     <div>
+                      <div class="font-semibold text-sm mb-2" v-if="detail?.feedback">Feedback</div>
                       <DescriptionView
-                        v-if="detail.feedback"
+                        v-if="detail?.feedback"
                         lineClamp="2"
                         :className="{ button: '  underline' }"
                         class="mb-4 print:mb-0"
                       >
-                        <p class="text-sky-500 text-sm" v-html="detail.feedback"></p>
+                        <p class="text-sky-500 text-sm" v-html="detail?.feedback"></p>
                       </DescriptionView>
                       <div>
                         <button
