@@ -76,10 +76,13 @@ function handleCreateAssignButtonClick() {
               </DescriptionView>
             </div>
 
-            <div class="mt-4 flex justify-between items-end pb-4 print:pb-0">
+            <div
+              class="mt-4 flex justify-between items-end pb-4 print:pb-0"
+              v-if="detail.supervisor"
+            >
               <div class="">
                 <div class="text-gray-400 mr-2 text-xs uppercase font-semibold">Supervisor:</div>
-                <TaskUserChip v-if="detail.supervisor" :user="detail.supervisor" />
+                <TaskUserChip :user="detail.supervisor" />
               </div>
             </div>
           </div>
