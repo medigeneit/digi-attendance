@@ -122,7 +122,7 @@ const goToAdd = () => {
                 </div> -->
                 </td>
                 <td class="px-4 py-4 text-right whitespace-nowrap">
-                  <UserChip :user="req.created_by" />
+                  <UserChip :user="req.created_by" v-if="req.created_by" />
                 </td>
 
                 <td class="px-4 py-4 text-center whitespace-nowrap">
