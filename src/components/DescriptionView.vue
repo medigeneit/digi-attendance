@@ -66,7 +66,7 @@ onBeforeUnmount(() => {
     </p>
     <button
       v-if="isOverflowing || lineClampClass === ''"
-      class="text-blue-500 hover:text-sky-400 ml-auto text-sm print:hidden mt-2"
+      class="text-blue-500 hover:text-sky-400 ml-auto text-sm print:hidden mt-2 whitespace-nowrap"
       :class="props?.className?.button || ''"
       @click.prevent="handleShowMoreClick"
     >

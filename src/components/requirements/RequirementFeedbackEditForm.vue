@@ -84,7 +84,15 @@ onMounted(async () => {
       <template v-if="state !== 'loading'">
         <div class="mb-4">
           <label class="block text-gray-600 text-sm font-medium">Title </label>
-          <DescriptionView line-clamp="1">{{ form.title }}</DescriptionView>
+          <DescriptionView
+            line-clamp="1"
+            :className="{
+              paragraph: 'whitespace-pre-wrap text-justify ',
+              button: 'mt-0',
+            }"
+          >
+            {{ detail?.title }}
+          </DescriptionView>
         </div>
 
         <div class="mb-4">
