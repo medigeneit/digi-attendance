@@ -115,8 +115,12 @@ onMounted(async () => {
               <tr class="bg-gray-200 text-gray-700 text-sm leading-normal">
                 <th class="py-3 px-2 text-center">#</th>
                 <th class="py-3 px-2 text-left">Department Name</th>
-                <th class="py-3 px-2 text-left">Coordinator & In-Charge</th>
+                <th class="py-3 px-4 text-left whitespace-nowrap">
+                  Coordinator, In-Charge & Operational Admin
+                </th>
                 <th class="py-3 px-2 text-center">Employee</th>
+                <th class="py-3 px-2 text-center">Recommend By</th>
+                <th class="py-3 px-2 text-center">Approved By</th>
                 <th class="py-3 px-2 text-center">Status</th>
                 <th class="py-3 px-2 text-center">Action</th>
               </tr>
@@ -132,17 +136,23 @@ onMounted(async () => {
                   <div>{{ department.name }}</div>
                   <strong>{{ department.short_name }}</strong>
                 </td>
-                <td class="py-3 px-2 text-left">
-                  <div>
+                <td class="py-3 px-4 text-left">
+                  <div class="whitespace-nowrap">
                     <span class="text-gray-400">Coordinator: </span>
                     {{ department.coordinator?.name || '-' }}
                   </div>
-                  <div>
+                  <div class="whitespace-nowrap">
                     <span class="text-gray-400">In-Charge: </span>
                     {{ department.in_charge?.name || '-' }}
                   </div>
+                  <div class="whitespace-nowrap">
+                    <span class="text-gray-400">Operational Admin: </span>
+                    {{ department.operational_admin?.name || '-' }}
+                  </div>
                 </td>
                 <td class="py-3 px-2 text-center">{{ department?.users_count }}</td>
+                <td class="py-3 px-2 text-center">{{ department?.recommend_by?.name || '-' }}</td>
+                <td class="py-3 px-2 text-center">{{ department?.approved_by?.name || '-' }}</td>
                 <td class="py-3 px-2 text-center">{{ department.status }}</td>
                 <td class="py-3 px-2 text-center">
                   <div class="flex item-center justify-center gap-4">

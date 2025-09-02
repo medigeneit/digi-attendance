@@ -17,6 +17,10 @@ const props = defineProps({
     type: String,
     default: '--Select Employee--',
   },
+  containment: {
+    type: Object,
+    default: () => window,
+  },
 })
 
 const emit = defineEmits(['update:modelValue', 'clear'])
@@ -36,7 +40,7 @@ const clearEmployee = () => {
 </script>
 
 <template>
-  <SelectDropdown v-model="selectedEmployeeId" :options="employees">
+  <SelectDropdown v-model="selectedEmployeeId" :options="employees" :containment="containment">
     <template #option="{ option }">
       <UserChip :user="option || {}" class="w-full overflow-hidden border relative" />
     </template>
