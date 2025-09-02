@@ -1,1 +1,0 @@
-import{_ as e}from"./_plugin-vue_export-helper-DlAUqK2U.js";import{c as t,o}from"./index-nvZG5ov6.js";const c={},r={class:"font-medium text-red-600 text-sm"};function s(n,_){return o(),t("span",r,"*")}const f=e(c,[["render",s]]);export{f as R};
