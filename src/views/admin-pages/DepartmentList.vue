@@ -146,15 +146,15 @@ onMounted(async () => {
                       {{ department.coordinator?.name || '-' }}
                     </span>
                   </div>
-                  <div class="whitespace-nowrap">
+                </td>
+                <td class="py-3 px-2 text-left">
+                  <div class="whitespace-nowrap mb-1">
                     <span class="text-gray-400 font-semibold">Operational Admin: </span>
                     <span class="text-gray-800">
                       {{ department.operational_admin?.name || '-' }}</span
                     >
                   </div>
-                </td>
-                <td class="py-3 px-2 text-left">
-                  <div class="whitespace-nowrap">
+                  <div class="whitespace-nowrap mb-1">
                     <span class="text-gray-400 font-semibold">Recommend By: </span>
                     <span class="text-gray-800">{{ department?.recommend_by?.name || '-' }}</span>
                   </div>
