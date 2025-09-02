@@ -2,12 +2,12 @@
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notification'
 import { useOvertimeStore } from '@/stores/overtime'
+import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AcceptAndRejectHandler from '../applications/AcceptAndRejectHandler.vue'
 import DeleteOvertime from './DeleteOvertime.vue'
 import DisplayFormattedWorkingHours from './DisplayFormattedWorkingHours.vue'
 import UpdateApprovalTime from './UpdateApprovalTime.vue'
-import { computed } from 'vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -36,7 +36,6 @@ const totalApprovedMinutes = computed(() => {
   const list = overtimeStore.overtimes || []
   return list.reduce((sum, o) => sum + (Number(o?.approval_overtime_hours) || 0), 0)
 })
-
 </script>
 
 <template>
@@ -152,10 +151,14 @@ const totalApprovedMinutes = computed(() => {
               <div class="flex items-center justify-center gap-x-4">
                 <div
                   v-if="
-                    overtime.approval_overtime_hours &&
-                    Object.values(
-                      notificationStore.applicationApprovalPermissions?.[overtime.id] || {},
-                    ).some((val) => val)
+                    overtime.recommend_by_user_id === authStore.user?.id
+                      ? (overtime.approval_overtime_hours ?? null) &&
+                        Object.values(
+                          notificationStore.applicationApprovalPermissions?.[overtime.id] || {},
+                        ).some((val) => val)
+                      : Object.values(
+                          notificationStore.applicationApprovalPermissions?.[overtime.id] || {},
+                        ).some((val) => val)
                   "
                   class="border border-dashed px-4 rounded-xl"
                 >
@@ -200,7 +203,6 @@ const totalApprovedMinutes = computed(() => {
             <td class="border border-gray-300 px-2 text-center">—</td>
           </tr>
         </tfoot>
-
       </table>
     </div>
   </div>
