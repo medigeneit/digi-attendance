@@ -240,7 +240,11 @@ function findOptionById(optionId) {
 
 onMounted(() => {
   document.addEventListener('click', handleOutsideClick)
-  props.containment?.addEventListener('scroll', () => calculatePosition(isOpen.value))
+  props.containment?.addEventListener('scroll', () => {
+    // console.log('containment', props.containment)
+    calculatePosition(isOpen.value)
+  })
+
   setTimeout(() => {
     tagSearchInput.value?.focus()
   })
