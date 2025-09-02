@@ -183,7 +183,7 @@ const hasSelection = computed(() => !!filters.value.employee_id)
         <i class="far fa-arrow-left"></i>
         <span class="hidden md:flex">Back</span>
       </button>
-      <h1 class="title-md md:title-lg flex-wrap text-center">Monthly Attendance</h1>
+      <h1 class="title-md md:title-lg flex-wrap text-center">Monthly Job Card</h1>
       <div></div>
     </div>
 

@@ -26,7 +26,7 @@ const hasAccessTo = (routeName) => {
       class="main-button"
     >
       <i class="fas fa-calendar-alt text-3xl"></i>
-      Attendance
+      Job Card
     </RouterLink>
 
     <RouterLink
