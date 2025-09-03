@@ -87,22 +87,22 @@ const leaveDaysMessage = computed(() => {
 
 watchEffect(async () => {
   if (leaveDays.value.length && userLeaveBalance.value.length) {
-    if (selectedLeaveTypes.value.length !== leaveDays.value.length) {
-      selectedLeaveTypes.value = leaveDays.value.map(() => userLeaveBalance.value[0].id)
-    }
-
     await holidayStore.fetchHolidays({
-      company_id: props?.userInfo?.company_id,
+      company_id: authStore?.user?.company_id,
       start_date: leaveDays.value[0],
       end_date: leaveDays.value[leaveDays.value.length - 1],
     })
 
+    // Check each leave day and select "weekend" for weekends based on the weekends array
     leaveDays.value.forEach(async (day, index) => {
       const weekdayName = new Date(day).toLocaleString('en-us', { weekday: 'long' }).toLowerCase()
+
+      // Capitalize weekdayName for comparison (e.g., "friday" -> "Friday")
       const capitalizedWeekday = weekdayName.charAt(0).toUpperCase() + weekdayName.slice(1)
 
+      // Check if the current day matches any of the user's weekends
       if (weekends.value.includes(capitalizedWeekday)) {
-        selectedLeaveTypes.value[index] = 'weekend'
+        selectedLeaveTypes.value[index] = 'weekend' // Auto-select "weekend" for matching days
       }
 
       if (holidayStore.holidayDates.includes(day)) {
@@ -177,6 +177,7 @@ onMounted(async () => {
     }
   })
 
+
   await userStore.fetchTypeWiseEmployees({ except: 'auth' })
 })
 
@@ -219,15 +220,15 @@ const goBack = () => {
 
       <div v-if="leaveDays.length" class="bg-gray-100 p-2 rounded-md">
         <h2 class="text-lg font-semibold">Leave Days</h2>
-        <div>
-          <div
+        <div
             v-for="(day, index) in leaveDays"
             :key="index"
             class="flex gap-4 mb-2 bg-white p-2 rounded-md"
+            :class="{ '!bg-red-500': selectedLeaveTypes[index] === 'Weekend'}"
           >
             <div class="font-semibold">{{ day }}</div>
             <div class="flex flex-wrap gap-2">
-              <label
+             <label
                 v-for="type in userLeaveBalance"
                 :key="type.id"
                 class="flex items-center space-x-1"
@@ -237,6 +238,7 @@ const goBack = () => {
                   :name="'leaveType-' + index"
                   :value="type.id"
                   v-model="selectedLeaveTypes[index]"
+                  :disabled="selectedLeaveTypes.filter(t => t === type.id).length >= type.remaining_days"
                 />
                 <span>{{ type.leave_type }}</span>
               </label>
@@ -260,7 +262,6 @@ const goBack = () => {
               </label>
             </div>
           </div>
-        </div>
       </div>
 
       <div>
