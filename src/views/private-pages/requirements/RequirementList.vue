@@ -102,11 +102,11 @@ const goToAdd = () => {
                       class="text-blue-800"
                       v-if="req?.details?.length > 0 && Array.isArray(req?.details)"
                     >
-                      <div class="line-clamp-1 font-semibold">
+                      <div class="line-clamp-1 font-semibold" :title="req?.details[0].title">
                         {{ req?.details[0].title }}
                       </div>
                     </div>
-                    <div v-else class="text-gray-400 text-sm">No Details added</div>
+                    <div v-else class="text-gray-400 text-sm italic">No Requirement added</div>
                     <RouterLink
                       :to="{ name: 'RequirementShow', params: { id: req?.id } }"
                       class="text-blue-600 text-sm hover:underline hover:text-blue-800"

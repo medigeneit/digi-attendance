@@ -116,11 +116,10 @@ onMounted(async () => {
                 <th class="py-3 px-2 text-center">#</th>
                 <th class="py-3 px-2 text-left">Department Name</th>
                 <th class="py-3 px-4 text-left whitespace-nowrap">
-                  Coordinator, In-Charge & Operational Admin
+                  In-Charge, Coordinator & Operational Admin
                 </th>
+                <th class="py-3 px-2 text-left">Administration</th>
                 <th class="py-3 px-2 text-center">Employee</th>
-                <th class="py-3 px-2 text-center">Recommend By</th>
-                <th class="py-3 px-2 text-center">Approved By</th>
                 <th class="py-3 px-2 text-center">Status</th>
                 <th class="py-3 px-2 text-center">Action</th>
               </tr>
@@ -129,7 +128,7 @@ onMounted(async () => {
               <tr
                 v-for="(department, index) in departments"
                 :key="index"
-                class="border-b border-gray-200 hover:bg-blue-200"
+                class="border-b border-gray-200 hover:bg-blue-100"
               >
                 <td class="py-3 px-2 text-center">{{ index += 1 }}</td>
                 <td class="py-3 px-2 text-left">
@@ -137,24 +136,55 @@ onMounted(async () => {
                   <strong>{{ department.short_name }}</strong>
                 </td>
                 <td class="py-3 px-4 text-left">
-                  <div class="whitespace-nowrap">
-                    <span class="text-gray-400">Coordinator: </span>
-                    {{ department.coordinator?.name || '-' }}
+                  <div class="whitespace-nowrap mb-1">
+                    <span class="text-gray-400 font-semibold">In-Charge: </span>
+                    <span class="text-gray-800"> {{ department.in_charge?.name || '-' }}</span>
                   </div>
-                  <div class="whitespace-nowrap">
-                    <span class="text-gray-400">In-Charge: </span>
-                    {{ department.in_charge?.name || '-' }}
-                  </div>
-                  <div class="whitespace-nowrap">
-                    <span class="text-gray-400">Operational Admin: </span>
-                    {{ department.operational_admin?.name || '-' }}
+                  <div class="whitespace-nowrap mb-1">
+                    <span class="text-gray-400 font-semibold">Coordinator: </span>
+                    <span class="text-gray-800">
+                      {{ department.coordinator?.name || '-' }}
+                    </span>
                   </div>
                 </td>
-                <td class="py-3 px-2 text-center">{{ department?.users_count }}</td>
-                <td class="py-3 px-2 text-center">{{ department?.recommend_by?.name || '-' }}</td>
-                <td class="py-3 px-2 text-center">{{ department?.approved_by?.name || '-' }}</td>
-                <td class="py-3 px-2 text-center">{{ department.status }}</td>
+                <td class="py-3 px-2 text-left">
+                  <div class="whitespace-nowrap mb-1">
+                    <span class="text-gray-400 font-semibold">Operational Admin: </span>
+                    <span class="text-gray-800">
+                      {{ department.operational_admin?.name || '-' }}</span
+                    >
+                  </div>
+                  <div class="whitespace-nowrap mb-1">
+                    <span class="text-gray-400 font-semibold">Recommend By: </span>
+                    <span class="text-gray-800">{{ department?.recommend_by?.name || '-' }}</span>
+                  </div>
+                  <div class="whitespace-nowrap">
+                    <span class="text-gray-400 font-semibold">Approved By: </span>
+                    <span class="text-gray-800"> {{ department?.approved_by?.name || '-' }}</span>
+                  </div>
+                </td>
+                <td class="py-3 px-2 text-center text-gray-800 font-semibold">
+                  {{ department?.users_count }}
+                </td>
                 <td class="py-3 px-2 text-center">
+                  <div
+                    class="flex gap-1 items-center"
+                    :class="{
+                      'text-green-500': department?.status?.toLowerCase() == 'active',
+                      'text-red-400': department?.status?.toLowerCase() == 'inactive',
+                    }"
+                  >
+                    <i
+                      class="fas"
+                      :class="{
+                        'fa-check-circle': department?.status?.toLowerCase() == 'active',
+                        'fa-times-circle': department?.status?.toLowerCase() == 'inactive',
+                      }"
+                    ></i>
+                    {{ department.status }}
+                  </div>
+                </td>
+                <td class="py-3 px-6 text-center">
                   <div class="flex item-center justify-center gap-4">
                     <button
                       @click="openEditModal(department)"

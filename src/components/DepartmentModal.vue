@@ -4,6 +4,7 @@ import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import EmployeeDropdownInput from './EmployeeDropdownInput.vue'
+import LoaderView from './common/LoaderView.vue'
 
 const props = defineProps({
   show: { type: Boolean, required: true },
@@ -36,6 +37,7 @@ const departmentForm = reactive({
   description: '',
   status: 'Active',
 })
+const state = ref(false)
 
 const computedInchargeId = computed(() => (selectIncharge.value ? selectIncharge.value.id : null))
 const computedCoordinatorId = computed(() =>
@@ -143,6 +145,7 @@ const fetchEmployee = async (companyId) => {
 }
 
 onMounted(async () => {
+  state.value = 'loading'
   console.log(`DepartmentModal: onMounted`)
 
   await fetchCompanies()
@@ -156,16 +159,21 @@ onMounted(async () => {
   selectCoordinator.value = userStore.users?.find(
     (user) => user.id === props.department?.coordinator?.id,
   )
+  state.value = ''
 })
 </script>
 
 <template>
   <div v-if="show" class="modal-bg">
-    <div class="modal-card">
+    <div class="modal-card relative">
       <h2 class="text-lg font-semibold">
         {{ isEditMode ? 'Edit Department' : 'Add Department' }}
       </h2>
       <form @submit.prevent="handleSubmit">
+        <LoaderView
+          class="shadow-none absolute inset-0 z-10 h-full flex items-center justify-center bg-opacity-80"
+          v-if="state == 'loading'"
+        />
         <div class="max-h-[70vh] overflow-y-auto border-y my-4" ref="formInputs">
           <div class="mb-4">
             <label for="company_id" class="block text-sm font-medium mb-2">Company</label>
