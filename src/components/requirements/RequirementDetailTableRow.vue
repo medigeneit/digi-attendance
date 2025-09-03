@@ -75,19 +75,15 @@ function handleCreateAssignButtonClick() {
                 <p v-html="detail.description" class="text-justify"></p>
               </DescriptionView>
             </div>
+          </div>
 
-            <div
-              class="mt-4 flex justify-between items-end pb-4 print:pb-0"
-              v-if="detail.supervisor"
-            >
+          <div class="flex items-end">
+            <div class="mt-4 flex justify-between items-end print:pb-0" v-if="detail.supervisor">
               <div class="">
                 <div class="text-gray-400 mr-2 text-xs uppercase font-semibold">Supervisor:</div>
                 <TaskUserChip :user="detail.supervisor" />
               </div>
             </div>
-          </div>
-
-          <div class="flex items-end">
             <div class="ml-auto flex gap-6 items-center">
               <button class="btn-2" @click.prevent="emit('editClick', detail)">
                 <i class="fas fa-edit"></i>Edit
