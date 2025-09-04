@@ -150,7 +150,7 @@ function handleDetailAdd() {
       </template>
 
       <div class="col-span-full">
-        <div class="mb-8 mt-5">
+        <div class="mb-4 mt-5">
           <TextWithHr class="mb-5">
             <h3 class="font-semibold text-xl text-gray-800 mx-2">Requirement details</h3>
           </TextWithHr>
@@ -189,9 +189,13 @@ function handleDetailAdd() {
             </tbody>
           </table>
         </div>
-        <div class="mb-8 border rounded-md p-8 flex items-center justify-center bg-gray-50">
-          <button class="btn-2 pl-2 text-base" @click.prevent="() => handleDetailAdd()">
-            <i class="fad fa-plus-circle text-2xl mr-2"></i>Add Requirement
+
+        <div class="mb-4 rounded-md flex items-center justify-center">
+          <button
+            class="btn-icon flex justify-center items-center"
+            @click.prevent="() => handleDetailAdd()"
+          >
+            <i class="fad fa-plus-circle text-2xl"></i>
           </button>
         </div>
 
