@@ -1,130 +1,120 @@
+// stores/device.js
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
-import apiClient from '../axios'
+import { ref } from 'vue'
+import apiClient from '@/axios'
 
 export const useDeviceStore = defineStore('device', () => {
-  const devices = ref([]) // ডিভাইস লিস্ট
-  const device = ref(null) // একক ডিভাইস ডিটেইল
-  const loading = ref(false) // লোডিং স্টেট
-  const error = ref(null) // এরর স্টেট
+  const devices = ref([])
+  const device  = ref(null)
+  const loading = ref(false)
+  const error   = ref(null)
 
-  const fetchDevices = async () => {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await apiClient.get('/devices')
-      devices.value = response.data
-    } catch (err) {
-      error.value = err.response?.data?.message || 'ডিভাইস লোড করতে ব্যর্থ হয়েছে।'
-      console.error('Error fetching devices:', err)
-    } finally {
-      loading.value = false
-    }
+  const setErr = (e, fallback) => {
+    error.value = e?.response?.data?.message || e?.message || fallback
   }
 
-  const fetchDevice = async (id) => {
-    loading.value = true
-    error.value = null
+  async function fetchDevices() {
+    loading.value = true; error.value = null
     try {
-      const response = await apiClient.get(`/devices/${id}`)
-      device.value = response.data
-    } catch (err) {
-      error.value = err.response?.data?.message || `ডিভাইস (ID: ${id}) লোড করতে ব্যর্থ হয়েছে।`
-      console.error(`Error fetching device with id ${id}:`, err)
-    } finally {
-      loading.value = false
-    }
+      const { data } = await apiClient.get('/devices')
+      devices.value = data
+      return data
+    } catch (e) { setErr(e, 'ডিভাইস লোড ব্যর্থ') ; return [] }
+    finally { loading.value = false }
   }
 
-  const createDevice = async (data) => {
-    loading.value = true
-    error.value = null
+  async function fetchDevice(id) {
+    loading.value = true; error.value = null
     try {
-      const response = await apiClient.post('/devices', data)
-      devices.value.push(response.data) // নতুন ডিভাইস লিস্টে যোগ করুন
-      return response.data
-    } catch (err) {
-      error.value = err.response?.data?.message || 'ডিভাইস তৈরি করতে ব্যর্থ হয়েছে।'
-      console.error('Error creating device:', err)
-    } finally {
-      loading.value = false
-    }
+      const { data } = await apiClient.get(`/devices/${encodeURIComponent(id)}`)
+      device.value = data
+      return data
+    } catch (e) { setErr(e, `ডিভাইস (${id}) লোড ব্যর্থ`) ; return null }
+    finally { loading.value = false }
   }
 
-  const updateDevice = async (id, data) => {
-    loading.value = true
-    error.value = null
+  async function createDevice(payload) {
+    loading.value = true; error.value = null
     try {
-      const response = await apiClient.put(`/devices/${id}`, data)
-      const index = devices.value.findIndex((device) => device.id === id)
-      if (index !== -1) {
-        devices.value[index] = response.data // আপডেট করা ডিভাইস
-      }
-      return response.data
-    } catch (err) {
-      error.value = err.response?.data?.message || `ডিভাইস (ID: ${id}) আপডেট করতে ব্যর্থ হয়েছে।`
-      console.error(`Error updating device with id ${id}:`, err)
-    } finally {
-      loading.value = false
-    }
+      const { data } = await apiClient.post('/devices', payload)
+      // API রেসপন্সে device অবজেক্ট থাকলে push করো
+      await fetchDevices()
+      return data
+    } catch (e) { setErr(e, 'ডিভাইস তৈরি ব্যর্থ'); throw e?.response?.data || e }
+    finally { loading.value = false }
   }
 
-  const deleteDevice = async (id) => {
-    loading.value = true
-    error.value = null
+  async function updateDevice(id, payload) {
+    loading.value = true; error.value = null
     try {
-      await apiClient.delete(`/devices/${id}`)
-      devices.value = devices.value.filter((device) => device.id !== id) // ডিভাইস রিমুভ
-    } catch (err) {
-      error.value = err.response?.data?.message || `ডিভাইস (ID: ${id}) মুছতে ব্যর্থ হয়েছে।`
-      console.error(`Error deleting device with id ${id}:`, err)
-    } finally {
-      loading.value = false
-    }
+      const { data } = await apiClient.put(`/devices/${encodeURIComponent(id)}`, payload)
+      await fetchDevices()
+      return data
+    } catch (e) { setErr(e, `ডিভাইস (${id}) আপডেট ব্যর্থ`); throw e?.response?.data || e }
+    finally { loading.value = false }
   }
 
-  const checkDeviceConnection = async (id) => {
+  async function deleteDevice(id) {
+    loading.value = true; error.value = null
     try {
-      await apiClient.get(`/check-device-connection/${id}`)
-      return true;
-    } catch (error) {
-      console.error(error)
-      return false;
-    }
+      const { data } = await apiClient.delete(`/devices/${encodeURIComponent(id)}`)
+      devices.value = devices.value.filter(d => d.id !== id)
+      return data
+    } catch (e) { setErr(e, `ডিভাইস (${id}) ডিলিট ব্যর্থ`); throw e?.response?.data || e }
+    finally { loading.value = false }
   }
 
-    const syncCatchup = async (id) => {
+  async function checkDeviceConnection(id) {
     try {
-      loading.value = true
-      await apiClient.post(`/devices/${id}/sync-catchup`)
-      return true
-    } catch (e) {
-      console.error(e); return false
-    } finally { loading.value = false }
+      const { data } = await apiClient.get(`/check-device-connection/${encodeURIComponent(id)}`)
+      return data
+    } catch (e) { setErr(e, 'কনেকশন চেক ব্যর্থ'); throw e?.response?.data || e }
   }
 
-  const syncAll = async () => {
-    try {
-      loading.value = true
-      await apiClient.post(`/devices/sync-all`)
-      return true
-    } catch (e) {
-      console.error(e); return false
-    } finally { loading.value = false }
+  // --- device ops
+  const info        = (id) => apiClient.get(`/devices/${encodeURIComponent(id)}/info`).then(r=>r.data)
+  const enable      = (id) => apiClient.post(`/devices/${encodeURIComponent(id)}/enable`).then(r=>r.data)
+  const disable     = (id) => apiClient.post(`/devices/${encodeURIComponent(id)}/disable`).then(r=>r.data)
+  const restart     = (id) => apiClient.post(`/devices/${encodeURIComponent(id)}/restart`).then(r=>r.data)
+  const shutdown    = (id) => apiClient.post(`/devices/${encodeURIComponent(id)}/shutdown`).then(r=>r.data)
+  const testVoice   = (id) => apiClient.post(`/devices/${encodeURIComponent(id)}/test-voice`).then(r=>r.data)
+
+  function setTime(id, { datetime, date, time }) {
+    const payload = datetime ? { datetime } : { date, time }
+    return apiClient.post(`/devices/${encodeURIComponent(id)}/time/sync`, payload).then(r=>r.data)
+  }
+
+  // --- users live / diff
+  const usersLive = (id) =>
+    apiClient.get(`/devices/${encodeURIComponent(id)}/users/live`).then(r=>r.data)
+
+  const usersDiff = (id, { include_inactive = false } = {}) =>
+    apiClient.post(`/devices/${encodeURIComponent(id)}/users/diff`, { include_inactive }).then(r=>r.data)
+
+  // --- import/export (file)
+  async function importUsers(deviceId, file, { pushNow = true } = {}) {
+    const fd = new FormData()
+    fd.append('file', file)
+    if (pushNow) fd.append('push_now', '1')
+    const { data } = await apiClient.post(`/devices/${encodeURIComponent(deviceId)}/users/import`, fd, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    return data
+  }
+
+  // blob রিটার্ন করি—caller চাইলে ডাউনলোড হ্যান্ডেল করবে
+  async function exportUsers(deviceId) {
+    const res = await apiClient.get(`/devices/${encodeURIComponent(deviceId)}/users/export`, {
+      responseType: 'blob'
+    })
+    return res.data
   }
 
   return {
-    devices: computed(() => devices.value),
-    device: computed(() => device.value),
-    loading: computed(() => loading.value),
-    error: computed(() => error.value),
-    fetchDevices,
-    fetchDevice,
-    createDevice,
-    updateDevice,
-    deleteDevice,
+    devices, device, loading, error,
+    fetchDevices, fetchDevice, createDevice, updateDevice, deleteDevice,
     checkDeviceConnection,
-    syncCatchup,
-    syncAll,
+    info, setTime, enable, disable, restart, shutdown, testVoice,
+    usersLive, usersDiff, importUsers, exportUsers
   }
 })
