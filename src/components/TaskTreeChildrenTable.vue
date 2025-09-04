@@ -8,23 +8,33 @@
           >
             SL
           </td>
-          <td class="border text-center text-xs text-gray-400 bg-gray-50/80 sticky -top-4 z-20">
+          <td
+            class="border text-center text-xs text-gray-400 bg-gray-50/80 sticky -top-4 z-20 px-2 whitespace-nowrap"
+          >
             Sub Task
           </td>
-          <td class="border text-center text-xs text-gray-400 bg-gray-50/80 sticky -top-4 z-20">
+          <td
+            class="border text-center text-xs text-gray-400 bg-gray-50/80 sticky -top-4 z-20 px-2 whitespace-nowrap"
+          >
             Assign Person
           </td>
-          <td class="border text-center text-xs text-gray-400 bg-gray-50/80 sticky -top-4 z-20">
+          <td
+            class="border text-center text-xs text-gray-400 bg-gray-50/80 sticky -top-4 z-20 px-2 whitespace-nowrap"
+          >
             Assign Date
           </td>
-          <td class="border text-center text-xs text-gray-400 bg-gray-50/80 sticky -top-4 z-20">
+          <td
+            class="border text-center text-xs text-gray-400 bg-gray-50/80 sticky -top-4 z-20 px-2 whitespace-nowrap"
+          >
             Deadline
           </td>
-          <td class="border text-center text-xs text-gray-400 bg-gray-50/80 sticky -top-4 z-20">
+          <td
+            class="border text-center text-xs text-gray-400 bg-gray-50/80 sticky -top-4 z-20 px-2 whitespace-nowrap"
+          >
             Started
           </td>
           <td
-            class="border-y text-center text-xs text-gray-400 bg-gray-50/80 -top-4 z-20 sticky right-0 border-l bg-sky-50"
+            class="border-y text-center text-xs text-gray-400 bg-gray-50/80 -top-4 z-20 sticky right-0 border-l bg-sky-50 px-2 whitespace-nowrap"
           >
             Status
           </td>

@@ -257,6 +257,9 @@ async function submit() {
           </div>
         </div>
       </template>
+
+      <slot name="before-form-button"></slot>
+
       <div class="sticky bottom-0 bg-white py-4 border-t -mx-6 px-6">
         <div v-if="store.error" class="mb-4 text-red-500 font-medium">
           {{ store.error }}

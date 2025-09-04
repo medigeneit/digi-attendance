@@ -28,7 +28,9 @@ async function handleSubmitDate() {
       state.value = 'restored'
     } else {
       state.value = 'deleting'
-      await deleteTask(props.task.id, { params: { security_check: securityCheck.value } })
+      await deleteTask(props.task.id, {
+        params: { security_check: encodeURIComponent(securityCheck.value) },
+      })
       state.value = 'deleted'
     }
     if (state.value == 'deleted') {
@@ -93,12 +95,17 @@ function emitDelete() {
     </template>
 
     <div class="flex justify-between items-center">
-      <button class="btn-3" type="button" @click.prevent="handleCloseClick">
-        <span v-if="state == 'deleted'">Delete</span>
-        <span v-else> Close </span>
+      <button
+        v-if="state == 'deleted'"
+        class="btn-2-red"
+        type="button"
+        @click.prevent="handleCloseClick"
+      >
+        Delete
       </button>
+      <button v-else class="btn-3">Close</button>
 
-      <button v-if="state == 'deleted'" class="btn-2-red">
+      <button v-if="state == 'deleted'" class="btn-2 bg-green-600 bg-none">
         Undo Delete in
         <CountdownTimer
           :hide-if-zero-value="true"
