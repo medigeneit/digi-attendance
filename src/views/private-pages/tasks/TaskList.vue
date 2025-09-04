@@ -217,7 +217,6 @@ onUnmounted(() => {
       @clickPriorityDiscard="() => (listHasRearranged ? draggableTaskList.resetItems : null)"
       :list-has-rearranged="listHasRearranged"
       :isMyTask="route.name === 'MyTaskList'"
-      class="mb-6"
     />
 
     <template v-if="route?.query?.['query-log'] == 'true'">
