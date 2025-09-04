@@ -225,7 +225,7 @@ onUnmounted(() => {
       </div>
     </template>
 
-    <div class="relative min-h-[30vh]">
+    <div class="relative min-h-[26vh]">
       <div v-if="store.error" class="text-center py-4 text-red-500">
         {{ store.error }}
       </div>

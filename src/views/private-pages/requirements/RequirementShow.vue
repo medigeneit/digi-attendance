@@ -60,6 +60,9 @@ function goToTaskAdd(detail) {
     description: detail.description,
     from_department_id: requirement.value.from_department_id,
     to_department_id: requirement.value.to_department_id,
+    is_important: detail?.priority == 'IMPORTANT',
+    is_urgent: detail?.priority == 'URGENT',
+    supervisor_ids: detail?.supervisor_id ? [detail?.supervisor_id] : [],
   }
   addFormData.requirementDetail = detail
 }

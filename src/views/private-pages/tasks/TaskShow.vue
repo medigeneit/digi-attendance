@@ -1,6 +1,7 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
 import OverlyModal from '@/components/common/OverlyModal.vue'
+import DescriptionView from '@/components/DescriptionView.vue'
 import SubTaskList from '@/components/tasks/SubTaskList.vue'
 import SubTaskProgress from '@/components/tasks/SubTaskProgress.vue'
 import { default as TaskDeletingFrom } from '@/components/tasks/TaskDeletingFrom.vue'
@@ -30,8 +31,6 @@ const taskDeleting = reactive({
   open: false,
   task: null,
 })
-
-const full_description_hidden = ref(true)
 
 onMounted(async () => {
   state.value = 'loading'
@@ -181,18 +180,9 @@ watch(
           </div>
 
           <div class="col-span-full mb-4">
-            <p
-              v-html="store.task?.description"
-              class="text-gray-700"
-              :class="{ 'line-clamp-3': full_description_hidden }"
-            />
-            <button
-              v-if="store.task?.description?.length >= 600"
-              class="text-blue-500 mt-2"
-              @click.prevent="full_description_hidden = !full_description_hidden"
-            >
-              Show {{ full_description_hidden ? 'More' : 'Less' }}
-            </button>
+            <DescriptionView>
+              <p v-html="store.task?.description" class="text-justify" />
+            </DescriptionView>
           </div>
 
           <TaskSupervisorAndEmployee
