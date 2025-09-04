@@ -1,9 +1,13 @@
 <script setup>
 import { usePaycutStore } from '@/stores/paycut'
-import { ref, computed, watch } from 'vue'
-import TimePickerAsFloatHour from '../common/TimePickerAsFloatHour.vue'
+import { computed, ref, watch } from 'vue'
 import { useToast } from 'vue-toastification'
+import TimePickerAsFloatHour from '../common/TimePickerAsFloatHour.vue'
+
 const toast = useToast()
+
+const minimumPayCutHour = ref(0)
+const maximumPayCutHour = ref(54)
 
 const props = defineProps({
   userId: {
@@ -14,10 +18,15 @@ const props = defineProps({
     type: String, // format: 'YYYY-MM'
     required: true,
   },
-  show: Boolean // new prop
+  show: Boolean, // new prop
 })
+
 const emit = defineEmits(['updated'])
-const isValid = computed(() => paycutHour.value > 0 && paycutHour.value <= 24)
+
+const isValid = computed(
+  () => paycutHour.value >= minimumPayCutHour.value && paycutHour.value <= maximumPayCutHour.value,
+)
+
 const payCutStore = usePaycutStore()
 
 const isModalOpen = ref(false)
@@ -31,12 +40,11 @@ const isEditMode = computed(() => !!currentPaycut.value?.id)
 const fetchPaycutData = async () => {
   try {
     await payCutStore.fetchUserMonthlyPaycuts(props.userId, props.month)
-    const record = payCutStore.paycut;
+    const record = payCutStore.paycut
     currentPaycut.value = record || null
     paycutHour.value = Number(record?.paycut_hours || 0) || 0
     reason.value = record?.reason || ''
-    console.log({record});
-    
+    console.log({ record })
   } catch (err) {
     console.error('Failed to fetch paycut:', err)
     currentPaycut.value = null
@@ -59,25 +67,28 @@ watch(
     if (isModalOpen.value) {
       await fetchPaycutData()
     }
-  }
+  },
 )
 
 const handleSubmit = async () => {
-
-  if (!isValid.value) return toast.error('Paycut hour must be between 1–24')
+  if (!isValid.value) {
+    return toast.error(
+      `Paycut hour must be between ${minimumPayCutHour.value} and ${maximumPayCutHour.value}`,
+    )
+  }
 
   const confirmed = window.confirm(
     isEditMode.value
       ? 'Are you sure you want to update this paycut? This can only be done once.'
-      : 'Are you sure you want to create this paycut?'
-  );
+      : 'Are you sure you want to create this paycut?',
+  )
   if (!confirmed) return
 
   try {
     if (isEditMode.value) {
       await payCutStore.updatePaycut(currentPaycut.value.id, {
         paycut_hours: paycutHour.value,
-        note: note.value,
+        reason: reason.value,
       })
     } else {
       await payCutStore.createPaycut({
@@ -87,7 +98,7 @@ const handleSubmit = async () => {
         month: props.month,
       })
     }
-    emit('updated')  // notify parent
+    emit('updated') // notify parent
     closeModal()
   } catch (e) {
     alert('Failed to submit paycut: ' + e.message)
@@ -99,7 +110,6 @@ const closeModal = () => {
 }
 </script>
 
-
 <template>
   <i @click="isModalOpen = true" class="fa fa-edit cursor-pointer text-sky-600"></i>
   <div v-if="isModalOpen" class="fixed inset-0 z-50 flex justify-center items-center bg-black/50">
@@ -110,22 +120,11 @@ const closeModal = () => {
         v-model="paycutHour"
         :minute-interval="5"
         :required="true"
-        :hour-min="1"
-        :hour-max="24"
+        :hour-min="0"
+        :hour-max="54"
       />
-      <div v-if="isEditMode">
-        <textarea
-          class="input-1"
-          v-model="note"
-          placeholder="Edit Note"
-        ></textarea>
-      </div> 
-      <div v-else>
-        <textarea
-          class="input-1"
-          v-model="reason"
-          placeholder="Pay cut reason"
-        ></textarea>
+      <div>
+        <textarea class="input-1" v-model="reason" placeholder="Pay cut reason"></textarea>
       </div>
       <hr class="my-2" />
       <div class="flex justify-between gap-2 mt-4">

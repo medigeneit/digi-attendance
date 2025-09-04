@@ -62,7 +62,7 @@ export const useTaskStore = defineStore('task', () => {
       error.value = err.response?.data?.message || 'টাস্ক লোড করতে ব্যর্থ হয়েছে।';
       throw err
     }
-    
+
   };
 
   const fetchMyTasks = async (params, config) => {
@@ -212,11 +212,27 @@ export const useTaskStore = defineStore('task', () => {
     } catch (err) {
       error.value = err.response?.data?.message || `টাস্ক (ID: ${id}) মুছতে ব্যর্থ হয়েছে।`;
       console.error(`Error deleting task with id ${id}:`, err);
+      throw err
     } finally {
       loading.value = false;
     }
   };
 
+
+  const setTaskRequirement =  async (taskId, detailId) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      await apiClient.patch(`/tasks/${taskId}/update-requirement-detail/${detailId}`);
+      tasks.value = tasks.value.filter((t) => t.id !== taskId);
+    } catch (err) {
+      error.value = err.response?.data?.message || `টাস্ক (ID: ${taskId}) রেকয়্যারমেন্ট সেট করতে ব্যর্থ হয়েছে।`;
+      console.error(`Error deleting task with id ${taskId}:`, err);
+      throw err
+    } finally {
+      loading.value = false;
+    }
+  }
 
 
   return {
@@ -235,6 +251,7 @@ export const useTaskStore = defineStore('task', () => {
     updateTask,
     deleteTask,
     assignUsers,
-    updateTaskPriorities
+    updateTaskPriorities,
+    setTaskRequirement
   };
 });

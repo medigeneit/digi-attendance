@@ -7,7 +7,7 @@
     </div>
 
     <div
-      class="flex-grow border-2 rounded pb-3 px-3"
+      class="flex-grow border-2 rounded pb-3 overflow-y-auto"
       :class="{
         'border-blue-500': index % 2 === 0,
         'border-pink-300': index % 2 === 1,
@@ -18,13 +18,12 @@
     >
       <div class="items-start group">
         <div
-          class="task-details py-3 shadow-slate-100 flex flex-wrap z-30"
+          class="task-details py-3 shadow-slate-100 flex flex-wrap z-30 pl-3"
           :class="{
             'shadow-sm': treeLevel > 0,
           }"
         >
           <div class="flex items-start justify-between w-full gap-4 mb-2">
-            {{}}
             <div class="flex gap-2 flex-grow items-center">
               <div class="text-xl font-semibold text-blue-500" v-if="index !== undefined">
                 {{ index + 1 }}.
@@ -38,7 +37,9 @@
               />
             </div>
 
-            <div class="justify-end items-center gap-2 ml-auto flex flex-wrap flex-shrink-0">
+            <div
+              class="justify-end items-center gap-2 ml-auto flex flex-wrap flex-shrink-0 sticky right-4"
+            >
               <TaskIsClosedBadge v-if="task.closed_at" />
 
               <TaskStatus
@@ -120,7 +121,7 @@
         </div>
       </div>
 
-      <div class="flex gap-3 items-center">
+      <div class="flex gap-3 items-center px-3 flex-wrap gap-y-8">
         <div class="text-right text-sm flex items-center gap-4 mt-2 opacity-80">
           <div
             v-if="task.is_target"
@@ -129,7 +130,7 @@
             <i class="fad fa-bullseye-arrow mr-1"></i> TARGET TASK
           </div>
 
-          <span class="text-sm inline-flex" v-if="deadline">
+          <span class="text-sm" v-if="deadline">
             <span class="italic text-gray-500">Deadline: </span>
             <span class="text-blue-500 font-semibold whitespace-nowrap">{{ deadline }}</span>
           </span>
@@ -152,12 +153,12 @@
           </span>
         </div>
 
-        <div class="flex items-center sm:ml-auto order-0 sm:order-1">
+        <div class="flex items-center justify-center w-full md:w-auto sm:ml-auto">
           <div class="flex gap-2 ml-4 items-center text-xs" v-if="!hideButtons">
             <a
               :href="`/tasks/edit/${task.id}`"
               @click.stop.prevent="emits('editClick', task.id)"
-              class="btn-2 py-0.5 text-xs"
+              class="btn-2 py-0.5 text-xs whitespace-nowrap"
               v-if="!task.is_closed"
             >
               <i class="fas fa-edit"></i> Edit
@@ -167,7 +168,7 @@
               :href="`/tasks/${task.id}/assign-users`"
               @click.stop.prevent="emits('employeeAssignClick', task.id)"
               v-if="!task.is_closed"
-              class="border-indigo-500 hover:bg-indigo-600 text-indigo-600 hover:text-white font-semibold px-3 py-0.5 rounded-full transition border-2"
+              class="border-indigo-500 hover:bg-indigo-600 text-indigo-600 hover:text-white font-semibold px-3 py-0.5 rounded-full transition border-2 whitespace-nowrap"
             >
               <i class="fas fa-users-cog"></i> Manage
             </a>
@@ -179,7 +180,7 @@
                 query: { ['is-my-task']: isMyTask },
                 hash: '#task-reports',
               }"
-              class="border-indigo-500 hover:bg-indigo-600 text-indigo-600 hover:text-white font-semibold px-3 py-0.5 rounded-full transition border-2"
+              class="border-indigo-500 hover:bg-indigo-600 text-indigo-600 hover:text-white font-semibold px-3 py-0.5 rounded-full transition border-2 whitespace-nowrap"
             >
               <i class="far fa-file-alt"></i> Reports
             </RouterLink>

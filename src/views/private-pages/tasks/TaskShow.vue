@@ -1,6 +1,7 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
 import OverlyModal from '@/components/common/OverlyModal.vue'
+import DescriptionView from '@/components/DescriptionView.vue'
 import SubTaskList from '@/components/tasks/SubTaskList.vue'
 import SubTaskProgress from '@/components/tasks/SubTaskProgress.vue'
 import { default as TaskDeletingFrom } from '@/components/tasks/TaskDeletingFrom.vue'
@@ -30,8 +31,6 @@ const taskDeleting = reactive({
   open: false,
   task: null,
 })
-
-const full_description_hidden = ref(true)
 
 onMounted(async () => {
   state.value = 'loading'
@@ -143,13 +142,14 @@ watch(
                 {{ store.task.title }}
               </h2>
 
-              <div class="flex items-center gap-2 text-xs text-gray-500 mt-2 opacity-80 text-left">
+              <div class="flex items-center gap-3 text-xs text-gray-500 mt-2 opacity-80 text-left">
                 <div
                   v-if="store.task.parent_id == 0"
                   class="text-white bg-green-700 text-[12px] uppercase px-2 py-[2px] rounded-full border border-green-200 opacity-80"
                 >
                   MAIN TASK
                 </div>
+                <div class="font-semibold">#{{ store.task?.serial }}</div>
 
                 <TaskImportantBadge v-if="store.task?.is_important" />
 
@@ -180,18 +180,9 @@ watch(
           </div>
 
           <div class="col-span-full mb-4">
-            <p
-              v-html="store.task?.description"
-              class="text-gray-700"
-              :class="{ 'line-clamp-3': full_description_hidden }"
-            />
-            <button
-              v-if="store.task?.description?.length >= 600"
-              class="text-blue-500 mt-2"
-              @click.prevent="full_description_hidden = !full_description_hidden"
-            >
-              Show {{ full_description_hidden ? 'More' : 'Less' }}
-            </button>
+            <DescriptionView>
+              <p v-html="store.task?.description" class="text-justify" />
+            </DescriptionView>
           </div>
 
           <TaskSupervisorAndEmployee

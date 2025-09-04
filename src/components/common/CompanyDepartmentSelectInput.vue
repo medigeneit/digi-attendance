@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import SelectDropdown from '../SelectDropdown.vue'
 
 const props = defineProps({
   companies: { type: Array, required: true },
@@ -7,10 +8,11 @@ const props = defineProps({
   className: {
     type: Object,
     default: () => ({
-      select: 'px-4 py-2',
+      select: '',
     }),
   },
   defaultOption: { type: String, default: '--select department--' },
+  disabled: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -23,26 +25,37 @@ const department_id = computed({
     emit('update:modelValue', value)
   },
 })
+
+function departmentFilterBy(options, term) {
+  return options.filter((dept) => {
+    return (
+      dept?.short_name?.toLowerCase().includes(term) || dept?.name?.toLowerCase().includes(term)
+    )
+  })
+}
 </script>
 
 <template>
   <div>
-    <slot name="label">Department</slot>
-    <select
-      v-model="department_id"
-      class="w-full border rounded-md focus:ring-2 focus:ring-blue-500"
+    <slot name="label">Department </slot>
+    <SelectDropdown
+      :options="companies"
+      :isOptionGroup="true"
       :class="className.select"
+      :searchBy="departmentFilterBy"
+      v-model="department_id"
+      optGroupOptionKey="departments"
+      label="name"
+      class="w-full border rounded-md focus:ring-2 focus:ring-blue-500"
+      clearable
+      :disabled="disabled"
     >
-      <option value="">{{ defaultOption }}</option>
-      <optgroup v-for="company in companies" :key="company.id" :label="company.name">
-        <option
-          v-for="department in company.departments"
-          :value="department.id"
-          :key="department.id"
-        >
-          {{ department.name }}
-        </option>
-      </optgroup>
-    </select>
+      <template #selected-option="{ option }">
+        <div>
+          <span v-if="option?.name" class="text-gray-800 line-clamp-1">{{ option?.name }}</span>
+          <span v-else class="text-gray-500 whitespace-nowrap">{{ defaultOption }}</span>
+        </div>
+      </template>
+    </SelectDropdown>
   </div>
 </template>

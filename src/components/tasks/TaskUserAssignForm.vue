@@ -206,6 +206,7 @@ const taskFormContainerRef = ref()
             </div>
 
             <label class="block uppercase text-xs text-gray-600"> Employees </label>
+            <!-- <SelectDropdown :options="employeeOptions" v-model="form.user_ids" multiple /> -->
             <TaskAssignUserInput
               :employees="employeeOptions"
               v-model="selectedUsers"

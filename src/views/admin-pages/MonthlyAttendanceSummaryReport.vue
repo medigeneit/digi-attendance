@@ -240,7 +240,7 @@ const refreshPaycutList = async () => {
               <td class="border px-2 py-0.5">
                 {{ log?.total_overtime_hours ? log?.total_overtime_hours + ' H' : '' }}
               </td>
-              <td class="border px-2 py-0.5">{{ log?.remain_total_absent * 9 }}H</td>
+              <td class="border px-2 py-0.5">{{ log?.total_absent * 9 }}H</td>
               <td class="border px-2 py-0.5">{{ log?.total_wpl_hour }}H</td>
               <td class="border px-2 py-0.5">
                 <div class="flex gap-2 items-center">
@@ -255,7 +255,7 @@ const refreshPaycutList = async () => {
                 </div>
               </td>
               <td class="border px-2 py-0.5">{{ log?.payable_hour }}H</td>
-              <td class="border px-4 py-0.5">
+              <td class="border">
                 <router-link
                   :to="{
                     name: 'EmployeeAttendance',
@@ -266,10 +266,13 @@ const refreshPaycutList = async () => {
                     }
                   }"
                   target="_blank"
-                  class="text-blue-500 hover:underline inline-flex items-center gap-1"
+                  class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm font-medium bg-blue-50 text-blue-700 hover:bg-blue-100"
                 >
-                  <i class="fas fa-calendar-check"></i>
-                  Go to 
+                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                </svg>
+                  Job Card
                 </router-link>
               </td>
             </tr>

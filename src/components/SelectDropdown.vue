@@ -53,10 +53,11 @@
         <!-- Single Item selection -->
         <template v-else>
           <div class="flex items-center h-full">
+            <!-- {{ modelValue }} - {{ getSelectionLabel(selectedItems) }} - -->
             <slot
               name="selected-option"
               :option="findOptionById(modelValue)"
-              :is-selected="isSelected"
+              :group="selectedGroup"
             >
               <span
                 v-if="getSelectionLabel(selectedItems)"
@@ -73,7 +74,7 @@
       <div class="flex items-center gap-0.5">
         <!-- Indicator -->
         <button
-          v-if="props.modelValue && clearable"
+          v-if="props.modelValue && clearable && !props.disabled"
           @click.prevent="() => emit('update:modelValue', '')"
           class="text-gray-600 font-semibold hover:text-red-700 text-xl"
           title="Clear selection"
@@ -121,20 +122,42 @@
 
       <ul class="max-h-60 overflow-y-auto py-2">
         <template v-if="filteredOptions.length">
-          <li
-            tabindex="0"
-            v-for="option in filteredOptions"
-            :key="getOptionKey(option)"
-            :class="{ 'bg-blue-50': isSelected(option) }"
-            class="px-3 py-1 my-0.5 hover:bg-blue-100 focus:bg-blue-100 focus:outline-blue-500 cursor-pointer"
-            @click="selectOption(option)"
-            @keydown.prevent.space="selectOption(option)"
-            @keydown.prevent.enter="selectOption(option)"
-          >
-            <slot name="option" :option="option">
-              {{ getOptionLabel(option) }}
-            </slot>
-          </li>
+          <template v-for="option in filteredOptions" :key="getOptionKey(option)">
+            <li v-if="isOptionGroup">
+              <div class="mx-2 text-sm font-semibold">
+                {{ option?.[groupLabel] }}
+              </div>
+              <ul class="px-2 text-sm text-gray-700">
+                <li
+                  v-for="groupOption in option?.[optGroupOptionKey] || []"
+                  :key="getOptionKey(groupOption)"
+                  tabindex="0"
+                  :class="{ 'bg-blue-50': isSelected(groupOption) }"
+                  class="px-3 py-1 my-0.5 hover:bg-blue-100 focus:bg-blue-100 focus:outline-blue-500 cursor-pointer"
+                  @click="selectOption(groupOption, option)"
+                  @keydown.prevent.space="selectOption(groupOption, option)"
+                  @keydown.prevent.enter="selectOption(groupOption, option)"
+                >
+                  <slot name="option" :option="groupOption" :group="option">
+                    {{ getOptionLabel(groupOption) }}
+                  </slot>
+                </li>
+              </ul>
+            </li>
+            <li
+              v-else
+              tabindex="0"
+              :class="{ 'bg-blue-50': isSelected(option) }"
+              class="px-3 py-1 my-0.5 hover:bg-blue-100 focus:bg-blue-100 focus:outline-blue-500 cursor-pointer"
+              @click="selectOption(option)"
+              @keydown.prevent.space="selectOption(option)"
+              @keydown.prevent.enter="selectOption(option)"
+            >
+              <slot name="option" :option="option">
+                {{ getOptionLabel(option) }}
+              </slot>
+            </li>
+          </template>
         </template>
         <li v-else class="px-3 py-2 text-gray-500 min-h-24 flex justify-center items-center -mt-2">
           <slot name="no-options">{{
@@ -161,7 +184,7 @@ const props = defineProps({
   clearable: { type: Boolean, default: false },
   searchable: { type: Boolean, default: true },
   disabled: { type: Boolean, default: false },
-  filterBy: { type: Function, default: null },
+  searchBy: { type: Function, default: null },
   position: {
     type: String,
     default: 'auto',
@@ -170,6 +193,9 @@ const props = defineProps({
   containment: { type: Object, default: () => window },
   taggable: { type: Boolean, default: false },
   createOption: Function, // optional custom create handler
+  isOptionGroup: { type: Boolean, default: false },
+  optGroupOptionKey: { type: String, default: 'children' },
+  groupLabel: { type: String, default: 'name' },
 })
 
 const emit = defineEmits([
@@ -192,8 +218,8 @@ const searchInput = ref(null)
 const tagSearchInput = ref(null)
 const dropdownRef = ref()
 const dropdownMenuRef = ref()
-
 const dropdownPosition = ref(props.position)
+const selectedGroup = ref('')
 
 function handleOutsideClick(event) {
   if (dropdownRef.value && !dropdownRef.value.contains(event.target)) {
@@ -205,12 +231,20 @@ function handleOutsideClick(event) {
 }
 
 function findOptionById(optionId) {
-  return props.options.find((opt) => opt?.[props.value] == optionId)
+  const options = props.isOptionGroup
+    ? getSelectedGroupByModelValue(optionId)?.[props.optGroupOptionKey] || []
+    : props.options
+
+  return options.find((opt) => opt?.[props.value] == optionId)
 }
 
 onMounted(() => {
   document.addEventListener('click', handleOutsideClick)
-  props.containment?.addEventListener('scroll', () => calculatePosition(isOpen.value))
+  props.containment?.addEventListener('scroll', () => {
+    // console.log('containment', props.containment)
+    calculatePosition(isOpen.value)
+  })
+
   setTimeout(() => {
     tagSearchInput.value?.focus()
   })
@@ -245,7 +279,17 @@ const getOptionLabel = (option) => {
 }
 
 const getSelectionLabel = (optionId) => {
-  const selected = props.options.find((opt) => {
+  let options = []
+
+  if (props.isOptionGroup) {
+    const selectedOptGroup = getSelectedGroupByModelValue(optionId)
+
+    options = props.isOptionGroup
+      ? selectedOptGroup?.[props.optGroupOptionKey] || []
+      : props.options
+  }
+
+  const selected = options.find((opt) => {
     if (typeof opt == 'string' || typeof opt == 'number') {
       return String(opt) === String(optionId)
     }
@@ -264,6 +308,10 @@ const getSelectionLabel = (optionId) => {
 }
 
 const getOptionKey = (option) => {
+  // const options = props.isOptionGroup
+  //   ? selectedGroup.value?.[props.optGroupOptionKey] || []
+  //   : props.options
+
   if (typeof option == 'object') {
     return option?.[props.value] ?? option?.value ?? option
   } else if (typeof option == 'string' || typeof option == 'number') {
@@ -293,7 +341,13 @@ const isSelected = (option) => {
   return getOptionKey(selectedItems.value) === val
 }
 
-const selectOption = (option) => {
+const selectOption = (option, parentOption = null) => {
+  console.log({ parentOption })
+
+  if (parentOption) {
+    selectedGroup.value = parentOption
+  }
+
   if (props.multiple || props.taggable) {
     if (isSelected(option)) {
       emit('option:deselecting', option)
@@ -324,17 +378,63 @@ const selectOption = (option) => {
 }
 
 const removeItem = (option) => {
-  // if (!props.multiple || !props.taggable) return
   const newSelection = selectedItems.value.filter((o) => getOptionKey(o) !== getOptionKey(option))
   emit('update:modelValue', newSelection)
   emit('option:deselected', option)
 }
 
 const filteredOptions = computed(() => {
-  const term = search.value.toLowerCase()
-  if (!props.searchable || !term) return props.options
-  if (typeof props.filterBy == 'function') return props.filterBy(props.options, term)
-  return props.options.filter((opt) => getOptionLabel(opt).toLowerCase().includes(term))
+  if (!props.searchable) return props.options
+
+  const termRaw = (search.value || '').trim()
+  if (!termRaw) return props.options
+
+  const term = termRaw.toLowerCase()
+  const { options, isOptionGroup, searchBy, optGroupOptionKey } = props
+
+  // Flat list
+  if (!isOptionGroup) {
+    return typeof searchBy === 'function'
+      ? searchBy(options, term)
+      : options.filter((opt) => {
+          const lbl = getOptionLabel(opt)
+          return lbl && lbl.toLowerCase().includes(term)
+        })
+  }
+
+  // Grouped list
+  const childKey = optGroupOptionKey || 'children'
+  const result = []
+
+  for (let i = 0; i < options.length; i++) {
+    const group = options[i]
+    const children = group?.[childKey] || []
+
+    // Apply custom filter if provided, otherwise default filter
+    const filteredChildren =
+      typeof searchBy === 'function'
+        ? searchBy(children, term)
+        : (() => {
+            const out = []
+            for (let j = 0; j < children.length; j++) {
+              const lbl = getOptionLabel(children[j])
+              if (lbl && lbl.toLowerCase().includes(term)) out.push(children[j])
+            }
+            return out
+          })()
+
+    // Keep group only if it has matches
+    if (filteredChildren.length > 0) {
+      // If nothing changed, reuse the same group object
+      if (filteredChildren.length === children.length) {
+        result.push(group)
+      } else {
+        result.push({ ...group, [childKey]: filteredChildren })
+      }
+    }
+  }
+
+  return result
 })
 
 async function calculatePosition(dropdownOpen) {
@@ -400,6 +500,21 @@ function handleTagEnter(event) {
   search.value = ''
   event.target.focus()
 }
+
+function getSelectedGroupByModelValue(value) {
+  return props.options.find((group) => {
+    return group?.[props.optGroupOptionKey]?.some((opt) => opt?.[props.value] == value)
+  })
+}
+
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    if (props.isOptionGroup) {
+      selectedGroup.value = getSelectedGroupByModelValue(newValue)
+    }
+  },
+)
 
 watch(isOpen, calculatePosition)
 </script>

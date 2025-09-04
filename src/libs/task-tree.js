@@ -23,7 +23,7 @@ export const useTaskTree = () => {
           idPath: path + node.id
         });
 
-        if (node.children_tasks && node.children_tasks.length) {
+        if (node.children_tasks && node.children_tasks?.length) {
           traverse(node.children_tasks, depth + 1, path + node.id + '-');
         }
 
@@ -87,7 +87,7 @@ function taskClientSideFilter(task, filters) {
 
 
   if( task?.children_tasks?.length > 0) {
-    return matched && task?.children_tasks.filter(
+    return matched && task?.children_tasks?.filter(
       childTask => taskClientSideFilter( childTask, filters)
     ).length > 0
   }
@@ -111,7 +111,7 @@ export function mapAndFilterTask(taskList, filters) {
       return {
         ...childTask,
         children_tasks:
-          childTask.children_tasks.length > 0
+          childTask.children_tasks?.length > 0
             ? mapAndFilterTask(childTask.children_tasks, filters)
             : [],
       }

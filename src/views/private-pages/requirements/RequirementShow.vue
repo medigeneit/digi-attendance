@@ -2,10 +2,14 @@ ii
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
 import OverlyModal from '@/components/common/OverlyModal.vue'
+import DescriptionView from '@/components/DescriptionView.vue'
 import RequirementDetailAddForm from '@/components/requirements/RequirementDetailAddForm.vue'
 import RequirementDetailDeleteForm from '@/components/requirements/RequirementDetailDeleteForm.vue'
 import RequirementDetailEditForm from '@/components/requirements/RequirementDetailEditForm.vue'
 import RequirementDetailTableRow from '@/components/requirements/RequirementDetailTableRow.vue'
+import RequirementFeedbackEditForm from '@/components/requirements/RequirementFeedbackEditForm.vue'
+import TaskParentIdSelector from '@/components/requirements/TaskParentIdSelector.vue'
+import TaskAddForm from '@/components/tasks/TaskAddForm.vue'
 import { findRequirement } from '@/services/requirement'
 import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -22,6 +26,12 @@ const detailEditForm = reactive({
   detail: null,
   open: false,
 })
+
+const feedbackEditForm = reactive({
+  detail: null,
+  open: false,
+})
+
 const detailDeleteForm = reactive({
   detail: null,
   open: false,
@@ -35,6 +45,26 @@ async function fetchRequirement() {
   state.value = 'loading'
   requirement.value = (await findRequirement(route.params.id)).data?.requirement
   state.value = ''
+}
+
+function goToTaskAdd(detail) {
+  //router.push({ name: 'TaskAdd' })
+
+  console.log({ detail })
+  addFormData.modalShown = true
+  addFormData.from_department_id = requirement.value.from_department_id
+  addFormData.to_department_id = requirement.value.to_department_id
+
+  addFormData.taskDefaultValues = {
+    title: detail.title,
+    description: detail.description,
+    from_department_id: requirement.value.from_department_id,
+    to_department_id: requirement.value.to_department_id,
+    is_important: detail?.priority == 'IMPORTANT',
+    is_urgent: detail?.priority == 'URGENT',
+    supervisor_ids: detail?.supervisor_id ? [detail?.supervisor_id] : [],
+  }
+  addFormData.requirementDetail = detail
 }
 
 function handleAddRequirementDetail() {
@@ -54,9 +84,34 @@ function handleDeleteRequirementDetail(detail) {
 function handlePrint() {
   window.print()
 }
+
+const addFormData = reactive({
+  parentId: null,
+  modalShown: false,
+  requirementId: 0,
+  taskDefaultValues: {},
+  requirementDetail: null,
+})
+
+async function handleTaskUpdate() {
+  addFormData.parentId = 0
+  addFormData.parentId = null
+  addFormData.modalShown = false
+  addFormData.requirementDetail = null
+  state.value = 'loading'
+  await fetchRequirement()
+}
+
+async function handleTaskAddClose() {
+  addFormData.parentId = null
+  addFormData.modalShown = false
+  addFormData.requirementDetail = null
+}
 </script>
 <template>
   <div class="container mx-auto p-6 print:p-0 w-full print:max-w-full">
+    <!-- {{ addFormData }} -->
+
     <OverlyModal v-if="detailAddForm.open" class="*:max-w-4xl">
       <RequirementDetailAddForm
         :requirementId="requirement.id"
@@ -69,6 +124,7 @@ function handlePrint() {
         "
       />
     </OverlyModal>
+
     <OverlyModal v-if="detailEditForm.open">
       <RequirementDetailEditForm
         :requirementId="requirement.id"
@@ -82,6 +138,21 @@ function handlePrint() {
         "
       />
     </OverlyModal>
+
+    <OverlyModal v-if="feedbackEditForm.open">
+      <RequirementFeedbackEditForm
+        :requirementId="requirement.id"
+        :detailId="feedbackEditForm.detail?.id"
+        @closeClick="feedbackEditForm.open = false"
+        @update="
+          async () => {
+            feedbackEditForm.open = false
+            await fetchRequirement()
+          }
+        "
+      />
+    </OverlyModal>
+
     <OverlyModal v-if="detailDeleteForm.open">
       <RequirementDetailDeleteForm
         :requirementId="requirement.id"
@@ -93,6 +164,39 @@ function handlePrint() {
             await fetchRequirement()
           }
         "
+      />
+    </OverlyModal>
+
+    <OverlyModal v-if="addFormData.modalShown" class="*:relative">
+      <button
+        @click.prevent="handleTaskAddClose"
+        class="absolute right-3 top-2 text-xl text-red-500 hover:text-red-400"
+      >
+        <i class="fas fa-times-circle"></i>
+      </button>
+
+      <TaskParentIdSelector
+        v-if="addFormData.parentId === null"
+        :from-department-id="requirement?.from_department_id"
+        :requirementDetail="addFormData?.requirementDetail"
+        @parentIdSelect="(parentId) => (addFormData.parentId = parentId)"
+        @cancelClick="handleTaskAddClose"
+        @assignTask="handleTaskUpdate"
+      >
+      </TaskParentIdSelector>
+
+      <TaskAddForm
+        v-else
+        :parentTaskId="addFormData.parentId"
+        :requirementDetailId="addFormData?.requirementDetail?.id"
+        :requirementId="requirement.id"
+        @close="handleTaskAddClose"
+        @taskCreated="handleTaskUpdate"
+        :defaultValues="addFormData.taskDefaultValues"
+        :readonlyFields="{
+          from_department_id: true,
+          to_department_id: true,
+        }"
       />
     </OverlyModal>
 
@@ -118,19 +222,23 @@ function handlePrint() {
       </div>
       <div class="text-center text-xl font-bold mb-2 underline">Requirement Form</div>
       <div class="mb-4 flex items-center gap-1 print:mb-1">
-        <div class="text-gray-800 text-sm">Requirement ID:</div>
+        <div class="text-gray-500 text-sm">Requirement ID:</div>
         <div class="font-bold print:text-gray-900">
           {{ requirement?.id }}
         </div>
       </div>
 
-      <div class="mb-4 print:flex print:items-center print:gap-3 print:mb-1">
-        <div class="text-gray-800 text-sm">From</div>
+      <div class="mb-3 flex items-center gap-3 print:mb-1">
+        <div class="text-gray-500 text-sm">From</div>
         <div class="print:text-gray-900">
           {{ requirement?.from_department?.name }}
         </div>
       </div>
-      <div class="mb-4 print:flex print:items-center print:gap-3 print:mb-1">
+
+      <div
+        class="mb-3 flex items-center gap-3 print:mb-1"
+        v-if="requirement?.website_tags?.length > 0"
+      >
         <div class="text-gray-500 text-sm">Website</div>
 
         <div class="flex items-center gap-2 print:text-gray-900 flex-wrap">
@@ -143,7 +251,8 @@ function handlePrint() {
           </div>
         </div>
       </div>
-      <div class="mb-4 print:flex print:items-center print:gap-3 print:mb-1">
+
+      <div class="mb-3 flex items-center gap-3 print:mb-1">
         <div class="text-gray-500 text-sm">Submission Date</div>
         <div class="print:text-gray-900">
           {{
@@ -215,12 +324,14 @@ function handlePrint() {
             <tbody>
               <template v-for="(detail, index) in requirement?.details || []" :key="detail.id">
                 <RequirementDetailTableRow
+                  :requirement="requirement"
                   :detail="detail"
                   :serial="index + 1"
                   @editClick="handleEditRequirementDetail"
                   @deleteClick="handleDeleteRequirementDetail"
+                  @taskCreateClick="goToTaskAdd"
                 />
-                <tr>
+                <tr class="">
                   <td
                     class="whitespace-nowrap print:whitespace-break-spaces print:px-0 p-3 text-center border-2 border-gray-800"
                   >
@@ -231,10 +342,32 @@ function handlePrint() {
                     </div>
                     <div class="text-gray-800 text-xs">(Feedback)</div>
                   </td>
-                  <td
-                    class="whitespace-nowrap p-3 text-center border-2 border-gray-800"
-                    colspan="4"
-                  ></td>
+                  <td class="p-3 border-2 border-gray-800" colspan="4">
+                    <div>
+                      <div class="font-semibold text-sm mb-2" v-if="detail?.feedback">Feedback</div>
+                      <DescriptionView
+                        v-if="detail?.feedback"
+                        lineClamp="2"
+                        :className="{ button: '  underline' }"
+                        class="mb-4 print:mb-0"
+                      >
+                        <p class="text-sky-500 text-sm" v-html="detail?.feedback"></p>
+                      </DescriptionView>
+                      <div>
+                        <button
+                          class="btn-3 print:hidden"
+                          @click.prevent="
+                            () => {
+                              feedbackEditForm.open = true
+                              feedbackEditForm.detail = detail
+                            }
+                          "
+                        >
+                          {{ detail.feedback ? 'Update Feedback' : 'Add feedback' }}
+                        </button>
+                      </div>
+                    </div>
+                  </td>
                 </tr>
               </template>
             </tbody>

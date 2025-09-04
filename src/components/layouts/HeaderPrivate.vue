@@ -36,6 +36,7 @@ const markNotificationAndNavigate = async (notificationId, url) => {
       </RouterLink>
       <ul class="flex gap-4 items-center">
         <!-- Notification Bell -->
+
         <button class="btn-icon relative" @click="toggleNotice">
           <i class="fas fa-bell text-xl"></i>
           <div

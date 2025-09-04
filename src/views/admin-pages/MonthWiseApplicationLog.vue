@@ -15,7 +15,7 @@ const userStore = useUserStore()
 const leaveApplicationStore = useLeaveApplicationStore()
 
 const selectedUser = ref(null)
-const selectedMonth = ref(route.query.date || leaveApplicationStore.selectedMonth)
+const selectedMonth = ref(route.query.date || leaveApplicationStore.selectedMonth || new Date().toISOString().slice(0,7))
 
 const filters = ref({
   company_id: route.query.company_id || '',
@@ -44,38 +44,47 @@ const fetchApplications = async () => {
 
 // Initial fetch on mount
 onMounted(async () => {
-  if (filters.value.employee_id) {
+
+   if (filters.value.employee_id) {
     await fetchUser(filters.value.employee_id)
   }
+
+  if (filters.value.employee_id && selectedMonth.value) {
+    await fetchApplications()
+  }
+
 })
 
 // Watch employee_id changes
 watch(
   () => filters.value.employee_id,
   async (newVal, oldVal) => {
-    if (newVal && newVal !== oldVal) {
+    if (newVal) {
       await fetchUser(newVal)
-      await fetchApplications()
+      if (selectedMonth.value) {
+        await fetchApplications()
+      }
       router.replace({
-        query: {
-          ...route.query,
-          employee_id: newVal,
-        },
+        query: { ...route.query, employee_id: newVal },
       })
+    } else {
+      selectedUser.value = null
     }
-  }
+  },
+  { immediate: true } // ✅ প্রথমবারেও চালু হবে
 )
 
 // Watch month change
-watch(selectedMonth, (newDate) => {
-  router.replace({
-    query: {
-      ...route.query,
-      date: newDate,
-    },
-  })
-  fetchApplications()
-})
+watch(
+  selectedMonth,
+  (newDate) => {
+    router.replace({ query: { ...route.query, date: newDate } })
+    if (filters.value.employee_id && newDate) {
+      fetchApplications()
+    }
+  },
+  { immediate: true } // ✅ প্রথমবারেও চালু হবে
+)
 
 // Go back
 const goBack = () => router.go(-1)
