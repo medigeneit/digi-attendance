@@ -240,7 +240,7 @@ const refreshPaycutList = async () => {
               <td class="border px-2 py-0.5">
                 {{ log?.total_overtime_hours ? log?.total_overtime_hours + ' H' : '' }}
               </td>
-              <td class="border px-2 py-0.5">{{ log?.remain_total_absent * 9 }}H</td>
+              <td class="border px-2 py-0.5">{{ log?.total_absent * 9 }}H</td>
               <td class="border px-2 py-0.5">{{ log?.total_wpl_hour }}H</td>
               <td class="border px-2 py-0.5">
                 <div class="flex gap-2 items-center">

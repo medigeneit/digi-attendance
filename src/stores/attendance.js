@@ -308,7 +308,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   }
 
-  const downloadExcel = async (company_id, category, month) => {
+  const downloadExcel = async (company_id, line_type, month) => {
     if (!company_id || !month) {
       error.value = 'Invalid company ID or month'
       return
@@ -316,7 +316,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     isLoading.value = true
 
     try {
-      const params = { company_id, category, month }
+      const params = { company_id, line_type, month }
 
       const response = await apiClient.get(`/attendance/monthly-summary-reports?flag=excel`, {
         params,
@@ -338,10 +338,10 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   }
 
-  const attendanceDownloadExcel = async (companyId, employee_id, category, month, status) => {
+  const attendanceDownloadExcel = async (companyId, employee_id, line_type, month, status) => {
     isLoading.value = true
     try {
-      const params = { companyId, employee_id, category, month, status }
+      const params = { companyId, employee_id, line_type, month, status }
       const response = await apiClient.get(`/attendance/today?flag=excel`, {
         params,
         responseType: 'blob', // Important for file downloads
