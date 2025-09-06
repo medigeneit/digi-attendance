@@ -260,13 +260,22 @@ const refreshPaycutList = async () => { await fetchAttendance() }
             <td class="td">{{ log?.actual_early_hour }}</td>
             <td class="td">{{ log?.total_remain_early_day }}</td>
             <td class="td">{{ log?.total_remain_early_hour }}</td>
-
+            
             <td class="td">
+              <div class="font-semibold text-green-600">
+                {{ log?.total_working_hours || 0 }} 
+              </div>
+              <div class="text-gray-500 text-xs">
+                of {{ log?.total_shift_hour || 0 }} 
+              </div>
+            </td>
+
+            <!-- <td class="td">
               <div class="border-b border-black font-semibold text-green-600">
                 {{ log?.total_working_hours || 0 }}
               </div>
               <div class="text-gray-600">{{ log?.total_shift_hour || 0 }}</div>
-            </td>
+            </td> -->
 
             <td class="td">{{ log?.total_cl_leave }}</td>
             <td class="td">{{ log?.total_ml_leave }}</td>
