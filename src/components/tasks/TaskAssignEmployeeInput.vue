@@ -61,9 +61,11 @@ function isMainEmployee(index) {
               :isRemovable="index > 0"
               :isSortable="index > 0"
               @removeClick="() => removeItem(userId)"
+              avatar-size="large"
+              :avatar-class="['transition', isMainEmployee(index) ? '!size-8 ' : '']"
               :class="[
-                'w-full flex bg-white !shadow',
-                isMainEmployee(index) ? 'size-10' : 'size-8',
+                'w-full flex bg-white !shadow ',
+                isMainEmployee(index) ? 'size-10 :size-12' : 'size-8',
               ]"
             >
               <template #title-bottom v-if="isMainEmployee(index)">
