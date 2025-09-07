@@ -82,7 +82,7 @@ function isMainEmployee(index) {
 
                 <button
                   type="button"
-                  v-if="items.length > 1 && (!isMainEmployee(index) || isSupervisor())"
+                  v-if="items.length > 1 && !isMainEmployee(index) && !isSupervisor()"
                   class="btn-icon size-6 handle text-gray-500 hover:text-gray-800"
                   @click.stop="() => null"
                 >
