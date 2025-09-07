@@ -1,12 +1,15 @@
 <script setup>
 import { getYearMonthDayFormat } from '@/libs/datetime'
 import { useAuthStore } from '@/stores/auth'
+import { useUserStore } from '@/stores/user'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { computed, onMounted, ref } from 'vue'
 import LoaderView from '../common/LoaderView.vue'
+import SelectDropdown from '../SelectDropdown.vue'
 import TextWithHr from '../TextWithHr.vue'
+import UserChip from '../user/UserChip.vue'
 import IsTargetTaskInput from './IsTargetTaskInput.vue'
-import TaskAssignUserInput from './TaskAssignUserInput.vue'
+import TaskAssignEmployeeInput from './TaskAssignEmployeeInput.vue'
 import TaskUrgencyInput from './TaskUrgencyInput.vue'
 import TaskUserChip from './TaskUserChip.vue'
 
@@ -29,6 +32,7 @@ const props = defineProps({
   },
 })
 
+const userStore = useUserStore()
 const task = ref(null)
 
 const form = ref(
@@ -81,25 +85,12 @@ const userIsSelected = (user) => {
   return selectedUsers.value.find((selectedUser) => selectedUser.id === user.id)
 }
 
-const supervisorIsSelected = (user) => {
-  return selectedSupervisors.value.find((selectedUser) => selectedUser.id === user.id)
-}
-
 const employeeOptions = computed(() => {
   console.log('PARENT_USER', task.value?.parent?.users)
 
   return employees.value.filter((u) => {
     if (u.department_id === task.value?.to_department?.id) {
       return !userIsSelected(u)
-    }
-    return false
-  })
-})
-
-const supervisorOptions = computed(() => {
-  return supervisors.value.filter((u) => {
-    if (u.department_id === task.value?.from_department?.id) {
-      return !supervisorIsSelected(u)
     }
     return false
   })
@@ -141,6 +132,10 @@ function setTaskOnFormData(taskData) {
         }
 }
 const taskFormContainerRef = ref()
+const selectedSupervisorIds = ref([])
+onMounted(async () => {
+  await userStore.fetchTypeWiseEmployees({ type: 'academy_body,doctor,executive' })
+})
 </script>
 
 <template>
@@ -160,6 +155,32 @@ const taskFormContainerRef = ref()
       <div class="min-h-[150px]">
         <LoaderView v-if="state === 'loading'" class="absolute inset-0 border-0 shadow-none" />
         <div v-else class="grid grid-cols-4 gap-4 mb-4 items-stretch">
+          <!-- <div class="col-span-2">
+            <SelectDropdown
+              label="name"
+              v-model="selectedSupervisorIds"
+              multiple
+              :options="userStore.users"
+            >
+              <template #selected-options="{ items, removeItem, getOption }">
+                <div class="flex gap-2 flex-wrap justify-between">
+                  <UserChip
+                    v-for="userId in items"
+                    :key="userId"
+                    :user="getOption(userId)"
+                    class=" "
+                  >
+                    <template #after>
+                      <button class="btn-icon size-6" @click.prevent="removeItem(userId)">
+                        &times;
+                      </button>
+                    </template>
+                  </UserChip>
+                </div>
+              </template>
+            </SelectDropdown>
+          </div>
+          <pre class="col-span-2">{{ { selectedSupervisorIds, user: userStore.users } }}</pre> -->
           <div class="col-span-2 flex flex-col">
             <div class="mb-4" v-if="task?.from_department">
               <div class="text-sm text-gray-500">Task From Department</div>
@@ -170,8 +191,8 @@ const taskFormContainerRef = ref()
 
             <label class="block uppercase text-xs text-gray-600"> Supervisors </label>
 
-            <TaskAssignUserInput
-              :employees="supervisorOptions"
+            <TaskAssignEmployeeInput
+              :employees="userStore.users"
               list-type="supervisor"
               v-if="auth?.user?.role !== 'employee' && auth.isAdminMood"
               :isRemovable="true"
@@ -207,7 +228,7 @@ const taskFormContainerRef = ref()
 
             <label class="block uppercase text-xs text-gray-600"> Employees </label>
             <!-- <SelectDropdown :options="employeeOptions" v-model="form.user_ids" multiple /> -->
-            <TaskAssignUserInput
+            <TaskAssignEmployeeInput
               :employees="employeeOptions"
               v-model="selectedUsers"
               class="flex-grow"

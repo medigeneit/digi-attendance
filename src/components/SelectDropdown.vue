@@ -10,28 +10,36 @@
       <!-- Display selected values or placeholder -->
       <div class="w-full h-full">
         <template v-if="isMultiSelection">
-          <div class="flex flex-wrap items-center gap-2 w-full h-full justify-items-stretch">
+          <div class="flex flex-wrap items-center gap-2 w-full h-full justify-items-stretch py-1.5">
             <template v-if="Array.isArray(selectedItems) && selectedItems.length > 0">
-              <template v-for="item in selectedItems" :key="getOptionKey(item)">
-                <slot
-                  name="selected-option"
-                  :option="findOptionById(item)"
-                  :removeItem="(item) => removeItem(item)"
-                >
-                  <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-sm">
-                    <span>
-                      {{ getSelectionLabel(item) }}
+              <slot
+                name="selected-options"
+                :items="selectedItems"
+                :removeItem="(item) => removeItem(item)"
+                :getOption="findOptionById"
+                :label="getSelectionLabel"
+              >
+                <template v-for="item in selectedItems" :key="getOptionKey(item)">
+                  <slot
+                    name="selected-option"
+                    :option="findOptionById(item)"
+                    :removeItem="(item) => removeItem(item)"
+                  >
+                    <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-sm">
+                      <span>
+                        {{ getSelectionLabel(item) }}
+                      </span>
+                      <button
+                        @click.prevent.stop="removeItem(item)"
+                        type="button"
+                        class="ml-1 text-xs"
+                      >
+                        ×
+                      </button>
                     </span>
-                    <button
-                      @click.prevent.stop="removeItem(item)"
-                      type="button"
-                      class="ml-1 text-xs"
-                    >
-                      ×
-                    </button>
-                  </span>
-                </slot>
-              </template>
+                  </slot>
+                </template>
+              </slot>
             </template>
 
             <span v-else-if="!taggable" class="text-gray-400">{{ placeholder || 'Select..' }}</span>
@@ -283,16 +291,16 @@ const getSelectionLabel = (optionId) => {
 
   if (props.isOptionGroup) {
     const selectedOptGroup = getSelectedGroupByModelValue(optionId)
-
-    options = props.isOptionGroup
-      ? selectedOptGroup?.[props.optGroupOptionKey] || []
-      : props.options
+    options = selectedOptGroup?.[props.optGroupOptionKey] || []
+  } else {
+    options = props.options
   }
 
   const selected = options.find((opt) => {
     if (typeof opt == 'string' || typeof opt == 'number') {
       return String(opt) === String(optionId)
     }
+
     return opt?.[props.value] == optionId
   })
 
@@ -308,10 +316,6 @@ const getSelectionLabel = (optionId) => {
 }
 
 const getOptionKey = (option) => {
-  // const options = props.isOptionGroup
-  //   ? selectedGroup.value?.[props.optGroupOptionKey] || []
-  //   : props.options
-
   if (typeof option == 'object') {
     return option?.[props.value] ?? option?.value ?? option
   } else if (typeof option == 'string' || typeof option == 'number') {

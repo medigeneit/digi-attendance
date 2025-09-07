@@ -5,6 +5,7 @@ import { shallowRef, useTemplateRef, watch } from 'vue'
 const props = defineProps({
   items: { type: Array, default: () => [] },
   handle: String,
+  idKey: { type: String, default: 'id' },
 })
 
 const emit = defineEmits(['itemsUpdate'])
@@ -74,8 +75,13 @@ defineExpose({
 
 <template>
   <div ref="el">
-    <template v-for="(item, index) in _items" :key="item.id">
-      <slot name="item" :item="item" :index="index"></slot>
+    <template
+      v-for="(item, index) in _items"
+      :key="(typeof item == 'object' ? item[idKey] : item) || index"
+    >
+      <div>
+        <slot name="item" :item="item" :index="index"></slot>
+      </div>
     </template>
   </div>
 </template>
