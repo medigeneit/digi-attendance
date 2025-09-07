@@ -115,7 +115,7 @@ const dtLocal = ref('')
 async function onCheck() {
   try {
     setBusy('checking')
-    const res = await store.checkDeviceConnection(props.device.id)
+    const res = await store.ping(props.device.id)
     // আগের json এর বদলে fixed view:
     openModal('Connection Result', 'connection', res)
     toast.success('Connection checked')

@@ -64,12 +64,17 @@ export const useDeviceStore = defineStore('device', () => {
     finally { loading.value = false }
   }
 
-  async function checkDeviceConnection(id) {
+    async function ping(id, { modes = ['udp','tcp'] } = {}) {
     try {
-      const { data } = await apiClient.get(`/check-device-connection/${encodeURIComponent(id)}`)
+      const { data } = await apiClient.get(`/devices/${encodeURIComponent(id)}/ping`, {
+        params: { modes }
+      })
       return data
-    } catch (e) { setErr(e, 'কনেকশন চেক ব্যর্থ'); throw e?.response?.data || e }
+    } catch (e) {
+      setErr(e, 'কনেকশন চেক ব্যর্থ'); throw e?.response?.data || e
+    }
   }
+
 
   // --- device ops
   const info        = (id) => apiClient.get(`/devices/${encodeURIComponent(id)}/info`).then(r=>r.data)
@@ -89,7 +94,7 @@ export const useDeviceStore = defineStore('device', () => {
     apiClient.get(`/devices/${encodeURIComponent(id)}/users/live`).then(r=>r.data)
 
   const usersDiff = (id, { include_inactive = false } = {}) =>
-    apiClient.post(`/devices/${encodeURIComponent(id)}/users/diff`, { include_inactive }).then(r=>r.data)
+    apiClient.get(`/devices/${encodeURIComponent(id)}/users/diff`, { include_inactive }).then(r=>r.data)
 
   // --- import/export (file)
   async function importUsers(deviceId, file, { pushNow = true } = {}) {
@@ -113,7 +118,7 @@ export const useDeviceStore = defineStore('device', () => {
   return {
     devices, device, loading, error,
     fetchDevices, fetchDevice, createDevice, updateDevice, deleteDevice,
-    checkDeviceConnection,
+    ping,
     info, setTime, enable, disable, restart, shutdown, testVoice,
     usersLive, usersDiff, importUsers, exportUsers
   }

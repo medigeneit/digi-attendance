@@ -12,9 +12,9 @@ const status = ref(false)
 const message = ref('')
 const loading = ref(false)
 
-const checkDeviceConnection = async () => {
+const ping = async () => {
   loading.value = true
-  const response = await deviceStore.checkDeviceConnection(props.device.id)
+  const response = await deviceStore.ping(props.device.id)
 
   status.value = response
   message.value = response ? 'success' : 'Failed'
@@ -29,7 +29,7 @@ const checkDeviceConnection = async () => {
 
 <template>
   <div class="flex justify-center items-center gap-2">
-    <button @click="checkDeviceConnection" class="text-blue-600 hover:text-blue-800">
+    <button @click="ping" class="text-blue-600 hover:text-blue-800">
       <i
         class="fas fa-sync-alt"
         :class="{
