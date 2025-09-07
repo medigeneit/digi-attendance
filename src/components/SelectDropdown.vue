@@ -1,8 +1,8 @@
 <template>
-  <div class="border rounded cursor-pointer bg-white relative" ref="dropdownRef">
+  <div class="border rounded-md cursor-pointer relative" ref="dropdownRef">
     <!-- Control -->
     <div
-      class="flex items-center justify-between px-2 h-full"
+      class="flex items-center justify-between px-2 h-full gap-2"
       @click="toggleDropdown"
       :class="{ 'bg-gray-100': disabled }"
       tabindex="0"
@@ -201,6 +201,7 @@ const props = defineProps({
   containment: { type: Object, default: () => window },
   taggable: { type: Boolean, default: false },
   createOption: Function, // optional custom create handler
+  hideSelectedValue: { type: Boolean, default: false },
   isOptionGroup: { type: Boolean, default: false },
   optGroupOptionKey: { type: String, default: 'children' },
   groupLabel: { type: String, default: 'name' },
@@ -391,7 +392,7 @@ const filteredOptions = computed(() => {
   if (!props.searchable) return props.options
 
   const termRaw = (search.value || '').trim()
-  if (!termRaw) return props.options
+  if (!termRaw) return itemsWithHiddenBySelected(props.options)
 
   const term = termRaw.toLowerCase()
   const { options, isOptionGroup, searchBy, optGroupOptionKey } = props
@@ -400,15 +401,15 @@ const filteredOptions = computed(() => {
   if (!isOptionGroup) {
     return typeof searchBy === 'function'
       ? searchBy(options, term)
-      : options.filter((opt) => {
+      : itemsWithHiddenBySelected(options).filter((opt) => {
           const lbl = getOptionLabel(opt)
           return lbl && lbl.toLowerCase().includes(term)
         })
   }
 
+  const result = []
   // Grouped list
   const childKey = optGroupOptionKey || 'children'
-  const result = []
 
   for (let i = 0; i < options.length; i++) {
     const group = options[i]
@@ -433,13 +434,27 @@ const filteredOptions = computed(() => {
       if (filteredChildren.length === children.length) {
         result.push(group)
       } else {
-        result.push({ ...group, [childKey]: filteredChildren })
+        result.push({ ...group, [childKey]: itemsWithHiddenBySelected(filteredChildren) })
       }
     }
   }
 
   return result
 })
+
+const itemsWithHiddenBySelected = (items) => {
+  if (!Array.isArray(items)) {
+    return []
+  }
+
+  if (!props.hideSelectedValue) {
+    return [...items]
+  }
+
+  return items.filter((option) => {
+    return !isSelected(option)
+  })
+}
 
 async function calculatePosition(dropdownOpen) {
   if (!props.containment) {

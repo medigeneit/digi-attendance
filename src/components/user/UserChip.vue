@@ -12,7 +12,7 @@ defineProps({
     class="inline-flex items-center border rounded-full px-1 py-0.5 bg-slate-100 shadow-sm gap-1"
     :title="user?.name"
   >
-    <UserAvatar :user="user" class="w-6 h-6 !text-xs" :class="avatarClass" />
+    <UserAvatar :user="user" class="avatar w-6 h-6 !text-xs" :class="avatarClass" />
     <div class="text-xs">
       <div class="flex items-center" :class="titleClass">
         <span class="text-gray-600" v-if="user?.employee_id && !hideEmployeeId">

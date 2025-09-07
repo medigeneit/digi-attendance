@@ -16,6 +16,7 @@ const userInitial = computed(() => (props.user ? getUserInitials(props.user) : '
   <div class="min-w-max rounded-full object-cover overflow-hidden border">
     <div
       class="flex rounded-full overflow-hidden h-full aspect-square max-h-8 bg-teal-600 items-center justify-center"
+      :class="{ 'max-h-8': size == 'small', 'max-h-10': size == 'large' }"
     >
       <img
         v-if="user && user.photo && showUserPhoto"

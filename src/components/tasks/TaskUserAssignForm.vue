@@ -5,9 +5,7 @@ import { useUserStore } from '@/stores/user'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { computed, onMounted, ref } from 'vue'
 import LoaderView from '../common/LoaderView.vue'
-import SelectDropdown from '../SelectDropdown.vue'
 import TextWithHr from '../TextWithHr.vue'
-import UserChip from '../user/UserChip.vue'
 import IsTargetTaskInput from './IsTargetTaskInput.vue'
 import TaskAssignEmployeeInput from './TaskAssignEmployeeInput.vue'
 import TaskUrgencyInput from './TaskUrgencyInput.vue'
@@ -16,14 +14,11 @@ import TaskUserChip from './TaskUserChip.vue'
 const taskStore = useTaskStore()
 const auth = useAuthStore()
 const selectedUsers = ref([])
-const user_ids = computed(() => selectedUsers.value.map((u) => u.id))
 // const taskId = route.params.id
 const state = ref('')
 const error = ref(null)
 const employees = ref([])
-const supervisor_ids = computed(() => selectedSupervisors.value.map((u) => u.id))
 const selectedSupervisors = ref([])
-const supervisors = ref([])
 
 const props = defineProps({
   taskId: {
@@ -65,15 +60,9 @@ onMounted(async () => {
 
   task.value = taskData.task
 
-  supervisors.value = task.value?.parent
-    ? task.value.parent?.supervisors
-    : taskData?.from_department_users || []
-
   employees.value = task.value?.parent
     ? task.value.parent?.users
     : taskData?.to_department_users || []
-
-  // users.value = (await companyStore.fetchEmployees(auth.user?.company_id))?.data?.employees || []
 
   setTaskOnFormData(task.value)
   selectedUsers.value = task.value.users
@@ -81,19 +70,13 @@ onMounted(async () => {
   state.value = ''
 })
 
-const userIsSelected = (user) => {
-  return selectedUsers.value.find((selectedUser) => selectedUser.id === user.id)
-}
-
 const employeeOptions = computed(() => {
-  console.log('PARENT_USER', task.value?.parent?.users)
+  return [...employees.value, ...(task.value?.users?.length ? [...task.value.users] : [])]
+})
 
-  return employees.value.filter((u) => {
-    if (u.department_id === task.value?.to_department?.id) {
-      return !userIsSelected(u)
-    }
-    return false
-  })
+const supervisorOptions = computed(() => {
+  const supervisors = task.value?.parent ? task.value.parent?.supervisors : userStore.users
+  return [...supervisors, ...(task.value?.supervisors?.length ? [...task.value.supervisors] : [])]
 })
 
 const submit = async () => {
@@ -101,15 +84,7 @@ const submit = async () => {
   error.value = null
 
   try {
-    await taskStore.updateTask(
-      props.taskId,
-      {
-        ...form.value,
-        user_ids: user_ids.value,
-        supervisor_ids: supervisor_ids.value,
-      },
-      { loadingBeforeFetch: false },
-    )
+    await taskStore.updateTask(props.taskId, form.value, { loadingBeforeFetch: false })
     // await taskStore.assignUsers(props.taskId, user_ids.value, { updateStoreData: false })
     emit('success')
   } catch (err) {
@@ -129,10 +104,11 @@ function setTaskOnFormData(taskData) {
           is_target: taskData.is_target,
           assigned_at: getYearMonthDayFormat(taskData.assigned_at),
           deadline: getYearMonthDayFormat(taskData.deadline),
+          user_ids: task.value.users?.map((u) => u.id),
+          supervisor_ids: task.value.supervisors?.map((u) => u.id),
         }
 }
 const taskFormContainerRef = ref()
-const selectedSupervisorIds = ref([])
 onMounted(async () => {
   await userStore.fetchTypeWiseEmployees({ type: 'academy_body,doctor,executive' })
 })
@@ -149,38 +125,10 @@ onMounted(async () => {
       </h3>
     </div>
 
-    <!-- <div v-if="state === 'loading'" class="text-center text-gray-500 py-4">Loading users...</div> -->
-
     <form @submit.prevent="submit" class="relative min-h-40">
       <div class="min-h-[150px]">
         <LoaderView v-if="state === 'loading'" class="absolute inset-0 border-0 shadow-none" />
         <div v-else class="grid grid-cols-4 gap-4 mb-4 items-stretch">
-          <!-- <div class="col-span-2">
-            <SelectDropdown
-              label="name"
-              v-model="selectedSupervisorIds"
-              multiple
-              :options="userStore.users"
-            >
-              <template #selected-options="{ items, removeItem, getOption }">
-                <div class="flex gap-2 flex-wrap justify-between">
-                  <UserChip
-                    v-for="userId in items"
-                    :key="userId"
-                    :user="getOption(userId)"
-                    class=" "
-                  >
-                    <template #after>
-                      <button class="btn-icon size-6" @click.prevent="removeItem(userId)">
-                        &times;
-                      </button>
-                    </template>
-                  </UserChip>
-                </div>
-              </template>
-            </SelectDropdown>
-          </div>
-          <pre class="col-span-2">{{ { selectedSupervisorIds, user: userStore.users } }}</pre> -->
           <div class="col-span-2 flex flex-col">
             <div class="mb-4" v-if="task?.from_department">
               <div class="text-sm text-gray-500">Task From Department</div>
@@ -192,12 +140,13 @@ onMounted(async () => {
             <label class="block uppercase text-xs text-gray-600"> Supervisors </label>
 
             <TaskAssignEmployeeInput
-              :employees="userStore.users"
+              :employees="supervisorOptions"
               list-type="supervisor"
               v-if="auth?.user?.role !== 'employee' && auth.isAdminMood"
               :isRemovable="true"
-              v-model="selectedSupervisors"
+              v-model="form.supervisor_ids"
               class="flex-grow"
+              placeholder="--No Supervisor assigned--"
             />
 
             <div
@@ -230,8 +179,9 @@ onMounted(async () => {
             <!-- <SelectDropdown :options="employeeOptions" v-model="form.user_ids" multiple /> -->
             <TaskAssignEmployeeInput
               :employees="employeeOptions"
-              v-model="selectedUsers"
+              v-model="form.user_ids"
               class="flex-grow"
+              placeholder="--No employee(s) assigned--"
             />
             <!-- :form-container-ref="taskFormContainerRef" -->
           </div>
