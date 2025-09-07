@@ -78,7 +78,7 @@ export const useZKUserStore = defineStore('zkUser', () => {
   }
 
   async function removeUserFromDevice(deviceId, zk_userid) {
-    const { data } = await apiClient.post(
+    const { data } = await apiClient.delete(
       `/devices/${encodeURIComponent(deviceId)}/users/${encodeURIComponent(zk_userid)}/remove`
     )
     return data
