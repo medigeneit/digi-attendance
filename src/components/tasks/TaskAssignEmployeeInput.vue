@@ -1,27 +1,20 @@
 <script setup>
-import { computed, shallowRef } from 'vue'
+import { computed } from 'vue'
 import DraggableList from '../common/DraggableList.vue'
-import MultiselectDropdown from '../MultiselectDropdown.vue'
 import SelectDropdown from '../SelectDropdown.vue'
 import UserChip from '../user/UserChip.vue'
-import TaskUserChip from './TaskUserChip.vue'
 
 const props = defineProps({
   modelValue: { type: Array, default: () => [] },
   employees: { type: Array, required: true },
   listType: { type: String, default: 'employee' }, //employee, supervisor
+  placeholder: { type: String, default: '' }, //employee, supervisor
   isRemovable: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['update:modelValue'])
 
-function handleUserRemove(user) {
-  const newValue = props.modelValue.filter((su) => su.id !== user.id)
-  console.log({ newValue })
-  emit('update:modelValue', newValue)
-}
-
-const selectedUsers = computed({
+const selectedUserIds = computed({
   get() {
     return props.modelValue
   },
@@ -30,131 +23,90 @@ const selectedUsers = computed({
   },
 })
 
-function handlePriorityUpdate(a) {
-  emit('update:modelValue', a)
-}
-
-const userIds = shallowRef([])
-
 function handleUserIdsPriorityUpdate(newList) {
-  userIds.value = [...newList]
+  selectedUserIds.value = [...newList]
   console.log({ newList })
+  // emit('update:modelValue', newList)
 }
 
-const getEmployees = computed(() => {
-  return props.employees.filter((emp) => !userIds.value.includes(emp.id))
-})
+function isSupervisor() {
+  return props.listType === 'supervisor'
+}
+
+function isMainEmployee(index) {
+  return props.listType === 'employee' && index === 0
+}
 </script>
 
 <template>
-  <div>
-    {{ userIds }}
-    <SelectDropdown v-model="userIds" multiple :options="employees" class="mb-8">
-      <template #selected-options="{ items, removeItem, getOption }">
-        <div class="w-full">
-          <DraggableList
-            :items="items || []"
-            handle="handle"
-            class="mb-2 flex flex-col gap-x-4 gap-y-3 w-full"
-            @itemsUpdate="handleUserIdsPriorityUpdate"
-          >
-            <template #item="{ item: userId, index }">
-              <UserChip
-                :user="getOption(userId)"
-                :isRemovable="index > 0"
-                :isSortable="index > 0"
-                @removeClick="() => removeItem(userId)"
-                :class="['w-full flex', index === 0 ? 'size-10' : 'size-8']"
-              >
-                <template #after>
-                  <button
-                    class="btn-icon size-6 ml-auto"
-                    @click.prevent.stop="removeItem(userId)"
-                    v-if="index > 0"
-                  >
-                    &times;
-                  </button>
-
-                  <button
-                    type="button"
-                    v-if="index > 0 && userType !== 'supervisor'"
-                    class="btn-icon size-6 handle"
-                  >
-                    <i class="fas fa-arrows"></i>
-                  </button>
-                  <div
-                    v-else
-                    class="btn-icon size-8 ml-auto bg-blue-200 text-blue-800 border-blue-300"
-                  >
-                    <i class="fas fa-user-crown text-xl"></i>
-                  </div>
-                </template>
-              </UserChip>
-            </template>
-          </DraggableList>
-
-          <!-- <UserChip v-for="userId in items" :key="userId" :user="getOption(userId)" class=" ">
-            <template #after>
-              <button class="btn-icon size-6" @click.prevent="removeItem(userId)">&times;</button>
-            </template>
-          </UserChip> -->
-        </div>
-      </template>
-      <template #option="{ option }">
-        <UserChip :user="option" />
-      </template>
-    </SelectDropdown>
-
-    <MultiselectDropdown
-      v-model="selectedUsers"
-      :options="employees"
-      :multiple="true"
-      track-by="id"
-      label="label"
-      placeholder="Select users"
-      class="[&_.multiselect]:w-auto [&_.multiselect]:border [&_.multiselect]:h-full"
-    >
-      <template #selection="{ ...attrs }">
-        <template v-if="listType == 'supervisor'">
-          <div class="mb-2 flex flex-wrap gap-x-4 gap-y-3 pb-0.5">
-            <TaskUserChip
-              v-for="user in attrs?.values || []"
-              :key="user.id"
-              :user="user"
-              userType="supervisor"
-              :isRemovable="isRemovable"
-              @removeClick="() => handleUserRemove(user)"
-              class="h-10 items-center flex [&_.user-avatar]:h-8 [&_.clear-icon]:size-8"
-            />
-          </div>
-        </template>
-
+  <SelectDropdown
+    v-model="selectedUserIds"
+    :options="employees"
+    :placeholder="placeholder"
+    class="border-sky-200 bg-sky-50"
+    multiple
+    hide-selected-value
+  >
+    <template #selected-options="{ items, removeItem, getOption }">
+      <div class="w-full">
         <DraggableList
-          v-else
-          :items="attrs?.values || []"
+          :items="items || []"
           handle="handle"
-          class="mb-2 flex flex-wrap gap-x-4 gap-y-3"
-          @itemsUpdate="handlePriorityUpdate"
+          class="flex flex-col gap-x-4 gap-y-1 w-full"
+          @itemsUpdate="handleUserIdsPriorityUpdate"
         >
-          <template #item="{ item: user, index }">
-            <TaskUserChip
-              :user="user"
-              :userType="
-                index === 0 && listType == 'employee'
-                  ? 'main-employee'
-                  : listType == 'supervisor'
-                    ? listType
-                    : 'employee'
-              "
+          <template #item="{ item: userId, index }">
+            <UserChip
+              :user="getOption(userId)"
               :isRemovable="index > 0"
-              @removeClick="() => handleUserRemove(user)"
-            />
+              :isSortable="index > 0"
+              @removeClick="() => removeItem(userId)"
+              :class="[
+                'w-full flex hover:bg-blue-100 border-blue-200 shadow-md',
+                isMainEmployee(index) ? 'size-10' : 'size-8',
+              ]"
+            >
+              <template #title-bottom v-if="isMainEmployee(index)">
+                <span class="text-xs italic text-gray-400">Responsible for Task</span>
+              </template>
+              <template #after>
+                <button
+                  class="btn-icon size-6 ml-auto font-bold text-xl text-red-600/60 hover:text-red-600"
+                  @click.prevent.stop="removeItem(userId)"
+                  v-if="!isMainEmployee(index) || isSupervisor()"
+                >
+                  &times;
+                </button>
+
+                <button
+                  type="button"
+                  v-if="items.length > 1 && (!isMainEmployee(index) || isSupervisor())"
+                  class="btn-icon size-6 handle text-gray-500 hover:text-gray-800"
+                  @click.stop="() => null"
+                >
+                  <i class="fas fa-arrows"></i>
+                </button>
+
+                <div
+                  v-if="isSupervisor()"
+                  class="btn-icon size-6 bg-blue-200 text-blue-800 border-blue-300"
+                >
+                  <i class="fas fa-user-cowboy text-base"></i>
+                </div>
+                <div
+                  v-else-if="isMainEmployee(index)"
+                  class="btn-icon size-8 ml-auto bg-blue-200 text-blue-800 border-blue-300"
+                >
+                  <i class="fas fa-user-crown text-xl"></i>
+                </div>
+              </template>
+            </UserChip>
           </template>
         </DraggableList>
-      </template>
-      <template #option="{ option: user }">
-        <UserChip :user="user" class="w-full" />
-      </template>
-    </MultiselectDropdown>
-  </div>
+      </div>
+    </template>
+    <template #option="{ option }">
+      <UserChip :user="option" />
+    </template>
+  </SelectDropdown>
 </template>

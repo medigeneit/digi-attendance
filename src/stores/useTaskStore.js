@@ -85,7 +85,7 @@ export const useTaskStore = defineStore('task', () => {
     }
 
     return list
-      .filter(item => item.parent_id === parentId)
+      .filter(item => item?.parent_id === parentId)
       .map(item => ({
         ...item,
         children_tasks: buildTree(list, item.id)

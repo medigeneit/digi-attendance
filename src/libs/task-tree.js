@@ -71,7 +71,7 @@ function taskClientSideFilter(task, filters) {
   let matched = true
 
   if (filters?.['user-ids']) {
-    matched = matched && task.users.some((user) => user.id == filters?.['user-ids'])
+    matched = matched && task?.users?.some((user) => user.id == filters?.['user-ids'])
   }
 
   if (filters?.['status']) {
