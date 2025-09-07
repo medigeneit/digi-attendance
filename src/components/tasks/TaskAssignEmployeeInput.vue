@@ -52,7 +52,7 @@ function isMainEmployee(index) {
         <DraggableList
           :items="items || []"
           handle="handle"
-          class="flex flex-col gap-x-4 gap-y-1 w-full"
+          class="flex flex-col gap-x-4 gap-y-1.5 w-full"
           @itemsUpdate="handleUserIdsPriorityUpdate"
         >
           <template #item="{ item: userId, index }">
@@ -62,7 +62,7 @@ function isMainEmployee(index) {
               :isSortable="index > 0"
               @removeClick="() => removeItem(userId)"
               :class="[
-                'w-full flex hover:bg-blue-100 border-blue-200 shadow-md',
+                'w-full flex bg-white !shadow',
                 isMainEmployee(index) ? 'size-10' : 'size-8',
               ]"
             >
