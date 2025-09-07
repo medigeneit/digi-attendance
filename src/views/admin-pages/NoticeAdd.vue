@@ -99,7 +99,7 @@ const fileUploadLink = async (event) => {
     const formData = new FormData()
     formData.append('file', file)
     const response = await noticeStore.fetchFileUpload(formData)
-    form.file = response?.data?.url
+    form.file = response?.url
   }
 }
 

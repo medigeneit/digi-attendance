@@ -1,200 +1,344 @@
 <script setup>
+import { ref, computed, onMounted } from 'vue'
 import { useToast } from 'vue-toastification'
-import { ref, onMounted } from 'vue'
-import { useZKUserStore } from '@/stores/zk-user'
-import { useDeviceStore } from '@/stores/zk-device'
-import ZKUserModal from '@/components/ZKUserModal.vue'
-import ZKUserPushModal from '@/components/ZKUserPushModal.vue'
-import ZKUserPullModal from '@/components/ZKUserPullModal.vue'
-import LoaderView from '@/components/common/LoaderView.vue'
-import HeaderWithButtons from '@/components/common/HeaderWithButtons.vue'
-import DeleteModal from '@/components/common/DeleteModal.vue'
+import { useZKUserStore } from '@/stores/zk-user.js'
+import { useDeviceStore } from '@/stores/zk-device.js'
 
+import UserTable from '@/components/UserTable.vue'
+import UserFormModal from '@/components/UserFormModal.vue'
+import ConfirmModal from '@/components/ConfirmModal.vue'
+import DeviceActionModal from '@/components/DeviceActionModal.vue'
+
+const deviceStore = useDeviceStore()
+const devices = computed(() => deviceStore.devices)
+const store = useZKUserStore()
 const toast = useToast()
 
-const zkUserStore = useZKUserStore()
-const deviceStore = useDeviceStore()
-const selectedIds = ref([])
-const showModal = ref(false)
-const editUserData = ref(null)
+// UI states
+const search = ref('')
+const searching = ref(false)
+const searchResults = ref([])
+const deviceId = ref('') // device-scoped actions-এর জন্য
+const loadingTop = ref(false)
 
-const showDeleteModal = ref(false)
-const deleteUserId = ref(null)
+// NEW: device action modal states
+const showDeviceAction = ref(false)
+const actionMode = ref('push') // 'push' | 'remove'
+const actionUser = ref(null)
+const actionBusy = ref(false)
 
-// ⬇️ নতুন: Push modal state
-const showPushModal = ref(false)
-const pushUserData = ref(null)
+// modal
+const showForm = ref(false)
+const editing = ref(null) // null => create
+const showConfirm = ref(false)
+const confirmTitle = ref('')
+const confirmMessage = ref('')
+let confirmAction = null
+let confirmPayload = null
 
-const showPullModal = ref(false)
-const pullUserData = ref(null)
+// computed users
+const users = computed(() => (searching.value ? searchResults.value : store.users))
 
-onMounted(() => {
-  zkUserStore.fetchUsers()
-  deviceStore.fetchDevices()
+async function loadUsers() {
+  await store.fetchUsers()
+}
+
+onMounted(async () => {
+  await Promise.all([store.fetchUsers(), deviceStore.fetchDevices()])
 })
 
-function openCreateModal() {
-  editUserData.value = null
-  showModal.value = true
-}
-function openEditModal(user) {
-  editUserData.value = { ...user }
-  showModal.value = true
-}
-function closeModal() {
-  showModal.value = false
-}
-function handleSaved() {
-  zkUserStore.fetchUsers()
-  closeModal()
-}
-
-// 🔻 delete
-function confirmDelete(userId) {
-  deleteUserId.value = userId
-  showDeleteModal.value = true
-}
-async function performDelete() {
-  await zkUserStore.deleteUser(deleteUserId.value)
-  deleteUserId.value = null
-  showDeleteModal.value = false
-  zkUserStore.fetchUsers()
-}
-
-// ✅ নতুন: open/close push modal
-function openPushModal(user) {
-  pushUserData.value = { ...user }
-  showPushModal.value = true
-}
-
-function handlePushed(summary) {
-  // চাইলে এখানে summary থেকে টোস্ট/লগ করতে পারো
-  // console.log('push summary', summary)
-}
-
-// ✅ নতুন: Pull modal open/close
-function openPullModal(user) {
-  pullUserData.value = { ...user }
-  showPullModal.value = true
-}
-function handlePulled(summary) {
-  // summary: { fingers_pulled, fingers:[], user_present, device_id }
-  toast.success(
-    `✅ Pulled ${summary?.fingers_pulled ?? 0} template(s) from device ${summary?.device_id ?? ''}`,
-  )
-}
-
-function toggleSelectAll(event) {
-  if (event.target.checked) {
-    selectedIds.value = zkUserStore.users.map((u) => u.id)
-  } else {
-    selectedIds.value = []
+async function doSearch() {
+  if (!search.value) {
+    searching.value = false
+    searchResults.value = []
+    return
+  }
+  try {
+    loadingTop.value = true
+    const res = await store.searchUsers(search.value, 50)
+    searchResults.value = Array.isArray(res) ? res : []
+    searching.value = true
+  } catch (e) {
+    toast.error(e?.message || 'Search failed')
+  } finally {
+    loadingTop.value = false
   }
 }
 
-const roleMap = { 0: 'User', 14: 'Admin' }
+function clearSearch() {
+  search.value = ''
+  searching.value = false
+  searchResults.value = []
+}
+
+function openCreate() {
+  editing.value = null
+  showForm.value = true
+}
+function openEdit(u) {
+  editing.value = u
+  showForm.value = true
+}
+function closeForm() {
+  showForm.value = false
+}
+
+async function saveForm(payload) {
+  try {
+    if (editing.value?.id) {
+      await store.updateUser(editing.value.id, payload)
+      toast.success('User updated')
+    } else {
+      await store.createUser(payload)
+      toast.success('User created')
+    }
+    await loadUsers()
+    showForm.value = false
+  } catch (e) {
+    toast.error(e?.message || 'Save failed')
+  }
+}
+
+function askDelete(u) {
+  confirmTitle.value = 'Delete User'
+  confirmMessage.value = `Are you sure you want to delete "${u.name}" (Enroll ${u.zk_userid})?`
+  confirmAction = async () => {
+    await store.deleteUser(u.id)
+    toast.warning('User deleted')
+    await loadUsers()
+  }
+  confirmPayload = null
+  showConfirm.value = true
+}
+
+function closeConfirm() {
+  showConfirm.value = false
+  confirmAction = null
+  confirmPayload = null
+}
+
+async function runConfirm() {
+  if (!confirmAction) return closeConfirm()
+  try {
+    await confirmAction(confirmPayload)
+  } catch (e) {
+    toast.error(e?.message || 'Operation failed')
+  } finally {
+    closeConfirm()
+  }
+}
+
+// device-scoped: top-bar ops
+async function pullFromDevice() {
+  if (!deviceId.value) return toast.error('Enter a Device ID first')
+  try {
+    loadingTop.value = true
+    const res = await store.pullUsersFromDevice(deviceId.value)
+    toast.success(
+      `Pulled from device#${deviceId.value}: seen ${res.seen ?? 0}, inserted ${res.inserted ?? 0}`,
+    )
+    await loadUsers()
+  } catch (e) {
+    toast.error(e?.message || 'Pull failed')
+  } finally {
+    loadingTop.value = false
+  }
+}
+
+async function pushAllToDevice() {
+  if (!deviceId.value) return toast.error('Enter a Device ID first')
+  try {
+    loadingTop.value = true
+    const res = await store.pushAllUsersToDevice(deviceId.value)
+    toast.success(
+      `Pushed to device#${deviceId.value}: new ${res.pushed ?? 0}, already ${res.already ?? 0}`,
+    )
+  } catch (e) {
+    toast.error(e?.message || 'Push failed')
+  } finally {
+    loadingTop.value = false
+  }
+}
+
+async function countOnDevice() {
+  if (!deviceId.value) return toast.error('Enter a Device ID first')
+  try {
+    loadingTop.value = true
+    const res = await store.userCountOnDevice(deviceId.value)
+    const c = Number(res?.user_count ?? 0)
+    toast.info(`Device#${deviceId.value}: users = ${c}${res?.online === false ? ' (offline)' : ''}`)
+  } catch (e) {
+    toast.error(e?.message || 'Count failed')
+  } finally {
+    loadingTop.value = false
+  }
+}
+
+// row-level device actions
+async function pushOneToDevice(u) {
+  if (!deviceId.value) return toast.error('Enter a Device ID first')
+  try {
+    const res = await store.pushSingleUserToDevice(deviceId.value, u.zk_userid)
+    toast.success(
+      `Pushed ${u.zk_userid} → device#${deviceId.value}: ${res?.pushed ? 'created' : 'already exists'}`,
+    )
+  } catch (e) {
+    toast.error(e?.message || 'Push failed')
+  }
+}
+
+async function removeOneFromDevice(u) {
+  if (!deviceId.value) return toast.error('Enter a Device ID first')
+  // confirm
+  confirmTitle.value = 'Remove From Device'
+  confirmMessage.value = `Remove user ${u.zk_userid} from device#${deviceId.value}?`
+  confirmAction = async () => {
+    const res = await store.removeUserFromDevice(deviceId.value, u.zk_userid)
+    toast.warning(
+      `Removed (${res?.removed ? 'ok' : 'maybe not'}) user ${u.zk_userid} from device#${deviceId.value}`,
+    )
+  }
+  confirmPayload = null
+  showConfirm.value = true
+}
+
+// row-level: এখন সরাসরি API না ডেকে মোডাল ওপেন করবো
+function openPushOne(u) {
+  actionUser.value = u
+  actionMode.value = 'push'
+  showDeviceAction.value = true
+}
+function openRemoveOne(u) {
+  actionUser.value = u
+  actionMode.value = 'remove'
+  showDeviceAction.value = true
+}
+
+// modal confirm → নির্বাচিত deviceId নিয়ে call
+async function onDeviceActionConfirm(deviceId) {
+  if (!deviceId || !actionUser.value) return
+  try {
+    actionBusy.value = true
+    if (actionMode.value === 'push') {
+      const res = await store.pushSingleUserToDevice(deviceId, actionUser.value.zk_userid)
+      toast.success(
+        `Pushed ${actionUser.value.zk_userid} → device#${deviceId}: ${res?.pushed ? 'created' : 'already exists'}`,
+      )
+    } else {
+      const res = await store.removeUserFromDevice(deviceId, actionUser.value.zk_userid)
+      toast.warning(
+        `Removed ${actionUser.value.zk_userid} from device#${deviceId}${res?.removed ? '' : ' (check device)'}`,
+      )
+    }
+  } catch (e) {
+    toast.error(e?.message || 'Operation failed')
+  } finally {
+    actionBusy.value = false
+    showDeviceAction.value = false
+    actionUser.value = null
+  }
+}
+
+// optional: modal close helper
+function closeDeviceAction() {
+  showDeviceAction.value = false
+  actionUser.value = null
+}
 </script>
 
 <template>
   <div class="my-container space-y-4">
-    <HeaderWithButtons title="ZK User Management" @add="openCreateModal" />
-
-    <LoaderView v-if="zkUserStore.loading" />
-
-    <div v-else class="overflow-x-auto card-bg">
-      <table class="min-w-full text-sm text-left text-gray-700">
-        <thead class="bg-gray-200 uppercase text-xs text-gray-600 tracking-wider">
-          <tr>
-            <th class="p-3"><input type="checkbox" @change="toggleSelectAll($event)" /></th>
-
-            <th class="p-3">Device User ID</th>
-            <th class="p-3">Name (Device)</th>
-            <th class="p-3">Fingers</th>
-            <th class="p-3">Role</th>
-            <th class="p-3">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="user in zkUserStore.users"
-            :key="user.id"
-            class="border-b hover:bg-gray-50 transition-colors duration-150"
-          >
-            <td class="p-3"><input type="checkbox" :value="user.id" v-model="selectedIds" /></td>
-
-            <td class="p-3">{{ user.zk_userid }}</td>
-            <td class="p-3 font-medium">{{ user.name }}</td>
-            <td class="p-3">{{ user.fingerprints_count }}</td>
-            <td class="p-3">{{ roleMap[user.role] ?? '—' }}</td>
-            <td class="p-3 space-x-6">
-              <button
-                @click="openEditModal(user)"
-                class="text-blue-600 hover:text-blue-800 font-semibold"
-                title="Edit user"
-              >
-                <i class="fas fa-edit"></i>
-              </button>
-
-              <!-- ✅ নতুন: Push FP button -->
-              <button
-                @click="openPushModal(user)"
-                class="text-purple-600 hover:text-purple-800 font-semibold"
-                title="Push user's fingerprints to selected devices"
-              >
-                <i class="fas fa-upload"></i>
-              </button>
-
-              <button
-                @click="openPullModal(user)"
-                class="text-green-600 hover:text-green-800 font-semibold"
-                title="Pull user's fingerprints from a selected device"
-              >
-                <i class="fas fa-fingerprint"></i>
-              </button>
-
-              <button
-                @click="confirmDelete(user.id)"
-                class="text-red-600 hover:text-red-800 font-semibold"
-                title="Delete user"
-              >
-                <i class="fas fa-trash"></i>
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="flex items-center justify-between">
+      <h1 class="text-xl font-semibold">ZK Users</h1>
+      <div class="flex items-center gap-2">
+        <input
+          v-model="search"
+          @keyup.enter="doSearch"
+          type="text"
+          placeholder="Search name / enroll / card"
+          class="border rounded px-3 py-1.5 text-sm w-64"
+        />
+        <button class="btn" @click="doSearch" :disabled="loadingTop">
+          <i class="fas fa-search mr-1"></i> Search
+        </button>
+        <button class="btn-outline" @click="clearSearch" :disabled="loadingTop || !searching">
+          <i class="fas fa-times mr-1"></i> Clear
+        </button>
+        <button class="btn-primary" @click="openCreate">
+          <i class="fas fa-user-plus mr-1"></i> New User
+        </button>
+      </div>
     </div>
+
+    <!-- device scoped actions -->
+    <div class="flex flex-wrap items-center gap-2 bg-slate-50 border rounded-lg p-3">
+      <div class="text-sm text-slate-600">Device actions:</div>
+      <input
+        v-model="deviceId"
+        type="number"
+        min="1"
+        placeholder="Device ID"
+        class="border rounded px-2 py-1 text-sm w-28"
+      />
+      <button class="btn" @click="pullFromDevice" :disabled="loadingTop">
+        <i class="fas fa-download mr-1"></i> Pull Users
+      </button>
+      <button class="btn" @click="pushAllToDevice" :disabled="loadingTop">
+        <i class="fas fa-upload mr-1"></i> Push All
+      </button>
+      <button class="btn" @click="countOnDevice" :disabled="loadingTop">
+        <i class="fas fa-list-ol mr-1"></i> Count
+      </button>
+
+      <span v-if="store.loading || loadingTop" class="ml-auto text-xs text-slate-500">
+        <i class="fas fa-circle-notch fa-spin"></i> Working…
+      </span>
+    </div>
+
+    <!-- table -->
+    <UserTable
+      :items="users"
+      :loading="store.loading"
+      @edit="openEdit"
+      @delete="askDelete"
+      @push-one="openPushOne"
+      @remove-one="openRemoveOne"
+    />
+
+    <!-- modals -->
+    <UserFormModal :show="showForm" :user="editing" @close="closeForm" @save="saveForm" />
+
+    <ConfirmModal
+      :show="showConfirm"
+      :title="confirmTitle"
+      :message="confirmMessage"
+      @close="closeConfirm"
+      @confirm="runConfirm"
+    />
+
+    <DeviceActionModal
+      :show="showDeviceAction"
+      :mode="actionMode"
+      :user="actionUser"
+      :devices="devices"
+      :loading="actionBusy"
+      @close="closeDeviceAction"
+      @confirm="onDeviceActionConfirm"
+    />
   </div>
-
-  <ZKUserModal
-    :show="showModal"
-    :editUser="editUserData"
-    @close="closeModal"
-    @saved="handleSaved"
-  />
-
-  <DeleteModal
-    :show="showDeleteModal"
-    title="Confirm Deletion"
-    message="Are you sure you want to delete this user?"
-    @close="showDeleteModal = false"
-    @confirm="performDelete"
-  />
-
-  <!-- ✅ নতুন: Push FP modal -->
-  <ZKUserPushModal
-    :show="showPushModal"
-    :user="pushUserData"
-    :devices="deviceStore.devices"
-    @close="showPushModal = false"
-    @pushed="handlePushed"
-  />
-
-  <ZKUserPullModal
-    :show="showPullModal"
-    :user="pullUserData"
-    :devices="deviceStore.devices"
-    @close="showPullModal = false"
-    @pulled="handlePulled"
-  />
 </template>
+
+<style scoped>
+.my-container {
+  @apply max-w-6xl mx-auto p-4;
+}
+.btn {
+  @apply inline-flex items-center gap-1 px-3 py-1.5 rounded border border-slate-300 text-sm hover:bg-slate-50;
+}
+.btn-outline {
+  @apply inline-flex items-center gap-1 px-3 py-1.5 rounded border border-slate-300 text-sm text-slate-700 hover:bg-slate-50;
+}
+.btn-primary {
+  @apply inline-flex items-center gap-1 px-3 py-1.5 rounded bg-slate-800 text-white text-sm hover:bg-slate-700;
+}
+</style>
