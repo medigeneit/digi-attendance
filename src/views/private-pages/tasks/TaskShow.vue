@@ -12,6 +12,7 @@ import TaskStatusManager from '@/components/tasks/TaskStatusManager.vue'
 import TaskSupervisorAndEmployee from '@/components/tasks/TaskSupervisorAndEmployee.vue'
 import TaskUrgentBadge from '@/components/tasks/TaskUrgentBadge.vue'
 import TaskUserDateUpdate from '@/components/tasks/TaskUserDateUpdate.vue'
+import UserAvatar from '@/components/UserAvatar.vue'
 import { getDisplayDateTime } from '@/libs/datetime'
 import { scrollToID } from '@/libs/dom'
 import { getTaskProgressUsers } from '@/libs/task-progress'
@@ -156,9 +157,20 @@ watch(
                 <TaskUrgentBadge v-if="store.task?.is_urgent" />
               </div>
 
-              <div class="text-gray-400 text-xs mt-2 col-span-full">
-                <i class="fas fa-clock"></i>
-                {{ getDisplayDateTime(store.task.created_at) }}
+              <div class="mt-2 col-span-full flex items-center">
+                <div class="text-gray-400 text-xs">
+                  <i class="fas fa-clock"></i>
+                  {{ getDisplayDateTime(store.task.created_at) }}
+                </div>
+                <template v-if="store.task?.created_by_user">
+                  <span class="text-sm text-gray-600 ml-4">By</span>
+                  <div class="flex items-center gap-0.5">
+                    <UserAvatar :user="store.task?.created_by_user" class="!size-4 ml-1" />
+                    <div class="text-sky-400 text-sm font-semibold">
+                      {{ store.task?.created_by_user?.label }}
+                    </div>
+                  </div>
+                </template>
               </div>
             </div>
 
