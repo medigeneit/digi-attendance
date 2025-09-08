@@ -95,6 +95,29 @@ function handleDeleteSuccess() {
 
 const isMyTask = computed(() => route.name == 'MyTaskShow' || !!route.query['is-my-task'])
 
+const getBreadCrumbFromTask = (task, is_current_page = false) => {
+  return {
+    id: task?.id,
+    title: task?.title,
+    status: task?.status,
+    is_current_page,
+  }
+}
+
+const breadcrumbTaskItems = computed(() => {
+  const parents = []
+
+  if (store?.task?.parent) {
+    parents.push(getBreadCrumbFromTask(store.task?.parent))
+
+    if (store?.task?.parent?.parent) {
+      parents.push(getBreadCrumbFromTask(store.task?.parent?.parent))
+    }
+  }
+
+  return [...parents.reverse(), ...[getBreadCrumbFromTask(store.task, true)]]
+})
+
 watch(
   () => route.params.id,
   async (taskId) => {
@@ -136,6 +159,37 @@ watch(
 
     <div class="max-w-8xl min-h-64 mx-auto bg-white shadow-lg rounded-lg p-6 relative" v-else>
       <template v-if="store.task">
+        <nav
+          class="text-sm mb-2 border-b"
+          aria-label="Breadcrumb"
+          v-if="breadcrumbTaskItems.length > 1"
+        >
+          <ol class="flex items-center gap-2">
+            <template
+              v-for="(breadcrumbTask, index) in breadcrumbTaskItems"
+              :key="breadcrumbTask.id"
+            >
+              <li aria-hidden="true" class="text-gray-400 text-base" v-if="index > 0">/</li>
+              <li :title="breadcrumbTask?.title" class="text-gray-600">
+                <RouterLink
+                  :to="`${isMyTask ? '/my-tasks' : '/tasks'}/${breadcrumbTask.id}`"
+                  class="hover:text-gray-900 hover:underline transition"
+                  :class="{
+                    'line-clamp-1 text-justify': index > 0,
+                    'whitespace-nowrap': index === 0,
+                  }"
+                  v-if="!breadcrumbTask.is_current_page"
+                >
+                  {{ breadcrumbTask?.title }}
+                </RouterLink>
+                <span v-else class="text-gray-900 font-medium line-clamp-1" aria-current="page">
+                  {{ breadcrumbTask?.title }}
+                </span>
+              </li>
+            </template>
+          </ol>
+        </nav>
+
         <section class="grid grid-cols-4">
           <div class="mb-4 flex col-span-full">
             <div>
