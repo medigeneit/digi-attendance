@@ -43,7 +43,7 @@ function isMainEmployee(index) {
     v-model="selectedUserIds"
     :options="employees"
     :placeholder="placeholder"
-    class="border-sky-200 bg-sky-50"
+    class="border-gray-300 bg-sky-50/10 !rounded-2xl shadow-sm"
     multiple
     hide-selected-value
   >
@@ -52,7 +52,7 @@ function isMainEmployee(index) {
         <DraggableList
           :items="items || []"
           handle="handle"
-          class="flex flex-col gap-x-4 gap-y-1.5 w-full"
+          class="flex flex-col gap-x-4 gap-y-2 w-full"
           @itemsUpdate="handleUserIdsPriorityUpdate"
         >
           <template #item="{ item: userId, index }">
@@ -60,24 +60,25 @@ function isMainEmployee(index) {
               :user="getOption(userId)"
               :isRemovable="index > 0"
               :isSortable="index > 0"
-              @removeClick="() => removeItem(userId)"
               avatar-size="large"
               :avatar-class="['transition', isMainEmployee(index) ? '!size-8 ' : '']"
               :class="[
-                'w-full flex bg-white !shadow ',
+                'w-full flex bg-sky-100/40 !shadow-sm border-sky-200 ',
                 isMainEmployee(index) ? 'size-10 :size-12' : 'size-8',
               ]"
+              @removeClick="() => removeItem(userId)"
+              @click="(e) => (isMainEmployee(index) ? e.stopPropagation() : null)"
             >
               <template #title-bottom v-if="isMainEmployee(index)">
                 <span class="text-xs italic text-gray-400">Responsible for Task</span>
               </template>
               <template #after>
                 <button
-                  class="btn-icon size-6 ml-auto font-bold text-xl text-red-600/60 hover:text-red-600"
+                  class="btn-icon size-6 ml-auto font-bold text-base text-red-600/60 hover:text-red-600 border border-red-200 flex items-center justify-center"
                   @click.prevent.stop="removeItem(userId)"
                   v-if="!isMainEmployee(index) || isSupervisor()"
                 >
-                  &times;
+                  <i class="fas fa-times"></i>
                 </button>
 
                 <button
@@ -108,7 +109,7 @@ function isMainEmployee(index) {
       </div>
     </template>
     <template #option="{ option }">
-      <UserChip :user="option" />
+      <UserChip :user="option" class="w-full border-gray-300" />
     </template>
   </SelectDropdown>
 </template>

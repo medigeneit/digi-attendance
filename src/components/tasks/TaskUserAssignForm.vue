@@ -128,7 +128,7 @@ onMounted(async () => {
     <form @submit.prevent="submit" class="relative min-h-40">
       <div class="min-h-[150px]">
         <LoaderView v-if="state === 'loading'" class="absolute inset-0 border-0 shadow-none" />
-        <div v-else class="grid grid-cols-4 gap-4 mb-4 items-stretch">
+        <div v-else class="grid grid-cols-4 gap-8 mb-4 items-stretch">
           <div class="col-span-2 flex flex-col">
             <div class="mb-4" v-if="task?.from_department">
               <div class="text-sm text-gray-500">Task From Department</div>
