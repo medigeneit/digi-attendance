@@ -38,7 +38,7 @@ const title = computed(() => (props.mode === 'remove' ? 'Remove From Device' : '
 
       <div class="p-4 space-y-3 text-sm">
         <div class="text-slate-600">
-          <div><b>User:</b> {{ user?.zk_userid }} — {{ user?.name }}</div>
+          <div><b>User:</b> {{ user?.userid }} — {{ user?.name }}</div>
           <div v-if="mode === 'push'">Select a device and choose what to push.</div>
           <div v-else>Select a device to <b>remove</b> this user from.</div>
         </div>

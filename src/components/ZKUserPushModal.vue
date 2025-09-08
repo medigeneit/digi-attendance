@@ -44,7 +44,7 @@ function clearAll() {
 }
 
 async function pushUserProfiles() {
-  if (!props.user?.zk_userid) return toast.error('Invalid user')
+  if (!props.user?.userid) return toast.error('Invalid user')
   if (!selectedDeviceIds.value.length) return toast.warning('Select at least one device')
 
   workingUser.value = true
@@ -52,7 +52,7 @@ async function pushUserProfiles() {
     const ids = [...selectedDeviceIds.value]
     const results = await Promise.allSettled(
       ids.map(async (id) => {
-        const res = await zkUserStore.pushSingleUserToDevice(id, props.user.zk_userid)
+        const res = await zkUserStore.pushSingleUserToDevice(id, props.user.userid)
         return { deviceId: id, res }
       }),
     )
@@ -81,7 +81,7 @@ async function pushUserProfiles() {
 }
 
 async function pushFingerprints() {
-  if (!props.user?.zk_userid) return toast.error('Invalid user')
+  if (!props.user?.userid) return toast.error('Invalid user')
   if (!selectedDeviceIds.value.length) return toast.warning('Select at least one device')
 
   workingFingers.value = true
@@ -89,7 +89,7 @@ async function pushFingerprints() {
     const ids = [...selectedDeviceIds.value]
     const results = await Promise.allSettled(
       ids.map(async (id) => {
-        const res = await fingerStore.pushFingerprintsOne(id, props.user.zk_userid)
+        const res = await fingerStore.pushFingerprintsOne(id, props.user.userid)
         return { deviceId: id, res }
       }),
     )
@@ -151,7 +151,7 @@ async function pushFingerprints() {
           </div>
           <div>
             <div class="text-gray-500">Device User ID</div>
-            <div class="font-medium">{{ user?.zk_userid }}</div>
+            <div class="font-medium">{{ user?.userid }}</div>
           </div>
           <div>
             <div class="text-gray-500">Name (Device)</div>

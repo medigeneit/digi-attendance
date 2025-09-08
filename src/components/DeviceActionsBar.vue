@@ -1,60 +1,81 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useToast } from 'vue-toastification'
-import { useZKUserStore } from '@/stores/zk-user.js'
+import { useZKUserStore } from '@/stores/zk-user.js' // fetchUsers() রাখছি
+import { useZktecoStore } from '@/stores/zkteco.js' // ✅ নতুন স্টোর
 
 const props = defineProps({
-  // চাইলে ড্রপডাউন দেখাতে ডিভাইস লিস্ট পাস করো (id,name,ip_address)
   devices: { type: Array, default: () => [] },
 })
 
 const toast = useToast()
 const userStore = useZKUserStore()
+const zkStore = useZktecoStore() // ✅ ইনস্ট্যান্স
 
 const deviceId = ref('')
 const loading = ref(false)
 
 const hasDevices = computed(() => Array.isArray(props.devices) && props.devices.length > 0)
 
+// ✅ useZktecoStore দিয়ে Pull
 async function pullFromDevice() {
   if (!deviceId.value) return toast.error('Enter a Device ID first')
   try {
     loading.value = true
-    const res = await userStore.pullUsersFromDevice(deviceId.value)
+    const res = await zkStore.pull({ deviceId: deviceId.value, what: 'both' })
+
+    // বিভিন্ন রেসপন্স-কি ফ্যালব্যাক
+    const pulledUsers = res?.users_added ?? res?.pulled_users ?? res?.users ?? 0
+    const pulledTemplates = res?.fingers_added ?? res?.pulled_templates ?? res?.templates ?? 0
+
     toast.success(
-      `Pulled from device#${deviceId.value}: users ${res?.pulled_users ?? 0}, templates ${res?.pulled_templates ?? 0}`,
+      `Pulled from device #${deviceId.value}: users ${pulledUsers}, templates ${pulledTemplates}`,
     )
-    // তালিকা রিফ্রেশ
+
+    // সেন্ট্রাল লিস্ট রিফ্রেশ
     await userStore.fetchUsers()
   } catch (e) {
-    toast.error(e?.message || 'Pull failed')
+    toast.error(e?.error || e?.message || 'Pull failed')
   } finally {
     loading.value = false
   }
 }
 
+// ✅ useZktecoStore দিয়ে Push (all)
 async function pushAllToDevice() {
   if (!deviceId.value) return toast.error('Enter a Device ID first')
   try {
     loading.value = true
-    const res = await userStore.pushAllUsersToDevice(deviceId.value)
+    const res = await zkStore.push({
+      deviceId: deviceId.value,
+      what: 'both',
+      scope: 'all',
+      disableDuringSync: true,
+    })
+
+    const pushedUsers = res?.users_pushed ?? res?.users ?? 0
+    const pushedTemplates = res?.fingers_pushed ?? res?.templates ?? 0
+
     toast.success(
-      `Pushed to device#${deviceId.value}: users ${res?.pushed_users ?? 0}, templates ${res?.pushed_templates ?? 0}`,
+      `Pushed to device #${deviceId.value}: users ${pushedUsers}, templates ${pushedTemplates}`,
     )
   } catch (e) {
-    toast.error(e?.message || 'Push failed')
+    toast.error(e?.error || e?.message || 'Push failed')
   } finally {
     loading.value = false
   }
 }
 
+// countOnDevice আগের মতই থাকুক (আপনি চাইলে পরে devices-store দিয়ে বদলাতে পারবেন)
 async function countOnDevice() {
   if (!deviceId.value) return toast.error('Enter a Device ID first')
   try {
     loading.value = true
     const res = await userStore.userCountOnDevice(deviceId.value)
     const c = Number(res?.user_count ?? 0)
-    toast.info(`Device#${deviceId.value}: users = ${c}${res?.online === false ? ' (offline)' : ''}`)
+    toast.info(
+      `Device #${deviceId.value}: users = ${c}${res?.online === false ? ' (offline)' : ''}`,
+    )
   } catch (e) {
     toast.error(e?.message || 'Count failed')
   } finally {

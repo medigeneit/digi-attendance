@@ -8,7 +8,7 @@ const props = defineProps({
 const emit = defineEmits(['close', 'save'])
 
 const form = reactive({
-  zk_userid: '',
+  userid: '',
   name: '',
   role: 0,
   cardno: '',
@@ -20,14 +20,14 @@ watch(
   () => props.user,
   (u) => {
     if (u) {
-      form.zk_userid = u.zk_userid ?? ''
+      form.userid = u.userid ?? ''
       form.name = u.name ?? ''
       form.role = Number(u.role ?? 0)
       form.cardno = u.cardno ?? ''
       form.password = '' // ইচ্ছা হলে ফাঁকা রাখো
       form.is_active = u.is_active ?? true
     } else {
-      form.zk_userid = ''
+      form.userid = ''
       form.name = ''
       form.role = 0
       form.cardno = ''
@@ -46,7 +46,7 @@ function close() {
 
 function save() {
   const payload = {
-    zk_userid: form.zk_userid,
+    userid: form.userid,
     name: form.name,
     role: Number(form.role),
     cardno: form.cardno || null,
@@ -70,9 +70,9 @@ function save() {
       <div class="p-4 space-y-3">
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs text-slate-600 mb-1">Enroll (zk_userid)</label>
+            <label class="block text-xs text-slate-600 mb-1">Enroll (userid)</label>
             <input
-              v-model="form.zk_userid"
+              v-model="form.userid"
               :readonly="isEdit"
               type="text"
               maxlength="9"

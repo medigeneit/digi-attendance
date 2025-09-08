@@ -76,7 +76,7 @@ async function saveForm(payload) {
 
 function askDelete(u) {
   confirmTitle.value = 'Delete User'
-  confirmMessage.value = `Are you sure you want to delete "${u.name}" (Enroll ${u.zk_userid})?`
+  confirmMessage.value = `Are you sure you want to delete "${u.name}" (Enroll ${u.userid})?`
   confirmAction = async () => {
     await store.deleteUser(u.id)
     toast.warning('User deleted')
@@ -118,9 +118,9 @@ async function onDeviceActionConfirm(deviceId) {
   if (!deviceId || !actionUser.value) return
   try {
     actionBusyRemove.value = true
-    const res = await store.removeUserFromDevice(deviceId, actionUser.value.zk_userid)
+    const res = await store.removeUserFromDevice(deviceId, actionUser.value.userid)
     toast.warning(
-      `Removed ${actionUser.value.zk_userid} from device#${deviceId}${res?.removed ? '' : ' (check device)'}`,
+      `Removed ${actionUser.value.userid} from device#${deviceId}${res?.removed ? '' : ' (check device)'}`,
     )
   } catch (e) {
     toast.error(e?.message || 'Operation failed')
@@ -135,8 +135,8 @@ async function onDevicePushUserConfirm(deviceId) {
   if (!deviceId || !actionUser.value) return
   try {
     actionBusyUser.value = true
-    const res = await store.pushSingleUserToDevice(deviceId, actionUser.value.zk_userid)
-    toast.success(`Pushed USER ${actionUser.value.zk_userid} → device#${deviceId}`)
+    const res = await store.pushSingleUserToDevice(deviceId, actionUser.value.userid)
+    toast.success(`Pushed USER ${actionUser.value.userid} → device#${deviceId}`)
   } catch (e) {
     toast.error(e?.message || 'User push failed')
   } finally {
@@ -150,9 +150,9 @@ async function onDevicePushFpConfirm(deviceId) {
   if (!deviceId || !actionUser.value) return
   try {
     actionBusyFp.value = true
-    const res = await fingerStore.pushFingerprintsOne(deviceId, actionUser.value.zk_userid)
+    const res = await fingerStore.pushFingerprintsOne(deviceId, actionUser.value.userid)
     const n = Number(res?.data?.pushed_templates ?? res?.pushed_templates ?? 0)
-    toast.success(`Pushed FPs ${actionUser.value.zk_userid} → device#${deviceId}: ${n}`)
+    toast.success(`Pushed FPs ${actionUser.value.userid} → device#${deviceId}: ${n}`)
   } catch (e) {
     toast.error(e?.message || 'Fingerprint push failed')
   } finally {
