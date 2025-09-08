@@ -7,13 +7,12 @@ const props = defineProps({
   mode: { type: String, default: 'push' }, // 'push' | 'remove'
   user: { type: Object, default: null },
   devices: { type: Array, default: () => [] },
-  // নতুন: পুশের জন্য আলাদা লোডার
-  loadingUser: { type: Boolean, default: false },
-  loadingFp: { type: Boolean, default: false },
-  // পুরনো remove লোডার আগের মতোই থাকবে
-  loading: { type: Boolean, default: false },
+  // loaders
+  loading: { type: Boolean, default: false }, // remove loader
+  loadingPush: { type: Boolean, default: false }, // push (user+fp) loader
 })
-const emit = defineEmits(['close', 'confirm', 'confirm-user', 'confirm-fp'])
+const emit = defineEmits(['close', 'confirm'])
+
 const selectedId = ref(null)
 
 watch(
@@ -39,7 +38,7 @@ const title = computed(() => (props.mode === 'remove' ? 'Remove From Device' : '
       <div class="p-4 space-y-3 text-sm">
         <div class="text-slate-600">
           <div><b>User:</b> {{ user?.userid }} — {{ user?.name }}</div>
-          <div v-if="mode === 'push'">Select a device and choose what to push.</div>
+          <div v-if="mode === 'push'">Select a device and push <b>User + Fingerprints</b>.</div>
           <div v-else>Select a device to <b>remove</b> this user from.</div>
         </div>
 
@@ -61,7 +60,7 @@ const title = computed(() => (props.mode === 'remove' ? 'Remove From Device' : '
       <div class="px-4 py-3 border-t flex items-center justify-end gap-2">
         <button class="btn" @click="$emit('close')">Cancel</button>
 
-        <!-- remove mode: আগের মতোই single confirm -->
+        <!-- remove: single confirm -->
         <button
           v-if="mode === 'remove'"
           class="btn-primary"
@@ -73,27 +72,17 @@ const title = computed(() => (props.mode === 'remove' ? 'Remove From Device' : '
           <span class="ml-1">Confirm Remove</span>
         </button>
 
-        <!-- push mode: দুইটা আলাদা বাটন -->
-        <template v-else>
-          <button
-            class="btn-primary"
-            :disabled="!selectedId || loadingUser"
-            @click="$emit('confirm-user', selectedId)"
-          >
-            <i v-if="!loadingUser" class="fas fa-user-plus"></i>
-            <i v-else class="fas fa-circle-notch fa-spin"></i>
-            <span class="ml-1">Push User</span>
-          </button>
-          <button
-            class="btn-primary"
-            :disabled="!selectedId || loadingFp"
-            @click="$emit('confirm-fp', selectedId)"
-          >
-            <i v-if="!loadingFp" class="fas fa-fingerprint"></i>
-            <i v-else class="fas fa-circle-notch fa-spin"></i>
-            <span class="ml-1">Push Fingerprints</span>
-          </button>
-        </template>
+        <!-- push: single confirm (User + Fingerprints) -->
+        <button
+          v-else
+          class="btn-primary"
+          :disabled="!selectedId || loadingPush"
+          @click="$emit('confirm', selectedId)"
+        >
+          <i v-if="!loadingPush" class="fas fa-cloud-upload-alt"></i>
+          <i v-else class="fas fa-circle-notch fa-spin"></i>
+          <span class="ml-1">Push User + Fingerprints</span>
+        </button>
       </div>
     </div>
   </div>
