@@ -244,7 +244,7 @@ const formatDateTime = (timestamp) => {
           </div>
         </div>
         <div class="text-sm">
-          <p>
+          <p class="whitespace-pre-line	">
             <strong>Works in Hand: </strong
             >{{ leaveApplication?.works_in_hand || 'No details provided' }}
           </p>

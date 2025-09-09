@@ -3,7 +3,6 @@ import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import DisplayFormattedWorkingHours from '@/components/overtime/DisplayFormattedWorkingHours.vue'
 import SelectedEmployeeCard from '@/components/user/SelectedEmployeeCard.vue'
-import { useAttendanceStore } from '@/stores/attendance'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
 import { useUserStore } from '@/stores/user'
 import { onMounted, ref, watch } from 'vue'
@@ -278,6 +277,7 @@ const specifications = {
               <th class="p-2">Last Working Date</th>
               <th class="p-2">Resumption Date</th>
               <th class="p-2">Type</th>
+              <th class="p-2">Reason</th>
               <th class="p-2">Status</th>
               <th class="p-2">Action</th>
             </tr>
@@ -294,6 +294,9 @@ const specifications = {
               <td class="p-2">{{ item.to  }}</td>
               <td class="p-2 whitespace-pre-line">
                 {{ item.application_types }}
+              </td>
+              <td class="p-2 whitespace-pre-line">
+                {{ item.reason }}
               </td>
               <td class="p-2 whitespace-pre-line">
                 {{ item.status }}
