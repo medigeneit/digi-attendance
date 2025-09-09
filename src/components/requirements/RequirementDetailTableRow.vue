@@ -8,6 +8,7 @@ const props = defineProps({
   detail: { type: Object },
   requirement: { type: Object },
   serial: { type: Number },
+  isPrinting: { type: Boolean },
 })
 
 const emit = defineEmits(['editClick', 'deleteClick', 'taskCreateClick'])
@@ -21,9 +22,12 @@ const rowsOfTask = computed(() => {
 })
 
 function handleCreateAssignButtonClick() {
-  if (auth.user?.department_id !== props.requirement?.to_department_id) {
+  if (
+    auth.user.role !== 'super_admin' &&
+    auth.user?.id !== props.requirement?.to_department?.incharge_id
+  ) {
     return alert(
-      `You can't create or assign task for this requirement. \nOnly ${props.requirement?.to_department?.name}'s user can create or assign.`,
+      `You can't create or assign task for this requirement. \nOnly ${props.requirement?.to_department?.name}'s In charge can create or assign.`,
     )
   }
   emit('taskCreateClick', props.detail)
@@ -35,11 +39,18 @@ function handleCreateAssignButtonClick() {
       class="group/item border text-gray-800 py-4 shadow-sm mb-4 px-4 rounded-md hover:bg-blue-50"
     >
       <template v-if="taskIndex === 0">
-        <td class="border-2 border-gray-700 p-3 align-top" :rowspan="detail?.tasks?.length || 1">
+        <td
+          class="border-2 border-gray-700 p-3 align-top"
+          :rowspan="(detail?.tasks?.length || 1) + (isPrinting ? 0 : 1)"
+        >
           <span class="text-2xl font-medium">{{ serial }}</span>
         </td>
 
-        <td class="border-2 border-gray-700 p-3" :rowspan="detail?.tasks?.length || 1">
+        <td
+          class="border-2 border-gray-700 p-3"
+          :rowspan="(detail?.tasks?.length || 1) + (isPrinting ? 0 : 1)"
+        >
+          <!-- {{ requirement.to_department }} -->
           <div>
             <div class="text-lg font-semibold mb-2 flex items-start gap-3">
               <DescriptionView line-clamp="3" class="grow">
@@ -98,7 +109,7 @@ function handleCreateAssignButtonClick() {
 
         <td
           class="border-2 border-gray-700 p-3 whitespace-nowrap print:whitespace-break-spaces print:px-0"
-          :rowspan="detail?.tasks?.length || 1"
+          :rowspan="(detail?.tasks?.length || 1) + (isPrinting ? 0 : 1)"
         >
           <div class="text-center print:text-xs">
             {{
@@ -151,15 +162,25 @@ function handleCreateAssignButtonClick() {
         </td>
       </template>
       <template v-else>
-        <td colspan="2" class="border-2 border-gray-700 p-3 text-center">
+        <td colspan="2" class="border-2 border-gray-700 p-3 text-center" v-if="isPrinting">
           <button
             @click.prevent="handleCreateAssignButtonClick"
             class="print:hidden border-2 border-transparent group-hover/item:bg-blue-200 hover:border-blue-700 text-blue-500 hover:text-white hover:!bg-blue-500 rounded-md px-4 py-1 whitespace-nowrap"
           >
-            Create / Assign Task
+            <i class="fas fa-plus-circle"></i> Create / Assign Task
           </button>
-        </td>
-      </template>
+        </td></template
+      >
     </tr>
   </template>
+  <tr v-if="!isPrinting">
+    <td colspan="2" class="border-2 border-gray-700 p-3 text-center">
+      <button
+        @click.prevent="handleCreateAssignButtonClick"
+        class="print:hidden border-2 border-transparent group-hover/item:bg-blue-200 hover:border-blue-700 text-blue-500 hover:text-white hover:!bg-blue-500 rounded-md px-4 py-1 whitespace-nowrap"
+      >
+        <i class="fas fa-plus-circle"></i> Create / Assign Task
+      </button>
+    </td>
+  </tr>
 </template>

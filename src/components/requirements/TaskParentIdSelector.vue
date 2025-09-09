@@ -31,9 +31,9 @@ function handleTaskClick(task) {
   if (assignType.value == 'sub-task') {
     emit('parentIdSelect', task.id)
   } else {
-    if (task.requirement_detail_id) {
-      return alert("This task already assigned to another requirement. Can't be assigned.")
-    }
+    // if (task.requirement_detail_id) {
+    //   return alert("This task already assigned to another requirement. Can't be assigned.")
+    // }
     selectedTask.value = task
   }
 }
@@ -122,12 +122,6 @@ const taskList = computed(() => {
               <div class="grow">
                 <div class="line-clamp-1">
                   {{ task.title }}
-                </div>
-                <div
-                  class="text-red-400 text-xs font-normal mt-1"
-                  v-if="!!task.requirement_detail_id && assignType == 'direct-assign'"
-                >
-                  Already assigned to a requirement
                 </div>
               </div>
               <TaskStatus :status="task.status" class="ml-auto" />

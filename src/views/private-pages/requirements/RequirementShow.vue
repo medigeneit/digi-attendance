@@ -11,7 +11,7 @@ import RequirementFeedbackEditForm from '@/components/requirements/RequirementFe
 import TaskParentIdSelector from '@/components/requirements/TaskParentIdSelector.vue'
 import TaskAddForm from '@/components/tasks/TaskAddForm.vue'
 import { findRequirement } from '@/services/requirement'
-import { onMounted, reactive, ref } from 'vue'
+import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
@@ -37,10 +37,21 @@ const detailDeleteForm = reactive({
   open: false,
 })
 
+const isPrinting = ref(false)
+
+const beforePrint = () => (isPrinting.value = true)
+const afterPrint = () => (isPrinting.value = false)
+
 onMounted(async () => {
   await fetchRequirement()
+  window.addEventListener('beforeprint', beforePrint)
+  window.addEventListener('afterprint', afterPrint)
 })
 
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeprint', beforePrint)
+  window.removeEventListener('afterprint', afterPrint)
+})
 async function fetchRequirement() {
   state.value = 'loading'
   requirement.value = (await findRequirement(route.params.id)).data?.requirement
@@ -82,7 +93,8 @@ function handleDeleteRequirementDetail(detail) {
 }
 
 function handlePrint() {
-  window.print()
+  setTimeout(() => window.print())
+  isPrinting.value = true
 }
 
 const addFormData = reactive({
@@ -330,6 +342,7 @@ async function handleTaskAddClose() {
                   @editClick="handleEditRequirementDetail"
                   @deleteClick="handleDeleteRequirementDetail"
                   @taskCreateClick="goToTaskAdd"
+                  :isPrinting="isPrinting"
                 />
                 <tr class="">
                   <td
