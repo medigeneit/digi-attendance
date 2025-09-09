@@ -294,13 +294,13 @@ async function handleTaskAddClose() {
               <tr>
                 <th
                   rowspan="2"
-                  class="border-2 border-gray-800 text-left px-4 text-gray-800 print:text-black text-xl font-semibold whitespace-nowrap w-[15%]"
+                  class="border-2 border-gray-800 text-left px-4 print:px-2 text-gray-800 print:text-black text-xl font-semibold whitespace-nowrap w-[8%]"
                 >
                   SL
                 </th>
                 <th
                   rowspan="2"
-                  class="border-2 border-gray-800 text-center text-gray-800 print:text-black text-base font-semibold whitespace-nowrap w-[65%]"
+                  class="border-2 border-gray-800 text-center text-gray-800 print:text-black text-base font-semibold whitespace-nowrap print:whitespace-normal w-[65%]"
                 >
                   Requirement Details
                 </th>
@@ -312,7 +312,7 @@ async function handleTaskAddClose() {
                 </th>
                 <th
                   colspan="2"
-                  class="border-2 border-gray-800 text-center text-gray-800 print:text-black text-base font-semibold whitespace-nowrap px-3 py-1 print:whitespace-normal w-[25%]"
+                  class="w-[30%] border-2 border-gray-800 text-center text-gray-800 print:text-black text-base font-semibold whitespace-nowrap px-3 py-1 print:whitespace-normal"
                 >
                   For '{{
                     requirement.to_department?.short_name || requirement.to_department?.name
@@ -321,12 +321,12 @@ async function handleTaskAddClose() {
               </tr>
               <tr>
                 <td
-                  class="border-2 border-gray-800 text-center text-gray-800 print:text-black text-sm font-semibold whitespace-nowrap p-3 print:whitespace-normal"
+                  class="whitespace-nowrap border-2 border-gray-800 text-center text-gray-800 print:text-black text-sm font-semibold print:text-xs"
                 >
-                  Issue No
+                  Task No
                 </td>
                 <td
-                  class="border-2 border-gray-800 text-center text-gray-800 print:text-black text-sm font-semibold whitespace-nowrap p-3 print:whitespace-normal print:p-0"
+                  class="border-2 border-gray-800 text-center text-gray-800 print:text-black text-sm font-semibold whitespace-nowrap p-3 print:text-xs print:p-0"
                 >
                   Expected Date
                 </td>
@@ -345,26 +345,32 @@ async function handleTaskAddClose() {
                   :isPrinting="isPrinting"
                 />
                 <tr class="">
-                  <td
+                  <!--
+                    <td
                     class="whitespace-nowrap print:whitespace-break-spaces print:px-0 p-3 text-center border-2 border-gray-800"
-                  >
+                    >
                     <div class="text-gray-900 text-base">
                       For '{{
                         requirement.to_department?.short_name || requirement.to_department?.name
-                      }}' Use
+                        }}' Use
+                        </div>
+                      <div class="text-gray-800 text-xs">(Feedback)</div>
+                    </td>
+                    -->
+                  <td class="p-3 border-2 border-gray-800" colspan="5">
+                    <div class="font-semibold text-gray-500 print:text-gray-800 text-sm mb-1">
+                      '{{
+                        requirement.to_department?.short_name || requirement.to_department?.name
+                      }}' Feedback
                     </div>
-                    <div class="text-gray-800 text-xs">(Feedback)</div>
-                  </td>
-                  <td class="p-3 border-2 border-gray-800" colspan="4">
                     <div>
-                      <div class="font-semibold text-sm mb-2" v-if="detail?.feedback">Feedback</div>
                       <DescriptionView
                         v-if="detail?.feedback"
                         lineClamp="2"
                         :className="{ button: '  underline' }"
                         class="mb-4 print:mb-0"
                       >
-                        <p class="text-sky-500 text-sm" v-html="detail?.feedback"></p>
+                        <p class="text-sky-600 text-sm" v-html="detail?.feedback"></p>
                       </DescriptionView>
                       <div>
                         <button
