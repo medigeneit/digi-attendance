@@ -51,11 +51,10 @@ defineExpose({
 
 <template>
   <div
-    class="rounded-full py-0.5 relative overflow-hidden h-6 border-2"
+    class="rounded-full py-0.5 relative overflow-hidden h-6 min-w-40 border-2"
     :class="progressColor.container"
     v-if="task.children_task_count > 0"
   >
-    <!-- {{ completedPercentage }} -->
     <div
       class="z-10 absolute top-0 bottom-0"
       :style="`width: ${completedPercentage}%`"

@@ -109,7 +109,7 @@ const update = async () => {
       {{ tagStore.tags }}
     </pre> -->
 
-    <form @submit.prevent="update" class="my-4">
+    <form @submit.prevent="update" class="mt-4">
       <div class="mb-4">
         <label class="block text-gray-700 font-medium mb-2">Task Title</label>
         <input
@@ -217,28 +217,16 @@ const update = async () => {
       </div>
 
       <div class="sticky bottom-0 bg-white py-4 border-t">
-        <div v-if="store.error" class="mb-4 text-red-500 font-medium">
-          {{ store.error }}
+        <div v-if="store.error || errorMessage" class="mb-4 text-red-500 font-medium">
+          {{ store.error || errorMessage }}
         </div>
-        <hr v-if="store.error" class="mb-4" />
+        <hr v-if="store.error" />
         <div class="flex items-center gap-4 justify-between">
-          <button
-            type="button"
-            @click.prevent="emit('close')"
-            class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-5 py-2 rounded transition"
-          >
-            Cancel
-          </button>
+          <button type="button" @click.prevent="emit('close')" class="btn-3">Cancel</button>
 
-          <button
-            :disabled="loading"
-            type="submit"
-            class="bg-green-500 hover:bg-green-600 text-white font-semibold px-5 py-2 rounded transition"
-          >
+          <button :disabled="loading" type="submit" class="btn-2">
             {{ loading ? 'Updating...' : 'Update Task' }}
           </button>
-
-          <div class="text-red-500 text-sm" v-if="errorMessage">{{ errorMessage }}</div>
         </div>
       </div>
     </form>

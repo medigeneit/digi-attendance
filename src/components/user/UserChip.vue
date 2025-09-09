@@ -15,14 +15,18 @@ defineProps({
     <UserAvatar :user="user" class="avatar w-6 h-6 !text-xs" :class="avatarClass" />
     <div class="text-xs">
       <div class="flex items-center" :class="titleClass">
-        <span class="text-gray-600 mr-1" v-if="user?.employee_id && !hideEmployeeId">
+        <span
+          class="text-gray-600 mr-1 whitespace-nowrap"
+          v-if="user?.employee_id && !hideEmployeeId"
+        >
           {{ user?.employee_id }} -
         </span>
         <div>
           <span
             class="text-gray-900 font-semibold w-full line-clamp-1"
             :class="{ '  ': user?.employee_id && !hideEmployeeId }"
-            >{{ user?.name }}
+          >
+            {{ user?.name }}
           </span>
           <slot name="name-bottom"></slot>
         </div>
