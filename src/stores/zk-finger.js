@@ -51,7 +51,7 @@ export const useZKFingerStore = defineStore('zkFinger', () => {
   }
 
   // (device) POST /devices/{device}/push-fingerprints
-  // NOTE: backend expects { user_ids: number[] }  (আগে zk_userids ছিল—এখানে user_ids পাঠাও)
+  // NOTE: backend expects { user_ids: number[] }  (আগে userids ছিল—এখানে user_ids পাঠাও)
   async function pushFingerprintsBulk(deviceId, userIds = [], { force = false } = {}) {
     loading.value = true; error.value = null
     try {
@@ -65,25 +65,25 @@ export const useZKFingerStore = defineStore('zkFinger', () => {
     finally { loading.value = false }
   }
 
-  // (device) POST /devices/{device}/users/{zk_userid}/push-fingerprints
-  async function pushFingerprintsOne(deviceId, zk_userid) {
+  // (device) POST /devices/{device}/users/{userid}/push-fingerprints
+  async function pushFingerprintsOne(deviceId, userid) {
     loading.value = true; error.value = null
     try {
       const { data } = await apiClient.post(
-        `/devices/${encodeURIComponent(deviceId)}/users/${encodeURIComponent(zk_userid)}/push-fingerprints`
+        `/devices/${encodeURIComponent(deviceId)}/users/${encodeURIComponent(userid)}/push-fingerprints`
       )
       return data
     } catch (e) { setErr(e, 'সিঙ্গেল ফিঙ্গার পুশ ব্যর্থ'); throw e?.response?.data || e }
     finally { loading.value = false }
   }
 
-  // (device) POST /devices/{device}/fingerprints/remove  body: { zk_userid, indexes[] }
-  async function removeFingerprints(deviceId, zk_userid, indexes) {
+  // (device) POST /devices/{device}/fingerprints/remove  body: { userid, indexes[] }
+  async function removeFingerprints(deviceId, userid, indexes) {
     loading.value = true; error.value = null
     try {
       const { data } = await apiClient.post(
         `/devices/${encodeURIComponent(deviceId)}/fingerprints/remove`,
-        { zk_userid, indexes }
+        { userid, indexes }
       )
       return data
     } catch (e) { setErr(e, 'ফিঙ্গারপ্রিন্ট রিমুভ ব্যর্থ'); throw e?.response?.data || e }

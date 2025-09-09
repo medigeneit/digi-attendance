@@ -4,7 +4,7 @@ import { useZKFingerStore } from '@/stores/zk-finger'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
-  user: { type: Object, default: null }, // expects user.zk_userid
+  user: { type: Object, default: null }, // expects user.userid
   devices: { type: Array, default: () => [] },
 })
 const emit = defineEmits(['close', 'pulled'])
@@ -39,8 +39,8 @@ function close() {
 }
 
 async function submitPull() {
-  if (!props.user?.zk_userid) {
-    error.value = 'Invalid user (missing zk_userid)'
+  if (!props.user?.userid) {
+    error.value = 'Invalid user (missing userid)'
     return
   }
   if (!selectedDeviceId.value) {
@@ -53,7 +53,7 @@ async function submitPull() {
   try {
     const res = await fingerStore.pullUserFingersFromDevice(
       Number(selectedDeviceId.value),
-      String(props.user.zk_userid),
+      String(props.user.userid),
     )
     // res: { fingers_pulled, fingers:[], user_present, ... }
     emit('pulled', { ...res, device_id: Number(selectedDeviceId.value) })
@@ -83,7 +83,7 @@ async function submitPull() {
       <div class="space-y-4">
         <div class="rounded-md bg-gray-50 p-3 text-sm">
           <div>
-            <span class="font-medium">User (device user id):</span> {{ user?.zk_userid || '—' }}
+            <span class="font-medium">User (device user id):</span> {{ user?.userid || '—' }}
           </div>
           <div>
             <span class="font-medium">Name:</span> {{ user?.name || user?.user?.name || '—' }}

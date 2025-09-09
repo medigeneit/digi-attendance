@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useToast } from 'vue-toastification'
 import { useZKUserStore } from '@/stores/zk-user.js'
 import { useDeviceStore } from '@/stores/zk-device.js'
-import { useZKFingerStore } from '@/stores/zk-finger.js'
+import { useZktecoStore } from '@/stores/zkteco.js' // ✅ নতুন
 
 import UserTable from '@/components/UserTable.vue'
 import UserFormModal from '@/components/UserFormModal.vue'
@@ -16,15 +16,16 @@ const deviceStore = useDeviceStore()
 const devices = computed(() => deviceStore.devices)
 
 const store = useZKUserStore()
-const fingerStore = useZKFingerStore()
+const zkStore = useZktecoStore() // ✅
+
 const toast = useToast()
 
 const showDeviceAction = ref(false)
-const actionMode = ref('push')
+const actionMode = ref('push') // 'push' | 'remove'
 const actionUser = ref(null)
+
 const actionBusyRemove = ref(false)
-const actionBusyUser = ref(false)
-const actionBusyFp = ref(false)
+const actionBusyPush = ref(false) // ✅ single loader for push
 
 const showForm = ref(false)
 const editing = ref(null)
@@ -35,12 +36,8 @@ const confirmMessage = ref('')
 let confirmAction = null
 let confirmPayload = null
 
-// users — এখন সরাসরি স্টোরের users
 const users = computed(() => store.users)
-
-async function loadUsers() {
-  await store.fetchUsers()
-}
+const loadUsers = () => store.fetchUsers()
 
 onMounted(async () => {
   await Promise.all([store.fetchUsers(), deviceStore.fetchDevices()])
@@ -76,7 +73,7 @@ async function saveForm(payload) {
 
 function askDelete(u) {
   confirmTitle.value = 'Delete User'
-  confirmMessage.value = `Are you sure you want to delete "${u.name}" (Enroll ${u.zk_userid})?`
+  confirmMessage.value = `Are you sure you want to delete "${u.name}" (Enroll ${u.userid})?`
   confirmAction = async () => {
     await store.deleteUser(u.id)
     toast.warning('User deleted')
@@ -85,7 +82,6 @@ function askDelete(u) {
   confirmPayload = null
   showConfirm.value = true
 }
-
 function closeConfirm() {
   showConfirm.value = false
   confirmAction = null
@@ -114,49 +110,35 @@ function openRemoveOne(u) {
   showDeviceAction.value = true
 }
 
+// ✅ one handler for both: remove OR push (user+fp)
 async function onDeviceActionConfirm(deviceId) {
   if (!deviceId || !actionUser.value) return
   try {
-    actionBusyRemove.value = true
-    const res = await store.removeUserFromDevice(deviceId, actionUser.value.zk_userid)
-    toast.warning(
-      `Removed ${actionUser.value.zk_userid} from device#${deviceId}${res?.removed ? '' : ' (check device)'}`,
-    )
+    if (actionMode.value === 'remove') {
+      actionBusyRemove.value = true
+      const res = await store.removeUserFromDevice(deviceId, actionUser.value.userid)
+      toast.warning(
+        `Removed ${actionUser.value.userid} from device#${deviceId}${res?.removed ? '' : ' (check device)'}`,
+      )
+    } else {
+      actionBusyPush.value = true
+      // useZktecoStore → push both (user + fingerprints)
+      const res = await zkStore.push({
+        deviceId,
+        what: 'both',
+        scope: 'only',
+        userIds: [actionUser.value.id], // central user id
+        disableDuringSync: true,
+      })
+      const up = Number(res?.users_pushed ?? 0)
+      const fp = Number(res?.fingers_pushed ?? 0)
+      toast.success(`Pushed to device #${deviceId}: users ${up}, fingerprints ${fp}`)
+    }
   } catch (e) {
-    toast.error(e?.message || 'Operation failed')
+    toast.error(e?.error || e?.message || 'Operation failed')
   } finally {
     actionBusyRemove.value = false
-    showDeviceAction.value = false
-    actionUser.value = null
-  }
-}
-
-async function onDevicePushUserConfirm(deviceId) {
-  if (!deviceId || !actionUser.value) return
-  try {
-    actionBusyUser.value = true
-    const res = await store.pushSingleUserToDevice(deviceId, actionUser.value.zk_userid)
-    toast.success(`Pushed USER ${actionUser.value.zk_userid} → device#${deviceId}`)
-  } catch (e) {
-    toast.error(e?.message || 'User push failed')
-  } finally {
-    actionBusyUser.value = false
-    showDeviceAction.value = false
-    actionUser.value = null
-  }
-}
-
-async function onDevicePushFpConfirm(deviceId) {
-  if (!deviceId || !actionUser.value) return
-  try {
-    actionBusyFp.value = true
-    const res = await fingerStore.pushFingerprintsOne(deviceId, actionUser.value.zk_userid)
-    const n = Number(res?.data?.pushed_templates ?? res?.pushed_templates ?? 0)
-    toast.success(`Pushed FPs ${actionUser.value.zk_userid} → device#${deviceId}: ${n}`)
-  } catch (e) {
-    toast.error(e?.message || 'Fingerprint push failed')
-  } finally {
-    actionBusyFp.value = false
+    actionBusyPush.value = false
     showDeviceAction.value = false
     actionUser.value = null
   }
@@ -167,10 +149,8 @@ async function onDevicePushFpConfirm(deviceId) {
   <div class="my-container space-y-4">
     <HeaderWithButtons title="ZK Users" @add="openCreate" />
 
-    <!-- ✅ Device scoped actions now separate component -->
     <DeviceActionsBar :devices="devices" />
 
-    <!-- ✅ Search UI টেবিলের ভেতরে -->
     <UserTable
       :items="users"
       :loading="store.loading"
@@ -180,7 +160,6 @@ async function onDevicePushFpConfirm(deviceId) {
       @remove-one="openRemoveOne"
     />
 
-    <!-- Modals -->
     <UserFormModal :show="showForm" :user="editing" @close="closeForm" @save="saveForm" />
 
     <ConfirmModal
@@ -197,8 +176,7 @@ async function onDevicePushFpConfirm(deviceId) {
       :user="actionUser"
       :devices="devices"
       :loading="actionBusyRemove"
-      :loading-user="actionBusyUser"
-      :loading-fp="actionBusyFp"
+      :loading-push="actionBusyPush"
       @close="
         () => {
           showDeviceAction = false
@@ -206,8 +184,6 @@ async function onDevicePushFpConfirm(deviceId) {
         }
       "
       @confirm="onDeviceActionConfirm"
-      @confirm-user="onDevicePushUserConfirm"
-      @confirm-fp="onDevicePushFpConfirm"
     />
   </div>
 </template>

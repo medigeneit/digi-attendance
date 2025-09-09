@@ -18,10 +18,10 @@ const total = computed(() => props.items.length)
 const filtered = computed(() => {
   const term = q.value.trim().toLowerCase()
   if (!term) return props.items
-  // name / zk_userid / cardno — ব্রাউজার-ভিত্তিক ফিল্টার
+  // name / userid / cardno — ব্রাউজার-ভিত্তিক ফিল্টার
   return props.items.filter((u) => {
     const name = String(u?.name ?? '').toLowerCase()
-    const id = String(u?.zk_userid ?? '').toLowerCase()
+    const id = String(u?.userid ?? '').toLowerCase()
     const card = String(u?.cardno ?? '').toLowerCase()
     return name.includes(term) || id.includes(term) || card.includes(term)
   })
@@ -69,14 +69,13 @@ function clearSearch() {
             <th class="px-3 py-2 border-b">Enroll</th>
             <th class="px-3 py-2 border-b">Name</th>
             <th class="px-3 py-2 border-b">Role</th>
-            <th class="px-3 py-2 border-b">Card</th>
             <th class="px-3 py-2 border-b">FPs</th>
             <th class="px-3 py-2 border-b w-64">Actions</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="u in filtered" :key="u.id" class="border-b">
-            <td class="px-3 py-2 font-mono text-xs">{{ u.zk_userid }}</td>
+            <td class="px-3 py-2 font-mono text-xs">{{ u.userid }}</td>
             <td class="px-3 py-2">{{ u.name }}</td>
             <td class="px-3 py-2">
               <span
@@ -90,8 +89,7 @@ function clearSearch() {
                 {{ roleTag(u.role) }}
               </span>
             </td>
-            <td class="px-3 py-2">{{ u.cardno ?? '' }}</td>
-            <td class="px-3 py-2">{{ u.fingerprints_count ?? 0 }}</td>
+            <td class="px-3 py-2">{{ u.finger_count ?? 0 }}</td>
             <td class="px-3 py-2">
               <div class="flex flex-wrap gap-2">
                 <button class="btn" @click="$emit('edit', u)">

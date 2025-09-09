@@ -593,8 +593,8 @@ function onDelete() {
             <details>
               <summary class="cursor-pointer font-medium">Create</summary>
               <ul class="list-disc ml-6 text-[12px]">
-                <li v-for="x in modal.data?.create || []" :key="`c-${x.zk_userid}`">
-                  {{ x.zk_userid }} — {{ x.name }}
+                <li v-for="x in modal.data?.create || []" :key="`c-${x.userid}`">
+                  {{ x.userid }} — {{ x.name }}
                 </li>
               </ul>
             </details>
@@ -602,8 +602,8 @@ function onDelete() {
             <details>
               <summary class="cursor-pointer font-medium">Update</summary>
               <ul class="list-disc ml-6 text-[12px]">
-                <li v-for="x in modal.data?.update || []" :key="`u-${x.zk_userid}`">
-                  {{ x.zk_userid }}
+                <li v-for="x in modal.data?.update || []" :key="`u-${x.userid}`">
+                  {{ x.userid }}
                 </li>
               </ul>
             </details>
@@ -611,8 +611,8 @@ function onDelete() {
             <details>
               <summary class="cursor-pointer font-medium">Remove</summary>
               <ul class="list-disc ml-6 text-[12px]">
-                <li v-for="x in modal.data?.remove || []" :key="`r-${x.zk_userid}`">
-                  {{ x.zk_userid }}
+                <li v-for="x in modal.data?.remove || []" :key="`r-${x.userid}`">
+                  {{ x.userid }}
                 </li>
               </ul>
             </details>

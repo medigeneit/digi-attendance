@@ -65,9 +65,9 @@ export const useZKUserStore = defineStore('zkUser', () => {
     return data
   }
 
-  async function pushSingleUserToDevice(deviceId, zk_userid) {
+  async function pushSingleUserToDevice(deviceId, userid) {
     const { data } = await apiClient.post(
-      `/devices/${encodeURIComponent(deviceId)}/users/${encodeURIComponent(zk_userid)}/push`
+      `/devices/${encodeURIComponent(deviceId)}/users/${encodeURIComponent(userid)}/push`
     )
     return data
   }
@@ -77,9 +77,9 @@ export const useZKUserStore = defineStore('zkUser', () => {
     return data
   }
 
-  async function removeUserFromDevice(deviceId, zk_userid) {
+  async function removeUserFromDevice(deviceId, userid) {
     const { data } = await apiClient.delete(
-      `/devices/${encodeURIComponent(deviceId)}/users/${encodeURIComponent(zk_userid)}/remove`
+      `/devices/${encodeURIComponent(deviceId)}/users/${encodeURIComponent(userid)}/remove`
     )
     return data
   }

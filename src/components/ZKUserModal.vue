@@ -12,7 +12,7 @@ const props = defineProps({
 const store = useZKUserStore()
 
 const form = reactive({
-  zk_userid: '',
+  userid: '',
   name: '',
   password: '',
   role: 0,
@@ -26,13 +26,13 @@ watch(
   () => props.editUser,
   (user) => {
     if (user) {
-      form.zk_userid = user.zk_userid || ''
+      form.userid = user.userid || ''
       form.name = user.name || ''
       form.password = user.password || ''
       form.role = user.role || 0
       form.cardno = user.cardno || ''
     } else {
-      form.zk_userid = ''
+      form.userid = ''
       form.name = ''
       form.password = ''
       form.role = 0
@@ -63,7 +63,7 @@ const save = async () => {
       <form @submit.prevent="save" class="space-y-4">
         <div>
           <label class="block">User ID</label>
-          <input v-model="form.zk_userid" type="text" class="input-1" required />
+          <input v-model="form.userid" type="text" class="input-1" required />
         </div>
         <div>
           <label class="block">Name</label>
