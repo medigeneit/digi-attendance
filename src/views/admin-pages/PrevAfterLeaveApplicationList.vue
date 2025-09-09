@@ -12,16 +12,24 @@ const route = useRoute()
 const leaveApplicationStore = useLeaveApplicationStore()
 const userStore = useUserStore()
 const { leaveApplications, loading } = storeToRefs(leaveApplicationStore)
-const selectedUser = ref(null)
-// Weekly range: 'prev' | 'after'  (default 'prev' if not given)
-const range = ref(route.query.applicationType === 'after' ? 'after' : 'prev')
 
-const selectedDate = ref(route.query.date || leaveApplicationStore.selectedMonth || new Date().toISOString().slice(0,7))
+const selectedUser = ref(null)
+
+// ⚠️ এক জায়গায় কনস্ট্যান্ট: query key
+const RANGE_PARAM = 'applicationType' // <-- URL query key হবে `applicationType`
+
+// Weekly range: 'prev' | 'after'  (default 'prev' if not given)
+const range = ref(route.query[RANGE_PARAM] === 'after' ? 'after' : 'prev')
+
+// anchor date: YYYY-MM or YYYY-MM-DD
+const selectedDate = ref(
+  route.query.date || leaveApplicationStore.selectedMonth || new Date().toISOString().slice(0,7)
+)
 
 const filters = ref({
   company_id: route.query.company_id || '',
   department_id: route.query.department_id || '',
-  line_type: route.query.line_type || 'all',  
+  line_type: route.query.line_type || 'all',
   employee_id: route.query.employee_id || '',
 })
 
@@ -37,15 +45,13 @@ const fetchApplicationsByUser = async () => {
   const payload = {
     company_id: filters.value.company_id,
     department_id: filters.value.department_id,
-    selectedDate: selectedDate.value, 
+    selectedDate: selectedDate.value,
     selectedStatus: leaveApplicationStore.selectedStatus,
-    query: weeklyQuery,                 
-    anchor_date: anchor,               
+    query: weeklyQuery,
+    anchor_date: anchor,
   }
 
-  if (filters.value.employee_id) {
-    payload.user_id = filters.value.employee_id
-  }
+  if (filters.value.employee_id) payload.user_id = filters.value.employee_id
   if (filters.value.line_type && filters.value.line_type !== 'all') {
     payload.line_type = filters.value.line_type
   }
@@ -70,15 +76,19 @@ onMounted(async () => {
 // Build + sync query to URL (clean: drop empty)
 function buildQuery() {
   const q = {
-    type: range.value,                 // weekly range in URL
-    date: selectedDate.value,          // anchor
+    // ⚠️ এখানে `applicationType` key লেখা হচ্ছে
+    [RANGE_PARAM]: range.value,
+    date: selectedDate.value,
   }
   if (filters.value.company_id)    q.company_id    = String(filters.value.company_id)
   if (filters.value.department_id) q.department_id = String(filters.value.department_id)
-  if (filters.value.line_type && filters.value.line_type !== 'all') q.line_type = String(filters.value.line_type)
+  if (filters.value.line_type && filters.value.line_type !== 'all') {
+    q.line_type = String(filters.value.line_type)
+  }
   if (filters.value.employee_id)   q.employee_id   = String(filters.value.employee_id)
   return q
 }
+
 let qTimer = null
 function syncUrlDebounced() {
   if (qTimer) clearTimeout(qTimer)
@@ -88,35 +98,49 @@ function syncUrlDebounced() {
 }
 
 // React to external URL changes (if user navigates)
-watch(() => route.query, (q) => {
-  const nextRange = q.type === 'after' ? 'after' : 'prev'
-  const nextDate  = q.date || ''
-  const nextFilters = {
-    company_id: q.company_id || '',
-    department_id: q.department_id || '',
-    line_type: q.line_type || 'all',
-    employee_id: q.employee_id || '',
-  }
+watch(
+  () => route.query,
+  (q) => {
+    // ⚠️ এখন থেকে URL থেকে পড়বে `applicationType`
+    const nextRange = q[RANGE_PARAM] === 'after' ? 'after' : 'prev'
+    const nextDate  = q.date || ''
+    const nextFilters = {
+      company_id: q.company_id || '',
+      department_id: q.department_id || '',
+      line_type: q.line_type || 'all',
+      employee_id: q.employee_id || '',
+    }
 
-  let changed = false
-  if (nextRange !== range.value) { range.value = nextRange; changed = true }
-  if (nextDate && nextDate !== selectedDate.value) { selectedDate.value = nextDate; changed = true }
+    let changed = false
+    if (nextRange !== range.value) { range.value = nextRange; changed = true }
+    if (nextDate && nextDate !== selectedDate.value) { selectedDate.value = nextDate; changed = true }
 
-  if (
-    nextFilters.company_id !== filters.value.company_id ||
-    nextFilters.department_id !== filters.value.department_id ||
-    nextFilters.type !== filters.value.type ||
-    nextFilters.employee_id !== filters.value.employee_id
-  ) {
-    filters.value = nextFilters
-    changed = true
+    // ⚠️ টাইপো ফিক্স: আগে `nextFilters.type` ছিল; এটি হওয়া উচিত `line_type`
+    if (
+      nextFilters.company_id !== filters.value.company_id ||
+      nextFilters.department_id !== filters.value.department_id ||
+      nextFilters.line_type !== filters.value.line_type ||
+      nextFilters.employee_id !== filters.value.employee_id
+    ) {
+      filters.value = nextFilters
+      changed = true
+    }
+
+    if (changed) fetchApplicationsByUser()
   }
-  if (changed) fetchApplicationsByUser()
-})
+)
 
 // Watch core inputs → fetch + sync URL
 watch(
-  () => [range.value, selectedDate.value, filters.value.company_id, filters.value.department_id, filters.value.employee_id],
+  // ⚠️ line_type-ও এখানে add করা হলো, যেন বদলালে রিফ্রেশ হয়
+  () => [
+    range.value,
+    selectedDate.value,
+    filters.value.company_id,
+    filters.value.department_id,
+    filters.value.employee_id,
+    filters.value.line_type,
+  ],
   () => {
     syncUrlDebounced()
     fetchApplicationsByUser()
@@ -143,6 +167,7 @@ const handleFilterChange = () => {
   syncUrlDebounced()
 }
 </script>
+
 
 <template>
   <div class="space-y-2 px-4">
