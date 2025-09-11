@@ -5,6 +5,10 @@
   "scripts": {
     "dev": "vite",
     "dev-host": "vite --host",
+    "dev-8881": "vite --port=8881",
+    "dev-8882": "vite --port=8882",
+    "dev-8883": "vite --port=8883",
+    "dev-8884": "vite --port=8884",
     "build": "vite build",
     "preview": "vite preview",
     "lint:oxlint": "oxlint . --fix -D correctness --ignore-path .gitignore",
