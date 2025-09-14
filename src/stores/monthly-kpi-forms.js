@@ -36,6 +36,8 @@ export const useMonthlyKpiFormsStore = defineStore('monthlyKpiForms', () => {
     performance_mark: Number(raw.performance_mark ?? 0),
     target_marks: Number(raw.target_marks ?? 0),
     report: raw.report ?? {},
+    criteria: raw.criteria ?? {},
+    criteria_id: raw.criteria_id ?? {},
     created_at: raw.created_at ?? null,
     updated_at: raw.updated_at ?? null,
   })
@@ -59,6 +61,8 @@ export const useMonthlyKpiFormsStore = defineStore('monthlyKpiForms', () => {
     performance_mark: Number(form.performance_mark ?? 0),
     target_marks: Number(form.target_marks ?? 0),
     report: form.report ?? {}, // object
+    criteria_id: form.criteria_id ?? {}, // object
+    criteria: form.criteria ?? {}, // object
   })
 
   const messageFromError = (err) =>
@@ -91,6 +95,7 @@ export const useMonthlyKpiFormsStore = defineStore('monthlyKpiForms', () => {
       const m = res?.data?.meta ?? {}
 
       items.value = data.map(normalizeItem)
+
       meta.value = {
         total: m.total ?? data.length,
         per_page: m.per_page ?? merged.per_page,
@@ -176,6 +181,11 @@ export const useMonthlyKpiFormsStore = defineStore('monthlyKpiForms', () => {
     }
   }
 
+  async function fetchAvailableCriteria(formId, q = '') {
+    const res = await apiClient.get(`available-criteria`, { params: { q } })
+    return res?.data?.data || []
+  }
+
   async function setPage(p) { return fetchList({ page: Number(p) }) }
   async function setPerPage(pp) { return fetchList({ per_page: Number(pp), page: 1 }) }
 
@@ -191,6 +201,6 @@ export const useMonthlyKpiFormsStore = defineStore('monthlyKpiForms', () => {
 
   return {
     items, current, isLoading, isSaving, error, meta, filters, hasNextPage, hasPrevPage,
-    fetchList, fetchOne, createForm, updateForm, deleteForm, setPage, setPerPage, reset
+    fetchList, fetchOne, createForm, updateForm, deleteForm, setPage, setPerPage, reset, fetchAvailableCriteria
   }
 })

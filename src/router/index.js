@@ -1101,7 +1101,23 @@ const router = createRouter({
           name: 'MonthlyKpiFormItems',
           component: () => import('@/views/admin-pages/MonthlyKpiFormItems.vue'),
           props: true,
-        }
+        },
+        {
+          path: '/kpi/evaluations',
+          name: 'EvaluationList',
+          component: () => import('@/views/admin-pages/EvaluationList.vue'),
+        },
+        {
+          path: '/kpi/evaluations/:id',
+          name: 'EvaluationShow',
+          component: () => import('@/views/admin-pages/EvaluationShow.vue'),
+          props: true,
+        },
+        {
+          path: '/kpi/assignments',
+          name: 'AssignmentList',
+          component: () => import('@/views/admin-pages/AssignmentList.vue'),
+        },
       ],
     },
   ],

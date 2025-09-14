@@ -3,11 +3,11 @@ import { useMonthlyKpiFormsStore } from '@/stores/monthly-kpi-forms'
 import { computed, reactive, ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
-
 const toast = useToast()
 const router = useRouter()
 const route = useRoute()
 const store = useMonthlyKpiFormsStore()
+const options = ref([]) // available criteria
 
 const editingId = computed(() => {
   const n = Number(route.params?.id)
@@ -21,7 +21,8 @@ const form = reactive({
   end_month: '',          // optional YYYY-MM
   performance_mark: 25,
   target_marks: 25,
-  report: {},             // free-form JSON (we’ll edit as textarea)
+  report: {},  
+  criteria_id:''           // free-form JSON (we’ll edit as textarea)
 })
 
 const loading = ref(false)
@@ -52,6 +53,7 @@ async function prefillIfEditing() {
   resetErrors()
   try {
     const item = await store.fetchOne(editingId.value)
+    form.criteria_id = item.criteria_id || ''
     form.type = item.type || 'staff'
     form.start_month = item.start_month || ''
     form.end_month = item.end_month || ''
@@ -62,6 +64,15 @@ async function prefillIfEditing() {
     toast.error(e?.response?.data?.message || 'Failed to load form')
   } finally {
     preloading.value = false
+  }
+}
+
+function onSelectCriteria() {
+  const id = Number(form.value.criteria_id)
+  const c = options.value.find(x => x.id === id)
+  if (c) {
+    form.value.title = c.name || ''
+    form.value.description = c.description || ''
   }
 }
 
@@ -101,7 +112,11 @@ function handleKeydown(e) {
   }
 }
 
-onMounted(() => { window.addEventListener('keydown', handleKeydown); prefillIfEditing() })
+onMounted( async () => { 
+  window.addEventListener('keydown', handleKeydown); 
+  prefillIfEditing();
+  options.value = await store.fetchAvailableCriteria()
+})
 onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
 
 // keep a simple “dirty” tracker if you need warn-on-leave later
@@ -123,9 +138,27 @@ watch(() => [form.type, form.start_month, form.end_month, form.performance_mark,
       </RouterLink>
     </div>
 
+
     <form @submit.prevent="onSubmit" class="card-bg rounded-2xl border border-gray-200 bg-white p-6 shadow-sm" novalidate>
       <div class="grid gap-6">
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Criteria</label>
+          <select
+            v-model="form.criteria_id"
+            @change="onSelectCriteria"
+            class="mt-1 w-full rounded-md border px-3 py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+            aria-label="Select criteria"
+          >
+            <option value="">Select…</option>
+            <option v-for="c in options" :key="c.id" :value="c.id">
+              {{ c.name }}
+            </option>
+          </select>
+        </div>
+
         <!-- Type -->
+
         <div>
           <label class="mb-1 block text-sm font-medium text-gray-700">Type <span class="text-red-500">*</span></label>
           <select v-model="form.type" class="w-full rounded-md border px-3 py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200">

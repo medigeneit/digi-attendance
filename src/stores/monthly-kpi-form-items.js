@@ -33,7 +33,7 @@ export const useMonthlyKpiFormItemsStore = defineStore('monthlyKpiFormItems', ()
   }
 
   async function fetchAvailableCriteria(formId, q = '') {
-    const res = await apiClient.get(`/monthly-kpi-forms/${formId}/items/available-criteria`, { params: { q } })
+    const res = await apiClient.get(`/items/available-criteria`, { params: { q } })
     return res?.data?.data || []
   }
 

@@ -9,5 +9,14 @@
       <i class="far fa-file-chart-line text-3xl"></i>
       Monthly KPI Forms
     </RouterLink>
+    <RouterLink :to="{ name: 'AssignmentList' }" class="main-button">
+      <i class="far fa-file-chart-line text-3xl"></i>
+      Assignment List
+    </RouterLink>
+    <RouterLink :to="{ name: 'EvaluationList' }" class="main-button">
+      <i class="far fa-file-chart-line text-3xl"></i>
+      Evaluation List
+    </RouterLink>
+    
   </div>
 </template>
