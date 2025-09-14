@@ -70,7 +70,7 @@ onBeforeMount(() => {
           to="/profile"
           class="menus font-bold bg-gray-100 hover:bg-teal-100 p-1 rounded-full border"
         >
-          <UserAvatar :user="user" />
+          <UserAvatar :user="user" size="medium" />
           <h4 class="hidden md:flex flex-col overflow-hidden">
             <span class="line-clamp-1 break-all pr-2 text-sm">{{ user.name }}</span>
             <span class="line-clamp-1 break-all pr-2 text-xs font-normal">{{ user.email }}</span>
