@@ -13,9 +13,9 @@ const userInitial = computed(() => (props.user ? getUserInitials(props.user) : '
 </script>
 
 <template>
-  <div class="min-w-max rounded-full object-cover overflow-hidden border">
+  <div class="min-w-max">
     <div
-      class="flex rounded-full overflow-hidden aspect-square bg-teal-600 items-center justify-center"
+      class="flex justify-center items-center text-[#24A1DE] bg-white rounded-full overflow-hidden border border-white"
       :class="{
         'size-4 text-[9px]': size?.trim() == 'xsmall',
         'size-6 text-xs': size?.trim() == 'small',
@@ -29,6 +29,7 @@ const userInitial = computed(() => (props.user ? getUserInitials(props.user) : '
         @error="showUserPhoto = false"
         :src="user.photo"
         :alt="userInitial"
+        class="object-cover w-full h-full"
       />
       <span v-else class="text-white font-bold pt-2 p-2">{{ userInitial }}</span>
     </div>

@@ -5,7 +5,10 @@ import apiClient from '../axios'
 export const useChatStore = defineStore('chat', () => {
   const loading = ref(false)
   const error = ref(null)
+  const openAddModal = ref(false)
   const conversations = ref([])
+  const conversation = ref({})
+  const messages = ref([])
 
   const fetchUserConversations = async (params = {}) => {
     loading.value = true
@@ -16,11 +19,57 @@ export const useChatStore = defineStore('chat', () => {
       conversations.value = response.data
     } catch (err) {
       error.value = err.response?.data?.message || 'ডাটা লোড করতে ব্যর্থ হয়েছে।'
-      console.error('Error fetching companies:', err)
+      console.error('Error fetching conversations:', err)
     } finally {
       loading.value = false
     }
   }
 
-  return { loading, error, conversations, fetchUserConversations }
+  const fetchConversationById = async (conversationsId) => {
+    loading.value = true
+    error.value = null
+
+    conversation.value = {}
+
+    try {
+      const response = await apiClient.get(`/chat/conversations/${conversationsId}`)
+      conversation.value = response.data
+    } catch (err) {
+      error.value = err.response?.data?.message || 'ডাটা লোড করতে ব্যর্থ হয়েছে।'
+      console.error('Error fetching conversation:', err)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const fetchConversationMessages = async (conversationsId, params = {}) => {
+    loading.value = true
+    error.value = null
+
+    messages.value = []
+
+    try {
+      const response = await apiClient.get(`/chat/conversations/${conversationsId}/messages`, {
+        params,
+      })
+      messages.value = response.data
+    } catch (err) {
+      error.value = err.response?.data?.message || 'ডাটা লোড করতে ব্যর্থ হয়েছে।'
+      console.error('Error fetching messages:', err)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  return {
+    loading,
+    error,
+    openAddModal,
+    conversations,
+    conversation,
+    messages,
+    fetchUserConversations,
+    fetchConversationById,
+    fetchConversationMessages,
+  }
 })

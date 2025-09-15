@@ -71,7 +71,14 @@ const router = createRouter({
           component: () => import('@/views/private-pages/chatting/ChattingList.vue'),
           meta: { requiresAuth: true, title: 'Chatting List' },
         },
-        
+
+        {
+          path: '/chatting/:conversationId',
+          name: 'Conversation Message',
+          component: () => import('@/views/private-pages/chatting/ChattingList.vue'),
+          meta: { requiresAuth: true, title: 'Conversation Message' },
+        },
+
         {
           path: 'task-management',
           name: 'TaskManagementView',
