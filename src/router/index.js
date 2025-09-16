@@ -836,6 +836,12 @@ const router = createRouter({
           component: () => import('@/views/private-pages/MySpecificNotificationList.vue'),
           meta: { requiresAuth: true, title: 'Notification List' },
         },
+        {
+          path: '/task-notifications/:type',
+          name: 'MyTaskNotificationList',
+          component: () => import('@/views/private-pages/MyTaskNotificationList.vue'),
+          meta: { requiresAuth: true, title: 'Other Notification List' },
+        },
 
         {
           path: '/notifications',

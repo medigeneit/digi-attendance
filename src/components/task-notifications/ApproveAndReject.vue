@@ -1,5 +1,5 @@
 <script setup>
-import { useNotificationStore } from '@/stores/notification'
+import { useTaskNotificationStore } from '@/stores/task-notification'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useToast } from 'vue-toastification'
 
@@ -26,9 +26,14 @@ const props = defineProps({
   },
 })
 
+const acceptedCharacterCount = ref(255)
+const remainingCharacter = computed(() => {
+  return acceptedCharacterCount.value - note.value.length
+})
+
 const toast = useToast()
 
-const notificationStore = useNotificationStore()
+const notificationStore = useTaskNotificationStore()
 
 const confirmBtnRef = ref(null)
 const cancelBtnRef = ref(null)
@@ -40,10 +45,6 @@ const isModalOpen = computed(() => currentAction.value !== null)
 
 const modalTitle = computed(() =>
   currentAction.value === 'accept' ? 'Accept Application' : 'Reject Application',
-)
-
-const confirmButtonClass = computed(() =>
-  currentAction.value === 'accept' ? 'btn-2' : 'btn-2 bg-red-500 text-white',
 )
 
 function openModal(action) {
@@ -75,7 +76,7 @@ async function handleConfirm() {
     })
   }
 
-  await notificationStore.updateSpecificNotification(
+  await notificationStore.updateNotification(
     props.notificationType,
     props.applicationId,
     currentAction.value,
@@ -85,7 +86,7 @@ async function handleConfirm() {
   if (props.onSuccess) {
     props.onSuccess()
   } else {
-    notificationStore.fetchCountNotifications()
+    notificationStore.fetchTaskNotification()
   }
 
   closeModal()
@@ -143,13 +144,28 @@ onBeforeUnmount(() => {
     >
       <div class="modal-card">
         <h3 class="title-lg">{{ modalTitle }}</h3>
-        <textarea
-          v-model="note"
-          rows="7"
-          :placeholder="currentAction === 'accept' ? 'Accept Note...' : 'Rejection Reason...'"
-          class="w-full border rounded-lg p-2 text-gray-700"
-          :required="currentAction === 'reject'"
-        ></textarea>
+        <div>
+          <textarea
+            v-model="note"
+            rows="7"
+            :placeholder="currentAction === 'accept' ? 'Accept Note...' : 'Rejection Reason...'"
+            class="w-full border rounded-lg p-2 text-gray-700"
+            :required="currentAction === 'reject'"
+            @input="
+              note.length > acceptedCharacterCount
+                ? (note = note.slice(0, acceptedCharacterCount))
+                : null
+            "
+          ></textarea>
+          <div class="flex">
+            <div
+              class="ml-auto inline-block text-sm text-gray-500"
+              :class="note.length >= acceptedCharacterCount ? 'text-red-500' : ''"
+            >
+              left {{ remainingCharacter }}/{{ acceptedCharacterCount }} words
+            </div>
+          </div>
+        </div>
         <div class="flex justify-between gap-2 mt-4">
           <button ref="cancelBtnRef" class="btn-3 focus:ring-2 ring-offset-2" @click="closeModal">
             Cancel
