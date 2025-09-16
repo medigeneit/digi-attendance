@@ -15,7 +15,7 @@
     </RouterLink>
     <RouterLink :to="{ name: 'MonthlyKpiReportList' }" class="main-button">
       <i class="far fa-file-chart-line text-3xl"></i>
-      Evaluation List
+      Monthly KPI Reports
     </RouterLink>
     
   </div>

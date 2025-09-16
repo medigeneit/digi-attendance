@@ -278,7 +278,7 @@ watch(
       <h1 class="title-md md:title-lg">User Monthly KPI Evaluations</h1>
       <div class="flex gap-2">
         <RouterLink :to="{ name: 'MonthlyKpiFormList' }" class="btn-2">Forms</RouterLink>
-        <button class="btn-2" @click="openCreate">New Evaluation</button>
+        <!-- <button class="btn-2" @click="openCreate">New Evaluation</button> -->
       </div>
     </div>
 
