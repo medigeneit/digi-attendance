@@ -414,7 +414,7 @@ async function handleTaskAddClose() {
             </RequirementSubmissionHandler>
           </div>
         </div>
-        <div class="mt-2 text-right print:hidden">
+        <div class="mt-2 text-right print:hidden" v-if="state != 'loading' && !requirement?.status">
           <p class="text-yellow-800 text-sm">
             <span class="fas fa-exclamation-circle"></span>
             After submitting you cannot add requirement no more

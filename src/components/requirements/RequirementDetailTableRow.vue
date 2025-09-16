@@ -97,7 +97,9 @@ function handleCreateAssignButtonClick() {
             </div>
             <div
               class="ml-auto flex gap-6 items-center"
-              v-if="state != 'loading' && !requirement?.status"
+              v-if="
+                (state != 'loading' && !requirement?.status) || auth?.user?.role == 'super_admin'
+              "
             >
               <button class="btn-2" @click.prevent="emit('editClick', detail)">
                 <i class="fas fa-edit"></i>Edit
