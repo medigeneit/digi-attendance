@@ -1,5 +1,6 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import CriteriaAssignModal from '@/components/CriteriaAssignModal.vue'
 import { useUserMonthlyKpiStore } from '@/stores/user-monthly-kpi'
 import { storeToRefs } from 'pinia'
 import { ref, computed, watch, onMounted } from 'vue'
@@ -14,7 +15,7 @@ const id = Number(route.params.id)
 const store = useUserMonthlyKpiStore()
 const { current, isLoading, isSaving, error } = storeToRefs(store)
 
-// local states for score blocks
+/* ---------- Scores local state ---------- */
 const target = ref({ max_score: 0, incharge_score: 0, incharge_comment: '', coordinator_score: 0, coordinator_comment: '', final_score: 0 })
 const perf   = ref({ max_score: 0, incharge_score: 0, incharge_comment: '', coordinator_score: 0, coordinator_comment: '', final_score: 0 })
 
@@ -27,16 +28,25 @@ const formMeta  = computed(() => current.value?.form ?? {})
 const perfMax   = computed(() => Number(perf.value.max_score || formMeta.value?.performance_mark || 0))
 const targetMax = computed(() => Number(target.value.max_score || formMeta.value?.target_marks || 0))
 
-const grandMax   = computed(() =>  perfMax.value + targetMax.value)
-const grandObt   = computed(() =>  Number(perf.value.final_score || 0) + Number(target.value.final_score || 0))
+// totals
+const grandMax         = computed(() => perfMax.value + targetMax.value)
+const inchargeTotal    = computed(() =>
+  clamp(perf.value.incharge_score, 0, perfMax.value) +
+  clamp(target.value.incharge_score, 0, targetMax.value)
+)
+const coordinatorTotal = computed(() =>
+  clamp(perf.value.coordinator_score, 0, perfMax.value) +
+  clamp(target.value.coordinator_score, 0, targetMax.value)
+)
+const finalTotal       = computed(() =>
+  Number(perf.value.final_score || 0) + Number(target.value.final_score || 0)
+)
 
 function clamp(n, min, max) {
   let v = Number(n ?? 0); if (!Number.isFinite(v)) v = 0
   return v < min ? min : v > max ? max : v
 }
-
 function hydrateBlocks(c) {
-  // target from API resource
   const t = c?.target ?? {}
   target.value = {
     max_score: Number(t.max_score || formMeta.value?.target_marks || 0),
@@ -46,7 +56,6 @@ function hydrateBlocks(c) {
     coordinator_comment: String(t.coordinator_comment || ''),
     final_score: Number(t.final_score || 0),
   }
-  // performance from API resource
   const p = c?.performance ?? {}
   perf.value = {
     max_score: Number(p.max_score || formMeta.value?.performance_mark || 0),
@@ -58,6 +67,39 @@ function hydrateBlocks(c) {
   }
 }
 
+/* ---------- Assign/Manage (current.user ভিত্তিক) ---------- */
+const emptyHtml = '<em class="text-slate-400">কার্যসম্পাদনের বিবরণ নেই</em>'
+const u = computed(() => current.value?.user ?? null)
+const cAssign = computed(() => u.value?.criteria_assignments ?? null)
+// robust count (array / items[] / count / length)
+const criteriaCount = computed(() => {
+  const ca = cAssign.value
+  if (Array.isArray(ca)) return ca.length
+  if (Array.isArray(ca?.items)) return ca.items.length
+  if (typeof ca?.count === 'number') return ca.count
+  if (typeof ca?.length === 'number') return ca.length
+  return 0
+})
+const assignOpen = ref(false)
+function openAssign() {
+  if (!u.value) return
+  assignOpen.value = true
+}
+async function afterAssigned(payload) {
+  assignOpen.value = false
+  try {
+    await store.show(id)
+    hydrateBlocks(current.value)
+    toast.success('Criteria updated')
+  } catch (_) {
+    // fallback local patch if payload provided
+    if (payload && current.value?.user) {
+      current.value.user.criteria_assignments = payload.criteria_assignments || payload
+    }
+  }
+}
+
+/* ---------- Load / Save handlers ---------- */
 async function load() {
   await store.show(id)
   hydrateBlocks(current.value)
@@ -67,7 +109,6 @@ async function load() {
 }
 watch(current, hydrateBlocks)
 
-// save handlers
 async function saveTargetText() {
   try {
     await store.updateTarget(id, current.value?.monthly_target || '')
@@ -77,7 +118,6 @@ async function saveTargetText() {
     toast.error(e?.response?.data?.message || 'Failed to save target')
   }
 }
-
 async function saveScore(kind, role) {
   const state = kind === 'target' ? target.value : perf.value
   const max   = kind === 'target' ? targetMax.value : perfMax.value
@@ -94,7 +134,6 @@ async function saveScore(kind, role) {
     toast.error(e?.response?.data?.message || 'Failed to save score')
   }
 }
-
 async function saveObs(role) {
   try {
     const text = role === 'incharge' ? inchargeObs.value : coordinatorObs.value
@@ -104,7 +143,6 @@ async function saveObs(role) {
     toast.error(e?.response?.data?.message || 'Failed to save')
   }
 }
-
 async function finalize() {
   if (!confirm('Finalize this evaluation?')) return
   try {
@@ -117,12 +155,17 @@ async function finalize() {
 }
 
 function backToList() { router.push({ name: 'EvaluationList' }) }
-
 onMounted(load)
+
+function printPage() {
+  if (typeof window !== 'undefined' && typeof window.print === 'function') {
+    window.print()
+  }
+}
 </script>
 
 <template>
-  <div class="space-y-4 px-4 print:px-0">
+  <div class="space-y-4 px-4 print:px-0 max-w-7xl mx-auto">
     <!-- Actions -->
     <div class="flex items-center justify-between gap-2 sticky top-0 z-10 bg-white/80 backdrop-blur p-2 rounded-b-lg border-b print:hidden">
       <div class="flex items-center gap-2">
@@ -131,14 +174,14 @@ onMounted(load)
       </div>
       <div class="flex gap-2">
         <button class="btn-2" :disabled="isSaving || finalized || !current" @click="finalize">{{ finalized ? 'Finalized' : 'Finalize' }}</button>
-        <button class="btn-3" @click="() => window.print()"><i class="far fa-print mr-1"></i>Print</button>
+        <button class="btn-3" @click="printPage"><i class="far fa-print mr-1"></i>Print</button>
       </div>
     </div>
 
     <div v-if="isLoading" class="py-8 text-center"><LoaderView /></div>
     <div v-else-if="error" class="rounded-md border border-red-200 bg-red-50 p-3 text-red-700">{{ error }}</div>
 
-    <div v-else-if="current" class="rounded-2xl border bg-white p-5 shadow-sm space-y-4">
+    <div v-else-if="current" class="rounded-2xl bg-white p-5 shadow-sm space-y-4">
       <!-- Header -->
       <div class="text-center">
         <h2 class="text-xl font-semibold">Key Performance Indicator (KPI)</h2>
@@ -149,12 +192,27 @@ onMounted(load)
 
       <!-- Meta -->
       <div class="grid grid-cols-12 gap-2 text-sm">
-        <div class="col-span-6 border p-2 rounded">NAME: <span class="font-medium">#{{ current.user_id }}</span></div>
-        <div class="col-span-3 border p-2 rounded">DESIGNATION:</div>
-        <div class="col-span-3 border p-2 rounded">DATE OF JOINING:</div>
-        <div class="col-span-6 border p-2 rounded">DEPARTMENT:</div>
-        <div class="col-span-3 border p-2 rounded"></div>
-        <div class="col-span-3 border p-2 rounded"></div>
+        <div class="col-span-6 border p-2 rounded">NAME: <span class="font-medium">{{ current?.user?.name }}</span></div>
+        <div class="col-span-3 border p-2 rounded">DESIGNATION: <span class="font-medium">{{ current?.user?.designation }}</span></div>
+        <div class="col-span-3 border p-2 rounded">DATE OF JOINING: {{ current?.user?.joining_date }}</div>
+        <div class="col-span-6 border p-2 rounded">DEPARTMENT: {{ current?.user?.department }}</div>
+        <div class="col-span-3 border p-2 rounded">COMPANY:<span class="font-medium">{{ current?.user?.company }}</span></div>
+      </div>
+
+      <!-- Live totals -->
+      <div class="grid grid-cols-1 print:grid-cols-3 md:grid-cols-3 gap-2 text-sm">
+        <div class="rounded-lg border p-2 text-center">
+          <div class="text-gray-500">In-charge total</div>
+          <div class="font-semibold">{{ inchargeTotal }} / {{ grandMax }}</div>
+        </div>
+        <div class="rounded-lg border p-2 text-center">
+          <div class="text-gray-500">Coordinator total</div>
+          <div class="font-semibold">{{ coordinatorTotal }} / {{ grandMax }}</div>
+        </div>
+        <div class="rounded-lg border p-2 text-center">
+          <div class="text-gray-500">Final (server)</div>
+          <div class="font-semibold">{{ finalTotal }} / {{ grandMax }}</div>
+        </div>
       </div>
 
       <!-- Main table -->
@@ -170,11 +228,30 @@ onMounted(load)
             </tr>
           </thead>
           <tbody>
-            <!-- ১) Performance (criteria.description) -->
+            <!-- ১) Performance -->
             <tr>
               <td class="border px-2 py-2 align-top text-center">১</td>
               <td class="border px-2 py-2 align-top">
-                <div class="prose prose-sm max-w-none" v-html="current.form?.criteria?.description || '<em>কার্যসম্পাদনের বিবরণ নেই</em>'"></div>
+                <div class="prose prose-sm max-w-none text-slate-700 line-clamp-3" v-if="u?.criteria_assignments?.description"
+                     v-html="u?.criteria_assignments?.description"></div>
+                <div class="mt-2" v-else>
+                  <button
+                    @click="openAssign"
+                    title="Assign KPI criteria"
+                   class="btn-4"
+                  >
+                    <svg v-if="criteriaCount > 0" viewBox="0 0 24 24" class="h-4 w-4 opacity-90">
+                      <path fill="currentColor" d="M9 16.2l-3.5-3.5L4 14.2l5 5 11-11-1.5-1.5z"/>
+                    </svg>
+                    <svg v-else viewBox="0 0 24 24" class="h-4 w-4 opacity-80">
+                      <path fill="currentColor" d="M11 11V6h2v5h5v2h-5v5h-2v-5H6v-2z"/>
+                    </svg>
+
+                    <span class="ml-1 hidden lg:inline">
+                      Assign
+                    </span>
+                  </button>
+                </div>
               </td>
               <td class="border px-2 py-2 align-top text-right">{{ perfMax }}</td>
               <td class="border px-2 py-2 align-top">
@@ -230,7 +307,8 @@ onMounted(load)
             <tr class="bg-gray-50 font-medium">
               <td class="border px-2 py-2 text-right" colspan="2">সর্বমোট</td>
               <td class="border px-2 py-2 text-right">{{ grandMax }}</td>
-              <td class="border px-2 py-2 text-right" colspan="2">{{ grandObt }}</td>
+              <td class="border px-2 py-2 text-right">{{ inchargeTotal }}</td>
+              <td class="border px-2 py-2 text-right">{{ coordinatorTotal }}</td>
             </tr>
           </tbody>
         </table>
@@ -268,13 +346,87 @@ onMounted(load)
     </div>
 
     <div v-else class="rounded-md border bg-white p-4 text-gray-600">Data not available.</div>
+
+    <!-- Criteria modal: current.user ভিত্তিক, একবারই মাউন্ট -->
+    <CriteriaAssignModal
+      v-model="assignOpen"
+      :user-id="u?.id"
+      :user-label="u?.name"
+      :criteria_assignments="u?.criteria_assignments"
+      @assigned="afterAssigned"
+    />
   </div>
 </template>
 
 <style scoped>
+/* ===== Print-only cleanup (inside this component) ===== */
 @media print {
+  /* Layout cleanup */
   .print\:hidden { display: none !important; }
-  .rounded-2xl { border-radius: 0 !important; }
-  .btn-2, .btn-3, .btn-4 { display: none !important; }
+  .rounded-2xl, .rounded-lg, .rounded, .rounded-md { border-radius: 0 !important; }
+  .shadow, .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl { box-shadow: none !important; }
+  .backdrop-blur, .backdrop-blur-sm, .backdrop-blur-md { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+
+  /* Table look: crisp B/W */
+  thead tr, .bg-gray-50, .bg-gray-100 { background: transparent !important; }
+  th, td { padding: 6px 8px !important; }
+  th { border-bottom: 1px solid #000 !important; }
+  .border { border-color: #555 !important; } /* হালকা ধূসর লাইনের বদলে শার্প */
+  .text-gray-500, .text-gray-600, .text-slate-600 { color: #000 !important; }
+
+  /* Description: print-এ clamp খুলে দিন */
+  .line-clamp-3 {
+    display: block !important;
+    -webkit-line-clamp: unset !important;
+    overflow: visible !important;
+  }
+
+  /* Inputs/textarea/select → Plain text look */
+  input, textarea, select {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+    padding: 0 !important;
+  }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  textarea {
+    height: auto !important;
+    overflow: visible !important;
+    white-space: pre-wrap !important; /* লাইন ব্রেক প্রিজার্ভ */
+  }
+  /* Placeholder গুলো লুকান */
+  ::-webkit-input-placeholder { color: transparent !important; }
+  :-ms-input-placeholder { color: transparent !important; }
+  ::placeholder { color: transparent !important; }
+
+  /* Action/UI elements */
+  .btn-2, .btn-3, .btn-4, button, [role="button"] { display: none !important; }
+  a { color: inherit !important; text-decoration: none !important; }
+
+  /* টেবিল/কার্ড পেজ ব্রেক এভয়েড */
+  table, .avoid-break { page-break-inside: auto; }
+  tr, .card, .rounded-2xl, .rounded-lg { page-break-inside: avoid; }
+}
+
+/* Optional: signature line look (screen + print) */
+.signature-line {
+  position: relative;
+  min-height: 36px;
+}
+@media print {
+  .signature-line {
+    border: 0 !important; padding: 0 !important;
+  }
+  .signature-line::after {
+    content: "";
+    display: block;
+    margin-top: 18px;      /* লাইনের উপরে একটু স্পেস */
+    border-bottom: 1px solid #000;
+    width: 100%;
+  }
 }
 </style>

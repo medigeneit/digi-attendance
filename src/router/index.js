@@ -1096,12 +1096,7 @@ const router = createRouter({
           component: () => import('@/views/admin-pages/MonthlyKpiFormForm.vue'),
           props: true,
         },
-        {
-          path: '/kpi/monthly-forms/:id/items',
-          name: 'MonthlyKpiFormItems',
-          component: () => import('@/views/admin-pages/MonthlyKpiFormItems.vue'),
-          props: true,
-        },
+        
         {
           path: '/kpi/evaluations',
           name: 'EvaluationList',

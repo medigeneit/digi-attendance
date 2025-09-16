@@ -35,9 +35,6 @@ export const useMonthlyKpiFormsStore = defineStore('monthlyKpiForms', () => {
     end_month: raw.end_month ?? null,     // null | "YYYY-MM"
     performance_mark: Number(raw.performance_mark ?? 0),
     target_marks: Number(raw.target_marks ?? 0),
-    report: raw.report ?? {},
-    criteria: raw.criteria ?? {},
-    criteria_id: raw.criteria_id ?? {},
     created_at: raw.created_at ?? null,
     updated_at: raw.updated_at ?? null,
   })
@@ -60,9 +57,6 @@ export const useMonthlyKpiFormsStore = defineStore('monthlyKpiForms', () => {
     end_month: form.end_month ? String(form.end_month) : null,
     performance_mark: Number(form.performance_mark ?? 0),
     target_marks: Number(form.target_marks ?? 0),
-    report: form.report ?? {}, // object
-    criteria_id: form.criteria_id ?? {}, // object
-    criteria: form.criteria ?? {}, // object
   })
 
   const messageFromError = (err) =>

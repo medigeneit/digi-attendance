@@ -67,7 +67,7 @@ onMounted(() => fetchList())
 </script>
 
 <template>
-  <div class="space-y-4 px-4  max-w-7xl mx-auto py-6">
+  <div class="space-y-4 px-4">
     <!-- Header -->
     <div class="flex items-center justify-between gap-2">
       <button class="btn-3" @click="goBack">
@@ -162,9 +162,8 @@ onMounted(() => fetchList())
             <th class="px-3 py-2 w-12">#</th>
             <th class="px-3 py-2 cursor-pointer" @click="toggleSort('type')">Type</th>
             <th class="px-3 py-2 cursor-pointer" @click="toggleSort('start_month')">Period</th>
-            <th class="px-3 py-2">Perf.Mark</th>
-            <th class="px-3 py-2">Target Mark</th>
-            <th class="px-3 py-2">Criteria</th>
+            <th class="px-3 py-2">Perf.Max</th>
+            <th class="px-3 py-2">Target</th>
             <th class="px-3 py-2 cursor-pointer" @click="toggleSort('updated_at')">Updated</th>
             <th class="px-3 py-2 text-right w-28">Actions</th>
           </tr>
@@ -176,9 +175,6 @@ onMounted(() => fetchList())
             <td class="px-3 py-2">{{ periodText(row) }}</td>
             <td class="px-3 py-2">{{ row.performance_mark }}</td>
             <td class="px-3 py-2">{{ row.target_marks }}</td>
-            <td class="px-3 py-2">
-              {{ row?.criteria?.name || 'N/A' }}
-            </td>
             <td class="px-3 py-2">{{ new Date(row.updated_at || row.created_at).toLocaleString() }}</td>
             <td class="px-3 py-2 text-right">
               <div class="inline-flex gap-1">
