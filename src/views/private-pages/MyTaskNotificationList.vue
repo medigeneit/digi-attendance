@@ -14,17 +14,23 @@ const loading = ref(false)
 onMounted(async () => {
   if (route.params.type) {
     loading.value = true
-    notificationStore.fetchTaskNotification(route.params.type)
+    await notificationStore.fetchTaskNotification(route.params.type)
     loading.value = false
   }
 })
+
+async function onSuccess() {
+  loading.value = true
+  await notificationStore.fetchTaskNotification(route.params.type)
+  loading.value = false
+}
 
 watch(
   () => route.params.type,
   async (newType, oldType) => {
     if (newType && newType !== oldType) {
       loading.value = true
-      notificationStore.fetchTaskNotification(newType)
+      await notificationStore.fetchTaskNotification(newType)
       loading.value = false
     }
   },
@@ -53,7 +59,7 @@ const formattedType = computed(() => {
 </script>
 
 <template>
-  <div class="my-container space-y-6 px-4 py-4">
+  <div class="my-container space-y-4 px-4 py-4 relative">
     <h2 class="md:text-2xl font-semibold capitalize text-gray-700">
       {{ formattedType || 'Notifications' }}
       <span
@@ -63,10 +69,13 @@ const formattedType = computed(() => {
         {{ notification_count[route.params.type] }}
       </span>
     </h2>
-    <div v-if="loading" class="text-center text-red-500 py-10 text-xl italic">
-      <LoaderView />
-    </div>
-    <div v-else-if="notifications.length" class="space-y-4">
+
+    <LoaderView
+      v-if="loading || notificationStore.loading"
+      class="absolute inset-0 flex items-center justify-center bg-opacity-80 !shadow-none min-h-[80vh]"
+    />
+
+    <div v-if="notifications.length > 0" class="space-y-4">
       <div
         v-for="notification in notifications"
         :key="notification.application_id"
@@ -92,7 +101,7 @@ const formattedType = computed(() => {
         </div>
 
         <div
-          class="flex items-center text-red-600 text-xs md:text-sm lg:text-base"
+          class="text-red-600 text-xs md:text-sm lg:text-base line-clamp-1 pr-12"
           v-html="notification.description"
         ></div>
 
@@ -125,9 +134,16 @@ const formattedType = computed(() => {
             :applicationId="notification?.application_id"
             :onSuccess="onSuccess"
             :variant="2"
+            @loading="(isLoading) => (loading = isLoading)"
           />
         </div>
       </div>
+    </div>
+    <div
+      v-else-if="!loading"
+      class="h-[80vh] flex items-center justify-center border rounded-md bg-white/50 text-gray-400"
+    >
+      No notifications found.
     </div>
   </div>
 </template>

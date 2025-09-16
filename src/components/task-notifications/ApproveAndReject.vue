@@ -26,6 +26,8 @@ const props = defineProps({
   },
 })
 
+const emit = defineEmits(['loading'])
+
 const acceptedCharacterCount = ref(255)
 const remainingCharacter = computed(() => {
   return acceptedCharacterCount.value - note.value.length
@@ -40,6 +42,7 @@ const cancelBtnRef = ref(null)
 
 const currentAction = ref(null)
 const note = ref('')
+const isUpdating = ref(false)
 
 const isModalOpen = computed(() => currentAction.value !== null)
 
@@ -76,6 +79,8 @@ async function handleConfirm() {
     })
   }
 
+  emit('loading', true)
+  isUpdating.value = true
   await notificationStore.updateNotification(
     props.notificationType,
     props.applicationId,
@@ -83,7 +88,10 @@ async function handleConfirm() {
     note.value,
   )
 
-  if (props.onSuccess) {
+  emit('loading', false)
+  isUpdating.value = false
+
+  if (typeof props.onSuccess == 'function') {
     props.onSuccess()
   } else {
     notificationStore.fetchTaskNotification()
@@ -167,14 +175,20 @@ onBeforeUnmount(() => {
           </div>
         </div>
         <div class="flex justify-between gap-2 mt-4">
-          <button ref="cancelBtnRef" class="btn-3 focus:ring-2 ring-offset-2" @click="closeModal">
+          <button
+            ref="cancelBtnRef"
+            class="btn-3 focus:ring-2 ring-offset-2 disabled:opacity-30"
+            @click="closeModal"
+            :disabled="isUpdating"
+          >
             Cancel
           </button>
           <button
             ref="confirmBtnRef"
-            class="focus:ring-2 ring-offset-2"
+            class="focus:ring-2 ring-offset-2 disabled:opacity-30"
             :class="currentAction === 'reject' ? 'btn-2-red' : 'btn-2-green'"
             @click="handleConfirm"
+            :disabled="isUpdating"
           >
             Confirm <span class="capitalize hidden md:inline">{{ currentAction }}</span>
           </button>
