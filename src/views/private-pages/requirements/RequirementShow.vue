@@ -403,7 +403,10 @@ async function handleTaskAddClose() {
           </button>
 
           <div class="flex flex-col items-end">
-            <RequirementSubmissionHandler :requirement-id="requirement?.id">
+            <RequirementSubmissionHandler
+              :requirement-id="requirement?.id"
+              @success="fetchRequirement"
+            >
               <template #heading> Requirement Submission </template>
               <template #acceptButtonLabel>
                 <span class="btn-2 pl-2 text-base">
