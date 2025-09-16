@@ -41,14 +41,18 @@ const isUserFixed = computed(() => !!props.userId)
 // যখন userId prop দেয়া থাকবে, তখনই সেটাকে lock করে দিন
 watch(
   () => props.userId,
-  (v) => {
+  async(v) => {
     if (v) {
       sel.value.user_id = String(v)
-      // নিরাপদ রাখতে employee related ফিল্ড পরিষ্কার করে দিচ্ছি
       sel.value.company_id = ''
       sel.value.department_id = ''
       sel.value.employee_id = ''
       sel.value.line_type = ''
+
+       if (formsStore) {
+        await formsStore.fetchList?.({ per_page: 100 })
+        forms.value = formsStore.items || []
+      }
     }
   },
   { immediate: true }
