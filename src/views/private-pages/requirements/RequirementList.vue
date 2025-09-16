@@ -126,7 +126,7 @@ const goToAdd = () => {
                 </td>
 
                 <td class="px-4 py-4 text-center whitespace-nowrap">
-                  <div class="text-gray-600">
+                  <div class="text-gray-600" v-if="req.submission_date">
                     {{
                       new Date(req.submission_date).toLocaleDateString('en-US', {
                         year: 'numeric',
@@ -135,6 +135,7 @@ const goToAdd = () => {
                       })
                     }}
                   </div>
+                  <div v-else>-</div>
                 </td>
 
                 <td class="px-4 py-4 text-center">
