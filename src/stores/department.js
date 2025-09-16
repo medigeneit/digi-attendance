@@ -14,7 +14,7 @@ export const useDepartmentStore = defineStore('department', () => {
     error.value = null;
     try {
       const response = await apiClient.get('/departments', {
-        params: companyId,
+        params: { company_id: companyId },
       });
       departments.value = response.data;
     } catch (err) {
