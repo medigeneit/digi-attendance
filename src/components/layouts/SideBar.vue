@@ -186,6 +186,18 @@ const logout = () => {
         </RouterLink>
 
         <RouterLink
+          to="/kpi"
+          class="side-menu"
+          :class="{
+            'flex justify-center': !open,
+            'side-menu-active': currentRoute.includes('/kpi'),
+          }"
+        >
+          <i class="fas fa-file-chart-line py-2"></i>
+          <h4 v-if="open">KPI</h4>
+        </RouterLink>
+
+        <RouterLink
           to="/hrd"
           class="side-menu"
           :class="{

@@ -3,6 +3,7 @@ import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import ShiftAssignmentModal from '@/components/common/ShiftAssignmentModal.vue'
 import ShiftWeekendModal from '@/components/common/WeekendAssignModal.vue'
+import CriteriaAssignModal from '@/components/CriteriaAssignModal.vue'
 import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
 import { useShiftStore } from '@/stores/shift'
@@ -221,6 +222,19 @@ const formattedName = (name) => {
   return ''
 }
 
+const assignOpen = ref(false)
+const selectedUser = ref()
+
+function openAssign(user) {
+  selectedUser.value = user
+  assignOpen.value = true
+}
+
+function afterAssigned() {
+  assignOpen.value = false
+  // চাইলে এখানে রিফ্রেশ কল করতে পারেন
+}
+
 // const selectedCompanyId = ref()
 </script>
 
@@ -282,7 +296,7 @@ const formattedName = (name) => {
         <div class="overflow-x-auto">
           <table class="min-w-full table-auto bg-white shadow-md rounded-lg overflow-hidden">
             <thead>
-              <tr class="bg-gray-200">
+              <tr class="bg-gray-200 text-sm font-medium text-gray-700">
                 <th class="border border-gray-300 px-2 text-left">#</th>
                 <th class="border border-gray-300 px-2 text-left">Name</th>
                 <th class="border border-gray-300 px-2 text-left">Designation</th>
@@ -295,6 +309,7 @@ const formattedName = (name) => {
                 <th class="border border-gray-300 px-2 text-left">Phone</th>
                 <th class="border border-gray-300 px-2 text-left">Email</th>
                 <th class="border border-gray-300 px-2 text-left">Status</th>
+                <th class="border border-gray-300 px-2 text-left">KPI Criteria</th>
                 <th class="border border-gray-300 px-2 text-left">Action</th>
               </tr>
             </thead>
@@ -405,6 +420,31 @@ const formattedName = (name) => {
                   <span v-if="user.is_active" class="text-green-500">Active</span>
                   <span v-else class="text-red-500">Inactive</span>
                 </td>
+                <td class="px-2 py-1 whitespace-nowrap">
+                  <button
+                    @click="openAssign(user)"
+                    :title="(user.criteria_assignments?.length || 0) > 0 ? 'Manage KPI criteria' : 'Assign KPI criteria'"
+                    :class="[
+                      'group inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium transition',
+                      'focus:outline-none focus:ring-2 focus:ring-offset-1',
+                      (user.criteria_assignments?.length || 0) > 0
+                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 focus:ring-emerald-300'
+                        : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-white focus:ring-slate-300'
+                    ]"
+                  >
+                    <span class="ml-1 hidden lg:inline">
+                      {{ (user.criteria_assignments?.length || 0) > 0 ? 'Manage' : 'Assign' }}
+                    </span>
+
+                    <span
+                      class="ml-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1 text-[10px] font-semibold"
+                      :class="(user.criteria_assignments?.length || 0) > 0 ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700'"
+                    >
+                      {{ user.criteria_assignments?.length || 0 }}
+                    </span>
+                  </button>
+                </td>
+
                 <td class="border border-gray-300 px-2">
                   <div class="flex gap-2">
                     <RouterLink
@@ -434,6 +474,16 @@ const formattedName = (name) => {
           </table>
         </div>
       </div>
+
+
+      <CriteriaAssignModal
+        v-model="assignOpen"
+        :user-id="selectedUser?.id"
+        :user-label="selectedUser?.name"
+        :criteria_assignments="selectedUser?.criteria_assignments"
+        @assigned="afterAssigned"
+      />
+
     </div>
   </div>
 </template>

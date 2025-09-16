@@ -176,9 +176,8 @@ watch(selectedCompany, async (companyId) => {
     employees.value = []
     scheduleMap.value = {}
 
-    await companyStore.fetchEmployee(companyId)
-    await departmentStore.fetchDepartments({ companyId })
-    await shiftStore.fetchShifts({ companyId })
+    await departmentStore.fetchDepartments({ company_id: Number(companyId) })
+    await shiftStore.fetchShifts({ company_id: Number(companyId) })
     assignColorsToShifts()
   }
 })
