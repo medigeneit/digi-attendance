@@ -1035,6 +1035,95 @@ const router = createRouter({
           component: () => import('@/views/private-pages/MyOvertimeShow.vue'),
           meta: { requiresAuth: true, title: 'Overtime Show' },
         },
+        {
+          path: '/kpi',
+          name: 'KpiView',
+          component: () => import('@/views/admin-pages/KpiView.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['super_admin', 'developer'],
+            title: 'KPI View',
+          },
+        },
+
+        {
+          path: '/kpi/monthly-format-list',
+          name: 'KpiMonthlyList',
+          component: () => import('@/views/admin-pages/KpiFormatList.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['super_admin', 'developer'],
+            title: 'KPI Monthly Format Add',
+          },
+        },
+        {
+          path: '/kpi/monthly-format-add',
+          name: 'KpiMonthlyAdd',
+          component: () => import('@/views/admin-pages/KpiFormatForm.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['super_admin', 'developer'],
+            title: 'KPI Monthly Format Add',
+          },
+        },
+        {
+          path: '/kpi/monthly-format-edit/:id',
+          name: 'KpiMonthlyEdit',
+          component: () => import('@/views/admin-pages/KpiFormatForm.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['super_admin', 'developer'],
+            title: 'KPI Monthly Format  Edit',
+          },
+        },
+        {
+          path: '/kpi/monthly-format-view/:id',
+          name: 'KpiMonthlyView',
+          component: () => import('@/views/admin-pages/KpiView.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['super_admin', 'developer'],
+            title: 'KPI Monthly Format  Edit',
+          },
+        },
+        {
+          path: '/kpi/monthly-forms',
+          name: 'MonthlyKpiFormList',
+          component: () => import('@/views/admin-pages/MonthlyKpiFormList.vue'),
+        },
+        {
+          path: '/kpi/monthly-forms/create',
+          name: 'MonthlyKpiFormCreate',
+          component: () => import('@/views/admin-pages/MonthlyKpiFormForm.vue'),
+        },
+        {
+          path: '/kpi/monthly-forms/:id/edit',
+          name: 'MonthlyKpiFormEdit',
+          component: () => import('@/views/admin-pages/MonthlyKpiFormForm.vue'),
+          props: true,
+        },
+        
+        {
+          path: '/kpi/evaluations',
+          name: 'EvaluationList',
+          component: () => import('@/views/admin-pages/EvaluationList.vue'),
+        },
+        {
+          path: '/kpi/evaluations/:id',
+          name: 'EvaluationShow',
+          component: () => import('@/views/admin-pages/EvaluationShow.vue'),
+          props: true,
+        },
+        {
+          path: '/kpi/assignments',
+          name: 'AssignmentList',
+          component: () => import('@/views/admin-pages/AssignmentList.vue'),
+        },
+        {
+          path: '/kpi/reports',
+          name: 'MonthlyKpiReportList',
+          component: () => import('@/views/admin-pages/KpiBiMonthlyReport.vue'),
+        },
       ],
     },
   ],
