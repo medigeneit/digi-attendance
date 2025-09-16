@@ -265,7 +265,7 @@ async function handleTaskAddClose() {
         </div>
       </div>
 
-      <div class="mb-3 flex items-center gap-3 print:mb-1">
+      <div class="mb-3 flex items-center gap-3 print:mb-1" v-if="requirement?.submission_date">
         <div class="text-gray-500 text-sm">Submission Date</div>
         <div class="print:text-gray-900">
           {{
