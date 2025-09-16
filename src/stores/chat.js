@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import apiClient from '../axios'
 
 export const useChatStore = defineStore('chat', () => {
@@ -8,7 +8,33 @@ export const useChatStore = defineStore('chat', () => {
   const openAddModal = ref(false)
   const conversations = ref([])
   const conversation = ref({})
+  const activeConversationId = ref(null)
   const messages = ref([])
+  const searchText = ref('')
+
+  const activeConversation = computed(() => {
+    if (conversations.value?.length === 0) {
+      return {}
+    }
+
+    return conversations.value?.find(
+      (conversation) => parseInt(conversation.id) === parseInt(activeConversationId.value),
+    )
+  })
+
+  const filteredConversations = computed(() => {
+    if (conversations.value?.length === 0) {
+      return []
+    }
+
+    if (!searchText.value) {
+      return conversations.value
+    }
+
+    return conversations.value?.filter((conversation) =>
+      conversation?.title?.toLowerCase().includes(searchText.value),
+    )
+  })
 
   const fetchUserConversations = async (params = {}) => {
     loading.value = true
@@ -65,8 +91,12 @@ export const useChatStore = defineStore('chat', () => {
     loading,
     error,
     openAddModal,
+    searchText,
     conversations,
+    filteredConversations,
     conversation,
+    activeConversationId,
+    activeConversation,
     messages,
     fetchUserConversations,
     fetchConversationById,

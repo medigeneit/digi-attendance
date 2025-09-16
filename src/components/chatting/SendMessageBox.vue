@@ -1,11 +1,7 @@
 <script setup>
-const props = defineProps({
-  conversationId: {
-    type: [String, Number],
-    required: false,
-    default: null,
-  },
-})
+import { useChatStore } from '@/stores/chat'
+
+const chatStore = useChatStore()
 </script>
 
 <template>
@@ -24,7 +20,7 @@ const props = defineProps({
       </div>
       <div class="overflow-hidden rounded-3xl w-full border-2 border-blue-100">
         <div
-          contenteditable=""
+          :contenteditable="true"
           class="p-2 px-4 rounded-3xl bg-gray-100 break-all max-h-32 min-h-10 overflow-auto scrollbar"
         ></div>
       </div>

@@ -13,13 +13,13 @@ const props = defineProps({
 })
 
 const isOwnMessage = computed(() => {
-  return parseInt(props.message?.sender?.id) === parseInt(authStore?.user?.id)
+  return props.message.is_own_message
 })
 </script>
 
 <template>
   <div
-    class="w-full flex"
+    class="flex"
     :class="{
       'justify-end pl-12': isOwnMessage,
       'justify-start pr-12': !isOwnMessage,
@@ -28,7 +28,7 @@ const isOwnMessage = computed(() => {
     <div>
       <div class="border rounded-lg max-w-lg w-full">
         <div
-          class="flex justify-between items-center p-1 rounded-t-lg"
+          class="flex justify-between items-center p-1 rounded-t-lg gap-4"
           :class="{
             'bg-[#24A1DE] text-white': isOwnMessage,
             'bg-gray-200 text-black': !isOwnMessage,
@@ -37,16 +37,17 @@ const isOwnMessage = computed(() => {
           <div class="flex items-center gap-1">
             <UserAvatar :user="message.sender" size="small" />
             <div class="font-semibold hidden sm:inline-block text-sm">
-              {{ message.sender.name }}
+              {{ message.sender?.name }}
             </div>
           </div>
           <div class="text-xs mt-1" :class="isOwnMessage ? 'text-right' : 'text-left'">
-            {{ new Date(message.created_at).toLocaleString() }}
+            {{ message.send_at }}
           </div>
         </div>
-        <div class="block py-1 px-2 rounded-b-lg bg-white text-sm whitespace-pre-wrap break-words">
-          {{ message.body }}
-        </div>
+        <div
+          class="block py-1 px-2 rounded-b-lg bg-white text-sm whitespace-pre-wrap break-words leading-relaxed"
+          v-html="message.body"
+        ></div>
       </div>
       <div
         class="flex"
@@ -62,15 +63,8 @@ const isOwnMessage = computed(() => {
             'justify-start': !isOwnMessage,
           }"
         >
-          <template
-            v-for="last_read_participant in message.last_read_participants"
-            :key="last_read_participant.id"
-          >
-            <UserAvatar
-              v-if="last_read_participant?.user?.id"
-              :user="last_read_participant.user"
-              size="xsmall"
-            />
+          <template v-for="photo in message.last_reader_photos" :key="photo">
+            <UserAvatar v-if="photo" :user="{ photo }" size="xsmall" />
           </template>
         </div>
       </div>
