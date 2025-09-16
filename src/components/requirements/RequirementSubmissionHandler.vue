@@ -1,32 +1,16 @@
 <script setup>
-import { useTaskNotificationStore } from '@/stores/task-notification'
+import { submitRequirement } from '@/services/requirement'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useToast } from 'vue-toastification'
 
 const props = defineProps({
-  notificationType: {
-    type: String,
-    required: true,
-  },
-  applicationId: {
+  requirementId: {
     type: [String, Number],
     required: true,
   },
-  onSuccess: {
-    type: Function,
-    default: null,
-  },
-  onSubmit: {
-    type: Function,
-    default: null,
-  },
-  variant: {
-    type: Number,
-    default: 1,
-  },
 })
 
-const emit = defineEmits(['loading'])
+const emit = defineEmits(['loading', 'success', 'error'])
 
 const acceptedCharacterCount = ref(255)
 const remainingCharacter = computed(() => {
@@ -34,8 +18,6 @@ const remainingCharacter = computed(() => {
 })
 
 const toast = useToast()
-
-const notificationStore = useTaskNotificationStore()
 
 const confirmBtnRef = ref(null)
 const cancelBtnRef = ref(null)
@@ -45,10 +27,6 @@ const note = ref('')
 const isUpdating = ref(false)
 
 const isModalOpen = computed(() => currentAction.value !== null)
-
-const modalTitle = computed(() =>
-  currentAction.value === 'accept' ? 'Accept Application' : 'Reject Application',
-)
 
 function openModal(action) {
   if (action === 'accept' || action === 'reject') {
@@ -64,10 +42,6 @@ function closeModal() {
 }
 
 async function handleConfirm() {
-  if (notificationStore.loading) {
-    return
-  }
-
   if (currentAction.value === 'reject' && !note.value) {
     return toast.error('Rejection Reason is required!')
   }
@@ -83,24 +57,16 @@ async function handleConfirm() {
   isUpdating.value = true
 
   try {
-    await notificationStore.updateNotification(
-      props.notificationType,
-      props.applicationId,
-      currentAction.value,
-      note.value,
-    )
+    await submitRequirement(props.requirementId, { note: note.value })
+    emit('success')
+    closeModal()
+  } catch (err) {
+    emit('error', err)
+    return toast.error(err?.response?.data?.message || 'Submission failed!')
   } finally {
     emit('loading', false)
     isUpdating.value = false
   }
-
-  if (typeof props.onSuccess == 'function') {
-    props.onSuccess()
-  } else {
-    notificationStore.fetchTaskNotification()
-  }
-
-  closeModal()
 }
 
 function handleKeydown(e) {
@@ -130,19 +96,11 @@ onBeforeUnmount(() => {
 
 <template>
   <div>
-    <div class="flex justify-center items-center" :class="variant === 1 ? 'gap-5' : 'gap-2'">
+    <div class="flex justify-center items-center">
       <button @click="openModal('accept')">
-        <span v-if="variant === 1" class="font-bold text-lg text-green-600">✔</span>
-        <span v-if="variant === 2" class="btn-2">
-          <span class="text-base scale-110">✔</span>
-          <span class="hidden md:inline">Approve</span>
-        </span>
-      </button>
-      <button @click="openModal('reject')">
-        <span v-if="variant === 1" class="text-base">❌</span>
-        <span v-if="variant === 2" class="btn-1">
-          <span class="text-base">❌</span>
-          <span class="hidden md:inline">Reject</span>
+        <span class="btn-2">
+          <span class="fas fa-paper-plane"></span>
+          <span class="hidden md:inline">Submit Requirement</span>
         </span>
       </button>
     </div>
@@ -154,12 +112,12 @@ onBeforeUnmount(() => {
       @click.self="closeModal"
     >
       <div class="modal-card">
-        <h3 class="title-lg">{{ modalTitle }}</h3>
+        <h3 class="title-lg">Requirement Submission</h3>
         <div>
           <textarea
             v-model="note"
-            rows="7"
-            :placeholder="currentAction === 'accept' ? 'Accept Note...' : 'Rejection Reason...'"
+            rows="4"
+            placeholder="Note..."
             class="w-full border rounded-lg p-2 text-gray-700"
             :required="currentAction === 'reject'"
             @input="
@@ -193,7 +151,7 @@ onBeforeUnmount(() => {
             @click="handleConfirm"
             :disabled="isUpdating"
           >
-            Confirm <span class="capitalize hidden md:inline">{{ currentAction }}</span>
+            Confirm Submission
           </button>
         </div>
       </div>
