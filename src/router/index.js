@@ -1113,6 +1113,11 @@ const router = createRouter({
           name: 'AssignmentList',
           component: () => import('@/views/admin-pages/AssignmentList.vue'),
         },
+        {
+          path: '/kpi/reports',
+          name: 'MonthlyKpiReportList',
+          component: () => import('@/views/admin-pages/KpiBiMonthlyReport.vue'),
+        },
       ],
     },
   ],
