@@ -59,7 +59,7 @@ const goToAdd = () => {
             <tr>
               <th class="px-4 py-2 text-center whitespace-nowrap w-2">#</th>
               <th class="px-4 py-2 text-left whitespace-nowrap">Requirement</th>
-              <th class="px-4 py-2 text-center whitespace-nowrap w-16">Submitted By</th>
+              <th class="px-4 py-2 text-center whitespace-nowrap w-16">User</th>
               <th class="px-4 py-2 text-center whitespace-nowrap w-16">Submitted At</th>
               <th class="px-4 py-2 text-center whitespace-nowrap w-20">Actions</th>
             </tr>
@@ -80,8 +80,10 @@ const goToAdd = () => {
                 :key="req.id"
                 class="border-t hover:bg-blue-50 odd:bg-gray-50 group/item"
               >
-                <td class="px-4 py-4 font-semibold text-xl text-gray-700">{{ serial + 1 }}</td>
-                <td class="px-4 py-4 max-w-[60px] md:max-w-[300px]">
+                <td class="px-4 py-4 font-semibold text-xl text-gray-700 border border-gray-200">
+                  {{ serial + 1 }}
+                </td>
+                <td class="px-4 py-4 max-w-[60px] md:max-w-[300px] border border-gray-200">
                   <div
                     class="flex flex-col lg:flex-row items-start lg:items-center gap-2 text-sm mb-3"
                   >
@@ -121,11 +123,47 @@ const goToAdd = () => {
                   <span class="text-gray-400">By</span> <UserChip :user="req.created_by" />
                 </div> -->
                 </td>
-                <td class="px-4 py-4 text-right whitespace-nowrap">
-                  <UserChip :user="req.created_by" v-if="req.created_by" />
+                <td class="px-4 py-4 whitespace-nowrap border border-gray-200">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-500">Created:</span>
+                    <UserChip :user="req.created_by" v-if="req.created_by" avatar-size="xsmall" />
+                  </div>
+
+                  <div class="flex items-center gap-2 mt-2">
+                    <div class="text-xs text-gray-500">From Coordinator:</div>
+                    <UserChip
+                      :user="req.from_coordinator"
+                      v-if="req.from_coordinator"
+                      avatar-size="xsmall"
+                    />
+                    <div v-else>
+                      <span v-if="req?.from_department?.coordinator_id">-</span>
+                      <span v-else class="italic text-xs text-gray-400">N/A</span>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2 mt-2">
+                    <div class="text-xs text-gray-500">To Coordinator:</div>
+                    <UserChip
+                      :user="req.to_coordinator"
+                      v-if="req.to_coordinator"
+                      avatar-size="xsmall"
+                    />
+                    <div v-else>
+                      <span v-if="req?.to_department?.coordinator_id">-</span>
+                      <span v-else class="italic text-xs text-gray-400">N/A</span>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2 mt-2">
+                    <div class="text-xs text-gray-500">To In Charge:</div>
+                    <UserChip :user="req.to_incharge" v-if="req.to_incharge" avatar-size="xsmall" />
+                    <div v-else>
+                      <span v-if="req?.to_department?.incharge_id">-</span>
+                      <span v-else class="italic text-xs text-gray-400">N/A</span>
+                    </div>
+                  </div>
                 </td>
 
-                <td class="px-4 py-4 text-center whitespace-nowrap">
+                <td class="px-4 py-4 text-center whitespace-nowrap border border-gray-200">
                   <div class="text-gray-600" v-if="req.submission_date">
                     {{
                       new Date(req.submission_date).toLocaleDateString('en-US', {
@@ -138,7 +176,7 @@ const goToAdd = () => {
                   <div v-else>-</div>
                 </td>
 
-                <td class="px-4 py-4 text-center">
+                <td class="px-4 py-4 text-center border border-gray-200">
                   <div class="flex gap-4 items-center justify-center">
                     <RouterLink
                       :to="{ name: 'RequirementShow', params: { id: req?.id } }"
