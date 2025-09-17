@@ -38,16 +38,19 @@ const goToAdd = () => {
 
 <template>
   <div class="container mx-auto p-6">
-    <div class="bg-white shadow-md rounded-lg p-6">
-      <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold text-gray-800">Requirements</h2>
-        <button @click="goToAdd" class="btn-1">Add Requirement</button>
-      </div>
-      <RequirementHeader v-model="filters" />
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-gray-800">Requirements</h2>
+      <button @click="goToAdd" class="btn-1">Add Requirement</button>
+    </div>
+    <div class="bg-white shadow-md rounded-lg p-4">
+      <RequirementHeader v-model="filters" class="mt-2 mb-6" />
 
-      <LoaderView v-if="store.loading" class="min-h-64 shadow-none"
-        >Loading requirements...</LoaderView
+      <LoaderView
+        v-if="store.loading"
+        class="sm:min-h-64 lg:min-h-96 shadow-none flex items-center justify-center"
       >
+        Loading requirements...
+      </LoaderView>
 
       <div v-else-if="store.error" class="text-center py-4 text-red-500">
         {{ store.error }}
