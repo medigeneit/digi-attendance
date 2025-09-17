@@ -44,5 +44,27 @@ export const useKpiReportStore = defineStore('kpi-report', {
         throw e
       }
     },
+
+   async setReportCompletion(payload) {
+      try {
+        const { form_id, department_id, completed } = payload || {};
+        if (!form_id) throw new Error('form_id is required');
+        if (department_id === undefined || department_id === null) {
+          throw new Error('department_id is required');
+        }
+
+        const { data } = await apiClient.patch(
+          `/kpi/forms/${form_id}/report-completion`,
+          { department_id, completed: !!completed }
+        );
+
+        return data;
+      } catch (e) {
+        const msg = e?.response?.data?.message || e?.message || 'Failed to update report completion';
+        console.error('setReportCompletion error:', e);
+        throw new Error(msg);
+      }
+    }
+
   },
 })

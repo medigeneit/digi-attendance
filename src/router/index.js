@@ -1084,6 +1084,11 @@ const router = createRouter({
           path: '/kpi/monthly-forms',
           name: 'MonthlyKpiFormList',
           component: () => import('@/views/admin-pages/MonthlyKpiFormList.vue'),
+           meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'MonthlyKpi Form List',
+          },
         },
         {
           path: '/kpi/monthly-forms/create',
@@ -1101,22 +1106,41 @@ const router = createRouter({
           path: '/kpi/evaluations',
           name: 'EvaluationList',
           component: () => import('@/views/admin-pages/EvaluationList.vue'),
+           meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Evaluation List',
+          },
         },
         {
           path: '/kpi/evaluations/:id',
           name: 'EvaluationShow',
           component: () => import('@/views/admin-pages/EvaluationShow.vue'),
-          props: true,
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Evaluation Show',
+          },
         },
         {
           path: '/kpi/assignments',
           name: 'AssignmentList',
           component: () => import('@/views/admin-pages/AssignmentList.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Assignment List',
+          },
         },
         {
-          path: '/kpi/reports',
+          path: '/kpi/monthly-kpi-reports',
           name: 'MonthlyKpiReportList',
           component: () => import('@/views/admin-pages/KpiBiMonthlyReport.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['super_admin', 'developer'],
+            title: 'Monthly Kpi Report',
+          },
         },
       ],
     },
