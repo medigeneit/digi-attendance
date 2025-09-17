@@ -154,7 +154,7 @@ async function finalize() {
   }
 }
 
-function backToList() { router.push({ name: 'EvaluationList' }) }
+function backToList() { router.back(-1) }
 onMounted(load)
 
 function printPage() {
