@@ -57,11 +57,11 @@ const goToAdd = () => {
         <table class="min-w-full bg-white border overflow-hidden table table-fixed">
           <thead class="bg-gray-100">
             <tr>
-              <th class="px-4 py-2 text-center whitespace-nowrap w-2">#</th>
-              <th class="px-4 py-2 text-left whitespace-nowrap">Requirement</th>
-              <th class="px-4 py-2 text-center whitespace-nowrap w-16">User</th>
-              <th class="px-4 py-2 text-center whitespace-nowrap w-16">Submitted At</th>
-              <th class="px-4 py-2 text-center whitespace-nowrap w-20">Actions</th>
+              <th class="px-4 py-2 text-center whitespace-nowrap w-2 border">#</th>
+              <th class="px-4 py-2 text-left whitespace-nowrap border">Requirement</th>
+              <th class="px-4 py-2 text-center whitespace-nowrap w-16 border">User</th>
+              <th class="px-4 py-2 text-center whitespace-nowrap w-16 border">Submitted At</th>
+              <th class="px-4 py-2 text-center whitespace-nowrap w-20 border">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -80,7 +80,9 @@ const goToAdd = () => {
                 :key="req.id"
                 class="border-t hover:bg-blue-50 odd:bg-gray-50 group/item"
               >
-                <td class="px-4 py-4 font-semibold text-xl text-gray-700 border border-gray-200">
+                <td
+                  class="px-4 py-4 font-semibold text-xl text-gray-700 border border-gray-200 text-center"
+                >
                   {{ serial + 1 }}
                 </td>
                 <td class="px-4 py-4 max-w-[60px] md:max-w-[300px] border border-gray-200">
@@ -165,13 +167,24 @@ const goToAdd = () => {
 
                 <td class="px-4 py-4 text-center whitespace-nowrap border border-gray-200">
                   <div class="text-gray-600" v-if="req.submission_date">
-                    {{
-                      new Date(req.submission_date).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                      })
-                    }}
+                    <div>
+                      {{
+                        new Date(req.submission_date).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })
+                      }}
+                    </div>
+                    <div>
+                      {{
+                        new Date(req.submission_date).toLocaleTimeString('en-US', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: true,
+                        })
+                      }}
+                    </div>
                   </div>
                   <div v-else>-</div>
                 </td>
