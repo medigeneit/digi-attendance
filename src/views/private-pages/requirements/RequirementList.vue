@@ -2,6 +2,7 @@
 import LoaderView from '@/components/common/LoaderView.vue'
 import RequirementHeader from '@/components/tasks/RequirementHeader.vue'
 import UserChip from '@/components/user/UserChip.vue'
+import { useAuthStore } from '@/stores/auth'
 import { useRequirementStore } from '@/stores/useRequirementStore'
 import { computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -9,6 +10,7 @@ import { useRoute, useRouter } from 'vue-router'
 const store = useRequirementStore()
 const router = useRouter()
 const route = useRoute()
+const auth = useAuthStore()
 
 const filters = computed({
   get() {
@@ -95,14 +97,22 @@ const goToAdd = () => {
                     <span class="text-gray-400">From </span>
                     <span
                       :title="req?.from_department?.name"
-                      class="text-blue-500/60 group-hover/item:text-blue-500 font-semibold flex-shrink-0 border bg-blue-50 rounded-full px-2 text-xs"
+                      :class="{
+                        'bg-green-500 text-white group-hover/item:text-white':
+                          req?.from_department?.id == auth?.user?.department_id,
+                      }"
+                      class="text-blue-500 font-semibold flex-shrink-0 border border-blue-500 bg-blue-50 rounded-full px-2 text-xs"
                     >
                       {{ req?.from_department?.short_name || req?.from_department?.name }}
                     </span>
                     <span class="text-gray-400">To </span>
                     <span
                       :title="req?.to_department?.name"
-                      class="text-sky-500/60 group-hover/item:text-sky-500 font-semibold flex-shrink-0 border bg-blue-50 rounded-full px-2 text-xs"
+                      :class="{
+                        'bg-sky-500 !text-white  ':
+                          req?.to_department?.id == auth?.user?.department_id,
+                      }"
+                      class="text-sky-500 font-semibold flex-shrink-0 border border-sky-500 bg-blue-50 rounded-full px-2 text-xs"
                       >{{ req?.to_department?.short_name || req?.to_department?.name }}</span
                     >
                   </div>
