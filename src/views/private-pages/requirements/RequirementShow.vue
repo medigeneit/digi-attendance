@@ -371,7 +371,7 @@ async function handleTaskAddClose() {
                         :className="{ button: '  underline' }"
                         class="mb-4 print:mb-0"
                       >
-                        <p class="text-sky-800 text-sm" v-html="detail?.feedback"></p>
+                        <p class="text-sky-800 text-sm text-justify" v-html="detail?.feedback"></p>
                       </DescriptionView>
                       <div>
                         <button

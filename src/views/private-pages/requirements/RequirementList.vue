@@ -2,6 +2,7 @@
 import LoaderView from '@/components/common/LoaderView.vue'
 import RequirementHeader from '@/components/tasks/RequirementHeader.vue'
 import UserChip from '@/components/user/UserChip.vue'
+import { useAuthStore } from '@/stores/auth'
 import { useRequirementStore } from '@/stores/useRequirementStore'
 import { computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -9,6 +10,7 @@ import { useRoute, useRouter } from 'vue-router'
 const store = useRequirementStore()
 const router = useRouter()
 const route = useRoute()
+const auth = useAuthStore()
 
 const filters = computed({
   get() {
@@ -38,30 +40,33 @@ const goToAdd = () => {
 
 <template>
   <div class="container mx-auto p-6">
-    <div class="bg-white shadow-md rounded-lg p-6">
-      <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold text-gray-800">Requirements</h2>
-        <button @click="goToAdd" class="btn-1">Add Requirement</button>
-      </div>
-      <RequirementHeader v-model="filters" />
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-gray-800">Requirements</h2>
+      <button @click="goToAdd" class="btn-1">Add Requirement</button>
+    </div>
+    <div class="bg-white shadow-md rounded-lg p-4">
+      <RequirementHeader v-model="filters" class="mt-2 mb-6" />
 
-      <LoaderView v-if="store.loading" class="min-h-64 shadow-none"
-        >Loading requirements...</LoaderView
+      <LoaderView
+        v-if="store.loading"
+        class="sm:min-h-64 lg:min-h-96 shadow-none flex items-center justify-center"
       >
+        Loading requirements...
+      </LoaderView>
 
       <div v-else-if="store.error" class="text-center py-4 text-red-500">
         {{ store.error }}
       </div>
 
-      <div v-else class="overflow-x-auto">
+      <div v-else class="overflow-x-auto border-x xl:border-x-0">
         <table class="min-w-full bg-white border overflow-hidden table table-fixed">
           <thead class="bg-gray-100">
             <tr>
-              <th class="px-4 py-2 text-center whitespace-nowrap w-2 border">#</th>
-              <th class="px-4 py-2 text-left whitespace-nowrap border">Requirement</th>
-              <th class="px-4 py-2 text-center whitespace-nowrap w-16 border">User</th>
-              <th class="px-4 py-2 text-center whitespace-nowrap w-16 border">Submitted At</th>
-              <th class="px-4 py-2 text-center whitespace-nowrap w-20 border">Actions</th>
+              <th class="px-4 py-2 text-center whitespace-nowrap border w-[4%]">#</th>
+              <th class="px-4 py-2 text-left whitespace-nowrap border w-[60%]">Requirement</th>
+              <th class="px-4 py-2 text-center whitespace-nowrap w-[12%] border">User</th>
+              <th class="px-4 py-2 text-center whitespace-nowrap w-[12%] border">Submitted At</th>
+              <th class="px-4 py-2 text-center whitespace-nowrap w-[12%] border">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -85,20 +90,30 @@ const goToAdd = () => {
                 >
                   {{ serial + 1 }}
                 </td>
-                <td class="px-4 py-4 max-w-[60px] md:max-w-[300px] border border-gray-200">
+                <td class="px-4 py-4 min-w-[300px] md:min-w-[400px] border border-gray-200">
                   <div
-                    class="flex flex-col lg:flex-row items-start lg:items-center gap-2 text-sm mb-3"
+                    class="flex flex-col lg:flex-row items-start lg:items-center lg:flex-wrap gap-2 text-sm mb-3"
                   >
                     <span class="text-gray-400">From </span>
                     <span
-                      class="text-blue-500/60 group-hover/item:text-blue-500 font-semibold flex-shrink-0 border bg-blue-50 rounded-full px-2 text-xs"
+                      :title="req?.from_department?.name"
+                      :class="{
+                        'bg-green-500 text-white group-hover/item:text-white':
+                          req?.from_department?.id == auth?.user?.department_id,
+                      }"
+                      class="text-blue-500 font-semibold flex-shrink-0 border border-blue-500 bg-blue-50 rounded-full px-2 text-xs"
                     >
-                      {{ req?.from_department?.name }}
+                      {{ req?.from_department?.short_name || req?.from_department?.name }}
                     </span>
                     <span class="text-gray-400">To </span>
                     <span
-                      class="text-sky-500/60 group-hover/item:text-sky-500 font-semibold flex-shrink-0 border bg-blue-50 rounded-full px-2 text-xs"
-                      >{{ req?.to_department?.name }}</span
+                      :title="req?.to_department?.name"
+                      :class="{
+                        'bg-sky-500 !text-white  ':
+                          req?.to_department?.id == auth?.user?.department_id,
+                      }"
+                      class="text-sky-500 font-semibold flex-shrink-0 border border-sky-500 bg-blue-50 rounded-full px-2 text-xs"
+                      >{{ req?.to_department?.short_name || req?.to_department?.name }}</span
                     >
                   </div>
                   <div class="space-y-4">
