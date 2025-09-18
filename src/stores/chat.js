@@ -51,6 +51,21 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  const createConversation = async (body = {}) => {
+    loading.value = true
+    error.value = null
+
+    try {
+      await apiClient.post('/chat/conversations', body)
+      // fetchUserConversations()
+    } catch (err) {
+      error.value = err.response?.data?.message || 'ডাটা Create করতে ব্যর্থ হয়েছে।'
+      console.error('Error creating conversation:', err)
+    } finally {
+      loading.value = false
+    }
+  }
+
   const fetchConversationById = async (conversationsId) => {
     loading.value = true
     error.value = null
@@ -99,6 +114,7 @@ export const useChatStore = defineStore('chat', () => {
     activeConversation,
     messages,
     fetchUserConversations,
+    createConversation,
     fetchConversationById,
     fetchConversationMessages,
   }

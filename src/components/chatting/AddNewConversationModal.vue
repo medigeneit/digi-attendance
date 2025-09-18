@@ -1,57 +1,129 @@
+<!-- AddNewConversationModal.vue -->
 <script setup>
-import { useChatStore } from '@/stores/chat';
+import { useChatStore } from '@/stores/chat'
+import { ref } from 'vue'
+import ConversationTypeSelector from './add-conversation/ConversationTypeSelector.vue'
+import GroupTitleInput from './add-conversation/GroupTitleInput.vue'
+import UserPicker from './add-conversation/UserPicker.vue'
+
+const TYPES = { DIRECT: 'direct', GROUP: 'group' }
 
 const chatStore = useChatStore()
 
-function submit() {
-  console.log('Submitting...')
-}
+// state
+const conversationType = ref('')
+const companyId = ref('')
+const departmentId = ref('')
+const groupTitle = ref('')
+const selectedUserIds = ref([])
+const errorMsg = ref('')
 
+// helpers
 const closeModal = () => {
   chatStore.openAddModal = false
+  resetAll()
+}
+
+function resetAll() {
+  conversationType.value = ''
+  companyId.value = ''
+  departmentId.value = ''
+  groupTitle.value = ''
+  selectedUserIds.value = []
+  errorMsg.value = ''
+}
+
+// submit
+async function submit() {
+  errorMsg.value = ''
+  if (!conversationType.value) {
+    errorMsg.value = 'দয়া করে Conversation টাইপ নির্বাচন করুন।'
+    return
+  }
+  if (selectedUserIds.value?.length == 0) {
+    errorMsg.value = 'User নির্বাচন করুন।'
+    return
+  }
+
+  // 👉 এখানে আপনার create conversation API কল করুন
+  // direct: selectedUserIds.value.length === 1
+  // group : groupTitle.value && selectedUserIds.value.length >= 2
+
+  chatStore.createConversation({
+    type: conversationType.value,
+    title: conversationType.value == 'group' ? groupTitle.value : '',
+    user_ids: selectedUserIds.value,
+  })
 }
 </script>
 
 <template>
   <div
     v-if="chatStore.openAddModal"
-    class="fixed inset-0 w-screen h-screen bg-black bg-opacity-50 flex justify-center items-center z-[9999]"
-    @click.self="closeModal"
+    class="fixed inset-0 w-screen h-screen bg-black/50 flex justify-center items-center z-[9999999]"
   >
-    <div class="bg-white rounded-lg p-6 w-full max-w-xl">
-      <h2 class="text-xl font-semibold text-center">Add New Conversation</h2>
-      <hr class="my-3" />
-      <form @submit.prevent="submit">
-        <div class="mb-4">
-          <label class="block text-gray-700 mb-2" for="title">Title</label>
-          <input
-            id="title"
-            type="text"
-            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter conversation title"
-          />
+    <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90%] overflow-y-auto">
+      <div class="flex justify-between items-center">
+        <h2 class="text-xl text-center">Add New Conversation Form</h2>
+
+        <ConversationTypeSelector
+          v-model="conversationType"
+          :onSelect="() => (selectedUserIds = [])"
+        />
+      </div>
+
+      <hr class="mt-4" />
+
+      <div v-if="!conversationType" class="mt-4">
+        <div class="rounded-md border border-dashed p-4 text-center text-gray-600">
+          <div class="py-4 text-xl leading-loose">
+            Conversation টাইপ (Direct / Group) সিলেক্ট করুন, <br />
+            তারপর নিচে ফিল্টার দেখাবে।
+          </div>
+          <p class="pb-1">অথবা,</p>
+          <button
+            type="button"
+            class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
+            @click="closeModal"
+          >
+            Cancel
+          </button>
         </div>
-        <div class="mb-4">
-          <label class="block text-gray-700 mb-2" for="participants">Participants</label>
-          <input
-            id="participants"
-            type="text"
-            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter participant usernames"
-          />
-        </div>
-        <hr class="my-3" />
+      </div>
+
+      <form v-else class="space-y-3 mt-3" @submit.prevent="submit">
+        <GroupTitleInput v-if="conversationType === TYPES.GROUP" v-model="groupTitle" />
+
+        <!-- ✅ Filter + Users picker এক কম্পোনেন্টেই -->
+        <UserPicker
+          :mode="conversationType"
+          v-model:company-id="companyId"
+          v-model:department-id="departmentId"
+          v-model:selectedUserIds="selectedUserIds"
+        />
+
+        <p v-if="errorMsg" class="text-red-600 text-sm">
+          {{ errorMsg }}
+        </p>
+
+        <hr />
+
         <div class="flex justify-between">
           <button
             type="button"
-            class="mr-2 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
-            @click.self="closeModal"
+            class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
+            @click="closeModal"
           >
             Cancel
           </button>
           <button
             type="submit"
-            class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+            class="px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 disabled:opacity-60"
+            :disabled="
+              conversationType === TYPES.DIRECT
+                ? selectedUserIds.length !== 1
+                : !groupTitle.trim() || selectedUserIds.length < 2
+            "
           >
             Create
           </button>
