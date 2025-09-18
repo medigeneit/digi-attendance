@@ -2,53 +2,76 @@
 import MyNotifications from '@/components/MyNotifications.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import { useNotificationStore } from '@/stores/notification'
+import { useTaskNotificationStore } from '@/stores/task-notification'
 import { storeToRefs } from 'pinia'
 import { onBeforeMount, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
+import MyTaskNotifications from '../task-notifications/MyTaskNotifications.vue'
 
 const props = defineProps({ user: Object, userInitial: String })
 
 const notificationStore = useNotificationStore()
+const taskNotificationStore = useTaskNotificationStore()
 
 const { total_notifications } = storeToRefs(notificationStore)
+const { total_task_notifications } = storeToRefs(taskNotificationStore)
 
-const showNotice = ref(false)
+const noticeDropdown = ref(null) //task or general
+
 const notificationListRef = ref(null)
 
-const toggleNotice = () => {
-  showNotice.value = !showNotice.value
+const toggleNoticeDropdown = (type) => {
+  noticeDropdown.value = noticeDropdown.value == type ? null : type
 }
 
 function handleOutsideClick(event) {
   if (notificationListRef.value && !notificationListRef.value.contains(event.target)) {
-    showNotice.value = false
+    noticeDropdown.value = null
   }
 }
 
-onMounted(() => {
-  notificationStore.fetchCountNotifications()
+onMounted(async () => {
+  await Promise.all([
+    notificationStore.fetchCountNotifications(),
+    taskNotificationStore.fetchTaskNotificationCount(),
+  ])
+
   document.addEventListener('click', handleOutsideClick)
 })
 
-const markNotificationAndNavigate = async (notificationId, url) => {
-  await notificationStore.markAsRead(notificationId)
-  window.location.href = url
-}
 onBeforeMount(() => {
   document.removeEventListener('click', handleOutsideClick)
 })
 </script>
 
 <template>
-  <div class="bg-white py-2 shadow">
+  <div class="bg-white shadow">
     <div class="mx-auto flex justify-between items-center px-4">
-      <RouterLink to="/" class="logo ml-7 md:ml-0">
-        <img class="h-[50px]" src="/src/assets/logo.png" alt="Logo" />
+      <RouterLink to="/" class="logo ml-7 md:ml-0 pr-2 flex-shrink-0 my-1">
+        <img class="h-[25px] md:h-[50px]" src="/src/assets/logo.png" alt="Logo" />
       </RouterLink>
-      <ul class="flex gap-4 items-center" ref="notificationListRef">
+
+      <div class="flex gap-4 items-center relative my-1" ref="notificationListRef">
         <!-- Notification Bell -->
 
-        <button class="btn-icon relative" @click="toggleNotice">
+        <button class="btn-icon relative" @click="() => toggleNoticeDropdown('task')">
+          <i class="fas fa-tasks text-xl"></i>
+          <div
+            v-if="total_task_notifications > 0"
+            class="absolute -translate-x-1/2 -translate-y-1/2 -right-3 top-2.5"
+          >
+            <span class="flex size-6 relative">
+              <span
+                class="flex justify-center items-center size-6 text-xs text-white rounded-full bg-red-500"
+              >
+                {{ total_task_notifications }}
+              </span>
+              <span class="absolute animate-ping size-6 rounded-full bg-red-400 opacity-75"></span>
+            </span>
+          </div>
+        </button>
+
+        <button class="btn-icon relative" @click="() => toggleNoticeDropdown('general')">
           <i class="fas fa-bell text-xl"></i>
           <div
             v-if="total_notifications > 0"
@@ -70,19 +93,18 @@ onBeforeMount(() => {
           to="/profile"
           class="menus font-bold bg-gray-100 hover:bg-teal-100 p-1 rounded-full border"
         >
-          <UserAvatar :user="user" />
+          <UserAvatar :user="user" size="medium" />
           <h4 class="hidden md:flex flex-col overflow-hidden">
-            <span class="line-clamp-1 break-all pr-2 text-sm">{{ user.name }}</span>
-            <span class="line-clamp-1 break-all pr-2 text-xs font-normal">{{ user.email }}</span>
+            <span class="line-clamp-1 break-all pr-2 text-sm text-gray-900">{{ user.name }}</span>
+            <span class="line-clamp-1 break-all pr-2 text-xs font-normal text-gray-700">
+              {{ user.email }}
+            </span>
           </h4>
         </RouterLink>
-      </ul>
 
-      <MyNotifications
-        v-if="showNotice"
-        :markNotification="markNotificationAndNavigate"
-        @close="showNotice = false"
-      />
+        <MyNotifications v-if="noticeDropdown == 'general'" @close="noticeDropdown = null" />
+        <MyTaskNotifications v-if="noticeDropdown == 'task'" @close="noticeDropdown = null" />
+      </div>
     </div>
   </div>
 </template>
