@@ -64,7 +64,8 @@ const goToAdd = () => {
             <tr>
               <th class="px-4 py-2 text-center whitespace-nowrap border w-[4%]">#</th>
               <th class="px-4 py-2 text-left whitespace-nowrap border w-[60%]">Requirement</th>
-              <th class="px-4 py-2 text-center whitespace-nowrap w-[12%] border">User</th>
+              <th class="px-4 py-2 text-center whitespace-nowrap w-[12%] border">From</th>
+              <th class="px-4 py-2 text-center whitespace-nowrap w-[12%] border">To</th>
               <th class="px-4 py-2 text-center whitespace-nowrap w-[12%] border">Submitted At</th>
               <th class="px-4 py-2 text-center whitespace-nowrap w-[12%] border">Actions</th>
             </tr>
@@ -116,6 +117,7 @@ const goToAdd = () => {
                       >{{ req?.to_department?.short_name || req?.to_department?.name }}</span
                     >
                   </div>
+
                   <div class="space-y-4">
                     <div
                       class="text-blue-800"
@@ -136,16 +138,48 @@ const goToAdd = () => {
                       <span v-else class="">Show Form</span>
                     </RouterLink>
                   </div>
+
+                  <div class="flex gap-2 items-center mt-4">
+                    <div
+                      class="text-gray-600 text-xs flex items-center gap-2"
+                      v-if="req.created_at"
+                    >
+                      <i class="fas fa-clock text-blue-400"></i>
+                      <div>
+                        {{
+                          new Date(req.created_at).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: true,
+                          })
+                        }}
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-gray-500">By:</span>
+                      <UserChip :user="req.created_by" v-if="req.created_by" avatar-size="xsmall" />
+                    </div>
+                  </div>
                   <!-- <div class="flex items-center gap-2 mt-4">
                   <span class="text-gray-400">By</span> <UserChip :user="req.created_by" />
                 </div> -->
                 </td>
                 <td class="px-4 py-4 whitespace-nowrap border border-gray-200">
-                  <div class="flex items-center gap-2">
-                    <span class="text-xs text-gray-500">Created:</span>
-                    <UserChip :user="req.created_by" v-if="req.created_by" avatar-size="xsmall" />
+                  <div class="flex items-center gap-2 mt-2">
+                    <div class="text-xs text-gray-500">From In Charge:</div>
+                    <UserChip
+                      :user="req?.from_department?.in_charge"
+                      v-if="req?.from_department?.in_charge"
+                      avatar-size="xsmall"
+                    />
+                    <div v-else>
+                      <span v-if="req?.from_department?.incharge_id">-</span>
+                      <span v-else class="italic text-xs text-gray-400">N/A</span>
+                    </div>
                   </div>
-
                   <div class="flex items-center gap-2 mt-2">
                     <div class="text-xs text-gray-500">From Coordinator:</div>
                     <UserChip
@@ -158,6 +192,16 @@ const goToAdd = () => {
                       <span v-else class="italic text-xs text-gray-400">N/A</span>
                     </div>
                   </div>
+                </td>
+                <td class="px-4 py-4 whitespace-nowrap border border-gray-200">
+                  <div class="flex items-center gap-2 mt-2">
+                    <div class="text-xs text-gray-500">To In Charge:</div>
+                    <UserChip :user="req.to_incharge" v-if="req.to_incharge" avatar-size="xsmall" />
+                    <div v-else>
+                      <span v-if="req?.to_department?.incharge_id">-</span>
+                      <span v-else class="italic text-xs text-gray-400">N/A</span>
+                    </div>
+                  </div>
                   <div class="flex items-center gap-2 mt-2">
                     <div class="text-xs text-gray-500">To Coordinator:</div>
                     <UserChip
@@ -167,14 +211,6 @@ const goToAdd = () => {
                     />
                     <div v-else>
                       <span v-if="req?.to_department?.coordinator_id">-</span>
-                      <span v-else class="italic text-xs text-gray-400">N/A</span>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-2 mt-2">
-                    <div class="text-xs text-gray-500">To In Charge:</div>
-                    <UserChip :user="req.to_incharge" v-if="req.to_incharge" avatar-size="xsmall" />
-                    <div v-else>
-                      <span v-if="req?.to_department?.incharge_id">-</span>
                       <span v-else class="italic text-xs text-gray-400">N/A</span>
                     </div>
                   </div>
