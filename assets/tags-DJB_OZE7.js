@@ -1,1 +1,0 @@
-import{H as r,G as n,r as g}from"./index-DBYhXNkE.js";async function o(a){return r.get("/tags",{params:{tag_type:a}})}const i=n("tags",()=>{const a=g([]);return{tags:a,fetchTags:async e=>{var t,s;a.value=((s=(t=await o(e))==null?void 0:t.data)==null?void 0:s.tags)||[]}}});export{i as u};
