@@ -92,6 +92,11 @@ export const useNotificationStore = defineStore('notification', () => {
 
     try {
 
+      await apiClient.put(
+        `/pending-notifications/${notificationType}/${applicationId}/${action}`,
+        { note },
+      )
+
       await fetchCountNotifications()
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch notifications'
