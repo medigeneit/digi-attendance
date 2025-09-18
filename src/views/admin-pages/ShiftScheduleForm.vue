@@ -113,7 +113,8 @@ function assignWeekends() {
   if (!selectedIdsNum.value.length) return
   selectedIdsNum.value.forEach((empId) => {
     const emp = byId(empId)(employees.value)
-    const empWeekends = (emp?.weekends || []).map(d => String(d).slice(0, 3))
+    // console.log('emp weekends', empId, emp?.assign_weekend?.weekends);
+    const empWeekends = (emp?.assign_weekend?.weekends || []).map(d => String(d).slice(0, 3))
     if (!scheduleMap.value[k(empId)]) scheduleMap.value[k(empId)] = {}
     daysInMonth.value.forEach((day) => {
       const dayName = getDayName(day)

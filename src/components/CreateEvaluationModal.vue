@@ -7,9 +7,7 @@ import { useMonthlyKpiFormsStore } from '@/stores/monthly-kpi-forms'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
-  // ✅ নতুন: যদি userId আসে, তখন EmployeeFilter দেখানো হবে না (লকড)
   userId: { type: [Number, String], default: '' },
-  // optional: সুন্দর লেবেল দেখাতে চাইলে
   userLabel: { type: String, default: '' },
 })
 const emit = defineEmits(['update:modelValue', 'created'])
@@ -24,13 +22,12 @@ watch(() => props.modelValue, v => (open.value = v))
 
 watch(open, v => emit('update:modelValue', v))
 
-// local state
 const sel = ref({
   company_id: '',
   department_id: '',
   employee_id: '',
   line_type: '',
-  user_id: '', // mapped or locked
+  user_id: '', 
   form_id: '',
 })
 const forms = ref([])
@@ -38,7 +35,6 @@ const creating = ref(false)
 
 const isUserFixed = computed(() => !!props.userId)
 
-// যখন userId prop দেয়া থাকবে, তখনই সেটাকে lock করে দিন
 watch(
   () => props.userId,
   async(v) => {
