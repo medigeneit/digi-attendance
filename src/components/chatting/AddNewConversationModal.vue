@@ -2,6 +2,7 @@
 <script setup>
 import { useChatStore } from '@/stores/chat'
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import ConversationTypeSelector from './add-conversation/ConversationTypeSelector.vue'
 import GroupTitleInput from './add-conversation/GroupTitleInput.vue'
 import UserPicker from './add-conversation/UserPicker.vue'
@@ -9,6 +10,8 @@ import UserPicker from './add-conversation/UserPicker.vue'
 const TYPES = { DIRECT: 'direct', GROUP: 'group' }
 
 const chatStore = useChatStore()
+
+const router = useRouter()
 
 // state
 const conversationType = ref('')
@@ -49,11 +52,20 @@ async function submit() {
   // direct: selectedUserIds.value.length === 1
   // group : groupTitle.value && selectedUserIds.value.length >= 2
 
-  chatStore.createConversation({
+  const conversationId = await chatStore.createConversation({
     type: conversationType.value,
     title: conversationType.value == 'group' ? groupTitle.value : '',
     user_ids: selectedUserIds.value,
   })
+
+  chatStore.openAddModal = false
+
+  router.push({
+    name: 'Conversation Message',
+    params: { conversationId },
+  })
+
+  chatStore.fetchUserConversations()
 }
 </script>
 

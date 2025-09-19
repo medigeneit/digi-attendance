@@ -15,17 +15,32 @@ const props = defineProps({
 const isOwnMessage = computed(() => {
   return props.message.is_own_message
 })
+
+const isSystemMessage = computed(() => {
+  return props.message.type === 'system'
+})
 </script>
 
 <template>
   <div
-    class="flex"
+    class="flex px-4"
     :class="{
-      'justify-end pl-12': isOwnMessage,
-      'justify-start pr-12': !isOwnMessage,
+      'justify-end pl-12': !isSystemMessage && isOwnMessage,
+      'justify-start pr-12': !isSystemMessage && !isOwnMessage,
+      'justify-center': isSystemMessage,
     }"
   >
-    <div>
+    <div v-if="isSystemMessage" class="flex gap-1 items-center justify-center">
+      <i class="far fa-cog text-gray-700"></i>
+      <strong class="text-sm">
+        {{ isOwnMessage ? 'You' : message.sender?.name }}
+      </strong>
+      <div
+        v-html="message.body"
+        class="block text-sm italic whitespace-pre-wrap break-words leading-relaxed"
+      ></div>
+    </div>
+    <div v-else>
       <div class="border rounded-lg max-w-lg w-full">
         <div
           class="flex justify-between items-center p-1 rounded-t-lg gap-4"

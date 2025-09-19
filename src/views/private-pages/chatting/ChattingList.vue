@@ -45,10 +45,11 @@ watch(
         </h2>
         <template v-else>
           <ConversationHeader />
-          <ChatMessageContainer />
-          <SendMessageBox
-            class="bg-white border-t border-[#24A1DE] absolute left-0 right-0 bottom-0 w-full p-2"
-          />
+          <ChatMessageContainer>
+            <SendMessageBox
+              class="bg-white border-t border-[#24A1DE] sticky bottom-0 mt-auto z-10 w-full p-2"
+            />
+          </ChatMessageContainer>
         </template>
       </div>
     </div>

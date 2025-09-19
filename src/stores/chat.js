@@ -56,8 +56,9 @@ export const useChatStore = defineStore('chat', () => {
     error.value = null
 
     try {
-      await apiClient.post('/chat/conversations', body)
-      // fetchUserConversations()
+      const response = await apiClient.post('/chat/conversations', body)
+      activeConversationId.value = response.data.id
+      return response.data.id
     } catch (err) {
       error.value = err.response?.data?.message || 'ডাটা Create করতে ব্যর্থ হয়েছে।'
       console.error('Error creating conversation:', err)
@@ -102,6 +103,29 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  const createConversationMessage = async (conversationsId, body = {}) => {
+    if (!conversationsId) {
+      return
+    }
+
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await apiClient.post(`/chat/conversations/${conversationsId}/messages`, body)
+      messages.value?.push(response.data)
+
+      fetchUserConversations()
+
+      return response.data
+    } catch (err) {
+      error.value = err.response?.data?.message || 'ডাটা Create করতে ব্যর্থ হয়েছে।'
+      console.error('Error creating conversation:', err)
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     loading,
     error,
@@ -117,5 +141,6 @@ export const useChatStore = defineStore('chat', () => {
     createConversation,
     fetchConversationById,
     fetchConversationMessages,
+    createConversationMessage,
   }
 })
