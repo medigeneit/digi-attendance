@@ -6,6 +6,8 @@ import ConversationLoader from './ConversationLoader.vue'
 
 const chatStore = useChatStore()
 
+const isLoading = ref(false)
+
 /* ====== refs & state ====== */
 const scrollEl = ref(null)
 const atBottom = ref(true) // ইউজার বটমে আছে কিনা
@@ -53,6 +55,7 @@ const handleScroll = async () => {
 
 /* ====== data fetch ====== */
 const fetchData = async () => {
+  isLoading.value = true
   try {
     if (chatStore.activeConversationId) {
       await chatStore.fetchConversationMessages(chatStore.activeConversationId)
@@ -60,6 +63,8 @@ const fetchData = async () => {
     }
   } catch (e) {
     // store থেকেই error সেট হচ্ছে; চাইলে এখানে toast দিতে পারো
+  } finally {
+    isLoading.value = false
   }
 }
 
@@ -100,10 +105,10 @@ const showJumpButton = computed(() => !atBottom.value && !!chatStore.activeConve
     class="w-full overflow-y-auto h-[calc(100vh-200px)] scrollbar relative flex flex-col"
     :class="{
       'items-center justify-center':
-        !chatStore.activeConversationId || chatStore.error || chatStore.loading,
+        !chatStore.activeConversationId || chatStore.error || isLoading,
     }"
   >
-    <ConversationLoader v-if="chatStore.loading" />
+    <ConversationLoader v-if="isLoading" />
 
     <div v-if="chatStore.error" class="text-red-500 text-center my-4">
       {{ chatStore.error }}

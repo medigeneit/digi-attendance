@@ -6,6 +6,9 @@ export const useChatStore = defineStore('chat', () => {
   const loading = ref(false)
   const error = ref(null)
   const openAddModal = ref(false)
+  const openAddMemberModal = ref(false)
+  const showMobileConversationList  = ref(false)
+
   const conversations = ref([])
   const conversation = ref({})
   const activeConversationId = ref(null)
@@ -23,17 +26,28 @@ export const useChatStore = defineStore('chat', () => {
   })
 
   const filteredConversations = computed(() => {
-    if (conversations.value?.length === 0) {
-      return []
-    }
+    const list = conversations.value || []
+    if (list.length === 0) return []
 
-    if (!searchText.value) {
-      return conversations.value
-    }
+    const q = (searchText.value || '').toLowerCase().trim()
 
-    return conversations.value?.filter((conversation) =>
-      conversation?.title?.toLowerCase().includes(searchText.value),
-    )
+    // 1) filter
+    const filtered = q
+      ? list.filter((c) => (c?.title || '').toLowerCase().includes(q))
+      : list.slice() // clone, so original won't be mutated
+
+    // 2) sort by numeric "sort_by"
+    filtered.sort((a, b) => {
+      const av = Number.isFinite(+a?.sort_by) ? +a.sort_by : Number.NEGATIVE_INFINITY
+      const bv = Number.isFinite(+b?.sort_by) ? +b.sort_by : Number.NEGATIVE_INFINITY
+      if (av === bv) {
+        // tie-breaker: title (optional)
+        return (a?.title || '').localeCompare(b?.title || '')
+      }
+      return bv - av
+    })
+
+    return filtered
   })
 
   const fetchUserConversations = async (params = {}) => {
@@ -67,14 +81,14 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  const fetchConversationById = async (conversationsId) => {
+  const fetchConversationById = async (conversationId) => {
     loading.value = true
     error.value = null
 
     conversation.value = {}
 
     try {
-      const response = await apiClient.get(`/chat/conversations/${conversationsId}`)
+      const response = await apiClient.get(`/chat/conversations/${conversationId}`)
       conversation.value = response.data
     } catch (err) {
       error.value = err.response?.data?.message || 'ডাটা লোড করতে ব্যর্থ হয়েছে।'
@@ -84,14 +98,51 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  const fetchConversationMessages = async (conversationsId, params = {}) => {
+  const addConversationMembers = async (conversationId, body = {}) => {
+    if (!conversationId) {
+      return
+    }
+
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await apiClient.post(
+        `/chat/conversations/${conversationId}/add-members`,
+        body,
+      )
+
+      if (response?.data?.message) {
+        messages.value?.push(response.data?.message)
+      }
+
+      if (response?.data?.conversation) {
+        conversations.value = conversations.value.map((conversation) =>
+          parseInt(conversation.id) === parseInt(conversationId)
+            ? response.data.conversation
+            : conversation,
+        )
+      }
+
+      // fetchUserConversations()
+
+      return response.data
+    } catch (err) {
+      error.value = err.response?.data?.message || 'ডাটা Create করতে ব্যর্থ হয়েছে।'
+      console.error('Error creating conversation:', err)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const fetchConversationMessages = async (conversationId, params = {}) => {
     loading.value = true
     error.value = null
 
     messages.value = []
 
     try {
-      const response = await apiClient.get(`/chat/conversations/${conversationsId}/messages`, {
+      const response = await apiClient.get(`/chat/conversations/${conversationId}/messages`, {
         params,
       })
       messages.value = response.data
@@ -103,8 +154,8 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  const createConversationMessage = async (conversationsId, body = {}) => {
-    if (!conversationsId) {
+  const createConversationMessage = async (conversationId, body = {}) => {
+    if (!conversationId) {
       return
     }
 
@@ -112,12 +163,23 @@ export const useChatStore = defineStore('chat', () => {
     error.value = null
 
     try {
-      const response = await apiClient.post(`/chat/conversations/${conversationsId}/messages`, body)
-      messages.value?.push(response.data)
+      const response = await apiClient.post(`/chat/conversations/${conversationId}/messages`, body)
 
-      fetchUserConversations()
+      if (response?.data?.message) {
+        messages.value?.push(response.data?.message)
+      }
 
-      return response.data
+      if (response?.data?.conversation) {
+        conversations.value = conversations.value.map((conversation) =>
+          parseInt(conversation.id) === parseInt(conversationId)
+            ? response.data.conversation
+            : conversation,
+        )
+      }
+
+      // fetchUserConversations()
+
+      return response.data?.message
     } catch (err) {
       error.value = err.response?.data?.message || 'ডাটা Create করতে ব্যর্থ হয়েছে।'
       console.error('Error creating conversation:', err)
@@ -130,6 +192,8 @@ export const useChatStore = defineStore('chat', () => {
     loading,
     error,
     openAddModal,
+    openAddMemberModal,
+    showMobileConversationList,
     searchText,
     conversations,
     filteredConversations,
@@ -138,6 +202,7 @@ export const useChatStore = defineStore('chat', () => {
     activeConversation,
     messages,
     fetchUserConversations,
+    addConversationMembers,
     createConversation,
     fetchConversationById,
     fetchConversationMessages,

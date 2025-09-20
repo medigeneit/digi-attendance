@@ -23,44 +23,44 @@ const isSystemMessage = computed(() => {
 
 <template>
   <div
-    class="flex px-4"
+    class="flex px-2 md:px-4"
     :class="{
-      'justify-end pl-12': !isSystemMessage && isOwnMessage,
-      'justify-start pr-12': !isSystemMessage && !isOwnMessage,
+      'justify-end pl-6 md:pl-12': !isSystemMessage && isOwnMessage,
+      'justify-start pr-6 md:pr-12': !isSystemMessage && !isOwnMessage,
       'justify-center': isSystemMessage,
     }"
   >
-    <div v-if="isSystemMessage" class="flex gap-1 items-center justify-center">
-      <i class="far fa-cog text-gray-700"></i>
-      <strong class="text-sm">
+    <div v-if="isSystemMessage" class="flex flex-wrap gap-x-0.5 md:gap-x-1 items-center justify-center">
+      <i class="far fa-cog text-gray-700 text-xs md:text-base"></i>
+      <strong class="text-xs md:text-sm">
         {{ isOwnMessage ? 'You' : message.sender?.name }}
       </strong>
       <div
         v-html="message.body"
-        class="block text-sm italic whitespace-pre-wrap break-words leading-relaxed"
+        class="block text-xs md:text-sm italic whitespace-pre-wrap break-words leading-relaxed"
       ></div>
     </div>
     <div v-else>
-      <div class="border rounded-lg max-w-lg w-full">
+      <div class="border rounded-lg max-w-lg w-full min-w-40 md:min-w-80">
         <div
-          class="flex justify-between items-center p-1 rounded-t-lg gap-4"
+          class="flex justify-between items-center p-1 rounded-t-lg gap-1 md:gap-4"
           :class="{
             'bg-[#24A1DE] text-white': isOwnMessage,
             'bg-gray-200 text-black': !isOwnMessage,
           }"
         >
-          <div class="flex items-center gap-1">
+          <div class="grow w-full flex items-center gap-1">
             <UserAvatar :user="message.sender" size="small" />
-            <div class="font-semibold hidden sm:inline-block text-sm">
+            <div class="font-semibold sm:inline-block text-sm line-clamp-1">
               {{ message.sender?.name }}
             </div>
           </div>
-          <div class="text-xs mt-1" :class="isOwnMessage ? 'text-right' : 'text-left'">
+          <div class="shrink md:shrink-0 text-[10px] md:text-xs mt-1 text-right">
             {{ message.send_at }}
           </div>
         </div>
         <div
-          class="block py-1 px-2 rounded-b-lg bg-white text-sm whitespace-pre-wrap break-words leading-relaxed"
+          class="block py-1 px-2 rounded-b-lg bg-white text-xs md:text-sm whitespace-pre-wrap break-words leading-relaxed"
           v-html="message.body"
         ></div>
       </div>
