@@ -65,6 +65,7 @@ async function submit() {
     params: { conversationId },
   })
 
+  chatStore.showMobileConversationList = false
   chatStore.fetchUserConversations()
 }
 </script>

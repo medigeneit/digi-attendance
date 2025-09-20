@@ -102,7 +102,7 @@ const showJumpButton = computed(() => !atBottom.value && !!chatStore.activeConve
   <div
     ref="scrollEl"
     @scroll="handleScroll"
-    class="w-full overflow-y-auto h-[calc(100vh-200px)] scrollbar relative flex flex-col"
+    class="w-full overflow-y-auto h-[calc(100vh-150px)] scrollbar relative flex flex-col"
     :class="{
       'items-center justify-center':
         !chatStore.activeConversationId || chatStore.error || isLoading,
