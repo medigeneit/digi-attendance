@@ -22,6 +22,7 @@ const props = defineProps({
   companyId: { type: [String, Number], default: '' },
   departmentId: { type: [String, Number], default: '' },
   selectedUserIds: { type: Array, default: () => [] },
+  alreadyAddedUserIds: { type: Array, default: () => [] },
 })
 
 const emit = defineEmits(['update:companyId', 'update:departmentId', 'update:selectedUserIds'])
@@ -196,12 +197,12 @@ onMounted(async () => {
               :for="`userId${user.id}`"
               class="flex items-center justify-between gap-3 p-3 hover:bg-gray-50"
             >
-              <div class="flex items-center gap-3">
+              <div class="w-full grow flex items-center gap-3">
                 <div class="border rounded-full" :title="user.name">
                   <UserAvatar :user="user" size="medium" />
                 </div>
                 <div class="leading-tight">
-                  <div class="font-medium">
+                  <div class="font-medium text-sm md:text-base">
                     {{ user.name || 'User #' + (user.employee_id ?? user.id) }}
                   </div>
                   <div class="text-xs text-gray-500">
@@ -210,8 +211,12 @@ onMounted(async () => {
                 </div>
               </div>
 
-              <div class="shrink-0 flex justify-center items-center">
+              <div class="w-14 md:w-auto md:shrink-0 inline-flex justify-center items-center text-right">
+                <span v-if="alreadyAddedUserIds.includes(user.id)" class="text-gray-500 text-xs text-center">
+                  Already Added
+                </span>
                 <input
+                  v-else
                   :id="`userId${user.id}`"
                   :type="mode === 'direct' ? 'radio' : 'checkbox'"
                   :name="mode === 'direct' ? 'direct-user' : 'group-users'"

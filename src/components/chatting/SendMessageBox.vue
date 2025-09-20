@@ -62,15 +62,16 @@ onMounted(() => nextTick(autoResize))
     </label>
 
     <!-- Textarea input -->
-    <div class="w-full border-2 border-blue-100 rounded-3xl bg-gray-100 px-4 py-2">
+    <div class="w-full border-2 border-blue-100 rounded-xl bg-gray-100 px-1.5 pt-1.5 pb-0">
       <textarea
         ref="taRef"
         v-model="text"
         @input="autoResize"
         @keydown="onKeydown"
+        name="body"
         rows="1"
         placeholder="Write a message…"
-        class="w-full resize-none overflow-hidden bg-transparent outline-none leading-6 max-h-32"
+        class="w-full resize-none overflow-hidden bg-transparent outline-none leading-6 max-h-32 mb-0"
       ></textarea>
     </div>
 

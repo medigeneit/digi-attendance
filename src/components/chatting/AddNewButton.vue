@@ -12,7 +12,7 @@ const openModal = () => {
 
 <template>
   <div
-    v-if="['super_admin', 'developer'].includes(authStore.user.role)"
+    v-if="['admin', 'super_admin', 'developer'].includes(authStore.user?.role)"
     @click="openModal"
     title="Add New Conversation"
     class="size-10 shrink-0 grow-0 flex justify-center items-center"

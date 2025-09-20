@@ -11,7 +11,7 @@ const chatStore = useChatStore()
       id="search"
       placeholder="Search Conversations..."
       type="search"
-      class="input-1 pl-10 pr-2 rounded-b-none border-none outline-[#24a0deb0] py-[15px] rounded-none rounded-tl-lg"
+      class="input-1 pl-10 pr-2 rounded-b-none border-none outline-[#24a0deb0] py-[11px] md:py-[15px] rounded-none rounded-tl-lg"
       v-model="chatStore.searchText"
     />
   </label>

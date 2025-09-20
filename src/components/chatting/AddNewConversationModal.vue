@@ -74,9 +74,9 @@ async function submit() {
     v-if="chatStore.openAddModal"
     class="fixed inset-0 w-screen h-screen bg-black/50 flex justify-center items-center z-[9999999]"
   >
-    <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90%] overflow-y-auto">
-      <div class="flex justify-between items-center">
-        <h2 class="text-xl text-center">Add New Conversation Form</h2>
+    <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[100vh] md:max-h-[90%] overflow-y-auto">
+      <div class="flex flex-col gap-y-2 md:flex-row justify-between items-center">
+        <h2 class="text-xl text-center font-semibold">Add New Conversation</h2>
 
         <ConversationTypeSelector
           v-model="conversationType"
