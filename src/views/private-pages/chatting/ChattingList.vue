@@ -8,7 +8,7 @@ import ConversationList from '@/components/chatting/ConversationList.vue'
 import SearchConversation from '@/components/chatting/SearchConversation.vue'
 import SendMessageBox from '@/components/chatting/SendMessageBox.vue'
 import { useChatStore } from '@/stores/chat'
-import { watch } from 'vue'
+import { onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 const chatStore = useChatStore()
@@ -24,6 +24,10 @@ watch(
     immediate: true,
   },
 )
+
+onMounted(() => {
+  chatStore.showMobileConversationList = !route.params.conversationId
+})
 </script>
 
 <template>
@@ -68,7 +72,7 @@ watch(
           class="my-8 text-center px-4 grid justify-center items-center gap-2"
         >
           <i class="fad text-blue-600 fa-info-circle text-4xl md:text-7xl"></i>
-          <p class="text-gray-500 md:text-4xl ">
+          <p class="text-gray-500 md:text-4xl">
             Select a conversation <br />
             to start chatting
           </p>

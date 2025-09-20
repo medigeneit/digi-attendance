@@ -57,7 +57,7 @@ onBeforeMount(() => {
         <RouterLink to="/chatting" class="btn-icon relative" @click="noticeDropdown = null">
           <!-- <i class="fas fa-comment-alt text-xl"></i> -->
           <i class="fad fa-comment-alt-lines text-2xl text-blue-600"></i>
-          <div v-if="true" class="absolute -translate-x-1/2 -translate-y-1/2 -right-3 top-2.5">
+          <div v-if="false" class="absolute -translate-x-1/2 -translate-y-1/2 -right-3 top-2.5">
             <span class="flex size-6 relative">
               <span
                 class="flex justify-center items-center size-6 text-xs text-white rounded-full bg-blue-600"
