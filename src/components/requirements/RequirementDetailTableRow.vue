@@ -95,7 +95,12 @@ function handleCreateAssignButtonClick() {
                 <TaskUserChip :user="detail.supervisor" />
               </div>
             </div>
-            <div class="ml-auto flex gap-6 items-center">
+            <div
+              class="ml-auto flex gap-6 items-center"
+              v-if="
+                (state != 'loading' && !requirement?.status) || auth?.user?.role == 'super_admin'
+              "
+            >
               <button class="btn-2" @click.prevent="emit('editClick', detail)">
                 <i class="fas fa-edit"></i>Edit
               </button>
@@ -164,23 +169,29 @@ function handleCreateAssignButtonClick() {
       <template v-else>
         <td colspan="2" class="border-2 border-gray-700 p-3 text-center" v-if="isPrinting">
           <button
+            v-if="requirement.status == 'approved'"
             @click.prevent="handleCreateAssignButtonClick"
             class="print:hidden border-2 border-transparent group-hover/item:bg-blue-200 hover:border-blue-700 text-blue-500 hover:text-white hover:!bg-blue-500 rounded-md px-4 py-1 whitespace-nowrap"
           >
             <i class="fas fa-plus-circle"></i> Create / Assign Task
           </button>
-        </td></template
-      >
+          <div v-else-if="requirement.status == 'rejected'" class="text-red-400">Task Rejected</div>
+          <div v-else class="text-blue-400">Approval Pending</div>
+        </td>
+      </template>
     </tr>
   </template>
   <tr v-if="!isPrinting">
     <td colspan="2" class="border-2 border-gray-700 p-3 text-center">
       <button
+        v-if="requirement.status == 'approved'"
         @click.prevent="handleCreateAssignButtonClick"
         class="print:hidden border-2 border-transparent group-hover/item:bg-blue-200 hover:border-blue-700 text-blue-500 hover:text-white hover:!bg-blue-500 rounded-md px-4 py-1 whitespace-nowrap"
       >
         <i class="fas fa-plus-circle"></i> Create / Assign Task
       </button>
+      <div v-else-if="requirement.status == 'rejected'" class="text-red-400">Task Rejected</div>
+      <div v-else class="text-blue-400">Approval Pending</div>
     </td>
   </tr>
 </template>

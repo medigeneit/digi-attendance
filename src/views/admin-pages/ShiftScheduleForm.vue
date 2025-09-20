@@ -1,6 +1,5 @@
 <script setup>
-import EmployeeDropdownInput from '@/components/EmployeeDropdownInput.vue'
-import SelectDropdown from '@/components/SelectDropdown.vue'
+import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
 import { useShiftStore } from '@/stores/shift'
@@ -8,423 +7,459 @@ import { useShiftScheduleStore } from '@/stores/shiftScheduleStore'
 
 import dayjs from 'dayjs'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
-const store = useShiftScheduleStore()
-const companyStore = useCompanyStore()
-const shiftStore = useShiftStore()
+/* ==== Stores ==== */
+const scheduleStore   = useShiftScheduleStore()
+const companyStore    = useCompanyStore()
+const shiftStore      = useShiftStore()
 const departmentStore = useDepartmentStore()
 
-const { defaultShift } = storeToRefs(store)
-const { companies, employees } = storeToRefs(companyStore)
-const { departments } = storeToRefs(departmentStore)
-const { shifts } = storeToRefs(shiftStore)
+const { defaultShift }         = storeToRefs(scheduleStore)
+const { employees } = storeToRefs(companyStore)
+const { shifts }               = storeToRefs(shiftStore)
 
-const selectedMonth = ref(dayjs().format('YYYY-MM'))
-const selectedCompany = ref('')
-const selectedDepartment = ref('')
-const selectedEmployee = ref('')
-const selectedEmployeeId = ref('')
-const selectedShift = ref('')
-const scheduleMap = ref({})
-const selectedEmployeeIds = ref([])
+/* ==== Filters/State ==== */
+const selectedMonth       = ref(dayjs().format('YYYY-MM'))
+const selectedCompany     = ref('')
+const selectedDepartment  = ref('')
+const selectedEmployeeId  = ref('')       
+const selectedShift       = ref('')        
+const scheduleMap         = ref({})       
+const selectedEmployeeIds = ref([])        
 
+/* ==== Colors ==== */
 const shiftColorMap = ref({
-  WEEKEND: '#B91C1C', // Red
-  HOLIDAY: '#6B7280', // Tailwind's Gray-500 equivalent
+  WEEKEND: '#B91C1C', // red-700
+  HOLIDAY: '#6B7280', // gray-500
 })
-
 const colorPool = [
-  '#FF5733',
-  '#33C1FF',
-  '#33FF57',
-  '#FF33D4',
-  '#FFD633',
-  '#7D33FF',
-  '#FF8C33',
-  '#33FFF0',
-  '#B833FF',
-  '#3375FF',
-  '#FF3333',
-  '#33FFAA',
+  '#FF5733', '#33C1FF', '#33FF57', '#FF33D4', '#FFD633', '#7D33FF',
+  '#FF8C33', '#33FFF0', '#B833FF', '#3375FF', '#FF3333', '#33FFAA',
 ]
 
-const allShifts = computed(() => Object.values(shifts.value || {}).flat())
-
-function assignColorsToShifts() {
-  let colorIndex = 0
-  allShifts.value.forEach((shift) => {
-    if (!shiftColorMap.value[shift.id]) {
-      shiftColorMap.value[shift.id] = colorPool[colorIndex % colorPool.length]
-      colorIndex++
+/* ==== Helpers ==== */
+const byId = (id) => (arr) => (arr || []).find((i) => Number(i?.id) === Number(id))
+const allShifts = computed(() => {
+  const v = shifts.value || {}
+  return Array.isArray(v) ? v : Object.values(v).flat()
+})
+function assignColorsToShifts () {
+  let i = 0
+  allShifts.value.forEach(s => {
+    const key = String(s.id)
+    if (!shiftColorMap.value[key]) {
+      shiftColorMap.value[key] = colorPool[i % colorPool.length]
+      i++
     }
   })
 }
 
-const daysInMonth = computed(() =>
-  Array.from({ length: dayjs(selectedMonth.value).daysInMonth() }, (_, i) => i + 1),
-)
-
+const daysInMonth = computed(() => (
+  Array.from({ length: dayjs(selectedMonth.value).daysInMonth() }, (_, i) => i + 1)
+))
 const getDayName = (day) => {
   const date = `${selectedMonth.value}-${String(day).padStart(2, '0')}`
   return dayjs(date).format('ddd')
 }
 
+/* Selected IDs normalized + quick checker */
+const selectedIdsNum = computed(() =>
+  (selectedEmployeeIds.value || []).map(v => Number(v)).filter(Number.isFinite)
+)
+const selectedIdsSet = computed(() => new Set(selectedIdsNum.value))
+const isChecked = (empId) => selectedIdsSet.value.has(Number(empId))
+
+/* EmpId key helper */
+const k = (empId) => String(empId)
+
+/* ==== Cell rendering ==== */
 const getShiftColorStyle = (empId, day) => {
-  const shiftKey = scheduleMap.value?.[empId]?.[day]
-  if (!shiftKey) return { backgroundColor: '#D1D5DB' } // default gray
-
-  if (shiftKey === 'WEEKEND' || shiftKey === 'HOLIDAY') {
-    return { backgroundColor: shiftColorMap.value[shiftKey] || '#D1D5DB' }
-  }
-
-  return { backgroundColor: shiftColorMap.value[shiftKey] || '#D1D5DB' }
+  const val = scheduleMap.value?.[k(empId)]?.[day]
+  if (!val) return { backgroundColor: '#E5E7EB' }
+  const color = shiftColorMap.value[String(val)] || '#D1D5DB'
+  return { backgroundColor: color }
 }
-
 const getShiftName = (empId, day) => {
-  const shiftId = scheduleMap.value?.[empId]?.[day]
-  const shift = allShifts.value.find((s) => s.id === shiftId)
-  return shift?.name || ''
+  const val = scheduleMap.value?.[k(empId)]?.[day]
+  if (val === 'WEEKEND' || val === 'HOLIDAY') return val
+  const s = byId(val)(allShifts.value)
+  return s?.name || ''
 }
 
-const assignShift = (empId, day) => {
-  if (!selectedEmployeeIds.value.includes(parseInt(empId))) return
+/* ==== Assignment actions (ONLY for checked rows) ==== */
+function assignShift(empId, day) {
+  if (!isChecked(empId)) return
   if (!selectedShift.value) return
-  if (!scheduleMap.value[empId]) scheduleMap.value[empId] = {}
-  scheduleMap.value[empId][day] = selectedShift.value
+  if (!scheduleMap.value[k(empId)]) scheduleMap.value[k(empId)] = {}
+  scheduleMap.value[k(empId)][day] = selectedShift.value
 }
 
-const assignAllDatesForEmployee = (empId) => {
-  if (!selectedEmployeeIds.value.includes(parseInt(empId))) return
+function assignAllDatesForEmployee(empId) {
+  if (!isChecked(empId)) return
   if (!selectedShift.value) return
-  if (!scheduleMap.value[empId]) scheduleMap.value[empId] = {}
-  daysInMonth.value.forEach((day) => {
-    scheduleMap.value[empId][day] = selectedShift.value
+  if (!scheduleMap.value[k(empId)]) scheduleMap.value[k(empId)] = {}
+  daysInMonth.value.forEach((d) => {
+    scheduleMap.value[k(empId)][d] = selectedShift.value
   })
 }
 
-const assignAllDatesToSelectedEmployees = () => {
-  selectedEmployeeIds.value.forEach(assignAllDatesForEmployee)
+function assignAllDatesToSelectedEmployees() {
+  if (!selectedIdsNum.value.length || !selectedShift.value) return
+  selectedIdsNum.value.forEach(assignAllDatesForEmployee)
 }
 
-const assignWeekends = () => {
-  selectedEmployeeIds.value.forEach((empId) => {
-    const emp = employees.value.find((e) => e.id === parseInt(empId))
-    const empWeekends = emp?.weekends?.map((day) => day.slice(0, 3)) || []
-    if (!scheduleMap.value[empId]) scheduleMap.value[empId] = {}
+function assignWeekends() {
+  if (!selectedIdsNum.value.length) return
+  selectedIdsNum.value.forEach((empId) => {
+    const emp = byId(empId)(employees.value)
+    // console.log('emp weekends', empId, emp?.assign_weekend?.weekends);
+    const empWeekends = (emp?.assign_weekend?.weekends || []).map(d => String(d).slice(0, 3))
+    if (!scheduleMap.value[k(empId)]) scheduleMap.value[k(empId)] = {}
     daysInMonth.value.forEach((day) => {
       const dayName = getDayName(day)
       if (empWeekends.includes(dayName)) {
-        scheduleMap.value[empId][day] = 'WEEKEND'
+        scheduleMap.value[k(empId)][day] = 'WEEKEND'
       }
     })
   })
 }
 
-const saveSchedule = async () => {
-  if (!selectedEmployeeIds.value.length) {
-    alert('Please select employees before saving.')
+function clearAssignmentsForSelected() {
+  if (!selectedIdsNum.value.length) return
+  selectedIdsNum.value.forEach((empId) => {
+    if (scheduleMap.value[k(empId)]) scheduleMap.value[k(empId)] = {}
+  })
+}
+
+/* ==== Save (ONLY checked rows) ==== */
+async function saveSchedule () {
+  if (!selectedIdsNum.value.length) {
+    alert('Select at least one employee.')
     return
   }
-
-  if (!confirm('Are you sure you want to save the schedule?')) return
-
   const payload = []
-
-  for (const [empId, schedule] of Object.entries(scheduleMap.value)) {
-    if (!selectedEmployeeIds.value.includes(parseInt(empId))) continue
-
-    for (const [day, shiftValue] of Object.entries(schedule)) {
-      let shift_id = null
-      let status = null
-
-      if (shiftValue === 'WEEKEND' || shiftValue === 'HOLIDAY') {
-        status = shiftValue
-      } else {
-        shift_id = shiftValue
-      }
-
-      payload.push({
-        employee_id: parseInt(empId),
-        date: `${selectedMonth.value}-${String(day).padStart(2, '0')}`,
-        shift_id,
-        status,
-      })
+  for (const [empKey, schedule] of Object.entries(scheduleMap.value || {})) {
+    const empId = Number(empKey)
+    if (!selectedIdsSet.value.has(empId)) continue // ← only checked
+    for (const [dayStr, value] of Object.entries(schedule || {})) {
+      const day = Number(dayStr)
+      if (!day || !value) continue
+      const ymd = `${selectedMonth.value}-${String(day).padStart(2, '0')}`
+      let shift_id = null, status = null
+      if (value === 'WEEKEND' || value === 'HOLIDAY') status = value
+      else shift_id = Number(value)
+      payload.push({ employee_id: empId, date: ymd, shift_id, status })
     }
   }
 
-  console.log({ payload })
-
   if (!payload.length) {
-    alert('No schedule data to save.')
+    alert('No schedule data to save for checked employees.')
     return
   }
 
   try {
-    await store.saveSchedules({ payload })
+    await scheduleStore.saveSchedules({ payload })
     alert('Shift schedule saved successfully!')
-  } catch (err) {
-    console.error('Failed to save schedule', err)
+  } catch (e) {
+    console.error('Failed to save schedule', e)
     alert('Something went wrong while saving.')
   }
 }
 
-watch(selectedCompany, async (companyId) => {
-  if (companyId) {
-    selectedDepartment.value = ''
-    selectedEmployeeIds.value = []
-    employees.value = []
-    scheduleMap.value = {}
-
-    await companyStore.fetchEmployee(companyId)
-    await departmentStore.fetchDepartments({ companyId })
-    await shiftStore.fetchShifts({ companyId })
-    assignColorsToShifts()
-  }
-})
-
-watch(selectedDepartment, async (departmentId) => {
-  if (departmentId) {
-    const payload = {
-      departmentIds: [departmentId],
-    }
-    const response = await departmentStore.fetchDepartmentEmployee(payload)
-    employees.value = response
-
-    selectedEmployeeIds.value = []
-    await loadScheduleData(selectedCompany.value, departmentId, selectedMonth.value)
-  }
-})
-
-watch(selectedMonth, async (month) => {
-  if (month && selectedCompany.value && selectedDepartment.value) {
-    await companyStore.fetchEmployee(selectedCompany.value)
-
-    if (selectedCompany.value) {
-      await shiftStore.fetchShifts({ companyId: selectedCompany.value })
-    }
-
-    if (selectedDepartment.value) {
-      const response = await departmentStore.fetchDepartmentEmployee({
-        departmentIds: [selectedDepartment.value],
-      })
-      employees.value = response
-    }
-
-    assignColorsToShifts()
-    await loadScheduleData(selectedCompany.value, selectedDepartment.value, month)
-  }
-})
-
-const filteredEmployees = computed(() => {
-  if (!selectedEmployeeId.value) return employees.value
-  return employees.value.filter((emp) => emp.id === parseInt(selectedEmployeeId.value))
-})
-
-onMounted(async () => {
-  await companyStore.fetchCompanies()
-})
-
-const loadScheduleData = async (companyId, departmentId, month) => {
+/* ==== Data loading ==== */
+async function loadScheduleData (companyId, departmentId, month) {
   try {
     if (!companyId || !departmentId || !month) {
       alert('Company, Department, and Month are required to load schedule.')
       return
     }
-
     scheduleMap.value = {}
-    selectedEmployeeIds.value = []
+    // keep current selection; do not auto-select anyone
     defaultShift.value = false
 
-    const response = await store.fetchSchedules({
-      params: { company_id: companyId, department_id: departmentId, month },
+    const res = await scheduleStore.fetchSchedules({
+      params: { company_id: Number(companyId), department_id: Number(departmentId), month }
     })
-
-    let data = response || []
-    const mapped = {}
+    let data = res || []
 
     if (!data.length) {
-      const fallback = await store.fetchDefaultSchedules({
-        params: { company_id: companyId, department_id: departmentId, month },
+      const fallback = await scheduleStore.fetchDefaultSchedules({
+        params: { company_id: Number(companyId), department_id: Number(departmentId), month }
       })
       console.warn('[Fallback Schedule Loaded]', fallback)
       alert('No saved schedule found. Default schedule loaded.')
-      data = fallback
+      data = fallback || []
       defaultShift.value = true
     }
 
+    const mapped = {}
     data.forEach((item) => {
-      if (!item?.employee_id || !item?.date) return
-      const empId = item.employee_id
-      const day = parseInt(item.date.split('-')[2])
-      if (!mapped[empId]) mapped[empId] = {}
-      mapped[empId][day] = item.shift_id || item.status
-      if (!defaultShift.value && !selectedEmployeeIds.value.includes(empId)) {
-        selectedEmployeeIds.value.push(empId)
-      }
+      const empId = Number(item?.employee_id)
+      const dStr  = String(item?.date || '').split('-')[2]
+      const day   = Number(dStr)
+      if (!empId || !day) return
+      if (!mapped[k(empId)]) mapped[k(empId)] = {}
+      mapped[k(empId)][day] = item.shift_id ?? item.status
     })
-
     scheduleMap.value = mapped
-  } catch (err) {
-    console.error('Failed to load schedule data:', err)
+  } catch (e) {
+    console.error('Failed to load schedule data:', e)
     alert('Error loading schedule. Please try again or contact admin.')
+  }
+}
+
+/* ==== Fetchers / Watchers ==== */
+watch(selectedCompany, async (companyId) => {
+  if (!companyId) return
+  selectedDepartment.value  = ''
+  selectedEmployeeIds.value = []
+  employees.value = []
+  scheduleMap.value = {}
+
+  await departmentStore.fetchDepartments({ company_id: Number(companyId) })
+  await shiftStore.fetchShifts({ company_id: Number(companyId) })
+  assignColorsToShifts()
+})
+
+watch(selectedDepartment, async (departmentId) => {
+  if (!departmentId) return
+  const response = await departmentStore.fetchDepartmentEmployee({ departmentIds: [Number(departmentId)] })
+  employees.value = response || []
+  // keep selection if those employees still visible; otherwise clear
+  selectedEmployeeIds.value = selectedEmployeeIds.value.filter(id =>
+    (employees.value || []).some(e => Number(e.id) === Number(id))
+  )
+  await loadScheduleData(selectedCompany.value, departmentId, selectedMonth.value)
+})
+
+watch(selectedMonth, async (month) => {
+  if (!month || !selectedCompany.value || !selectedDepartment.value) return
+  await shiftStore.fetchShifts({ company_id: Number(selectedCompany.value) })
+  assignColorsToShifts()
+  const resp = await departmentStore.fetchDepartmentEmployee({
+    departmentIds: [Number(selectedDepartment.value)]
+  })
+  employees.value = resp || []
+  // keep selection in current filter scope
+  selectedEmployeeIds.value = selectedEmployeeIds.value.filter(id =>
+    (employees.value || []).some(e => Number(e.id) === Number(id))
+  )
+  await loadScheduleData(selectedCompany.value, selectedDepartment.value, month)
+})
+
+const filteredEmployees = computed(() => {
+  if (!selectedEmployeeId.value) return employees.value || []
+  const id = Number(selectedEmployeeId.value)
+  return (employees.value || []).filter(e => Number(e?.id) === id)
+})
+
+/* Select-all for visible employees */
+function toggleSelectAllVisible(checked) {
+  if (checked) {
+    selectedEmployeeIds.value = filteredEmployees.value.map(e => Number(e.id))
+  } else {
+    selectedEmployeeIds.value = []
   }
 }
 </script>
 
 <template>
   <div class="p-4 max-w-[1600px] mx-auto">
-    <h2 class="text-center title-lg mb-4">Monthly Shift Schedule Plan</h2>
-    <div class="grid grid-cols-2 md:grid-cols-6 gap-3 mb-4 items-center">
-      <SelectDropdown
-        v-model="selectedCompany"
-        :options="companies"
-        placeholder="--Select Company--"
-        class="h-10"
-        clearable
-        label="name"
-      />
-
-      <SelectDropdown
-        v-model="selectedDepartment"
-        :options="departments"
-        placeholder="--All Department--"
-        class="h-10"
-        clearable
-        label="name"
-      />
-
-      <!-- <select v-model="selectedDepartment" class="h-10 px-2 border rounded">
-        <option value="">- Department -</option>
-        <option v-for="d in departments" :key="d.id" :value="d.id">{{ d.name }}</option>
-      </select> -->
-
-      <div>
-        <EmployeeDropdownInput
-          v-model="selectedEmployeeId"
-          :employees="employees"
-          placeholder="--Select User--"
-          class="h-10"
-        />
-      </div>
-      <select v-model="selectedShift" class="h-10 px-2 border rounded">
-        <option value="">- Shift -</option>
-        <option v-for="s in allShifts" :key="s.id" :value="s.id">{{ s.name }}</option>
-      </select>
-
-      <input type="month" v-model="selectedMonth" class="h-10 px-2 border rounded" />
+    <!-- Title -->
+    <div class="flex items-center justify-between gap-3 mb-4">
+      <h2 class="text-center text-2xl font-semibold">Monthly Shift Schedule Plan</h2>
+      <div class="text-sm text-gray-500">Month: {{ selectedMonth }}</div>
     </div>
 
-    <p v-if="defaultShift" class="text-yellow-600 font-medium mb-2 p-2 border rounded border-black">
+    <!-- Filters -->
+    <div class="flex flex-wrap justify-start items-center gap-3 mb-4">
+      <EmployeeFilter
+        v-model:company_id="selectedCompany"
+        v-model:department_id="selectedDepartment"
+        v-model:employee_id="selectedEmployeeId"
+        :with-type="false"
+        :initial-value="{ company_id: selectedCompany, department_id: selectedDepartment, employee_id: selectedEmployeeId }"  
+      />
+      <select v-model="selectedShift" class="px-2 py-2 border rounded">
+        <option value="">- Pick a Shift -</option>
+        <option v-for="s in allShifts" :key="s.id" :value="s.id">{{ s.name }}</option>
+      </select>
+      <input type="month" v-model="selectedMonth" class="h-10 px-2 border rounded" />
+      <!-- visible select all -->
+    
+    </div>
+
+    <!-- Rule: only checked editable -->
+    <p class="text-sky-800 bg-sky-50 border border-sky-200 rounded p-2 mb-3">
+      ✔ Only <b>checked</b> employees are editable & will be saved.
+    </p>
+
+    <p v-if="defaultShift" class="text-amber-700 bg-amber-50 border border-amber-100 rounded p-2 mb-3">
       ⚠ Showing default schedule from current shift. Select employees manually before saving.
     </p>
 
-    <!-- Color Legend with selectable shift -->
-    <div class="flex flex-wrap gap-3 mb-4 p-4 bg-white rounded sticky top-16">
+    <!-- Clickable Legend -->
+    <div class="flex flex-wrap gap-3 mb-4 p-3 bg-white/70 backdrop-blur rounded sticky top-16 z-20 border">
       <div
         v-for="shift in allShifts"
         :key="shift.id"
-        class="flex items-center gap-2 cursor-pointer px-2 py-1 rounded"
-        :class="{
-          'ring-2 ring-blue-500': selectedShift === shift.id,
-        }"
+        class="flex items-center gap-2 cursor-pointer px-2 py-1 rounded border hover:bg-gray-50"
+        :class="{ 'ring-2 ring-blue-500': String(selectedShift) === String(shift.id) }"
         @click="selectedShift = shift.id"
       >
-        <div
-          class="w-5 h-5 rounded"
-          :style="{ backgroundColor: shiftColorMap[shift.id] || '#ccc' }"
-        />
+        <div class="w-4 h-4 rounded" :style="{ backgroundColor: shiftColorMap[String(shift.id)] || '#ccc' }"></div>
         <span class="text-sm">{{ shift.name }}</span>
       </div>
-
-      <!-- Hardcoded Holiday -->
       <div
-        class="flex items-center gap-2 cursor-pointer px-2 py-1 rounded"
+        class="flex items-center gap-2 cursor-pointer px-2 py-1 rounded border hover:bg-gray-50"
         :class="{ 'ring-2 ring-blue-500': selectedShift === 'HOLIDAY' }"
         @click="selectedShift = 'HOLIDAY'"
       >
-        <div class="w-5 h-5 rounded bg-gray-500" />
+        <div class="w-5 h-5 rounded bg-gray-500"></div>
         <span class="text-sm">Holiday</span>
       </div>
-
-      <!-- Hardcoded Weekend -->
       <div
-        class="flex items-center gap-2 cursor-pointer px-2 py-1 rounded"
+        class="flex items-center gap-2 cursor-pointer px-2 py-1 rounded border hover:bg-gray-50"
         :class="{ 'ring-2 ring-blue-500': selectedShift === 'WEEKEND' }"
         @click="selectedShift = 'WEEKEND'"
       >
-        <div class="w-5 h-5 rounded" :style="{ backgroundColor: shiftColorMap['WEEKEND'] }" />
+        <div class="w-5 h-5 rounded" :style="{ backgroundColor: shiftColorMap['WEEKEND'] }"></div>
         <span class="text-sm">Weekend</span>
       </div>
     </div>
 
-    <div class="mb-4 flex gap-4">
+    <!-- Bulk actions (simplified labels) -->
+    <div class="mb-4 flex flex-wrap gap-3">
       <button
         @click="assignAllDatesToSelectedEmployees"
-        class="bg-indigo-600 text-white px-4 py-2 rounded"
+        class="btn-4 bg-indigo-600 hover:bg-indigo-700 text-white"
+        :disabled="!selectedIdsNum.length || !selectedShift"
+        title="Set selected shift to all days for checked employees"
       >
-        Assign Selected Shift to Checked Employees
+        Set Shift → Checked (All Dates)
       </button>
 
-      <button @click="assignWeekends" class="bg-red-700 text-white px-4 py-2 rounded">
-        Assign Weekends to Checked Employees
+      <button
+        @click="assignWeekends"
+        class="btn-4 bg-red-700 hover:bg-red-800 text-white"
+        :disabled="!selectedIdsNum.length"
+        title="Mark employee-specific weekends for checked employees"
+      >
+        Set Weekends → Checked
       </button>
+
+      <button
+        @click="clearAssignmentsForSelected"
+        class="btn-4 bg-gray-700 hover:bg-gray-800 text-white"
+        :disabled="!selectedIdsNum.length"
+      >
+        Clear (Checked)
+      </button>
+
+      <div class="justify-end flex-grow">
+        <button @click="saveSchedule" class="btn-2">
+          Save (Checked only)
+        </button>
+      </div>
+
+       <label class="btn-3">
+        <input
+          type="checkbox"
+          :checked="selectedIdsNum.length && selectedIdsNum.length === filteredEmployees.length"
+          @change="toggleSelectAllVisible($event.target.checked)"
+        />
+        <span>Select all (visible)</span>
+      </label>
     </div>
 
-    <!-- Schedule Table -->
-    <div class="overflow-auto">
-      <table class="table-auto w-full border text-sm">
+    <!-- Table -->
+    <div class="overflow-auto border rounded">
+      <table class="table-auto w-full text-sm">
         <thead class="sticky top-0 bg-white z-10">
           <tr>
-            <th class="border p-2">Emp ID</th>
-            <th class="border p-2">Name</th>
-            <th class="border p-2">Action</th>
-            <th v-for="day in daysInMonth" :key="day" class="border text-center p-1 w-10">
-              {{ day }}
-              <div class="text-xs text-gray-400">{{ getDayName(day) }}</div>
+            <th class="border p-2 text-left w-40">Employee</th>
+            <th class="border p-2 w-40">Quick Action</th>
+            <th
+              v-for="day in daysInMonth"
+              :key="day"
+              class="border text-center p-1 min-w-[46px]"
+              :title="`${selectedMonth}-${String(day).padStart(2,'0')}`"
+            >
+              <div class="font-medium leading-none">{{ day }}</div>
+              <div class="text-[10px] text-gray-500">{{ getDayName(day) }}</div>
             </th>
           </tr>
         </thead>
+
         <tbody>
-          <tr v-for="emp in filteredEmployees" :key="emp.id">
+          <tr
+            v-for="emp in filteredEmployees"
+            :key="emp.id"
+            class="odd:bg-white even:bg-gray-50"
+          >
             <td class="border p-2">
-              <input type="checkbox" class="mr-2" :value="emp.id" v-model="selectedEmployeeIds" />
-              {{ emp.code }}
+              <label class="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  class="rounded"
+                  :value="emp.id"
+                  v-model="selectedEmployeeIds"
+                />
+                <div class="min-w-0">
+                  <div class="font-medium leading-tight">{{ emp.name }}</div>
+                </div>
+              </label>
             </td>
-            <td class="border p-2 whitespace-nowrap">{{ emp.name }}</td>
+
             <td class="border p-2">
               <button
-                class="text-xs bg-green-600 text-white px-2 py-1 rounded"
+                class="btn-4 cursor-pointer"
                 @click="assignAllDatesForEmployee(emp.id)"
-              >
-                Apply to All Dates
+                :disabled="!selectedShift || !isChecked(emp.id)">
+                Selected shift to all dates
               </button>
             </td>
+
             <td
               v-for="day in daysInMonth"
               :key="day"
-              class="border text-center cursor-pointer"
-              @click="assignShift(emp.id, day)"
+              class="border text-center"
+              :class="isChecked(emp.id) ? 'cursor-pointer hover:bg-gray-100' : 'cursor-not-allowed opacity-60'"
+              @click="isChecked(emp.id) && assignShift(emp.id, day)"
+              :title="isChecked(emp.id) ? (getShiftName(emp.id, day) || 'Click to set') : 'Check this employee to edit'"
             >
               <div
-                :title="getShiftName(emp.id, day)"
                 :style="getShiftColorStyle(emp.id, day)"
-                class="w-full h-6"
+                class="w-full h-6 rounded transition"
               ></div>
+            </td>
+          </tr>
+
+          <tr v-if="!filteredEmployees?.length">
+            <td colspan="999" class="text-center text-gray-500 p-6">
+              No employees found for current filter.
             </td>
           </tr>
         </tbody>
       </table>
     </div>
-    <div class="mb-4 flex justify-center mt-4">
-      <button @click="saveSchedule" class="btn-2">💾 Save Schedule</button>
+
+    <!-- Save -->
+    <div class="flex justify-center mt-5">
+      <button
+        @click="saveSchedule"
+        class="btn-2"
+        :disabled="!selectedIdsNum.length"
+        title="Saves only checked employees"
+      >
+        <i></i>
+       Save (Checked only)
+      </button>
     </div>
   </div>
 </template>
 
 <style scoped>
-th,
-td {
-  white-space: nowrap;
-}
+th, td { white-space: nowrap; }
 </style>

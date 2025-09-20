@@ -18,6 +18,10 @@ export async function updateRequirement(requirementId, data){
   return apiClient.put(`/requirements/${requirementId}`, data);
 }
 
+export async function submitRequirement(requirementId, data){
+  return apiClient.put(`/requirements/${requirementId}/submit`, data);
+}
+
 export async function deleteRequirement(taskId, {params = {}} = {}){
   const query = objectToQuery(params)
   return apiClient.delete(`/requirements/${taskId}${query ? '?' + query :''}`);

@@ -4,13 +4,6 @@ import { storeToRefs } from 'pinia'
 
 const notificationStore = useNotificationStore()
 
-const props = defineProps({
-  markNotification: {
-    type: Function,
-    required: true,
-  },
-})
-
 const { icons, count_notifications, total_notifications } = storeToRefs(notificationStore)
 
 const emits = defineEmits(['close'])
@@ -18,7 +11,7 @@ const emits = defineEmits(['close'])
 
 <template>
   <div
-    class="bg-white shadow-2xl rounded-lg absolute right-4 md:right-10 md:top-14 top-16 w-60 max-h-96 overflow-y-auto border border-gray-200"
+    class="bg-white shadow-2xl rounded-lg absolute right-4 md:left-0 top-[100%] mt-1.5 w-60 max-h-96 overflow-y-auto border border-gray-200"
   >
     <!-- Header -->
     <div
@@ -64,7 +57,10 @@ const emits = defineEmits(['close'])
 
       <RouterLink
         v-if="count_notifications?.shift_exchange_applications"
-        :to="{ name: 'MySpecificNotificationList', params: { type: 'shift_exchange_applications' } }"
+        :to="{
+          name: 'MySpecificNotificationList',
+          params: { type: 'shift_exchange_applications' },
+        }"
         @click="emits('close')"
         class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
       >
@@ -78,7 +74,10 @@ const emits = defineEmits(['close'])
 
       <RouterLink
         v-if="count_notifications?.offday_exchange_applications"
-        :to="{ name: 'MySpecificNotificationList', params: { type: 'offday_exchange_applications' } }"
+        :to="{
+          name: 'MySpecificNotificationList',
+          params: { type: 'offday_exchange_applications' },
+        }"
         @click="emits('close')"
         class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
       >
@@ -92,7 +91,10 @@ const emits = defineEmits(['close'])
 
       <RouterLink
         v-if="count_notifications?.manual_attendance_applications"
-        :to="{ name: 'MySpecificNotificationList', params: { type: 'manual_attendance_applications' } }"
+        :to="{
+          name: 'MySpecificNotificationList',
+          params: { type: 'manual_attendance_applications' },
+        }"
         @click="emits('close')"
         class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
       >
@@ -110,9 +112,7 @@ const emits = defineEmits(['close'])
         @click="emits('close')"
         class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
       >
-        <span class="text-sm text-gray-700">
-          {{ icons.overtime_applications }} Overtime
-        </span>
+        <span class="text-sm text-gray-700"> {{ icons.overtime_applications }} Overtime </span>
         <span class="text-xs bg-sky-500 text-white rounded-full px-2 py-0.5 font-semibold">
           {{ count_notifications.overtime_applications }}
         </span>

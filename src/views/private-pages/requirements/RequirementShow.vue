@@ -8,6 +8,7 @@ import RequirementDetailDeleteForm from '@/components/requirements/RequirementDe
 import RequirementDetailEditForm from '@/components/requirements/RequirementDetailEditForm.vue'
 import RequirementDetailTableRow from '@/components/requirements/RequirementDetailTableRow.vue'
 import RequirementFeedbackEditForm from '@/components/requirements/RequirementFeedbackEditForm.vue'
+import RequirementSubmissionHandler from '@/components/requirements/RequirementSubmissionHandler.vue'
 import TaskParentIdSelector from '@/components/requirements/TaskParentIdSelector.vue'
 import TaskAddForm from '@/components/tasks/TaskAddForm.vue'
 import { findRequirement } from '@/services/requirement'
@@ -264,7 +265,7 @@ async function handleTaskAddClose() {
         </div>
       </div>
 
-      <div class="mb-3 flex items-center gap-3 print:mb-1">
+      <div class="mb-3 flex items-center gap-3 print:mb-1" v-if="requirement?.submission_date">
         <div class="text-gray-500 text-sm">Submission Date</div>
         <div class="print:text-gray-900">
           {{
@@ -363,14 +364,14 @@ async function handleTaskAddClose() {
                         requirement.to_department?.short_name || requirement.to_department?.name
                       }}' Feedback
                     </div>
-                    <div>
+                    <div v-if="state != 'loading' && requirement?.status">
                       <DescriptionView
                         v-if="detail?.feedback"
                         lineClamp="2"
                         :className="{ button: '  underline' }"
                         class="mb-4 print:mb-0"
                       >
-                        <p class="text-sky-800 text-sm" v-html="detail?.feedback"></p>
+                        <p class="text-sky-800 text-sm text-justify" v-html="detail?.feedback"></p>
                       </DescriptionView>
                       <div>
                         <button
@@ -393,10 +394,34 @@ async function handleTaskAddClose() {
           </table>
         </div>
 
-        <div class="mt-8 border rounded-md p-8 flex items-center justify-center bg-gray-50">
+        <div
+          class="mt-8 border rounded-md p-8 flex items-start justify-between bg-gray-50 print:hidden"
+          v-if="state != 'loading' && !requirement?.status"
+        >
           <button class="btn-2 pl-2 text-base" @click.prevent="handleAddRequirementDetail">
             <i class="fad fa-plus-circle text-2xl mr-2"></i>Add Requirement
           </button>
+
+          <div class="flex flex-col items-end">
+            <RequirementSubmissionHandler
+              :requirement-id="requirement?.id"
+              @success="fetchRequirement"
+            >
+              <template #heading> Requirement Submission </template>
+              <template #acceptButtonLabel>
+                <span class="btn-2 pl-2 text-base">
+                  <i class="fad fa-paper-plane text-lg mr-2"></i>Submit Requirement
+                </span>
+              </template>
+              <template #submitButtonLabel> Submit Requirement </template>
+            </RequirementSubmissionHandler>
+          </div>
+        </div>
+        <div class="mt-2 text-right print:hidden" v-if="state != 'loading' && !requirement?.status">
+          <p class="text-yellow-800 text-sm">
+            <span class="fas fa-exclamation-circle"></span>
+            After submitting you cannot add requirement no more
+          </p>
         </div>
       </div>
 

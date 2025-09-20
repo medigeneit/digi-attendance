@@ -129,7 +129,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="w-full mx-auto">
-    <div class="flex items-center gap-2 mb-2 flex-wrap bg-gray-100 border border-gray-300 p-2">
+    <div class="flex items-center gap-2 flex-wrap bg-gray-100 p-2">
       <button
         type="button"
         @click.stop.prevent="formatText('bold')"
@@ -137,7 +137,7 @@ onBeforeUnmount(() => {
           'bg-blue-200 text-blue-700': activeCommands.bold,
           'hover:bg-gray-200': !activeCommands.bold
         }"
-        class="p-2 rounded flex items-center justify-center transition"
+        class="p-2 flex items-center justify-center transition"
       >
         <i class="fas fa-bold"></i>
       </button>
