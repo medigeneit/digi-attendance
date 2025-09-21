@@ -40,7 +40,7 @@ const { userDashboard } = storeToRefs(userStore)
               'bg-yellow-500 py-1 rounded-full px-2 text-white':
                 leaveApplication.status === 'Pending',
               'bg-green-500 py-1 rounded-full px-2 text-white':
-                leaveApplication.status === 'approved',
+                leaveApplication.status === 'Approved',
             }"
           >
             <span v-if="leaveApplication.status === null">
