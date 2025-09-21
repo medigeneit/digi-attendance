@@ -51,6 +51,7 @@ onUnmounted(() => {
           <i class="fas fa-times-circle text-xl"></i>
         </button>
       </div>
+
       <div
         class="fixed md:sticky top-0 bottom-0 transition duration-150 print:hidden"
         :class="{

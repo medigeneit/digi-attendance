@@ -7,8 +7,9 @@
     </div>
 
     <div
-      class="flex-grow border-2 rounded pb-3 overflow-y-auto"
+      class="flex-grow rounded pb-3 overflow-y-auto"
       :class="{
+        'border-2': index,
         'border-blue-500': index % 2 === 0,
         'border-pink-300': index % 2 === 1,
         'bg-blue-100/30  ': task.closed_at,
