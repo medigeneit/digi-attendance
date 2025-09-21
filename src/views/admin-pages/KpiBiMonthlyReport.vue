@@ -15,7 +15,6 @@ const rule = ref('any')           // 'any' or 'both'
 
 const periods = computed(() => meta.value?.periods || [])
 
-/* Completed map: `${rowKey}::${pKey}` => boolean */
 const completed = ref({})
 const isSaving = ref({})          // key => boolean (submitting)
 const prevCompleted = ref({})     // key => previous boolean (to revert)
@@ -168,11 +167,22 @@ async function load() {
   initCompleted()
 }
 
+async function exportBiMonthly() {
+  await store.exportBiMonthly({
+    year: Number(year.value),
+    scope: scope.value,
+    department_id: department_id.value ? Number(department_id.value) : undefined,
+    form_id: form_id.value ? Number(form_id.value) : undefined,
+    rule: rule.value
+  })
+}
+
+
 // old tick (fallback)
 function tick(v){ return v ? '✓' : '—' }
 
 // show "done/assigned"
-function countStr(cell, role /* 'ic'|'co' */) {
+function countStr(cell, total, role /* 'ic'|'co' */) {
   const assigned = Number(cell?.assigned ?? 0)
   const done = role === 'ic'
     ? Number(cell?.incharge?.done ?? 0)
@@ -181,7 +191,7 @@ function countStr(cell, role /* 'ic'|'co' */) {
     const boolVal = role === 'ic' ? cell?.incharge : cell?.coordinator
     if (typeof boolVal === 'boolean') return tick(boolVal)
   }
-  return `${done}/${assigned}`
+  return `${done}/${total}`
 }
 
 function statusClass(cell, role) {
@@ -210,7 +220,7 @@ watch([rows, periods, rule], initCompleted)
         <label class="text-sm text-gray-600">Year</label>
         <input type="number" v-model.number="year" class="w-28 rounded border px-2 py-1">
       </div>
-      <button class="btn-3" @click="load">Generate</button>
+      <button class="btn-3" @click="exportBiMonthly">Excel Generate</button>
       <button class="btn-3" @click="doPrint"><i class="far fa-print mr-1"></i>Print</button>
     </div>
 
@@ -231,7 +241,7 @@ watch([rows, periods, rule], initCompleted)
             <th
               v-for="p in periods"
               :key="p.key"
-              colspan="3"
+              colspan="4"
               class="border px-2 py-2 text-center font-semibold"
             >
               {{ p.label }}
@@ -240,6 +250,7 @@ watch([rows, periods, rule], initCompleted)
           <!-- Row 2: sub-columns -->
           <tr class="bg-gray-100 text-gray-700">
             <template v-for="p in periods" :key="p.key + '-sub'">
+              <th class="border px-1 py-1 text-center text-[11px]">Target</th>
               <th class="border px-1 py-1 text-center text-[11px]">Report</th>
               <th class="border px-1 py-1 text-center text-[11px]">Inch.</th>
               <th class="border px-1 py-1 text-center text-[11px]">Coord.</th>
@@ -252,53 +263,55 @@ watch([rows, periods, rule], initCompleted)
             <td class="border px-1 py-2 text-center">{{ i+1 }}</td>
             <td class="border px-1 py-2 w-40">{{ r.name }}</td>
 
-            <!-- Period cells (প্রতি period = 3টি cell) -->
-            <template v-for="p in periods" :key="p.key">
-              <!-- Report -->
-              <td class="border py-1 text-center">
-                <input
-                  type="checkbox"
-                  :disabled="!cellAssignable(r, p.key) || isSaving[keyOf(r.key, p.key)]"
-                  v-model="completed[keyOf(r.key, p.key)]"
-                  @mousedown="startCompletedEdit(r, p)"
-                  @keydown.enter.prevent="startCompletedEdit(r, p)"
-                  @change="onCompletedChange(r, p)"
-                  :title="completed[keyOf(r.key,p.key)] ? 'Completed' : 'Pending'"
-                />
-                <div
-                  v-if="meta?.scope==='department'"
-                  class="text-xs text-gray-500 print:hidden"
-                >
-                  A: {{ r.cells[p.key]?.assigned || 0 }} / {{ r.employees_total || 0 }}
-                </div>
-              </td>
+              <template v-for="p in periods" :key="p.key">
+                <!-- Report -->
+                <td class="border py-1 text-center">
+                  <div
+                    v-if="meta?.scope==='department'"
+                    class="text-xs text-gray-500"
+                  >
+                     {{ r.cells[p.key].monthly_target.have || 0 }} / {{ r.cells[p.key].monthly_target.of || 0 }}
+                  </div>
+                </td>
 
-              <!-- Incharge -->
-              <td class="border py-1 text-center">
-                <span
-                  class="inline-block text-center font-mono rounded"
-                  :class="statusClass(r.cells[p.key], 'ic')"
-                >
-                  {{ countStr(r.cells[p.key], 'ic') }}
-                </span>
-              </td>
+                <td class="border py-1 text-center">
+                  <input
+                    type="checkbox"
+                    :disabled="!cellAssignable(r, p.key) || isSaving[keyOf(r.key, p.key)]"
+                    v-model="completed[keyOf(r.key, p.key)]"
+                    @mousedown="startCompletedEdit(r, p)"
+                    @keydown.enter.prevent="startCompletedEdit(r, p)"
+                    @change="onCompletedChange(r, p)"
+                    :title="completed[keyOf(r.key,p.key)] ? 'Completed' : 'Pending'"
+                  />
+                </td>
 
-              <!-- Coordinator -->
-              <td class="border px-2 py-2 text-center">
-                <span
-                  class="inline-block  text-center font-mono rounded"
-                  :class="statusClass(r.cells[p.key], 'co')"
-                >
-                  {{ countStr(r.cells[p.key], 'co') }}
-                </span>
-                <div
-                  v-if="r.cells[p.key]?.max_total"
-                  class="mt-1 text-[10px] text-gray-500 text-center"
-                >
-                  {{ r.cells[p.key].final_total }} / {{ r.cells[p.key].max_total }}
-                </div>
-              </td>
-            </template>
+                <!-- Incharge -->
+                <td class="border py-1 text-center">
+                  <span
+                    class="inline-block text-center font-mono rounded"
+                    :class="statusClass(r.cells[p.key], 'ic')"
+                  >
+                    {{ countStr(r.cells[p.key], r.employees_total, 'ic') }}
+                  </span>
+                </td>
+
+                <!-- Coordinator -->
+                <td class="border px-2 py-2 text-center">
+                  <span
+                    class="inline-block  text-center font-mono rounded"
+                    :class="statusClass(r.cells[p.key], 'co')"
+                  >
+                    {{ countStr(r.cells[p.key],  r.employees_total, 'co') }}
+                  </span>
+                  <div
+                    v-if="r.cells[p.key]?.max_total"
+                    class="mt-1 text-[10px] text-gray-500 text-center"
+                  >
+                    {{ r.cells[p.key].final_total }} / {{ r.cells[p.key].max_total }}
+                  </div>
+                </td>
+              </template>
           </tr>
 
           <tr v-if="!rows || rows.length===0">

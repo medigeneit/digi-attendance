@@ -28,19 +28,31 @@ export const useKpiReportStore = defineStore('kpi-report', {
 
     async exportBiMonthly(params) {
       try {
-        const res = await apiClient.get('/kpi/reports/bi-monthly/export', {
+        const res = await apiClient.get('/kpi/reports/bi-monthly-export', {
           params,
           responseType: 'blob',
         })
 
-        const blob = res.data
-        const cd = res.headers?.['content-disposition'] || ''
-        const m = /filename\*?=(?:UTF-8''|")?([^;\r\n"]+)/i.exec(cd)
-        const filename = m ? decodeURIComponent(m[1].replace(/"/g, '')) : `kpi-bimonthly-${params?.year || ''}.xlsx`
+        // filename from header if present
+        const dispo = res.headers['content-disposition'] || ''
+        let filename = 'kpi_bi_monthly.xlsx'
+        const match = /filename="?([^"]+)"?/i.exec(dispo)
+        if (match && match[1]) filename = decodeURIComponent(match[1])
 
-        return { blob, filename }
+        const blob = new Blob(
+          [res.data],
+          { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }
+        )
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = filename
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        URL.revokeObjectURL(url)
       } catch (e) {
-        this.error = e?.response?.data?.message || 'Failed to export report'
+        console.error(e)
         throw e
       }
     },
