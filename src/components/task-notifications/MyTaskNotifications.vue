@@ -7,7 +7,7 @@ const taskNotificationStore = useTaskNotificationStore()
 const props = defineProps({
   markNotification: {
     type: Function,
-    required: true,
+    required: false,
   },
 })
 
@@ -24,16 +24,14 @@ const emits = defineEmits(['close'])
     <div
       class="flex justify-between items-center p-4 bg-gradient-to-r from-teal-100 to-teal-200 rounded-t-lg"
     >
-      <RouterLink
-        :to="{ name: 'MyNotificationList' }"
-        @click="emits('close')"
+      <div
         class="w-full flex text-base font-bold text-gray-700"
       >
         🔔 Task Notifications
         <span class="ml-auto px-2 py-1 bg-red-500 text-white text-xs rounded-full">
           {{ total_task_notifications }}
         </span>
-      </RouterLink>
+      </div>
     </div>
 
     <!-- Notification List -->

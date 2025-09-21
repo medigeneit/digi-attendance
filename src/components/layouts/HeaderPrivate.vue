@@ -51,28 +51,43 @@ onBeforeMount(() => {
         <img class="h-[25px] md:h-[50px]" src="/src/assets/logo.png" alt="Logo" />
       </RouterLink>
 
-      <div class="flex gap-4 items-center relative my-1" ref="notificationListRef">
+      <div class="flex gap-1.5 md:gap-3 items-center relative my-1" ref="notificationListRef">
         <!-- Notification Bell -->
 
+        <RouterLink to="/chatting" class="btn-icon relative" @click="noticeDropdown = null">
+          <!-- <i class="fas fa-comment-alt text-xl"></i> -->
+          <i class="fad fa-comment-alt-lines text-2xl text-blue-600"></i>
+          <div v-if="false" class="absolute -translate-x-1/2 -translate-y-1/2 -right-3 top-2.5">
+            <span class="flex size-6 relative">
+              <span
+                class="flex justify-center items-center size-6 text-xs text-white rounded-full bg-blue-600"
+              >
+                0
+              </span>
+              <!-- <span class="absolute animate-ping size-6 rounded-full bg-blue-500 opacity-75"></span> -->
+            </span>
+          </div>
+        </RouterLink>
+
         <button class="btn-icon relative" @click="() => toggleNoticeDropdown('task')">
-          <i class="fas fa-tasks text-xl"></i>
+          <i class="fad fa-tasks text-xl text-pink-500"></i>
           <div
             v-if="total_task_notifications > 0"
             class="absolute -translate-x-1/2 -translate-y-1/2 -right-3 top-2.5"
           >
             <span class="flex size-6 relative">
               <span
-                class="flex justify-center items-center size-6 text-xs text-white rounded-full bg-red-500"
+                class="flex justify-center items-center size-6 text-xs text-white rounded-full bg-pink-500"
               >
                 {{ total_task_notifications }}
               </span>
-              <span class="absolute animate-ping size-6 rounded-full bg-red-400 opacity-75"></span>
+              <!-- <span class="absolute animate-ping size-6 rounded-full bg-pink-400 opacity-75"></span> -->
             </span>
           </div>
         </button>
 
         <button class="btn-icon relative" @click="() => toggleNoticeDropdown('general')">
-          <i class="fas fa-bell text-xl"></i>
+          <i class="fad fa-bell text-xl text-red-600"></i>
           <div
             v-if="total_notifications > 0"
             class="absolute -translate-x-1/2 -translate-y-1/2 -right-3 top-2.5"
@@ -83,7 +98,7 @@ onBeforeMount(() => {
               >
                 {{ total_notifications }}
               </span>
-              <span class="absolute animate-ping size-6 rounded-full bg-red-400 opacity-75"></span>
+              <!-- <span class="absolute animate-ping size-6 rounded-full bg-red-400 opacity-75"></span> -->
             </span>
           </div>
         </button>
