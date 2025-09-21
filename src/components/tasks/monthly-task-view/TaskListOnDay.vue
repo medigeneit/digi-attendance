@@ -22,14 +22,15 @@ const limitedTaskList = computed(() => {
 </script>
 <template>
   <div>
-    <div v-if="tree">
+    <div v-if="tree" class="space-y-6 py-2">
       <TaskTreeViewWithSubTable
-        v-for="task in limitedTaskList"
+        v-for="(task, index) in limitedTaskList"
         hide-buttons
         hide-assigned-users
         :task="task"
         :key="task.id"
-        class="mb-6 shadow hover:shadow-md"
+        :index="index"
+        class="shadow hover:shadow-md border border-blue-300 rounded-md *:border-none"
       />
     </div>
 

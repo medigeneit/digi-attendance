@@ -115,7 +115,7 @@ const filteredTasks = computed(() => {
 </script>
 
 <template>
-  <div class="border">
+  <div>
     <DailyTaskHeading
       v-if="listType == 'day-wise'"
       :loading="state == 'loading'"
@@ -134,8 +134,8 @@ const filteredTasks = computed(() => {
       @reload-click="handleReloadClick"
     />
 
-    <div class="bg-gray-300 bg-opacity-90 relative">
-      <div class="bg-gray-50 border-y rounded-md z-20">
+    <div class="bg-opacity-90 relative">
+      <div class="rounded-md z-20">
         <div class="text-md sticky top-0 border-b px-4 z-30 py-3 bg-white flex items-center shadow">
           <div class="flex justify-between items-center gap-6 ml-auto">
             <div
@@ -173,7 +173,7 @@ const filteredTasks = computed(() => {
           </div>
         </div>
         <TaskListOnDay
-          class="p-4 min-h-[40vh] max-h-[60vh] overflow-y-auto"
+          class="p-4 overflow-y-auto"
           :tasks="filteredTasks"
           :tree="true"
           v-if="listType == 'day-wise'"
@@ -181,6 +181,7 @@ const filteredTasks = computed(() => {
         <TaskInMonth
           :tasks="filteredTasks || []"
           :month="selectedMonth"
+          class="bg-gray-50"
           v-else-if="listType == 'month-wise'"
         />
       </div>

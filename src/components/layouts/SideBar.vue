@@ -23,7 +23,10 @@ const logout = () => {
 </script>
 
 <template>
-  <aside class="bg-white sidebar h-screen overflow-auto scrollbar pb-24 z-[500]">
+  <aside
+    class="bg-white sidebar h-screen overflow-auto scrollbar pb-24 z-[500]"
+    :class="{ 'sm:min-w-[240px]': open }"
+  >
     <div class="space-y-1 pt-16 md:pt-0">
       <!-- Admin Mode + Toggle Menu Row -->
       <div
