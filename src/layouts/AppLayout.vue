@@ -79,11 +79,11 @@ onUnmounted(() => {
         </div>
       </header>
 
-      <main class="flex-grow py-4 print:py-0 pb-20 md:pb-10">
+      <main class="flex-grow py-4 print:py-0">
         <RouterView />
       </main>
 
-      <footer class="hidden md:block print:hidden bg-blue-700 text-white py-2 text-center">
+      <footer class="hidden print:hidden bg-blue-700 text-white py-2 text-center">
         <div class="my-container">
           {{ new Date().getFullYear() }} Copyright © Digitgate IT. All rights reserved.
         </div>

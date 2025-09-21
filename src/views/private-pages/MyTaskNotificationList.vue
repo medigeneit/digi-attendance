@@ -75,7 +75,7 @@ const formattedType = computed(() => {
       class="absolute inset-0 flex items-center justify-center bg-opacity-80 !shadow-none min-h-[80vh]"
     />
 
-    <div v-if="notifications.length > 0" class="space-y-4">
+    <div v-if="notifications?.length > 0" class="space-y-4">
       <div
         v-for="notification in notifications"
         :key="notification.application_id"

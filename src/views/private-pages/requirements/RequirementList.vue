@@ -60,11 +60,14 @@ const goToAdd = () => {
 
       <div v-else class="overflow-x-auto border-x xl:border-x-0">
         <table class="min-w-full bg-white border overflow-hidden table table-fixed">
-          <thead class="bg-gray-100">
+          <thead class="bg-gray-100 text-gray-700">
             <tr>
               <th class="px-4 py-2 text-center whitespace-nowrap border w-[4%]">#</th>
               <th class="px-4 py-2 text-left whitespace-nowrap border w-[60%]">Requirement</th>
-              <th class="px-4 py-2 text-center whitespace-nowrap w-[12%] border">User</th>
+              <th class="px-4 py-2 text-center whitespace-nowrap w-[12%] border">
+                From Department
+              </th>
+              <th class="px-4 py-2 text-center whitespace-nowrap w-[12%] border">To Department</th>
               <th class="px-4 py-2 text-center whitespace-nowrap w-[12%] border">Submitted At</th>
               <th class="px-4 py-2 text-center whitespace-nowrap w-[12%] border">Actions</th>
             </tr>
@@ -91,31 +94,6 @@ const goToAdd = () => {
                   {{ serial + 1 }}
                 </td>
                 <td class="px-4 py-4 min-w-[300px] md:min-w-[400px] border border-gray-200">
-                  <div
-                    class="flex flex-col lg:flex-row items-start lg:items-center lg:flex-wrap gap-2 text-sm mb-3"
-                  >
-                    <span class="text-gray-400">From </span>
-                    <span
-                      :title="req?.from_department?.name"
-                      :class="{
-                        'bg-green-500 text-white group-hover/item:text-white':
-                          req?.from_department?.id == auth?.user?.department_id,
-                      }"
-                      class="text-blue-500 font-semibold flex-shrink-0 border border-blue-500 bg-blue-50 rounded-full px-2 text-xs"
-                    >
-                      {{ req?.from_department?.short_name || req?.from_department?.name }}
-                    </span>
-                    <span class="text-gray-400">To </span>
-                    <span
-                      :title="req?.to_department?.name"
-                      :class="{
-                        'bg-sky-500 !text-white  ':
-                          req?.to_department?.id == auth?.user?.department_id,
-                      }"
-                      class="text-sky-500 font-semibold flex-shrink-0 border border-sky-500 bg-blue-50 rounded-full px-2 text-xs"
-                      >{{ req?.to_department?.short_name || req?.to_department?.name }}</span
-                    >
-                  </div>
                   <div class="space-y-4">
                     <div
                       class="text-blue-800"
@@ -136,46 +114,107 @@ const goToAdd = () => {
                       <span v-else class="">Show Form</span>
                     </RouterLink>
                   </div>
+
+                  <div class="flex gap-6 items-center mt-6">
+                    <div
+                      class="text-gray-600 text-xs flex items-center gap-2 whitespace-nowrap"
+                      v-if="req.created_at"
+                    >
+                      <i class="fas fa-clock text-sky-800/50"></i>
+                      <div>
+                        {{
+                          new Date(req.created_at).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: true,
+                          })
+                        }}
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-2 whitespace-nowrap">
+                      <span class="text-xs text-gray-500">By:</span>
+                      <UserChip :user="req.created_by" v-if="req.created_by" avatar-size="xsmall" />
+                    </div>
+                  </div>
                   <!-- <div class="flex items-center gap-2 mt-4">
                   <span class="text-gray-400">By</span> <UserChip :user="req.created_by" />
                 </div> -->
                 </td>
                 <td class="px-4 py-4 whitespace-nowrap border border-gray-200">
-                  <div class="flex items-center gap-2">
-                    <span class="text-xs text-gray-500">Created:</span>
-                    <UserChip :user="req.created_by" v-if="req.created_by" avatar-size="xsmall" />
-                  </div>
+                  <span
+                    :title="req?.from_department?.name"
+                    :class="{
+                      'bg-green-500 text-white group-hover/item:text-white':
+                        req?.from_department?.id == auth?.user?.department_id,
+                    }"
+                    class="text-blue-500 font-semibold flex-shrink-0 border border-blue-500 bg-blue-50 rounded-full px-2 text-xs"
+                  >
+                    {{ req?.from_department?.short_name || req?.from_department?.name }}
+                  </span>
 
-                  <div class="flex items-center gap-2 mt-2">
-                    <div class="text-xs text-gray-500">From Coordinator:</div>
+                  <div class="flex items-center gap-2 mt-4">
+                    <div class="text-xs text-gray-500">In Charge:</div>
+                    <UserChip
+                      :user="req?.from_department?.in_charge"
+                      v-if="req?.from_department?.in_charge"
+                      avatar-size="xsmall"
+                    />
+                    <div v-else>
+                      <span class="italic text-xs text-gray-400">N/A</span>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2 mt-1">
+                    <div class="text-xs text-gray-500">Coordinator:</div>
                     <UserChip
                       :user="req.from_coordinator"
                       v-if="req.from_coordinator"
                       avatar-size="xsmall"
                     />
                     <div v-else>
-                      <span v-if="req?.from_department?.coordinator_id">-</span>
-                      <span v-else class="italic text-xs text-gray-400">N/A</span>
+                      <div v-if="req?.from_department?.coordinator_id" class="text-xs text-red-300">
+                        Approval Pending
+                      </div>
+                      <div v-else class="italic text-xs text-gray-400">N/A</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-4 py-4 whitespace-nowrap border border-gray-200">
+                  <span
+                    :title="req?.to_department?.name"
+                    :class="{
+                      'bg-sky-500 !text-white  ':
+                        req?.to_department?.id == auth?.user?.department_id,
+                    }"
+                    class="text-sky-500 font-semibold flex-shrink-0 border border-sky-500 bg-blue-50 rounded-full px-2 text-xs"
+                    >{{ req?.to_department?.short_name || req?.to_department?.name }}
+                  </span>
+
+                  <div class="flex items-center gap-2 mt-4">
+                    <div class="text-xs text-gray-500">In Charge:</div>
+                    <UserChip :user="req.to_incharge" v-if="req.to_incharge" avatar-size="xsmall" />
+                    <div v-else>
+                      <div v-if="req?.to_department?.incharge_id" class="text-xs text-red-300">
+                        Approval Pending
+                      </div>
+                      <div v-else class="italic text-xs text-gray-400">N/A</div>
                     </div>
                   </div>
                   <div class="flex items-center gap-2 mt-2">
-                    <div class="text-xs text-gray-500">To Coordinator:</div>
+                    <div class="text-xs text-gray-500">Coordinator:</div>
                     <UserChip
                       :user="req.to_coordinator"
                       v-if="req.to_coordinator"
                       avatar-size="xsmall"
                     />
                     <div v-else>
-                      <span v-if="req?.to_department?.coordinator_id">-</span>
-                      <span v-else class="italic text-xs text-gray-400">N/A</span>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-2 mt-2">
-                    <div class="text-xs text-gray-500">To In Charge:</div>
-                    <UserChip :user="req.to_incharge" v-if="req.to_incharge" avatar-size="xsmall" />
-                    <div v-else>
-                      <span v-if="req?.to_department?.incharge_id">-</span>
-                      <span v-else class="italic text-xs text-gray-400">N/A</span>
+                      <div v-if="req?.to_department?.coordinator_id" class="text-xs text-red-300">
+                        Approval Pending
+                      </div>
+
+                      <div v-else class="italic text-xs text-gray-400">N/A</div>
                     </div>
                   </div>
                 </td>

@@ -23,6 +23,10 @@ export const useNotificationStore = defineStore('notification', () => {
   })
 
   const total_notifications = computed(() => {
+    if( Object.values(count_notifications.value).length === 0) {
+      return 0;
+    }
+
     return Object.values(count_notifications.value).reduce((sum, n) => sum + n, 0)
   })
 
@@ -87,7 +91,8 @@ export const useNotificationStore = defineStore('notification', () => {
     error.value = null
 
     try {
-      const response = await apiClient.put(
+
+      await apiClient.put(
         `/pending-notifications/${notificationType}/${applicationId}/${action}`,
         { note },
       )

@@ -16,10 +16,6 @@ const props = defineProps({
     type: Function,
     default: null,
   },
-  onSubmit: {
-    type: Function,
-    default: null,
-  },
   variant: {
     type: Number,
     default: 1,
@@ -42,10 +38,6 @@ const modalTitle = computed(() =>
   currentAction.value === 'accept' ? 'Accept Application' : 'Reject Application',
 )
 
-const confirmButtonClass = computed(() =>
-  currentAction.value === 'accept' ? 'btn-2' : 'btn-2 bg-red-500 text-white',
-)
-
 function openModal(action) {
   if (action === 'accept' || action === 'reject') {
     currentAction.value = action
@@ -66,13 +58,6 @@ async function handleConfirm() {
 
   if (currentAction.value === 'reject' && !note.value) {
     return toast.error('Rejection Reason is required!')
-  }
-
-  if (typeof props.onSubmit == 'function') {
-    return props.onSubmit({
-      note: note.value,
-      action: currentAction.value,
-    })
   }
 
   await notificationStore.updateSpecificNotification(
