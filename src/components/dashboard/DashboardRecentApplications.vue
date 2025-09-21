@@ -18,7 +18,7 @@ const { userDashboard } = storeToRefs(userStore)
 
     <div
       v-if="userDashboard?.current_month_leave?.length === 0"
-      class="text-xs italic text-center py-4 text-gray-500"
+      class="text-xs italic text-center py-4 text-gray-500 mt-2"
     >
       No Application on this month
     </div>
