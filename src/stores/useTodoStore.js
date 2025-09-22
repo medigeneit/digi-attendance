@@ -2,8 +2,10 @@ import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import apiClient from '../axios';
 
+import { todos } from '@/libs/dummy-todos.js';
+
 export const useTodoStore = defineStore('todo', () => {
-  const todos = ref([]);
+  // const todos = ref([]);
   const todo = ref(null);
   const loading = ref(false);
   const error = ref(null);
@@ -12,8 +14,8 @@ export const useTodoStore = defineStore('todo', () => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await apiClient.get('/todos');
-      todos.value = response.data;
+      // const response = await apiClient.get('/todos');
+      todos.value = todos;
     } catch (err) {
       error.value = err.response?.data?.message || 'Todos load failed';
     } finally {
@@ -32,6 +34,10 @@ export const useTodoStore = defineStore('todo', () => {
       loading.value = false;
     }
   };
+
+  const getTodosByDate = (date) =>{
+    return todos.value?.filter( todo => todo.date == date)
+  }
 
   const fetchTodo = async (id) => {
     loading.value = true;
@@ -115,6 +121,7 @@ export const useTodoStore = defineStore('todo', () => {
     updateTodo,
     deleteTodo,
     fetchMyTodos,
-    updateTodoStatus
+    updateTodoStatus,
+    getTodosByDate
   };
 });

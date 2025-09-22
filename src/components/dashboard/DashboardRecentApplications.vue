@@ -18,7 +18,7 @@ const { userDashboard } = storeToRefs(userStore)
 
     <div
       v-if="userDashboard?.current_month_leave?.length === 0"
-      class="text-xs italic text-center py-4 text-gray-500"
+      class="text-xs italic text-center py-4 text-gray-500 mt-2"
     >
       No Application on this month
     </div>
@@ -40,7 +40,7 @@ const { userDashboard } = storeToRefs(userStore)
               'bg-yellow-500 py-1 rounded-full px-2 text-white':
                 leaveApplication.status === 'Pending',
               'bg-green-500 py-1 rounded-full px-2 text-white':
-                leaveApplication.status === 'approved',
+                leaveApplication.status === 'Approved',
             }"
           >
             <span v-if="leaveApplication.status === null">

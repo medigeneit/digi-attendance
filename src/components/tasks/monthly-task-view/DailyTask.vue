@@ -137,7 +137,7 @@ const filteredTasks = computed(() => {
     <div class="bg-opacity-90 relative">
       <div class="rounded-md z-20">
         <div class="text-md sticky top-0 border-b px-4 z-30 py-3 bg-white flex items-center shadow">
-          <div class="flex justify-between items-center gap-6 ml-auto">
+          <div class="flex justify-between items-center gap-6 w-full">
             <div
               class="text-blue-800 bg-blue-100 rounded-full border px-4 py-0.5 text-sm"
               v-if="listType == 'day-wise'"
@@ -152,24 +152,26 @@ const filteredTasks = computed(() => {
               {{ getDisplayMonth(selectedMonth) }}
             </div>
 
-            <div class="w-32 relative h-8" v-if="listType == 'day-wise'">
-              <label class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500"
-                >Status</label
-              >
-              <select
-                v-model="taskStatus"
-                class="h-8 text-xs px-2 text-gray-600 border-2 border-gray-400 rounded-md w-full"
-              >
-                <option value="">--ALL TASKS--</option>
-                <option value="not-completed">Not Completed</option>
-                <!-- <option value="only-completed">Completed</option> -->
-              </select>
+            <div class="ml-auto flex items-center gap-2">
+              <div class="w-32 relative h-8" v-if="listType == 'day-wise'">
+                <label class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500"
+                  >Status</label
+                >
+                <select
+                  v-model="taskStatus"
+                  class="h-8 text-xs px-2 text-gray-600 border-2 border-gray-400 rounded-md w-full"
+                >
+                  <option value="">--ALL TASKS--</option>
+                  <option value="not-completed">Not Completed</option>
+                  <!-- <option value="only-completed">Completed</option> -->
+                </select>
+              </div>
+              <SearchInput
+                v-model="search"
+                class="w-full md:w-48 md:ml-auto h-8"
+                :debounce-time="0"
+              />
             </div>
-            <SearchInput
-              v-model="search"
-              class="w-full md:w-48 md:ml-auto h-8"
-              :debounce-time="0"
-            />
           </div>
         </div>
         <TaskListOnDay

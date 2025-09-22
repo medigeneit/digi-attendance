@@ -1,21 +1,46 @@
 <script setup>
+import TodoCalenderView from '@/components/todo/TodoCalenderView.vue'
+import TodoHeading from '@/components/todo/TodoHeading.vue'
+import { getYearMonthDayFormat, getYearMonthFormat } from '@/libs/datetime'
+import { todos } from '@/libs/dummy-todos.js'
 import { useTodoStore } from '@/stores/useTodoStore'
-import { onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted, ref } from 'vue'
+
+const selectedMonth = ref('')
+const selectedDay = ref('')
+const viewType = ref('month-view')
 
 const store = useTodoStore()
-const router = useRouter()
 
-onMounted(() => {
-  store.fetchTodos()
+onMounted(async () => {
+  await store.fetchTodos()
+  selectedDay.value = getYearMonthDayFormat(new Date())
+  selectedMonth.value = getYearMonthFormat(new Date())
 })
 
-const goToEdit = (id) => {
-  router.push({ name: 'TodoEdit', params: { id } })
+function handleReloadClick() {}
+
+function getSelectedValue() {
+  if (viewType.value == 'month-view') {
+    return selectedMonth.value
+  }
+  if (viewType.value == 'day-view') {
+    return selectedDay.value
+  }
 }
 
-const deleteTodo = async (id) => {
-  await store.deleteTodo(id)
+function handleHeadingChange({ value, selectedType }) {
+  viewType.value = selectedType
+
+  if (selectedType == 'month-view') {
+    console.log(`${value}-01`)
+    selectedMonth.value = value
+    selectedDay.value = `${value}-01`
+  }
+  if (selectedType == 'day-view') {
+    selectedDay.value = value
+    selectedMonth.value = getYearMonthFormat(new Date(selectedDay.value))
+  }
 }
 </script>
 
@@ -25,31 +50,27 @@ const deleteTodo = async (id) => {
     <div v-if="store.loading" class="text-center py-4 text-gray-500">Loading...</div>
     <div v-else-if="store.error" class="text-center py-4 text-red-500">{{ store.error }}</div>
 
-    <div v-else>
-      <ul class="space-y-4">
-        <li
-          v-for="todo in store.todos"
-          :key="todo.id"
-          class="flex justify-between items-center p-4 bg-white border rounded-lg"
-        >
-          <div>
-            <span :class="{ 'line-through text-gray-500': todo.status === 'DONE' }">
-              {{ todo.message }}
-            </span>
-            <div class="text-sm text-gray-400">
-              {{ todo.todoable_type }} | {{ todo.todoable?.title }}
-            </div>
-          </div>
-          <div class="flex gap-2">
-            <button @click="goToEdit(todo.id)" class="bg-green-500 text-white px-4 py-2 rounded">
-              Edit
-            </button>
-            <button @click="deleteTodo(todo.id)" class="bg-red-500 text-white px-4 py-2 rounded">
-              Delete
-            </button>
-          </div>
-        </li>
-      </ul>
+    <div class="border">
+      <TodoHeading
+        :selected-type="viewType"
+        :selected-value="getSelectedValue()"
+        @change="handleHeadingChange"
+        @selectViewType="(vt) => (viewType = vt)"
+        @reload-click="handleReloadClick"
+      />
+
+      {{ viewType }} - {{ selectedMonth }} -
+      {{ selectedDay }}
+
+      <TodoCalenderView
+        :month="selectedMonth"
+        :todos="todos"
+        v-if="viewType == 'month-view'"
+        class="bg-white"
+      />
+      <div v-if="viewType == 'day-view'" class="border min-h-40 text-center bg-white">
+        Day View will be shown here
+      </div>
     </div>
   </div>
 </template>

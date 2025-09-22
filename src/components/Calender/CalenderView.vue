@@ -115,6 +115,9 @@ const calendarDates = computed(() => {
   const [yearStr, monthStr] = props.month.split('-')
   const year = parseInt(yearStr)
   const month = parseInt(monthStr) - 1
+
+  console.log({ yearStr, monthStr })
+
   return getCalendarDates(year, month)
 })
 
@@ -151,6 +154,7 @@ watch(() => props.month, updateOnMonthChange)
     </div>
 
     <!-- Weekly rows -->
+
     <div class="flex flex-col">
       <div class="week grid grid-cols-7 min-h-28" v-for="(week, wIdx) in weeks" :key="wIdx">
         <template v-for="(date, _dIdx) in week" :key="_dIdx">
@@ -161,9 +165,10 @@ watch(() => props.month, updateOnMonthChange)
             :year="date.year"
             :weekday="(date.date.getDay() + 1) % 7"
             :isCurrentMonth="date.isCurrentMonth"
+            :yearMonthDate="`${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`"
           >
-            <div class="p-2 border-r border-t">
-              {{ date.getDate() }}
+            <div class="p-2 border-r border-t" v-if="date?.date">
+              {{ date?.date?.getDate() }}
             </div>
           </slot>
         </template>
