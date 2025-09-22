@@ -401,7 +401,7 @@ onMounted(() => {
         <thead>
           <!-- Row 1 -->
           <tr class="bg-gray-100 text-gray-800">
-            <th rowspan="2" class="border px-2 py-2 text-center">SL</th>
+            <th rowspan="2" class="border py-2 text-center">SL</th>
             <th rowspan="2" class="border px-2 py-2 text-left">
               {{ meta?.scope === 'user' ? 'Employee' : 'Department' }}
             </th>
@@ -427,12 +427,12 @@ onMounted(() => {
 
         <tbody>
           <tr v-for="(r, i) in rows" :key="r.key" class="border-t">
-            <td class="border px-1 py-2 text-center">{{ i+1 }}</td>
-            <td class="border px-1 py-2 w-40">{{ r.name }}</td>
+            <td class="border text-center">{{ i+1 }}</td>
+            <td class="border px-2 w-40">{{ r.name }}</td>
 
             <template v-for="p in periods" :key="p.key">
               <!-- Target -->
-              <td class="border py-1 text-center">
+              <td class="border text-center">
                 <input
                   type="checkbox"
                   :disabled="!cellTargetAssignable(r, p.key) || isSaving[keyOf(r.key, p.key)]"
@@ -451,7 +451,7 @@ onMounted(() => {
               </td>
 
               <!-- Report -->
-              <td class="border py-1 text-center">
+              <td class="border text-center">
                 <input
                   type="checkbox"
                   :disabled="!cellReportAssignable(r, p.key) || isSaving[keyOf(r.key, p.key)]"
@@ -464,7 +464,7 @@ onMounted(() => {
               </td>
 
               <!-- Incharge -->
-              <td class="border py-1 text-center">
+              <td class="border text-center">
                 <span
                   class="inline-block text-center font-mono rounded"
                   :class="statusClass(r.cells[p.key], 'ic')"
@@ -474,7 +474,7 @@ onMounted(() => {
               </td>
 
               <!-- Coordinator -->
-              <td class="border px-2 py-2 text-center">
+              <td class="border text-center">
                 <span
                   class="inline-block text-center font-mono rounded"
                   :class="statusClass(r.cells[p.key], 'co')"
