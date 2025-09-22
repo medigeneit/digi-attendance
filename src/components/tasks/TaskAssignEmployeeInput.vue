@@ -60,12 +60,9 @@ function isMainEmployee(index) {
               :user="getOption(userId)"
               :isRemovable="index > 0"
               :isSortable="index > 0"
-              avatar-size="large"
-              :avatar-class="['transition', isMainEmployee(index) ? '!size-8 ' : '']"
-              :class="[
-                'w-full flex bg-sky-100/40 !shadow-sm border-sky-200 ',
-                isMainEmployee(index) ? 'size-10 :size-12' : 'size-8',
-              ]"
+              :avatar-size="isMainEmployee(index) ? 'medium' : 'small'"
+              :avatar-class="['transition']"
+              :class="['w-full flex bg-sky-100/40 !shadow-sm border-sky-200 ']"
               @removeClick="() => removeItem(userId)"
               @click="(e) => (isMainEmployee(index) ? e.stopPropagation() : null)"
             >

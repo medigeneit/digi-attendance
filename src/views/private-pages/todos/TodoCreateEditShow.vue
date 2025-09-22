@@ -1,0 +1,46 @@
+<script setup>
+import OverlyModal from '@/components/common/OverlyModal.vue'
+import TodoAddForm from '@/components/todo/TodoAddForm.vue'
+import TodoEditForm from '@/components/todo/TodoEditForm.vue'
+import TodoShow from '@/components/todo/TodoShow.vue'
+
+defineProps({
+  todoModal: {
+    type: Object,
+    required: true,
+  },
+})
+
+const emit = defineEmits(['cancelClick', 'update', 'clickEdit'])
+
+function handleTodoUpdate() {
+  emit('update')
+}
+</script>
+
+<template>
+  <OverlyModal v-if="todoModal.action == 'add'">
+    <TodoAddForm
+      @cancelClick="emit('cancelClick')"
+      @update="handleTodoUpdate"
+      :date="todoModal?.date"
+    />
+  </OverlyModal>
+
+  <OverlyModal v-if="todoModal.action == 'edit'">
+    <TodoEditForm
+      @cancelClick="emit('cancelClick')"
+      @update="handleTodoUpdate"
+      :todo="todoModal?.todo"
+    />
+  </OverlyModal>
+
+  <OverlyModal v-if="todoModal.action == 'show'">
+    <TodoShow
+      @cancelClick="emit('cancelClick')"
+      @update="handleTodoUpdate"
+      @clickEdit="(todo) => emit('clickEdit', todo)"
+      :todo="todoModal?.todo"
+    />
+  </OverlyModal>
+</template>

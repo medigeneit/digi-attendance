@@ -2,26 +2,29 @@ import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import apiClient from '../axios';
 
-import { todos } from '@/libs/dummy-todos.js';
+import { todos as todoList } from '@/libs/dummy-todos.js';
+import { uniqueId } from '@/libs/uuid';
 
 export const useTodoStore = defineStore('todo', () => {
   // const todos = ref([]);
   const todo = ref(null);
   const loading = ref(false);
   const error = ref(null);
+  const todos = ref([])
 
   const fetchTodos = async () => {
     loading.value = true;
     error.value = null;
     try {
       // const response = await apiClient.get('/todos');
-      todos.value = todos;
+      todos.value = todoList;
     } catch (err) {
       error.value = err.response?.data?.message || 'Todos load failed';
     } finally {
       loading.value = false;
     }
   }
+
   const fetchMyTodos = async () => {
     loading.value = true;
     error.value = null;
@@ -36,6 +39,8 @@ export const useTodoStore = defineStore('todo', () => {
   };
 
   const getTodosByDate = (date) =>{
+
+
     return todos.value?.filter( todo => todo.date == date)
   }
 
@@ -43,8 +48,10 @@ export const useTodoStore = defineStore('todo', () => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await apiClient.get(`/todos/${id}`);
-      todo.value = response.data;
+      // const response = await apiClient.get(`/todos/${id}`);
+      // todo.value = response.data;
+
+      todo.value = todos.value.find( td => td.id == id);
     } catch (err) {
       error.value = err.response?.data?.message || 'Todo load failed';
     } finally {
@@ -56,9 +63,22 @@ export const useTodoStore = defineStore('todo', () => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await apiClient.post('/todos', data);
-      todos.value.push(response.data);
-      return response.data;
+
+
+      // const response = await apiClient.post('/todos', data);
+      // todos.value.push(response.data);
+      // return response.data;
+
+      todos.value = [...todos.value,
+      {
+        "id": uniqueId(),
+        "date": data.date,
+        "title": data.title,
+        "status": "PENDING"
+      }
+    ]
+
+
     } catch (err) {
       error.value = err.response?.data?.message || 'Todo create failed';
     } finally {
@@ -82,6 +102,7 @@ export const useTodoStore = defineStore('todo', () => {
       loading.value = false;
     }
   };
+
   // Update todo status
   const updateTodoStatus = async (id, status) => {
     loading.value = true;

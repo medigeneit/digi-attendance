@@ -11,6 +11,18 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  selected: {
+    type: Object,
+    default: () => {
+      return {
+        type: 'month-view',
+        month: '',
+        day: '',
+        year: '',
+        week: '',
+      }
+    },
+  },
   loading: {
     type: Boolean,
     default: false,
@@ -23,37 +35,67 @@ const selected_type = ref()
 
 function handleTypeChange() {
   emit('selectViewType', selected_type.value)
+
+  emit('change', {
+    ...props.selected,
+    type: selected_type.value,
+  })
 }
 
 watch(
-  () => props.selectedType,
+  () => props.selected?.type,
   (t) => (selected_type.value = t),
   { immediate: true },
 )
+
+const selectedDateArray = computed(() => {
+  if (selected_type.value == 'month-view' && props.selected.year && props.selected.month) {
+    return [props.selected.year, props.selected.month - 1, 1]
+  }
+
+  if (
+    selected_type.value == 'day-view' &&
+    props.selected.year &&
+    props.selected.month &&
+    props.selected.day
+  ) {
+    return [props.selected.year, props.selected.month - 1, props.selected.day]
+  }
+
+  return [new Date().getFullYear(), new Date().getMonth(), new Date().getDate()]
+})
 
 /***********Date change when type is month-view **************/
 function handleClickCurrentMonth() {
   if (selected_type.value == 'month-view') {
     const today = new Date()
-    emitChange(getYearMonthFormat(today))
+    changeSelected(today)
+    // emitChange(getYearMonthFormat(today))
   }
 }
 
 function handleClickOnNextMonth() {
   if (selected_type.value == 'month-view') {
-    const [year, month] = input?.value?.split('-').map(Number)
-    const date = new Date(year, month, 1)
-    date.setMonth(date.getMonth())
-    emitChange(getYearMonthFormat(date))
+    // const [year, month] = input?.value?.split('-').map(Number)
+    // const date = new Date(year, month, 1)
+    // const [year, month, day] = selectedDateArray
+
+    const date = new Date(...selectedDateArray.value)
+    date.setMonth(date.getMonth() + 1)
+    changeSelected(date)
+    // emitChange(getYearMonthFormat(date))
   }
 }
 
 function handleClickOnPreviousMonth() {
   if (selected_type.value == 'month-view') {
-    const [year, month] = input?.value?.split('-').map(Number)
-    const date = new Date(year, month, 1)
-    date.setMonth(date.getMonth() - 2)
-    emitChange(getYearMonthFormat(date))
+    // const [year, month] = input?.value?.split('-').map(Number)
+    // const date = new Date(year, month, 1)
+
+    const date = new Date(...selectedDateArray.value)
+    date.setMonth(date.getMonth() - 1)
+    changeSelected(date)
+    // emitChange(getYearMonthFormat(date))
   }
 }
 
@@ -61,48 +103,76 @@ function handleClickOnPreviousMonth() {
 function handleClickOnToday() {
   if (selected_type.value == 'day-view') {
     const today = new Date()
-    emitChange(getYearMonthDayFormat(today))
+    changeSelected(today)
+    // emitChange(getYearMonthDayFormat(today))
   }
 }
 
 function handleClickOnNextDay() {
   if (selected_type.value == 'day-view') {
-    const today = new Date(input?.value)
+    // const today = new Date(input?.value)
+
+    const today = new Date(...selectedDateArray.value)
+
     today.setDate(today.getDate() + 1)
-    emitChange(getYearMonthDayFormat(today))
+    changeSelected(today)
+    // emitChange(getYearMonthDayFormat(today))
   }
 }
 
 function handleClickOnPreviousDay() {
   if (selected_type.value == 'day-view') {
-    const today = new Date(input.value)
+    // const today = new Date(input.value)
+
+    const today = new Date(...selectedDateArray.value)
+
     today.setDate(today.getDate() - 1)
-    emitChange(getYearMonthDayFormat(today))
+    changeSelected(today)
+    // emitChange(getYearMonthDayFormat(today))
   }
 }
 
-const input = computed(() => {
-  return props.selectedValue
-})
-
-function emitChange(value) {
+function changeSelected(date) {
   emit('change', {
-    value,
-    selectedType: selected_type.value,
+    type: selected_type.value,
+    month: date.getMonth() + 1,
+    day: date.getDate(),
+    year: date.getFullYear(),
+    week: date.getDay(),
   })
 }
 
-const handleInputChange = (e) => {
-  emitChange(e.target.value)
-  emit('selectViewType', selected_type.value)
+const input = computed(() => {
+  if (selected_type.value == 'month-view') {
+    return `${props.selected.year}-${props.selected.month.toString().padStart(2, '0')}`
+  }
+
+  if (selected_type.value == 'day-view') {
+    return `${props.selected.year}-${props.selected.month
+      .toString()
+      .padStart(2, '0')}-${props.selected.day.toString().padStart(2, '0')}`
+  }
+
+  return props.selected
+})
+
+const handleInputChange = () => {
+  if (selected_type.value == 'month-view') {
+    const [year, month] = input?.value?.split('-').map(Number)
+    const date = new Date(year, month - 1, 1)
+    changeSelected(date)
+  }
+
+  if (selected_type.value == 'day-view') {
+    const date = new Date(input?.value)
+    changeSelected(date)
+  }
 }
 </script>
 
 <template>
-  <div class="px-4 py-2 flex items-center bg-gray-50 group">
-    <h2 class="leading-none font-semibold text-lg">Monthly Task</h2>
-
-    <select class="mx-4 px-2 h-7 border rounded" v-model="selected_type" @change="handleTypeChange">
+  <div class="px-4 py-2 flex items-center bg-gray-50 group gap-2">
+    <select class="px-2 h-7 border rounded" v-model="selected_type" @change="handleTypeChange">
       <option value="day-view">Day</option>
       <!-- <option value="week-view">Week</option> -->
       <option value="month-view">Month</option>
@@ -157,13 +227,6 @@ const handleInputChange = (e) => {
     <div class="ml-4 md:ml-auto flex items-center gap-2" v-if="selected_type == 'day-view'">
       <button class="btn-2 h-7" @click.prevent="handleClickOnPreviousDay">Previous Day</button>
       <button class="btn-2 h-7" @click.prevent="handleClickOnNextDay">Next Day</button>
-
-      <!-- <input
-        type="date"
-        :value="selectedDay"
-        @input="(e) => emit('change', e.target?.value)"
-        class="border px-2 rounded"
-      /> -->
     </div>
   </div>
 </template>

@@ -1,47 +1,100 @@
 <script setup>
-import TodoCalenderView from '@/components/todo/TodoCalenderView.vue'
 import TodoHeading from '@/components/todo/TodoHeading.vue'
-import { getYearMonthDayFormat, getYearMonthFormat } from '@/libs/datetime'
-import { todos } from '@/libs/dummy-todos.js'
+import TodoCalenderView from '@/components/todo/TodosInCalenderView.vue'
+import TodosInDailyView from '@/components/todo/TodosInDailyView.vue'
 import { useTodoStore } from '@/stores/useTodoStore'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import TodoCreateEditShow from './TodoCreateEditShow.vue'
 
-const selectedMonth = ref('')
-const selectedDay = ref('')
-const viewType = ref('month-view')
+const date = new Date()
+const selected = ref({
+  type: 'month-view',
+  month: date.getMonth() + 1,
+  day: date.getDate(),
+  year: date.getFullYear(),
+  week: date.getDay(),
+})
+
+const todoModal = ref({
+  action: null,
+})
 
 const store = useTodoStore()
 
-onMounted(async () => {
+async function handleReloadClick() {
   await store.fetchTodos()
-  selectedDay.value = getYearMonthDayFormat(new Date())
-  selectedMonth.value = getYearMonthFormat(new Date())
+}
+
+async function handleTodoUpdate() {
+  todoModal.value = { ...todoModal.value, action: '' }
+  await store.fetchTodos()
+}
+
+function handleHeadingChange(changed) {
+  selected.value = { ...selected.value, ...changed }
+}
+
+function handleDateClick(date) {
+  const [year, month, day] = date.split('-').map(Number)
+
+  selected.value = {
+    ...selected.value,
+    type: 'day-view',
+    year,
+    month,
+    day,
+  }
+}
+
+function handleClickTodo(todo) {
+  todoModal.value = {
+    ...todoModal.value,
+    action: 'show',
+    todo,
+  }
+}
+
+function handleClickEditTodo(todo) {
+  console.log({ todo })
+
+  todoModal.value = {
+    ...todoModal.value,
+    action: 'edit',
+    todo,
+  }
+}
+
+function handleClickAddTodo(yearMonthDay) {
+  todoModal.value = {
+    ...todoModal.value,
+    action: 'add',
+    date: yearMonthDay,
+  }
+}
+
+function handleModalCancel() {
+  todoModal.value = {
+    action: null,
+    todo: null,
+  }
+}
+
+const getDateString = computed(() => {
+  const year = selected.value?.year?.toString()
+  const month = selected.value?.month?.toString().padStart(2, '0')
+  const day = selected.value?.day?.toString().padStart(2, '0')
+  return `${year}-${month}-${day}`
 })
 
-function handleReloadClick() {}
+const getMonthString = computed(() => {
+  const year = selected.value?.year?.toString()
+  const month = selected.value?.month?.toString().padStart(2, '0')
+  return `${year}-${month}`
+})
 
-function getSelectedValue() {
-  if (viewType.value == 'month-view') {
-    return selectedMonth.value
-  }
-  if (viewType.value == 'day-view') {
-    return selectedDay.value
-  }
-}
-
-function handleHeadingChange({ value, selectedType }) {
-  viewType.value = selectedType
-
-  if (selectedType == 'month-view') {
-    console.log(`${value}-01`)
-    selectedMonth.value = value
-    selectedDay.value = `${value}-01`
-  }
-  if (selectedType == 'day-view') {
-    selectedDay.value = value
-    selectedMonth.value = getYearMonthFormat(new Date(selectedDay.value))
-  }
-}
+onMounted(async () => {
+  await store.fetchTodos()
+})
 </script>
 
 <template>
@@ -50,27 +103,36 @@ function handleHeadingChange({ value, selectedType }) {
     <div v-if="store.loading" class="text-center py-4 text-gray-500">Loading...</div>
     <div v-else-if="store.error" class="text-center py-4 text-red-500">{{ store.error }}</div>
 
-    <div class="border">
+    <div class="border bg-white">
       <TodoHeading
-        :selected-type="viewType"
-        :selected-value="getSelectedValue()"
+        :selected="selected"
         @change="handleHeadingChange"
-        @selectViewType="(vt) => (viewType = vt)"
         @reload-click="handleReloadClick"
       />
 
-      {{ viewType }} - {{ selectedMonth }} -
-      {{ selectedDay }}
-
       <TodoCalenderView
-        :month="selectedMonth"
-        :todos="todos"
-        v-if="viewType == 'month-view'"
+        :month="getMonthString"
+        v-if="selected.type == 'month-view'"
         class="bg-white"
+        @dateClick="handleDateClick"
+        @clickTodo="handleClickTodo"
+        @clickDateCell="handleClickAddTodo"
       />
-      <div v-if="viewType == 'day-view'" class="border min-h-40 text-center bg-white">
-        Day View will be shown here
-      </div>
+
+      <TodosInDailyView
+        :date="getDateString"
+        v-if="selected.type == 'day-view'"
+        @clickTodo="handleClickTodo"
+        @clickEdit="handleClickEditTodo"
+        @clickAdd="handleClickAddTodo"
+      />
     </div>
+
+    <TodoCreateEditShow
+      :todoModal="todoModal"
+      @cancelClick="handleModalCancel"
+      @updateTodo="handleTodoUpdate"
+      @clickEdit="handleClickEditTodo"
+    />
   </div>
 </template>

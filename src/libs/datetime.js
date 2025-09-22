@@ -13,7 +13,35 @@
     'Dec',
   ]
 
-  export const getDisplayDate = (dateTime) => {
+  const shortWeekDays = [
+    'Sun',
+    'Mon',
+    'Tue',
+    'Wed',
+    'Thu',
+    'Fri',
+    'Sat',
+  ]
+
+  const longWeekDays = [
+    'Sunday',
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+  ]
+
+  export const getWeekDay = (dateTime, weekDay = 'short') => {
+    const date = new Date(dateTime)
+    if (isNaN(date)) return ''
+    const wDay = date.getDay()
+
+    return  weekDay == 'short' ? shortWeekDays[wDay]:(weekDay == 'long' ? longWeekDays[wDay]:'');
+  }
+
+  export const getDisplayDate = (dateTime, {weekDay = null} = {}) => {
   if (!dateTime) {
     return ''
   }
@@ -26,11 +54,13 @@
     const month = monthNames[date.getMonth()]
     const year = date.getFullYear()
 
-    return `${day}-${month}-${year}`
+    const wd = getWeekDay(date, weekDay);
+    return `${wd} ${day}-${month}-${year}`
   } catch (e) {
     return ''
   }
 }
+
 
 export const getDisplayMonth = (dateTime) => {
   if (!dateTime) {
