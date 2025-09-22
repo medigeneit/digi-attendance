@@ -76,7 +76,14 @@ export const useKpiReportStore = defineStore('kpi-report', {
         console.error('setReportCompletion error:', e);
         throw new Error(msg);
       }
-    }
+    },
 
+    async setTargetCompletion({ form_id, department_id, completed }) {
+      const { data } = await apiClient.post(
+        `/kpi/bi-monthly/forms/${form_id}/target-completion`,
+        { department_id, completed }
+      )
+      return data
+    }
   },
 })
