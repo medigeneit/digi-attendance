@@ -1,5 +1,6 @@
 <script setup>
 import { getDisplayDate } from '@/libs/datetime'
+import { useTodoStore } from '@/stores/useTodoStore'
 import { computed } from 'vue'
 import TodosInDate from './TodosInDate.vue'
 import TodoStatusIcon from './TodoStatusIcon.vue'
@@ -16,23 +17,28 @@ const emit = defineEmits([
   'clickAdd',
   'clickEdit',
   'clickDelete',
-  'clickComplete',
+  'clickChangeStatus',
   'backClick',
+  'update',
 ])
 
 const selectedDate = computed(() => {
   return new Date(props.date)
 })
 
-function handleClickDelete(todo) {
-  if (confirm(`Are your sure want to delete todo\n'${todo.title}'`)) {
-    emit('clickComplete', todo.id)
+const todoStore = useTodoStore()
+
+async function handleClickDelete(todo) {
+  if (confirm(`Are your sure want to delete todo\n'${todo?.title}'`)) {
+    await todoStore.deleteTodo(todo.id)
+    emit('update')
   }
 }
 
-function handleClickComplete(todo) {
-  if (confirm(`Are your sure want to compete todo\n'${todo.title}'`)) {
-    emit('clickComplete', todo.id)
+async function handleClickComplete(todo) {
+  if (confirm(`Are your sure want to compete todo\n'${todo?.title}'`)) {
+    await todoStore.updateTodoStatus(todo.id, 'COMPLETED')
+    emit('update')
   }
 }
 </script>
@@ -60,9 +66,13 @@ function handleClickComplete(todo) {
             <TodoStatusIcon :todo="todo" />
 
             <div class="line-clamp-2 ml-2">{{ todo.title }}</div>
+            <div class="line-clamp-2 ml-2 text-gray-500" v-if="todo.todo_type && todo.todo_type_id">
+              {{ todo.todo_type }} id {{ todo.todo_type_id }}
+            </div>
 
             <div class="ml-auto flex items-center gap-2">
               <button
+                v-if="todo.status !== 'COMPLETED'"
                 class="btn-icon bg-green-400 text-white hover:bg-green-600 hover:text-white"
                 @click.prevent.stop="() => handleClickComplete(todo)"
               >
@@ -75,7 +85,6 @@ function handleClickComplete(todo) {
                 <i class="fas fa-pen"></i>
               </button>
               <button
-                v-if="todo.status !== 'COMPLETED'"
                 class="btn-icon bg-red-400 text-white hover:bg-red-600 hover:text-white"
                 @click.prevent.stop="() => handleClickDelete(todo)"
               >

@@ -11,7 +11,7 @@ defineProps({
   },
 })
 
-const emit = defineEmits(['cancelClick', 'update', 'clickEdit'])
+const emit = defineEmits(['cancelClick', 'update', 'clickEdit', 'clickDelete', 'clickChangeStatus'])
 
 function handleTodoUpdate() {
   emit('update')
@@ -40,6 +40,8 @@ function handleTodoUpdate() {
       @cancelClick="emit('cancelClick')"
       @update="handleTodoUpdate"
       @clickEdit="(todo) => emit('clickEdit', todo)"
+      @clickDelete="(todoId) => emit('clickDelete', todoId)"
+      @clickChangeStatus="(todoId, status) => emit('clickChangeStatus', todoId, status)"
       :todo="todoModal?.todo"
     />
   </OverlyModal>
