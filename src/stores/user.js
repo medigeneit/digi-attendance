@@ -124,6 +124,24 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  const fetchUserWeekends = async (id) => {
+    try {
+      const res = await apiClient.get(`/employee/weekends/${id}`)
+      return res?.data ?? res
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Something went wrong'
+    } 
+  }
+
+  const fetchUserShifts = async (id) => {
+    try {
+      const res = await apiClient.get(`/employee/${id}/shift-history`)
+      return res?.data ?? res
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Something went wrong'
+    } 
+  }
+
   const fetchUserDashboardData = async () => {
     try {
       isLoading.value = true
@@ -274,6 +292,8 @@ export const useUserStore = defineStore('user', () => {
     saveLeaveBalances,
     fetchUserLeaveBalances,
     fetchUserLeaveTypes,
-    updateOrCreateWeekend
+    updateOrCreateWeekend,
+    fetchUserWeekends,
+    fetchUserShifts
   }
 })
