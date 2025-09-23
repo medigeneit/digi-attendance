@@ -65,7 +65,11 @@ const todoInDate = computed(() => {
             @click.prevent.stop="emit('clickTodo', todo)"
             :title="todo.title"
           >
-            <TodoStatusIcon :todo="todo" class="text-sm" />
+            <TodoStatusIcon
+              :todo="todo"
+              class="text-sm"
+              :class="[todo.status == 'COMPLETED' ? '!text-white' : '']"
+            />
 
             <div class="line-clamp-1">{{ todo.title }}</div>
           </div>

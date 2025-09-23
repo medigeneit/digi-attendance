@@ -3,6 +3,7 @@ import { getDisplayDate, getYearMonthDayFormat } from '@/libs/datetime'
 import { useTodoStore } from '@/stores/useTodoStore'
 import { computed, nextTick, onMounted, ref } from 'vue'
 import FormHandler from '../FormHandler.vue'
+import LoaderView from '../common/LoaderView.vue'
 
 const props = defineProps({
   date: { type: String, default: getYearMonthDayFormat(new Date()) },
@@ -39,7 +40,14 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div>
+  <div class="relative">
+    <LoaderView
+      v-if="todoStore.loading"
+      class="absolute inset-0 bg-opacity-80 text-center py-4 text-gray-500 z-10 flex items-center justify-center"
+    >
+      Loading...
+    </LoaderView>
+
     <FormHandler
       @submit="handleFormSubmit"
       @clickCancel="emit('cancelClick')"

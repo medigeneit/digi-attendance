@@ -2,8 +2,6 @@ import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import apiClient from '../axios';
 
-import { todos as todoList } from '@/libs/dummy-todos.js';
-import { uniqueId } from '@/libs/uuid';
 
 export const useTodoStore = defineStore('todo', () => {
   // const todos = ref([]);
@@ -16,10 +14,11 @@ export const useTodoStore = defineStore('todo', () => {
     loading.value = true;
     error.value = null;
     try {
-      // const response = await apiClient.get('/todos');
-      todos.value = todoList;
+      const response = await apiClient.get('/todos');
+      todos.value = response.data?.todos || [];
     } catch (err) {
       error.value = err.response?.data?.message || 'Todos load failed';
+      throw err
     } finally {
       loading.value = false;
     }
@@ -30,9 +29,10 @@ export const useTodoStore = defineStore('todo', () => {
     error.value = null;
     try {
       const response = await apiClient.get('/my-todos');
-      todos.value = response.data;
+      todos.value = response.data?.todos || [];
     } catch (err) {
       error.value = err.response?.data?.message || 'Todos load failed';
+      throw err
     } finally {
       loading.value = false;
     }
@@ -48,12 +48,13 @@ export const useTodoStore = defineStore('todo', () => {
     loading.value = true;
     error.value = null;
     try {
-      // const response = await apiClient.get(`/todos/${id}`);
-      // todo.value = response.data;
+      const response = await apiClient.get(`/todos/${id}`);
+      todo.value = response.data;
 
       todo.value = todos.value.find( td => td.id == id);
     } catch (err) {
       error.value = err.response?.data?.message || 'Todo load failed';
+      throw err
     } finally {
       loading.value = false;
     }
@@ -64,23 +65,14 @@ export const useTodoStore = defineStore('todo', () => {
     error.value = null;
     try {
 
+      const response = await apiClient.post('/todos', data);
+      todos.value = [...todos.value, response.data?.todo];
 
-      // const response = await apiClient.post('/todos', data);
-      // todos.value.push(response.data);
-      // return response.data;
-
-      todos.value = [...todos.value,
-      {
-        "id": uniqueId(),
-        "date": data.date,
-        "title": data.title,
-        "status": "PENDING"
-      }
-    ]
-
+      return response.data;
 
     } catch (err) {
       error.value = err.response?.data?.message || 'Todo create failed';
+      throw err
     } finally {
       loading.value = false;
     }
@@ -91,13 +83,19 @@ export const useTodoStore = defineStore('todo', () => {
     error.value = null;
     try {
       const response = await apiClient.put(`/todos/${id}`, data);
-      const index = todos.value.findIndex((t) => t.id === id);
-      if (index !== -1) {
-        todos.value[index] = response.data;
-      }
+
+      todos.value = todos.value.map( todo => {
+        if( todo.id == response.data?.todo?.id ) {
+          return response.data?.todo
+        }
+
+        return {...todo}
+      })
+
       return response.data;
     } catch (err) {
       error.value = err.response?.data?.message || 'Todo update failed';
+      throw err
     } finally {
       loading.value = false;
     }
@@ -105,27 +103,42 @@ export const useTodoStore = defineStore('todo', () => {
 
   // Update todo status
   const updateTodoStatus = async (id, status) => {
+
     loading.value = true;
     error.value = null;
     try {
-      await apiClient.put(`/todos/status/${id}`, { status });
-      fetchMyTodos()
+      await apiClient.put( `/todos/status/${id}`, { status } );
+
+      todos.value = todos.value.map( todo => {
+        if( todo.id === id ) {
+          return {...todo, status}
+        }
+
+        return {...todo}
+      })
+
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to update todo status';
+      throw err
     } finally {
       loading.value = false;
     }
+
   };
 
 
   const deleteTodo = async (id) => {
     loading.value = true;
     error.value = null;
+
+    // todos.value = todos.value.filter((todo) => todo.id !== id);
+
     try {
       await apiClient.delete(`/todos/${id}`);
       todos.value = todos.value.filter((todo) => todo.id !== id);
     } catch (err) {
       error.value = err.response?.data?.message || 'Todo delete failed';
+      throw err
     } finally {
       loading.value = false;
     }

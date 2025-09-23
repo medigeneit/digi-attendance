@@ -3,6 +3,7 @@ import { getDisplayDate, getYearMonthDayFormat } from '@/libs/datetime'
 import { useTodoStore } from '@/stores/useTodoStore'
 import { computed, nextTick, onMounted, ref } from 'vue'
 import FormHandler from '../FormHandler.vue'
+import LoaderView from '../common/LoaderView.vue'
 
 const props = defineProps({
   date: { type: String, default: getYearMonthDayFormat(new Date()) },
@@ -17,20 +18,24 @@ const emit = defineEmits(['update', 'cancelClick'])
 
 const form = ref({
   title: '',
-  task_id: '',
+  todo_type: 'task',
+  todo_type_id: '',
 })
 
 async function fetchTodo() {
   await todoStore.fetchTodo(props.todo?.id)
   form.value.title = todoStore.todo?.title
-  form.value.task_id = todoStore.todo?.task_id
+  form.value.todo_type_id = todoStore.todo?.todoable_id
 }
 
 async function handleFormSubmit() {
   state.value = 'submitting'
-  await todoStore.createTodo(form.value)
-  state.value = ''
-  emit('update')
+  try {
+    await todoStore.updateTodo(props.todo.id, form.value)
+    emit('update')
+  } finally {
+    state.value = ''
+  }
 }
 
 const selectedDate = computed(() => {
@@ -45,11 +50,18 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div>
+  <div class="relative">
+    <LoaderView
+      v-if="todoStore.loading"
+      class="absolute inset-0 bg-opacity-80 text-center py-4 text-gray-500 z-10 flex items-center justify-center"
+    >
+      Loading...
+    </LoaderView>
     <FormHandler
       @submit="handleFormSubmit"
       @clickCancel="emit('cancelClick')"
       :isSubmitting="state == 'submitting'"
+      :isLoading="todoStore.loading"
       :error="todoStore.error"
     >
       <div class="border-b py-2 px-4">
@@ -77,7 +89,7 @@ onMounted(async () => {
         <div class="mb-4">
           <label class="block text-gray-700 font-medium mb-2">Task ID (optional)</label>
           <input
-            v-model="form.task_id"
+            v-model="form.todo_type_id"
             placeholder="Enter a task id"
             class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
           />
