@@ -19,15 +19,30 @@ const todoModal = ref({
   action: null,
 })
 
-const store = useTodoStore()
+const todoStore = useTodoStore()
 
 async function handleReloadClick() {
-  await store.fetchTodos()
+  await todoStore.fetchTodos()
 }
 
 async function handleTodoUpdate() {
   todoModal.value = { ...todoModal.value, action: '' }
-  await store.fetchTodos()
+  await todoStore.fetchTodos()
+}
+
+async function handleClickCompleteTodo(todoId) {
+  await todoStore.completeTodo(todoId)
+}
+
+async function handleClickDeleteTodo(todoId) {
+  await todoStore.deleteTodo(todoId)
+}
+
+function handleClickBackFromDayView() {
+  selected.value = {
+    ...selected.value,
+    type: 'month-view',
+  }
 }
 
 function handleHeadingChange(changed) {
@@ -93,15 +108,17 @@ const getMonthString = computed(() => {
 })
 
 onMounted(async () => {
-  await store.fetchTodos()
+  await todoStore.fetchTodos()
 })
 </script>
 
 <template>
   <div class="container mx-auto p-6">
     <h2 class="text-2xl font-bold mb-6">Todo List</h2>
-    <div v-if="store.loading" class="text-center py-4 text-gray-500">Loading...</div>
-    <div v-else-if="store.error" class="text-center py-4 text-red-500">{{ store.error }}</div>
+    <div v-if="todoStore.loading" class="text-center py-4 text-gray-500">Loading...</div>
+    <div v-else-if="todoStore.error" class="text-center py-4 text-red-500">
+      {{ todoStore.error }}
+    </div>
 
     <div class="border bg-white">
       <TodoHeading
@@ -125,6 +142,9 @@ onMounted(async () => {
         @clickTodo="handleClickTodo"
         @clickEdit="handleClickEditTodo"
         @clickAdd="handleClickAddTodo"
+        @clickDelete="handleClickDeleteTodo"
+        @clickComplete="handleClickCompleteTodo"
+        @backClick="handleClickBackFromDayView"
       />
     </div>
 

@@ -156,15 +156,15 @@ const input = computed(() => {
   return props.selected
 })
 
-const handleInputChange = () => {
+const handleInputChange = (event) => {
   if (selected_type.value == 'month-view') {
-    const [year, month] = input?.value?.split('-').map(Number)
+    const [year, month] = event.target.value?.split('-').map(Number)
     const date = new Date(year, month - 1, 1)
     changeSelected(date)
   }
 
   if (selected_type.value == 'day-view') {
-    const date = new Date(input?.value)
+    const date = new Date(event.target?.value)
     changeSelected(date)
   }
 }
