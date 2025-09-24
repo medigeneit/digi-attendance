@@ -83,7 +83,7 @@ function fmtDateOnlyAny(value) {
     : ''
 }
 
-/** Internal helpers used by range builder (date-only) */
+/** Internal date helpers for range builder (date-only) */
 function toDateOnly(d) {
   const m = String(d || '').match(/^(\d{4})-(\d{2})-(\d{2})$/)
   if (!m) return null
@@ -96,12 +96,17 @@ function sameYMD(a, b) {
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate()
 }
+/** Local-safe YYYY-MM-DD (no UTC conversion) */
+function ymdLocal(dt) {
+  const y = dt.getFullYear()
+  const m = String(dt.getMonth() + 1).padStart(2, '0')
+  const d = String(dt.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
 
 /**
  * Build contiguous leave ranges from json_data; weekends আলাদা থাকে।
  * Returns: { ranges:[{from,to}], weekends:[string], leaveCount:number }
- * - non-weekend গুলোকে range বানাই
- * - weekend গুলো শুধু কাউন্ট/tooltip-এ কাজে লাগে (UI চাইলে দেখাতে পারেন)
  */
 function buildLeaveRanges(jsonData) {
   const items = Array.isArray(jsonData) ? jsonData.slice() : []
@@ -123,11 +128,11 @@ function buildLeaveRanges(jsonData) {
     if (!start) { start = prev = cur; continue }
     if (sameYMD(addDays(prev, 1), cur)) prev = cur
     else {
-      ranges.push({ from: start.toISOString().slice(0,10), to: prev.toISOString().slice(0,10) })
+      ranges.push({ from: ymdLocal(start), to: ymdLocal(prev) })
       start = prev = cur
     }
   }
-  if (start && prev) ranges.push({ from: start.toISOString().slice(0,10), to: prev.toISOString().slice(0,10) })
+  if (start && prev) ranges.push({ from: ymdLocal(start), to: ymdLocal(prev) })
 
   return { ranges, weekends: weekendDates, leaveCount: leaveDates.length }
 }
@@ -181,7 +186,7 @@ const badgeInfo  = 'border-sky-200 bg-sky-50 text-sky-700'
             </span>
           </div>
 
-          <!-- From–To (non-weekend >1), else single date; weekends hidden for compact UI -->
+          <!-- From–To (non-weekend >1), else single date; weekend badge hidden -->
           <div class="mb-1 text-gray-700 flex flex-wrap items-center gap-x-2.5 gap-y-1">
             <template v-for="info in [buildLeaveRanges(item.json_data)]" :key="'info-'+item.id">
               <template v-if="info.leaveCount > 1">
@@ -207,16 +212,21 @@ const badgeInfo  = 'border-sky-200 bg-sky-50 text-sky-700'
                 </span>
               </template>
 
-              <!-- Uncomment if you want weekend count -->
+              <!-- Weekend count (optional) -->
+              <!--
               <span v-if="info.weekends.length" :class="[badge, 'border-gray-300 bg-gray-100 text-gray-700']"
                     :title="info.weekends.map(fmtDateOnlyAny).join(', ')">
                 <i class="far fa-calendar mr-1"></i> + {{ info.weekends.length }} wknd
               </span>
-              <!-- <span v-if="item.resumption_date" :class="[badge, 'border-emerald-200 bg-emerald-50 text-emerald-700']"
+              -->
+              <!-- Resumption (optional) -->
+              <!--
+              <span v-if="item.resumption_date" :class="[badge, 'border-emerald-200 bg-emerald-50 text-emerald-700']"
                     :title="fmtDateOnlyAny(item.resumption_date)">
                 <i class="far fa-play-circle mr-1"></i>
                 Resume: {{ fmtDateOnlyAny(item.resumption_date) }}
-              </span> -->
+              </span>
+              -->
             </template>
           </div>
         </button>
@@ -321,7 +331,6 @@ const badgeInfo  = 'border-sky-200 bg-sky-50 text-sky-700'
           <div class="flex justify-between items-center py-2 rounded hover:bg-sky-50/60 transition-colors">
             <h3 class="text-sm text-gray-900 min-w-0">
               <span :class="[badge, badgeMuted, 'text-xs mr-1']">
-                <!-- prefer check_in date; else fallback to check_out -->
                 {{ item.check_in ? fmtDateOnlyAny(item.check_in) : fmtDateOnlyAny(item.check_out) }}
               </span>
               <span class="opacity-80">({{ item.type || '—' }})</span>
