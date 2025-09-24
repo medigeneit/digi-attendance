@@ -17,7 +17,7 @@ onMounted(async () => {
 
 <template>
   <div>
-    <div class="overflow-y-auto h-[calc(100vh-150px)] scrollbar text-blue-900 bg-white border-0">
+    <div class="overflow-y-auto h-[calc(100dvh-150px)] scrollbar-hide text-blue-900 bg-white border-0">
       <ConversationLoader v-if="isLoading" />
       <ConversationNotFoundMessage v-else-if="chatStore.conversations.length === 0" />
       <template v-else>
