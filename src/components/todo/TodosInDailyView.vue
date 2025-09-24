@@ -72,7 +72,7 @@ async function handleClickComplete(todo) {
 
             <div class="ml-auto flex items-center gap-2">
               <button
-                v-if="todo.status !== 'COMPLETED'"
+                v-if="todo.status === 'WORKING'"
                 class="btn-icon bg-green-400 text-white hover:bg-green-600 hover:text-white"
                 @click.prevent.stop="() => handleClickComplete(todo)"
               >
