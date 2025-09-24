@@ -34,7 +34,7 @@ onMounted(() => {
   <div class="my-container">
     <div class="flex overflow-hidden border-[#24A1DE] border rounded-lg">
       <div
-        class="min-w-11 md:block grow-0 shrink-0 md:w-[360px] rounded-l-lg"
+        class="min-w-11 md:block grow-0 shrink-0 md:w-[280px] lg:w-[360px] xl:w-[400px] rounded-l-lg"
         :class="{
           'w-full': chatStore.showMobileConversationList,
         }"

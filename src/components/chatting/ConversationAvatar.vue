@@ -21,7 +21,7 @@ const showUserPhoto = ref(true)
         @error="showUserPhoto = false"
         :src="conversation?.avatar"
         alt="Photo"
-        class="object-cover w-full h-full"
+        class="object-cover w-full h-full aspect-square"
       />
       <template v-else>
         <i v-if="conversation.type === 'group'" class="fas fa-users md:text-3xl"></i>

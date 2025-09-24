@@ -33,7 +33,7 @@ const isActive = computed(() => {
         }"
         class="md:block"
       >
-        <h3 class="md:text-lg font-semibold">
+        <h3 :title="conversation.title" class="md:text-lg font-semibold line-clamp-1">
           {{ conversation.title }}
         </h3>
         <div
