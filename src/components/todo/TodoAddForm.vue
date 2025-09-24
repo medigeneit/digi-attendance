@@ -40,7 +40,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="relative">
+  <div class="">
     <LoaderView
       v-if="todoStore.loading"
       class="absolute inset-0 bg-opacity-80 text-center py-4 text-gray-500 z-10 flex items-center justify-center"
@@ -53,12 +53,13 @@ onMounted(async () => {
       @clickCancel="emit('cancelClick')"
       :isSubmitting="state == 'submitting'"
       :error="todoStore.error"
+      class="rounded-md relative"
     >
       <div class="border-b py-2 px-4">
         <h2 class="text-xl font-semibold">Add Todo</h2>
       </div>
 
-      <div class="p-4">
+      <div class="p-4 min-h-[10vh] max-h-[50vh] overflow-y-auto">
         <div class="mb-2">
           <span class="font-semibold"> Date </span>
           <span>

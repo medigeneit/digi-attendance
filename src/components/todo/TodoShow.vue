@@ -56,7 +56,7 @@ onMounted(async () => {
       <div class="border-b py-2 px-4">
         <h2 class="text-xl font-semibold">Show Todo</h2>
       </div>
-      <div class="min-h-[20vh] p-4">
+      <div class="min-h-[10vh] max-h-[50vh] overflow-y-auto p-4">
         <!-- {{ todo }} -->
 
         <div class="mb-4">

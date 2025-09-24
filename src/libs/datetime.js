@@ -171,7 +171,9 @@ export function getDateRangeArray(start, end) {
 
 export function dateIsToday(givenDate){
 
-if (!givenDate || !givenDate instanceof Date) {
+
+
+  if (!givenDate || !givenDate instanceof Date) {
     return false
   }
 
