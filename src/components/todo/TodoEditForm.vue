@@ -67,7 +67,7 @@ onMounted(async () => {
       <div class="border-b py-2 px-4">
         <h2 class="text-xl font-semibold">Edit Todo</h2>
       </div>
-      <div class="p-4">
+      <div class="p-4 min-h-[10vh] max-h-[50vh] overflow-y-auto">
         <div class="mb-2">
           <span class="font-semibold"> Date </span>
           <span>

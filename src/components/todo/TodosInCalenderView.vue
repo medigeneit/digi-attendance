@@ -1,4 +1,5 @@
 <script setup>
+import { dateIsToday } from '@/libs/datetime'
 import CalenderView from '../Calender/CalenderView.vue'
 import TodosInDate from './TodosInDate.vue'
 
@@ -17,6 +18,14 @@ function handleDateKeypress(e, date) {
     emit('clickDateCell', date)
   }
 }
+
+function isToday(date) {
+  const [year, month, day] = String(date).split('-').map(Number)
+
+  const selectedDate = new Date(year, month - 1, day) // month-1 because JS months are 0-based
+
+  return dateIsToday(selectedDate)
+}
 </script>
 <template>
   <div class="relative">
@@ -24,7 +33,13 @@ function handleDateKeypress(e, date) {
       <template #date="{ day, yearMonthDate, isCurrentMonth }">
         <div
           tabindex="0"
-          class="border p-4 hover:bg-sky-50 focus:bg-sky-50 hover:border-blue-300 focus:outline-blue-400 cursor-pointer group/date relative"
+          class="border p-4 cursor-pointer group/date relative"
+          :class="{
+            'bg-rose-50  border-rose-300 focus:bg-rose-50 focus:outline-rose-400':
+              isToday(yearMonthDate),
+            'hover:bg-sky-50  hover:border-blue-300 focus:bg-sky-50 focus:outline-blue-400':
+              !isToday(yearMonthDate),
+          }"
           @click="emit('clickDateCell', yearMonthDate)"
           @keypress.prevent="(e) => handleDateKeypress(e, yearMonthDate)"
         >
