@@ -4,6 +4,7 @@ import UserAvatar from '@/components/UserAvatar.vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import CompanyDepartmentFilter from './CompanyDepartmentFilter.vue'
 
+import { useAuthStore } from '@/stores/auth'
 import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
 import { useUserStore } from '@/stores/user'
@@ -31,6 +32,7 @@ const emit = defineEmits(['update:companyId', 'update:departmentId', 'update:sel
 const companyStore = useCompanyStore()
 const departmentStore = useDepartmentStore()
 const userStore = useUserStore()
+const authStore = useAuthStore()
 
 /** ---- v-model proxies ---- */
 const modelCompanyId = computed({
@@ -191,41 +193,47 @@ onMounted(async () => {
           </div>
 
           <div v-else class="divide-y">
-            <label
-              v-for="user in filtered"
-              :key="user.id"
-              :for="`userId${user.id}`"
-              class="flex items-center justify-between gap-3 p-3 hover:bg-gray-50"
-            >
-              <div class="w-full grow flex items-center gap-3">
-                <div class="border rounded-full" :title="user.name">
-                  <UserAvatar :user="user" size="medium" />
-                </div>
-                <div class="leading-tight">
-                  <div class="font-medium text-sm md:text-base">
-                    {{ user.name || 'User #' + (user.employee_id ?? user.id) }}
+            <template v-for="user in filtered" :key="user.id">
+              <label
+                v-if="authStore?.user?.id !== user.id"
+                :for="`userId${user.id}`"
+                class="flex items-center justify-between gap-3 p-3 hover:bg-gray-50"
+              >
+                <div class="w-full grow flex items-center gap-3">
+                  <div class="border rounded-full" :title="user.name">
+                    <UserAvatar :user="user" size="medium" />
                   </div>
-                  <div class="text-xs text-gray-500">
-                    {{ user.employee_id || user.phone || user.email || '' }}
+                  <div class="leading-tight">
+                    <div class="font-medium text-sm md:text-base">
+                      {{ user.name || 'User #' + (user.employee_id ?? user.id) }}
+                    </div>
+                    <div class="text-xs text-gray-500">
+                      {{ user.employee_id || user.phone || user.email || '' }}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div class="w-14 md:w-auto md:shrink-0 inline-flex justify-center items-center text-right">
-                <span v-if="alreadyAddedUserIds.includes(user.id)" class="text-gray-500 text-xs text-center">
-                  Already Added
-                </span>
-                <input
-                  v-else
-                  :id="`userId${user.id}`"
-                  :type="mode === 'direct' ? 'radio' : 'checkbox'"
-                  :name="mode === 'direct' ? 'direct-user' : 'group-users'"
-                  :checked="selectedUserIds.includes(user.id)"
-                  @change="toggle(user)"
-                  class="size-5"
-                />
-              </div>
-            </label>
+                <div
+                  class="w-14 md:w-auto md:shrink-0 inline-flex justify-center items-center text-right"
+                >
+                  <span
+                    v-if="alreadyAddedUserIds.includes(user.id)"
+                    class="text-gray-500 text-xs text-center"
+                  >
+                    Already Added
+                  </span>
+                  <input
+                    v-else
+                    :id="`userId${user.id}`"
+                    :type="mode === 'direct' ? 'radio' : 'checkbox'"
+                    :name="mode === 'direct' ? 'direct-user' : 'group-users'"
+                    :checked="selectedUserIds.includes(user.id)"
+                    @change="toggle(user)"
+                    class="size-5"
+                  />
+                </div>
+              </label>
+            </template>
           </div>
         </template>
       </div>
