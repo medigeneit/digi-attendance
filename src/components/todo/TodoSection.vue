@@ -136,7 +136,20 @@ onMounted(async () => {
         class="border-b shadow z-20"
         @change="handleHeadingChange"
         @reload-click="handleReloadClick"
-      />
+      >
+        <template #before="params">
+          <slot name="beforeHeader" v-bind="params"></slot>
+        </template>
+        <template #after="params">
+          <slot name="afterHeader" v-bind="params"></slot>
+        </template>
+        <template #bottom="params">
+          <slot name="bottomHeader" v-bind="params"></slot>
+        </template>
+        <template #typeSelection="params">
+          <slot name="typeSelection" v-bind="params"></slot>
+        </template>
+      </TodoHeading>
 
       <TodoCalenderView
         :month="getMonthString"
