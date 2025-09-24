@@ -152,7 +152,7 @@ const onAction = async () => {
                 <div><b>Date:</b> {{ exchange?.current_date }}</div>
 
                 <div><b>Exchange Day:</b> {{ getDayName(exchange?.exchange_date) }}</div>
-                <div><b>Date:</b> {{ exchange?.exchange_date }}</div>
+                <div><b>Exchange Date:</b> {{ exchange?.exchange_date }}</div>
 
                 <div class="col-span-2 pt-2"><b>Reason:</b> {{ exchange?.reason || 'N/A' }}</div>
               </div>
