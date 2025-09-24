@@ -3,82 +3,51 @@ import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
 import { computed, ref, defineAsyncComponent } from 'vue'
 
-/* ----- lazy imports (cuts bundle size) ----- */
+/* ===== Lazy imports ===== */
 const LeaveApplicationModal         = defineAsyncComponent(() => import('@/components/LeaveApplicationModal.vue'))
 const ShortLeaveDetailsModal        = defineAsyncComponent(() => import('@/components/ShortLeaveDetailsModal.vue'))
 const ManualAttendanceDetailsModal  = defineAsyncComponent(() => import('@/components/ManualAttendanceDetailsModal.vue'))
 const ShiftExchangeDetailsModal     = defineAsyncComponent(() => import('@/components/ShiftExchangeDetailsModal.vue'))
 const OffdayExchangeDetailsModal    = defineAsyncComponent(() => import('@/components/OffdayExchangeDetailsModal.vue'))
 
-/* ----- store ----- */
+/* ===== Store ===== */
 const userStore = useUserStore()
 const { userDashboard } = storeToRefs(userStore)
 
-/* ----- lists (API “lists” shape) ----- */
+/* ===== Lists ===== */
 const lists        = computed(() => userDashboard.value?.lists ?? {})
 const leaveApps    = computed(() => lists.value.current_month_leave ?? [])
 const shortLeaves  = computed(() => lists.value.short_leave ?? [])
 const exchanges    = computed(() => lists.value.exchange ?? [])
 const manuals      = computed(() => lists.value.manual_attendance ?? [])
 
-/* ----- status chip (constant map) ----- */
+/* ===== Status Chip ===== */
 const STATUS_STYLES = {
   null:       { title: 'Handover Waiting', cls: 'bg-gray-500 text-white' },
   Pending:    { title: 'Pending',          cls: 'bg-yellow-500 text-white' },
   Approved:   { title: 'Approved',         cls: 'bg-green-500 text-white' },
   Rejected:   { title: 'Rejected',         cls: 'bg-red-500 text-white' }
 }
-const chipFor = (status) => STATUS_STYLES[status ?? 'null'] ?? { title: String(status || 'Unknown'), cls: 'bg-gray-400 text-white' }
+const chipFor = (status) =>
+  STATUS_STYLES[status ?? 'null'] ?? { title: String(status || 'Unknown'), cls: 'bg-gray-400 text-white' }
 
-/* ----- utilities ----- */
+/* ===== Small helpers ===== */
 const typeNamesWithDays = (counts) =>
   Array.isArray(counts)
     ? counts.filter(c => c?.name).map(c => `${c.name} (${c?.days ?? 0})`).join(', ')
     : ''
 
-const fmtDate = (d) => {
-  if (!d) return ''
-  try {
-    const x = new Date(d)
-    return x.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })
-  } catch { return d }
-}
-
-/* ====== Expand/Collapse state ====== */
-/* Applications */
-const openLeaveMap = ref(Object.create(null))
-const isLeaveOpen = (id) => !!openLeaveMap.value[id]
-const toggleLeave = (id, e) => { if (e) e.stopPropagation(); openLeaveMap.value[id] = !openLeaveMap.value[id] }
-
-/* Short Leave */
-const openShortMap = ref(Object.create(null))
-const isShortOpen = (id) => !!openShortMap.value[id]
-const toggleShort = (id, e) => { if (e) e.stopPropagation(); openShortMap.value[id] = !openShortMap.value[id] }
-
-/* Exchange */
-const openExchangeMap = ref(Object.create(null))
-const isExchangeOpen = (id) => !!openExchangeMap.value[id]
-const toggleExchange = (id, e) => { if (e) e.stopPropagation(); openExchangeMap.value[id] = !openExchangeMap.value[id] }
-
-/* Manual Attendance */
-const openManualMap = ref(Object.create(null))
-const isManualOpen = (id) => !!openManualMap.value[id]
-const toggleManual = (id, e) => { if (e) e.stopPropagation(); openManualMap.value[id] = !openManualMap.value[id] }
-
-/* ----- leave modal ----- */
-const leaveModal = ref({ open: false, id: null })
-const openLeaveModal = (id) => { leaveModal.value = { open: true, id } }
-
-/* ----- short leave modal ----- */
-const shortLeaveModal = ref({ open: false, id: null })
-const openShortLeaveModal = (id) => { shortLeaveModal.value = { open: true, id } }
-
-/* ----- manual attendance modal ----- */
+/* ===== Modals ===== */
+const leaveModal  = ref({ open: false, id: null })
+const shortModal  = ref({ open: false, id: null })
 const manualModal = ref({ open: false, id: null })
-const openManualAttendanceModal = (id) => { manualModal.value = { open: true, id } }
 
-/* ----- Unified Exchange Modal (shift | offday) ----- */
-const exchangeModal = ref({ open: false, id: null, type: null })
+const openLeaveModal             = (id) => { leaveModal.value  = { open: true, id } }
+const openShortLeaveModal        = (id) => { shortModal.value  = { open: true, id } }
+const openManualAttendanceModal  = (id) => { manualModal.value = { open: true, id } }
+
+/* ===== Unified Exchange Modal ===== */
+const exchangeModal = ref({ open: false, id: null, type: null }) // 'shift' | 'offday'
 const openExchangeModal = (item) => {
   const type = (item?.exchange_type === 'offday') ? 'offday' : 'shift'
   exchangeModal.value = { open: true, id: item.id, type }
@@ -86,318 +55,308 @@ const openExchangeModal = (item) => {
 const activeExchangeComp = computed(() =>
   exchangeModal.value.type === 'offday' ? OffdayExchangeDetailsModal : ShiftExchangeDetailsModal
 )
-const exchangeKey = computed(() => `${exchangeModal.value.type || 'x'}-${exchangeModal.value.id || 'x'}`)
+const exchangeKey = computed(() =>
+  `${exchangeModal.value.type || 'x'}-${exchangeModal.value.id || 'x'}`)
 
-function parseSqlDateTime(input) {
-  if (!input) return null;
-  if (input instanceof Date) return isNaN(input) ? null : input;
+/* =========================
+   DATE / DATETIME HELPERS
+   ========================= */
 
-  // Accept both 'YYYY-MM-DD' and 'YYYY-MM-DD HH:mm:ss'
-  const m = String(input).match(
-    /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/
-  );
-  if (!m) return null;
-
-  const [, Y, M, D, hh='00', mm='00', ss='00'] = m;
-  // Create local Date to avoid timezone surprises of Date.parse on non-ISO strings
-  return new Date(
-    Number(Y),
-    Number(M) - 1,
-    Number(D),
-    Number(hh),
-    Number(mm),
-    Number(ss)
-  );
+/** Accepts 'YYYY-MM-DD' or 'YYYY-MM-DD HH:mm:ss' and returns Date (local) */
+function parseSqlDateOrDateTime(input) {
+  if (!input) return null
+  const s = String(input).trim()
+  // YYYY-MM-DD
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (m) return new Date(+m[1], +m[2]-1, +m[3], 0, 0, 0)
+  // YYYY-MM-DD HH:mm:ss (seconds optional)
+  m = s.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/)
+  if (m) return new Date(+m[1], +m[2]-1, +m[3], +m[4], +m[5], +(m[6]||0))
+  return null
 }
 
-const fmtDateOnly = (value) => {
-  const d = parseSqlDateTime(value);
-  return d ? d.toLocaleDateString(undefined, { year:'numeric', month:'short', day:'2-digit' }) : '';
-};
+/** Safe date-only pretty text from date or datetime string */
+function fmtDateOnlyAny(value) {
+  const d = parseSqlDateOrDateTime(value)
+  return d
+    ? d.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })
+    : ''
+}
+
+/** Internal helpers used by range builder (date-only) */
+function toDateOnly(d) {
+  const m = String(d || '').match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!m) return null
+  return new Date(+m[1], +m[2]-1, +m[3], 0, 0, 0)
+}
+function addDays(dt, n) { const d = new Date(dt); d.setDate(d.getDate() + n); return d }
+function sameYMD(a, b) {
+  return a && b &&
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+}
+
+/**
+ * Build contiguous leave ranges from json_data; weekends আলাদা থাকে।
+ * Returns: { ranges:[{from,to}], weekends:[string], leaveCount:number }
+ * - non-weekend গুলোকে range বানাই
+ * - weekend গুলো শুধু কাউন্ট/tooltip-এ কাজে লাগে (UI চাইলে দেখাতে পারেন)
+ */
+function buildLeaveRanges(jsonData) {
+  const items = Array.isArray(jsonData) ? jsonData.slice() : []
+
+  // unique + sorted
+  const uniqSort = (arr) => Array.from(new Set(arr)).sort()
+
+  const leaveDates = uniqSort(
+    items.filter(x => x?.leave_type_id !== 'weekend').map(x => x.date).filter(Boolean)
+  )
+  const weekendDates = uniqSort(
+    items.filter(x => x?.leave_type_id === 'weekend').map(x => x.date).filter(Boolean)
+  )
+
+  const ranges = []
+  let start = null, prev = null
+  for (const d of leaveDates) {
+    const cur = toDateOnly(d); if (!cur) continue
+    if (!start) { start = prev = cur; continue }
+    if (sameYMD(addDays(prev, 1), cur)) prev = cur
+    else {
+      ranges.push({ from: start.toISOString().slice(0,10), to: prev.toISOString().slice(0,10) })
+      start = prev = cur
+    }
+  }
+  if (start && prev) ranges.push({ from: start.toISOString().slice(0,10), to: prev.toISOString().slice(0,10) })
+
+  return { ranges, weekends: weekendDates, leaveCount: leaveDates.length }
+}
+
+/* Tiny UI util: badge classes */
+const badge = 'inline-flex items-center rounded-full border px-2 py-0.5 text-[12px]'
+const badgeMuted = 'border-gray-300 bg-gray-50 text-gray-800'
+const badgeInfo  = 'border-sky-200 bg-sky-50 text-sky-700'
 </script>
 
 <template>
-  <div class="bg-white shadow-md rounded-lg p-4">
-    <!-- Leave Applications (latest 3) -->
-    <div>
-      <div class="flex items-center justify-between mb-1">
-        <div class="flex items-center">
-          <i class="fas fa-file mr-2 h-5 w-5"></i>
-          <h2 class="text-xl font-semibold">
-            Applications <span class="text-xs ml-2 text-green-600">Latest</span>
+  <div class="bg-white shadow-sm rounded-xl p-4">
+    <!-- Section: Applications -->
+    <section>
+      <header class="flex items-center justify-between mb-1">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-file h-5 w-5 text-gray-600"></i>
+          <h2 class="text-lg font-semibold text-gray-900">Applications
+            <span class="text-xs ml-2 text-green-600 font-medium">Latest</span>
           </h2>
         </div>
         <RouterLink :to="{ name: 'MyLeaveApplications' }" class="text-xs text-blue-600 hover:underline">
           See more
         </RouterLink>
-      </div>
-      <hr />
+      </header>
+      <hr class="border-gray-200" />
 
       <div v-if="leaveApps.length === 0" class="text-xs italic text-center py-4 text-gray-500 mt-2">
         No applications
       </div>
 
-      <div v-else class="py-3 divide-y">
-        <div v-for="leave in leaveApps" :key="leave.id" class="w-full">
-          <!-- Summary row -->
-          <button class="w-full text-left" @click="openLeaveModal(leave.id)">
-            <div class="flex justify-between items-center py-2 rounded hover:bg-sky-50 transition-colors">
-              <div class="flex items-center gap-2 min-w-0">
-                <button class="shrink-0 inline-flex h-6 w-6 items-center justify-center rounded hover:bg-gray-100"
-                        :aria-label="isLeaveOpen(leave.id) ? 'Collapse details' : 'Expand details'"
-                        @click="toggleLeave(leave.id, $event)">
-                  <i class="fas fa-chevron-right transition-transform duration-200"
-                     :class="isLeaveOpen(leave.id) ? 'rotate-90' : ''"></i>
-                </button>
-                <h3 class="text-sm text-gray-800 truncate">
-                  #{{ leave.id }} <span class="opacity-70">({{ typeNamesWithDays(leave.leave_type_counts) }})</span>
-                </h3>
-              </div>
-              <span class="text-xs px-2 py-1 rounded-full font-medium flex items-center whitespace-nowrap"
-                    :class="chipFor(leave.status).cls">
-                {{ chipFor(leave.status).title }}
-              </span>
-            </div>
-          </button>
+      <div v-else class="py-3 divide-y divide-gray-100">
+        <button
+          v-for="item in leaveApps"
+          :key="item.id"
+          class="block w-full text-left"
+          @click="openLeaveModal(item.id)"
+        >
+          <div class="flex justify-between items-center py-2 rounded hover:bg-sky-50/60 transition-colors">
+            <h3 class="text-sm text-gray-900 min-w-0">
+              <span class="font-medium">#{{ item.id }}</span>
+              <span class="opacity-70"> ({{ typeNamesWithDays(item.leave_type_counts) }})</span>
+            </h3>
+            <span class="font-medium flex items-center whitespace-nowrap text-[11px] px-2 py-0.5 rounded-full"
+                  :class="chipFor(item.status).cls">
+              <i v-if="item.status === null" class="fas fa-clock mr-1.5"></i>
+              <i v-else-if="item.status === 'Pending'" class="fas fa-hourglass-half mr-1.5"></i>
+              <i v-else-if="item.status === 'Approved'" class="fas fa-check-circle mr-1.5"></i>
+              <i v-else class="fas fa-times-circle mr-1.5"></i>
+              {{ chipFor(item.status).title }}
+            </span>
+          </div>
 
-          <!-- Details -->
-          <transition name="accordion">
-            <div v-show="isLeaveOpen(leave.id)" class="px-3 pb-2">
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
-                <div class="rounded border border-gray-200 p-1 bg-gray-50">
-                  <div class="text-gray-500">Types</div>
-                  <div class="font-medium text-gray-800">
-                    {{ typeNamesWithDays(leave.leave_type_counts) || '—' }}
-                  </div>
-                </div>
-                <div class="rounded border border-gray-200 p-1 bg-gray-50">
-                  <div class="text-gray-500">Total days</div>
-                  <div class="font-medium text-gray-800">{{ leave.total_days ?? '—' }}</div>
-                </div>
-                <div class="rounded border border-gray-200 p-1 bg-gray-50">
-                  <div class="text-gray-500">Resumption</div>
-                  <div class="font-medium text-gray-800">{{ fmtDate(leave.resumption_date) || '—' }}</div>
-                </div>
-              </div>
-
-              <div class="mt-3">
-                <div class="text-[12px] text-gray-500 mb-1">Dates</div>
-                <div class="flex flex-wrap gap-2">
-                  <span v-for="(d, i) in leave.json_data || []" :key="i"
-                        class="inline-flex items-center rounded-full px-2 py-0.5 border text-[12px]"
-                        :class="d?.leave_type_id === 'weekend'
-                          ? 'bg-gray-100 text-gray-700 border-gray-300'
-                          : 'bg-sky-50 text-sky-700 border-sky-200'">
-                    {{ fmtDate(d?.date) }}
-                    <span v-if="d?.leave_type_id == 'weekend'" class="ml-1 opacity-70">(Weekend)</span>
+          <!-- From–To (non-weekend >1), else single date; weekends hidden for compact UI -->
+          <div class="mb-1 text-gray-700 flex flex-wrap items-center gap-x-2.5 gap-y-1">
+            <template v-for="info in [buildLeaveRanges(item.json_data)]" :key="'info-'+item.id">
+              <template v-if="info.leaveCount > 1">
+                <template v-for="(rg, idx) in info.ranges" :key="idx">
+                  <span :class="[badge, badgeMuted]"
+                        :title="rg.from === rg.to ? fmtDateOnlyAny(rg.from) : (fmtDateOnlyAny(rg.from)+' – '+fmtDateOnlyAny(rg.to))">
+                    <i class="far fa-calendar-minus mr-1"></i>
+                    <template v-if="rg.from !== rg.to">
+                      <span class="truncate max-w-[9.5rem] sm:max-w-none">{{ fmtDateOnlyAny(rg.from) }}</span>
+                      <span class="mx-1">–</span>
+                      <span class="truncate max-w-[9.5rem] sm:max-w-none">{{ fmtDateOnlyAny(rg.to) }}</span>
+                    </template>
+                    <template v-else>
+                      <span class="truncate max-w-[10rem] sm:max-w-none">{{ fmtDateOnlyAny(rg.from) }}</span>
+                    </template>
                   </span>
-                </div>
-              </div>
-            </div>
-          </transition>
-        </div>
-      </div>
-    </div>
+                </template>
+              </template>
+              <template v-else>
+                <span v-if="info.ranges[0]" :class="[badge, badgeMuted]" :title="fmtDateOnlyAny(info.ranges[0].from)">
+                  <i class="far fa-calendar-day mr-1"></i>
+                  {{ fmtDateOnlyAny(info.ranges[0].from) }}
+                </span>
+              </template>
 
-    <!-- Short Leave (expand/collapse) -->
-    <div class="mt-6">
-      <div class="flex items-center justify-between mb-1">
-        <div class="flex items-center">
-          <i class="fas fa-walking mr-2 h-5 w-5"></i>
-          <h2 class="text-base font-semibold">Short Leave</h2>
+              <!-- Uncomment if you want weekend count -->
+              <span v-if="info.weekends.length" :class="[badge, 'border-gray-300 bg-gray-100 text-gray-700']"
+                    :title="info.weekends.map(fmtDateOnlyAny).join(', ')">
+                <i class="far fa-calendar mr-1"></i> + {{ info.weekends.length }} wknd
+              </span>
+              <!-- <span v-if="item.resumption_date" :class="[badge, 'border-emerald-200 bg-emerald-50 text-emerald-700']"
+                    :title="fmtDateOnlyAny(item.resumption_date)">
+                <i class="far fa-play-circle mr-1"></i>
+                Resume: {{ fmtDateOnlyAny(item.resumption_date) }}
+              </span> -->
+            </template>
+          </div>
+        </button>
+      </div>
+    </section>
+
+    <!-- Section: Short Leave -->
+    <section class="mt-6">
+      <header class="flex items-center justify-between mb-1">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-walking h-5 w-5 text-gray-600"></i>
+          <h2 class="text-base font-semibold text-gray-900">Short Leave</h2>
         </div>
         <RouterLink :to="{ name: 'MyShortLeaves' }" class="text-xs text-blue-600 hover:underline">See more</RouterLink>
-      </div>
-      <hr />
+      </header>
+      <hr class="border-gray-200" />
 
       <div v-if="shortLeaves.length === 0" class="text-xs italic text-center py-4 text-gray-500 mt-2">
         No short leave
       </div>
 
-      <div v-else class="py-3 divide-y">
-        <div v-for="item in shortLeaves" :key="item.id" class="w-full">
-          <!-- Summary row -->
-          <button class="w-full text-left" @click="openShortLeaveModal(item.id)">
-            <div class="flex justify-between items-center py-2 rounded hover:bg-sky-50 transition-colors">
-              <div class="flex items-center gap-2 min-w-0">
-                <button class="shrink-0 inline-flex h-6 w-6 items-center justify-center rounded hover:bg-gray-100"
-                        :aria-label="isShortOpen(item.id) ? 'Collapse details' : 'Expand details'"
-                        @click="toggleShort(item.id, $event)">
-                  <i class="fas fa-chevron-right transition-transform duration-200"
-                     :class="isShortOpen(item.id) ? 'rotate-90' : ''"></i>
-                </button>
-                <h3 class="text-sm text-gray-800 truncate">
-                  #{{ item.id }} <span class="opacity-70">({{ item.type }})</span>
-                </h3>
-              </div>
-              <span class="text-xs px-2 py-1 rounded-full" :class="chipFor(item.status).cls">
-                {{ chipFor(item.status).title }}
-              </span>
-            </div>
-          </button>
-
-          <!-- Details -->
-          <transition name="accordion">
-            <div v-show="isShortOpen(item.id)" class="px-3 pb-3">
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-[11px]">
-                <div class="rounded border border-gray-200 p-2 bg-gray-50">
-                  <div class="text-gray-500">Type</div>
-                  <div class="font-medium text-gray-800">{{ item.type || '—' }}</div>
-                </div>
-                <div class="rounded border border-gray-200 p-2 bg-gray-50">
-                  <div class="text-gray-500">Date</div>
-                  <div class="font-medium text-gray-800">{{ fmtDate(item.date) || '—' }}</div>
-                </div>
-                <div class="rounded border border-gray-200 p-2 bg-gray-50">
-                  <div class="text-gray-500">Status</div>
-                  <div class="font-medium text-gray-800">{{ chipFor(item.status).title }}</div>
-                </div>
-              </div>
-            </div>
-          </transition>
-        </div>
+      <div v-else class="py-3 divide-y divide-gray-100">
+        <button
+          v-for="item in shortLeaves"
+          :key="item.id"
+          class="w-full text-left"
+          @click="openShortLeaveModal(item.id)"
+        >
+          <div class="flex justify-between items-center py-2 rounded hover:bg-sky-50/60 transition-colors">
+            <h3 class="text-sm text-gray-900 min-w-0">
+              <span :class="[badge, badgeMuted, 'text-xs mr-1']">{{ fmtDateOnlyAny(item.date) }}</span>
+              <span class="opacity-80">({{ item.type || '—' }})</span>
+            </h3>
+            <span class="text-[11px] px-2 py-0.5 rounded-full" :class="chipFor(item.status).cls">
+              {{ chipFor(item.status).title }}
+            </span>
+          </div>
+        </button>
       </div>
-    </div>
+    </section>
 
-    <!-- Exchange (expand/collapse + unified modal) -->
-    <div class="mt-6">
-      <div class="flex items-center justify-between mb-1">
-        <div class="flex items-center">
-          <i class="fas fa-exchange-alt mr-2 h-5 w-5"></i>
-          <h2 class="text-base font-semibold">Exchange</h2>
+    <!-- Section: Exchange -->
+    <section class="mt-6">
+      <header class="flex items-center justify-between mb-1">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-exchange-alt h-5 w-5 text-gray-600"></i>
+          <h2 class="text-base font-semibold text-gray-900">Exchange</h2>
         </div>
         <div class="flex items-center gap-3">
           <RouterLink :to="{ name: 'MyShiftExchangeList' }" class="text-xs text-blue-600 hover:underline">Shift</RouterLink>
           <RouterLink :to="{ name: 'MyOffdayExchangeList' }" class="text-xs text-blue-600 hover:underline">Offday</RouterLink>
         </div>
-      </div>
-      <hr />
+      </header>
+      <hr class="border-gray-200" />
 
       <div v-if="exchanges.length === 0" class="text-xs italic text-center py-4 text-gray-500 mt-2">
         No exchange
       </div>
 
-      <div v-else class="py-3 divide-y">
-        <div v-for="ex in exchanges" :key="ex.id" class="w-full">
-          <!-- Summary row -->
-          <button class="w-full text-left" @click="openExchangeModal(ex)">
-            <div class="flex justify-between items-center py-2 rounded hover:bg-sky-50 transition-colors">
-              <div class="flex items-center gap-2 min-w-0">
-                <button class="shrink-0 inline-flex h-6 w-6 items-center justify-center rounded hover:bg-gray-100"
-                        :aria-label="isExchangeOpen(ex.id) ? 'Collapse details' : 'Expand details'"
-                        @click="toggleExchange(ex.id, $event)">
-                  <i class="fas fa-chevron-right transition-transform duration-200"
-                     :class="isExchangeOpen(ex.id) ? 'rotate-90' : ''"></i>
-                </button>
-                <h3 class="text-sm text-gray-800 truncate">
-                  #{{ ex.id }} <span class="opacity-70" v-if="ex.exchange_type">({{ ex.exchange_type }})</span>
-                </h3>
-              </div>
-              <span class="text-xs px-2 py-1 rounded-full" :class="chipFor(ex.status).cls">
-                {{ chipFor(ex.status).title }}
-              </span>
-            </div>
-          </button>
-
-          <!-- Details -->
-          <transition name="accordion">
-            <div v-show="isExchangeOpen(ex.id)" class="px-3 pb-3">
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-[11px]">
-                <div class="rounded border border-gray-200 p-2 bg-gray-50">
-                  <div class="text-gray-500">Type</div>
-                  <div class="font-medium text-gray-800">{{ ex.exchange_type || '—' }}</div>
-                </div>
-                <div class="rounded border border-gray-200 p-2 bg-gray-50">
-                  <div class="text-gray-500">Current date</div>
-                  <div class="font-medium text-gray-800">{{ fmtDate(ex.current_date) || '—' }}</div>
-                </div>
-                <div class="rounded border border-gray-200 px-2 bg-gray-50">
-                  <div class="text-gray-500">Status</div>
-                  <div class="font-medium text-gray-800">{{ chipFor(ex.status).title }}</div>
-                </div>
-              </div>
-            </div>
-          </transition>
-        </div>
+      <div v-else class="py-3 divide-y divide-gray-100">
+        <button
+          v-for="item in exchanges"
+          :key="item.id"
+          class="block w-full text-left"
+          @click="openExchangeModal(item)"
+        >
+          <div class="flex justify-between items-center py-2 rounded hover:bg-sky-50/60 transition-colors">
+            <h3 class="text-sm text-gray-900 min-w-0">
+              <span :class="[badge, badgeMuted, 'text-xs mr-1']">{{ fmtDateOnlyAny(item.current_date) }}</span>
+              <span class="opacity-80">({{ item.exchange_type || '—' }})</span>
+            </h3>
+            <span class="text-[11px] px-2 py-0.5 rounded-full" :class="chipFor(item.status).cls">
+              {{ chipFor(item.status).title }}
+            </span>
+          </div>
+        </button>
       </div>
-    </div>
+    </section>
 
-    <!-- Manual Attendance (expand/collapse) -->
-    <div class="mt-6">
-      <div class="flex items-center justify-between mb-1">
-        <div class="flex items-center">
-          <i class="fas fa-user-check mr-2 h-5 w-5"></i>
-          <h2 class="text-base font-semibold">Manual Attendance</h2>
+    <!-- Section: Manual Attendance -->
+    <section class="mt-6">
+      <header class="flex items-center justify-between mb-1">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-user-check h-5 w-5 text-gray-600"></i>
+          <h2 class="text-base font-semibold text-gray-900">Manual Attendance</h2>
         </div>
-      <RouterLink :to="{ name: 'MyManualAttendanceList' }" class="text-xs text-blue-600 hover:underline">See more</RouterLink>
-      </div>
-      <hr />
+        <RouterLink :to="{ name: 'MyManualAttendanceList' }" class="text-xs text-blue-600 hover:underline">See more</RouterLink>
+      </header>
+      <hr class="border-gray-200" />
 
       <div v-if="manuals.length === 0" class="text-xs italic text-center py-4 text-gray-500 mt-2">
         No manual application
       </div>
 
-      <div v-else class="py-3 divide-y">
-        <div v-for="m in manuals" :key="m.id" class="w-full">
-          <!-- Summary row -->
-          <button class="w-full text-left" @click="openManualAttendanceModal(m.id)">
-            <div class="flex justify-between items-center py-2 rounded hover:bg-sky-50 transition-colors">
-              <div class="flex items-center gap-2 min-w-0">
-                <button class="shrink-0 inline-flex h-6 w-6 items-center justify-center rounded hover:bg-gray-100"
-                        :aria-label="isManualOpen(m.id) ? 'Collapse details' : 'Expand details'"
-                        @click="toggleManual(m.id, $event)">
-                  <i class="fas fa-chevron-right transition-transform duration-200"
-                     :class="isManualOpen(m.id) ? 'rotate-90' : ''"></i>
-                </button>
-                <h3 class="text-sm text-gray-800 truncate">
-                  #{{ m.id }} <span class="opacity-70">({{ m.type }})</span>
-                </h3>
-              </div>
-              <span class="text-xs px-2 py-1 rounded-full" :class="chipFor(m.status).cls">
-                {{ chipFor(m.status).title }}
+      <div v-else class="py-3 divide-y divide-gray-100">
+        <button
+          v-for="item in manuals"
+          :key="item.id"
+          class="block w-full text-left"
+          @click="openManualAttendanceModal(item.id)"
+        >
+          <div class="flex justify-between items-center py-2 rounded hover:bg-sky-50/60 transition-colors">
+            <h3 class="text-sm text-gray-900 min-w-0">
+              <span :class="[badge, badgeMuted, 'text-xs mr-1']">
+                <!-- prefer check_in date; else fallback to check_out -->
+                {{ item.check_in ? fmtDateOnlyAny(item.check_in) : fmtDateOnlyAny(item.check_out) }}
               </span>
-            </div>
-          </button>
-
-          <!-- Details -->
-          <transition name="accordion">
-            <div v-show="isManualOpen(m.id)" class="px-3 pb-3">
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-[13px]">
-                <div class="rounded border border-gray-200 p-2 bg-gray-50">
-                  <div class="text-gray-500">Type</div>
-                  <div class="font-medium text-gray-800">{{ m.type || '—' }}</div>
-                </div>
-                <div class="rounded border border-gray-200 p-2 bg-gray-50">
-                  <div class="text-gray-500">Check-in</div>
-                  <div class="font-medium text-gray-800">{{ m.check_in ? fmtDateOnly(m.check_in) : fmtDateOnly(m.check_out) }}</div>
-                </div>
-                <div class="rounded border border-gray-200 p-2 bg-gray-50">
-                  <div class="text-gray-500">Status</div>
-                  <div class="font-medium text-gray-800">{{ chipFor(m.status).title }}</div>
-                </div>
-              </div>
-            </div>
-          </transition>
-        </div>
+              <span class="opacity-80">({{ item.type || '—' }})</span>
+            </h3>
+            <span class="text-[11px] px-2 py-0.5 rounded-full" :class="chipFor(item.status).cls">
+              {{ chipFor(item.status).title }}
+            </span>
+          </div>
+        </button>
       </div>
-    </div>
+    </section>
 
     <!-- Modals (lazy + only when open) -->
-    <LeaveApplicationModal v-if="leaveModal.open" v-model:open="leaveModal.open" :id="leaveModal.id" />
-    <ShortLeaveDetailsModal v-if="shortLeaveModal.open" v-model:open="shortLeaveModal.open" :id="shortLeaveModal.id" />
-    <ManualAttendanceDetailsModal v-if="manualModal.open" v-model:open="manualModal.open" :id="manualModal.id" />
+    <LeaveApplicationModal
+      v-if="leaveModal.open"
+      v-model:open="leaveModal.open"
+      :id="leaveModal.id"
+    />
+    <ShortLeaveDetailsModal
+      v-if="shortModal.open"
+      v-model:open="shortModal.open"
+      :id="shortModal.id"
+    />
+    <ManualAttendanceDetailsModal
+      v-if="manualModal.open"
+      v-model:open="manualModal.open"
+      :id="manualModal.id"
+    />
 
-    <!-- Unified Exchange Modal (shift/offday) -->
-    <component :is="activeExchangeComp" v-if="exchangeModal.open" :key="exchangeKey" v-model:open="exchangeModal.open" :id="exchangeModal.id" />
+    <component
+      :is="activeExchangeComp"
+      v-if="exchangeModal.open"
+      :key="exchangeKey"
+      v-model:open="exchangeModal.open"
+      :id="exchangeModal.id"
+    />
   </div>
 </template>
-
-<style scoped>
-/* accordion transition (auto-height) */
-.accordion-enter-from,
-.accordion-leave-to { max-height: 0; opacity: 0; }
-.accordion-enter-to,
-.accordion-leave-from { max-height: 500px; opacity: 1; }
-.accordion-enter-active,
-.accordion-leave-active { transition: all .25s ease; overflow: hidden; }
-</style>
