@@ -2,6 +2,7 @@
 import { getDisplayDate } from '@/libs/datetime'
 import { useTodoStore } from '@/stores/useTodoStore'
 import { computed } from 'vue'
+import UserChip from '../user/UserChip.vue'
 import TodosInDate from './TodosInDate.vue'
 import TodoStatusIcon from './TodoStatusIcon.vue'
 
@@ -65,9 +66,22 @@ async function handleClickComplete(todo) {
           >
             <TodoStatusIcon :todo="todo" />
 
-            <div class="line-clamp-2 ml-2">{{ todo.title }}</div>
-            <div class="line-clamp-2 ml-2 text-gray-500" v-if="todo.todo_type && todo.todo_type_id">
-              {{ todo.todo_type }} id {{ todo.todo_type_id }}
+            <div class="ml-4">
+              <div class="line-clamp-2">
+                {{ todo.title }}
+              </div>
+              <div class="mt-1 flex items-center gap-2" v-if="todo.user">
+                <UserChip :user="todo.user" avatar-size="xsmall" />
+                <div
+                  class="border border-sky-400 rounded-full text-sky-500 font-semibold bg-sky-50 px-1 py-0.5 text-xs inline-block"
+                >
+                  {{ todo.user?.department?.name }}
+                </div>
+              </div>
+              <!-- <div>{{ todo.user?.department }}</div> -->
+            </div>
+            <div class="line-clamp-2 ml-4 text-gray-500" v-if="todo.todo_type && todo.todo_type_id">
+              {{ todo.todo_type }} id: {{ todo.todo_type_id }}
             </div>
 
             <div class="ml-auto flex items-center gap-2">

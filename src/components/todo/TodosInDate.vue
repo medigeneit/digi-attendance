@@ -1,6 +1,7 @@
 <script setup>
 import { useTodoStore } from '@/stores/useTodoStore'
 import { computed } from 'vue'
+import UserAvatar from '../UserAvatar.vue'
 import TodoStatusIcon from './TodoStatusIcon.vue'
 
 const props = defineProps({
@@ -56,6 +57,7 @@ const todoInDate = computed(() => {
       <template v-for="todo in todoInDate.items" :key="todo.id">
         <slot name="todoItem" :todo="todo" :moreItemsCount="todoInDate.moreItemsCount">
           <div
+            :title="`${todo?.title} ${todo?.user ? '\nby:' : ''} ${todo?.user?.name} ${todo?.user?.department ? '\nDEPT:' : ''} ${todo.user?.department?.name}`"
             class="px-1 mb-2 text-sm rounded cursor-pointer flex items-center gap-2"
             :class="{
               'bg-sky-50 text-sky-900 hover:bg-sky-700 hover:text-white border border-sky-300':
@@ -63,7 +65,6 @@ const todoInDate = computed(() => {
               'bg-green-500 text-white': todo.status === 'COMPLETED',
             }"
             @click.prevent.stop="emit('clickTodo', todo)"
-            :title="todo.title"
           >
             <TodoStatusIcon
               :todo="todo"
@@ -72,6 +73,10 @@ const todoInDate = computed(() => {
             />
 
             <div class="line-clamp-1">{{ todo.title }}</div>
+
+            <template v-if="todo.user">
+              <UserAvatar :user="todo.user" size="xsmall" class="ml-auto" />
+            </template>
           </div>
         </slot>
       </template>
