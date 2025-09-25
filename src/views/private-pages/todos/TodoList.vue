@@ -31,6 +31,7 @@ function handleTodoInputChange(changedSelected) {
       :day="route.query.day"
       :type="route.query.type"
       @changeInput="handleTodoInputChange"
+      listUserRole="admin"
     >
       <template #beforeHeader>
         <h2 class="text-md font-medium">Todo List</h2>

@@ -30,9 +30,9 @@ watch(
 
 <template>
   <div class="w-full px-6 py-4">
-    <div class="grid lg:grid-cols-4 gap-6">
+    <div class="grid lg:grid-cols-4 gap-6 items-start">
       <div
-        class="card-bg gap-0 shadow-md border border-gray-300 col-span-full lg:col-span-3 lg:row-span-2"
+        class="gap-0 rounded-md bg-white shadow-md border border-gray-300 col-span-full lg:col-span-3 lg:row-span-2"
       >
         <div class="flex items-center justify-center gap-4 py-2">
           <button
@@ -56,7 +56,8 @@ watch(
             Tasks
           </button>
         </div>
-        <DashboardMyTodoList class="mb-4" v-if="mainSection == 'todos'" />
+
+        <DashboardMyTodoList v-if="mainSection == 'todos'" />
         <DailyTask v-if="mainSection == 'tasks'" />
       </div>
 
