@@ -39,7 +39,7 @@ async function handleFormSubmit() {
 }
 
 const selectedDate = computed(() => {
-  return new Date(props.date)
+  return new Date(props.todo.date)
 })
 
 onMounted(async () => {

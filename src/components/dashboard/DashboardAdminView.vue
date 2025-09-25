@@ -94,5 +94,14 @@ const { dashboardInfo, selectedDate } = storeToRefs(userStore)
       </span>
       Upcoming leaves
     </RouterLink>
+    <RouterLink
+      :to="{
+        name: 'TodoList',
+        query: { applicationType: 'after', date: selectedDate },
+      }"
+      class="main-button"
+    >
+      Todos
+    </RouterLink>
   </div>
 </template>
