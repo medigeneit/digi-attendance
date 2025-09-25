@@ -22,11 +22,13 @@ const form = ref({
 })
 
 async function handleFormSubmit() {
-  state.value = 'submitting'
-  await todoStore.createTodo(form.value)
-  console.log(form.value)
-  state.value = ''
-  emit('update')
+  try {
+    state.value = 'submitting'
+    await todoStore.createTodo(form.value)
+    emit('update')
+  } finally {
+    state.value = ''
+  }
 }
 
 const selectedDate = computed(() => {

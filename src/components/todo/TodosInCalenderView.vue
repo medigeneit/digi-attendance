@@ -15,7 +15,7 @@ const emit = defineEmits(['dateClick', 'clickTodo', 'clickDateCell'])
 
 function handleDateKeypress(e, date) {
   if (e.isTrusted && e.ctrlKey && e.which == 10) {
-    emit('clickDateCell', date)
+    emit('dateClick', date)
   }
 }
 
@@ -40,14 +40,13 @@ function isToday(date) {
             'hover:bg-sky-50  hover:border-blue-300 focus:bg-sky-50 focus:outline-blue-400':
               !isToday(yearMonthDate),
           }"
-          @click="emit('clickDateCell', yearMonthDate)"
+          @click.prevent.stop="emit('dateClick', yearMonthDate)"
           @keypress.prevent="(e) => handleDateKeypress(e, yearMonthDate)"
         >
           <button
             tabindex="1"
             :class="{ 'text-gray-300': !isCurrentMonth, 'text-sky-400': isCurrentMonth }"
             class="text-center mb-2 font-semibold hover:bg-sky-200 w-full rounded"
-            @click.prevent.stop="emit('dateClick', yearMonthDate)"
           >
             {{ day }}
           </button>
@@ -58,10 +57,14 @@ function isToday(date) {
               </template>
             </TodosInDate>
           </div>
-          <div
-            class="absolute bottom-0 left-0 right-0 text-center hidden group-hover/date:block text-sm text-red-800/40"
-          >
-            Click to add todo
+          <div class="flex items-center justify-center">
+            <button
+              @click.prevent.stop="emit('clickDateCell', yearMonthDate)"
+              class="btn-3 !py-1 invisible group-hover/date:visible text-sm text-red-800/40"
+            >
+              <i class="fas fa-plus"></i>
+              <span class="hidden lg:inline whitespace-nowrap"> Add todo </span>
+            </button>
           </div>
         </div>
       </template>

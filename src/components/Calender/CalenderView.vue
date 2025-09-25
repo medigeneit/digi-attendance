@@ -156,7 +156,11 @@ watch(() => props.month, updateOnMonthChange)
     <!-- Weekly rows -->
 
     <div class="flex flex-col">
-      <div class="week grid grid-cols-7 min-h-28" v-for="(week, wIdx) in weeks" :key="wIdx">
+      <div
+        class="week grid grid-cols-7 min-h-28 items-stretch"
+        v-for="(week, wIdx) in weeks"
+        :key="wIdx"
+      >
         <template v-for="(date, _dIdx) in week" :key="_dIdx">
           <slot
             name="date"
