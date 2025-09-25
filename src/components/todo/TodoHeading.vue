@@ -3,14 +3,6 @@ import { getYearMonthDayFormat, getYearMonthFormat } from '@/libs/datetime'
 import { computed, ref, watch } from 'vue'
 
 const props = defineProps({
-  selectedType: {
-    type: String,
-    default: 'month-view',
-  },
-  selectedValue: {
-    type: String,
-    default: '',
-  },
   selected: {
     type: Object,
     default: () => {
@@ -222,6 +214,7 @@ const handleInputChange = (event) => {
         @input="handleInputChange"
         class="border px-2 rounded"
       />
+
       <input
         v-if="selected_type == 'day-view'"
         type="date"
@@ -261,6 +254,7 @@ const handleInputChange = (event) => {
         </button>
         <button class="btn-2 h-7" @click.prevent="handleClickOnNextMonth">Next Month</button>
       </div>
+
       <div class="ml-4 md:ml-auto flex items-center gap-2" v-if="selected_type == 'day-view'">
         <button class="btn-2 h-7" @click.prevent="handleClickOnPreviousDay">Previous Day</button>
         <button class="btn-2 h-7" @click.prevent="handleClickOnNextDay">Next Day</button>

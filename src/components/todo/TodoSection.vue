@@ -5,7 +5,7 @@ import TodoCalenderView from '@/components/todo/TodosInCalenderView.vue'
 import TodosInDailyView from '@/components/todo/TodosInDailyView.vue'
 import { useTodoStore } from '@/stores/useTodoStore'
 import TodoCreateEditShow from '@/views/private-pages/todos/TodoCreateEditShow.vue'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 const date = new Date()
 
@@ -14,7 +14,8 @@ const props = defineProps({
   month: { type: Number, default: () => new Date().getMonth() + 1 },
   day: { type: Number, default: () => new Date().getDate() },
   week: { type: Number, default: () => new Date().getDay() },
-  viewType: { type: String, default: 'month-view' },
+  type: { type: String, default: 'month-view' },
+  listUserRole: { type: String, default: 'employee' },
 })
 
 const selected = ref({
@@ -25,6 +26,29 @@ const selected = ref({
   week: date.getDay(),
 })
 
+const emit = defineEmits(['changeInput'])
+
+watch(
+  () => ({ ...selected.value }),
+  (changedSelected) => {
+    emit('changeInput', changedSelected)
+  },
+)
+
+watch(
+  () => ({
+    year: props.year,
+    month: props.month,
+    day: props.day,
+    week: props.week,
+    type: props.type,
+  }),
+  (changedProps) => {
+    selected.value = { ...changedProps }
+  },
+  { immediate: true },
+)
+
 const todoModal = ref({
   action: null,
 })
@@ -32,7 +56,7 @@ const todoModal = ref({
 const todoStore = useTodoStore()
 
 async function handleReloadClick() {
-  await todoStore.fetchTodos()
+  await fetchTodos()
 }
 
 function handleTodoUpdate() {
@@ -114,14 +138,22 @@ const getMonthString = computed(() => {
   return `${year}-${month}`
 })
 
+async function fetchTodos() {
+  if (props.listUserRole == 'employee') {
+    await todoStore.fetchMyTodos()
+  } else {
+    await todoStore.fetchTodos()
+  }
+}
+
 onMounted(async () => {
-  await todoStore.fetchTodos()
-  console.log({ props })
+  await fetchTodos()
 })
 </script>
 
 <template>
   <div>
+    <!-- {{ props }} -->
     <!-- {{ props }} -->
     <div class="border bg-white relative">
       <LoaderView

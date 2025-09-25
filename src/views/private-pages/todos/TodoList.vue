@@ -1,34 +1,41 @@
 <script setup>
 import TodoSection from '@/components/todo/TodoSection.vue'
 import { useTodoStore } from '@/stores/useTodoStore'
-import { ref } from 'vue'
-
-const date = new Date()
-const selected = ref({
-  type: 'month-view',
-  month: date.getMonth() + 1,
-  day: date.getDate(),
-  year: date.getFullYear(),
-  week: date.getDay(),
-})
+import { useRoute, useRouter } from 'vue-router'
 
 const todoStore = useTodoStore()
+const route = useRoute()
+const router = useRouter()
+
+function handleTodoInputChange(changedSelected) {
+  router.push({
+    query: {
+      ...route.query,
+      ...changedSelected,
+    },
+  })
+}
 </script>
 
 <template>
   <div class="container mx-auto p-6">
-    <h2 class="text-2xl font-bold mb-6">Todo List</h2>
+    <!-- <h2 class="text-2xl font-bold mb-6">Todo List</h2> -->
 
     <div v-if="todoStore.error && !todoStore.loading" class="text-center py-4 text-red-500">
       {{ todoStore.error }}
     </div>
 
     <TodoSection
-      :year="selected.year"
-      :month="selected.month"
-      :day="selected.day"
-      :viewType="selected.type"
+      :year="route.query.year"
+      :month="route.query.month"
+      :day="route.query.day"
+      :type="route.query.type"
+      @changeInput="handleTodoInputChange"
     >
+      <template #beforeHeader>
+        <h2 class="text-md font-medium">Todo List</h2>
+      </template>
+
       <template #typeSelection="{ types, changeType, selected }">
         <div class="flex items-center gap-2 mr-2">
           <button
@@ -42,6 +49,7 @@ const todoStore = useTodoStore()
           >
             {{ types[0]?.label }}
           </button>
+
           <button
             @click.prevent="changeType(types[1]?.value)"
             :class="[
