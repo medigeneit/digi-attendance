@@ -16,6 +16,7 @@ export const useTodoStore = defineStore('todo', () => {
     try {
       const response = await apiClient.get('/todos');
       todos.value = response.data?.todos || [];
+      sortTodoList()
     } catch (err) {
       error.value = err.response?.data?.message || 'Todos load failed';
       throw err
@@ -43,6 +44,7 @@ export const useTodoStore = defineStore('todo', () => {
     try {
       const response = await apiClient.get('/my-todos');
       todos.value = response.data?.todos || [];
+      sortTodoList()
     } catch (err) {
       error.value = err.response?.data?.message || 'Todos load failed';
       throw err
