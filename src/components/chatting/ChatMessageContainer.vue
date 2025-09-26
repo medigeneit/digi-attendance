@@ -123,10 +123,11 @@ const showJumpButton = computed(() => !atBottom.value && !!chatStore.activeConve
       <div v-if="loadingOlder" class="text-xs text-gray-400 text-center py-2">Loading older…</div>
 
       <ChatMessageCard
-        v-for="message in chatStore.messages"
+        v-for="(message, index) in chatStore.messages"
         :key="message.id"
         :message="message"
         class="w-full my-4"
+        :index="index"
       />
     </template>
 

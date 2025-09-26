@@ -7,13 +7,15 @@ export const useChatStore = defineStore('chat', () => {
   const error = ref(null)
   const openAddModal = ref(false)
   const openAddMemberModal = ref(false)
-  const showMobileConversationList  = ref(false)
+  const showMobileConversationList = ref(false)
 
   const conversations = ref([])
   const conversation = ref({})
   const activeConversationId = ref(null)
   const messages = ref([])
   const searchText = ref('')
+
+  const notificationCount = ref(0)
 
   const activeConversation = computed(() => {
     if (conversations.value?.length === 0) {
@@ -188,6 +190,42 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  const fetchNotificationCount = async () => {
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await apiClient.get(`/chat/notifications/count`)
+      notificationCount.value = parseInt(response?.data || 0) || 0
+    } catch (err) {
+      error.value = err.response?.data?.message || 'ডাটা লোড করতে ব্যর্থ হয়েছে।'
+      console.error('Error fetching notification count:', err)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const readAllForActiveConversation = async (conversationId, body = {}) => {
+    if (!conversationId) {
+      return
+    }
+
+    error.value = null
+
+    try {
+      const response = await apiClient.patch(`/chat/conversations/${conversationId}/read-all`, body)
+
+      if (response?.data) {
+        conversations.value = conversations.value.map((conversation) =>
+          parseInt(conversation.id) === parseInt(conversationId) ? response.data : conversation,
+        )
+      }
+    } catch (err) {
+      error.value = err.response?.data?.message || 'ডাটা Update করতে ব্যর্থ হয়েছে।'
+      console.error('Error creating read all message:', err)
+    }
+  }
+
   return {
     loading,
     error,
@@ -201,11 +239,14 @@ export const useChatStore = defineStore('chat', () => {
     activeConversationId,
     activeConversation,
     messages,
+    notificationCount,
     fetchUserConversations,
     addConversationMembers,
     createConversation,
     fetchConversationById,
     fetchConversationMessages,
     createConversationMessage,
+    fetchNotificationCount,
+    readAllForActiveConversation,
   }
 })
