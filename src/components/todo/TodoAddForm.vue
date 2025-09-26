@@ -7,6 +7,7 @@ import LoaderView from '../common/LoaderView.vue'
 
 const props = defineProps({
   date: { type: String, default: getYearMonthDayFormat(new Date()) },
+  userRole: { type: String, default: 'employee' },
 })
 
 const state = ref()
@@ -24,7 +25,9 @@ const form = ref({
 async function handleFormSubmit() {
   try {
     state.value = 'submitting'
-    await todoStore.createTodo(form.value)
+    await todoStore.createTodo(form.value, {
+      returnWith: props.userRole !== 'employee' ? 'user,department,company' : '',
+    })
     emit('update')
   } finally {
     state.value = ''

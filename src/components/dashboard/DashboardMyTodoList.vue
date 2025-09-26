@@ -26,7 +26,7 @@ function handleTodoInputChange(changedSelected) {
     :year="route.query[`todos[year]`]"
     :month="route.query[`todos[month]`]"
     :day="route.query[`todos[day]`]"
-    listUserRole="employee"
+    userRole="employee"
     @changeInput="handleTodoInputChange"
   >
     <template #beforeHeader>

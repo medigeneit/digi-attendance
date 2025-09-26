@@ -9,6 +9,10 @@ defineProps({
     type: Object,
     required: true,
   },
+  userRole: {
+    type: String,
+    required: 'employee',
+  },
 })
 
 const emit = defineEmits(['cancelClick', 'update', 'clickEdit', 'clickDelete', 'clickChangeStatus'])
@@ -24,6 +28,7 @@ function handleTodoUpdate() {
       @cancelClick="emit('cancelClick')"
       @update="handleTodoUpdate"
       :date="todoModal?.date"
+      :userRole="userRole"
     />
   </OverlyModal>
 
@@ -32,6 +37,7 @@ function handleTodoUpdate() {
       @cancelClick="emit('cancelClick')"
       @update="handleTodoUpdate"
       :todo="todoModal?.todo"
+      :userRole="userRole"
     />
   </OverlyModal>
 
@@ -43,6 +49,7 @@ function handleTodoUpdate() {
       @clickDelete="(todoId) => emit('clickDelete', todoId)"
       @clickChangeStatus="(todoId, status) => emit('clickChangeStatus', todoId, status)"
       :todo="todoModal?.todo"
+      :userRole="userRole"
     />
   </OverlyModal>
 </template>

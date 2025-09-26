@@ -70,6 +70,16 @@ onMounted(async () => {
           <div class="text-xs text-gray-500">Todo</div>
           {{ todoStore.todo?.title }}
         </div>
+
+        <div class="mt-1 flex items-center gap-2" v-if="todo.user">
+          <UserChip :user="todo.user" avatar-size="xsmall" />
+          <div
+            class="border border-sky-400 rounded-full text-sky-500 font-semibold bg-sky-50 px-1 py-0.5 text-xs inline-block"
+          >
+            {{ todo.user?.department?.name }}
+          </div>
+        </div>
+
         <div>
           <div class="text-xs text-gray-500">Status</div>
           <div class="flex items-center gap-4">

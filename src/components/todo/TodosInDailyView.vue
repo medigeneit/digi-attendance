@@ -70,6 +70,7 @@ async function handleClickComplete(todo) {
               <div class="line-clamp-2">
                 {{ todo.title }}
               </div>
+
               <div class="mt-1 flex items-center gap-2" v-if="todo.user">
                 <UserChip :user="todo.user" avatar-size="xsmall" />
                 <div
@@ -78,6 +79,7 @@ async function handleClickComplete(todo) {
                   {{ todo.user?.department?.name }}
                 </div>
               </div>
+
               <!-- <div>{{ todo.user?.department }}</div> -->
             </div>
             <div class="line-clamp-2 ml-4 text-gray-500" v-if="todo.todo_type && todo.todo_type_id">

@@ -24,6 +24,15 @@ export const useTodoStore = defineStore('todo', () => {
     }
   }
 
+  function sortTodoList(){
+    todos.value = todos.value.sort((listA, listB) => {
+      if( listA.priority !== listB.priority ) {
+        return listA.priority - listB.priority
+      }
+      return listB.id - listA.id
+    })
+  }
+
   const fetchMyTodos = async () => {
     loading.value = true;
     error.value = null;
@@ -60,13 +69,17 @@ export const useTodoStore = defineStore('todo', () => {
     }
   };
 
-  const createTodo = async (data) => {
+  const createTodo = async (data, {returnWith} = {} ) => {
     loading.value = true;
     error.value = null;
     try {
 
-      const response = await apiClient.post('/todos', data);
+      const response = await apiClient.post('/todos', data,         {
+          params: {return_with: returnWith}
+        });
       todos.value = [...todos.value, response.data?.todo];
+
+      sortTodoList()
 
       return response.data;
 
@@ -78,15 +91,25 @@ export const useTodoStore = defineStore('todo', () => {
     }
   };
 
-  const updateTodo = async (id, data) => {
+  const updateTodo = async (id, data ) => {
     loading.value = true;
     error.value = null;
+
+
     try {
       const response = await apiClient.put(`/todos/${id}`, data);
 
       todos.value = todos.value.map( todo => {
+
         if( todo.id == response.data?.todo?.id ) {
-          return response.data?.todo
+
+          if( todo.user ) {
+            return {
+              ...response.data?.todo,
+              user: {...todo.user}
+            }
+          }
+          return {...response.data?.todo};
         }
 
         return {...todo}
@@ -102,12 +125,12 @@ export const useTodoStore = defineStore('todo', () => {
   };
 
   // Update todo status
-  const updateTodoStatus = async (id, status) => {
+  const updateTodoStatus = async (id, status ) => {
 
     loading.value = true;
     error.value = null;
     try {
-      await apiClient.put( `/todos/status/${id}`, { status } );
+      await apiClient.put( `/todos/status/${id}`, { status });
 
       todos.value = todos.value.map( todo => {
         if( todo.id === id ) {

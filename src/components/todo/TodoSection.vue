@@ -15,7 +15,7 @@ const props = defineProps({
   day: { type: Number, default: () => new Date().getDate() },
   week: { type: Number, default: () => new Date().getDay() },
   type: { type: String, default: 'month-view' },
-  listUserRole: { type: String, default: 'employee' },
+  userRole: { type: String, default: 'employee' },
 })
 
 const selected = ref({
@@ -139,7 +139,7 @@ const getMonthString = computed(() => {
 })
 
 async function fetchTodos() {
-  if (props.listUserRole == 'employee') {
+  if (props.userRole == 'employee') {
     await todoStore.fetchMyTodos()
   } else {
     await todoStore.fetchTodos()
@@ -207,6 +207,7 @@ onMounted(async () => {
 
     <TodoCreateEditShow
       :todoModal="todoModal"
+      :userRole="userRole"
       @cancelClick="handleModalCancel"
       @update="handleTodoUpdate"
       @clickEdit="handleClickEditTodo"
