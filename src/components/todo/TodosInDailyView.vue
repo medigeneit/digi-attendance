@@ -58,7 +58,7 @@ async function handleClickComplete(todo) {
           </button>
         </div>
       </div>
-      <TodosInDate :date="date" :max-items="10" class="my-8 w-full px-4">
+      <TodosInDate :date="date" max-items="all" class="my-8 w-full px-4">
         <template #todoItem="{ todo }">
           <div
             class="border rounded px-4 py-3 my-4 hover:bg-sky-50 cursor-pointer flex items-center"
