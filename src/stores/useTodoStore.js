@@ -26,6 +26,10 @@ export const useTodoStore = defineStore('todo', () => {
 
   function sortTodoList(){
     todos.value = todos.value.sort((listA, listB) => {
+      if( listA?.user?.id !== listB?.user?.id ) {
+        return listA?.user?.id - listB?.user?.id
+      }
+
       if( listA.priority !== listB.priority ) {
         return listA.priority - listB.priority
       }
