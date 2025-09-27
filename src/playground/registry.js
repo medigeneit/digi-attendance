@@ -1,6 +1,9 @@
 // Collect all demo SFCs under ./demos/*Demo.vue and their raw source
 // const demoModules = import.meta.glob('./demos/*Demo.vue', { eager: true });
 
+import DragAndDrop from '@/components/DragAndDrop.vue';
+import UserAvatar from '@/components/UserAvatar.vue';
+
 
 
 // const sourceModules = import.meta.glob('./demos/*Demo.vue', { as: 'raw', eager: true });
@@ -37,8 +40,16 @@ demos = [
     id: 'UserAvatarComp',
     title: 'UserAvatar',
     tags: [],
-    component: import('@/components/UserAvatar.vue'),
+    component: UserAvatar,
     source:  import.meta.glob('../components/UserAvatar.vue', { as: 'raw', eager: true })?.['../components/UserAvatar.vue']?.split('/')?.join('') ,
+    file: 'UserAvatar.vue',
+  },
+  {
+    id: 'DragAndDrop',
+    title: 'DragAndDrop',
+    tags: [],
+    component: DragAndDrop,
+    source:  import.meta.glob('../components/DragAndDrop.vue', { as: 'raw', eager: true })?.['../components/DragAndDrop.vue']?.split('/')?.join('') ,
     file: 'UserAvatar.vue',
   }
 ]
