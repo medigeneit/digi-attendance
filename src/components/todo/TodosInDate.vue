@@ -54,32 +54,39 @@ const todoInDate = computed(() => {
       </slot>
     </template>
     <template v-else>
-      <template v-for="todo in todoInDate.items" :key="todo.id">
-        <slot name="todoItem" :todo="todo" :moreItemsCount="todoInDate.moreItemsCount">
-          <div
-            :title="`${todo?.title} ${todo?.user ? '\nby:' : ''} ${todo?.user?.name} ${todo?.user?.department ? '\nDEPT:' : ''} ${todo.user?.department?.name}`"
-            class="px-1 mb-2 text-sm rounded cursor-pointer flex items-center gap-2"
-            :class="{
-              'bg-sky-50 text-sky-900 hover:bg-sky-700 hover:text-white border border-sky-300':
-                todo.status !== 'COMPLETED',
-              'bg-green-500 text-white': todo.status === 'COMPLETED',
-            }"
-            @click.prevent.stop="emit('clickTodo', todo)"
-          >
-            <TodoStatusIcon
-              :todo="todo"
-              class="text-sm"
-              :class="[todo.status == 'COMPLETED' ? '!text-white' : '']"
-            />
+      <slot
+        name="todoItems"
+        :todos="todoInDate.items"
+        :allTodos="todoInDate.items"
+        :moreItemsCount="todoInDate.moreItemsCount"
+      >
+        <template v-for="todo in todoInDate.items" :key="todo.id">
+          <slot name="todoItem" :todo="todo" :moreItemsCount="todoInDate.moreItemsCount">
+            <div
+              :title="`${todo?.title} ${todo?.user ? '\nby:' : ''} ${todo?.user?.name} ${todo?.user?.department ? '\nDEPT:' : ''} ${todo.user?.department?.name}`"
+              class="px-1 mb-2 text-sm rounded cursor-pointer flex items-center gap-2"
+              :class="{
+                'bg-sky-50 text-sky-900 hover:bg-sky-700 hover:text-white border border-sky-300':
+                  todo.status !== 'COMPLETED',
+                'bg-green-500 text-white': todo.status === 'COMPLETED',
+              }"
+              @click.prevent.stop="emit('clickTodo', todo)"
+            >
+              <TodoStatusIcon
+                :todo="todo"
+                class="text-sm"
+                :class="[todo.status == 'COMPLETED' ? '!text-white' : '']"
+              />
 
-            <div class="line-clamp-1">{{ todo.title }}</div>
+              <div class="line-clamp-1">{{ todo.title }}</div>
 
-            <template v-if="todo.user">
-              <UserAvatar :user="todo.user" size="xsmall" class="ml-auto" />
-            </template>
-          </div>
-        </slot>
-      </template>
+              <template v-if="todo.user">
+                <UserAvatar :user="todo.user" size="xsmall" class="ml-auto" />
+              </template>
+            </div>
+          </slot>
+        </template>
+      </slot>
       <div v-if="todoInDate.moreItemsCount > 0" class="text-purple-600 text-center">
         + {{ todoInDate.moreItemsCount }} more todo{{ todoInDate.moreItemsCount > 1 ? 's' : '' }}
       </div>

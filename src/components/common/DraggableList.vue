@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useSortable } from '@vueuse/integrations/useSortable'
-import { shallowRef, useTemplateRef, watch } from 'vue'
+import { computed, shallowRef, useTemplateRef, watch } from 'vue'
 
 const props = defineProps({
   items: { type: Array, default: () => [] },
@@ -29,11 +29,14 @@ watch(
   () => _items.value,
   (newItems, oldItems) => {
     if (!isEqual(newItems, oldItems)) {
-      emit('itemsUpdate', [...newItems])
+      emit('itemsUpdate', [...newItems], { changed: isItemsChanged.value })
     }
   },
   { deep: true },
 )
+
+// ✅ expose করার জন্য reactive flag
+const isItemsChanged = computed(() => !isEqual(_items.value, props.items))
 
 function isEqual(a: any, b: any): boolean {
   if (a === b) return true
@@ -67,9 +70,14 @@ function isEqual(a: any, b: any): boolean {
 defineExpose({
   resetItems: () => {
     _items.value = [...props.items]
-    emit('itemsUpdate', [...props.items])
+    //emit('itemsUpdate', [...props.items], { changed: isItemsChanged.value })
   },
-  items: _items.value,
+  get items() {
+    return _items.value
+  },
+  get isItemsChanged() {
+    return isItemsChanged.value
+  }, // boolean
 })
 </script>
 

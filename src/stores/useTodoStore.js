@@ -7,6 +7,7 @@ export const useTodoStore = defineStore('todo', () => {
   // const todos = ref([]);
   const todo = ref(null);
   const loading = ref(false);
+  const updatingPriority = ref(false)
   const error = ref(null);
   const todos = ref([])
 
@@ -26,16 +27,18 @@ export const useTodoStore = defineStore('todo', () => {
   }
 
   function sortTodoList(){
-    todos.value = todos.value.sort((listA, listB) => {
-      if( listA?.user?.id !== listB?.user?.id ) {
-        return listA?.user?.id - listB?.user?.id
-      }
+    todos.value = [
+      ...todos.value.sort((listA, listB) => {
+        if( listA?.user?.id !== listB?.user?.id ) {
+          return listA?.user?.id - listB?.user?.id
+        }
 
-      if( listA.priority !== listB.priority ) {
-        return listA.priority - listB.priority
-      }
-      return listB.id - listA.id
-    })
+        if( listA.priority !== listB.priority ) {
+          return listA.priority - listB.priority
+        }
+        return listB.id - listA.id
+      })
+    ]
   }
 
   const fetchMyTodos = async () => {
@@ -156,6 +159,42 @@ export const useTodoStore = defineStore('todo', () => {
   };
 
 
+  const rearrangeMyTodos = async (ids, {date} = {}) => {
+    loading.value = true;
+    updatingPriority.value = true
+    error.value = null;
+
+    // todos.value = todos.value.filter((todo) => todo.id !== id);
+
+    try {
+      const response = await apiClient.put(`/my-todos/rearrange`, {ids, date});
+      //todos.value = todos.value.filter((todo) => todo.id !== id);
+
+      todos.value = todos.value.map( todo => {
+        const changes = (response.data?.changes || []);
+        const changed = changes.find(t => t.id == todo.id)
+        if( changed ) {
+
+          return {
+            ...todo,
+            priority: changed.priority
+          }
+        }
+
+        return todo
+      })
+
+
+      sortTodoList()
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Todo rearranging failed';
+      throw err
+    } finally {
+      updatingPriority.value = true
+      loading.value = false;
+    }
+  };
+
   const deleteTodo = async (id) => {
     loading.value = true;
     error.value = null;
@@ -182,9 +221,11 @@ export const useTodoStore = defineStore('todo', () => {
     fetchTodo,
     createTodo,
     updateTodo,
+    rearrangeMyTodos,
     deleteTodo,
     fetchMyTodos,
     updateTodoStatus,
-    getTodosByDate
+    getTodosByDate,
+
   };
 });
