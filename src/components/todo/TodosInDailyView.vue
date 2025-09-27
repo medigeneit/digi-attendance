@@ -97,7 +97,7 @@ async function handleTodosRearrange() {
       </div>
       <TodosInDate :date="date" max-items="all" class="my-8 w-full px-4">
         <template #todoItems="{ allTodos }">
-          <DraggableList :items="allTodos" ref="draggableTodos">
+          <DraggableList :items="allTodos" ref="draggableTodos" handle="handle">
             <template #item="{ item: todo }">
               <div
                 class="border rounded px-4 py-3 my-4 hover:bg-sky-50 cursor-pointer flex items-center"
