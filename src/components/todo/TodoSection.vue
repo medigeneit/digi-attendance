@@ -195,6 +195,7 @@ onMounted(async () => {
       <TodosInDailyView
         :date="getDateString"
         v-if="selected.type == 'day-view'"
+        :userRole="userRole"
         @clickTodo="handleClickTodo"
         @clickEdit="handleClickEditTodo"
         @clickAdd="handleClickAddTodo"

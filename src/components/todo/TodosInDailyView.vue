@@ -12,6 +12,10 @@ const props = defineProps({
     type: String,
     required: true,
   },
+  userRole: {
+    type: String,
+    default: 'employee',
+  },
 })
 
 const draggableTodos = ref(null)
@@ -38,9 +42,9 @@ async function handleClickDelete(todo) {
   }
 }
 
-async function handleClickComplete(todo) {
-  if (confirm(`Are your sure want to compete todo\n'${todo?.title}'`)) {
-    await todoStore.updateTodoStatus(todo.id, 'COMPLETED')
+async function handleClickComplete(todo, status) {
+  if (confirm(`Are your sure?\nwant to change status to ${status} \ntodo: '${todo?.title}'`)) {
+    await todoStore.updateTodoStatus(todo.id, status)
     emit('update')
   }
 }
@@ -69,7 +73,7 @@ async function handleTodosRearrange() {
       <div class="mb-4 text-gray-700 border-b py-2 px-4 flex items-center">
         <button class="fa fa-arrow-left btn-icon mr-2" @click.prevent="emit('backClick')"></button>
         <div class="text-lg font-semibold">
-          {{ getDisplayDate(selectedDate, { weekDay: 'long' }) }}
+          {{ getDisplayDate(selectedDate, { weekDay: 'long' }) }} {{ type }}
         </div>
 
         <div class="ml-auto flex items-center gap-2">
@@ -132,15 +136,18 @@ async function handleTodosRearrange() {
                   <button
                     v-if="todo.status === 'WORKING'"
                     class="btn-icon bg-green-400 text-white hover:bg-green-600 hover:text-white"
-                    @click.prevent.stop="() => handleClickComplete(todo)"
+                    @click.prevent.stop="() => handleClickComplete(todo, 'COMPLETED')"
                   >
                     <i class="fas fa-check"></i>
                   </button>
                   <button
-                    class="btn-icon bg-gray-400 text-white hover:bg-gray-600 hover:text-white handle"
+                    v-if="todo.status === 'PENDING'"
+                    class="btn-icon bg-gray-200 hover:bg-gray-300 hover:text-red-400 text-red-500"
+                    @click.prevent.stop="() => handleClickComplete(todo, 'WORKING')"
                   >
-                    <i class="fas fa-arrows-alt-v"></i>
+                    <i class="fas fa-play"></i>
                   </button>
+
                   <button
                     class="btn-icon bg-sky-400 text-white hover:bg-sky-600 hover:text-white"
                     @click.prevent.stop="emit('clickEdit', todo)"
@@ -152,6 +159,13 @@ async function handleTodosRearrange() {
                     @click.prevent.stop="() => handleClickDelete(todo)"
                   >
                     <i class="fas fa-trash-alt"></i>
+                  </button>
+                  <button
+                    v-if="userRole == 'employee'"
+                    @click.stop.prevent="() => null"
+                    class="btn-icon bg-gray-400 text-white hover:bg-gray-600 hover:text-white handle"
+                  >
+                    <i class="fas fa-arrows-alt-v"></i>
                   </button>
                 </div>
               </div>
