@@ -21,7 +21,7 @@ const color = computed(() => {
 <template>
   <span :class="color">
     <i class="fa fa-exclamation-square" v-if="todo.status == 'PENDING'" title="Pending"></i>
-    <i class="fa fa-circle animate-pulse" v-if="todo.status == 'WORKING'" title="Working"></i>
+    <i class="fa fa-circle" v-if="todo.status == 'WORKING'" title="Working"></i>
     <i class="fa fa-check-square" v-if="todo.status == 'COMPLETED'" title="Completed"></i>
   </span>
 </template>
