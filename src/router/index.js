@@ -1,5 +1,6 @@
 import AppLayout from '@/layouts/AppLayout.vue'
 import GuestLayout from '@/layouts/GuestLayout.vue'
+import { playgroundRoute } from '@/playground'
 import { useAuthStore } from '@/stores/auth'
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/public-pages/HomeView.vue'
@@ -18,7 +19,6 @@ const router = createRouter({
           component: HomeView,
           meta: { title: 'Home' },
         },
-
         {
           path: '/about',
           name: 'About',
@@ -1169,6 +1169,8 @@ const router = createRouter({
     return { top: 0 }
   },
 })
+
+router.addRoute(playgroundRoute)
 
 router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore()
