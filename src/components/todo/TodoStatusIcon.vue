@@ -8,9 +8,9 @@ const props = defineProps({
 const color = computed(() => {
   switch (props.todo.status) {
     case 'PENDING':
-      return 'text-red-400'
+      return 'text-yellow-500'
     case 'WORKING':
-      return 'text-yellow-400'
+      return 'text-red-500'
     case 'COMPLETED':
       return 'text-green-400'
   }
@@ -20,8 +20,8 @@ const color = computed(() => {
 
 <template>
   <span :class="color">
-    <i class="fa fa-exclamation-circle" v-if="todo.status == 'PENDING'" title="Pending"></i>
-    <i class="fa fa-exclamation-square" v-if="todo.status == 'WORKING'" title="Wording"></i>
+    <i class="fa fa-exclamation-square" v-if="todo.status == 'PENDING'" title="Pending"></i>
+    <i class="fa fa-circle animate-pulse" v-if="todo.status == 'WORKING'" title="Working"></i>
     <i class="fa fa-check-square" v-if="todo.status == 'COMPLETED'" title="Completed"></i>
   </span>
 </template>

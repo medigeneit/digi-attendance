@@ -104,7 +104,11 @@ async function handleTodosRearrange() {
           <DraggableList :items="allTodos" ref="draggableTodos" handle="handle">
             <template #item="{ item: todo }">
               <div
-                class="border rounded px-4 py-3 my-4 hover:bg-sky-50 cursor-pointer flex items-center"
+                class="border rounded px-4 py-3 my-4 cursor-pointer flex items-center shadow-sm"
+                :class="{
+                  'bg-green-100': todo.status == 'COMPLETED',
+                  'hover:bg-gray-50': todo.status != 'COMPLETED',
+                }"
                 @click.prevent="emit('clickTodo', todo)"
               >
                 <!-- v-for="todo in allTodos"
@@ -112,7 +116,15 @@ async function handleTodosRearrange() {
                 <TodoStatusIcon :todo="todo" />
 
                 <div class="ml-4">
-                  <div class="line-clamp-2">{{ todo.id }} - {{ todo.title }}</div>
+                  <div
+                    class="line-clamp-1"
+                    :class="{
+                      'text-green-800': todo.status == 'COMPLETED',
+                      'text-blue-800': todo.status != 'COMPLETED',
+                    }"
+                  >
+                    {{ todo.id }} - {{ todo.title }}
+                  </div>
 
                   <div class="mt-1 flex items-center gap-2" v-if="todo.user">
                     <UserChip :user="todo.user" avatar-size="xsmall" />
@@ -134,18 +146,20 @@ async function handleTodosRearrange() {
 
                 <div class="ml-auto flex items-center gap-2">
                   <button
+                    title="Mark as Completed"
                     v-if="todo.status === 'WORKING'"
-                    class="btn-icon bg-green-400 text-white hover:bg-green-600 hover:text-white"
+                    class="btn-icon bg-transparent text-green-400 border-green-400 border hover:bg-green-400 hover:text-white"
                     @click.prevent.stop="() => handleClickComplete(todo, 'COMPLETED')"
                   >
                     <i class="fas fa-check"></i>
                   </button>
                   <button
                     v-if="todo.status === 'PENDING'"
-                    class="btn-icon bg-gray-200 hover:bg-gray-300 hover:text-red-400 text-red-500"
+                    title="Start Working"
+                    class="btn-icon bg-transparent text-red-400 border-red-400 border hover:bg-red-400 hover:text-white"
                     @click.prevent.stop="() => handleClickComplete(todo, 'WORKING')"
                   >
-                    <i class="fas fa-play"></i>
+                    <i class="fas fa-play ml-[4px]"></i>
                   </button>
 
                   <button
