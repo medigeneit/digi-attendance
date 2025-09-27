@@ -29,13 +29,15 @@ export const useTodoStore = defineStore('todo', () => {
   function sortTodoList(){
     todos.value = [
       ...todos.value.sort((listA, listB) => {
-        if( listA?.user?.id !== listB?.user?.id ) {
-          return listA?.user?.id - listB?.user?.id
+
+        if( listA?.user_id !== listB?.user_id ) {
+          return  listA?.user_id - listB?.user_id
         }
 
         if( listA.priority !== listB.priority ) {
           return listA.priority - listB.priority
         }
+
         return listB.id - listA.id
       })
     ]
@@ -86,6 +88,7 @@ export const useTodoStore = defineStore('todo', () => {
       const response = await apiClient.post('/todos', data,         {
           params: {return_with: returnWith}
         });
+
       todos.value = [...todos.value, response.data?.todo];
 
       sortTodoList()
