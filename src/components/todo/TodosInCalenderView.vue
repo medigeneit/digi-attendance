@@ -33,12 +33,11 @@ function isToday(date) {
       <template #date="{ day, yearMonthDate, isCurrentMonth }">
         <div
           tabindex="0"
-          class="border p-4 cursor-pointer group/date relative"
+          class="border p-4 cursor-pointer group/date relative focus:outline-slate-400"
           :class="{
-            'bg-rose-50  border-rose-300 focus:bg-rose-50 focus:outline-rose-400':
+            'bg-sky-50   border-sky-300 focus:bg-sky-50 focus:outline-sky-400':
               isToday(yearMonthDate),
-            'hover:bg-sky-50  hover:border-blue-300 focus:bg-sky-50 focus:outline-blue-400':
-              !isToday(yearMonthDate),
+            'hover:bg-slate-50  hover:border-slate-300 focus:bg-slate-50 ': !isToday(yearMonthDate),
           }"
           @click.prevent.stop="emit('dateClick', yearMonthDate)"
           @keypress.prevent="(e) => handleDateKeypress(e, yearMonthDate)"
