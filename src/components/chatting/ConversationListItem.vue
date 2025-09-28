@@ -25,7 +25,7 @@ const isActive = computed(() => {
     :class="{ 'bg-[#24A1DE] text-white': isActive }"
     @click="chatStore.showMobileConversationList = false"
   >
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-2 relative">
       <ConversationAvatar :conversation="conversation" />
       <div
         :class="{
@@ -38,9 +38,16 @@ const isActive = computed(() => {
         </h3>
         <div
           class="text-xs md:text-sm group-hover:text-gray-50 line-clamp-1"
-          :class="{ 'text-gray-50': isActive, 'text-gray-600': !isActive }"
+          :class="{ 'text-gray-50': isActive, 'text-gray-600': !isActive, 'font-bold': conversation?.unread?.count }"
           v-html="conversation.subtitle"
         ></div>
+      </div>
+      <div v-if="conversation?.unread?.count" class="absolute right-0 top-1/2 -translate-y-1/2">
+        <span
+          class="flex justify-center items-center size-5 text-[9px] text-white rounded-full bg-red-600"
+        >
+          {{ conversation?.unread?.count }}
+        </span>
       </div>
     </div>
   </RouterLink>

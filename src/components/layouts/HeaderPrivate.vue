@@ -1,6 +1,7 @@
 <script setup>
 import MyNotifications from '@/components/MyNotifications.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
+import { useChatStore } from '@/stores/chat'
 import { useNotificationStore } from '@/stores/notification'
 import { useTaskNotificationStore } from '@/stores/task-notification'
 import { storeToRefs } from 'pinia'
@@ -10,6 +11,7 @@ import MyTaskNotifications from '../task-notifications/MyTaskNotifications.vue'
 
 const props = defineProps({ user: Object, userInitial: String })
 
+const chatStore = useChatStore()
 const notificationStore = useNotificationStore()
 const taskNotificationStore = useTaskNotificationStore()
 
@@ -32,6 +34,7 @@ function handleOutsideClick(event) {
 
 onMounted(async () => {
   await Promise.all([
+    chatStore.fetchNotificationCount(),
     notificationStore.fetchCountNotifications(),
     taskNotificationStore.fetchTaskNotificationCount(),
   ])
@@ -55,14 +58,16 @@ onBeforeMount(() => {
         <!-- Notification Bell -->
 
         <RouterLink to="/chatting" class="btn-icon relative" @click="noticeDropdown = null">
-          <!-- <i class="fas fa-comment-alt text-xl"></i> -->
-          <i class="fad fa-comment-alt-lines text-2xl text-blue-600"></i>
-          <div v-if="false" class="absolute -translate-x-1/2 -translate-y-1/2 -right-3 top-2.5">
+          <i class="fad fa-comment-alt-lines text-2xl text-blue-600 mt-0.5"></i>
+          <div
+            v-if="chatStore.notificationCount"
+            class="absolute -translate-x-1/2 -translate-y-1/2 -right-3 top-2.5"
+          >
             <span class="flex size-6 relative">
               <span
                 class="flex justify-center items-center size-6 text-xs text-white rounded-full bg-blue-600"
               >
-                0
+                {{ chatStore.notificationCount }}
               </span>
               <!-- <span class="absolute animate-ping size-6 rounded-full bg-blue-500 opacity-75"></span> -->
             </span>
