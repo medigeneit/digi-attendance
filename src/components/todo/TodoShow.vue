@@ -4,12 +4,14 @@ import { useTodoStore } from '@/stores/useTodoStore'
 import { computed, onMounted } from 'vue'
 import LoaderView from '../common/LoaderView.vue'
 import TodoStatusIcon from './TodoStatusIcon.vue'
+import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps({
   todo: { type: Object, default: () => {} },
 })
 
 const todoStore = useTodoStore()
+const authStore = useAuthStore()
 
 const emit = defineEmits(['cancelClick', 'clickEdit', 'update'])
 
@@ -22,6 +24,10 @@ const selectedDate = computed(() => {
     return null
   }
   return new Date(todoStore.todo?.date)
+})
+
+const isOwnTodo = computed(() => {
+  return props.todo.user_id === authStore.user?.id
 })
 
 async function handleClickDelete(todo) {
@@ -88,7 +94,7 @@ onMounted(async () => {
               {{ todoStore.todo?.status }}
             </div>
 
-            <div class="flex items-center gap-2" v-if="!todoStore.loading">
+            <div class="flex items-center gap-2" v-if="isOwnTodo && !todoStore.loading">
               <button
                 v-if="todoStore.todo?.status === 'PENDING'"
                 class="btn-2 from-yellow-700 to-yellow-500 text-white hover:bg-green-600 hover:text-white"
@@ -111,7 +117,7 @@ onMounted(async () => {
     <div class="flex justify-between items-center gap-4 py-4 px-4 border-t">
       <button type="button" @click="emit('cancelClick')" class="btn-3">Cancel</button>
 
-      <div class="ml-auto flex items-center gap-2">
+      <div class="ml-auto flex items-center gap-2" v-if="isOwnTodo && !todoStore.loading">
         <button
           class="btn-2 bg-sky-400 text-white hover:bg-sky-600 hover:text-white"
           @click.prevent.stop="emit('clickEdit', todoStore.todo)"

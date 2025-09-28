@@ -6,6 +6,7 @@ import DraggableList from '../common/DraggableList.vue'
 import UserChip from '../user/UserChip.vue'
 import TodosInDate from './TodosInDate.vue'
 import TodoStatusIcon from './TodoStatusIcon.vue'
+import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps({
   date: {
@@ -29,11 +30,12 @@ const emit = defineEmits([
   'update',
 ])
 
+const authStore = useAuthStore()
+const todoStore = useTodoStore()
+
 const selectedDate = computed(() => {
   return new Date(props.date)
 })
-
-const todoStore = useTodoStore()
 
 async function handleClickDelete(todo) {
   if (confirm(`Are your sure want to delete todo\n'${todo?.title}'`)) {
@@ -145,37 +147,38 @@ async function handleTodosRearrange() {
                 </div>
 
                 <div class="ml-auto flex items-center gap-2">
-                  <button
-                    title="Mark as Completed"
-                    v-if="todo.status === 'WORKING'"
-                    class="btn-icon bg-transparent text-green-400 border-green-400 border hover:bg-green-400 hover:text-white"
-                    @click.prevent.stop="() => handleClickComplete(todo, 'COMPLETED')"
-                  >
-                    <i class="fas fa-check"></i>
-                  </button>
-                  <button
-                    v-if="todo.status === 'PENDING'"
-                    title="Start Working"
-                    class="btn-icon bg-transparent text-red-400 border-red-400 border hover:bg-red-400 hover:text-white"
-                    @click.prevent.stop="() => handleClickComplete(todo, 'WORKING')"
-                  >
-                    <i class="fas fa-play ml-[4px]"></i>
-                  </button>
+                  <template v-if="todo.user_id === authStore.user?.id">
+                    <button
+                      title="Mark as Completed"
+                      v-if="todo.status === 'WORKING'"
+                      class="btn-icon bg-transparent text-green-400 border-green-400 border hover:bg-green-400 hover:text-white"
+                      @click.prevent.stop="() => handleClickComplete(todo, 'COMPLETED')"
+                    >
+                      <i class="fas fa-check"></i>
+                    </button>
+                    <button
+                      v-if="todo.status === 'PENDING'"
+                      title="Start Working"
+                      class="btn-icon bg-transparent text-red-400 border-red-400 border hover:bg-red-400 hover:text-white"
+                      @click.prevent.stop="() => handleClickComplete(todo, 'WORKING')"
+                    >
+                      <i class="fas fa-play ml-[4px]"></i>
+                    </button>
 
+                    <button
+                      class="btn-icon bg-sky-400 text-white hover:bg-sky-600 hover:text-white"
+                      @click.prevent.stop="emit('clickEdit', todo)"
+                    >
+                      <i class="fas fa-pen"></i>
+                    </button>
+                    <button
+                      class="btn-icon bg-red-400 text-white hover:bg-red-600 hover:text-white"
+                      @click.prevent.stop="() => handleClickDelete(todo)"
+                    >
+                      <i class="fas fa-trash-alt"></i>
+                    </button>
+                  </template>
                   <button
-                    class="btn-icon bg-sky-400 text-white hover:bg-sky-600 hover:text-white"
-                    @click.prevent.stop="emit('clickEdit', todo)"
-                  >
-                    <i class="fas fa-pen"></i>
-                  </button>
-                  <button
-                    class="btn-icon bg-red-400 text-white hover:bg-red-600 hover:text-white"
-                    @click.prevent.stop="() => handleClickDelete(todo)"
-                  >
-                    <i class="fas fa-trash-alt"></i>
-                  </button>
-                  <button
-                    v-if="userRole == 'employee'"
                     @click.stop.prevent="() => null"
                     class="btn-icon bg-gray-400 text-white hover:bg-gray-600 hover:text-white handle"
                   >
