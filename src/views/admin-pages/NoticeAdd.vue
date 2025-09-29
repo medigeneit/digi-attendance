@@ -16,264 +16,560 @@ const companyStore = useCompanyStore()
 const departmentStore = useDepartmentStore()
 const { companies } = storeToRefs(companyStore)
 
+/* ---------- form ---------- */
 const form = reactive({
   title: '',
-  type: 1,
+  type: 1, // 1=General, 2=Policy
   description: '',
   published_at: '',
   expired_at: '',
-  company_id: '',
-  file: '',
   all_companies: false,
   all_departments: false,
   all_employees: false,
+  file: null, // File
 })
 
+/* ---------- selections ---------- */
 const selectedCompanies = ref([])
 const selectedDepartments = ref([])
 const selectedEmployees = ref([])
 
-const company_ids = computed(() => selectedCompanies.value.map((comp) => comp.id))
-const department_ids = computed(() => selectedDepartments.value.map((dep) => dep.id))
-const employee_ids = computed(() => selectedEmployees.value.map((emp) => emp.id))
+const companiesList = computed(() => companies.value || [])
+const departmentsList = computed(() => departmentStore.departments || [])
+const employeesList = computed(() => departmentStore.employees || [])
 
-const toggleAllCompany = () => {
-  selectedCompanies.value = form.all_companies
-    ? [...companyStore.companies]
-    : []
-}
+const company_ids = computed(() => selectedCompanies.value.map(c => c.id))
+const department_ids = computed(() => selectedDepartments.value.map(d => d.id))
+const employee_ids = computed(() => selectedEmployees.value.map(e => e.id))
 
-const toggleAllDepartments = () => {
-  selectedDepartments.value = form.all_departments
-    ? [...departmentStore.departments]
-    : []
-}
+/* ---------- ui state ---------- */
+const saving = ref(false)
+const errors = reactive({})
 
-const toggleAllEmployees = () => {
-  if (form.all_employees) {
-    employee_ids.value = []
+/* ---------- mode (All|Custom) segmented ---------- */
+const modeCompanies = computed({
+  get: () => (form.all_companies ? 'all' : 'custom'),
+  set: (v) => {
+    form.all_companies = (v === 'all')
+    selectedCompanies.value = form.all_companies ? [...companiesList.value] : []
   }
-}
+})
+const modeDepartments = computed({
+  get: () => (form.all_departments ? 'all' : 'custom'),
+  set: (v) => {
+    form.all_departments = (v === 'all')
+    selectedDepartments.value = form.all_departments ? [...departmentsList.value] : []
+  }
+})
+const modeEmployees = computed({
+  get: () => (form.all_employees ? 'all' : 'custom'),
+  set: (v) => {
+    form.all_employees = (v === 'all')
+    selectedEmployees.value = form.all_employees ? [...employeesList.value] : []
+  }
+})
 
+/* ---------- lifecycle ---------- */
 onMounted(async () => {
   await companyStore.fetchCompanies()
 })
 
-// Watch if "Select All Companies" changes
-watch(() => form.all_companies, async (allCompany) => {
-  if (allCompany) {
-    await departmentStore.fetchDepartments()
+/* ---------- dependent loading ---------- */
+// Companies → Departments
+watch(() => form.all_companies, async (all) => {
+  if (all) await departmentStore.fetchDepartments()
+})
+watch(company_ids, async (ids) => {
+  if (!form.all_companies) await departmentStore.fetchDepartments(ids)
+})
+
+// Departments → Employees
+watch(() => form.all_departments, async (all) => {
+  if (all) await departmentStore.fetchDepartmentEmployee('all')
+})
+watch(department_ids, async (ids) => {
+  if (!form.all_departments) await departmentStore.fetchDepartmentEmployee(ids)
+})
+
+/* ---------- sync “all_*” with actual selections ---------- */
+watch(selectedCompanies, list => {
+  form.all_companies = list.length === companiesList.value.length && list.length > 0
+})
+watch(selectedDepartments, list => {
+  form.all_departments = list.length === departmentsList.value.length && list.length > 0
+})
+watch([selectedEmployees, employeesList], ([sel, all]) => {
+  const total = Array.isArray(all) ? all.length : 0
+  form.all_employees = total > 0 && sel.length === total
+})
+
+/* ---------- file drop/browse ---------- */
+const dropActive = ref(false)
+
+const onFilePick = (e) => {
+  const f = e?.target?.files?.[0]
+  handleFile(f)
+}
+const onDrop = (e) => {
+  e.preventDefault()
+  dropActive.value = false
+  const f = e.dataTransfer?.files?.[0]
+  handleFile(f)
+}
+const onDragOver = (e) => { e.preventDefault(); dropActive.value = true }
+const onDragLeave = () => { dropActive.value = false }
+
+const handleFile = (f) => {
+  if (!f) { form.file = null; return }
+  const ok = [
+    'image/jpeg','image/jpg','image/png',
+    'application/pdf','application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ]
+  if (!ok.includes(f.type)) {
+    toast.error('Unsupported file type. Allowed: jpg, jpeg, png, pdf, doc, docx.')
+    form.file = null
+    return
   }
-})
-
-// Watch if "Select All Departments" changes
-watch(() => form.all_departments, async (allDepartment) => {
-  if (allDepartment) {
-    await departmentStore.fetchDepartmentEmployee('all')
+  if (f.size > 2 * 1024 * 1024) {
+    toast.error('File size must be ≤ 2MB.')
+    form.file = null
+    return
   }
-})
+  form.file = f
+}
+const clearFile = () => { form.file = null }
 
-// Watch selected company change → fetch departments
-watch(company_ids, async (newCompanyIds) => {
-  await departmentStore.fetchDepartments(newCompanyIds)
-})
-
-// Watch selected department change → fetch employees
-watch(department_ids, async (newDepartmentIds) => {
-  await departmentStore.fetchDepartmentEmployee(newDepartmentIds)
-})
-
-// Auto uncheck "Select All" if any company is removed
-watch(selectedCompanies, (newList) => {
-  form.all_companies = newList.length === companyStore.companies.length
-})
-
-// Auto uncheck "Select All" if any department is removed
-watch(selectedDepartments, (newList) => {
-  form.all_departments = newList.length === departmentStore.departments.length
-})
-
-const fileUploadLink = async (event) => {
-  const file = event.target.files[0]
-  if (file) {
-    const formData = new FormData()
-    formData.append('file', file)
-    const response = await noticeStore.fetchFileUpload(formData)
-    form.file = response?.url
-  }
+/* ---------- helpers ---------- */
+const shortChips = (items, labelKey = 'name', limit = 3) => {
+  const arr = Array.isArray(items) ? items : []
+  const head = arr.slice(0, limit).map(x => x?.[labelKey] ?? '—')
+  const more = Math.max(0, arr.length - limit)
+  return { head, more }
 }
 
-const saveNotice = async () => {
-  try {
-    const dataToSend = {
-      title: form.title,
-      type: form.type,
-      description: form.description,
-      published_at: form.published_at,
-      expired_at: form.expired_at,
-      company_id: form.company_id,
-      company_ids: company_ids.value,
-      department_id: form.department_id,
-      department_ids: department_ids.value,
-      employee_ids: employee_ids.value,
-      file: form.file,
-    }
+/* ---------- validation ---------- */
+const validDateRange = computed(() => {
+  if (form.type === 2) return true // Policy: dates optional
+  if (!form.published_at || !form.expired_at) return true
+  try { return new Date(form.expired_at) >= new Date(form.published_at) } catch { return true }
+})
 
-    await noticeStore.createNotice(dataToSend)
+const validate = () => {
+  Object.keys(errors).forEach(k => delete errors[k])
+
+  if (!form.title?.trim()) errors.title = 'Title is required'
+  if (form.type !== 2 && !form.published_at) errors.published_at = 'Publish date is required'
+  if (!validDateRange.value) errors.expired_at = 'Expired date must be on/after publish date'
+
+  return Object.keys(errors).length === 0
+}
+
+const canSave = computed(() =>
+  !saving.value &&
+  (!!form.title?.trim()) &&
+  (form.type === 2 || !!form.published_at) &&
+  validDateRange.value
+)
+
+/* ---------- submit ---------- */
+const saveNotice = async () => {
+  if (!validate()) {
+    toast.error('Please fix the errors and try again.')
+    return
+  }
+  const payload = {
+    title: form.title,
+    type: form.type,
+    description: form.description,
+    published_at: form.type === 2 ? null : form.published_at,
+    expired_at: form.type === 2 ? null : (form.expired_at || null),
+
+    all_companies: form.all_companies,
+    all_departments: form.all_departments,
+    all_employees: form.all_employees,
+
+    company_ids: company_ids.value,
+    department_ids: department_ids.value,
+    employee_ids: employee_ids.value,
+
+    file: form.file,
+  }
+  try {
+    saving.value = true
+    await noticeStore.createNotice(payload)
     toast.success('Notice created successfully')
     await noticeStore.fetchNotices()
     router.replace('/hrd/notice')
-  } catch (error) {
-    const errorMessage = error.response?.data?.message || 'Failed to save notice'
-    toast.error(errorMessage)
-    console.error(errorMessage)
+  } catch (e) {
+    const msg = e?.response?.data?.message || 'Failed to save notice'
+    toast.error(msg)
+    console.error(e)
+  } finally {
+    saving.value = false
   }
 }
+
+/* ---------- summary counts ---------- */
+const totalCompanies = computed(() => companiesList.value.length)
+const totalDepartments = computed(() => departmentsList.value.length)
+const totalEmployees = computed(() => employeesList.value.length)
 </script>
 
-
 <template>
-  <div class="my-container space-y-2">
-    <div class="card-bg md:p-8 p-4 mx-4">
-      <h2 class="title-lg text-center">Add Notice</h2>
-      <form @submit.prevent="saveNotice" class="space-y-4">
-        <div class="grid gap-4">
-          <div class="border p-4 rounded-md bg-gray-100">
-            <p class="title-md">Notice Info</p>
-            <hr class="my-2" />
-            <div class="grid md:grid-cols-2 gap-4">
-              <div class="w-full">
-                <label>
-                  <input type="checkbox" v-model="form.all_companies" @change="toggleAllCompany" />
-                  Select All Companies
+  <div class="mx-auto max-w-6xl px-3 md:px-6 py-4">
+    <!-- Page header -->
+    <div class="flex items-center justify-between mb-5">
+      <div>
+        <h1 class="text-2xl md:text-3xl font-semibold tracking-tight">Add Notice</h1>
+        <p class="text-sm text-gray-500">Fields marked <span class="text-red-500">*</span> are required.</p>
+      </div>
+      <div class="hidden md:flex gap-2">
+        <RouterLink
+          to="/hrd/notice"
+          class="px-3.5 py-2 rounded-xl border hover:bg-gray-50 text-sm"
+        >
+          Cancel
+        </RouterLink>
+        <button
+          :disabled="!canSave"
+          @click="saveNotice"
+          class="px-4 py-2 rounded-xl text-white text-sm"
+          :class="canSave ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-400 cursor-not-allowed'"
+        >
+          {{ saving ? 'Saving…' : 'Save' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <!-- Companies -->
+      <div class="rounded-2xl border bg-white/80 backdrop-blur p-4 shadow-sm hover:shadow transition">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-100 to-blue-50">
+              <svg viewBox="0 0 24 24" class="h-5 w-5 text-blue-600"><path fill="currentColor" d="M3 10v10h18V10H3zm9-7l9 7H3l9-7z"/></svg>
+            </span>
+            <div>
+              <div class="text-[11px] uppercase tracking-wide text-gray-500">Companies</div>
+              <div class="font-semibold">
+                {{ form.all_companies ? 'All' : selectedCompanies.length }} / {{ totalCompanies }}
+              </div>
+            </div>
+          </div>
+          <div class="text-[11px] text-gray-500 hidden md:block" v-if="!form.all_companies && selectedCompanies.length">
+            <span
+              v-for="(n,i) in shortChips(selectedCompanies,'name',3).head"
+              :key="'c'+i"
+              class="px-2 py-0.5 rounded-full bg-gray-100 mr-1"
+            >{{ n }}</span>
+            <span v-if="shortChips(selectedCompanies,'name',3).more">+{{ shortChips(selectedCompanies,'name',3).more }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Departments -->
+      <div class="rounded-2xl border bg-white/80 backdrop-blur p-4 shadow-sm hover:shadow transition">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-purple-100 to-purple-50">
+              <svg viewBox="0 0 24 24" class="h-5 w-5 text-purple-600"><path fill="currentColor" d="M3 5h18v2H3V5zm3 4h12v10H6V9z"/></svg>
+            </span>
+            <div>
+              <div class="text-[11px] uppercase tracking-wide text-gray-500">Departments</div>
+              <div class="font-semibold">
+                {{ form.all_departments ? 'All' : selectedDepartments.length }} / {{ totalDepartments }}
+              </div>
+            </div>
+          </div>
+          <div class="text-[11px] text-gray-500 hidden md:block" v-if="!form.all_departments && selectedDepartments.length">
+            <span
+              v-for="(n,i) in shortChips(selectedDepartments,'name',3).head"
+              :key="'d'+i"
+              class="px-2 py-0.5 rounded-full bg-gray-100 mr-1"
+            >{{ n }}</span>
+            <span v-if="shortChips(selectedDepartments,'name',3).more">+{{ shortChips(selectedDepartments,'name',3).more }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Employees -->
+      <div class="rounded-2xl border bg-white/80 backdrop-blur p-4 shadow-sm hover:shadow transition">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-50">
+              <svg viewBox="0 0 24 24" class="h-5 w-5 text-emerald-600"><path fill="currentColor" d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-4 0-8 2-8 6v2h16v-2c0-4-4-6-8-6z"/></svg>
+            </span>
+            <div>
+              <div class="text-[11px] uppercase tracking-wide text-gray-500">Employees</div>
+              <div class="font-semibold">
+                {{ form.all_employees ? 'All' : selectedEmployees.length }} / {{ totalEmployees }}
+              </div>
+            </div>
+          </div>
+          <div class="text-[11px] text-gray-500 hidden md:block" v-if="!form.all_employees && selectedEmployees.length">
+            <span
+              v-for="(n,i) in shortChips(selectedEmployees,'name',3).head"
+              :key="'e'+i"
+              class="px-2 py-0.5 rounded-full bg-gray-100 mr-1"
+            >{{ n }}</span>
+            <span v-if="shortChips(selectedEmployees,'name',3).more">+{{ shortChips(selectedEmployees,'name',3).more }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <form @submit.prevent="saveNotice" class="space-y-8">
+      <!-- Type -->
+      <section class="rounded-2xl border bg-white/70 p-5 shadow-sm">
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-semibold">Notice Type</h3>
+          <div class="inline-flex rounded-xl border overflow-hidden">
+            <button
+              type="button"
+              class="px-4 py-2 text-sm"
+              :class="form.type === 1 ? 'bg-blue-600 text-white' : 'bg-white hover:bg-gray-50'"
+              @click="form.type = 1"
+            >
+              General
+            </button>
+            <button
+              type="button"
+              class="px-4 py-2 text-sm border-l"
+              :class="form.type === 2 ? 'bg-blue-600 text-white' : 'bg-white hover:bg-gray-50'"
+              @click="form.type = 2"
+            >
+              Policy
+            </button>
+          </div>
+        </div>
+        <p class="text-xs text-gray-500 mt-2">
+          Policies usually don’t require publish/expire dates and remain visible until replaced.
+        </p>
+      </section>
+
+      <!-- Audience & Scope -->
+      <section class="rounded-2xl border bg-white/70 p-5 shadow-sm space-y-6">
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-semibold">Audience & Scope</h3>
+          <span class="text-xs text-gray-500">Define who should see this notice</span>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-6">
+
+          <div class="md:col-span-3 flex justify-between gap-4">
+            <!-- Publish -->
+            <div class="w-full">
+              <label class="font-medium">Publish Date <span class="text-red-500">*</span></label>
+              <input v-model="form.published_at" type="date" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500" />
+              <p v-if="errors.published_at" class="text-red-500 text-xs mt-1">{{ errors.published_at }}</p>
+            </div>
+
+            <!-- Expire -->
+            <div class="w-full">
+              <label class="font-medium">Expire Date</label>
+              <input v-model="form.expired_at" type="date" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500" />
+              <p v-if="errors.expired_at" class="text-red-500 text-xs mt-1">{{ errors.expired_at }}</p>
+            </div>
+
+          </div>
+
+          <div class="space-y-2 md:col-span-3">
+            <!-- Companies -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <label class="font-medium">Companies</label>
+                <div class="inline-flex rounded-lg border overflow-hidden">
+                  <button
+                    type="button"
+                    class="px-3 py-1.5 text-xs"
+                    :class="modeCompanies==='all' ? 'bg-blue-600 text-white' : 'bg-white hover:bg-gray-50'"
+                    @click="modeCompanies = 'all'"
+                  >All</button>
+                  <button
+                    type="button"
+                    class="px-3 py-1.5 text-xs border-l"
+                    :class="modeCompanies==='custom' ? 'bg-blue-600 text-white' : 'bg-white hover:bg-gray-50'"
+                    @click="modeCompanies = 'custom'"
+                  >Custom</button>
+                </div>
+              </div>
+              <MultiselectDropdown
+                v-model="selectedCompanies"
+                :options="companiesList"
+                :multiple="true"
+                :searchable="true"
+                track-by="id"
+                label="name"
+                placeholder="Select companies"
+              />
+            </div>
+            <!-- Departments -->
+            <div class="space-y-22">
+              <div class="flex items-center justify-between">
+                <label class="font-medium">Departments</label>
+                <div class="inline-flex rounded-lg border overflow-hidden">
+                  <button
+                    type="button"
+                    class="px-3 py-1.5 text-xs"
+                    :class="modeDepartments==='all' ? 'bg-purple-600 text-white' : 'bg-white hover:bg-gray-50'"
+                    @click="modeDepartments = 'all'"
+                  >All</button>
+                  <button
+                    type="button"
+                    class="px-3 py-1.5 text-xs border-l"
+                    :class="modeDepartments==='custom' ? 'bg-purple-600 text-white' : 'bg-white hover:bg-gray-50'"
+                    @click="modeDepartments = 'custom'"
+                  >Custom</button>
+                </div>
+              </div>
+              <MultiselectDropdown
+                v-model="selectedDepartments"
+                :options="departmentsList"
+                :multiple="true"
+                :searchable="true"
+                track-by="id"
+                label="name"
+                placeholder="Select departments"
+              />
+            </div>
+          </div>
+          
+
+          <!-- Employees -->
+          <div class="space-y-2 md:col-span-3">
+            <div class="flex items-center justify-between">
+              <label class="font-medium">Employees</label>
+              <div class="inline-flex items-center gap-3">
+                <span class="text-xs text-gray-500">Selected {{ selectedEmployees.length }} / {{ totalEmployees }}</span>
+                <div class="inline-flex rounded-lg border overflow-hidden">
+                  <button
+                    type="button"
+                    class="px-3 py-1.5 text-xs"
+                    :class="modeEmployees==='all' ? 'bg-emerald-600 text-white' : 'bg-white hover:bg-gray-50'"
+                    @click="modeEmployees = 'all'"
+                  >All</button>
+                  <button
+                    type="button"
+                    class="px-3 py-1.5 text-xs border-l"
+                    :class="modeEmployees==='custom' ? 'bg-emerald-600 text-white' : 'bg-white hover:bg-gray-50'"
+                    @click="modeEmployees = 'custom'"
+                  >Custom</button>
+                </div>
+              </div>
+            </div>
+            <MultiselectDropdown
+              v-model="selectedEmployees"
+              :options="employeesList"
+              :multiple="true"
+              :searchable="true"
+              track-by="id"
+              label="name"
+              placeholder="Select employees"
+            />
+          </div>
+        </div>
+      </section>
+
+      <!-- Content -->
+      <section class="rounded-2xl border bg-white/70 p-5 shadow-sm space-y-6">
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-semibold">Notice Content</h3>
+          <span class="text-xs text-gray-500">Craft the headline & attach relevant docs</span>
+        </div>
+
+        <div>
+          <label class="block font-medium mb-1">Title <span class="text-red-500">*</span></label>
+          <input v-model="form.title" type="text" class="w-full p-2.5 border rounded focus:ring-2 focus:ring-blue-500" />
+          <p v-if="errors.title" class="text-red-500 text-xs mt-1">{{ errors.title }}</p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-4 items-start">
+          <div class="space-y-2">
+            <label class="block font-medium">Attachment</label>
+
+            <!-- Dropzone -->
+            <div
+              class="rounded-xl border border-dashed p-5 transition relative"
+              :class="dropActive ? 'bg-blue-50 border-blue-300' : 'hover:bg-gray-50'"
+              @dragover="onDragOver"
+              @dragleave="onDragLeave"
+              @drop="onDrop"
+            >
+              <div class="flex items-center justify-between gap-3">
+                <div class="text-sm text-gray-600">
+                  <div class="font-medium">Drag & drop or click to upload</div>
+                  <div>JPG, JPEG, PNG, PDF, DOC, DOCX (≤ 2MB)</div>
+                </div>
+                <label class="inline-flex items-center">
+                  <input
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
+                    @change="onFilePick"
+                    class="hidden"
+                  />
+                  <span class="px-4 py-2 rounded-lg border bg-white hover:bg-gray-50 cursor-pointer text-sm">
+                    Browse…
+                  </span>
                 </label>
-                <MultiselectDropdown
-                  v-model="selectedCompanies"
-                  :options="companies"
-                  :multiple="true"
-                  :searchable="true"
-                  placeholder="Select companies"
-                  track-by="id"
-                  label="name"
-                  :disabled="form.all_companies"
-                />
               </div>
 
-              <div>
-                <label>Type*</label>
-                <select
-                  id="type"
-                  v-model="form.type"
-                  class="w-full border rounded px-3 py-2"
-                  required
-                >
-                  <option value="1">General</option>
-                  <option value="2">Policy</option>
-                </select>
-              </div>
-              <div>
-                <label>Publish Date*</label>
-                <input
-                  v-model="form.published_at"
-                  type="date"
-                  class="w-full p-2 border rounded"
-                  required
-                />
-              </div>
-
-              <div>
-                <label>Expired Date*</label>
-                <input
-                  v-model="form.expired_at"
-                  type="date"
-                  class="w-full p-2 border rounded"
-                  required
-                />
-              </div>
-              <div class="col-span-2 flex justify-between gap-8">
-                <div class="w-full">
-                  <label>
-                    <input
-                      type="checkbox"
-                      v-model="form.all_departments"
-                      @change="toggleAllDepartments"
-                    />
-                    Select All Departments
-                  </label>
-                  <MultiselectDropdown
-                    v-model="selectedDepartments"
-                    :options="departmentStore.departments"
-                    :multiple="true"
-                    :searchable="true"
-                    placeholder="Select departments"
-                    track-by="id"
-                    label="name"
-                    :disabled="form.all_departments"
-                  />
-                </div>
-                <div class="w-full">
-                  <label>
-                    <input
-                      type="checkbox"
-                      v-model="form.all_employees"
-                      @change="toggleAllEmployees"
-                    />
-                    Select All Employees
-                  </label>
-                  <MultiselectDropdown
-                    v-model="selectedEmployees"
-                    :options="departmentStore.employees"
-                    :multiple="true"
-                    :searchable="true"
-                    track-by="id"
-                    label="name"
-                    placeholder="Select Employees"
-                    :disabled="form.all_employees"
-                  />
-                </div>
-              </div>
-
-              <div class="col-span-full">
-                <label>Title*</label>
-                <input
-                  v-model="form.title"
-                  type="text"
-                  class="w-full p-2 border rounded"
-                  required
-                />
-              </div>
-
-              <div>
-                <label>File</label>
-                <input @change="fileUploadLink" type="file" class="w-full p-2 border rounded" />
-              </div>
-
-              <div class="col-span-full">
-                <label>Description</label>
-                <TextEditor
-                  v-model="form.description"
-                  cols="30"
-                  rows="10"
-                  class="w-full"
-                ></TextEditor>
+              <div v-if="form.file" class="mt-3 flex items-center justify-between bg-white rounded-lg border p-2.5">
+                <span class="text-sm truncate">
+                  <span class="text-gray-500 mr-1">Selected:</span>
+                  <span class="font-medium">{{ form.file?.name }}</span>
+                </span>
+                <button type="button" class="px-3 py-1.5 rounded-lg border hover:bg-gray-50 text-sm" @click="clearFile">
+                  Remove
+                </button>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="flex justify-center gap-4">
-          <RouterLink
-            :to="{ name: 'UserList' }"
-            type="button"
-            class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-          >
-            Cancel
-          </RouterLink>
-          <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-            Save
-          </button>
+        <div>
+          <label class="block font-medium mb-1">Description</label>
+          <TextEditor v-model="form.description" class="w-full" />
         </div>
-      </form>
-    </div>
+      </section>
+
+      <!-- Bottom actions (mobile-first) -->
+      <div class="sticky bottom-0 z-10 bg-white/90 backdrop-blur flex justify-end gap-2 p-3 rounded-2xl border shadow-sm md:hidden">
+        <RouterLink
+          to="/hrd/notice"
+          class="px-3.5 py-2 rounded-xl border hover:bg-gray-50 text-sm"
+        >
+          Cancel
+        </RouterLink>
+        <button
+          :disabled="!canSave"
+          type="submit"
+          class="px-4 py-2 rounded-xl text-white text-sm"
+          :class="canSave ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-400 cursor-not-allowed'"
+        >
+          {{ saving ? 'Saving…' : 'Save' }}
+        </button>
+      </div>
+
+      <!-- Desktop save row -->
+      <div class="hidden md:flex items-center justify-end gap-2">
+        <RouterLink
+          to="/hrd/notice"
+          class="px-3.5 py-2 rounded-xl border hover:bg-gray-50 text-sm"
+        >
+          Cancel
+        </RouterLink>
+        <button
+          :disabled="!canSave"
+          type="submit"
+          class="px-4 py-2 rounded-xl text-white text-sm"
+          :class="canSave ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-400 cursor-not-allowed'"
+        >
+          {{ saving ? 'Saving…' : 'Save' }}
+        </button>
+      </div>
+    </form>
   </div>
 </template>

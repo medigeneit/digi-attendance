@@ -2,6 +2,7 @@
 import LoaderView from '@/components/common/LoaderView.vue'
 import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import TextEditor from '@/components/TextEditor.vue'
+
 import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
 import { useNoticeStore } from '@/stores/notice'
@@ -13,291 +14,550 @@ import { useToast } from 'vue-toastification'
 const toast = useToast()
 const router = useRouter()
 const route = useRoute()
+
 const isLoading = ref(false)
+const saving = ref(false)
 
 const noticeStore = useNoticeStore()
 const companyStore = useCompanyStore()
 const departmentStore = useDepartmentStore()
+
 const { companies } = storeToRefs(companyStore)
-const { employees } = storeToRefs(departmentStore)
+const { employees } = storeToRefs(departmentStore) // ref([])
+
+// Local, derived refs for safety in template
+const departmentsList = computed(() => departmentStore.departments || [])
+const employeesList = computed(() => Array.isArray(employees.value) ? employees.value : [])
+const companiesList = computed(() => companies.value || [])
 
 const form = reactive({
   title: '',
-  type: '',
+  type: 1, // 1=General, 2=Policy
   description: '',
   published_at: '',
   expired_at: '',
-  company_id: 'all',
-  department_id: '',
-  file: '',
   all_companies: false,
   all_departments: false,
   all_employees: false,
+  file_url: null,
 })
 
+// Multi-select states
 const selectedCompanies = ref([])
 const selectedDepartments = ref([])
 const selectedEmployees = ref([])
 
-const company_ids = computed(() => selectedCompanies.value.map((comp) => comp.id))
-const department_ids = computed(() => selectedDepartments.value.map((dep) => dep.id))
-const employee_ids = computed(() => selectedEmployees.value.map((emp) => emp.id))
+// Upload states
+const selectedFile = ref(null) // Blob|null
+const uploadPct = ref(0)
+const isUploading = ref(false)
+const showConfirm = ref(false)
+let abortController = null
 
-const toggleAllCompany = () => {
-  selectedCompanies.value = form.all_companies
-    ? [...companyStore.companies]
-    : []
+const fileName = computed(() => selectedFile.value?.name || '')
+const fileSizeMB = computed(() =>
+  selectedFile.value ? (selectedFile.value.size / (1024 * 1024)).toFixed(2) : '0.00'
+)
+
+// IDs computed
+const company_ids = computed(() => selectedCompanies.value.map(c => c.id))
+const department_ids = computed(() => selectedDepartments.value.map(d => d.id))
+const employee_ids = computed(() => selectedEmployees.value.map(e => e.id))
+
+/* ---------- Helpers ---------- */
+const justDate = (value) => {
+  if (!value) return ''
+  const part = String(value).split(' ')[0]
+  return part.includes('-') ? part : ''
 }
 
-const toggleAllDepartments = () => {
-  selectedDepartments.value = form.all_departments
-    ? [...departmentStore.departments]
-    : []
+const shortChips = (items, labelKey = 'name', limit = 3) => {
+  const arr = Array.isArray(items) ? items : []
+  const head = arr.slice(0, limit).map(x => x?.[labelKey] ?? '—')
+  const more = Math.max(0, arr.length - limit)
+  return { head, more }
 }
 
-const toggleAllEmployees = () => {
-  if (form.all_employees) {
-    employee_ids.value = []
-  }
-}
-
-watch(selectedCompanies, (newList) => {
-  form.all_companies = newList.length === companyStore.companies.length
-})
-
-watch(selectedDepartments, (newList) => {
-  form.all_departments = newList.length === departmentStore.departments.length
-})
-
-watch(() => form.all_companies, async (allCompany) => {
-  if (allCompany) {
-    await departmentStore.fetchDepartments()
-  }
-})
-
-watch(() => form.all_departments, async (allDepartment) => {
-  if (allDepartment) {
-    await departmentStore.fetchDepartmentEmployee('all')
-  }
-})
-
-watch(company_ids, async (newCompanyIds) => {
-  if (newCompanyIds.length) {
-    await departmentStore.fetchDepartments(newCompanyIds)
-  }
-})
-
-watch(department_ids, async (newDepartmentIds) => {
-  if (newDepartmentIds.length) {
-    await departmentStore.fetchDepartmentEmployee(newDepartmentIds)
-  }
-})
-
-const fileUploadLink = async (event) => {
-  const file = event.target.files[0]
-  if (file) {
-    const formData = new FormData()
-    formData.append('file', file)
-    const response = await noticeStore.fetchFileUpload(formData)
-    form.file = response?.url
-  }
-}
-
-const updateFormattedDate = (date) => {
-  if (!date) return
-  const datePart = date.split(' ')[0]
-  if (!datePart.includes('-')) return 'Invalid Date Format'
-  return datePart
-}
-
-const loadNotice = async () => {
+const validDateRange = computed(() => {
+  if (form.type === 2) return true // Policy: dates hidden/ignored
+  if (!form.published_at || !form.expired_at) return true
   try {
-    const noticeId = route.params.id
-    const notice = await noticeStore.fetchNotice(noticeId)
-    form.title = notice.title
-    form.type = notice.type
-    form.file = notice.file
-    form.published_at = updateFormattedDate(notice.published_at)
-    form.expired_at = updateFormattedDate(notice.expired_at)
-    form.description = notice.description
-    form.company_id = notice.company_id ?? 'all'
-    form.department_id = notice.department_id
-    selectedCompanies.value = notice.companies_notice
-    selectedDepartments.value = notice.departments
-    selectedEmployees.value = notice.employees
+    const p = new Date(form.published_at)
+    const e = new Date(form.expired_at)
+    return e >= p
+  } catch {
+    return true
+  }
+})
 
-    form.all_companies = notice.companies_notice.length === 0
-    form.all_departments = notice.departments.length === 0
-    form.all_employees = notice.employees.length === 0
+const canSave = computed(() =>
+  !!form.title &&
+  !isUploading.value &&
+  validDateRange.value
+)
+
+/* ---------- Mode segmented toggles ---------- */
+const modeCompanies = computed({
+  get: () => (form.all_companies ? 'all' : 'custom'),
+  set: (v) => {
+    form.all_companies = (v === 'all')
+    selectedCompanies.value = form.all_companies ? [...companiesList.value] : []
+  }
+})
+const modeDepartments = computed({
+  get: () => (form.all_departments ? 'all' : 'custom'),
+  set: (v) => {
+    form.all_departments = (v === 'all')
+    selectedDepartments.value = form.all_departments ? [...departmentsList.value] : []
+  }
+})
+const modeEmployees = computed({
+  get: () => (form.all_employees ? 'all' : 'custom'),
+  set: (v) => {
+    form.all_employees = (v === 'all')
+    selectedEmployees.value = form.all_employees ? [...employeesList.value] : []
+  }
+})
+
+/* ---------- Dependent Loading ---------- */
+// Companies → Departments
+watch(() => form.all_companies, async (all) => {
+  if (all) await departmentStore.fetchDepartments()
+})
+watch(company_ids, async (ids) => {
+  if (!form.all_companies) await departmentStore.fetchDepartments(ids)
+})
+
+// Departments → Employees
+watch(() => form.all_departments, async (all) => {
+  if (all) await departmentStore.fetchDepartmentEmployee('all')
+})
+watch(department_ids, async (ids) => {
+  if (!form.all_departments) await departmentStore.fetchDepartmentEmployee(ids)
+})
+
+// Keep “Select All Employees” in sync with list size
+watch([selectedEmployees, employees], ([sel, all]) => {
+  const total = Array.isArray(all) ? all.length : 0
+  form.all_employees = total > 0 && sel.length === total
+})
+
+/* ---------- Load one notice ---------- */
+const loadNotice = async () => {
+  const id = route.params.id
+  try {
+    const notice = await noticeStore.fetchNotice(id)
+
+    form.title = notice.title ?? ''
+    form.type = Number(notice.type ?? 1)
+    form.published_at = justDate(notice.published_at)
+    form.expired_at = justDate(notice.expired_at)
+    form.description = notice.description ?? ''
+    form.file_url = notice.file_url || notice.file || null
+
+    selectedCompanies.value = notice.companies_notice || []
+    selectedDepartments.value = notice.departments || []
+    selectedEmployees.value = notice.employees || []
+
+    // heuristic: empty list => all
+    form.all_companies = (notice.companies_notice?.length ?? 0) === 0
+    form.all_departments = (notice.departments?.length ?? 0) === 0
+    form.all_employees = (notice.employees?.length ?? 0) === 0
+
+    // If any “all” is true, ensure selections reflect it for preview chips
+    if (form.all_companies) selectedCompanies.value = [...companiesList.value]
+    if (form.all_departments) selectedDepartments.value = [...departmentsList.value]
+    if (form.all_employees) selectedEmployees.value = [...employeesList.value]
   } catch (error) {
-    const errorMessage = error.response?.data?.message || 'Failed to load notice data'
-    toast.error(errorMessage)
+    const msg = error?.response?.data?.message || 'Failed to load notice data'
+    toast.error(msg)
     router.push({ name: 'NoticeList' })
   }
 }
 
-const updateNotice = async () => {
+/* ---------- File Upload (confirm + progress + cancel) ---------- */
+const onPickFile = (e) => {
+  const f = e?.target?.files?.[0]
+  if (!f) return
+  // basic guard
+  const ok = [
+    'image/jpeg','image/jpg','image/png',
+    'application/pdf','application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ]
+  if (!ok.includes(f.type)) {
+    toast.error('Unsupported file type. Allowed: jpg, jpeg, png, pdf, doc, docx.')
+    return
+  }
+  if (f.size > 2 * 1024 * 1024) {
+    toast.error('File size must be ≤ 2MB.')
+    return
+  }
+  selectedFile.value = f
+  showConfirm.value = true
+}
+
+const startUpload = async () => {
   try {
-    const dataToSend = {
-      ...form,
+    const id = route.params.id
+    if (!(selectedFile.value instanceof Blob)) return
+
+    uploadPct.value = 0
+    isUploading.value = true
+    abortController = new AbortController()
+
+    const notice = await noticeStore.updateNoticeFile(
+      id,
+      selectedFile.value,
+      {
+        onProgress: (pct) => (uploadPct.value = pct),
+        signal: abortController.signal,
+      }
+    )
+
+    form.file_url = notice?.file_url || notice?.file || form.file_url
+    toast.success('File uploaded successfully.')
+  } catch (err) {
+    if (err?.name === 'CanceledError' || err?.message === 'canceled') {
+      toast.info('Upload canceled.')
+    } else {
+      const msg = err?.response?.data?.message || err?.message || 'Upload failed.'
+      toast.error(msg)
+    }
+  } finally {
+    isUploading.value = false
+    showConfirm.value = false
+    selectedFile.value = null
+    abortController = null
+  }
+}
+
+const cancelUpload = () => {
+  if (abortController) abortController.abort()
+}
+
+/* ---------- Update (JSON only) ---------- */
+const updateNotice = async () => {
+  if (!validDateRange.value) {
+    toast.error('Expire date must be the same or after Publish date.')
+    return
+  }
+  try {
+    saving.value = true
+    const id = route.params.id
+
+    const payload = {
+      title: form.title,
+      type: form.type,
+      description: form.description,
+      published_at: form.type === 2 ? null : (form.published_at || null),
+      expired_at: form.type === 2 ? null : (form.expired_at || null),
+
+      all_companies: !!form.all_companies,
+      all_departments: !!form.all_departments,
+      all_employees: !!form.all_employees,
+
       company_ids: company_ids.value,
       department_ids: department_ids.value,
       employee_ids: employee_ids.value,
     }
-    await noticeStore.updateNotice(route.params.id, dataToSend)
+
+    await noticeStore.updateNotice(id, payload)
     toast.success('Notice updated successfully')
-    router.push({ name: 'NoticeShow', params: { id: route.params.id } })
+    router.push({ name: 'NoticeShow', params: { id } })
   } catch (error) {
-    const errorMessage = error.response?.data?.message || 'Failed to update notice'
-    toast.error(errorMessage)
+    const msg = error?.response?.data?.message || error?.message || 'Failed to update notice'
+    toast.error(msg)
+  } finally {
+    saving.value = false
   }
 }
 
+/* ---------- Bootstrap ---------- */
 onMounted(async () => {
   isLoading.value = true
   await companyStore.fetchCompanies()
   await loadNotice()
   isLoading.value = false
 })
+
+/* ---------- Summary counts ---------- */
+const totalCompanies = computed(() => companiesList.value.length)
+const totalDepartments = computed(() => departmentsList.value.length)
+const totalEmployees = computed(() => employeesList.value.length)
 </script>
 
-
 <template>
-  <div class="my-container space-y-2">
+  <div class="my-container space-y-4">
     <div class="card-bg md:p-8 p-4 mx-4">
       <h2 class="title-lg text-center">Edit Notice</h2>
+
       <LoaderView v-if="isLoading" class="bg-gray-100 border shadow-none" />
-      <form v-else @submit.prevent="updateNotice" class="space-y-4">
-        <div class="grid gap-4">
-          <div class="space-y-6 ">
-            <div class="border p-4 rounded-md bg-white space-y-6">
-              <h2 class="text-lg">Notice Information</h2>
-              <div class="space-y-3">
-                <label>
-                  <input type="checkbox" v-model="form.all_companies" @change="toggleAllCompany" />
-                  Select All Companies
-                </label>
-                <MultiselectDropdown
-                  v-model="selectedCompanies"
-                  :options="companies"
-                  :multiple="true"
-                  :searchable="true"
-                  placeholder="Select companies"
-                  track-by="id"
-                  label="name"
-                  :disabled="form.all_companies"
-                />
-              </div>
 
-              <div class="flex justify-between md:flex-row flex-col items-center gap-4">
-                <div class="w-full">
-                  <label>Type*</label>
-                  <select
-                    id="type"
-                    v-model="form.type"
-                    class="w-full border rounded px-3 py-2"
-                    required
-                  >
-                    <option value="1">General</option>
-                    <option value="2">Policy</option>
-                  </select>
-                </div>
-  
-                <div class="w-full" v-if="form.type !== '2'">
-                  <label>Publish Date</label>
-                  <input v-model="form.published_at" type="date" class="w-full p-2 border rounded" />
-                </div>
-  
-                <div class="w-full" v-if="form.type !== '2'">
-                  <label>Expire Date</label>
-                  <input v-model="form.expired_at" type="date" class="w-full p-2 border rounded" />
-                </div>
-              </div>
-
-
-              <div class="col-span-3 flex justify-between gap-8">
-                <div class="w-full space-y-3">
-                  <label>
-                    <input
-                      type="checkbox"
-                      v-model="form.all_departments"
-                      @change="toggleAllDepartments"
-                    />
-                    Select All Departments
-                  </label>
-                  <MultiselectDropdown
-                    v-model="selectedDepartments"
-                    :options="departmentStore.departments"
-                    :multiple="true"
-                    :searchable="true"
-                    placeholder="Select departments"
-                    track-by="id"
-                    label="name"
-                    :disabled="form.all_departments"
-                  />
-                </div>
-                <div class="w-full space-y-3">
-                  <label>
-                    <input
-                      type="checkbox"
-                      v-model="form.all_employees"
-                      @change="toggleAllEmployees"
-                    />
-                    Select All Employees
-                  </label>
-                  <MultiselectDropdown
-                    v-model="selectedEmployees"
-                    :options="employees"
-                    :multiple="true"
-                    :searchable="true"
-                    placeholder="Select Employee"
-                    track-by="id"
-                    label="name"
-                    :disabled="form.all_employees"
-                  />
+      <form v-else @submit.prevent="updateNotice" class="space-y-5">
+        <!-- Summary Bar -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div class="rounded-xl border bg-white p-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100">
+                <svg viewBox="0 0 24 24" class="h-5 w-5 text-blue-600"><path fill="currentColor" d="M3 10v10h18V10H3zm9-7l9 7H3l9-7z"/></svg>
+              </span>
+              <div>
+                <div class="text-sm text-gray-500">Companies</div>
+                <div class="font-semibold">
+                  {{ form.all_companies ? 'All' : selectedCompanies.length }} / {{ totalCompanies }}
                 </div>
               </div>
             </div>
+          </div>
 
-            <div class="border p-4 rounded-md bg-white space-y-6">
-                <h2 class="text-lg">Notice Content</h2>
-                <div>
-                  <label>Title*</label>
-                  <input v-model="form.title" type="text" class="w-full p-2 border rounded" />
+          <div class="rounded-xl border bg-white p-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-purple-100">
+                <svg viewBox="0 0 24 24" class="h-5 w-5 text-purple-600"><path fill="currentColor" d="M3 5h18v2H3V5zm3 4h12v10H6V9z"/></svg>
+              </span>
+              <div>
+                <div class="text-sm text-gray-500">Departments</div>
+                <div class="font-semibold">
+                  {{ form.all_departments ? 'All' : selectedDepartments.length }} / {{ totalDepartments }}
                 </div>
-  
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-xl border bg-white p-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100">
+                  <svg viewBox="0 0 24 24" class="h-5 w-5 text-emerald-600"><path fill="currentColor" d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-4 0-8 2-8 6v2h16v-2c0-4-4-6-8-6z"/></svg>
+                </span>
                 <div>
-                  <label>File</label>
-                  <!-- Show existing file link if available -->
-                  <div v-if="form.file && typeof form.file === 'string'" class="mb-2">
-                    <a :href="form.file" target="_blank" class="text-blue-500 underline">
-                      View Current File
-                    </a>
+                  <div class="text-sm text-gray-500">Employees</div>
+                  <div class="font-semibold">
+                    {{ form.all_employees ? 'All' : selectedEmployees.length }} / {{ totalEmployees }}
                   </div>
-                  <!-- File Input -->
-                  <input type="file" @change="fileUploadLink" class="w-full p-2 border rounded" />
-  
-                  <!-- Show Selected File Name -->
-                  <!-- <p v-if="fileName" class="text-sm text-gray-600 mt-1">
-                    Selected File: {{ fileName }}
-                  </p> -->
                 </div>
-  
-                <div class="col-span-full">
-                  <label>Description</label>
-                  <TextEditor
-                    v-model="form.description"
-                    cols="30"
-                    rows="10"
-                    class="w-full px-4 py-2"
-                  ></TextEditor>
-                </div>
+              </div>
             </div>
-
           </div>
         </div>
 
-        <div class="flex justify-center gap-4">
+        <!-- Notice Info -->
+        <div class="border p-4 rounded-xl bg-white space-y-6 shadow-sm">
+          <h2 class="text-lg font-semibold">Notice Information</h2>
+
+          <!-- Type -->
+          <div class="grid md:grid-cols-3 gap-4">
+            <div class="w-full">
+              <label for="type" class="font-medium block mb-1">Type*</label>
+              <div class="inline-flex rounded-lg border overflow-hidden">
+                <button
+                  type="button"
+                  class="px-4 py-2 text-sm"
+                  :class="form.type === 1 ? 'bg-blue-600 text-white' : 'bg-white hover:bg-gray-50'"
+                  @click="form.type = 1"
+                >
+                  General
+                </button>
+                <button
+                  type="button"
+                  class="px-4 py-2 text-sm border-l"
+                  :class="form.type === 2 ? 'bg-blue-600 text-white' : 'bg-white hover:bg-gray-50'"
+                  @click="form.type = 2"
+                >
+                  Policy
+                </button>
+              </div>
+            </div>
+
+            <div class="w-full">
+              <label class="font-medium block mb-1">Publish Date</label>
+              <input v-model="form.published_at" type="date" class="w-full p-2 border rounded" />
+            </div>
+
+            <div class="w-full">
+              <label class="font-medium block mb-1">Expire Date</label>
+              <input v-model="form.expired_at" type="date" class="w-full p-2 border rounded" />
+              <p v-if="!validDateRange" class="text-xs text-red-600 mt-1">
+                Expire date must be the same or after Publish date.
+              </p>
+            </div>
+          </div>
+
+          <!-- Companies -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <label class="font-medium">Companies</label>
+              <div class="inline-flex rounded-lg border overflow-hidden">
+                <button
+                  type="button"
+                  class="px-3 py-1.5 text-xs"
+                  :class="modeCompanies==='all' ? 'bg-blue-600 text-white' : 'bg-white hover:bg-gray-50'"
+                  @click="modeCompanies = 'all'"
+                >All</button>
+                <button
+                  type="button"
+                  class="px-3 py-1.5 text-xs border-l"
+                  :class="modeCompanies==='custom' ? 'bg-blue-600 text-white' : 'bg-white hover:bg-gray-50'"
+                  @click="modeCompanies = 'custom'"
+                >Custom</button>
+              </div>
+            </div>
+            <div>
+
+              <MultiselectDropdown
+                v-model="selectedCompanies"
+                :options="companiesList"
+                :multiple="true"
+                :searchable="true"
+                placeholder="Select companies"
+                track-by="id"
+                label="name"
+                :disabled="form.all_companies"
+              />
+            </div>
+          </div>
+
+          <!-- Departments & Employees -->
+          <div class="grid md:grid-cols-2 gap-6">
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <label class="font-medium">Departments</label>
+                <div class="inline-flex rounded-lg border overflow-hidden">
+                  <button
+                    type="button"
+                    class="px-3 py-1.5 text-xs"
+                    :class="modeDepartments==='all' ? 'bg-purple-600 text-white' : 'bg-white hover:bg-gray-50'"
+                    @click="modeDepartments = 'all'"
+                  >All</button>
+                  <button
+                    type="button"
+                    class="px-3 py-1.5 text-xs border-l"
+                    :class="modeDepartments==='custom' ? 'bg-purple-600 text-white' : 'bg-white hover:bg-gray-50'"
+                    @click="modeDepartments = 'custom'"
+                  >Custom</button>
+                </div>
+              </div>
+              <MultiselectDropdown
+                v-model="selectedDepartments"
+                :options="departmentsList"
+                :multiple="true"
+                :searchable="true"
+                placeholder="Select departments"
+                track-by="id"
+                label="name"
+                :disabled="form.all_departments"
+              />
+            </div>
+
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <label class="font-medium">Employees</label>
+                <div class="inline-flex items-center gap-3">
+                  <span class="text-xs text-gray-500">
+                    Selected {{ selectedEmployees.length }} / {{ totalEmployees }}
+                  </span>
+                  <div class="inline-flex rounded-lg border overflow-hidden">
+                    <button
+                      type="button"
+                      class="px-3 py-1.5 text-xs"
+                      :class="modeEmployees==='all' ? 'bg-emerald-600 text-white' : 'bg-white hover:bg-gray-50'"
+                      @click="modeEmployees = 'all'"
+                    >All</button>
+                    <button
+                      type="button"
+                      class="px-3 py-1.5 text-xs border-l"
+                      :class="modeEmployees==='custom' ? 'bg-emerald-600 text-white' : 'bg-white hover:bg-gray-50'"
+                      @click="modeEmployees = 'custom'"
+                    >Custom</button>
+                  </div>
+                </div>
+              </div>
+              <MultiselectDropdown
+                v-model="selectedEmployees"
+                :options="employeesList"
+                :multiple="true"
+                :searchable="true"
+                placeholder="Select employee"
+                track-by="id"
+                label="name"
+                :disabled="form.all_employees"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Content -->
+        <div class="border p-4 rounded-xl bg-white space-y-6 shadow-sm">
+          <h2 class="text-lg font-semibold">Notice Content</h2>
+
+          <div>
+            <label class="font-medium block mb-1">Title*</label>
+            <input v-model="form.title" type="text" class="w-full p-2 border rounded" required />
+          </div>
+
+          <!-- File -->
+          <div class="space-y-2">
+            <label class="font-medium block mb-1">Attachment</label>
+
+            <!-- Existing file -->
+            <div v-if="form.file_url" class="mb-2">
+              <a :href="form.file_url" target="_blank" class="inline-flex items-center gap-2 text-blue-600 underline">
+                <svg viewBox="0 0 24 24" class="h-4 w-4"><path fill="currentColor" d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path fill="currentColor" d="M14 3v6h6"/></svg>
+                View Current File
+              </a>
+            </div>
+
+            <!-- Browse (drag-like) -->
+            <div
+              class="w-full rounded-lg border border-dashed p-4 hover:bg-gray-50 transition"
+            >
+              <div class="flex items-center justify-between gap-3">
+                <div class="text-sm text-gray-600">
+                  <div class="font-medium">Upload new file</div>
+                  <div>JPG, JPEG, PNG, PDF, DOC, DOCX (≤ 2MB)</div>
+                </div>
+                <label class="inline-flex items-center">
+                  <input
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
+                    @change="onPickFile"
+                    class="hidden"
+                    :disabled="isUploading"
+                  />
+                  <span class="px-4 py-2 rounded border bg-white hover:bg-gray-50 cursor-pointer">
+                    Browse…
+                  </span>
+                </label>
+              </div>
+
+              <!-- progress -->
+              <div v-if="isUploading" class="mt-3">
+                <div class="h-2 bg-gray-200 rounded overflow-hidden">
+                  <div class="h-2 bg-blue-600 transition-all" :style="{ width: uploadPct + '%' }"></div>
+                </div>
+                <div class="flex items-center justify-between mt-1 text-xs text-gray-600">
+                  <span>{{ uploadPct }}%</span>
+                  <button
+                    type="button"
+                    class="px-3 py-1 rounded border hover:bg-gray-50"
+                    @click="cancelUpload"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="font-medium block mb-1">Description</label>
+            <TextEditor v-model="form.description" class="w-full px-4 py-2" />
+          </div>
+        </div>
+
+        <!-- Action bar -->
+        <div class="sticky bottom-0 bg-white/90 backdrop-blur flex justify-center gap-4 p-3 rounded-xl border">
           <RouterLink
             :to="{ name: 'NoticeList' }"
             type="button"
@@ -305,11 +565,40 @@ onMounted(async () => {
           >
             Cancel
           </RouterLink>
-          <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-            Save
+          <button
+            :disabled="saving || isUploading || !canSave"
+            type="submit"
+            class="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700 disabled:opacity-60"
+          >
+            {{ saving ? 'Saving…' : 'Save' }}
           </button>
         </div>
       </form>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div v-if="showConfirm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
+        <h3 class="text-lg font-semibold">Upload this file?</h3>
+        <p class="text-sm text-gray-600 break-words">
+          <span class="font-medium">Name:</span> {{ fileName }}<br />
+          <span class="font-medium">Size:</span> {{ fileSizeMB }} MB
+        </p>
+        <div class="flex justify-end gap-3">
+          <button
+            class="px-4 py-2 rounded border hover:bg-gray-50"
+            @click="showConfirm = false; selectedFile = null"
+          >
+            Cancel
+          </button>
+          <button
+            class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+            @click="startUpload"
+          >
+            Upload
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>

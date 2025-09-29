@@ -4,6 +4,7 @@ import apiClient from '../axios';
 
 export const useNoticeStore = defineStore('notice', () => {
   // State
+  const users = ref([]);
   const notices = ref([]);
   const policies = ref([]);
   const notice = ref({});
@@ -118,6 +119,7 @@ export const useNoticeStore = defineStore('notice', () => {
   const fetchFileUpload = async (payload) => {
     try {
       isLoading.value = true;
+      
       const response = await apiClient.post('file-upload', payload, {
         headers: {
           'Content-Type': 'multipart/form-data'  // ✅ Content-Type ঠিক রাখা
@@ -133,16 +135,58 @@ export const useNoticeStore = defineStore('notice', () => {
 
   const createNotice = async (payload) => {
     try {
-      isLoading.value = true;
-      const response = await apiClient.post('/notices', payload);
-      notices.value.push(response.data.notices);
-      error.value = null;
+      isLoading.value = true
+      error.value = null
+
+      // 1) create WITHOUT file (pure JSON)
+      const { data } = await apiClient.post('/notices', {
+        title: payload.title,
+        type: payload.type,
+        description: payload.description,
+        published_at: payload.published_at,
+        expired_at: payload.expired_at,
+        all_companies: !!payload.all_companies,
+        all_departments: !!payload.all_departments,
+        all_employees: !!payload.all_employees,
+        company_ids: payload.company_ids || [],
+        department_ids: payload.department_ids || [],
+        employee_ids: payload.employee_ids || [],
+      })
+
+      let created = data?.notice
+
+      // 2) if file present → attach via /notices/{id}/file
+      if (created?.id && payload.file instanceof Blob) {
+        const fd = new FormData()
+        fd.append('file', payload.file, payload.file.name || 'attachment')
+
+        const up = await apiClient.post(`/notices/${created.id}/file`, fd, {
+          // খুব গুরুত্বপূর্ণ: FormData যেন stringify না হয়
+          transformRequest: [(d) => d],
+          // Content-Type সেট কোরো না; ব্রাউজার boundary সহ সেট করবে
+          headers: {},
+        })
+
+        created = up.data?.notice || created
+      }
+
+      if (created) {
+        // optimistic update
+        notices.value.unshift(created)
+      }
+
+      return created
     } catch (err) {
-      error.value = err.response?.data?.message || 'Something went wrong';
+      const apiMsg = err?.response?.data?.message
+      const valErrors = err?.response?.data?.errors
+      error.value = valErrors
+        ? Object.values(valErrors)?.[0]?.[0] || apiMsg
+        : (apiMsg || err?.message || 'Something went wrong')
+      throw err
     } finally {
-      isLoading.value = false;
+      isLoading.value = false
     }
-  };
+  }
 
   const createNoticeFeedback = async (id, payload) => {
     try {
@@ -158,8 +202,6 @@ export const useNoticeStore = defineStore('notice', () => {
   const updateNotice = async (id, payload) => {
     try {
       isLoading.value = true;
-      console.log({payload});
-      
       const response = await apiClient.put(`/notices/${id}`, payload);
       const index = users.value.findIndex((u) => u.id === id);
       if (index !== -1) {
@@ -172,6 +214,26 @@ export const useNoticeStore = defineStore('notice', () => {
       isLoading.value = false;
     }
   };
+
+  const updateNoticeFile = async (id, file, { onProgress, signal } = {}) => {
+   const fd = new FormData()
+      fd.append('file', file, file.name || 'attachment')
+
+      const { data } = await apiClient.post(`/notices/${id}/file`, fd, {
+        transformRequest: [(d) => d],
+        headers: {},
+        onUploadProgress: (evt) => {
+          if (onProgress && evt.total) {
+            const pct = Math.round((evt.loaded * 100) / evt.total)
+            onProgress(pct)
+          }
+        },
+        signal, // AbortController signal
+      })
+      return data?.notice
+  }
+
+  
 
   // Return state, getters, and actions
   return {
@@ -192,6 +254,7 @@ export const useNoticeStore = defineStore('notice', () => {
     fetchUserNotices,
     fetchNoticeDetails,
     fetchFeedbacks,
-    downloadFeedbackUserExcel
+    downloadFeedbackUserExcel,
+    updateNoticeFile
   };
 });
