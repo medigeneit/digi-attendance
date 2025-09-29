@@ -413,7 +413,6 @@ const totalEmployees = computed(() => employeesList.value.length)
                 placeholder="Select companies"
                 track-by="id"
                 label="name"
-                :disabled="form.all_companies"
               />
             </div>
           </div>
@@ -446,7 +445,6 @@ const totalEmployees = computed(() => employeesList.value.length)
                 placeholder="Select departments"
                 track-by="id"
                 label="name"
-                :disabled="form.all_departments"
               />
             </div>
 
@@ -481,7 +479,6 @@ const totalEmployees = computed(() => employeesList.value.length)
                 placeholder="Select employee"
                 track-by="id"
                 label="name"
-                :disabled="form.all_employees"
               />
             </div>
           </div>
