@@ -21,6 +21,7 @@ const props = defineProps({
   departmentId: { type: String, default: '' },
   employeeId: { type: String, default: '' },
   lineType: { type: String, default: '' },
+  status: { type: String, default: '' },
 
   userRole: { type: String, default: 'employee' },
 })
@@ -162,6 +163,7 @@ async function fetchTodos() {
       'line-type': props.lineType,
       'start-date': startDate,
       'end-date': endDate,
+      status: props.status,
     })
   }
 }
@@ -176,6 +178,7 @@ watch(
     'department-id': props.departmentId,
     'employee-id': props.employeeId,
     'line-type': props.lineType,
+    status: props.status,
     month: props.month,
   }),
   () => fetchTodos(),

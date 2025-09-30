@@ -187,7 +187,7 @@ const handleInputChange = (event) => {
 
 <template>
   <div>
-    <div class="px-4 py-2 flex items-center bg-gray-50 group gap-2">
+    <div class="px-4 py-2 flex items-center justify-between flex-wrap bg-gray-50 group gap-2">
       <slot name="before" :selected="selected"></slot>
 
       <slot
@@ -224,7 +224,7 @@ const handleInputChange = (event) => {
       />
 
       <button
-        class="btn-3 mx-4 h-7"
+        class="btn-3 h-7"
         @click.prevent="handleClickCurrentMonth"
         v-if="selected_type == 'month-view'"
       >
@@ -232,7 +232,7 @@ const handleInputChange = (event) => {
       </button>
 
       <button
-        class="btn-3 mx-4 h-7"
+        class="btn-3 h-7"
         @click.prevent="handleClickOnToday"
         v-if="selected_type == 'day-view'"
       >
@@ -240,7 +240,7 @@ const handleInputChange = (event) => {
       </button>
 
       <button
-        class="btn-3 px-2 py-2 mx-4 size-7 disabled:text-gray-300 disabled:border-gray-300"
+        class="btn-3 px-2 py-2 size-7 disabled:text-gray-300 disabled:border-gray-300"
         :class="{ 'animate-spin text-gray-300 border-gray-300 !bg-opacity-0': loading }"
         @click.prevent="emit('reloadClick')"
         :disabled="loading"
@@ -248,16 +248,33 @@ const handleInputChange = (event) => {
         <i class="fas fa-redo-alt"></i>
       </button>
 
-      <div class="ml-4 md:ml-auto flex items-center gap-2" v-if="selected_type == 'month-view'">
+      <div
+        class="md:ml-auto flex items-center gap-2 w-full lg:w-auto"
+        v-if="selected_type == 'month-view'"
+      >
         <button class="btn-3 h-7" @click.prevent="handleClickOnPreviousMonth">
-          Previous Month
+          <span class="fas fa-arrow-left"></span>
+          <span class="hidden lg:inline">Previous Month</span>
         </button>
-        <button class="btn-3 h-7" @click.prevent="handleClickOnNextMonth">Next Month</button>
+
+        <button class="btn-3 h-7 ml-auto" @click.prevent="handleClickOnNextMonth">
+          <span class="hidden lg:inline">Next Month</span>
+          <span class="fas fa-arrow-right"></span>
+        </button>
       </div>
 
-      <div class="ml-4 md:ml-auto flex items-center gap-2" v-if="selected_type == 'day-view'">
-        <button class="btn-3 h-7" @click.prevent="handleClickOnPreviousDay">Previous Day</button>
-        <button class="btn-3 h-7" @click.prevent="handleClickOnNextDay">Next Day</button>
+      <div
+        class="md:ml-auto flex items-center gap-2 w-full lg:w-auto"
+        v-if="selected_type == 'day-view'"
+      >
+        <button class="btn-3 h-7" @click.prevent="handleClickOnPreviousDay">
+          <span class="fas fa-arrow-left"></span>
+          <span class="hidden lg:inline">Previous Day</span>
+        </button>
+        <button class="btn-3 h-7 ml-auto" @click.prevent="handleClickOnNextDay">
+          <span class="hidden lg:inline">Next Day</span>
+          <span class="fas fa-arrow-right"></span>
+        </button>
       </div>
 
       <slot name="after" :selected="selected"></slot>
