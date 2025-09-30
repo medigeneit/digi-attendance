@@ -283,32 +283,16 @@ const refreshPaycutList = async () => { await fetchAttendance() }
             <td class="td">{{ log?.total_wpl_leave }}</td>
 
             <td class="td">
-              <div class="flex flex-col items-center gap-1">
-                <span class="text-xs text-gray-600">
-                  {{ log?.total_first_short_leave || 0 }} of {{ log?.actual_late_day || 0 }}
-                </span>
-                <div class="w-10 h-2 bg-gray-200 rounded">
-                  <div
-                    class="h-2 bg-amber-500 rounded"
-                    :style="{ width: ((toNum(log?.total_first_short_leave) / Math.max(1, toNum(log?.actual_late_day))) * 100) + '%' }"
-                  ></div>
-                </div>
-              </div>
+              <p class="text-xs w-10 text-gray-600">
+                {{ log?.total_first_short_leave || 0 }} of {{ log?.actual_late_day || 0 }}
+              </p>
             </td>
 
             <!-- Short Leave vs Actual Early -->
             <td class="td">
-              <div class="flex flex-col items-center gap-1">
-                <span class="text-xs text-gray-600">
-                  {{ log?.total_last_short_leave || 0 }} of {{ log?.actual_early_day || 0 }}
-                </span>
-                <div class="w-10 h-2 bg-gray-200 rounded">
-                  <div
-                    class="h-2 bg-blue-500 rounded"
-                    :style="{ width: ((toNum(log?.total_last_short_leave) / Math.max(1, toNum(log?.actual_early_day))) * 100) + '%' }"
-                  ></div>
-                </div>
-              </div>
+              <p class="text-xs w-10 text-gray-600">
+                {{ log?.total_last_short_leave || 0 }} of {{ log?.actual_early_day || 0 }}
+              </p>
             </td>
 
             <td class="td">
