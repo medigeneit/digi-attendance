@@ -526,7 +526,7 @@ onMounted(fetchNotice)
         @click.self="closeLightbox"
         tabindex="0"
       >
-        <div class="flex items-center mt-14 justify-end p-3 text-white">
+        <div class="flex items-center md:mt-14 justify-end p-3 text-white">
           <div class="flex items-center gap-2">
             <button class="btn-4 py-1" title="Zoom out" @click="zoomOut">−</button>
             <span class="px-2 text-sm">{{ Math.round(zoom * 100) }}%</span>
@@ -548,7 +548,7 @@ onMounted(fetchNotice)
           @dblclick="toggleZoom"
         >
           <div
-            class="w-full h-full mt-10 flex items-center justify-center"
+            class="w-full h-full md:mt-10 flex items-center justify-center"
             :style="{
               transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
               transition: dragging ? 'none' : 'transform 120ms ease',
