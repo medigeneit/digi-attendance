@@ -153,8 +153,6 @@ onMounted(async () => {
 
 <template>
   <div>
-    <!-- {{ props }} -->
-    <!-- {{ props }} -->
     <div class="border bg-white relative">
       <LoaderView
         v-if="todoStore.loading"
