@@ -75,20 +75,55 @@ onMounted(async () => {
 })
 
 /* ---------- dependent loading ---------- */
-// Companies → Departments
+/* Companies → Departments (and clear employees on scope change) */
 watch(() => form.all_companies, async (all) => {
-  if (all) await departmentStore.fetchDepartments()
-})
-watch(company_ids, async (ids) => {
-  if (!form.all_companies) await departmentStore.fetchDepartments(ids)
+  if (all) {
+    await departmentStore.fetchDepartments()
+  } else {
+    await departmentStore.fetchDepartments(company_ids.value)
+  }
+  // company scope বদলালে employees reset
+  departmentStore.employees = []
+  selectedEmployees.value = []
 })
 
-// Departments → Employees
-watch(() => form.all_departments, async (all) => {
-  if (all) await departmentStore.fetchDepartmentEmployee('all')
+watch(company_ids, async (ids) => {
+  if (!form.all_companies) {
+    await departmentStore.fetchDepartments(ids)
+    // company selection বদলালে employees reset
+    departmentStore.employees = []
+    selectedEmployees.value = []
+  }
 })
-watch(department_ids, async (ids) => {
-  if (!form.all_departments) await departmentStore.fetchDepartmentEmployee(ids)
+
+/* ---------- Departments → Employees (FIXED) ---------- */
+/* কোন কোন department থেকে employees আনবো—single source of truth */
+const effectiveDepartmentIds = computed(() => {
+  return form.all_departments
+    ? (departmentsList.value || []).map(d => d.id)   // "All" হলে বর্তমান লিস্টের সব dept
+    : department_ids.value                           // custom হলে নির্বাচিত dept
+})
+
+/* এই আইডি-সেট বদলালেই ফেচ হবে; না থাকলে employees ক্লিয়ার */
+watch(effectiveDepartmentIds, async (ids) => {
+  if (Array.isArray(ids) && ids.length > 0) {
+    await departmentStore.fetchDepartmentEmployee(ids)
+  } else {
+    departmentStore.employees = []
+    selectedEmployees.value = []
+  }
+}, { immediate: true })
+
+/* ---------- “All” মোডে লিস্ট বদলালে সিলেকশন sync ---------- */
+watch(departmentsList, (list) => {
+  if (form.all_departments) {
+    selectedDepartments.value = [...list]
+  }
+})
+watch(employeesList, (list) => {
+  if (form.all_employees) {
+    selectedEmployees.value = [...list]
+  }
 })
 
 /* ---------- sync “all_*” with actual selections ---------- */
@@ -215,6 +250,7 @@ const totalCompanies = computed(() => companiesList.value.length)
 const totalDepartments = computed(() => departmentsList.value.length)
 const totalEmployees = computed(() => employeesList.value.length)
 </script>
+
 
 <template>
   <div class="mx-auto max-w-6xl px-3 md:px-6 py-4">
@@ -407,7 +443,7 @@ const totalEmployees = computed(() => employeesList.value.length)
               />
             </div>
             <!-- Departments -->
-            <div class="space-y-22">
+            <div class="space-y-2">
               <div class="flex items-center justify-between">
                 <label class="font-medium">Departments</label>
                 <div class="inline-flex rounded-lg border overflow-hidden">
