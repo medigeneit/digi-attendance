@@ -17,6 +17,7 @@ const route = useRoute()
 
 const isLoading = ref(false)
 const saving = ref(false)
+const initializing = ref(true) // ⬅️ in-flight guard for first load
 
 const noticeStore = useNoticeStore()
 const companyStore = useCompanyStore()
@@ -119,55 +120,90 @@ const modeEmployees = computed({
   }
 })
 
-/* ---------- Dependent Loading ---------- */
+/* ---------- Dependent Loading (guarded by `initializing`) ---------- */
 // Companies → Departments
 watch(() => form.all_companies, async (all) => {
+  if (initializing.value) return
   if (all) await departmentStore.fetchDepartments()
 })
 watch(company_ids, async (ids) => {
+  if (initializing.value) return
   if (!form.all_companies) await departmentStore.fetchDepartments(ids)
 })
 
 // Departments → Employees
 watch(() => form.all_departments, async (all) => {
+  if (initializing.value) return
   if (all) await departmentStore.fetchDepartmentEmployee('all')
 })
 watch(department_ids, async (ids) => {
+  if (initializing.value) return
   if (!form.all_departments) await departmentStore.fetchDepartmentEmployee(ids)
 })
 
 // Keep “Select All Employees” in sync with list size
 watch([selectedEmployees, employees], ([sel, all]) => {
+  if (initializing.value) return
   const total = Array.isArray(all) ? all.length : 0
   form.all_employees = total > 0 && sel.length === total
 })
 
-/* ---------- Load one notice ---------- */
+/* ---------- Load one notice (handles empty arrays as ALL) ---------- */
 const loadNotice = async () => {
   const id = route.params.id
   try {
-    const notice = await noticeStore.fetchNotice(id)
+    const n = await noticeStore.fetchNotice(id)
 
-    form.title = notice.title ?? ''
-    form.type = Number(notice.type ?? 1)
-    form.published_at = justDate(notice.published_at)
-    form.expired_at = justDate(notice.expired_at)
-    form.description = notice.description ?? ''
-    form.file_url = notice.file_url || notice.file || null
+    // ---------- Basic fields ----------
+    form.title        = n.title ?? ''
+    form.type         = Number(n.type ?? 1)
+    form.published_at = justDate(n.published_at)
+    form.expired_at   = justDate(n.expired_at)
+    form.description  = n.description ?? ''
+    form.file_url     = n.file_url || n.file || null
 
-    selectedCompanies.value = notice.companies_notice || []
-    selectedDepartments.value = notice.departments || []
-    selectedEmployees.value = notice.employees || []
+    // ---------- STEP 1: Companies ----------
+    const hasCompanies = (n.companies_notice?.length ?? 0) > 0
+    form.all_companies = !hasCompanies
 
-    // heuristic: empty list => all
-    form.all_companies = (notice.companies_notice?.length ?? 0) === 0
-    form.all_departments = (notice.departments?.length ?? 0) === 0
-    form.all_employees = (notice.employees?.length ?? 0) === 0
+    // ensure companies list is present
+    if (companiesList.value.length === 0) {
+      await companyStore.fetchCompanies()
+    }
 
-    // If any “all” is true, ensure selections reflect it for preview chips
-    if (form.all_companies) selectedCompanies.value = [...companiesList.value]
-    if (form.all_departments) selectedDepartments.value = [...departmentsList.value]
-    if (form.all_employees) selectedEmployees.value = [...employeesList.value]
+    selectedCompanies.value = hasCompanies
+      ? n.companies_notice
+      : [...companiesList.value] // all companies
+
+    // Departments depend on companies
+    if (form.all_companies) {
+      await departmentStore.fetchDepartments() // all companies
+    } else {
+      await departmentStore.fetchDepartments(company_ids.value) // scoped
+    }
+
+    // ---------- STEP 2: Departments ----------
+    const hasDepartments = (n.departments?.length ?? 0) > 0
+    form.all_departments = !hasDepartments
+
+    selectedDepartments.value = hasDepartments
+      ? n.departments
+      : [...departmentsList.value] // all depts for chosen companies
+
+    // Employees depend on departments
+    if (form.all_departments) {
+      await departmentStore.fetchDepartmentEmployee('all')
+    } else {
+      await departmentStore.fetchDepartmentEmployee(department_ids.value)
+    }
+
+    // ---------- STEP 3: Employees ----------
+    const hasEmployees = (n.employees?.length ?? 0) > 0
+    form.all_employees = !hasEmployees
+
+    selectedEmployees.value = hasEmployees
+      ? n.employees
+      : [...employeesList.value] // all employees for selected depts
   } catch (error) {
     const msg = error?.response?.data?.message || 'Failed to load notice data'
     toast.error(msg)
@@ -276,9 +312,10 @@ const updateNotice = async () => {
 /* ---------- Bootstrap ---------- */
 onMounted(async () => {
   isLoading.value = true
-  await companyStore.fetchCompanies()
+  await companyStore.fetchCompanies() // companies আগে আনাই ভালো
   await loadNotice()
   isLoading.value = false
+  initializing.value = false // now watchers can react to user changes
 })
 
 /* ---------- Summary counts ---------- */
@@ -404,7 +441,6 @@ const totalEmployees = computed(() => employeesList.value.length)
               </div>
             </div>
             <div>
-
               <MultiselectDropdown
                 v-model="selectedCompanies"
                 :options="companiesList"
