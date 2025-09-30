@@ -2,7 +2,7 @@
 import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref, watch, nextTick } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import EmployeeDropdownInput from '../EmployeeDropdownInput.vue'
 import SelectDropdown from '../SelectDropdown.vue'
 
@@ -35,18 +35,20 @@ const selectedDepartmentId = ref(
     ? String(props.department_id)
     : props.initialValue.department_id && props.initialValue.department_id !== 'all'
       ? String(props.initialValue.department_id)
-      : ''
+      : '',
 )
-const selectedTypeId = ref(props.withType ? String(props.line_type || props.initialValue.line_type || 'all') : null)
+const selectedTypeId = ref(
+  props.withType ? String(props.line_type || props.initialValue.line_type || 'all') : null,
+)
 const selectedEmployeeId = ref(String(props.employee_id || props.initialValue.employee_id || ''))
 
 /* ---------- Options ---------- */
 const companyOptions = computed(() =>
-  (companies.value || []).map((c) => ({ id: String(c.id), label: c.name }))
+  (companies.value || []).map((c) => ({ id: String(c.id), label: c.name })),
 )
 
 const departmentOptions = computed(() =>
-  (departments.value || []).map((d) => ({ id: String(d.id), label: d.name }))
+  (departments.value || []).map((d) => ({ id: String(d.id), label: d.name })),
 )
 
 const typeOptions = computed(() =>
@@ -58,7 +60,7 @@ const typeOptions = computed(() =>
         { id: 'doctor', label: 'Doctor' },
         { id: 'academy_body', label: 'Academy Body' },
       ]
-    : []
+    : [],
 )
 
 /* ---------- Employees ---------- */
@@ -77,23 +79,35 @@ onMounted(async () => {
 })
 
 /* ---------- Props → Local sync ---------- */
-watch(() => props.company_id, (v) => {
-  const next = String(v || '')
-  if (next !== selectedCompanyId.value) selectedCompanyId.value = next
-})
-watch(() => props.department_id, (v) => {
-  const next = v === '' || v == null ? '' : String(v)
-  if (next !== selectedDepartmentId.value) selectedDepartmentId.value = next
-})
-watch(() => props.employee_id, (v) => {
-  const next = String(v || '')
-  if (next !== selectedEmployeeId.value) selectedEmployeeId.value = next
-})
-watch(() => props.line_type, (v) => {
-  if (!props.withType) return
-  const next = String(v || 'all')
-  if (next !== selectedTypeId.value) selectedTypeId.value = next
-})
+watch(
+  () => props.company_id,
+  (v) => {
+    const next = String(v || '')
+    if (next !== selectedCompanyId.value) selectedCompanyId.value = next
+  },
+)
+watch(
+  () => props.department_id,
+  (v) => {
+    const next = v === '' || v == null ? '' : String(v)
+    if (next !== selectedDepartmentId.value) selectedDepartmentId.value = next
+  },
+)
+watch(
+  () => props.employee_id,
+  (v) => {
+    const next = String(v || '')
+    if (next !== selectedEmployeeId.value) selectedEmployeeId.value = next
+  },
+)
+watch(
+  () => props.line_type,
+  (v) => {
+    if (!props.withType) return
+    const next = String(v || 'all')
+    if (next !== selectedTypeId.value) selectedTypeId.value = next
+  },
+)
 
 /* ---------- Watchers (Local → Emits) ---------- */
 // Company বদলালে chain reset (employee clear করা যুক্তিযুক্ত)
@@ -153,7 +167,7 @@ function applyFilter() {
   // 2) apply department
   if (selectedDepartmentId.value) {
     filtered = filtered.filter(
-      (e) => String(e.department_id) === String(selectedDepartmentId.value)
+      (e) => String(e.department_id) === String(selectedDepartmentId.value),
     )
   }
 
@@ -169,7 +183,9 @@ function applyFilter() {
   if (selectedEmployeeId.value) {
     const exists = mapped.some((e) => e.id === String(selectedEmployeeId.value))
     if (!exists) {
-      const found = rawEmployees.value.find((e) => String(e.id) === String(selectedEmployeeId.value))
+      const found = rawEmployees.value.find(
+        (e) => String(e.id) === String(selectedEmployeeId.value),
+      )
       if (found) {
         mapped = [formatEmployee(found), ...mapped]
       }
@@ -191,7 +207,16 @@ function emitAll() {
 let emitTimer = null
 function emitFilterChange() {
   if (emitTimer) clearTimeout(emitTimer)
-  emitTimer = setTimeout(() => emit('filter-change'), 0)
+  emitTimer = setTimeout(
+    () =>
+      emit('filter-change', {
+        company_id: selectedCompanyId.value,
+        department_id: selectedDepartmentId.value,
+        line_type: selectedTypeId.value,
+        employee_id: selectedEmployeeId.value,
+      }),
+    0,
+  )
 }
 
 /* ---------- Clear helpers ---------- */

@@ -33,6 +33,8 @@
     'Saturday',
   ]
 
+
+
   export const getWeekDay = (dateTime, weekDay = 'short') => {
     const date = new Date(dateTime)
     if (isNaN(date)) return ''
@@ -186,4 +188,10 @@ export function dateIsToday(givenDate){
 
   return  givenDate.getTime() === today.getTime();
 
+}
+
+
+export function getLastDateOfMonth(year, month) {
+  // month is 0-based (0 = January, 11 = December)
+  return new Date(year, month + 1, 0);
 }

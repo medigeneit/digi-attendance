@@ -1,6 +1,8 @@
 <script setup>
+import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import TodoSection from '@/components/todo/TodoSection.vue'
 import { useTodoStore } from '@/stores/useTodoStore'
+import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const todoStore = useTodoStore()
@@ -15,11 +17,42 @@ function handleTodoInputChange(changedSelected) {
     },
   })
 }
+
+const status = computed({
+  get: () => route.query?.status || '',
+  set: (value) => {
+    router.push({
+      query: { ...route.query, status: value || undefined },
+    })
+  },
+})
 </script>
 
 <template>
-  <div class="container mx-auto p-6">
+  <div class="container mx-auto">
     <!-- <h2 class="text-2xl font-bold mb-6">Todo List</h2> -->
+
+    <div class="flex mb-4 gap-4 mt-4">
+      <EmployeeFilter
+        :company_id="route.query?.company_id"
+        :department_id="route.query?.department_id"
+        :employee_id="route.query?.employee_id"
+        :line_type="route.query?.line_type"
+        :with-type="true"
+        :initial-value="$route.query"
+        @filter-change="handleTodoInputChange"
+        class="flex-grow"
+      />
+
+      <select
+        class="border-2 border-gray-300 rounded-md cursor-pointer relative block w-40 px-4 text-gray-800 text-sm"
+        v-model="status"
+      >
+        <option value="">--All Status--</option>
+        <option value="not-completed">Not Completed</option>
+        <option value="completed">Completed</option>
+      </select>
+    </div>
 
     <div v-if="todoStore.error && !todoStore.loading" class="text-center py-4 text-red-500">
       {{ todoStore.error }}
@@ -30,6 +63,10 @@ function handleTodoInputChange(changedSelected) {
       :month="route.query.month"
       :day="route.query.day"
       :type="route.query.type"
+      :companyId="route.query?.company_id"
+      :departmentId="route.query?.department_id"
+      :employeeId="route.query?.employee_id"
+      :lineType="route.query?.line_type"
       @changeInput="handleTodoInputChange"
       userRole="admin"
     >
