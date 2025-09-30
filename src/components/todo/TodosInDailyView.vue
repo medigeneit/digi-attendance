@@ -103,6 +103,13 @@ async function handleTodosRearrange() {
         <template #todoItems="{ allTodos }">
           <DraggableList :items="allTodos" ref="draggableTodos" handle="handle">
             <template #item="{ item: todo }">
+              <!-- <TodoItemCard
+                :todo="todo"
+                @clickTodo="(todo) => emit('clickTodo', todo)"
+                @clickEdit="(todo) => emit('clickEdit', todo)"
+                @clickDelete="(todo) => handleClickDelete(todo)"
+                @clickChangeStatus="(todo, status) => handleClickComplete(todo, status)"
+              /> -->
               <div
                 class="border rounded px-4 py-3 my-4 cursor-pointer flex items-center shadow-sm"
                 :class="{
