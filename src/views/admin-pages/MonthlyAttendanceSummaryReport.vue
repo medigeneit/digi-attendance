@@ -236,7 +236,7 @@ const refreshPaycutList = async () => { await fetchAttendance() }
           </tr>
         </thead>
 
-        <tbody class="text-center text-sm">
+        <tbody class="text-center text-xs">
           <tr
             v-for="(log, index) in summaryRows"
             :key="`${log?.user_id || 'u'}-${index}`"
@@ -333,14 +333,14 @@ const refreshPaycutList = async () => { await fetchAttendance() }
 
             <td class="td">{{ log?.payable_hour }}H</td>
 
-            <td class="td">
+            <td class="td ">
               <router-link
                 :to="{
                   name: 'EmployeeAttendance',
                   query: { ...route.query, employee_id: log?.user_id, date: selectedMonth }
                 }"
                 target="_blank"
-                class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm font-medium bg-blue-50 text-blue-700 hover:bg-blue-100"
+                class="inline-flex w-20 items-center gap-1 rounded-md px-1 py-1 font-medium bg-blue-50 text-blue-700 hover:bg-blue-100"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none"
                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -353,7 +353,7 @@ const refreshPaycutList = async () => { await fetchAttendance() }
         </tbody>
 
         <tfoot>
-          <tr class="bg-gray-100 font-semibold text-center">
+          <tr class="bg-gray-100 font-semibold text-sm text-center">
             <td colspan="17" class="td">Total</td>
 
             <td class="td">{{ totals.cl }}</td>
