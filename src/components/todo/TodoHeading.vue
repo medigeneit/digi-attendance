@@ -249,15 +249,15 @@ const handleInputChange = (event) => {
       </button>
 
       <div class="ml-4 md:ml-auto flex items-center gap-2" v-if="selected_type == 'month-view'">
-        <button class="btn-2 h-7" @click.prevent="handleClickOnPreviousMonth">
+        <button class="btn-3 h-7" @click.prevent="handleClickOnPreviousMonth">
           Previous Month
         </button>
-        <button class="btn-2 h-7" @click.prevent="handleClickOnNextMonth">Next Month</button>
+        <button class="btn-3 h-7" @click.prevent="handleClickOnNextMonth">Next Month</button>
       </div>
 
       <div class="ml-4 md:ml-auto flex items-center gap-2" v-if="selected_type == 'day-view'">
-        <button class="btn-2 h-7" @click.prevent="handleClickOnPreviousDay">Previous Day</button>
-        <button class="btn-2 h-7" @click.prevent="handleClickOnNextDay">Next Day</button>
+        <button class="btn-3 h-7" @click.prevent="handleClickOnPreviousDay">Previous Day</button>
+        <button class="btn-3 h-7" @click.prevent="handleClickOnNextDay">Next Day</button>
       </div>
 
       <slot name="after" :selected="selected"></slot>

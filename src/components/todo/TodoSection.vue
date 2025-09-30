@@ -3,6 +3,7 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import TodoHeading from '@/components/todo/TodoHeading.vue'
 import TodoCalenderView from '@/components/todo/TodosInCalenderView.vue'
 import TodosInDailyView from '@/components/todo/TodosInDailyView.vue'
+import { getLastDateOfMonth, getYearMonthDayFormat } from '@/libs/datetime'
 import { useTodoStore } from '@/stores/useTodoStore'
 import TodoCreateEditShow from '@/views/private-pages/todos/TodoCreateEditShow.vue'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -15,6 +16,12 @@ const props = defineProps({
   day: { type: Number, default: () => new Date().getDate() },
   week: { type: Number, default: () => new Date().getDay() },
   type: { type: String, default: 'month-view' },
+
+  companyId: { type: String, default: '' },
+  departmentId: { type: String, default: '' },
+  employeeId: { type: String, default: '' },
+  lineType: { type: String, default: '' },
+
   userRole: { type: String, default: 'employee' },
 })
 
@@ -139,22 +146,44 @@ const getMonthString = computed(() => {
 })
 
 async function fetchTodos() {
+  const [year, month] = [Number(props.year), Number(props.month)]
+  const startDate = getYearMonthDayFormat(new Date(year, month - 1, 1))
+  const endDate = getYearMonthDayFormat(getLastDateOfMonth(year, month - 1))
+
+  console.log('FETCHING...', { startDate, endDate })
+
   if (props.userRole == 'employee') {
     await todoStore.fetchMyTodos()
   } else {
-    await todoStore.fetchTodos()
+    await todoStore.fetchTodos({
+      'company-id': props.companyId,
+      'department-id': props.departmentId,
+      'employee-id': props.employeeId,
+      'line-type': props.lineType,
+      'start-date': startDate,
+      'end-date': endDate,
+    })
   }
 }
 
 onMounted(async () => {
   await fetchTodos()
 })
+
+watch(
+  () => ({
+    'company-id': props.companyId,
+    'department-id': props.departmentId,
+    'employee-id': props.employeeId,
+    'line-type': props.lineType,
+    month: props.month,
+  }),
+  () => fetchTodos(),
+)
 </script>
 
 <template>
   <div>
-    <!-- {{ props }} -->
-    <!-- {{ props }} -->
     <div class="border bg-white relative">
       <LoaderView
         v-if="todoStore.loading"
@@ -163,6 +192,7 @@ onMounted(async () => {
         Loading...
       </LoaderView>
 
+      <!-- <pre>{{ props }}</pre> -->
       <TodoHeading
         :selected="selected"
         class="border-b shadow z-20"

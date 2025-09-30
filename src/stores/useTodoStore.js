@@ -11,11 +11,12 @@ export const useTodoStore = defineStore('todo', () => {
   const error = ref(null);
   const todos = ref([])
 
-  const fetchTodos = async () => {
+  const fetchTodos = async (params) => {
+    console.log({params})
     loading.value = true;
     error.value = null;
     try {
-      const response = await apiClient.get('/todos');
+      const response = await apiClient.get('/todos', {params});
       todos.value = response.data?.todos || [];
       sortTodoList()
     } catch (err) {
