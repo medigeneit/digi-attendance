@@ -236,7 +236,7 @@ const refreshPaycutList = async () => { await fetchAttendance() }
           </tr>
         </thead>
 
-        <tbody class="text-center text-sm">
+        <tbody class="text-center text-xs">
           <tr
             v-for="(log, index) in summaryRows"
             :key="`${log?.user_id || 'u'}-${index}`"
@@ -261,14 +261,14 @@ const refreshPaycutList = async () => { await fetchAttendance() }
             <td class="td">{{ log?.total_remain_early_day }}</td>
             <td class="td">{{ log?.total_remain_early_hour }}</td>
             
-            <td class="td">
-              <div class="font-semibold text-green-600">
-                {{ log?.total_working_hours || 0 }} 
-              </div>
-              <div class="text-gray-500 text-xs">
-                of {{ log?.total_shift_hour || 0 }} 
-              </div>
-            </td>
+            <td class="td text-xs" :class="{ '!text-red-500': log?.under_target }">
+                <div class="font-semibold" :class="log?.under_target ? 'text-red-600' : 'text-green-600'">
+                  {{ log?.total_working_hours }}
+                </div>
+                <div class="text-gray-500">
+                  of {{ log?.total_shift_hour }}
+                </div>
+              </td>
 
             <!-- <td class="td">
               <div class="border-b border-black font-semibold text-green-600">
@@ -283,32 +283,16 @@ const refreshPaycutList = async () => { await fetchAttendance() }
             <td class="td">{{ log?.total_wpl_leave }}</td>
 
             <td class="td">
-              <div class="flex flex-col items-center gap-1">
-                <span class="text-xs text-gray-600">
-                  {{ log?.total_first_short_leave || 0 }} of {{ log?.actual_late_day || 0 }}
-                </span>
-                <div class="w-10 h-2 bg-gray-200 rounded">
-                  <div
-                    class="h-2 bg-amber-500 rounded"
-                    :style="{ width: ((toNum(log?.total_first_short_leave) / Math.max(1, toNum(log?.actual_late_day))) * 100) + '%' }"
-                  ></div>
-                </div>
-              </div>
+              <p class="text-xs w-10 text-gray-600">
+                {{ log?.total_first_short_leave || 0 }} of {{ log?.actual_late_day || 0 }}
+              </p>
             </td>
 
             <!-- Short Leave vs Actual Early -->
             <td class="td">
-              <div class="flex flex-col items-center gap-1">
-                <span class="text-xs text-gray-600">
-                  {{ log?.total_last_short_leave || 0 }} of {{ log?.actual_early_day || 0 }}
-                </span>
-                <div class="w-10 h-2 bg-gray-200 rounded">
-                  <div
-                    class="h-2 bg-blue-500 rounded"
-                    :style="{ width: ((toNum(log?.total_last_short_leave) / Math.max(1, toNum(log?.actual_early_day))) * 100) + '%' }"
-                  ></div>
-                </div>
-              </div>
+              <p class="text-xs w-10 text-gray-600">
+                {{ log?.total_last_short_leave || 0 }} of {{ log?.actual_early_day || 0 }}
+              </p>
             </td>
 
             <td class="td">
@@ -333,14 +317,14 @@ const refreshPaycutList = async () => { await fetchAttendance() }
 
             <td class="td">{{ log?.payable_hour }}H</td>
 
-            <td class="td">
+            <td class="td ">
               <router-link
                 :to="{
                   name: 'EmployeeAttendance',
                   query: { ...route.query, employee_id: log?.user_id, date: selectedMonth }
                 }"
                 target="_blank"
-                class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm font-medium bg-blue-50 text-blue-700 hover:bg-blue-100"
+                class="inline-flex w-20 items-center gap-1 rounded-md px-1 py-1 font-medium bg-blue-50 text-blue-700 hover:bg-blue-100"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none"
                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -353,7 +337,7 @@ const refreshPaycutList = async () => { await fetchAttendance() }
         </tbody>
 
         <tfoot>
-          <tr class="bg-gray-100 font-semibold text-center">
+          <tr class="bg-gray-100 font-semibold text-sm text-center">
             <td colspan="17" class="td">Total</td>
 
             <td class="td">{{ totals.cl }}</td>

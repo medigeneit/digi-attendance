@@ -297,7 +297,7 @@ const formatDateTime = (timestamp) => {
                     {{ balance.leave_type }}
                   </td>
                   <td class="border border-gray-500 px-4 py-0.5 text-center">
-                    {{ balance?.total_leave_days }}
+                    {{ balance?.annual_quota }}
                   </td>
                   <td class="border border-gray-500 px-4 py-0.5 text-center">
                     {{ balance.used_days }}
@@ -381,23 +381,21 @@ const formatDateTime = (timestamp) => {
         </div>
       </div>
     </div>
-    <div>
-      <label>Attachment</label>
-      <!-- Show existing file link if available -->
-      <div
-        v-if="leaveApplication?.attachment && typeof leaveApplication?.attachment === 'string'"
-        class="mb-2"
-      >
-        <a :href="leaveApplication?.attachment" target="_blank" class="text-blue-500 underline">
-          View Current File
-        </a>
-      </div>
-      <div v-else class="text-center text-lg italic text-gray-400">No attachment</div>
-      <!-- File Input -->
-      <div v-if="leaveApplication?.user_id === authStore?.user?.id">
-        <input type="file" @change="fileUploadLink" class="w-full p-2 border rounded" />
-      </div>
-    </div>
+      <section class="mt-10 print:hidden">
+        <div v-if="leaveApplication?.attachment && typeof leaveApplication?.attachment === 'string'" class="mb-3">
+          <a :href="leaveApplication?.attachment" target="_blank" class="text-blue-600 underline">
+            View current file
+          </a>
+        </div>
+        <div v-else class="mb-3 text-slate-400 italic">No attachment</div>
+        <div
+          v-if="leaveApplication?.user_id === authStore?.user?.id"
+          class="rounded-xl border-2 border-dashed border-slate-300 p-4 hover:border-slate-400 transition"
+        >
+          <label class="block text-sm text-slate-600 mb-2">Upload / Replace</label>
+          <input type="file" @change="fileUploadLink" class="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-slate-800 file:text-white hover:file:bg-slate-700" />
+        </div>
+      </section>
     <ShareComponent />
   </div>
 </template>
