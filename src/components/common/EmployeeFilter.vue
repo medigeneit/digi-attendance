@@ -235,7 +235,7 @@ function clearType() {
       <SelectDropdown
         v-model="selectedCompanyId"
         :options="companyOptions"
-        class="border-2 border-gray-300 rounded h-[44px] w-full bg-white"
+        class="border-2 border-gray-300 rounded h-[32px] w-full bg-white"
         clearable
       >
         <template #selected-option="{ option }">
@@ -255,7 +255,7 @@ function clearType() {
       <SelectDropdown
         v-model="selectedDepartmentId"
         :options="departmentOptions"
-        class="border-2 border-gray-300 rounded h-[44px] w-full bg-white"
+        class="border-2 border-gray-300 rounded h-[32px] w-full bg-white"
         clearable
       >
         <template #selected-option="{ option }">
@@ -283,7 +283,7 @@ function clearType() {
         v-model="selectedTypeId"
         :options="typeOptions"
         placeholder="Select Type"
-        class="border-2 border-gray-300 rounded h-[44px] w-full bg-white"
+        class="border-2 border-gray-300 rounded h-[32px] w-full bg-white"
       >
         <template #selected-option="{ option }">
           <div v-if="option" class="relative w-full pr-6">
@@ -315,7 +315,7 @@ function clearType() {
       <EmployeeDropdownInput
         :employees="filterEmployees"
         v-model="selectedEmployeeId"
-        class="border-2 border-gray-300 rounded h-[44px] w-full bg-white"
+        class="border-2 border-gray-300 rounded h-[32px] w-full bg-white"
       />
       <div class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30">
         Employee

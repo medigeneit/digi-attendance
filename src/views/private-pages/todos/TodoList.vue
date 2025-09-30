@@ -36,33 +36,6 @@ onMounted(() => {
   <div class="container mx-auto px-4">
     <!-- <h2 class="text-2xl font-bold mb-6">Todo List</h2> -->
 
-    <div class="flex mb-4 gap-4 mt-4 items-center flex-wrap">
-      <EmployeeFilter
-        :company_id="route.query?.company_id"
-        :department_id="route.query?.department_id"
-        :employee_id="route.query?.employee_id"
-        :line_type="route.query?.line_type"
-        :with-type="true"
-        :initial-value="$route.query"
-        @filter-change="handleTodoInputChange"
-        class="flex-grow w-full lg:w-auto"
-      />
-
-      <div class="relative h-[44px] md:w-40 w-full">
-        <div class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30">
-          Company
-        </div>
-        <select
-          class="border-2 border-gray-300 rounded-md cursor-pointer relative block px-4 text-gray-800 text-sm h-full w-full"
-          v-model="status"
-        >
-          <option value="">--All Status--</option>
-          <option value="not-completed">Not Completed</option>
-          <option value="completed">Completed</option>
-        </select>
-      </div>
-    </div>
-
     <div v-if="todoStore.error && !todoStore.loading" class="text-center py-4 text-red-500">
       {{ todoStore.error }}
     </div>
@@ -79,23 +52,57 @@ onMounted(() => {
       :status="status"
       @changeInput="handleTodoInputChange"
       userRole="admin"
+      class="rounded-md"
     >
-      <template #beforeHeader>
-        <h2 class="text-md font-medium">Todo List</h2>
+      <template #afterHeader>
+        <div class="flex gap-4 items-center flex-wrap ml-auto">
+          <EmployeeFilter
+            :company_id="route.query?.company_id"
+            :department_id="route.query?.department_id"
+            :employee_id="route.query?.employee_id"
+            :line_type="route.query?.line_type"
+            :with-type="true"
+            :initial-value="$route.query"
+            @filter-change="handleTodoInputChange"
+            class="!flex flex-wrap *:max-w-48"
+          />
+
+          <div class="relative h-[32px] md:w-40">
+            <div
+              class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30"
+            >
+              Status
+            </div>
+            <select
+              class="border-2 border-gray-300 rounded-md cursor-pointer relative block px-4 text-gray-800 text-sm h-full w-full"
+              v-model="status"
+            >
+              <option value="">--All Status--</option>
+              <option value="not-completed">Not Completed</option>
+              <option value="completed">Completed</option>
+            </select>
+          </div>
+        </div>
       </template>
 
       <template #typeSelection="{ types, changeType, selected }">
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 ml-auto md:ml-0">
           <button
             @click.prevent="changeType(types[0]?.value)"
-            :class="['rounded text-sm ', selected?.type == types[0]?.value ? 'btn-2' : 'btn-3']"
+            :class="[
+              'rounded text-sm w-20 h-[32px] ',
+              selected?.type == types[0]?.value ? 'btn-2' : 'btn-3',
+            ]"
           >
             {{ types[0]?.label }}
           </button>
 
           <button
             @click.prevent="changeType(types[1]?.value)"
-            :class="['rounded text-sm ', selected?.type == types[1]?.value ? 'btn-2 ' : 'btn-3']"
+            :class="[
+              'rounded text-sm  w-20 h-[32px] ',
+              selected?.type == types[1]?.value ? 'btn-2 ' : 'btn-3',
+            ]"
           >
             {{ types[1]?.label }}
           </button>

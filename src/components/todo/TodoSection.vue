@@ -205,6 +205,9 @@ watch(
         <template #before="params">
           <slot name="beforeHeader" v-bind="params"></slot>
         </template>
+        <template #inner="params">
+          <slot name="innerHeader" v-bind="params"></slot>
+        </template>
         <template #after="params">
           <slot name="afterHeader" v-bind="params"></slot>
         </template>

@@ -37,14 +37,20 @@ function handleTodoInputChange(changedSelected) {
       <div class="flex items-center gap-2 mr-2">
         <button
           @click.prevent="changeType(types[0]?.value)"
-          :class="['rounded text-sm ', selected?.type == types[0]?.value ? 'btn-2' : 'btn-3']"
+          :class="[
+            'rounded text-sm h-[32px] w-20',
+            selected?.type == types[0]?.value ? 'btn-2' : 'btn-3',
+          ]"
         >
           {{ types[0]?.label }}
         </button>
 
         <button
           @click.prevent="changeType(types[1]?.value)"
-          :class="['rounded text-sm ', selected?.type == types[1]?.value ? 'btn-2 ' : 'btn-3']"
+          :class="[
+            'rounded text-sm h-[32px] w-20',
+            selected?.type == types[1]?.value ? 'btn-2 ' : 'btn-3',
+          ]"
         >
           {{ types[1]?.label }}
         </button>

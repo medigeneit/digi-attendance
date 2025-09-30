@@ -187,8 +187,19 @@ const handleInputChange = (event) => {
 
 <template>
   <div>
-    <div class="px-4 py-2 flex items-center justify-between flex-wrap bg-gray-50 group gap-2">
+    <div
+      class="px-4 py-2 flex items-center lg:justify-start flex-wrap bg-gray-50 group md:gap-x-2 gap-y-4"
+    >
       <slot name="before" :selected="selected"></slot>
+
+      <button
+        class="px-2 py-2 disabled:text-gray-300 border size-[32px] flex items-center justify-center rounded-full"
+        :class="{ 'animate-spin !bg-opacity-0': loading }"
+        @click.prevent="emit('reloadClick')"
+        :disabled="loading"
+      >
+        <i class="fas fa-redo" :class="[loading ? 'text-gray-400' : 'text-gray-500']"></i>
+      </button>
 
       <slot
         name="typeSelection"
@@ -207,72 +218,62 @@ const handleInputChange = (event) => {
         </select>
       </slot>
 
-      <input
-        v-if="selected_type == 'month-view'"
-        type="month"
-        :value="input"
-        @input="handleInputChange"
-        class="border px-2 rounded"
-      />
-
-      <input
-        v-if="selected_type == 'day-view'"
-        type="date"
-        :value="input"
-        @input="handleInputChange"
-        class="border px-2 rounded"
-      />
-
       <button
-        class="btn-3 h-7"
+        class="h-7"
         @click.prevent="handleClickCurrentMonth"
         v-if="selected_type == 'month-view'"
       >
-        Current Month
+        <!-- Current Month -->
       </button>
 
-      <button
-        class="btn-3 h-7"
-        @click.prevent="handleClickOnToday"
-        v-if="selected_type == 'day-view'"
-      >
-        Today
+      <button class="h-7" @click.prevent="handleClickOnToday" v-if="selected_type == 'day-view'">
+        <!-- Today -->
       </button>
 
-      <button
-        class="btn-3 px-2 py-2 size-7 disabled:text-gray-300 disabled:border-gray-300"
-        :class="{ 'animate-spin text-gray-300 border-gray-300 !bg-opacity-0': loading }"
-        @click.prevent="emit('reloadClick')"
-        :disabled="loading"
-      >
-        <i class="fas fa-redo-alt"></i>
-      </button>
+      <slot name="inner" :selected="selected"></slot>
 
       <div
-        class="md:ml-auto flex items-center gap-2 w-full lg:w-auto"
+        class="md:ml-auto flex items-center justify-between md:justify-start gap-2 w-full lg:w-auto"
         v-if="selected_type == 'month-view'"
       >
-        <button class="btn-3 h-7" @click.prevent="handleClickOnPreviousMonth">
+        <button class="btn-3 px-3 rounded h-7" @click.prevent="handleClickOnPreviousMonth">
           <span class="fas fa-arrow-left"></span>
-          <span class="hidden lg:inline">Previous Month</span>
+          <!-- <span class="hidden lg:inline">Previous Month</span> -->
         </button>
 
-        <button class="btn-3 h-7 ml-auto" @click.prevent="handleClickOnNextMonth">
-          <span class="hidden lg:inline">Next Month</span>
+        <input
+          v-if="selected_type == 'month-view'"
+          type="month"
+          :value="input"
+          @input="handleInputChange"
+          class="border-2 px-2 rounded border-blue-900"
+        />
+
+        <button class="btn-3 px-3 rounded h-7 md:ml-0" @click.prevent="handleClickOnNextMonth">
+          <!-- <span class="hidden lg:inline">Next Month</span> -->
           <span class="fas fa-arrow-right"></span>
         </button>
       </div>
 
       <div
-        class="md:ml-auto flex items-center gap-2 w-full lg:w-auto"
+        class="md:ml-auto flex items-center justify-between md:justify-start gap-2 w-full lg:w-auto"
         v-if="selected_type == 'day-view'"
       >
-        <button class="btn-3 h-7" @click.prevent="handleClickOnPreviousDay">
+        <button class="btn-3 px-3 rounded h-7" @click.prevent="handleClickOnPreviousDay">
           <span class="fas fa-arrow-left"></span>
-          <span class="hidden lg:inline">Previous Day</span>
+          <!-- <span class="hidden lg:inline">Previous Day</span> -->
         </button>
-        <button class="btn-3 h-7 ml-auto" @click.prevent="handleClickOnNextDay">
-          <span class="hidden lg:inline">Next Day</span>
+
+        <input
+          v-if="selected_type == 'day-view'"
+          type="date"
+          :value="input"
+          @input="handleInputChange"
+          class="border-2 px-2 rounded border-blue-900 w-28"
+        />
+
+        <button class="btn-3 px-3 rounded h-7 md:ml-0" @click.prevent="handleClickOnNextDay">
+          <!-- <span class="hidden lg:inline">Next Day</span> -->
           <span class="fas fa-arrow-right"></span>
         </button>
       </div>
