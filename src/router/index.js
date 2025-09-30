@@ -227,7 +227,7 @@ const router = createRouter({
           path: 'todos',
           name: 'TodoList',
           component: () => import('@/views/private-pages/todos/TodoList.vue'),
-          meta: { requiresAuth: true },
+          meta: { requiresAuth: true, title: 'Todo List' },
         },
 
         {

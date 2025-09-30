@@ -34,7 +34,7 @@ onMounted(() => {
 
 <template>
   <div class="container mx-auto px-4">
-    <!-- <h2 class="text-2xl font-bold mb-6">Todo List</h2> -->
+    <!-- <h2 class="text-2xl font-bold mb-2">Todo List</h2> -->
 
     <div v-if="todoStore.error && !todoStore.loading" class="text-center py-4 text-red-500">
       {{ todoStore.error }}
