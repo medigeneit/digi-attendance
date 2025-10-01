@@ -86,7 +86,7 @@ const goToDetails = (n) => {
   <div class="bg-white shadow-sm rounded-xl p-3">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-1.5">
-        <i class="fas fa-file text-blue-600 text-sm"></i>
+        <i class="fas fa-bell"></i>
         <h2 class="text-base font-semibold">Notices</h2>
       </div>
 
