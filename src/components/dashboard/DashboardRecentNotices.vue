@@ -1,7 +1,7 @@
 <script setup>
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import OverlyModal from '../common/OverlyModal.vue'
 
@@ -9,130 +9,181 @@ const userStore = useUserStore()
 const { userDashboard } = storeToRefs(userStore)
 const router = useRouter()
 
-const unreadNotice = computed(() => {
-  if (userDashboard.value && userDashboard.value.notices) {
-    const firstUnread = userDashboard.value?.notices?.find((n) => !n.user_feedback)
-    if (firstUnread) {
-      return firstUnread
-    }
+/* ---------- date helpers (no extra libs) ---------- */
+const fmtDate = (iso) => {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (isNaN(+d)) return iso
+  return new Intl.DateTimeFormat(undefined, {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(d)
+}
+
+const timeAgo = (iso) => {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (isNaN(+d)) return ''
+  const diff = (Date.now() - d.getTime()) / 1000 // sec
+  const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' })
+  const map = [
+    ['year', 60 * 60 * 24 * 365],
+    ['month', 60 * 60 * 24 * 30],
+    ['week', 60 * 60 * 24 * 7],
+    ['day', 60 * 60 * 24],
+    ['hour', 60 * 60],
+    ['minute', 60],
+    ['second', 1],
+  ]
+  for (const [unit, sec] of map) {
+    const val = Math.round(diff / sec)
+    if (Math.abs(val) >= 1) return rtf.format(-val, unit)
   }
-  return null
+  return rtf.format(0, 'second')
+}
+
+const prettyDate = (iso) => {
+  const d = fmtDate(iso)
+  const rel = timeAgo(iso)
+  return rel ? `${d} · ${rel}` : d
+}
+
+/* ---------- data shaping ---------- */
+const noticesRaw = computed(() => userDashboard.value?.notices ?? [])
+
+/* unread first, then latest publish date */
+const notices = computed(() => {
+  const arr = [...noticesRaw.value]
+  return arr.sort((a, b) => {
+    const au = a?.user_feedback ? 1 : 0
+    const bu = b?.user_feedback ? 1 : 0
+    if (au !== bu) return au - bu
+    const ad = new Date(a?.published_at || 0).getTime()
+    const bd = new Date(b?.published_at || 0).getTime()
+    return bd - ad
+  })
 })
 
-const goToDetails = () => {
-  if (!unreadNotice.value) return
+/* first unread for modal */
+const firstUnreadNotice = computed(() => notices.value.find(n => !n?.user_feedback) || null)
+const showUnreadModal = ref(!!firstUnreadNotice.value)
 
-  const path =
-    unreadNotice.value.type === 1
-      ? `/notice-details/${unreadNotice.value.id}`
-      : `/policy-details/${unreadNotice.value.id}`
+/* keep modal in sync if dashboard changes */
+watch(firstUnreadNotice, (nv) => { showUnreadModal.value = !!nv })
 
+const goToDetails = (n) => {
+  const notice = n || firstUnreadNotice.value
+  if (!notice) return
+  const path = notice.type === 1
+    ? `/notice-details/${notice.id}`
+    : `/policy-details/${notice.id}`
   router.push(path)
 }
 </script>
 
 <template>
-  <div class="bg-white shadow-md rounded-lg p-4">
-    <div class="flex justify-between items-start mb-1">
-      <div class="flex items-center">
-        <i class="fas fa-file mr-2 h-5 w-5"></i>
-        <h2 class="text-xl font-semibold">Notices</h2>
+  <div class="bg-white shadow-sm rounded-xl p-3">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-1.5">
+        <i class="fas fa-file text-blue-600 text-sm"></i>
+        <h2 class="text-base font-semibold">Notices</h2>
+      </div>
+
+      <div v-if="notices.length" class="text-[11px] text-gray-500">
+        <span
+          class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700"
+        >
+          <span class="h-1.5 w-1.5 rounded-full bg-blue-500"></span>
+          {{ notices.filter(n => !n.user_feedback).length }} pending
+        </span>
       </div>
     </div>
-    <hr class="mb-3" />
 
-    <div class="space-y-3">
-      <div
-        v-if="userDashboard.notices?.length === 0"
-        class="text-xs italic text-center py-4 text-gray-500"
+    <hr class="my-2 border-gray-200" />
+
+    <div v-if="!notices.length" class="text-xs italic text-center py-6 text-gray-500">
+      No pending notice found
+    </div>
+
+    <div v-else class="space-y-2">
+      <article
+        v-for="n in notices"
+        :key="n.id"
+        class="group flex items-center justify-between gap-2 p-3 border border-gray-100 rounded-lg hover:border-blue-200 transition"
       >
-        No pending notice found
-      </div>
-      <template v-else>
-        <div
-          v-for="(notice, index) in userDashboard.notices"
-          :key="index"
-          class="flex items-center justify-between p-4 border rounded-lg shadow-sm hover:shadow transition-all bg-white"
-        >
-          <!-- Left Section: Status + Title -->
-          <div class="flex items-center space-x-4">
-            <!-- Status Circle with Tooltip -->
-            <div
-              :class="['rounded-full', !notice.user_feedback ? 'bg-red-100' : 'bg-green-100']"
-              class="h-8 w-8 flex items-center justify-center rounded-full flex-shrink-0"
-            >
-              <span
-                v-if="!notice.user_feedback"
-                class="h-3 w-3 bg-red-600 rounded-full inline-block"
-              ></span>
-
-              <span v-else class="inline-block">
-                <i class="far fa-check text-green-600"></i>
-              </span>
-
-              <div
-                class="absolute top-10 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition pointer-events-none z-10 whitespace-nowrap"
-              >
-                {{ !notice.user_feedback ? 'Feedback Pending' : 'Feedback Submitted' }}
-              </div>
-            </div>
-
-            <!-- Notice Details -->
-            <div>
-              <p class="text-sm font-medium text-gray-900">{{ notice.title }}</p>
-              <p class="text-xs text-gray-500 mt-0.5">{{ notice.published_at }}</p>
-            </div>
-          </div>
-
-          <!-- Right Section: View Button -->
-          <RouterLink
-            :to="
-              notice.type === 1 ? `/notice-details/${notice.id}` : `/policy-details/${notice.id}`
-            "
-            class="text-blue-600 hover:text-blue-800 font-semibold text-sm"
+        <!-- Left -->
+        <div class="flex items-start gap-3 min-w-0">
+          <span
+            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium mt-0.5"
+            :class="!n.user_feedback ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'"
           >
-            View
-          </RouterLink>
+            <span
+              class="h-2 w-2 rounded-full"
+              :class="!n.user_feedback ? 'bg-rose-600 animate-pulse' : 'bg-emerald-600'"
+            ></span>
+          </span>
+
+          <div class="min-w-0">
+            <h3 class="text-sm font-medium text-gray-900 truncate">
+              {{ n.title || 'Untitled notice' }}
+            </h3>
+            <p class="text-[11px] text-gray-500 mt-0.5">
+              <i class="fas fa-calendar-alt text-gray-400 mr-1"></i>
+              {{ prettyDate(n.published_at) }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Right -->
+        <RouterLink
+          :to="n.type === 1 ? `/notice-details/${n.id}` : `/policy-details/${n.id}`"
+          class="shrink-0 inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 text-xs font-semibold"
+        >
+          View <i class="fas fa-arrow-right text-[10px]"></i>
+        </RouterLink>
+      </article>
+    </div>
+
+    <!-- Modal -->
+    <OverlyModal
+      v-if="firstUnreadNotice"
+      :show="showUnreadModal"
+      @close="showUnreadModal = false"
+    >
+      <template #default>
+        <div class="text-base font-semibold text-gray-800 flex items-center gap-2 p-3">
+          <i class="fas fa-bell text-blue-600"></i>
+          {{ firstUnreadNotice.title || 'New notice' }}
+        </div>
+
+        <div class="space-y-4 px-3 pb-4">
+          <p class="text-xs text-gray-500 flex items-center gap-2">
+            <i class="fas fa-calendar-alt text-gray-400"></i>
+            Published: {{ prettyDate(firstUnreadNotice.published_at) }}
+          </p>
+
+          <p class="text-sm text-gray-700">
+            You must read this notice before proceeding.
+          </p>
+
+          <div class="flex justify-end gap-2 mt-2">
+            <button
+              @click="showUnreadModal = false"
+              class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-3 py-1.5 rounded-md transition text-sm"
+            >
+              Later
+            </button>
+            <button
+              @click="goToDetails(firstUnreadNotice)"
+              class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-1.5 rounded-md transition text-sm"
+            >
+              Read
+            </button>
+          </div>
         </div>
       </template>
-
-      <OverlyModal v-if="unreadNotice" :show="true" @close="unreadNotice = null">
-        <template #default>
-          <div class="text-xl font-bold text-gray-800 flex items-center gap-2 p-4">
-            <i class="fas fa-bell text-blue-500"></i>
-            {{ unreadNotice.title }}
-          </div>
-
-          <div class="space-y-5 px-4 md:px-6 py-4">
-            <!-- Published Info -->
-            <p class="text-sm text-gray-500 flex items-center gap-2">
-              <i class="fas fa-calendar-alt text-gray-400"></i>
-              Published: {{ unreadNotice.published_at }}
-            </p>
-
-            <!-- Instruction -->
-            <p class="text-base text-gray-700 leading-relaxed">
-              You must read this notice before proceeding.
-            </p>
-
-            <!-- Actions -->
-            <div class="flex justify-end gap-3 mt-6">
-              <button
-                @click="unreadNotice = null"
-                class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-5 py-2 rounded-lg transition"
-              >
-                Cancel
-              </button>
-              <button
-                @click="goToDetails"
-                class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-lg shadow transition"
-              >
-                Read Details
-              </button>
-            </div>
-          </div>
-        </template>
-      </OverlyModal>
-    </div>
+    </OverlyModal>
   </div>
 </template>
+
