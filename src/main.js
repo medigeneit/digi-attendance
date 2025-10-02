@@ -12,6 +12,8 @@ import Toast from "vue-toastification";
 import App from './App.vue';
 import router from './router';
 
+import './echo'
+
 const app = createApp(App);
 const pinia = createPinia();
 const head = createHead()

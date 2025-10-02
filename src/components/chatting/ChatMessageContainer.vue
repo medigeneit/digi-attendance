@@ -1,10 +1,12 @@
 <script setup>
+import { useAuthStore } from '@/stores/auth'
 import { useChatStore } from '@/stores/chat'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import ChatMessageCard from './ChatMessageCard.vue'
 import ConversationLoader from './ConversationLoader.vue'
 
 const chatStore = useChatStore()
+const authStore = useAuthStore()
 
 const isLoading = ref(false)
 
@@ -12,6 +14,33 @@ const isLoading = ref(false)
 const scrollEl = ref(null)
 const atBottom = ref(true) // ইউজার বটমে আছে কিনা
 const loadingOlder = ref(false) // টপে গিয়ে পুরনো লোড হচ্ছে কিনা
+
+let channel = null
+
+function subscribe() {
+  const id = chatStore.activeConversationId
+  if (!id) return
+
+  if (channel) {
+    channel.stopListening('.message.created')
+  }
+
+  channel = window.Echo.private(`chat.${id}`)
+    .subscribed(() => console.log(`[SUBSCRIBED] chat.${id}`))
+    .error((e) => console.error('[CHANNEL ERROR]', e))
+    .listen('.message.created', (e) => {
+      console.log('[EVENT]', e)
+      chatStore.messages.push(e.message)
+    })
+}
+
+onMounted(async () => {
+  await fetchData()
+
+  if (!authStore.user) await authStore.fetchUser() // token valid user
+
+  watch(() => chatStore.activeConversationId, subscribe, { immediate: true })
+})
 
 /* ====== utils ====== */
 const nearBottom = (el, threshold = 80) =>
@@ -67,11 +96,6 @@ const fetchData = async () => {
     isLoading.value = false
   }
 }
-
-/* ====== lifecycle ====== */
-onMounted(() => {
-  fetchData()
-})
 
 watch(
   () => chatStore.activeConversationId,

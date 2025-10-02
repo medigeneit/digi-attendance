@@ -43,6 +43,8 @@ apiClient.interceptors.request.use(async (config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
+  config.headers['X-Socket-Id'] = window.Echo.socketId() || '',   // <— গুরুত্বপূর্ণ
+
   console.log(`${config.method.toUpperCase()} ${config.url} - API call initiated...`);
 
   await loadCsrfToken();
