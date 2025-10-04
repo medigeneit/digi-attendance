@@ -7,19 +7,25 @@ import { useLeaveApplicationStore } from '@/stores/leave-application'
 import { useLeaveTypeStore } from '@/stores/leave-type'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref, watch, watchEffect } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+/* ---------------- stores ---------------- */
 const authStore = useAuthStore()
 const leaveApplicationStore = useLeaveApplicationStore()
-const router = useRouter()
-const route = useRoute()
 const leaveTypeStore = useLeaveTypeStore()
 const userStore = useUserStore()
-const { userLeaveBalance } = storeToRefs(userStore)
 const holidayStore = useHolidayStore()
+
+/* ---------------- router ---------------- */
+const router = useRouter()
+const route = useRoute()
+
+/* --------------- refs/state ------------- */
+const { userLeaveBalance } = storeToRefs(userStore)
 const leaveApplication = computed(() => leaveApplicationStore.leaveApplication)
 const leaveApplicationId = computed(() => route.params.id)
+
 const selectUser = ref(null)
 const form = ref({
   user_id: '',
@@ -28,15 +34,19 @@ const form = ref({
   reason: '',
   works_in_hand: '',
   handover_user_id: '',
-  leave_days: [],
 })
 
-const selectedLeaveTypes = ref([])
-const maxedOutTypes = ref([]);
+/**
+ * date-keyed selections:
+ * e.g. selectedLeaveTypes['2025-10-05'] = 12 | 'weekend' | 'holiday'
+ */
+const selectedLeaveTypes = ref({}) // Record<YYYY-MM-DD, number | 'weekend' | 'holiday'>
+
 const loading = ref(false)
 const error = ref(null)
 const isEditMode = ref(false)
 
+/* ---------------- helpers ---------------- */
 const weekends = computed(() => {
   return (
     leaveApplicationStore?.leaveApplication?.user?.assign_weekend?.weekends ||
@@ -44,53 +54,151 @@ const weekends = computed(() => {
   )
 })
 
+const toYMD = (d) => {
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}
+
+/** Days between (exclusive of Last Working Date, exclusive of Resumption date’s day) */
+const leaveDays = computed(() => {
+  const startDateStr = form.value.last_working_date
+  const endDateStr = form.value.resumption_date
+  if (!startDateStr || !endDateStr) return []
+
+  const start = new Date(startDateStr)
+  const end = new Date(endDateStr)
+  if (end <= start) return []
+
+  const days = []
+  const cur = new Date(start)
+  cur.setDate(cur.getDate() + 1)
+  while (cur < end) {
+    days.push(toYMD(cur))
+    cur.setDate(cur.getDate() + 1)
+  }
+  return days
+})
+
+const leaveDaysMessage = computed(() => {
+  const startDateStr = form.value.last_working_date
+  const endDateStr = form.value.resumption_date
+  if (!startDateStr || !endDateStr) return ''
+  const start = new Date(startDateStr)
+  const end = new Date(endDateStr)
+  if (end <= start) return 'Resumption date must be after Last Working Date.'
+  if (leaveDays.value.length === 0) return 'No leave days between the selected dates.'
+  return `Total leave days: ${leaveDays.value.length}`
+})
+
+/** quick checks */
+const isWeekendDate = (day) => {
+  const weekdayName = new Date(day).toLocaleString('en-us', { weekday: 'long' }).toLowerCase()
+  const cap = weekdayName.charAt(0).toUpperCase() + weekdayName.slice(1)
+  return weekends.value.includes(cap)
+}
+const isHolidayDate = (day) => {
+  return (holidayStore?.holidayDates || []).includes(day)
+}
+
+
+/** count usage per numeric type id */
+const typeUsageCounts = computed(() => {
+  const counts = {}
+  for (const [date, val] of Object.entries(selectedLeaveTypes.value || {})) {
+    if (typeof val === 'number') {
+      counts[val] = (counts[val] || 0) + 1
+    }
+  }
+  return counts
+})
+
+/** exceeded types list (to show soft warning) */
+const exceededTypes = computed(() => {
+  const list = userLeaveBalance.value || []
+  const over = []
+  for (const t of list) {
+    const used = typeUsageCounts.value[t.id] || 0
+    if (Number.isFinite(t.remaining_days) && used > t.remaining_days) {
+      over.push({ id: t.id, name: t.leave_type || t.name, used, remain: t.remaining_days })
+    }
+  }
+  return over
+})
+
+const recalcSelectionsFromRange = () => {
+  const old = { ...(selectedLeaveTypes.value || {}) }
+  const next = {}
+
+  for (const day of leaveDays.value) {
+    if (isWeekendDate(day)) {
+      next[day] = 'weekend'
+      continue
+    }
+    if (isHolidayDate(day)) {
+      next[day] = 'holiday'
+      continue
+    }
+    const prev = old[day]
+    if (typeof prev === 'number') {
+      next[day] = prev
+      continue
+    }
+  }
+
+  selectedLeaveTypes.value = next
+}
+
+/** fetch holidays for range (company scope) */
+const fetchRangeHolidays = async () => {
+  const days = leaveDays.value
+  if (!days.length) return
+  await holidayStore.fetchHolidays({
+    company_id: authStore?.user?.company_id,
+    start_date: days[0],
+    end_date: days[days.length - 1],
+  })
+}
+
+/* --------------- lifecycle: mounted --------------- */
 onMounted(async () => {
   loading.value = true
   try {
     const { id } = route.params
     isEditMode.value = !!id
 
-    // Step 1: Fetch leave application
+    // 1) fetch application
     await leaveApplicationStore.fetchLeaveApplicationById(id)
-
     const application = leaveApplicationStore.leaveApplication
     const user = application?.user
-
     if (!application || !user) return
 
-    const user_id = application.user_id
+    // 2) leave types by company
     const companyId = user?.company?.id
+    if (companyId) await leaveTypeStore.fetchLeaveTypes(companyId)
 
-    // Step 2: Fetch leave types for user's company
-    if (companyId) {
-      await leaveTypeStore.fetchLeaveTypes(companyId)
+    // 3) user leave balances (edit-mode aware)
+    if (application.user_id) {
+      await userStore.fetchUserLeaveBalances(application.user_id, {
+        applicationId: leaveApplicationId.value,
+      })
     }
 
-    // Step 3: Fetch user leave balances
-    if (user_id) {
-      await userStore.fetchUserLeaveBalances(user_id)
-    }
-
-    // Step 4: Fetch type-wise employees
+    // 4) type-wise employees (handover list)
     await userStore.fetchTypeWiseEmployees({
       type: user.type,
       except: [user.id],
     })
+    userStore.users = userStore.users.map((_u) => ({ ..._u, label: _u.name }))
 
-    userStore.users = userStore.users.map((user) => ({
-      ...user,
-      label: user.name,
-    }))
-
-    // Set selected user if handover user exists
-    if (userStore.users.length > 0) {
-      const selected = userStore.users.find(
-        (u) => u.id === application.handover_user_id
-      )
+    // preselect handover user
+    if (userStore.users?.length) {
+      const selected = userStore.users.find((u) => u.id === application.handover_user_id)
       if (selected) selectUser.value = selected
     }
 
-    // Step 5: Populate form values
+    // 5) form fill
     form.value = {
       user_id: application.user_id,
       last_working_date: application.last_working_date,
@@ -98,151 +206,85 @@ onMounted(async () => {
       reason: application.reason,
       works_in_hand: application.works_in_hand,
       handover_user_id: application.handover_user_id,
-      leave_days: application.leave_days,
     }
 
-    // Step 6: Set selected leave types
-    if (application.json_data && Array.isArray(application.json_data)) {
-      application.json_data.forEach((item, index) => {
-        selectedLeaveTypes.value[index] = item.leave_type_id || userLeaveBalance.value[0]?.id
-      })
+    // 6) seed selections from saved json_data (date-keyed)
+    const seed = {}
+    if (Array.isArray(application.json_data)) {
+      for (const it of application.json_data) {
+        const d = it?.date
+        const lt = it?.leave_type_id
+        if (!d) continue
+        if (lt === 'weekend' || lt === 'holiday') seed[d] = lt
+        else if (lt != null && lt !== '' && !Number.isNaN(Number(lt))) {
+          seed[d] = Number(lt)
+        }
+      }
     }
+    selectedLeaveTypes.value = seed
 
-  } catch (error) {
-    console.error('Failed to load leave application:', error)
+    // 7) fetch holidays & final recalc (will also auto-CL new working days)
+    await fetchRangeHolidays()
+    recalcSelectionsFromRange()
+  } catch (e) {
+    console.error(e)
   } finally {
     loading.value = false
   }
 })
 
-
-const leaveDays = computed(() => {
-  const startDateStr = form.value.last_working_date
-  const endDateStr = form.value.resumption_date
-
-  if (!startDateStr || !endDateStr) return []
-
-  const start = new Date(startDateStr)
-  const end = new Date(endDateStr)
-
-  if (end <= start) return []
-
-  const days = []
-  let current = new Date(start)
-  current.setDate(current.getDate() + 1)
-
-  while (current < end) {
-    const yyyy = current.getFullYear()
-    const mm = (current.getMonth() + 1).toString().padStart(2, '0')
-    const dd = current.getDate().toString().padStart(2, '0')
-    days.push(`${yyyy}-${mm}-${dd}`)
-    current.setDate(current.getDate() + 1)
-  }
-
-  return days
-})
-
-const leaveDaysMessage = computed(() => {
-  const startDateStr = form.value.last_working_date
-  const endDateStr = form.value.resumption_date
-
-  if (!startDateStr || !endDateStr) return ''
-
-  const start = new Date(startDateStr)
-  const end = new Date(endDateStr)
-
-  if (end <= start) {
-    return 'Resumption date must be after Last Working Date.'
-  }
-
-  if (leaveDays.value.length === 0) {
-    return 'No leave days between the selected dates.'
-  }
-
-  return `Total leave days: ${leaveDays.value.length}`
-})
-
-watchEffect(async () => {
-  // if (isEditMode.value) return
-
-  if (leaveDays.value.length && userLeaveBalance.value.length) {
-    if (selectedLeaveTypes.value.length !== leaveDays.value.length) {
-      selectedLeaveTypes.value = leaveDays.value.map(() => userLeaveBalance.value[0]?.id)
-    }
-
-    await holidayStore.fetchHolidays({
-      company_id: authStore?.user?.company_id,
-      start_date: leaveDays.value[0],
-      end_date: leaveDays.value[leaveDays.value.length - 1],
-    })
-
-    leaveDays.value.forEach(async (day, index) => {
-      const weekdayName = new Date(day).toLocaleString('en-us', { weekday: 'long' }).toLowerCase()
-      const capitalizedWeekday = weekdayName.charAt(0).toUpperCase() + weekdayName.slice(1)
-
-      if (weekends.value.includes(capitalizedWeekday)) {
-        selectedLeaveTypes.value[index] = 'weekend'
-      }
-
-      if (holidayStore.holidayDates.includes(day)) {
-        selectedLeaveTypes.value[index] = 'holiday'
-      }
-    })
-  }
-})
-
+/* ---------- reactive effects ---------- */
+/** whenever date range changes -> fetch holidays then recalc */
 watch(
-  () => selectUser.value,
-  (newValue) => {
-    form.value.handover_user_id = newValue?.id
-  },
+  () => [form.value.last_working_date, form.value.resumption_date],
+  async () => {
+    await fetchRangeHolidays()
+    recalcSelectionsFromRange()
+  }
 )
 
-watch(selectedLeaveTypes, (newSelections) => {
-  const typeCount = {};
+/** weekends / holidays change -> recalc (keeps previous working-day selections) */
+watch(
+  () => [weekends.value, holidayStore.holidayDates],
+  () => {
+    recalcSelectionsFromRange()
+  },
+  { deep: true }
+)
 
-  newSelections.forEach((val) => {
-    if (typeof val === 'number') {
-      typeCount[val] = (typeCount[val] || 0) + 1;
-    }
-  });
-
-  const exceeded = userLeaveBalance.value.filter((type) => {
-    const count = typeCount[type.id] || 0;
-    return count > type.remaining_days;
-  });
-
-  if (exceeded.length) {
-    maxedOutTypes.value = exceeded.map((t) => t.name);
-
-    alert(
-      `You have exceeded remaining days for: ${maxedOutTypes.value.join(', ')}`
-    );
-  } else {
-    maxedOutTypes.value = [];
+/** keep handover id in sync with dropdown object */
+watch(
+  () => selectUser.value,
+  (v) => {
+    form.value.handover_user_id = v?.id || null
   }
-});
+)
 
+/* --------------- submit/update --------------- */
 const submitLeaveApplication = async () => {
   loading.value = true
   error.value = null
-
   try {
-    const leaveDaysPayload = leaveDays.value
-      .map((day, index) => ({
-        date: day,
-        leave_type_id:
-          selectedLeaveTypes.value[index] !== 'weekend' &&
-          selectedLeaveTypes.value[index] !== 'holiday'
-            ? selectedLeaveTypes.value[index]
-            : null,
-      }))
-      .filter((ld) => ld.leave_type_id !== null)
+    // Build arrays from date-keyed selections
+    const allDays = leaveDays.value
+    const leaveDaysPayload = []
+    const leaveDaysJson = []
 
-    const leaveDaysJson = leaveDays.value.map((day, index) => ({
-      date: day,
-      leave_type_id: selectedLeaveTypes.value[index] || '',
-    }))
+    for (const day of allDays) {
+      const sel = selectedLeaveTypes.value[day]
+      // payload for save (null for weekend/holiday so it doesn't consume balance)
+      const numericId =
+        sel !== 'weekend' && sel !== 'holiday' && sel != null ? Number(sel) : null
+
+      if (numericId != null) {
+        leaveDaysPayload.push({ date: day, leave_type_id: numericId })
+      }
+
+      leaveDaysJson.push({
+        date: day,
+        leave_type_id: sel == null ? '' : sel, // keep weekend/holiday strings for UI
+      })
+    }
 
     const payload = {
       id: leaveApplicationId.value,
@@ -257,30 +299,20 @@ const submitLeaveApplication = async () => {
     }
 
     if (payload.id) {
-      const newApplication = await leaveApplicationStore.updateLeaveApplication(payload.id, payload)
-      if (newApplication) {
-        router.push({ name: 'LeaveApplicationShow', params: { id: newApplication?.id } })
+      const updated = await leaveApplicationStore.updateLeaveApplication(payload.id, payload)
+      if (updated) {
+        router.push({ name: 'LeaveApplicationShow', params: { id: updated?.id } })
       }
     }
   } catch (err) {
-    error.value = err.message || 'Failed to submit leave application'
+    error.value = err?.message || 'Failed to submit leave application'
   } finally {
     loading.value = false
   }
 }
 
+/* --------------- misc --------------- */
 const goBack = () => router.go(-1)
-
-const isHoliday = async (day) => {
-  try {
-    const response = await holidayStore.fetchHolidays({ start_date: day })
-    const holidayDates = response[0]?.start_date || []
-    return holidayDates.includes(day)
-  } catch (error) {
-    console.error('Error fetching holidays:', error)
-    return false
-  }
-}
 </script>
 
 <template>
@@ -322,56 +354,64 @@ const isHoliday = async (day) => {
           />
         </div>
       </div>
-      <div v-if="form.last_working_date && form.resumption_date" class="">
+
+      <div v-if="form.last_working_date && form.resumption_date">
         <p class="text-blue-600 font-medium">{{ leaveDaysMessage }}</p>
       </div>
 
-      <!-- Leave days with radio groups -->
+      <!-- Leave days (date-keyed radios) -->
       <div v-if="leaveDays.length" class="bg-gray-100 p-2 rounded-md">
         <h2 class="text-lg font-semibold">Leave Days</h2>
-        <div>
-          <div
-            v-for="(day, index) in leaveDays"
-            :key="index"
-            class="flex gap-4 mb-2 bg-white p-2 rounded-md"
-          >
-            <div class="font-semibold">{{ day }}</div>
-            <div class="flex flex-wrap gap-2">
-               <label
-                v-for="type in userLeaveBalance"
-                :key="type.id"
-                class="flex items-center space-x-1"
-              >
-                <input
-                  type="radio"
-                  :name="'leaveType-' + index"
-                  :value="type.id"
-                  v-model="selectedLeaveTypes[index]"
-                  :disabled="selectedLeaveTypes.filter(t => t === type.id).length >= type.remaining_days"
-                />
-                <span>{{ type.leave_type }}</span>
-              </label>
-              <label class="flex items-center space-x-1">
-                <input
-                  type="radio"
-                  :name="'leaveType-' + index"
-                  value="weekend"
-                  v-model="selectedLeaveTypes[index]"
-                />
-                <span>Weekend</span>
-              </label>
-              <label class="flex items-center space-x-1">
-                <input
-                  type="radio"
-                  :name="'leaveType-' + index"
-                  value="holiday"
-                  v-model="selectedLeaveTypes[index]"
-                />
-                <span> Holiday</span>
-              </label>
-            </div>
+
+        <div v-for="(day, idx) in leaveDays" :key="day" class="flex gap-4 mb-2 bg-white p-2 rounded-md">
+          <div class="font-semibold w-32 shrink-0">{{ day }}</div>
+
+          <div class="flex flex-wrap gap-3">
+            <!-- numeric leave types -->
+            <label
+              v-for="type in userLeaveBalance"
+              :key="type.id"
+              class="flex items-center space-x-1"
+            >
+              <input
+                type="radio"
+                :name="'leaveType-' + day"
+                :value="type.id"
+                v-model="selectedLeaveTypes[day]"
+                :disabled="(typeUsageCounts[type.id] >= (type.remaining_days ?? Infinity)) && selectedLeaveTypes[day] !== type.id"
+              />
+              <span>{{ type.leave_type }}</span>
+            </label>
+
+            <!-- weekend -->
+            <label class="flex items-center space-x-1">
+              <input
+                type="radio"
+                :name="'leaveType-' + day"
+                value="weekend"
+                v-model="selectedLeaveTypes[day]"
+              />
+              <span>Weekend</span>
+            </label>
+
+            <!-- holiday -->
+            <label class="flex items-center space-x-1">
+              <input
+                type="radio"
+                :name="'leaveType-' + day"
+                value="holiday"
+                v-model="selectedLeaveTypes[day]"
+              />
+              <span>Holiday</span>
+            </label>
           </div>
         </div>
+
+        <!-- soft warning if anything exceeded -->
+        <p v-if="exceededTypes.length" class="text-red-600 text-sm font-medium mt-2">
+          You have exceeded remaining days for:
+          {{ exceededTypes.map(t => `${t.name} (used ${t.used}/${t.remain})`).join(', ') }}
+        </p>
       </div>
 
       <div>

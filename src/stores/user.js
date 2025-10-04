@@ -241,9 +241,13 @@ export const useUserStore = defineStore('user', () => {
       }
     }
 
-    const fetchUserLeaveBalances = async(userId) => {
+    const fetchUserLeaveBalances = async(userId, opts = null) => {
       try {
-        const res = await apiClient.get(`/user-leave-balance/${userId}`)
+        const params = {}
+        if (opts?.type) params.type = opts.type
+        if (opts?.applicationId) params.context_application_id = opts.applicationId
+
+        const res = await apiClient.get(`/user-leave-balance/${userId}` , { params })
         userLeaveBalance.value = res.data
         return res.data;
       } catch (err) {
