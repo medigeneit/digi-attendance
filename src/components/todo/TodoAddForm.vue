@@ -4,6 +4,7 @@ import { useTodoStore } from '@/stores/useTodoStore'
 import { computed, nextTick, onMounted, ref } from 'vue'
 import FormHandler from '../FormHandler.vue'
 import LoaderView from '../common/LoaderView.vue'
+import TodoTypeInput from './TodoTypeInput.vue'
 
 const props = defineProps({
   date: { type: String, default: getYearMonthDayFormat(new Date()) },
@@ -85,10 +86,11 @@ onMounted(async () => {
 
         <div class="mb-4">
           <label class="block text-gray-700 font-medium mb-2">Task ID (optional)</label>
-          <input
-            v-model="form.task_id"
-            placeholder="Enter a task id"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+
+          <TodoTypeInput
+            v-model:show="showTodoTypes"
+            v-model:todoType="form.todo_type"
+            v-model:todoTypeId="form.todo_type_id"
           />
         </div>
       </div>
