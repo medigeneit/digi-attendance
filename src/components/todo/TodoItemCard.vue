@@ -35,7 +35,7 @@ const emit = defineEmits([
 
 <template>
   <div
-    class="px-4 py-2 cursor-pointer flex items-center"
+    class="px-4 py-4 md:py-2 cursor-pointer flex flex-wrap items-center gap-y-2 gap-x-4"
     :class="{
       'bg-green-100': todo.status == 'COMPLETED',
       'hover:bg-gray-50': todo.status != 'COMPLETED',
@@ -44,9 +44,9 @@ const emit = defineEmits([
   >
     <!-- v-for="todo in allTodos"
                 :key="todo.id" -->
-    <TodoStatusIcon :todo="todo" />
 
-    <div class="ml-4">
+    <TodoStatusIcon :todo="todo" />
+    <div class="">
       <div
         class="line-clamp-1"
         :class="{
@@ -63,7 +63,10 @@ const emit = defineEmits([
       </div>
     </div>
 
-    <div class="line-clamp-2 ml-4 text-gray-500" v-if="todo.todo_type && todo.todo_type_id">
+    <div
+      class="line-clamp-2 text-gray-500 whitespace-nowrap mr-2"
+      v-if="todo.todo_type && todo.todo_type_id"
+    >
       {{ todo.todo_type }} id:
       <RouterLink
         class="text-blue-600 font-semibold underline hover:text-sky-400"
@@ -78,7 +81,7 @@ const emit = defineEmits([
       </RouterLink>
     </div>
 
-    <div class="ml-auto flex items-center gap-2">
+    <div class="md:ml-auto w-full md:w-auto flex items-center justify-center gap-2">
       <div class="flex items-center gap-1 text-red-600" v-if="todo.status == 'WORKING'">
         <span class="fas fa-circle animate-pulse text-xs"></span>
         <span class="text-xs">Working</span>

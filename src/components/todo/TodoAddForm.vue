@@ -12,6 +12,7 @@ const props = defineProps({
 })
 
 const state = ref()
+const showTodoTypes = ref(false)
 const titleRef = ref()
 const todoStore = useTodoStore()
 
@@ -46,7 +47,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="">
+  <div @click="showTodoTypes = false">
     <LoaderView
       v-if="todoStore.loading"
       class="absolute inset-0 bg-opacity-80 text-center py-4 text-gray-500 z-10 flex items-center justify-center"

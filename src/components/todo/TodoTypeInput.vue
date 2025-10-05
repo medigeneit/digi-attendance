@@ -92,20 +92,7 @@ onBeforeUnmount(() => {
 })
 </script>
 <template>
-  <div class="relative" @click.prevent="updatePosition" ref="anchor">
-    <!-- <input
-      readonly
-      placeholder="Enter a task id"
-      @focus.stop="null"
-      @click.stop="
-        () => {
-          modelShow = true
-          updatePosition()
-        }
-      "
-      v-model="modelTodoTypeId"
-      class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-    /> -->
+  <div class="relative" ref="anchor">
     <div
       class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 cursor-pointer"
       :class="modelTodoTypeId ? '' : 'text-gray-400'"
