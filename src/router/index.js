@@ -670,6 +670,16 @@ const router = createRouter({
             title: 'Monthly Application Log',
           },
         },
+        {
+          path: '/hrd/month-wise-application-report',
+          name: 'MonthWiseApplicationReport',
+          component: () => import('@/views/admin-pages/MonthWiseApplicationReport.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['super_admin', 'developer'],
+            title: 'Monthly Application Report',
+          },
+        },
 
         {
           path: '/hrd/shift-schedules',

@@ -14,6 +14,10 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
   const user = ref(null)
   const leave_balances = ref([])
   const selectedStatus = ref('')
+  const applicationMonth = ref(null);
+  const applicationUser = ref(null);
+  const applicationReport = ref([]);      
+  const applicationReportMonth = ref(null);
 
   async function fetchLeaveApplications(filters = {}) {
     loading.value = true
@@ -51,6 +55,59 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
         loading.value = false;
       }
     };
+
+  const getMonthlyApplicationSummary = async (userOrOpts, monthMaybe) => {
+    error.value = null;
+    loading.value = true;
+
+    try {
+      
+      if (typeof userOrOpts === 'object' || !monthMaybe) {
+        const opts = typeof userOrOpts === 'object' ? userOrOpts : {};
+        const month = opts.month || monthMaybe;
+        if (!month) throw new Error('Month is required');
+
+        const { companyId = null, departmentId = null, includeEmpty = false } = opts;
+
+        const { data } = await apiClient.get('/reports/monthly-applications', {
+          params: {
+            month,
+            company_id: companyId || undefined,
+            department_id: departmentId || undefined,
+            include_empty: includeEmpty ? 1 : 0,
+          },
+        });
+
+        applicationReport.value = Array.isArray(data?.results) ? data.results : [];
+        applicationReportMonth.value = data?.month || month;
+
+        return data;
+      }
+
+      // --- MODE 2: Per-user (old endpoint) ---
+      const userId = userOrOpts;
+      const month = monthMaybe;
+      if (!userId || !month) throw new Error('Invalid user ID or month');
+
+      const { data } = await apiClient.get(
+        `/user/application/monthly/${encodeURIComponent(month)}/report`,
+        { params: { user_id: userId } } // যদি backend এ দরকার না হয়, ignore হবে
+      );
+
+      applicationLog.value = data?.applications || [];
+      applicationUser.value = data?.user || null;
+      applicationMonth.value = data?.month || month;
+
+      return data;
+    } catch (err) {
+      console.error(err);
+      error.value = err?.response?.data?.message || err?.message || 'Something went wrong';
+      return null;
+    } finally {
+      loading.value = false;
+    }
+  };
+
 
   async function fetchYearlyUserLeaveApplications(filters = {}) {
     loading.value = true
@@ -383,5 +440,6 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
     getMonthlyApplicationLog,
     storeAdminLeaveApplication,
     leave_balances,
+    getMonthlyApplicationSummary
   }
 })

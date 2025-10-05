@@ -220,6 +220,8 @@ export const useChatStore = defineStore('chat', () => {
           parseInt(conversation.id) === parseInt(conversationId) ? response.data : conversation,
         )
       }
+
+      fetchNotificationCount()
     } catch (err) {
       error.value = err.response?.data?.message || 'ডাটা Update করতে ব্যর্থ হয়েছে।'
       console.error('Error creating read all message:', err)
