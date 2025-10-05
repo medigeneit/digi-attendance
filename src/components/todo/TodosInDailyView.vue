@@ -95,6 +95,7 @@ const userWiseTodos = (todos) => {
               @clickTodo="(todo) => emit('clickTodo', todo)"
               @clickEdit="(todo) => emit('clickEdit', todo)"
               @update="(todo) => emit('update')"
+              :user-role="userRole"
             />
           </template>
         </template>
