@@ -21,7 +21,6 @@ const emit = defineEmits(['update', 'cancelClick'])
 const form = ref({
   title: '',
   date: props.date || '',
-  task_id: '',
   todo_type: '',
   todo_type_id: '',
 })
@@ -31,7 +30,10 @@ async function handleFormSubmit() {
     state.value = 'submitting'
 
     if (!form.value?.todo_type_id) {
-      form.value.todo_type = ''
+      form.value = {
+        title: form.value.title,
+        date: form.value.date,
+      }
     }
 
     await todoStore.createTodo(form.value, {
