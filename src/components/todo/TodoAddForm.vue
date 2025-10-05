@@ -22,11 +22,18 @@ const form = ref({
   title: '',
   date: props.date || '',
   task_id: '',
+  todo_type: '',
+  todo_type_id: '',
 })
 
 async function handleFormSubmit() {
   try {
     state.value = 'submitting'
+
+    if (!form.value?.todo_type_id) {
+      // form.value?.todo_type = ''
+    }
+
     await todoStore.createTodo(form.value, {
       returnWith: props.userRole !== 'employee' ? 'user,department,company' : '',
     })

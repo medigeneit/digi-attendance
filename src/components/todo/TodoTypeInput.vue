@@ -62,6 +62,10 @@ function handleTaskClick(task) {
   modelTodoTypeId.value = task.id
   modelShow.value = false
 }
+function clearValue(_task) {
+  modelTodoTypeId.value = ''
+  modelShow.value = false
+}
 
 onMounted(async () => {
   await nextTick()
@@ -94,7 +98,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="relative" ref="anchor">
     <div
-      class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 cursor-pointer"
+      class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 cursor-pointer flex items-center"
       :class="modelTodoTypeId ? '' : 'text-gray-400'"
       @click.stop="
         () => {
@@ -104,6 +108,12 @@ onBeforeUnmount(() => {
       "
     >
       {{ modelTodoTypeId || 'Click to select todo' }}
+
+      <button
+        class="btn-icon fas fa-times !size-8 text-sm ml-auto"
+        v-if="modelTodoTypeId"
+        @click.prevent.stop="clearValue"
+      ></button>
     </div>
     <Teleport to="body">
       <div
