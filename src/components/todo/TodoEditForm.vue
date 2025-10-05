@@ -2,8 +2,10 @@
 import { getDisplayDate, getYearMonthDayFormat } from '@/libs/datetime'
 import { useTodoStore } from '@/stores/useTodoStore'
 import { computed, nextTick, onMounted, ref } from 'vue'
-import FormHandler from '../FormHandler.vue'
+
 import LoaderView from '../common/LoaderView.vue'
+import FormHandler from '../FormHandler.vue'
+import TodoTypeInput from './TodoTypeInput.vue'
 
 const props = defineProps({
   date: { type: String, default: getYearMonthDayFormat(new Date()) },
@@ -11,6 +13,7 @@ const props = defineProps({
 })
 
 const state = ref()
+const showTodoTypes = ref(false)
 const titleRef = ref()
 const todoStore = useTodoStore()
 
@@ -30,6 +33,9 @@ async function fetchTodo() {
 
 async function handleFormSubmit() {
   state.value = 'submitting'
+
+  console.log({ form: form.value })
+
   try {
     await todoStore.updateTodo(props.todo.id, form.value)
     emit('update')
@@ -50,7 +56,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="relative">
+  <div class="relative" @click="showTodoTypes = false">
     <LoaderView
       v-if="todoStore.loading"
       class="absolute inset-0 bg-opacity-80 text-center py-4 text-gray-500 z-10 flex items-center justify-center"
@@ -63,6 +69,7 @@ onMounted(async () => {
       :isSubmitting="state == 'submitting'"
       :isLoading="todoStore.loading"
       :error="todoStore.error"
+      id="todoEditForm"
     >
       <div class="border-b py-2 px-4">
         <h2 class="text-xl font-semibold">Edit Todo</h2>
@@ -88,10 +95,10 @@ onMounted(async () => {
 
         <div class="mb-4">
           <label class="block text-gray-700 font-medium mb-2">Task ID (optional)</label>
-          <input
-            v-model="form.todo_type_id"
-            placeholder="Enter a task id"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+          <TodoTypeInput
+            v-model:show="showTodoTypes"
+            v-model:todoType="form.todo_type"
+            v-model:todoTypeId="form.todo_type_id"
           />
         </div>
       </div>

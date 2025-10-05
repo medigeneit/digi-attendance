@@ -91,6 +91,7 @@ async function handleTodosRearrange() {
             hide-department
             hide-user
             class="border-b border-sky-200"
+            :userRole="userRole"
           />
         </template>
       </DraggableList>

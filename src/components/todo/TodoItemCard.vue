@@ -16,6 +16,10 @@ defineProps({
     type: Boolean,
     default: false,
   },
+  userRole: {
+    type: String,
+    default: 'employee',
+  },
 })
 
 const authStore = useAuthStore()
@@ -60,7 +64,18 @@ const emit = defineEmits([
     </div>
 
     <div class="line-clamp-2 ml-4 text-gray-500" v-if="todo.todo_type && todo.todo_type_id">
-      {{ todo.todo_type }} id: {{ todo.todo_type_id }}
+      {{ todo.todo_type }} id:
+      <RouterLink
+        class="text-blue-600 font-semibold underline hover:text-sky-400"
+        @click.stop="null"
+        :to="{
+          name: userRole == 'employee' ? 'MyTaskShow' : 'TaskShow',
+          params: { id: todo.todo_type_id },
+        }"
+      >
+        <i class="fas fa-link"></i>
+        {{ todo.todo_type_id }}
+      </RouterLink>
     </div>
 
     <div class="ml-auto flex items-center gap-2">

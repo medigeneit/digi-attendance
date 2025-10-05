@@ -170,7 +170,7 @@ watch(
               :key="breadcrumbTask.id"
             >
               <li aria-hidden="true" class="text-gray-400 text-base" v-if="index > 0">/</li>
-              <li :title="breadcrumbTask?.title" class="text-gray-600">
+              <li :title="breadcrumbTask?.title" class="text-gray-600 line-clamp-1">
                 <RouterLink
                   :to="`${isMyTask ? '/my-tasks' : '/tasks'}/${breadcrumbTask.id}`"
                   class="hover:text-gray-900 hover:underline transition"
