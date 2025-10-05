@@ -219,7 +219,7 @@ watch(
                 <template v-if="store.task?.created_by_user">
                   <span class="text-sm text-gray-600 ml-4">By</span>
                   <div class="flex items-center gap-0.5">
-                    <UserAvatar :user="store.task?.created_by_user" class="!size-4 ml-1" />
+                    <UserAvatar :user="store.task?.created_by_user" class="ml-1" size="xsmall" />
                     <div class="text-sky-400 text-sm font-semibold">
                       {{ store.task?.created_by_user?.label }}
                     </div>
