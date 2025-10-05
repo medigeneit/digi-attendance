@@ -31,7 +31,7 @@ async function handleFormSubmit() {
     state.value = 'submitting'
 
     if (!form.value?.todo_type_id) {
-      // form.value?.todo_type = ''
+      form.value.todo_type = ''
     }
 
     await todoStore.createTodo(form.value, {
