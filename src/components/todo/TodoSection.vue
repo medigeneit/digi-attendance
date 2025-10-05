@@ -3,7 +3,7 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import TodoHeading from '@/components/todo/TodoHeading.vue'
 import TodoCalenderView from '@/components/todo/TodosInCalenderView.vue'
 import TodosInDailyView from '@/components/todo/TodosInDailyView.vue'
-import { getLastDateOfMonth, getYearMonthDayFormat } from '@/libs/datetime'
+import { getCalendarRange, getLastDateOfMonth, getYearMonthDayFormat } from '@/libs/datetime'
 import { useTodoStore } from '@/stores/useTodoStore'
 import TodoCreateEditShow from '@/views/private-pages/todos/TodoCreateEditShow.vue'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -148,13 +148,20 @@ const getMonthString = computed(() => {
 
 async function fetchTodos() {
   const [year, month] = [Number(props.year), Number(props.month)]
-  const startDate = getYearMonthDayFormat(new Date(year, month - 1, 1))
-  const endDate = getYearMonthDayFormat(getLastDateOfMonth(year, month - 1))
 
+  const startDate1 = getYearMonthDayFormat(new Date(year, month - 1, 1))
+  const endDate1 = getYearMonthDayFormat(getLastDateOfMonth(year, month - 1))
+
+  console.log('FETCHING...', { startDate1, endDate1 })
+
+  const [startDate, endDate] = getCalendarRange(year, month - 1)
   console.log('FETCHING...', { startDate, endDate })
 
   if (props.userRole == 'employee') {
-    await todoStore.fetchMyTodos()
+    await todoStore.fetchMyTodos({
+      'start-date': startDate,
+      'end-date': endDate,
+    })
   } else {
     await todoStore.fetchTodos({
       'company-id': props.companyId,

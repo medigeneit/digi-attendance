@@ -1,5 +1,5 @@
 <script setup>
-import { dateIsToday } from '@/libs/datetime'
+import { dateIsToday, getMonthName } from '@/libs/datetime'
 import CalenderView from '../Calender/CalenderView.vue'
 import TodosInDate from './TodosInDate.vue'
 
@@ -30,7 +30,7 @@ function isToday(date) {
 <template>
   <div class="relative">
     <CalenderView v-if="month" :month="month" class="border-t border-blue-200/50 relative">
-      <template #date="{ day, yearMonthDate, isCurrentMonth }">
+      <template #date="{ day, month, yearMonthDate, isCurrentMonth }">
         <div
           tabindex="0"
           class="border p-4 cursor-pointer group/date relative focus:outline-slate-400"
@@ -44,10 +44,13 @@ function isToday(date) {
         >
           <button
             tabindex="1"
-            :class="{ 'text-gray-300': !isCurrentMonth, 'text-sky-400': isCurrentMonth }"
-            class="text-center mb-2 font-semibold hover:bg-sky-200 w-full rounded"
+            :class="{
+              'text-gray-300 hover:bg-sky-200  hover:text-white': !isCurrentMonth,
+              'text-sky-400 hover:bg-sky-200': isCurrentMonth,
+            }"
+            class="text-center mb-2 font-semibold w-full rounded"
           >
-            {{ day }}
+            {{ day }} {{ !isCurrentMonth ? getMonthName(month - 1) : '' }}
           </button>
           <div>
             <TodosInDate :date="yearMonthDate" @clickTodo="(todo) => emit('clickTodo', todo)">

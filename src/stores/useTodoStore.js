@@ -12,7 +12,7 @@ export const useTodoStore = defineStore('todo', () => {
   const todos = ref([])
 
   const fetchTodos = async (params) => {
-    console.log({params})
+
     loading.value = true;
     error.value = null;
     try {
@@ -44,11 +44,11 @@ export const useTodoStore = defineStore('todo', () => {
     ]
   }
 
-  const fetchMyTodos = async () => {
+  const fetchMyTodos = async (params) => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await apiClient.get('/my-todos');
+      const response = await apiClient.get('/my-todos', {params});
       todos.value = response.data?.todos || [];
       sortTodoList()
     } catch (err) {

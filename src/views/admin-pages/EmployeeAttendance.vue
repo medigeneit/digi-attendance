@@ -37,7 +37,9 @@ const toMonth = (val) => {
 }
 
 const q = route.query
-const selectedMonth = ref(toMonth(q.date) || toMonth(attendanceStore.selectedMonth) || toMonth(new Date()))
+const selectedMonth = ref(
+  toMonth(q.date) || toMonth(attendanceStore.selectedMonth) || toMonth(new Date()),
+)
 
 const filters = ref({
   company_id: q.company_id || '',
@@ -120,7 +122,7 @@ watch(
     selectedMonth.value = toMonth(date)
     syncQuery({ date: selectedMonth.value })
     // We do NOT fetch here immediately; the employee watcher controls fetching to avoid double-calls
-  }
+  },
 )
 
 // Keep URL in sync when any filter changes (but do not fetch here)
@@ -128,7 +130,7 @@ watch(
   () => ({ ...filters.value }), // shallow spread avoids deep reactivity pitfalls
   () => {
     syncQuery()
-  }
+  },
 )
 
 // Fetch user + attendance when employee changes
@@ -144,7 +146,7 @@ watch(
       // reset lastFetchKey so future selections can trigger
       lastFetchKey.value = ''
     }
-  }
+  },
 )
 
 /* -----------------------
@@ -189,21 +191,21 @@ const hasSelection = computed(() => !!filters.value.employee_id)
 
     <div class="rounded-xl border border-zinc-200 bg-white shadow-sm p-3">
       <div class="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
-        <p class="text-sm text-zinc-600">
-          <i class="fas fa-filter mr-2"></i> Filters
-        </p>
-        <div class="h-1 w-32 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-400 rounded-full"></div>
+        <p class="text-sm text-zinc-600"><i class="fas fa-filter mr-2"></i> Filters</p>
+        <div
+          class="h-1 w-32 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-400 rounded-full"
+        ></div>
       </div>
       <div class="w-full flex flex-wrap gap-4 items-center md:w-auto">
-          <EmployeeFilter
-           v-model:company_id="filters.company_id"
-            v-model:department_id="filters.department_id"
-            v-model:employee_id="filters.employee_id"
-            v-model:line_type="filters.line_type"
-            :with-type="true"
-            :initial-value="$route.query"
-           @filter-change="handleFilterChange"
-           class="w-full"
+        <EmployeeFilter
+          v-model:company_id="filters.company_id"
+          v-model:department_id="filters.department_id"
+          v-model:employee_id="filters.employee_id"
+          v-model:line_type="filters.line_type"
+          :with-type="true"
+          :initial-value="$route.query"
+          @filter-change="handleFilterChange"
+          class="w-full"
         />
         <div>
           <input
@@ -217,7 +219,6 @@ const hasSelection = computed(() => !!filters.value.employee_id)
         </div>
       </div>
     </div>
-
 
     <div v-if="selectedUser" class="grid md:grid-cols-2 gap-4 text-sm">
       <SelectedEmployeeCard v-if="hasSelection" :user="selectedUser" />
@@ -251,21 +252,27 @@ const hasSelection = computed(() => !!filters.value.employee_id)
         </div>
         <hr />
         <div class="grid md:grid-cols-2">
-          <p><strong>Total Working Days:</strong> {{ attendanceStore?.summary?.total_working_days }}</p>
+          <p>
+            <strong>Total Working Days:</strong> {{ attendanceStore?.summary?.total_working_days }}
+          </p>
           <p><strong>Present Days:</strong> {{ attendanceStore?.summary?.total_present_days }}</p>
           <p><strong>Absent Days:</strong> {{ attendanceStore?.summary?.total_absent_days }}</p>
           <p><strong>Late Days:</strong> {{ attendanceStore?.summary?.actual_late_day }}</p>
           <p><strong>Total Weekends:</strong> {{ attendanceStore?.summary?.total_weekend_days }}</p>
-          <p><strong>Total Working Hours:</strong> {{ attendanceStore?.summary?.total_working_hours }}</p>
-          <p><strong>Total Overtime Hours:</strong> {{ attendanceStore?.summary?.total_overtime_hours }}</p>
+          <p>
+            <strong>Total Working Hours:</strong>
+            {{ attendanceStore?.summary?.total_working_hours }}
+          </p>
+          <p>
+            <strong>Total Overtime Hours:</strong>
+            {{ attendanceStore?.summary?.total_overtime_hours }}
+          </p>
         </div>
       </div>
     </div>
 
     <div v-else>
-      <p class="text-gray-400 text-center text-2xl italic">
-        Select an employee, please.
-      </p>
+      <p class="text-gray-400 text-center text-2xl italic">Select an employee, please.</p>
     </div>
 
     <LoaderView v-if="attendanceStore.isLoading" />

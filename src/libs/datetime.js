@@ -195,3 +195,43 @@ export function getLastDateOfMonth(year, month) {
   // month is 0-based (0 = January, 11 = December)
   return new Date(year, month + 1, 0);
 }
+
+/**
+ *
+ * @param {Number} month month zero based month
+ * @returns {String} 3 digit month name
+ */
+export function getMonthName(month){
+  return monthNames[month]
+}
+
+export function getCalendarRange(year, month) {
+  // month = 0 ভিত্তিক (Jan=0, Feb=1)
+  const firstDayOfMonth = new Date(year, month, 1)
+  const lastDayOfMonth = new Date(year, month + 1, 0)
+
+  // সপ্তাহ শুরু শনিবার (6), শেষ শুক্রবার (5)
+  const weekStart = 6
+  const weekEnd = 5
+
+  // প্রথম দিনের weekday
+  let startDay = firstDayOfMonth.getDay()
+  // যদি মাস শনিবারে শুরু না হয়, আগের শনিবারে নিয়ে যাওয়া
+  let diffStart = (7 + startDay - weekStart) % 7
+
+  // শেষ দিনের weekday
+  let endDay = lastDayOfMonth.getDay()
+  // যদি মাস শুক্রবারে শেষ না হয়, পরের শুক্রবারে নিয়ে যাওয়া
+  let diffEnd = (7 + weekEnd - endDay) % 7
+
+  // leading day সহ শুরু
+  const calendarStart = new Date(firstDayOfMonth)
+  calendarStart.setDate(firstDayOfMonth.getDate() - diffStart)
+
+  // trailing day সহ শেষ
+  const calendarEnd = new Date(lastDayOfMonth)
+  calendarEnd.setDate(lastDayOfMonth.getDate() + diffEnd)
+
+  return [ getYearMonthDayFormat(calendarStart), getYearMonthDayFormat(calendarEnd) ]
+}
+
