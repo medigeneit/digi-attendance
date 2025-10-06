@@ -173,8 +173,6 @@ export function getDateRangeArray(start, end) {
 
 export function dateIsToday(givenDate){
 
-
-
   if (!givenDate || !givenDate instanceof Date) {
     return false
   }
@@ -183,10 +181,12 @@ export function dateIsToday(givenDate){
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Also remove time from given date
-  givenDate.setHours(0, 0, 0, 0);
+  const selectedDate = givenDate instanceof Date ? givenDate: new Date( givenDate )
 
-  return  givenDate.getTime() === today.getTime();
+  // Also remove time from given date
+  selectedDate.setHours(0, 0, 0, 0);
+
+  return  selectedDate.getTime() === today.getTime();
 
 }
 

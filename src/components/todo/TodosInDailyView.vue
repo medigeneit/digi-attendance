@@ -1,5 +1,5 @@
 <script setup>
-import { getDisplayDate } from '@/libs/datetime'
+import { dateIsToday, getDisplayDate } from '@/libs/datetime'
 import { useAuthStore } from '@/stores/auth'
 import { useTodoStore } from '@/stores/useTodoStore'
 import { computed } from 'vue'
@@ -60,6 +60,10 @@ const userWiseTodos = (todos) => {
 
   return Object.values(grouped)
 }
+
+// const dateIsToday = computed(() => {
+//   return true
+// })
 </script>
 <template>
   <div class="relative bg-white p-4">
@@ -76,8 +80,13 @@ const userWiseTodos = (todos) => {
     <div class="max-w-6xl mx-auto border rounded my-5">
       <div class="text-gray-700 border-b py-2 px-4 flex items-center">
         <button class="fa fa-arrow-left btn-icon mr-2" @click.prevent="emit('backClick')"></button>
-        <div class="text-lg font-semibold">
-          {{ getDisplayDate(selectedDate, { weekDay: 'long' }) }} {{ type }}
+        <div class="text-lg font-semibold flex items-center gap-2">
+          {{ getDisplayDate(selectedDate, { weekDay: 'long' }) }}
+          <span
+            v-if="dateIsToday(date)"
+            class="rounded-md border text-xs px-2 py-[1px] text-red-500 border-red-500 bg-red-50"
+            >Today</span
+          >
         </div>
 
         <div class="ml-auto flex items-center gap-2" v-if="userRole == 'employee'">
