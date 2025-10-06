@@ -67,7 +67,7 @@ const emit = defineEmits([
       class="line-clamp-2 text-gray-500 whitespace-nowrap mr-2"
       v-if="todo.todo_type && todo.todo_type_id"
     >
-      {{ todo.todo_type }} id:
+      {{ todo.todo_type }}
       <RouterLink
         class="text-blue-600 font-semibold underline hover:text-sky-400"
         @click.stop="null"

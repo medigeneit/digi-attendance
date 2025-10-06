@@ -1,6 +1,7 @@
 <script setup>
 import { useTaskStore } from '@/stores/useTaskStore'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import TodoInputTaskItem from './TodoInputTaskItem.vue'
 
 const props = defineProps({
   todoType: {
@@ -122,12 +123,38 @@ onBeforeUnmount(() => {
         class="fixed h-[300px] bg-white rounded-b-md overflow-y-auto shadow-lg border z-[5000] p-4"
       >
         <div class="border">
-          <div
+          <TodoInputTaskItem
             v-for="task in taskStore.tasks"
             :key="task.id"
-            class="px-2 border-b py-3 over text-sm relative group/main"
+            :task="task"
+            @select="handleTaskClick"
+            :selected="modelTodoTypeId"
+            class="group/main"
           >
-            <div class="flex items-center py-1">
+            <template #children="{ childrenTasks }">
+              <div class="border ml-4 mt-4">
+                <TodoInputTaskItem
+                  v-for="task in childrenTasks"
+                  :key="task.id"
+                  :task="task"
+                  @select="handleTaskClick"
+                  :selected="modelTodoTypeId"
+                >
+                  <template #children="{ childrenTasks }">
+                    <div class="border ml-4 mt-4">
+                      <TodoInputTaskItem
+                        v-for="task in childrenTasks"
+                        :key="task.id"
+                        :task="task"
+                        @select="handleTaskClick"
+                        :selected="modelTodoTypeId"
+                      ></TodoInputTaskItem>
+                    </div>
+                  </template>
+                </TodoInputTaskItem>
+              </div>
+            </template>
+            <!-- <div class="flex items-center py-1">
               <div
                 :class="[
                   'line-clamp-2 mr-4 ',
@@ -174,8 +201,8 @@ onBeforeUnmount(() => {
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </div> -->
+          </TodoInputTaskItem>
         </div>
       </div>
     </Teleport>
