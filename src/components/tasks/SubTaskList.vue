@@ -20,7 +20,7 @@ const props = defineProps({
 const route = useRoute()
 const auth = useAuthStore()
 const search = ref('')
-const taskStatus = ref('not-completed')
+const taskStatus = ref('')
 
 const employeeAssignForm = reactive({
   taskId: 0,
