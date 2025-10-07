@@ -97,7 +97,7 @@ const submit = async () => {
 function setTaskOnFormData(taskData) {
   form.value =
     auth.user?.role == 'employee'
-      ? {}
+      ? { user_ids: task.value.users?.map((u) => u.id) }
       : {
           is_important: taskData.is_important,
           is_urgent: taskData.is_urgent,
