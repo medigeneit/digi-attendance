@@ -38,7 +38,8 @@ const form = ref({
 
 /**
  * date-keyed selections:
- * e.g. selectedLeaveTypes['2025-10-05'] = 12 | 'weekend' | 'holiday'
+ * selectedLeaveTypes['2025-10-05'] = 12 | 'weekend' | 'holiday'
+ * ✅ এডিট ডাটাই truth; কোনো অটো-ডিফল্ট বসবে না
  */
 const selectedLeaveTypes = ref({}) // Record<YYYY-MM-DD, number | 'weekend' | 'holiday'>
 
@@ -47,13 +48,6 @@ const error = ref(null)
 const isEditMode = ref(false)
 
 /* ---------------- helpers ---------------- */
-const weekends = computed(() => {
-  return (
-    leaveApplicationStore?.leaveApplication?.user?.assign_weekend?.weekends ||
-    leaveApplicationStore?.leaveApplication?.user?.weekends || []
-  )
-})
-
 const toYMD = (d) => {
   const yyyy = d.getFullYear()
   const mm = String(d.getMonth() + 1).padStart(2, '0')
@@ -92,17 +86,6 @@ const leaveDaysMessage = computed(() => {
   return `Total leave days: ${leaveDays.value.length}`
 })
 
-/** quick checks */
-const isWeekendDate = (day) => {
-  const weekdayName = new Date(day).toLocaleString('en-us', { weekday: 'long' }).toLowerCase()
-  const cap = weekdayName.charAt(0).toUpperCase() + weekdayName.slice(1)
-  return weekends.value.includes(cap)
-}
-const isHolidayDate = (day) => {
-  return (holidayStore?.holidayDates || []).includes(day)
-}
-
-
 /** count usage per numeric type id */
 const typeUsageCounts = computed(() => {
   const counts = {}
@@ -114,7 +97,7 @@ const typeUsageCounts = computed(() => {
   return counts
 })
 
-/** exceeded types list (to show soft warning) */
+/** exceeded types list (soft warning) */
 const exceededTypes = computed(() => {
   const list = userLeaveBalance.value || []
   const over = []
@@ -127,38 +110,16 @@ const exceededTypes = computed(() => {
   return over
 })
 
-const recalcSelectionsFromRange = () => {
-  const old = { ...(selectedLeaveTypes.value || {}) }
+/** ✅ Range change হলে শুধু পুরোনো সিলেকশনগুলো রাখি; নতুন দিন -> খালি */
+const alignSelectionsToRange = () => {
+  const current = selectedLeaveTypes.value || {}
   const next = {}
-
   for (const day of leaveDays.value) {
-    if (isWeekendDate(day)) {
-      next[day] = 'weekend'
-      continue
-    }
-    if (isHolidayDate(day)) {
-      next[day] = 'holiday'
-      continue
-    }
-    const prev = old[day]
-    if (typeof prev === 'number') {
-      next[day] = prev
-      continue
+    if (Object.prototype.hasOwnProperty.call(current, day)) {
+      next[day] = current[day]
     }
   }
-
   selectedLeaveTypes.value = next
-}
-
-/** fetch holidays for range (company scope) */
-const fetchRangeHolidays = async () => {
-  const days = leaveDays.value
-  if (!days.length) return
-  await holidayStore.fetchHolidays({
-    company_id: authStore?.user?.company_id,
-    start_date: days[0],
-    end_date: days[days.length - 1],
-  })
 }
 
 /* --------------- lifecycle: mounted --------------- */
@@ -185,14 +146,12 @@ onMounted(async () => {
       })
     }
 
-    // 4) type-wise employees (handover list)
+    // 4) handover dropdown
     await userStore.fetchTypeWiseEmployees({
       type: user.type,
       except: [user.id],
     })
     userStore.users = userStore.users.map((_u) => ({ ..._u, label: _u.name }))
-
-    // preselect handover user
     if (userStore.users?.length) {
       const selected = userStore.users.find((u) => u.id === application.handover_user_id)
       if (selected) selectUser.value = selected
@@ -208,7 +167,7 @@ onMounted(async () => {
       handover_user_id: application.handover_user_id,
     }
 
-    // 6) seed selections from saved json_data (date-keyed)
+    // 6) ✅ seed from saved json_data ONLY (no auto weekend/holiday/defaults)
     const seed = {}
     if (Array.isArray(application.json_data)) {
       for (const it of application.json_data) {
@@ -223,9 +182,8 @@ onMounted(async () => {
     }
     selectedLeaveTypes.value = seed
 
-    // 7) fetch holidays & final recalc (will also auto-CL new working days)
-    await fetchRangeHolidays()
-    recalcSelectionsFromRange()
+    // 7) ✅ শুধু রেঞ্জ অনুযায়ী align — কোনো অটো-ফিল নয়
+    alignSelectionsToRange()
   } catch (e) {
     console.error(e)
   } finally {
@@ -234,22 +192,12 @@ onMounted(async () => {
 })
 
 /* ---------- reactive effects ---------- */
-/** whenever date range changes -> fetch holidays then recalc */
+/** date range change -> শুধু align (no auto weekend/holiday) */
 watch(
   () => [form.value.last_working_date, form.value.resumption_date],
-  async () => {
-    await fetchRangeHolidays()
-    recalcSelectionsFromRange()
-  }
-)
-
-/** weekends / holidays change -> recalc (keeps previous working-day selections) */
-watch(
-  () => [weekends.value, holidayStore.holidayDates],
   () => {
-    recalcSelectionsFromRange()
-  },
-  { deep: true }
+    alignSelectionsToRange()
+  }
 )
 
 /** keep handover id in sync with dropdown object */
@@ -265,14 +213,14 @@ const submitLeaveApplication = async () => {
   loading.value = true
   error.value = null
   try {
-    // Build arrays from date-keyed selections
+    // Build arrays from date-keyed selections (only current range)
     const allDays = leaveDays.value
     const leaveDaysPayload = []
     const leaveDaysJson = []
 
     for (const day of allDays) {
       const sel = selectedLeaveTypes.value[day]
-      // payload for save (null for weekend/holiday so it doesn't consume balance)
+      // payload for save (null/empty for non-numeric so it doesn't consume balance)
       const numericId =
         sel !== 'weekend' && sel !== 'holiday' && sel != null ? Number(sel) : null
 
@@ -280,9 +228,10 @@ const submitLeaveApplication = async () => {
         leaveDaysPayload.push({ date: day, leave_type_id: numericId })
       }
 
+      // ✅ json_data exactly as edited (empty string if unset)
       leaveDaysJson.push({
         date: day,
-        leave_type_id: sel == null ? '' : sel, // keep weekend/holiday strings for UI
+        leave_type_id: sel == null ? '' : sel,
       })
     }
 
@@ -294,8 +243,8 @@ const submitLeaveApplication = async () => {
       reason: form.value.reason,
       works_in_hand: form.value.works_in_hand,
       handover_user_id: form.value.handover_user_id,
-      leave_days: leaveDaysPayload,
-      json_data: leaveDaysJson,
+      leave_days: leaveDaysPayload, // numeric only
+      json_data: leaveDaysJson,     // as edited (can include 'weekend'/'holiday'/'')
     }
 
     if (payload.id) {
