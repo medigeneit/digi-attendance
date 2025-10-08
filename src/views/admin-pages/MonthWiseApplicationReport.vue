@@ -39,7 +39,7 @@ const cols = ref({
   leave: true,    // Leave Day
   ex: false,      // Shift Exchange
   sl: true,       // Short Leave
-  manual: true,   // <-- NEW: Manual separate group
+  manual: true,   // Manual separate group
 })
 try {
   const saved = JSON.parse(localStorage.getItem(COLS_KEY) || '{}')
@@ -61,23 +61,28 @@ const toHMShort = (hours) => {
   const m = Math.round((n - h) * 60)
   return `${h}:${String(m).padStart(2, '0')}`
 }
-const normalizeLeaveByType = (byType) => {
-  if (!byType) return {}
-  if (Array.isArray(byType)) {
-    const out = {}
-    for (const it of byType) {
-      if (it && it.type != null) out[String(it.type)] = safeNum(it.days)
-    }
-    return out
+
+// NEW: backend sends leave.by_code = {CL, ML, SL, WPL}
+const normalizeLeaveByCode = (byCode) => {
+  if (!byCode || typeof byCode !== 'object') {
+    return { CL: 0, ML: 0, SL: 0, WPL: 0 }
   }
-  return typeof byType === 'object' ? byType : {}
+  return {
+    CL: safeNum(byCode.CL),
+    ML: safeNum(byCode.ML),
+    SL: safeNum(byCode.SL),
+    WPL: safeNum(byCode.WPL),
+  }
 }
+
 const hasAnyPositive = (obj = {}) => Object.values(obj).some(v => safeNum(v) > 0)
 
 /* --------------- computed (row+totals) ----- */
 const coreRows = computed(() =>
   (applicationReport.value || []).map(r => {
-    const _leaveBy = normalizeLeaveByType(r?.leave?.by_type)
+    // ⬇️ updated to by_code
+    const _leaveBy = normalizeLeaveByCode(r?.leave?.by_code)
+
     return {
       ...r,
       _leaveBy,
@@ -85,13 +90,23 @@ const coreRows = computed(() =>
       _ml: safeNum(_leaveBy.ML),
       _sl: safeNum(_leaveBy.SL),
       _leaveTotal: safeNum(r?.leave?.total_days),
+
       _otReq: safeNum(r?.overtime?.requested_hours),
       _otAppr: safeNum(r?.overtime?.approved_hours),
       _otApps: safeNum(r?.overtime?.count),
-      _exOff: safeNum(r?.exchanges?.offday),
-      _exShift: safeNum(r?.exchanges?.shift),
-      _slTotal: safeNum(r?.short_leave?.total),
-      _slMinutes: safeNum(r?.short_leave?.minutes),
+
+      // ⬇️ updated to nested exchange totals
+      _exOff: safeNum(r?.exchanges?.offday?.total),
+      _exShift: safeNum(r?.exchanges?.shift?.total),
+
+      // ⬇️ updated to short_leave.totals
+      _slTotal: safeNum(r?.short_leave?.totals?.count),
+      _slMinutesApproved: safeNum(r?.short_leave?.totals?.approved_minutes),
+      _slMinutesPending: safeNum(r?.short_leave?.totals?.pending_minutes),
+
+      // UI single "Minutes" column → using approved minutes
+      _slMinutes: safeNum(r?.short_leave?.totals?.approved_minutes),
+
       _manual: safeNum(r?.manual_attendance),
     }
   })
@@ -142,7 +157,7 @@ const groupColspan = (g) => {
   if (g === 'ot') return cols.value.ot ? 3 : 0
   if (g === 'leave') return cols.value.leave ? 4 : 0
   if (g === 'ex') return cols.value.ex ? 2 : 0
-  if (g === 'sl') return cols.value.sl ? 2 : 0       // SL now only 2 columns
+  if (g === 'sl') return cols.value.sl ? 2 : 0
   if (g === 'manual') return cols.value.manual ? 1 : 0
   return 0
 }
@@ -206,7 +221,7 @@ const downloadCSV = () => {
     ...(cols.value.ot ? ['OT Req(h)','OT Appr(h)','OT Apps'] : []),
     ...(cols.value.leave ? ['CL','ML','SL','Leave Total'] : []),
     ...(cols.value.ex ? ['Offday Exch','Shift Exch'] : []),
-    ...(cols.value.sl ? ['SL Total','SL Minutes'] : []),
+    ...(cols.value.sl ? ['SL Total','SL Minutes (Approved)'] : []),
     ...(cols.value.manual ? ['Manual'] : []),
   ]
   const rowsCsv = filteredRows.value.map((u, i) => ([
@@ -298,7 +313,7 @@ const printTable = () => window.print()
     <div
       v-if="!loading"
       class="table-wrap group bg-white border rounded-xl shadow-sm overflow-auto print:overflow-visible"
-      :class="dense ? 'max-h-[68vh]' : 'max-h-[74vh]'"
+      :class="dense ? 'max-h-[74vh]' : 'max-h-[80vh]'"
     >
       <table class="w-full text-[12px] print:text-[11px] leading-tight">
         <!-- width hints -->
