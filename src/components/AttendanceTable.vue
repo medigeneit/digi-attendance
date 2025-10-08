@@ -150,12 +150,29 @@
             </template>
             <template v-else-if="log.over_time_status && log.overtime_hours">
               <span>{{ log.overtime_hours }}</span>
+              <router-link
+                v-if="applyApplication && log.overtime_hours"
+                :to="{
+                  name: 'MyOvertimeAdd',
+                  query: {
+                    date: new Date(log.date + ' UTC').toISOString().split('T')[0],
+                    start_time: log.exit_time,
+                    end_time: log.shift_end_time,
+                    request_overtime_hours: log.overtime_hours
+                  },
+                }"
+                class="btn-link text-red-600"
+              >
+                (Apply)
+              </router-link>
             </template>
           </td>
 
           <!-- Approved OT -->
           <td class="border px-1 py-0.5">
             {{ log?.approved_over_times ? log.approved_over_times + ' H' : '' }}
+
+            
           </td>
 
           <!-- Late Entry -->
