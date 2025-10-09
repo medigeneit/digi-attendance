@@ -1172,6 +1172,23 @@ const router = createRouter({
             title: 'Monthly Kpi Report',
           },
         },
+
+        {
+          path: '/checklists/board',
+          name: 'checklists.board',
+          component: () => import('@/views/admin-pages/JoiningExitBoard.vue')
+        },
+
+        {
+          path: '/users/:userId/checklists/:checklistId',
+          name: 'checklist.show',
+          component: () => import('@/views/admin-pages/ChecklistPage.vue')
+        },
+        {
+          path: '/users/:userId/checklists/create/:templateId',
+          name: 'checklist.create',
+          component: () => import('@/views/admin-pages/ChecklistPage.vue')
+        }
       ],
     },
   ],
