@@ -91,7 +91,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="relative" ref="anchor">
     <div
-      class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 cursor-pointer flex items-center"
+      class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 cursor-pointer flex items-center shadow-sm"
       :class="modelTodoTypeId ? '' : 'text-gray-400'"
       @click.stop="
         () => {

@@ -195,7 +195,7 @@ defineExpose({ buildPayload, resetIrrelevantFields })
         <!-- Repeat Type -->
         <div>
           <label class="block text-sm font-medium mb-1">Repeat Type</label>
-          <select v-model="form.repeat_type" class="w-full border rounded px-3 py-2">
+          <select v-model="form.repeat_type" class="w-full border rounded px-3 py-2 shadow-sm">
             <option v-for="opt in repeatTypes" :key="opt" :value="opt">{{ opt }}</option>
           </select>
         </div>
@@ -203,13 +203,21 @@ defineExpose({ buildPayload, resetIrrelevantFields })
         <!-- Start Date -->
         <div>
           <label class="block text-sm font-medium mb-1">Start Date</label>
-          <input v-model="form.start_date" type="date" class="w-full border rounded px-3 py-2" />
+          <input
+            v-model="form.start_date"
+            type="date"
+            class="w-full border rounded px-3 py-2 shadow-sm"
+          />
         </div>
 
         <!-- End Date -->
         <div>
           <label class="block text-sm font-medium mb-1">End Date (optional)</label>
-          <input v-model="form.end_date" type="date" class="w-full border rounded px-3 py-2" />
+          <input
+            v-model="form.end_date"
+            type="date"
+            class="w-full border rounded px-3 py-2 shadow-sm"
+          />
         </div>
       </div>
 
@@ -217,7 +225,7 @@ defineExpose({ buildPayload, resetIrrelevantFields })
       <div v-if="form.repeat_type === 'weekly'" class="grid md:grid-cols-3 gap-4">
         <div class="col-span-full">
           <label class="block text-sm font-medium mb-1">Weekly Day</label>
-          <div class="w-full border rounded px-3 py-2 flex items-center gap-4" required>
+          <div class="w-full border rounded px-3 py-2 flex items-center gap-4 shadow-sm" required>
             <label v-for="d in weeklyDays" :key="d" class="cursor-pointer">
               <input type="radio" :value="d" v-model="form.weekly_day" />
               <span class="ml-1">
@@ -233,7 +241,11 @@ defineExpose({ buildPayload, resetIrrelevantFields })
         <div class="grid md:grid-cols-3 gap-4">
           <div>
             <label class="block text-sm font-medium mb-1">Monthly Mode</label>
-            <select v-model="form.monthly_mode" class="w-full border rounded px-3 py-2" required>
+            <select
+              v-model="form.monthly_mode"
+              class="w-full border rounded px-3 py-2 shadow-sm"
+              required
+            >
               <option disabled value="">Select mode</option>
               <option v-for="m in monthlyModes" :key="m" :value="m">{{ m }}</option>
             </select>
@@ -246,14 +258,18 @@ defineExpose({ buildPayload, resetIrrelevantFields })
               type="number"
               min="1"
               max="31"
-              class="w-full border rounded px-3 py-2"
+              class="w-full border rounded px-3 py-2 shadow-sm"
               required
             />
           </div>
 
           <div v-if="form.monthly_mode === 'day_of_week'">
             <label class="block text-sm font-medium mb-1">Week</label>
-            <select v-model="form.monthly_week" class="w-full border rounded px-3 py-2" required>
+            <select
+              v-model="form.monthly_week"
+              class="w-full border rounded px-3 py-2 shadow-sm"
+              required
+            >
               <option disabled value="">Select week</option>
               <option v-for="w in monthlyWeeks" :key="w" :value="w">{{ w }}</option>
             </select>
@@ -261,7 +277,7 @@ defineExpose({ buildPayload, resetIrrelevantFields })
 
           <div v-if="form.monthly_mode === 'day_of_week'" class="col-span-full">
             <label class="block text-sm font-medium mb-1">Weekday</label>
-            <div class="w-full border rounded px-3 py-2 flex items-center gap-4" required>
+            <div class="w-full border rounded px-3 py-2 flex items-center gap-4 shadow-sm" required>
               <label v-for="d in weeklyDays" :key="d" class="cursor-pointer">
                 <input type="radio" :value="d" v-model="form.weekly_day" />
                 <span class="ml-1">

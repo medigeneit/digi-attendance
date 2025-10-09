@@ -83,43 +83,57 @@ async function fetchSetting() {
     }
   } catch (e) {
     // optional: surface error in a toast
+    settingsError.value = e?.response?.data?.message
     console.error('Load setting failed:', e?.message || e)
   }
 }
 
-async function handleFormSubmit() {
-  state.value = 'submitting'
-  try {
-    // 1) Update Todo
-    await todoStore.updateTodo(props.todo.id, {
-      title: form.value.title,
-      todo_type: form.value.todo_type,
-      todo_type_id: form.value.todo_type_id,
-    })
+async function submitTodo() {
+  // 1) Update Todo
+  await todoStore.updateTodo(props.todo.id, {
+    title: form.value.title,
+    todo_type: form.value.todo_type,
+    todo_type_id: form.value.todo_type_id,
+  })
+}
 
-    if (!hasTodoSetting.value) {
-      settingId.value ? await deleteTodoSetting(props.todo.id, settingId.value) : null
-    } else {
-      // 2) Build payload from fields component and UPSERT the setting
-      const payload = settingRef.value?.buildPayload
-        ? settingRef.value.buildPayload()
-        : { ...setting.value }
+async function submitSettings() {
+  if (!hasTodoSetting.value) {
+    settingId.value ? await deleteTodoSetting(props.todo.id, settingId.value) : null
+  } else {
+    // 2) Build payload from fields component and UPSERT the setting
+    const payload = settingRef.value?.buildPayload
+      ? settingRef.value.buildPayload()
+      : { ...setting.value }
 
-      // (ensure start_date at least)
-      if (!payload.start_date) {
-        payload.start_date = props.todo?.date || props.date || getYearMonthDayFormat(new Date())
-      }
-      // console.log({ payload })
-      await upsertTodoSetting(props.todo.id, payload)
+    // (ensure start_date at least)
+    if (!payload.start_date) {
+      payload.start_date = props.todo?.date || props.date || getYearMonthDayFormat(new Date())
     }
+    // console.log({ payload })
+    await upsertTodoSetting(props.todo.id, payload)
+  }
+}
 
+const getErrMsg = (e) => e?.response?.data?.message || e?.message || 'Something went wrong'
+
+async function handleFormSubmit() {
+  const [todoRes, settingsRes] = await Promise.allSettled([submitTodo(), submitSettings()])
+
+  const todoOk = todoRes.status === 'fulfilled'
+  const settingsOk = settingsRes.status === 'fulfilled'
+
+  if (!settingsOk) {
+    settingsError.value = getErrMsg(settingsRes.reason)
+  }
+
+  if (todoOk && settingsOk) {
     emit('update') // parent can refresh list/modal
-  } finally {
-    state.value = ''
   }
 }
 
 const settingsLoading = ref(false)
+const settingsError = ref(false)
 
 const selectedDate = computed(() => new Date(props.todo.date))
 
@@ -132,6 +146,10 @@ async function loadEverything() {
   titleRef.value?.focus()
 }
 
+const isLoading = computed(() => {
+  return todoStore.loading || settingsLoading.value
+})
+
 onMounted(() => {
   loadEverything()
 })
@@ -140,7 +158,7 @@ onMounted(() => {
 <template>
   <div class="relative" @click="showTodoTypes = false">
     <LoaderView
-      v-if="todoStore.loading || settingsLoading"
+      v-if="isLoading"
       class="absolute inset-0 bg-opacity-80 text-center py-4 text-gray-500 z-10 flex items-center justify-center"
     >
       Loading...
@@ -150,10 +168,19 @@ onMounted(() => {
       @submit="handleFormSubmit"
       @clickCancel="emit('cancelClick')"
       :isSubmitting="state == 'submitting'"
-      :isLoading="todoStore.loading || settingsLoading"
-      :error="todoStore.error"
+      :isLoading="isLoading"
       id="todoEditForm"
     >
+      <template #error>
+        <div>
+          <div v-if="todoStore.error" class="mb-4 text-red-500 font-medium">
+            {{ todoStore.error }}
+          </div>
+          <div v-if="settingsError" class="mb-4 text-red-500 font-medium">
+            {{ settingsError }}
+          </div>
+        </div>
+      </template>
       <div class="border-b py-2 px-4">
         <h2 class="text-xl font-semibold">Edit Todo</h2>
       </div>
@@ -171,7 +198,7 @@ onMounted(() => {
             v-model="form.title"
             required
             placeholder="Enter todo title"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 shadow-sm"
           />
         </div>
 
@@ -186,7 +213,6 @@ onMounted(() => {
 
         <hr class="my-6" />
 
-        <!-- {{ hasTodoSetting }} -->
         <!-- Recurrence fields (NO own buttons; parent controls submit) -->
         <TodoSettingFields ref="settingRef" v-model="setting" v-model:hasSetting="hasTodoSetting" />
       </div>
