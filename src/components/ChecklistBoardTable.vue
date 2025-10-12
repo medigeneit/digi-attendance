@@ -1,165 +1,228 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useChecklistBoardStore } from '@/stores/checklistBoard'
 
 const store = useChecklistBoardStore()
 const router = useRouter()
 
-const showOnlyMissing = ref(false)
-const showOnlyRequired = ref(true)
+// UI state (client-side helpers only)
+const q = ref('')                            // quick local search (optional)
+const showOnlyMissing = ref(false)           // show only users below target
+const sortBy = ref('progress_desc')          // 'name_asc' | 'progress_desc' | 'progress_asc'
 
-function itemLabel(it) {
-  return it.label || it?.template_item?.label || it?.templateItem?.label || ''
-}
-function isRequired(it) {
-  return !!(it.required ?? it?.template_item?.required ?? it?.templateItem?.required)
-}
-function hasAttachment(it) {
-  return !!it.attachment_id || !!it.attachment
-}
-function missingPredicate(it) {
-  if (showOnlyRequired.value && !isRequired(it)) return false
-  return it.status !== 'done' || !hasAttachment(it) // "data/attachment নাই" হিসেবে ধরা
+// --- helpers ---
+const rowOf = (u) => store.rows[String(u.id)] || {}
+
+const clamp = (v, min, max) => Math.min(Math.max(Number(v || 0), min), max)
+
+const actualPercent = (u) => {
+  const r = rowOf(u)
+  const val = r.percent ?? u?.percent ?? 0
+  return clamp(val, 0, 100)
 }
 
-async function toggleExpand(u) {
-  const r = store.rows[String(u.id)] || {}
-  r.expanded = !r.expanded
-  store.rows[String(u.id)] = { ...r }
-  if (r.expanded) {
-    await store.ensureRow(u.id)
-    await store.loadChecklistDetail(u)
-  }
+const targetPercent = (u) => {
+  // If backend provides a per-user required threshold via checklist, use it; else 100%
+  const t = u?.checklist?.required_completion_percent ?? 100
+  return clamp(t, 1, 100)
+}
+
+const statusOf = (u) => {
+  const a = actualPercent(u)
+  const t = targetPercent(u)
+  if (a >= t) return 'completed'
+  if (a > 0) return 'in_progress'
+  return 'not_started'
+}
+
+const personMatches = (u) => {
+  const n = (s) => String(s || '').toLowerCase()
+  const needle = n(q.value)
+  if (!needle) return true
+  return [u.name, u.employee_id, u.department, u.designation].some(v => n(v).includes(needle))
 }
 
 function goOpen(u) {
   const tplId = store.templateId
   if (!tplId) return
-  // create-if-needed route we built earlier
   router.push({ name: 'checklist.create', params: { userId: u.id, templateId: tplId } })
 }
+
+// Final list for the table (start from server-filtered store.users)
+const preparedUsers = computed(() => {
+  let arr = (store.users || []).filter(personMatches)
+
+  if (showOnlyMissing.value) {
+    arr = arr.filter(u => actualPercent(u) < targetPercent(u))
+  }
+
+  if (sortBy.value === 'name_asc') {
+    arr = [...arr].sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+  } else if (sortBy.value === 'progress_asc') {
+    arr = [...arr].sort((a, b) => actualPercent(a) - actualPercent(b))
+  } else {
+    // progress_desc
+    arr = [...arr].sort((a, b) => actualPercent(b) - actualPercent(a))
+  }
+  return arr
+})
 </script>
 
 <template>
   <div class="space-y-6">
-    <div class="flex items-center gap-4">
-      <label class="inline-flex items-center gap-2 text-sm">
-        <input type="checkbox" v-model="showOnlyRequired" />
-        Only required
-      </label>
-      <label class="inline-flex items-center gap-2 text-sm">
-        <input type="checkbox" v-model="showOnlyMissing" />
-        Only missing
-      </label>
-    </div>
+    <!-- Toolbar -->
+    <div class="flex flex-wrap items-center gap-3">
+      <div class="relative">
+        <input
+          v-model="q"
+          type="search"
+          placeholder="Search name / ID / dept / designation…"
+          class="w-72 max-w-full rounded-lg border bg-white/90 px-9 py-2 text-sm outline-none ring-0 focus:border-gray-400"
+        />
+        <!-- search icon -->
+        <svg class="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.9 14.32a8 8 0 111.414-1.414l3.387 3.387a1 1 0 01-1.414 1.414L12.9 14.32zM14 8a6 6 0 11-12 0 6 6 0 0112 0z" clip-rule="evenodd"/></svg>
+        <button v-if="q" class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-500" @click="q = ''">✕</button>
+      </div>
 
-    <div v-for="(deps, company) in store.grouped" :key="company" class="space-y-4">
-      <h2 class="text-lg font-semibold">{{ company }}</h2>
-
-      <div v-for="(people, dept) in deps" :key="dept" class="space-y-2">
-        <h3 class="text-base font-medium text-gray-700">{{ dept }}</h3>
-
-        <div class="overflow-x-auto border rounded">
-          <table class="min-w-full text-sm">
-            <thead>
-              <tr class="text-left border-b bg-gray-50">
-                <th class="p-2 w-10"></th>
-                <th class="p-2">User</th>
-                <th class="p-2">Position</th>
-                <th class="p-2 w-64">Progress</th>
-                <th class="p-2 w-24">Status</th>
-                <th class="p-2 w-36">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template v-for="u in people" :key="u.id">
-                <tr class="border-b hover:bg-gray-50">
-                  <td class="p-2">
-                    <button class="text-xs underline" @click="toggleExpand(u)">
-                      {{ store.rows[String(u.id)]?.expanded ? 'Hide' : 'View' }}
-                    </button>
-                  </td>
-                  <td class="p-2">
-                    <div class="font-medium">{{ u.name || u.full_name || u.email }}</div>
-                    <div class="text-xs text-gray-500">{{ u.email }}</div>
-                  </td>
-                  <td class="p-2">
-                    <!-- {{ store.positionTitleOf(u) }} -->
-                </td>
-                  <td class="p-2">
-                    <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                      <div class="bg-green-500 h-2"
-                           :style="{ width: (store.rows[String(u.id)]?.percent || 0) + '%' }"></div>
-                    </div>
-                    <div class="text-xs text-gray-600 mt-1">
-                      {{ store.rows[String(u.id)]?.percent || 0 }}%
-                    </div>
-                  </td>
-                  <td class="p-2 capitalize">
-                    {{ store.rows[String(u.id)]?.status || 'not_started' }}
-                  </td>
-                  <td class="p-2">
-                    <button class="px-3 py-1.5 rounded bg-gray-900 text-white" @click="goOpen(u)">
-                      Open
-                    </button>
-                  </td>
-                </tr>
-
-                <!-- Expanded detail: show which data/attachment given vs missing -->
-                <tr v-if="store.rows[String(u.id)]?.expanded">
-                  <td colspan="6" class="p-0">
-                    <div class="p-3 bg-gray-50">
-                      <div v-if="store.rows[String(u.id)]?.loading" class="text-gray-600">Loading…</div>
-                      <div v-else>
-                        <div class="flex items-center gap-2 text-xs mb-2">
-                          <span class="px-2 py-0.5 rounded bg-green-100 text-green-700">Done</span>
-                          <span class="px-2 py-0.5 rounded bg-rose-100 text-rose-700">Missing/Not done</span>
-                        </div>
-
-                        <div class="grid md:grid-cols-2 gap-2">
-                          <div v-for="it in (store.rows[String(u.id)]?.items || []).filter(i => showOnlyRequired ? (i.required ?? i?.template_item?.required ?? i?.templateItem?.required) : true)"
-                               :key="it.id"
-                               v-show="showOnlyMissing ? (it.status !== 'done' || !(it.attachment_id || it.attachment)) : true"
-                               class="border rounded p-2 bg-white flex items-start justify-between">
-                            <div>
-                              <div class="font-medium">{{ itemLabel(it) }}</div>
-                              <div class="text-xs text-gray-500">
-                                Required: {{ isRequired(it) ? 'Yes' : 'No' }} |
-                                Status: {{ it.status }}
-                              </div>
-                              <div class="text-xs mt-1" v-if="it.comment">
-                                <span class="text-gray-500">Note:</span> {{ it.comment }}
-                              </div>
-                              <div class="text-xs mt-1" v-if="it.attachment">
-                                <a :href="it.attachment.url || it.attachment.path" target="_blank" class="underline">
-                                  Attachment
-                                </a>
-                              </div>
-                            </div>
-                            <div>
-                              <span v-if="it.status === 'done' && (it.attachment_id || it.attachment)"
-                                    class="px-2 py-0.5 rounded text-xs bg-green-100 text-green-700">Done</span>
-                              <span v-else class="px-2 py-0.5 rounded text-xs bg-rose-100 text-rose-700">Missing</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div v-if="(store.rows[String(u.id)]?.items || []).length === 0"
-                             class="text-sm text-gray-600">
-                          No checklist items yet for this user/template.
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-
-              </template>
-            </tbody>
-          </table>
+      <!-- segmented filters -->
+      <div class="flex items-center gap-2">
+        <div class="rounded-lg border p-1 text-xs">
+          <button
+            class="rounded-md px-2 py-1"
+            :class="showOnlyMissing ? '' : 'bg-gray-900 text-white'"
+            @click="showOnlyMissing = false"
+          >All</button>
+          <button
+            class="rounded-md px-2 py-1"
+            :class="showOnlyMissing ? 'bg-gray-900 text-white' : ''"
+            @click="showOnlyMissing = true"
+            title="Show only users who are below their required target"
+          >Only Missing</button>
         </div>
+
+        <div class="rounded-lg border p-1 text-xs">
+          <select v-model="sortBy" class="rounded-md px-2 py-1 outline-none">
+            <option value="progress_desc">Sort: Progress ↓</option>
+            <option value="progress_asc">Sort: Progress ↑</option>
+            <option value="name_asc">Sort: Name A–Z</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="ml-auto">
+        <span
+          class="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs text-blue-700"
+          title="You must select a template to create/open checklists"
+        >
+          Template:
+          <span class="ml-1 font-medium">{{ store.templateId || 'Not selected' }}</span>
+        </span>
       </div>
     </div>
 
+    <!-- Flat table (no grouping) -->
+    <div class="overflow-x-auto rounded-xl border shadow-sm">
+      <table class="min-w-full text-sm">
+        <thead class="sticky top-0 bg-gray-50/90 backdrop-blur">
+          <tr class="text-left border-b">
+            <th class="p-2">#</th>
+            <th class="p-2 min-w-[220px]">User</th>
+            <th class="p-2 min-w-[180px]">Position</th>
+            <th class="p-2 w-72">Progress</th>
+            <th class="p-2 w-28">Status</th>
+            <th class="p-2 w-40">Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr v-for="(u,index) in preparedUsers" :key="index" class="border-b hover:bg-gray-50">
+            <!-- User -->
+
+            <!-- Position -->
+            <td class="p-3">
+              <div class="truncate" :title="u.id">{{ index+=1 }}</div>
+            </td>
+            
+            <td class="p-3">
+              <div class="flex items-center gap-3">
+                <div
+                  class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-200 text-xs font-semibold text-gray-700"
+                  :title="u.name"
+                >
+                
+                  <img v-if="u.avatar" :src="u.avatar" alt="" class="h-9 w-9 rounded-full object-cover" />
+                  <span v-else>{{ (u.name || u.full_name || u.email || '??').slice(0,2).toUpperCase() }}</span>
+                </div>
+                <div>
+                  <div class="font-medium leading-tight">
+                    {{ u.name || u.full_name || u.email }}
+                  </div>
+                  <div class="text-xs text-gray-500">
+                    <span v-if="u.employee_id" class="mr-2">ID: {{ u.employee_id }}</span>
+                    <span class="hidden sm:inline">Dept: {{ u.department }}</span>
+                  </div>
+                </div>
+              </div>
+            </td>
+            
+
+            <!-- Position -->
+            <td class="p-3">
+              <div class="truncate" :title="u.designation">{{ u.designation || '—' }}</div>
+            </td>
+
+            <!-- Progress with target marker -->
+            <td class="p-3">
+              <div class="relative w-full rounded-full bg-gray-200 h-2 overflow-hidden">
+                <!-- target marker -->
+                <div
+                  class="pointer-events-none absolute top-0 h-2 w-0.5 bg-gray-600/60"
+                  :style="{ left: `calc(${targetPercent(u)}% - 1px)` }"
+                  :title="`Target ${targetPercent(u)}%`"
+                />
+                <div class="h-2 bg-green-500" :style="{ width: actualPercent(u) + '%' }" />
+              </div>
+              <div class="mt-1 flex items-center justify-between text-xs text-gray-600">
+                <span>Actual: {{ actualPercent(u) }}%</span>
+                <span>Target: {{ targetPercent(u) }}%</span>
+              </div>
+            </td>
+
+            <!-- Status -->
+            <td class="p-3">
+              <span
+                class="inline-flex items-center rounded-full px-2 py-0.5 text-xs capitalize"
+                :class="{
+                  'bg-green-100 text-green-700': statusOf(u) === 'completed',
+                  'bg-amber-100 text-amber-700': statusOf(u) === 'in_progress',
+                  'bg-gray-100 text-gray-700': statusOf(u) === 'not_started',
+                }"
+              >
+                {{ statusOf(u) }}
+              </span>
+            </td>
+
+            <!-- Actions -->
+            <td class="p-3">
+              <button
+                class="btn-2 py-1"
+                :disabled="!store.templateId"
+                :title="store.templateId ? '' : 'Select a template first'"
+                @click="goOpen(u)"
+              >
+                {{ u?.checklist ? 'Open' : 'Create' }}
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Empty states -->
+    <div v-if="store.loading" class="text-gray-600">Loading…</div>
+    <div v-else-if="!store.loading && preparedUsers.length === 0" class="rounded-xl border border-dashed p-10 text-center text-sm text-gray-500">
+      No users found for the current filters.
+    </div>
   </div>
 </template>
