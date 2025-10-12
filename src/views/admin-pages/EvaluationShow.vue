@@ -234,13 +234,13 @@ function printPage() {
               <td class="border px-2 py-2 align-top">
                 <div class="prose prose-sm max-w-none text-slate-700 line-clamp-3" v-if="u?.criteria_assignments?.description"
                      v-html="u?.criteria_assignments?.description"></div>
-                <div class="mt-2" v-else>
+                <div class="mt-2" >
                   <button
                     @click="openAssign"
                     title="Assign KPI criteria"
                    class="btn-4"
                   >
-                    <svg v-if="criteriaCount > 0" viewBox="0 0 24 24" class="h-4 w-4 opacity-90">
+                    <svg v-if="criteriaCount > 0 || u?.criteria_assignments?.description" viewBox="0 0 24 24" class="h-4 w-4 opacity-90">
                       <path fill="currentColor" d="M9 16.2l-3.5-3.5L4 14.2l5 5 11-11-1.5-1.5z"/>
                     </svg>
                     <svg v-else viewBox="0 0 24 24" class="h-4 w-4 opacity-80">
@@ -248,7 +248,7 @@ function printPage() {
                     </svg>
 
                     <span class="ml-1 hidden lg:inline">
-                      Assign
+                      {{ u?.criteria_assignments?.description ? 'Edit' : 'Assign' }}
                     </span>
                   </button>
                 </div>
