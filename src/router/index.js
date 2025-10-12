@@ -1173,6 +1173,20 @@ const router = createRouter({
           },
         },
 
+         {
+          path: '/employee-management',
+          name: 'EmployeeManagementView',
+          component: () => import('@/views/admin-pages/EmployeeManagement.vue'),
+          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'Employee Management' },
+        },
+
+        {
+          path: '/admin/checklist-templates/:id/items',
+          name: 'TemplateItems',
+          component: () => import('@/views/admin-pages/TemplateItemsManager.vue'),
+          props: true
+        },
+
         {
           path: '/checklists/board',
           name: 'checklists.board',

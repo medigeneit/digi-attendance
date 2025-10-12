@@ -138,10 +138,8 @@ const preparedUsers = computed(() => {
         <tbody>
           <tr v-for="(u,index) in preparedUsers" :key="index" class="border-b hover:bg-gray-50">
             <!-- User -->
-
-            <!-- Position -->
-            <td class="p-3">
-              <div class="truncate" :title="u.id">{{ index+=1 }}</div>
+            <td class="p-2">
+              {{ index+=1 }}
             </td>
             
             <td class="p-3">

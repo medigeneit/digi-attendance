@@ -122,13 +122,13 @@ watch(
 
 <template>
   <div class="flex flex-wrap items-end gap-3">
-    <div>
+    <!-- <div>
       <label class="block text-xs text-gray-500 mb-1">Type</label>
       <select v-model="local.type" class="border rounded px-2 py-1">
         <option value="joining">Joining</option>
         <option value="exit">Exit</option>
       </select>
-    </div>
+    </div> -->
 
     <EmployeeFilter
       v-model:company_id="local.company_id"

@@ -214,6 +214,19 @@ const logout = () => {
 
         <RouterLink
           v-if="['super_admin', 'developer'].includes(user?.role)"
+          to="/employee-management"
+          class="side-menu"
+          :class="{
+            'flex justify-center': !open,
+            'side-menu-active': currentRoute.includes('/employee-management'),
+          }"
+        >
+          <i class="fas fa-users py-2"></i>
+          <h4 v-if="open">EmpManage</h4>
+        </RouterLink>
+
+        <RouterLink
+          v-if="['super_admin', 'developer'].includes(user?.role)"
           to="/settings"
           class="side-menu"
           :class="{
