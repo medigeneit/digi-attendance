@@ -47,6 +47,7 @@ async function submitModal(payload) {
     } else if (editing.value?.id) {
       const patch = {
         label: payload.label,
+        status: payload.status,
         required: !!payload.required,
         order_no: payload.order_no ?? editing.value.order_no
       }
@@ -115,6 +116,7 @@ async function saveOrder() { await s.saveOrder() }
             <th class="px-3 py-2">Item Key</th>
             <th class="px-3 py-2">Label</th>
             <th class="px-3 py-2 w-28">Required</th>
+            <th class="px-3 py-2 w-28">Status</th>
             <th class="px-3 py-2 w-40">Actions</th>
           </tr>
         </thead>
@@ -168,6 +170,10 @@ async function saveOrder() { await s.saveOrder() }
                 />
                 <span class="text-xs">{{ row.required ? 'Yes' : 'No' }}</span>
               </label>
+            </td>
+
+            <td>
+              {{ row.status }}
             </td>
 
             <td class="px-3 py-2">
