@@ -1,8 +1,11 @@
 <script setup>
 import { onMounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useRoute, useRouter } from 'vue-router'
 import { useCTDIStore } from '@/stores/ctdi'
 
+const route = useRoute()
+const router = useRouter()
 const s = useCTDIStore()
 const {
   departmentId, templateId, search, groupBy,
@@ -10,17 +13,49 @@ const {
   totalItems, activeCount, dirty, loading, saving, error,
 } = storeToRefs(s)
 
+// helper: coerce ?templateId=2 → 2 | null
+function asInt(v) {
+  const n = Number(v)
+  return Number.isFinite(n) && n > 0 ? n : null
+}
+
 async function onFilterChanged() {
   if (departmentId.value && templateId.value) {
     await s.refresh()
   }
 }
 
+// 1) initial load + read query (?templateId=2)
 onMounted(async () => {
   await s.loadFilters()
+
+  // read templateId from route query (if present)
+  const qTpl = asInt(route.query.templateId)
+  if (qTpl) {
+    templateId.value = qTpl
+  }
+  await onFilterChanged()
 })
-watch([departmentId, templateId], onFilterChanged)
+
+// 2) keep UI in sync when query changes externally
+watch(() => route.query.templateId, (v) => {
+  const qTpl = asInt(v)
+  if (qTpl !== templateId.value) {
+    templateId.value = qTpl
+  }
+})
+
+// 3) when user changes dropdowns, refresh + sync query back to URL
+watch([departmentId, templateId], async ([dept, tpl]) => {
+  await onFilterChanged()
+  const nextQuery = { ...route.query }
+  if (tpl) nextQuery.templateId = String(tpl); else delete nextQuery.templateId
+  if (dept) nextQuery.departmentId = String(dept); else delete nextQuery.departmentId
+
+  router.replace({ query: nextQuery }).catch(() => {})
+})
 </script>
+
 
 <template>
   <div class="max-w-7xl mx-auto p-6 space-y-6">
