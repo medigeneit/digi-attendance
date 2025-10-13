@@ -272,7 +272,7 @@ function printPage() {
             <!-- ১) Performance -->
             <tr>
               <td class="border px-2 py-2 align-top text-center">১</td>
-              <td class="border px-2 py-2 align-top">
+              <!-- <td class="border px-2 py-2 align-top">
                 <div
                   class="richtext"
                   v-if="u?.criteria_assignments?.description"
@@ -296,7 +296,69 @@ function printPage() {
                     </span>
                   </button>
                 </div>
+              </td> -->
+              <td class="border px-2 py-2 align-top">
+                <!-- CSS-only clamp + toggle + print-safe -->
+                <div v-if="u?.criteria_assignments?.description" class="mt-0.5">
+                  <!-- Hidden state checkbox -->
+                  <input
+                    :id="`kpi-desc-toggle-${u?.id ?? index}`"
+                    type="checkbox"
+                    class="peer sr-only"
+                  />
+
+                  <!-- Screen-only: clamped by default; expands on peer-checked -->
+                  <div
+                    class="richtext overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3] peer-checked:overflow-visible peer-checked:[display:block] peer-checked:[-webkit-line-clamp:unset] peer-checked:[-webkit-box-orient:unset] print:hidden"
+                    v-html="u?.criteria_assignments?.description"
+                  ></div>
+
+                  <!-- Print-only: always full, no clamp -->
+                  <div
+                    class="hidden print:block richtext print:break-inside-avoid"
+                    v-html="u?.criteria_assignments?.description"
+                  ></div>
+
+                  <!-- See more / See less (pure CSS, sibling-based) -->
+                  <div class="mt-2 space-x-3 print:hidden">
+                    <!-- shown when NOT checked -->
+                    <label
+                      :for="`kpi-desc-toggle-${u?.id ?? index}`"
+                      class="underline text-blue-500 inline-flex items-center gap-1 cursor-pointer select-none peer-checked:hidden"
+                    >
+                      See more
+                    </label>
+
+                    <!-- shown when checked -->
+                    <label
+                      :for="`kpi-desc-toggle-${u?.id ?? index}`"
+                      class="underline text-blue-500 hidden peer-checked:inline-flex items-center gap-1 cursor-pointer select-none"
+                    >
+                      See less
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Assign button (unchanged) -->
+                <div class="mt-2">
+                  <button @click="openAssign" title="Assign KPI criteria" class="btn-4">
+                    <svg
+                      v-if="criteriaCount > 0 || u?.criteria_assignments?.description"
+                      viewBox="0 0 24 24"
+                      class="h-4 w-4 opacity-90"
+                    >
+                      <path fill="currentColor" d="M9 16.2l-3.5-3.5L4 14.2l5 5 11-11-1.5-1.5z" />
+                    </svg>
+                    <svg v-else viewBox="0 0 24 24" class="h-4 w-4 opacity-80">
+                      <path fill="currentColor" d="M11 11V6h2v5h5v2h-5v5h-2v-5H6v-2z" />
+                    </svg>
+                    <span class="ml-1 hidden lg:inline">
+                      {{ u?.criteria_assignments?.description ? 'Edit' : 'Assign' }}
+                    </span>
+                  </button>
+                </div>
               </td>
+
               <td class="border px-2 py-2 align-top text-right">{{ perfMax }}</td>
               <td class="border px-2 py-2 align-top">
                 <div class="flex items-center justify-end gap-2">
