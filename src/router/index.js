@@ -1202,7 +1202,12 @@ const router = createRouter({
           path: '/users/:userId/checklists/create/:templateId',
           name: 'checklist.create',
           component: () => import('@/views/admin-pages/ChecklistPage.vue')
-        }
+        },
+        { 
+          path: '/department-item-assignments', 
+          name: 'ctdi', 
+          component: () => import('@/views/admin-pages/DepartmentItemAssignments.vue') 
+        },
       ],
     },
   ],
