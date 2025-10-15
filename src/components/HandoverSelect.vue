@@ -7,7 +7,7 @@ const opts = [
 ]
 </script>
 <template>
-  <select v-model="model" class="input">
+  <select v-model="model" class="input-1">
     <option v-for="o in opts" :key="o.v" :value="o.v">{{ o.t }}</option>
   </select>
 </template>
