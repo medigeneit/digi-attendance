@@ -21,6 +21,7 @@ const emit = defineEmits([
   'clickTodo',
   'clickAdd',
   'clickEdit',
+  'addCarryClick',
   'clickDelete',
   'clickChangeStatus',
   'backClick',
@@ -82,11 +83,13 @@ const userWiseTodos = (todos) => {
         <button class="fa fa-arrow-left btn-icon mr-2" @click.prevent="emit('backClick')"></button>
         <div class="text-lg font-semibold flex items-center gap-2">
           {{ getDisplayDate(selectedDate, { weekDay: 'long' }) }}
+
           <span
             v-if="dateIsToday(date)"
             class="rounded-md border text-xs px-2 py-[1px] text-red-500 border-red-500 bg-red-50"
-            >Today</span
           >
+            Today
+          </span>
         </div>
 
         <div class="ml-auto flex items-center gap-2" v-if="userRole == 'employee'">
@@ -99,7 +102,7 @@ const userWiseTodos = (todos) => {
         <template #todoItems="{ allTodos }">
           <template v-for="user in userWiseTodos(allTodos)" :key="user.id">
             <UserTodos
-              :todos="user?.todos || []"
+              :todosDates="user?.todos || []"
               :user="user"
               @clickTodo="(todo) => emit('clickTodo', todo)"
               @clickEdit="(todo) => emit('clickEdit', todo)"

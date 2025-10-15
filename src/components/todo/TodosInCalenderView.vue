@@ -52,6 +52,7 @@ function isToday(date) {
           >
             {{ day }} {{ !isCurrentMonth ? getMonthName(month - 1) : '' }}
           </button>
+
           <div>
             <TodosInDate :date="yearMonthDate" @clickTodo="(todo) => emit('clickTodo', todo)">
               <template #noTodos>
