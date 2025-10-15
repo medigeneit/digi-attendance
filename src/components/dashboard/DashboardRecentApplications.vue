@@ -61,29 +61,21 @@ const exchangeKey = computed(() =>
 /* =========================
    DATE / DATETIME HELPERS
    ========================= */
-
-/** Accepts 'YYYY-MM-DD' or 'YYYY-MM-DD HH:mm:ss' and returns Date (local) */
 function parseSqlDateOrDateTime(input) {
   if (!input) return null
   const s = String(input).trim()
-  // YYYY-MM-DD
   let m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/)
   if (m) return new Date(+m[1], +m[2]-1, +m[3], 0, 0, 0)
-  // YYYY-MM-DD HH:mm:ss (seconds optional)
   m = s.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/)
   if (m) return new Date(+m[1], +m[2]-1, +m[3], +m[4], +m[5], +(m[6]||0))
   return null
 }
-
-/** Safe date-only pretty text from date or datetime string */
 function fmtDateOnlyAny(value) {
   const d = parseSqlDateOrDateTime(value)
   return d
     ? d.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })
     : ''
 }
-
-/** Internal date helpers for range builder (date-only) */
 function toDateOnly(d) {
   const m = String(d || '').match(/^(\d{4})-(\d{2})-(\d{2})$/)
   if (!m) return null
@@ -96,31 +88,21 @@ function sameYMD(a, b) {
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate()
 }
-/** Local-safe YYYY-MM-DD (no UTC conversion) */
 function ymdLocal(dt) {
   const y = dt.getFullYear()
   const m = String(dt.getMonth() + 1).padStart(2, '0')
   const d = String(dt.getDate()).padStart(2, '0')
   return `${y}-${m}-${d}`
 }
-
-/**
- * Build contiguous leave ranges from json_data; weekends আলাদা থাকে।
- * Returns: { ranges:[{from,to}], weekends:[string], leaveCount:number }
- */
 function buildLeaveRanges(jsonData) {
   const items = Array.isArray(jsonData) ? jsonData.slice() : []
-
-  // unique + sorted
   const uniqSort = (arr) => Array.from(new Set(arr)).sort()
-
   const leaveDates = uniqSort(
     items.filter(x => x?.leave_type_id !== 'weekend').map(x => x.date).filter(Boolean)
   )
   const weekendDates = uniqSort(
     items.filter(x => x?.leave_type_id === 'weekend').map(x => x.date).filter(Boolean)
   )
-
   const ranges = []
   let start = null, prev = null
   for (const d of leaveDates) {
@@ -133,7 +115,6 @@ function buildLeaveRanges(jsonData) {
     }
   }
   if (start && prev) ranges.push({ from: ymdLocal(start), to: ymdLocal(prev) })
-
   return { ranges, weekends: weekendDates, leaveCount: leaveDates.length }
 }
 
@@ -141,205 +122,269 @@ function buildLeaveRanges(jsonData) {
 const badge = 'inline-flex items-center rounded-full border px-2 py-0.5 text-[12px]'
 const badgeMuted = 'border-gray-300 bg-gray-50 text-gray-800'
 const badgeInfo  = 'border-sky-200 bg-sky-50 text-sky-700'
+
+/* ===== Expand/Collapse state (default: all open) ===== */
+const sections = ref({
+  apps:   true,
+  short:  true,
+  exch:   true,
+  manual: true,
+})
+const toggleSection = (key) => { sections.value[key] = !sections.value[key] }
 </script>
 
 <template>
   <div class="bg-white shadow-sm rounded-xl p-4">
     <!-- Section: Applications -->
     <section>
-      <header class="flex items-center justify-between mb-1">
+      <header
+        class="flex items-center justify-between mb-1 cursor-pointer select-none"
+        role="button"
+        :aria-expanded="sections.apps"
+        @click="toggleSection('apps')"
+        @keydown.enter.prevent="toggleSection('apps')"
+        @keydown.space.prevent="toggleSection('apps')"
+        tabindex="0"
+      >
         <div class="flex items-center gap-2">
           <i class="fas fa-file h-5 w-5 text-gray-600"></i>
           <h2 class="text-lg font-semibold text-gray-900">Applications
             <span class="text-xs ml-2 text-green-600 font-medium">Latest</span>
           </h2>
         </div>
-        <RouterLink :to="{ name: 'MyLeaveApplications' }" class="text-xs text-blue-600 hover:underline">
-          See more
-        </RouterLink>
+        <div class="flex items-center gap-3">
+          <RouterLink
+            :to="{ name: 'MyLeaveApplications' }"
+            class="text-xs text-blue-600 hover:underline"
+            @click.stop
+          >
+            See more
+          </RouterLink>
+          <i
+            class="fas fa-chevron-down text-gray-600 transition-transform duration-200"
+            :class="sections.apps ? 'rotate-180' : ''"
+            aria-hidden="true"
+          />
+        </div>
       </header>
-      <hr class="border-gray-200" />
 
-      <div v-if="leaveApps.length === 0" class="text-xs italic text-center py-4 text-gray-500 mt-2">
-        No applications
-      </div>
+      <div v-show="sections.apps">
+        <hr class="border-gray-200" />
+        <div v-if="leaveApps.length === 0" class="text-xs italic text-center py-4 text-gray-500 mt-2">
+          No applications
+        </div>
 
-      <div v-else class="py-3 divide-y divide-gray-100">
-        <button
-          v-for="item in leaveApps"
-          :key="item.id"
-          class="block w-full text-left"
-          @click="openLeaveModal(item.id)"
-        >
-          <div class="flex justify-between items-center py-2 rounded hover:bg-sky-50/60 transition-colors">
-            <h3 class="text-sm text-gray-900 min-w-0">
-              <span class="font-medium">#{{ item.id }}</span>
-              <span class="opacity-70"> ({{ typeNamesWithDays(item.leave_type_counts) }})</span>
-            </h3>
-            <span class="font-medium flex items-center whitespace-nowrap text-[11px] px-2 py-0.5 rounded-full"
-                  :class="chipFor(item.status).cls">
-              <i v-if="item.status === null" class="fas fa-clock mr-1.5"></i>
-              <i v-else-if="item.status === 'Pending'" class="fas fa-hourglass-half mr-1.5"></i>
-              <i v-else-if="item.status === 'Approved'" class="fas fa-check-circle mr-1.5"></i>
-              <i v-else class="fas fa-times-circle mr-1.5"></i>
-              {{ chipFor(item.status).title }}
-            </span>
-          </div>
+        <div v-else class="py-3 divide-y divide-gray-100">
+          <button
+            v-for="item in leaveApps"
+            :key="item.id"
+            class="block w-full text-left"
+            @click="openLeaveModal(item.id)"
+          >
+            <div class="flex justify-between items-center py-2 rounded hover:bg-sky-50/60 transition-colors">
+              <h3 class="text-sm text-gray-900 min-w-0">
+                <span class="font-medium">#{{ item.id }}</span>
+                <span class="opacity-70"> ({{ typeNamesWithDays(item.leave_type_counts) }})</span>
+              </h3>
+              <span class="font-medium flex items-center whitespace-nowrap text-[11px] px-2 py-0.5 rounded-full"
+                    :class="chipFor(item.status).cls">
+                <i v-if="item.status === null" class="fas fa-clock mr-1.5"></i>
+                <i v-else-if="item.status === 'Pending'" class="fas fa-hourglass-half mr-1.5"></i>
+                <i v-else-if="item.status === 'Approved'" class="fas fa-check-circle mr-1.5"></i>
+                <i v-else class="fas fa-times-circle mr-1.5"></i>
+                {{ chipFor(item.status).title }}
+              </span>
+            </div>
 
-          <!-- From–To (non-weekend >1), else single date; weekend badge hidden -->
-          <div class="mb-1 text-gray-700 flex flex-wrap items-center gap-x-2.5 gap-y-1">
-            <template v-for="info in [buildLeaveRanges(item.json_data)]" :key="'info-'+item.id">
-              <template v-if="info.leaveCount > 1">
-                <template v-for="(rg, idx) in info.ranges" :key="idx">
-                  <span :class="[badge, badgeMuted]"
-                        :title="rg.from === rg.to ? fmtDateOnlyAny(rg.from) : (fmtDateOnlyAny(rg.from)+' – '+fmtDateOnlyAny(rg.to))">
-                    <i class="far fa-calendar-minus mr-1"></i>
-                    <template v-if="rg.from !== rg.to">
-                      <span class="truncate max-w-[9.5rem] sm:max-w-none">{{ fmtDateOnlyAny(rg.from) }}</span>
-                      <span class="mx-1">–</span>
-                      <span class="truncate max-w-[9.5rem] sm:max-w-none">{{ fmtDateOnlyAny(rg.to) }}</span>
-                    </template>
-                    <template v-else>
-                      <span class="truncate max-w-[10rem] sm:max-w-none">{{ fmtDateOnlyAny(rg.from) }}</span>
-                    </template>
+            <div class="mb-1 text-gray-700 flex flex-wrap items-center gap-x-2.5 gap-y-1">
+              <template v-for="info in [buildLeaveRanges(item.json_data)]" :key="'info-'+item.id">
+                <template v-if="info.leaveCount > 1">
+                  <template v-for="(rg, idx) in info.ranges" :key="idx">
+                    <span :class="[badge, badgeMuted]"
+                          :title="rg.from === rg.to ? fmtDateOnlyAny(rg.from) : (fmtDateOnlyAny(rg.from)+' – '+fmtDateOnlyAny(rg.to))">
+                      <i class="far fa-calendar-minus mr-1"></i>
+                      <template v-if="rg.from !== rg.to">
+                        <span class="truncate max-w-[9.5rem] sm:max-w-none">{{ fmtDateOnlyAny(rg.from) }}</span>
+                        <span class="mx-1">–</span>
+                        <span class="truncate max-w-[9.5rem] sm:max-w-none">{{ fmtDateOnlyAny(rg.to) }}</span>
+                      </template>
+                      <template v-else>
+                        <span class="truncate max-w-[10rem] sm:max-w-none">{{ fmtDateOnlyAny(rg.from) }}</span>
+                      </template>
+                    </span>
+                  </template>
+                </template>
+                <template v-else>
+                  <span v-if="info.ranges[0]" :class="[badge, badgeMuted]" :title="fmtDateOnlyAny(info.ranges[0].from)">
+                    <i class="far fa-calendar-day mr-1"></i>
+                    {{ fmtDateOnlyAny(info.ranges[0].from) }}
                   </span>
                 </template>
               </template>
-              <template v-else>
-                <span v-if="info.ranges[0]" :class="[badge, badgeMuted]" :title="fmtDateOnlyAny(info.ranges[0].from)">
-                  <i class="far fa-calendar-day mr-1"></i>
-                  {{ fmtDateOnlyAny(info.ranges[0].from) }}
-                </span>
-              </template>
-
-              <!-- Weekend count (optional) -->
-              <!--
-              <span v-if="info.weekends.length" :class="[badge, 'border-gray-300 bg-gray-100 text-gray-700']"
-                    :title="info.weekends.map(fmtDateOnlyAny).join(', ')">
-                <i class="far fa-calendar mr-1"></i> + {{ info.weekends.length }} wknd
-              </span>
-              -->
-              <!-- Resumption (optional) -->
-              <!--
-              <span v-if="item.resumption_date" :class="[badge, 'border-emerald-200 bg-emerald-50 text-emerald-700']"
-                    :title="fmtDateOnlyAny(item.resumption_date)">
-                <i class="far fa-play-circle mr-1"></i>
-                Resume: {{ fmtDateOnlyAny(item.resumption_date) }}
-              </span>
-              -->
-            </template>
-          </div>
-        </button>
+            </div>
+          </button>
+        </div>
       </div>
     </section>
 
     <!-- Section: Short Leave -->
     <section class="mt-6">
-      <header class="flex items-center justify-between mb-1">
+      <header
+        class="flex items-center justify-between mb-1 cursor-pointer select-none"
+        role="button"
+        :aria-expanded="sections.short"
+        @click="toggleSection('short')"
+        @keydown.enter.prevent="toggleSection('short')"
+        @keydown.space.prevent="toggleSection('short')"
+        tabindex="0"
+      >
         <div class="flex items-center gap-2">
           <i class="fas fa-walking h-5 w-5 text-gray-600"></i>
           <h2 class="text-base font-semibold text-gray-900">Short Leave</h2>
         </div>
-        <RouterLink :to="{ name: 'MyShortLeaves' }" class="text-xs text-blue-600 hover:underline">See more</RouterLink>
+        <div class="flex items-center gap-3">
+          <RouterLink :to="{ name: 'MyShortLeaves' }" class="text-xs text-blue-600 hover:underline" @click.stop>
+            See more
+          </RouterLink>
+          <i class="fas fa-chevron-down text-gray-600 transition-transform duration-200"
+             :class="sections.short ? 'rotate-180' : ''"
+             aria-hidden="true" />
+        </div>
       </header>
-      <hr class="border-gray-200" />
 
-      <div v-if="shortLeaves.length === 0" class="text-xs italic text-center py-4 text-gray-500 mt-2">
-        No short leave
-      </div>
+      <div v-show="sections.short">
+        <hr class="border-gray-200" />
+        <div v-if="shortLeaves.length === 0" class="text-xs italic text-center py-4 text-gray-500 mt-2">
+          No short leave
+        </div>
 
-      <div v-else class="py-3 divide-y divide-gray-100">
-        <button
-          v-for="item in shortLeaves"
-          :key="item.id"
-          class="w-full text-left"
-          @click="openShortLeaveModal(item.id)"
-        >
-          <div class="flex justify-between items-center py-2 rounded hover:bg-sky-50/60 transition-colors">
-            <h3 class="text-sm text-gray-900 min-w-0">
-              <span :class="[badge, badgeMuted, 'text-xs mr-1']">{{ fmtDateOnlyAny(item.date) }}</span>
-              <span class="opacity-80">({{ item.type || '—' }})</span>
-            </h3>
-            <span class="text-[11px] px-2 py-0.5 rounded-full" :class="chipFor(item.status).cls">
-              {{ chipFor(item.status).title }}
-            </span>
-          </div>
-        </button>
+        <div v-else class="py-3 divide-y divide-gray-100">
+          <button
+            v-for="item in shortLeaves"
+            :key="item.id"
+            class="w-full text-left"
+            @click="openShortLeaveModal(item.id)"
+          >
+            <div class="flex justify-between items-center py-2 rounded hover:bg-sky-50/60 transition-colors">
+              <h3 class="text-sm text-gray-900 min-w-0">
+                <span :class="[badge, badgeMuted, 'text-xs mr-1']">{{ fmtDateOnlyAny(item.date) }}</span>
+                <span class="opacity-80">({{ item.type || '—' }})</span>
+              </h3>
+              <span class="text-[11px] px-2 py-0.5 rounded-full" :class="chipFor(item.status).cls">
+                {{ chipFor(item.status).title }}
+              </span>
+            </div>
+          </button>
+        </div>
       </div>
     </section>
 
     <!-- Section: Exchange -->
     <section class="mt-6">
-      <header class="flex items-center justify-between mb-1">
+      <header
+        class="flex items-center justify-between mb-1 cursor-pointer select-none"
+        role="button"
+        :aria-expanded="sections.exch"
+        @click="toggleSection('exch')"
+        @keydown.enter.prevent="toggleSection('exch')"
+        @keydown.space.prevent="toggleSection('exch')"
+        tabindex="0"
+      >
         <div class="flex items-center gap-2">
           <i class="fas fa-exchange-alt h-5 w-5 text-gray-600"></i>
           <h2 class="text-base font-semibold text-gray-900">Exchange</h2>
         </div>
         <div class="flex items-center gap-3">
-          <RouterLink :to="{ name: 'MyShiftExchangeList' }" class="text-xs text-blue-600 hover:underline">Shift</RouterLink>
-          <RouterLink :to="{ name: 'MyOffdayExchangeList' }" class="text-xs text-blue-600 hover:underline">Offday</RouterLink>
+          <RouterLink :to="{ name: 'MyShiftExchangeList' }" class="text-xs text-blue-600 hover:underline" @click.stop>
+            Shift
+          </RouterLink>
+          <RouterLink :to="{ name: 'MyOffdayExchangeList' }" class="text-xs text-blue-600 hover:underline" @click.stop>
+            Offday
+          </RouterLink>
+          <i class="fas fa-chevron-down text-gray-600 transition-transform duration-200"
+             :class="sections.exch ? 'rotate-180' : ''"
+             aria-hidden="true" />
         </div>
       </header>
-      <hr class="border-gray-200" />
 
-      <div v-if="exchanges.length === 0" class="text-xs italic text-center py-4 text-gray-500 mt-2">
-        No exchange
-      </div>
+      <div v-show="sections.exch">
+        <hr class="border-gray-200" />
+        <div v-if="exchanges.length === 0" class="text-xs italic text-center py-4 text-gray-500 mt-2">
+          No exchange
+        </div>
 
-      <div v-else class="py-3 divide-y divide-gray-100">
-        <button
-          v-for="item in exchanges"
-          :key="item.id"
-          class="block w-full text-left"
-          @click="openExchangeModal(item)"
-        >
-          <div class="flex justify-between items-center py-2 rounded hover:bg-sky-50/60 transition-colors">
-            <h3 class="text-sm text-gray-900 min-w-0">
-              <span :class="[badge, badgeMuted, 'text-xs mr-1']">{{ fmtDateOnlyAny(item.current_date) }}</span>
-              <span class="opacity-80">({{ item.exchange_type || '—' }})</span>
-            </h3>
-            <span class="text-[11px] px-2 py-0.5 rounded-full" :class="chipFor(item.status).cls">
-              {{ chipFor(item.status).title }}
-            </span>
-          </div>
-        </button>
+        <div v-else class="py-3 divide-y divide-gray-100">
+          <button
+            v-for="item in exchanges"
+            :key="item.id"
+            class="block w-full text-left"
+            @click="openExchangeModal(item)"
+          >
+            <div class="flex justify-between items-center py-2 rounded hover:bg-sky-50/60 transition-colors">
+              <h3 class="text-sm text-gray-900 min-w-0">
+                <span :class="[badge, badgeMuted, 'text-xs mr-1']">{{ fmtDateOnlyAny(item.current_date) }}</span>
+                <span class="opacity-80">({{ item.exchange_type || '—' }})</span>
+              </h3>
+              <span class="text-[11px] px-2 py-0.5 rounded-full" :class="chipFor(item.status).cls">
+                {{ chipFor(item.status).title }}
+              </span>
+            </div>
+          </button>
+        </div>
       </div>
     </section>
 
     <!-- Section: Manual Attendance -->
     <section class="mt-6">
-      <header class="flex items-center justify-between mb-1">
+      <header
+        class="flex items-center justify-between mb-1 cursor-pointer select-none"
+        role="button"
+        :aria-expanded="sections.manual"
+        @click="toggleSection('manual')"
+        @keydown.enter.prevent="toggleSection('manual')"
+        @keydown.space.prevent="toggleSection('manual')"
+        tabindex="0"
+      >
         <div class="flex items-center gap-2">
           <i class="fas fa-user-check h-5 w-5 text-gray-600"></i>
           <h2 class="text-base font-semibold text-gray-900">Manual Attendance</h2>
         </div>
-        <RouterLink :to="{ name: 'MyManualAttendanceList' }" class="text-xs text-blue-600 hover:underline">See more</RouterLink>
+        <div class="flex items-center gap-3">
+          <RouterLink :to="{ name: 'MyManualAttendanceList' }" class="text-xs text-blue-600 hover:underline" @click.stop>
+            See more
+          </RouterLink>
+          <i class="fas fa-chevron-down text-gray-600 transition-transform duration-200"
+             :class="sections.manual ? 'rotate-180' : ''"
+             aria-hidden="true" />
+        </div>
       </header>
-      <hr class="border-gray-200" />
 
-      <div v-if="manuals.length === 0" class="text-xs italic text-center py-4 text-gray-500 mt-2">
-        No manual application
-      </div>
+      <div v-show="sections.manual">
+        <hr class="border-gray-200" />
+        <div v-if="manuals.length === 0" class="text-xs italic text-center py-4 text-gray-500 mt-2">
+          No manual application
+        </div>
 
-      <div v-else class="py-3 divide-y divide-gray-100">
-        <button
-          v-for="item in manuals"
-          :key="item.id"
-          class="block w-full text-left"
-          @click="openManualAttendanceModal(item.id)"
-        >
-          <div class="flex justify-between items-center py-2 rounded hover:bg-sky-50/60 transition-colors">
-            <h3 class="text-sm text-gray-900 min-w-0">
-              <span :class="[badge, badgeMuted, 'text-xs mr-1']">
-                {{ item.check_in ? fmtDateOnlyAny(item.check_in) : fmtDateOnlyAny(item.check_out) }}
+        <div v-else class="py-3 divide-y divide-gray-100">
+          <button
+            v-for="item in manuals"
+            :key="item.id"
+            class="block w-full text-left"
+            @click="openManualAttendanceModal(item.id)"
+          >
+            <div class="flex justify-between items-center py-2 rounded hover:bg-sky-50/60 transition-colors">
+              <h3 class="text-sm text-gray-900 min-w-0">
+                <span :class="[badge, badgeMuted, 'text-xs mr-1']">
+                  {{ item.check_in ? fmtDateOnlyAny(item.check_in) : fmtDateOnlyAny(item.check_out) }}
+                </span>
+                <span class="opacity-80">({{ item.type || '—' }})</span>
+              </h3>
+              <span class="text-[11px] px-2 py-0.5 rounded-full" :class="chipFor(item.status).cls">
+                {{ chipFor(item.status).title }}
               </span>
-              <span class="opacity-80">({{ item.type || '—' }})</span>
-            </h3>
-            <span class="text-[11px] px-2 py-0.5 rounded-full" :class="chipFor(item.status).cls">
-              {{ chipFor(item.status).title }}
-            </span>
-          </div>
-        </button>
+            </div>
+          </button>
+        </div>
       </div>
     </section>
 
@@ -359,7 +404,6 @@ const badgeInfo  = 'border-sky-200 bg-sky-50 text-sky-700'
       v-model:open="manualModal.open"
       :id="manualModal.id"
     />
-
     <component
       :is="activeExchangeComp"
       v-if="exchangeModal.open"

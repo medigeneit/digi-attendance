@@ -260,7 +260,7 @@ const refreshPaycutList = async () => { await fetchAttendance() }
             <td class="td">{{ log?.actual_early_hour }}</td>
             <td class="td">{{ log?.total_remain_early_day }}</td>
             <td class="td">{{ log?.total_remain_early_hour }}</td>
-            
+
             <td class="td text-xs" :class="{ '!text-red-500': log?.under_target }">
                 <div class="font-semibold" :class="log?.under_target ? 'text-red-600' : 'text-green-600'">
                   {{ log?.total_working_hours }}
@@ -291,7 +291,9 @@ const refreshPaycutList = async () => { await fetchAttendance() }
             <!-- Short Leave vs Actual Early -->
             <td class="td">
               <p class="text-xs w-10 text-gray-600">
-                {{ log?.total_last_short_leave || 0 }} of {{ log?.actual_early_day || 0 }}
+                {{ log?.total_last_short_leave || 0 }} of <span :class="{'text-red-600 font-bold' : log?.actual_early_day >= 4}">
+                  {{ log?.actual_early_day || 0 }}
+                </span>
               </p>
             </td>
 

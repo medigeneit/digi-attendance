@@ -1172,6 +1172,37 @@ const router = createRouter({
             title: 'Monthly Kpi Report',
           },
         },
+
+         {
+          path: '/employee-management',
+          name: 'EmployeeManagementView',
+          component: () => import('@/views/admin-pages/EmployeeManagement.vue'),
+          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'Employee Management' },
+        },
+
+        {
+          path: '/admin/checklist-templates/:id/items',
+          name: 'TemplateItems',
+          component: () => import('@/views/admin-pages/TemplateItemsManager.vue'),
+          props: true
+        },
+
+        {
+          path: '/checklists/board',
+          name: 'checklists.board',
+          component: () => import('@/views/admin-pages/JoiningExitBoard.vue')
+        },
+
+        {
+          path: '/users/:userId/checklists/:checklistId',
+          name: 'checklist.show',
+          component: () => import('@/views/admin-pages/ChecklistPage.vue')
+        },
+        {
+          path: '/users/:userId/checklists/create/:templateId',
+          name: 'checklist.create',
+          component: () => import('@/views/admin-pages/ChecklistPage.vue')
+        }
       ],
     },
   ],

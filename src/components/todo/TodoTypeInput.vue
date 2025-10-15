@@ -21,10 +21,6 @@ const props = defineProps({
 const emit = defineEmits(['update:todoType', 'update:todoTypeId', 'update:show'])
 
 // Create computed setters/getters for two-way binding
-const modelTodoType = computed({
-  get: () => props.todoType,
-  set: (val) => emit('update:todoType', val),
-})
 
 const modelTodoTypeId = computed({
   get: () => props.todoTypeId,
@@ -74,10 +70,6 @@ onMounted(async () => {
 
   window.addEventListener('resize', updatePosition)
   document.addEventListener('scroll', updatePosition)
-
-  modelShow.value = true
-
-  modelTodoType.value = 'task'
 })
 
 const taskStore = useTaskStore()
@@ -99,7 +91,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="relative" ref="anchor">
     <div
-      class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 cursor-pointer flex items-center"
+      class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 cursor-pointer flex items-center shadow-sm"
       :class="modelTodoTypeId ? '' : 'text-gray-400'"
       @click.stop="
         () => {
