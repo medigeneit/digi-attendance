@@ -152,10 +152,10 @@
         </template>
       </tbody>
     </table>
-    <div class="flex gap-1 items-center mt-2 mb-1 text-sm">
+    <div class="flex gap-1 items-center text-sm">
       <template v-if="childrenTasks.length > 0">
         <button
-          class="hover:bg-blue-600 hover:text-white text-indigo-600 font-semibold px-3 py-0.5 rounded-full transition border ml-2"
+          class="hover:bg-blue-600 hover:text-white text-indigo-600 font-semibold px-3 py-0.5 rounded-full transition border ml-2 mt-2"
           @click.prevent.stop="handleShowAllTask"
           v-if="hiddenTasks.length > 0 || showAll"
         >
@@ -168,7 +168,7 @@
 
       <a
         :href="`/tasks/add?parent_id=${parentTask.id}&back-to=${encodeURIComponent(route.path + '?' + objectToQuery(route.query)).toLowerCase()}`"
-        class="hover:bg-blue-600 hover:text-white text-indigo-600 font-semibold px-3 py-0.5 rounded-full transition border border-indigo-300"
+        class="hover:bg-blue-600 hover:text-white text-indigo-600 font-semibold px-3 py-0.5 rounded-full transition border border-indigo-300 mt-2"
         :class="{ 'ml-2': childrenTasks.length === 0, 'ml-3': childrenTasks.length > 0 }"
         @click.stop.prevent="emits('addClick', parentTask.id)"
         v-if="parentTask.level < 2 && !hideButtons"
