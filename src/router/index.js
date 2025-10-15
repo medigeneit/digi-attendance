@@ -1215,7 +1215,7 @@ const router = createRouter({
           component: () => import('@/views/admin-pages/ChecklistPage.vue')
         },
         { 
-          path: '/department-item-assignments', 
+          path: '/settings/department-item-assignments', 
           name: 'ctdi', 
           component: () => import('@/views/admin-pages/DepartmentItemAssignments.vue') 
         },
