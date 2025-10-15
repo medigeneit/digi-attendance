@@ -1,4 +1,4 @@
-import { createTodoDate as createDate, deleteTodoDate as deleteDate, findTodoDate, getMyTodoDates, updateTodoDateStatus } from '@/services/todo';
+import { createTodoDate as createDate, deleteTodoDate as deleteDate, findTodoDate, getTodoDates, updateTodoDateStatus } from '@/services/todo';
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import apiClient from '../axios';
@@ -17,7 +17,7 @@ export const useTodoDateStore = defineStore('todo-date', () => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await getMyTodoDates({params});
+      const response = await getTodoDates({params});
 
       todo_dates.value = response.data?.todo_dates || [];
       sortTodoDateList()

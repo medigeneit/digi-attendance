@@ -187,7 +187,7 @@ async function fetchTodos() {
       'end-date': endDate,
     })
   } else {
-    await todoStore.fetchTodos({
+    await todoDateStore.fetchTodoDates({
       'company-id': props.companyId,
       'department-id': props.departmentId,
       'employee-id': props.employeeId,
@@ -226,7 +226,6 @@ watch(
         Loading...
       </LoaderView>
 
-      <!-- <pre>{{ props }}</pre> -->
       <TodoHeading
         :selected="selected"
         class="border-b shadow z-20"
@@ -243,7 +242,15 @@ watch(
           <slot name="afterHeader" v-bind="params"></slot>
         </template>
         <template #bottom="params">
-          <slot name="bottomHeader" v-bind="params"></slot>
+          <div>
+            <slot name="bottomHeader" v-bind="params"></slot>
+            <div
+              v-if="todoDateStore.error"
+              class="text-red-600 py-4 text-semibold text-center text-xl"
+            >
+              {{ todoDateStore.error }}
+            </div>
+          </div>
         </template>
         <template #typeSelection="params">
           <slot name="typeSelection" v-bind="params"></slot>
