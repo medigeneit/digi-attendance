@@ -4,24 +4,48 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import ShareComponent from '@/components/common/ShareComponent.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
-import { useNotificationStore } from '@/stores/notification'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+/* stores */
 const authStore = useAuthStore()
-const notificationStore = useNotificationStore()
 const leaveApplicationStore = useLeaveApplicationStore()
 
+/* router */
 const router = useRouter()
 const route = useRoute()
-const attachment = ref(null)
+const appId = computed(() => route.params.id)
+
+/* ui state */
 const loading = ref(true)
 
-const leaveApplication = computed(() => leaveApplicationStore.leaveApplication)
+/* attachment state */
+const isUploading = ref(false)
+const uploadMsg = ref('')
+const uploadError = ref('')
 
+const fileInput = ref(null)
+const isDragging = ref(false)
+const attachmentUrl = ref(null)
+
+/* file constraints */
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
+const ALLOWED_LABEL = 'JPG, PNG, WEBP, PDF'
+const MAX_SIZE_MB = 10
+
+/* data */
+const leaveApplication = computed(() => leaveApplicationStore.leaveApplication)
+const hasAttachment = computed(
+  () => typeof leaveApplication.value?.attachment === 'string' && leaveApplication.value.attachment.length > 0
+)
+const canEditAttachment = computed(
+  () => leaveApplication.value?.user_id === authStore?.user?.id
+)
+
+/* lifecycle */
 onMounted(async () => {
   try {
-    await leaveApplicationStore.fetchLeaveApplicationById(route.params.id)
+    await leaveApplicationStore.fetchLeaveApplicationById(appId.value)
   } catch (error) {
     console.error('Failed to load leave application:', error)
   } finally {
@@ -29,126 +53,179 @@ onMounted(async () => {
   }
 })
 
-function print() {
-  window.print()
-}
-
-const onAction = async () => {
-  await leaveApplicationStore.fetchLeaveApplicationById(route.params.id)
-}
-
+/* navigation */
 const goBack = () => router.go(-1)
+const print = () => window.print()
 
-const totalWithWeekendDays = computed(() => {
-  if (
-    !leaveApplication.value ||
-    !leaveApplication.value.last_working_date ||
-    !leaveApplication.value.resumption_date
-  ) {
-    return 0 // Return 0 if leaveApplication is null or dates are missing
+/* utilities */
+const formatDateTime = (timestamp) => {
+  if (!timestamp) return ''
+  const d = new Date(timestamp)
+  const date = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+  const time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+  return `${date} , ${time}`
+}
+
+const isImageUrl = (url) => /\.(png|jpe?g|webp|gif)$/i.test(url || '')
+
+const filenameFromUrl = (url) => {
+  try {
+    const u = new URL(url)
+    return decodeURIComponent(u.pathname.split('/').pop() || 'attachment')
+  } catch {
+    return (url || '').split('/').pop() || 'attachment'
   }
+}
 
-  const lastWorkingDate = new Date(leaveApplication?.value.last_working_date)
-  const resumptionDate = new Date(leaveApplication?.value.resumption_date)
+const showSuccess = (msg) => {
+  uploadMsg.value = msg
+  uploadError.value = ''
+  setTimeout(() => (uploadMsg.value = ''), 2500)
+}
+const showError = (msg) => {
+  uploadError.value = msg
+  uploadMsg.value = ''
+  setTimeout(() => (uploadError.value = ''), 3500)
+}
 
-  // Calculate the difference in milliseconds and convert to days
-  const diffTime = resumptionDate - lastWorkingDate
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) // Convert milliseconds to days
-
-  return diffDays - 1 // Exclude last working day itself
+/* computed */
+const totalWithWeekendDays = computed(() => {
+  const a = leaveApplication.value
+  if (!a || !a.last_working_date || !a.resumption_date) return 0
+  const lastWorkingDate = new Date(a.last_working_date)
+  const resumptionDate = new Date(a.resumption_date)
+  const diffDays = Math.ceil((resumptionDate - lastWorkingDate) / (1000 * 60 * 60 * 24))
+  return diffDays - 1
 })
 
-const uploadLeaveApplicationAttachment = async () => {
-  try {
-    const payload = {
-      attachment: attachment.value,
-    }
-    await leaveApplicationStore.uploadLeaveApplicationAttachment(route.params.id, payload)
-  } catch (err) {
-    console.error('Failed to reject short leave:', err)
-    alert('Failed to reject short leave.')
-  }
+/* data refresh (after actions) */
+const refreshApplication = async () => {
+  await leaveApplicationStore.fetchLeaveApplicationById(appId.value)
 }
 
-const fileUploadLink = async (event) => {
-  const file = event.target.files[0]
-  if (file) {
+/* validation + upload */
+const validateFile = (file) => {
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    showError(`Only ${ALLOWED_LABEL} allowed`)
+    return false
+  }
+  const sizeMb = file.size / (1024 * 1024)
+  if (sizeMb > MAX_SIZE_MB) {
+    showError(`Max file size ${MAX_SIZE_MB} MB`)
+    return false
+  }
+  return true
+}
+
+const persistAttachment = async (url) => {
+  await leaveApplicationStore.uploadLeaveApplicationAttachment(appId.value, { attachment: url })
+  await refreshApplication()
+}
+
+const handleFile = async (file) => {
+  if (!file || !validateFile(file)) return
+  isUploading.value = true
+  try {
     const formData = new FormData()
     formData.append('file', file)
     formData.append('folder', 'leave-application')
+
     const response = await leaveApplicationStore.fetchFileUpload(formData)
-    attachment.value = response?.url
-    uploadLeaveApplicationAttachment()
+    attachmentUrl.value = response?.url
+
+    await persistAttachment(attachmentUrl.value)
+    showSuccess('Attachment uploaded')
+  } catch (e) {
+    console.error('Upload failed:', e)
+    showError('Upload failed. Try again.')
+  } finally {
+    isUploading.value = false
+    if (fileInput.value) fileInput.value.value = ''
   }
 }
 
+const handleFileSelect = async (event) => {
+  const file = event.target.files?.[0]
+  if (file) await handleFile(file)
+}
 
-const formatDateTime = (timestamp) => {
-  const d = new Date(timestamp)
-  const date = d.toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric'
-  }) // e.g., "19 Jul 2025"
+/* drag & drop */
+const onDragOver = (e) => { e.preventDefault(); isDragging.value = true }
+const onDragLeave = (e) => { e.preventDefault(); isDragging.value = false }
+const onDrop = async (e) => {
+  e.preventDefault()
+  isDragging.value = false
+  const file = e.dataTransfer?.files?.[0]
+  if (file) await handleFile(file)
+}
 
-  const time = d.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true
-  }) // e.g., "04:30 PM"
+const browseFiles = () => fileInput.value?.click()
 
-  return `${date} , ${time}`
+/* actions */
+const copyLink = async () => {
+  try {
+    await navigator.clipboard.writeText(leaveApplication.value?.attachment || '')
+    showSuccess('Link copied')
+  } catch {
+    showError('Copy failed')
+  }
+}
+
+const removeAttachment = async () => {
+  if (!hasAttachment.value) return
+  if (!confirm('Remove current attachment?')) return
+  isUploading.value = true
+  try {
+    await persistAttachment(null)
+    showSuccess('Attachment removed')
+  } catch (e) {
+    console.error('Remove failed:', e)
+    showError('Failed to remove attachment')
+  } finally {
+    isUploading.value = false
+  }
 }
 </script>
 
 <template>
   <div class="my-container max-w-3xl space-y-6">
+    <!-- header -->
     <div class="flex items-center justify-between gap-2 print:hidden">
       <button class="btn-3" @click="goBack">
-        <i class="far fa-arrow-left"></i>
-        <span class="hidden md:flex">Back</span>
+        <i class="far fa-arrow-left"></i><span class="hidden md:flex">Back</span>
       </button>
       <h1 class="title-md md:title-xl flex-wrap text-center">Leave Application</h1>
-      <div>
-        <button class="btn-2" @click="print">
-          <i class="far fa-print"></i>
-          Print
-        </button>
-      </div>
+      <button class="btn-2" @click="print"><i class="far fa-print"></i> Print</button>
     </div>
 
     <LoaderView v-if="loading" />
 
     <div v-else class="card-bg p-4 md:p-8 print:text-black">
+      <!-- company -->
       <div>
-        <h1 class="title-lg text-center">
-          {{ leaveApplication?.user?.company?.name }}
-        </h1>
-        <p class="text-center text-sm">
-          {{ leaveApplication?.user?.company.address }}
-        </p>
+        <h1 class="title-lg text-center">{{ leaveApplication?.user?.company?.name }}</h1>
+        <p class="text-center text-sm">{{ leaveApplication?.user?.company.address }}</p>
       </div>
+
       <div class="space-y-4">
+        <!-- subject + summary + last leave -->
         <div class="grid md:grid-cols-2 print:grid-cols-2 gap-8">
           <div>
             <p>To</p>
             <p class="font-bold">Managing Director</p>
-            <p class="">{{ leaveApplication?.user?.company?.name }}</p>
+            <p>{{ leaveApplication?.user?.company?.name }}</p>
             <p class="text-sm">{{ leaveApplication?.user?.company.address }}</p>
-            <div>
-              <p class="pt-6">
-                <b>Subject:</b>
-                Leave Application for
-                <template v-for="(leave, index) in leaveApplication?.leave_types" :key="index">
-                  <span v-if="index && leave.days">,&nbsp;</span>
-                  <span v-if="leave.days" class="font-semibold">
-                    {{ leave.type }}
-                  </span>
-                </template>
-              </p>
-            </div>
+            <p class="pt-6">
+              <b>Subject:</b> Leave Application for
+              <template v-for="(leave, i) in leaveApplication?.leave_types" :key="i">
+                <span v-if="i && leave.days">,&nbsp;</span>
+                <span v-if="leave.days" class="font-semibold">{{ leave.type }}</span>
+              </template>
+            </p>
           </div>
+
           <div class="flex justify-end gap-4">
+            <!-- summary -->
             <div>
               <h1 class="font-bold">Summary</h1>
               <table class="table-auto border border-black bg-white text-xs">
@@ -159,11 +236,7 @@ const formatDateTime = (timestamp) => {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr
-                    v-for="(leave, index) in leaveApplication?.leave_types"
-                    :key="index"
-                    class="border border-black"
-                  >
+                  <tr v-for="(leave, i) in leaveApplication?.leave_types" :key="i" class="border border-black">
                     <td class="border border-black px-2">{{ leave.type }}</td>
                     <td class="border border-black px-2">{{ leave.days }}</td>
                   </tr>
@@ -175,62 +248,52 @@ const formatDateTime = (timestamp) => {
                   </tr>
                   <tr class="font-bold">
                     <td class="border border-black px-2">Total</td>
-                    <td class="border border-black px-2">
-                      {{ totalWithWeekendDays }}
-                    </td>
+                    <td class="border border-black px-2">{{ totalWithWeekendDays }}</td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
+            <!-- last leave -->
             <div>
               <h1 class="font-bold">Last Leave</h1>
-              <div>
-                <table class="table-auto border border-black bg-white text-xs">
-                  <thead>
-                    <tr class="bg-gray-200 border border-black">
-                      <th colspan="2" class="border border-black px-2">Date</th>
-                    </tr>
-                    <tr class="border border-black">
-                      <td colspan="2" class="border border-black px-2 w-32">
-                        {{ leaveApplication?.last_leave?.date || 'N/A' }}
-                      </td>
-                    </tr>
-                    <tr class="bg-gray-200 border border-black">
-                      <th class="border border-black px-2">Type</th>
-                      <th class="border border-black px-2">Days</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    <tr
-                      v-for="(leave, index) in leaveApplication?.last_leave?.types"
-                      :key="index"
-                      class="border border-black"
-                    >
-                      <td class="border border-black px-2">{{ leave?.type }}</td>
-                      <td class="border border-black px-2">{{ leave?.days }}</td>
-                    </tr>
-                    <tr class="font-bold">
-                      <td class="border border-black px-2">Total</td>
-                      <td class="border border-black px-2">
-                        {{
-                          leaveApplication?.last_leave?.types
-                            ? leaveApplication.last_leave.types.reduce(
-                                (sum, leave) => sum + leave.days,
-                                0,
-                              )
-                            : 0
-                        }}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+              <table class="table-auto border border-black bg-white text-xs">
+                <thead>
+                  <tr class="bg-gray-200 border border-black">
+                    <th colspan="2" class="border border-black px-2">Date</th>
+                  </tr>
+                  <tr class="border border-black">
+                    <td colspan="2" class="border border-black px-2 w-32">
+                      {{ leaveApplication?.last_leave?.date || 'N/A' }}
+                    </td>
+                  </tr>
+                  <tr class="bg-gray-200 border border-black">
+                    <th class="border border-black px-2">Type</th>
+                    <th class="border border-black px-2">Days</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(leave, i) in leaveApplication?.last_leave?.types" :key="i" class="border border-black">
+                    <td class="border border-black px-2">{{ leave?.type }}</td>
+                    <td class="border border-black px-2">{{ leave?.days }}</td>
+                  </tr>
+                  <tr class="font-bold">
+                    <td class="border border-black px-2">Total</td>
+                    <td class="border border-black px-2">
+                      {{
+                        leaveApplication?.last_leave?.types
+                          ? leaveApplication.last_leave.types.reduce((sum, l) => sum + l.days, 0)
+                          : 0
+                      }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
 
+        <!-- details -->
         <div>
           <h3 class="font-bold">Leave Details:</h3>
           <div class="grid print:grid-cols-2 md:grid-cols-2 text-sm">
@@ -243,42 +306,42 @@ const formatDateTime = (timestamp) => {
             <li><strong>Create Date:</strong> {{ formatDateTime(leaveApplication?.created_at) }}</li>
           </div>
         </div>
+
+        <!-- works in hand -->
         <div class="text-sm">
-          <p class="whitespace-pre-line	">
-            <strong>Works in Hand: </strong
-            >{{ leaveApplication?.works_in_hand || 'No details provided' }}
+          <p class="whitespace-pre-line">
+            <strong>Works in Hand: </strong>{{ leaveApplication?.works_in_hand || 'No details provided' }}
           </p>
         </div>
+
+        <!-- handover block -->
         <div class="pt-8 grid grid-cols-2">
-          <div>
-            <div class="text-sm">
-              <hr class="w-44 border-black hidden print:block my-1" />
-              <p class='font-bold'>
-                <strong>Applicant: </strong> 
-                <span class="text-blue-700 print:text-black">{{ leaveApplication?.user?.name }}</span>
-              </p>
-              <p><strong>Designation:</strong> {{ leaveApplication?.user?.designation?.title }}</p>
-              <p><strong>Department:</strong> {{ leaveApplication?.user?.department?.name }}</p>
-              <!-- <p><strong>Email:</strong> {{ leaveApplication?.user?.email }}</p> -->
-              <p><strong>Phone:</strong> {{ leaveApplication?.user?.phone }}</p>
-              <p><strong>joining Date:</strong> {{ leaveApplication?.user?.joining_date }}</p>
-            </div>
+          <div class="text-sm">
+            <hr class="w-44 border-black hidden print:block my-1" />
+            <p class="font-bold">
+              <strong>Applicant: </strong>
+              <span class="text-blue-700 print:text-black">{{ leaveApplication?.user?.name }}</span>
+            </p>
+            <p><strong>Designation:</strong> {{ leaveApplication?.user?.designation?.title }}</p>
+            <p><strong>Department:</strong> {{ leaveApplication?.user?.department?.name }}</p>
+            <p><strong>Phone:</strong> {{ leaveApplication?.user?.phone }}</p>
+            <p><strong>Joining Date:</strong> {{ leaveApplication?.user?.joining_date }}</p>
           </div>
 
           <ApprovalItem
             :application="leaveApplication"
             type="leave_applications"
             item="handover"
-            :onAction="onAction"
+            :date="formatDateTime(leaveApplication.handover_set_at)"
+            :onAction="refreshApplication"
           />
         </div>
 
+        <!-- balance -->
         <div>
           <h1 class="font-bold">Leave Balance</h1>
           <div class="overflow-x-auto">
-            <table
-              class="min-w-full table-auto border-collapse border border-gray-200 bg-white rounded-md text-sm"
-            >
+            <table class="min-w-full table-auto border-collapse border border-gray-200 bg-white rounded-md text-sm">
               <thead>
                 <tr class="bg-gray-200">
                   <th class="border border-gray-500 px-4 py-0.5 text-left">Leave Type</th>
@@ -288,28 +351,15 @@ const formatDateTime = (timestamp) => {
                 </tr>
               </thead>
               <tbody>
-                <tr
-                  v-for="(balance, index) in leaveApplication?.leave_balance"
-                  :key="index"
-                  class="hover:bg-blue-200"
-                >
-                  <td class="border border-gray-500 px-4 py-0.5 text-left">
-                    {{ balance.leave_type }}
-                  </td>
-                  <td class="border border-gray-500 px-4 py-0.5 text-center">
-                    {{ balance?.annual_quota }}
-                  </td>
-                  <td class="border border-gray-500 px-4 py-0.5 text-center">
-                    {{ balance.used_days }}
-                  </td>
+                <tr v-for="(b, i) in leaveApplication?.leave_balance" :key="i" class="hover:bg-blue-200">
+                  <td class="border border-gray-500 px-4 py-0.5 text-left">{{ b.leave_type }}</td>
+                  <td class="border border-gray-500 px-4 py-0.5 text-center">{{ b?.annual_quota }}</td>
+                  <td class="border border-gray-500 px-4 py-0.5 text-center">{{ b.used_days }}</td>
                   <td
                     class="border border-gray-500 px-4 py-0.5 text-center"
-                    :class="{
-                      'text-green-600 font-bold': balance.remaining_days > 0,
-                      'text-red-600 font-bold': balance.remaining_days === 0,
-                    }"
+                    :class="{ 'text-green-600 font-bold': b.remaining_days > 0, 'text-red-600 font-bold': b.remaining_days === 0 }"
                   >
-                    {{ balance.remaining_days }}
+                    {{ b.remaining_days }}
                   </td>
                 </tr>
               </tbody>
@@ -317,85 +367,136 @@ const formatDateTime = (timestamp) => {
           </div>
         </div>
       </div>
+
+      <!-- status + approval sections -->
       <div class="space-y-14">
         <p class="font-bold text-center text-lg">
           Leave Approval:
-          <b
-            :class="{
+          <b :class="{
               'text-yellow-600': leaveApplication?.status === 'Pending',
               'text-green-600': leaveApplication?.status === 'Approved',
               'text-red-600': leaveApplication?.status === 'Rejected',
-            }"
-          >
+            }">
             {{ leaveApplication?.status || 'N/A' }}
           </b>
         </p>
+
         <div v-if="leaveApplication?.status === 'Rejected'">
           <p><b>Rejected by: </b> {{ leaveApplication?.rejected_by_user?.name }}</p>
-          <p><b>rejection Reason: </b> {{ leaveApplication.rejection_reason }}</p>
+          <p><b>Rejection Reason: </b> {{ leaveApplication.rejection_reason }}</p>
+          <p v-if="leaveApplication?.rejected_at" class="text-xs text-slate-600">
+            <i class="far fa-clock"></i> {{ formatDateTime(leaveApplication.rejected_at) }}
+          </p>
         </div>
 
         <div class="grid md:grid-cols-3 print:grid-cols-3 gap-4 text-sm items-end">
-          <!-- In-Charge Approval -->
           <ApprovalItem
             :application="leaveApplication"
             type="leave_applications"
             item="in_charge"
-            :onAction="onAction"
+            :date="formatDateTime(leaveApplication.in_charge_set_at)"
+            :onAction="refreshApplication"
           />
-
-          <!-- Coordinator Approval -->
           <ApprovalItem
             :application="leaveApplication"
             type="leave_applications"
             item="coordinator"
-            :onAction="onAction"
+            :date="formatDateTime(leaveApplication.coordinator_set_at)"
+            :onAction="refreshApplication"
           />
-
-          <!-- Operational Admin Approval -->
           <ApprovalItem
             :application="leaveApplication"
             type="leave_applications"
             item="operational_admin"
-            :onAction="onAction"
+            :date="formatDateTime(leaveApplication.operational_admin_set_at)"
+            :onAction="refreshApplication"
           />
         </div>
 
-        <!-- Additional Approvals -->
         <div class="flex justify-evenly text-sm items-end">
-          <!-- Recommend By Approval -->
           <ApprovalItem
             :application="leaveApplication"
             type="leave_applications"
             item="recommend_by"
-            :onAction="onAction"
+            :date="formatDateTime(leaveApplication.recommended_at)"
+            :onAction="refreshApplication"
           />
-
-          <!-- Approved By Approval -->
           <ApprovalItem
             :application="leaveApplication"
             type="leave_applications"
             item="approved_by"
-            :onAction="onAction"
+            :date="formatDateTime(leaveApplication.approved_at)"
+            :onAction="refreshApplication"
           />
         </div>
       </div>
     </div>
-      <section class="mt-10 print:hidden">
-        <div v-if="leaveApplication?.attachment && typeof leaveApplication?.attachment === 'string'" class="mb-3">
-          <a :href="leaveApplication?.attachment" target="_blank" class="text-blue-600 underline">
-            View current file
-          </a>
+
+    <!-- Attachment Upload -->
+    <section class="mt-10 print:hidden space-y-3">
+      <!-- current file -->
+      <div v-if="hasAttachment" class="border rounded-lg bg-white p-3 flex items-center gap-3">
+        <div class="shrink-0">
+          <img
+            v-if="isImageUrl(leaveApplication.attachment)"
+            :src="leaveApplication.attachment"
+            alt="Attachment preview"
+            class="h-16 w-16 object-cover rounded-md border"
+          />
+          <div v-else class="h-16 w-16 grid place-items-center rounded-md border text-slate-500">
+            <i class="far fa-file text-2xl"></i>
+          </div>
         </div>
-        <div v-else class="mb-3 text-slate-400 italic">No attachment</div>
-        <div
-          v-if="leaveApplication?.user_id === authStore?.user?.id"
-          class="rounded-xl border-2 border-dashed border-slate-300 p-4 hover:border-slate-400 transition"
-        >
-          <label class="block text-sm text-slate-600 mb-2">Upload / Replace</label>
-          <input type="file" @change="fileUploadLink" class="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-slate-800 file:text-white hover:file:bg-slate-700" />
+        <div class="min-w-0 flex-1">
+          <p class="text-sm font-medium truncate">{{ filenameFromUrl(leaveApplication.attachment) }}</p>
+          <a :href="leaveApplication.attachment" target="_blank" class="text-blue-600 underline text-xs">Open link</a>
         </div>
-      </section>
+        <div class="flex gap-2" v-if="canEditAttachment">
+          <button class="px-3 py-1.5 rounded-md border text-sm" @click="copyLink" :disabled="isUploading">Copy link</button>
+          <button class="px-3 py-1.5 rounded-md border text-sm" @click="browseFiles" :disabled="isUploading">Replace</button>
+          <button class="px-3 py-1.5 rounded-md border text-sm text-red-600" @click="removeAttachment" :disabled="isUploading">Remove</button>
+        </div>
+      </div>
+
+      <!-- dropzone -->
+      <div
+        v-if="canEditAttachment"
+        class="rounded-xl border-2 border-dashed p-6 transition grid place-items-center text-center"
+        :class="[
+          isDragging ? 'border-blue-500 bg-blue-50' : 'border-slate-300 hover:border-slate-400',
+          isUploading ? 'opacity-60 pointer-events-none' : ''
+        ]"
+        @dragover="onDragOver"
+        @dragleave="onDragLeave"
+        @drop="onDrop"
+      >
+        <div class="space-y-2">
+          <i class="far fa-cloud-upload-alt text-3xl"></i>
+          <p class="text-sm text-slate-600">
+            Drag & drop your file here, or
+            <button class="text-blue-700 underline font-medium" type="button" @click="browseFiles">browse</button>
+          </p>
+          <p class="text-xs text-slate-500">
+            Allowed: {{ ALLOWED_LABEL }} • Max {{ MAX_SIZE_MB }} MB
+          </p>
+        </div>
+        <input
+          ref="fileInput"
+          class="hidden"
+          type="file"
+          :accept="ALLOWED_TYPES.join(',')"
+          @change="handleFileSelect"
+        />
+        <div v-if="isUploading" class="mt-3 text-sm inline-flex items-center gap-2">
+          <i class="far fa-circle-notch fa-spin"></i> Uploading…
+        </div>
+      </div>
+
+      <!-- feedback -->
+      <p v-if="uploadMsg" class="text-green-600 text-sm">{{ uploadMsg }}</p>
+      <p v-if="uploadError" class="text-red-600 text-sm">{{ uploadError }}</p>
+    </section>
+
     <ShareComponent />
   </div>
 </template>
