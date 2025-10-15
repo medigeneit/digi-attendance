@@ -4,6 +4,7 @@ import TodoHeading from '@/components/todo/TodoHeading.vue'
 import TodoCalenderView from '@/components/todo/TodosInCalenderView.vue'
 import TodosInDailyView from '@/components/todo/TodosInDailyView.vue'
 import { getCalendarRange, getLastDateOfMonth, getYearMonthDayFormat } from '@/libs/datetime'
+import { useTodoDateStore } from '@/stores/useTodoDateStore'
 import { useTodoStore } from '@/stores/useTodoStore'
 import TodoCreateEditShow from '@/views/private-pages/todos/TodoCreateEditShow.vue'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -62,12 +63,18 @@ const todoModal = ref({
 })
 
 const todoStore = useTodoStore()
+const todoDateStore = useTodoDateStore()
 
 async function handleReloadClick() {
   await fetchTodos()
 }
 
 function handleTodoUpdate() {
+  todoModal.value = { ...todoModal.value, action: '' }
+  fetchTodos()
+}
+
+function handleTodoDateUpdate() {
   todoModal.value = { ...todoModal.value, action: '' }
 }
 
@@ -103,6 +110,7 @@ function handleDateClick(date) {
 }
 
 function handleClickTodo(todo) {
+  console.log({ todo })
   todoModal.value = {
     ...todoModal.value,
     action: 'show',
@@ -118,11 +126,25 @@ function handleClickEditTodo(todo) {
   }
 }
 
-function handleClickAddTodo(yearMonthDay) {
+function handleClickAddTodo(yearMonthDay, mainTodoId) {
+  console.log({ yearMonthDay, mainTodoId })
+
   todoModal.value = {
     ...todoModal.value,
     action: 'add',
     date: yearMonthDay,
+    todo_id: mainTodoId,
+  }
+}
+
+function addTodoDate(todoId, yearMonthDay) {
+  console.log({ yearMonthDay, todoId })
+
+  todoModal.value = {
+    ...todoModal.value,
+    action: 'addDate',
+    date: yearMonthDay,
+    todo_id: todoId,
   }
 }
 
@@ -158,7 +180,9 @@ async function fetchTodos() {
   console.log('FETCHING...', { startDate, endDate })
 
   if (props.userRole == 'employee') {
-    await todoStore.fetchMyTodos({
+    // await todoStore.fetchMyTodos()
+
+    await todoDateStore.fetchMyTodoDates({
       'start-date': startDate,
       'end-date': endDate,
     })
@@ -175,8 +199,8 @@ async function fetchTodos() {
   }
 }
 
-onMounted(async () => {
-  await fetchTodos()
+onMounted(() => {
+  fetchTodos()
 })
 
 watch(
@@ -196,7 +220,7 @@ watch(
   <div>
     <div class="border bg-white relative">
       <LoaderView
-        v-if="todoStore.loading"
+        v-if="todoDateStore.loading"
         class="absolute inset-0 bg-opacity-80 text-center py-4 text-gray-500 z-10 flex items-center justify-center"
       >
         Loading...
@@ -246,6 +270,7 @@ watch(
         @clickChangeStatus="handleClickChangeStatusTodo"
         @backClick="handleClickBackFromDayView"
         @update="handleTodoUpdate"
+        @addCarryClick="handleClickAddTodo"
       />
     </div>
 
@@ -253,8 +278,10 @@ watch(
       :todoModal="todoModal"
       :userRole="userRole"
       @cancelClick="handleModalCancel"
-      @update="handleTodoUpdate"
+      @todoUpdate="handleTodoUpdate"
+      @todoDateUpdate="handleTodoDateUpdate"
       @clickEdit="handleClickEditTodo"
+      @clickAddTodoDate="addTodoDate"
     />
   </div>
 </template>

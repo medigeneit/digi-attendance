@@ -49,6 +49,10 @@ export async function getTodoDates({params = {}} = {}){
   return apiClient.get('/todo-dates', {params});
 }
 
+export async function getMyTodoDates({params = {}} = {}){
+  return apiClient.get('/my-todo-dates', {params});
+}
+
 export async function createTodoDate(data){
   return apiClient.post(`/todo-dates`, data);
 }
@@ -62,7 +66,7 @@ export async function updateTodoDate(todoDateId, data){
 }
 
 export async function updateTodoDateStatus(todoDateId, data){
-  return apiClient.patch(`/todo-dates/${todoDateId}/status`, data);
+  return apiClient.patch(`/my-todo-dates/${todoDateId}/status`, data);
 }
 
 export async function deleteTodoDate(todoDateId, {params = {}} = {}){

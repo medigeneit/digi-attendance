@@ -1,12 +1,11 @@
 <script setup>
-import { getDisplayDate, getYearMonthDayFormat } from '@/libs/datetime'
+import { getYearMonthDayFormat } from '@/libs/datetime'
 import { useTodoStore } from '@/stores/useTodoStore'
 import { computed, nextTick, onMounted, ref } from 'vue'
 
 import { deleteTodoSetting, findTodoSetting, upsertTodoSetting } from '@/services/todo'
 import LoaderView from '../common/LoaderView.vue'
 import FormHandler from '../FormHandler.vue'
-import TodoSettingFields from './TodoSettingFields.vue'
 import TodoTypeInput from './TodoTypeInput.vue'
 
 // API helpers
@@ -135,8 +134,6 @@ async function handleFormSubmit() {
 const settingsLoading = ref(false)
 const settingsError = ref(false)
 
-const selectedDate = computed(() => new Date(props.todo.date))
-
 async function loadEverything() {
   await fetchTodo()
   settingsLoading.value = true
@@ -186,13 +183,17 @@ onMounted(() => {
       </div>
 
       <div class="p-4 min-h-[10vh] max-h-[50vh] overflow-y-auto">
-        <div class="mb-2">
-          <span class="font-semibold"> Date </span>
-          <span>{{ getDisplayDate(selectedDate, { weekDay: 'long' }) }}</span>
+        <div class="text-xs text-red-800 mb-6">
+          <strong>Tips:</strong> If you change the todo, it will change to all the concurrent dates
         </div>
 
+        <!-- <div class="mb-2">
+          <span class="font-semibold"> Date </span>
+          <span>{{ getDisplayDate(selectedDate, { weekDay: 'long' }) }}</span>
+        </div> -->
+
         <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-2">Title</label>
+          <label class="block text-gray-500 font-medium text-sm">Title</label>
           <input
             ref="titleRef"
             v-model="form.title"
@@ -203,7 +204,7 @@ onMounted(() => {
         </div>
 
         <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-2">Task ID (optional)</label>
+          <label class="block text-gray-500 font-medium text-sm">Task ID (optional)</label>
           <TodoTypeInput
             v-model:show="showTodoTypes"
             v-model:todoType="form.todo_type"
@@ -211,10 +212,18 @@ onMounted(() => {
           />
         </div>
 
-        <hr class="my-6" />
-
         <!-- Recurrence fields (NO own buttons; parent controls submit) -->
-        <TodoSettingFields ref="settingRef" v-model="setting" v-model:hasSetting="hasTodoSetting" />
+        <!--
+        <div>
+          <hr class="my-6" />
+
+          <TodoSettingFields
+            ref="settingRef"
+            v-model="setting"
+            v-model:hasSetting="hasTodoSetting"
+          />
+        </div>
+        -->
       </div>
     </FormHandler>
   </div>
