@@ -2,6 +2,7 @@ taskAddClick
 <script setup>
 import { getDisplayDateTime } from '@/libs/datetime.js'
 import { ref, watch } from 'vue'
+import DepartmentChip from '../DepartmentChip.vue'
 import TaskTreeChildrenTable from '../TaskTreeChildrenTable.vue'
 
 const props = defineProps({
@@ -79,15 +80,20 @@ watch(
           </div>
 
           <div class="flex items-center justify-between gap-16 w-full">
-            <div class="flex-shrink-0">
-              <div class="flex items-center">
-                <!-- {{ detail }} -->
-                <div class="flex items-center gap-2 text-xs text-gray-500 opacity-80 text-left">
-                  <div class="text-xs text-gray-400 whitespace-nowrap">
-                    <i class="fas fa-clock"></i>
-                    {{ getDisplayDateTime(detail?.requirement?.submission_date) }}
-                  </div>
+            <div class="flex-shrink-0 flex items-center gap-6">
+              <!-- {{ detail }} -->
+              <div class="flex items-center gap-2 text-xs text-gray-500 opacity-80 text-left">
+                <div class="text-xs text-gray-400 whitespace-nowrap">
+                  <i class="fas fa-clock"></i>
+                  {{ getDisplayDateTime(detail?.requirement?.submission_date) }}
                 </div>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <span class="text-sm text-gray-600">From</span>
+                <DepartmentChip :department="detail.requirement?.from_department" />
+                <span class="text-sm text-gray-600">To</span>
+                <DepartmentChip :department="detail.requirement?.to_department" />
               </div>
             </div>
           </div>

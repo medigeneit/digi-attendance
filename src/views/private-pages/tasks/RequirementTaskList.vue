@@ -63,7 +63,7 @@ async function fetchTasks() {
 
   taskAbortController = new AbortController()
 
-  requirementStore.fetchRequirementsWithTasks()
+  requirementStore.fetchRequirementsWithTasks({ ...route.query, ...{ page: 1 } })
   // console.log({ useRequirementStored, rr: requirementStore })
 
   if (route.name === 'MyTaskList') {

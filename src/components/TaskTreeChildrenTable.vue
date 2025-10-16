@@ -65,8 +65,8 @@
                       :isMyTask="isMyTask"
                     />
                   </div>
+
                   <div class="flex items-center flex-none lg:w-full order-0 lg:order-1">
-                    <!-- <span class="text-gray-500 text-sm"> #{{ task }} </span> -->
                     <div class="text-gray-400 text-xs mr-4 whitespace-nowrap">
                       <i class="fas fa-clock"></i>
                       {{ getDisplayDateTime(task.created_at) }}
