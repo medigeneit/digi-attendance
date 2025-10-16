@@ -7,6 +7,7 @@ const { application, type, item, onAction } = defineProps({
   application: Object,
   type: String,
   item: String,
+  date: String,
   onAction: {
     type: Function,
     default: () => {},
@@ -80,7 +81,13 @@ const isPending = computed(
   <div class="flex flex-col justify-center items-center text-sm md:text-base text-center">
     <div v-if="itemUserId" class="text-center">
       <p class="text-center">{{ itemUser?.name || '' }}</p>
-      <p class="text-xs text-gray-400 text-center">{{ itemNote }}</p>
+
+      <div class="text-xs text-gray-400 text-center">
+        
+        <i v-if="date" class="far fa-clock"></i> {{ date }}
+        <span v-if="date && itemNote">  — </span>
+        <span v-if="itemNote">  {{ itemNote }}</span>
+      </div>
     </div>
     <p v-else class="text-center">
       {{ approvalUser?.name || 'N/A' }}

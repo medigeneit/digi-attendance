@@ -1,37 +1,37 @@
+import { createTodoDate as createDate, deleteTodoDate as deleteDate, findTodoDate, getTodoDates, updateTodoDateStatus } from '@/services/todo';
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import apiClient from '../axios';
-import { useTodoDateStore } from './useTodoDateStore';
 
 
-export const useTodoStore = defineStore('todo', () => {
+export const useTodoDateStore = defineStore('todo-date', () => {
   // const todos = ref([]);
-  const todo = ref(null);
+  const todo_date = ref(null);
   const loading = ref(false);
   const updatingPriority = ref(false)
   const error = ref(null);
-  const todos = ref([])
-  const todoDateStore = useTodoDateStore()
+  const todo_dates = ref([])
 
-  const fetchTodos = async (params) => {
+  const fetchTodoDates = async (params) => {
 
     loading.value = true;
     error.value = null;
     try {
-      const response = await apiClient.get('/todos', {params});
-      todos.value = response.data?.todos || [];
-      sortTodoList()
+      const response = await getTodoDates({params});
+
+      todo_dates.value = response.data?.todo_dates || [];
+      sortTodoDateList()
     } catch (err) {
-      error.value = err.response?.data?.message || 'Todos load failed';
+      error.value = err.response?.data?.message || 'TodoDates load failed';
       throw err
     } finally {
       loading.value = false;
     }
   }
 
-  function sortTodoList(){
-    todos.value = [
-      ...todos.value.sort((listA, listB) => {
+  function sortTodoDateList(){
+    todo_dates.value = [
+      ...todo_dates.value.sort((listA, listB) => {
 
         if( listA?.user_id !== listB?.user_id ) {
           return  listA?.user_id - listB?.user_id
@@ -46,35 +46,36 @@ export const useTodoStore = defineStore('todo', () => {
     ]
   }
 
-  const fetchMyTodos = async (params) => {
+  const fetchMyTodoDates = async (params) => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await apiClient.get('/my-todos', {params});
-      todos.value = response.data?.todos || [];
-      sortTodoList()
+      const response = await apiClient.get('/my-todo-dates', {params});
+      todo_dates.value = response.data?.todo_dates || [];
+      sortTodoDateList()
     } catch (err) {
-      error.value = err.response?.data?.message || 'Todos load failed';
+      error.value = err.response?.data?.message || 'TodoDates load failed';
       throw err
     } finally {
       loading.value = false;
     }
   };
 
-  const getTodosByDate = (date) =>{
-
-
-    return todos.value?.filter( todo => todo.date == date)
+  const getTodoDatesByDate = (date) =>{
+    return todo_dates.value?.filter( todo_date => todo_date.date == date)
   }
 
-  const fetchTodo = async (id) => {
+  const fetchTodoDate = async (id) => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await apiClient.get(`/todos/${id}`);
-      todo.value = response.data;
+      // todo_date.value = response.data;
+      // const response = await fetchTodoDate( id )
 
-      // todo.value = todos.value.find( td => td.id == id);
+      const response = await findTodoDate( id )
+      todo_date.value = response.data.todo_date;
+      // todo_date.value = todo_dates.value.find( td => td.id == id);
+
     } catch (err) {
       error.value = err.response?.data?.message || 'Todo load failed';
       throw err
@@ -83,22 +84,16 @@ export const useTodoStore = defineStore('todo', () => {
     }
   };
 
-  const createTodo = async (data, {returnWith} = {} ) => {
+  const createTodoDate = async (data  ) => {
     loading.value = true;
     error.value = null;
     try {
 
-      const response = await apiClient.post('/todos', data,         {
-          params: {return_with: returnWith}
-        });
+      const response = await createDate( data );
 
-      todos.value = [...todos.value, response.data?.todo];
+      todo_dates.value = [...todo_dates.value, response.data?.todo_date];
 
-      if( response?.data?.todo_date ) {
-        todoDateStore.setNewTodoDate( response?.data?.todo_date )
-      }
-
-      sortTodoList()
+      sortTodoDateList()
 
       return response.data;
 
@@ -110,16 +105,21 @@ export const useTodoStore = defineStore('todo', () => {
     }
   };
 
+  const setNewTodoDate = (todoDate) => {
+    todo_dates.value = [...todo_dates.value, todoDate];
+    sortTodoDateList()
+  }
 
-  const updateTodo = async (id, data ) => {
+
+  const updateTodoDate = async (id, data ) => {
     loading.value = true;
     error.value = null;
 
 
     try {
-      const response = await apiClient.put(`/todos/${id}`, data);
+      const response = await updateTodoDate(id, data);
 
-      todos.value = todos.value.map( todo => {
+      todo_dates.value = todo_dates.value.map( todo => {
 
         if( todo.id == response.data?.todo?.id ) {
 
@@ -145,14 +145,14 @@ export const useTodoStore = defineStore('todo', () => {
   };
 
   // Update todo status
-  const updateTodoStatus = async (id, status ) => {
+  const updateStatus = async (id, status ) => {
 
     loading.value = true;
     error.value = null;
     try {
-      await apiClient.put( `/todos/status/${id}`, { status });
+      await updateTodoDateStatus(id, {status});
 
-      todos.value = todos.value.map( todo => {
+      todo_dates.value = todo_dates.value.map( todo => {
         if( todo.id === id ) {
           return {...todo, status}
         }
@@ -170,18 +170,18 @@ export const useTodoStore = defineStore('todo', () => {
   };
 
 
-  const rearrangeMyTodos = async (ids, {date} = {}) => {
+  const rearrangeMyTodoDates = async (ids, {date} = {}) => {
     loading.value = true;
     updatingPriority.value = true
     error.value = null;
 
-    // todos.value = todos.value.filter((todo) => todo.id !== id);
+    // todo_dates.value = todo_dates.value.filter((todo) => todo.id !== id);
 
     try {
-      const response = await apiClient.put(`/my-todos/rearrange`, {ids, date});
-      //todos.value = todos.value.filter((todo) => todo.id !== id);
+      const response = await apiClient.put(`/my-todo-dates/rearrange`, {ids, date});
+      //todo_dates.value = todo_dates.value.filter((todo) => todo.id !== id);
 
-      todos.value = todos.value.map( todo => {
+      todo_dates.value = todo_dates.value.map( todo => {
         const changes = (response.data?.changes || []);
         const changed = changes.find(t => t.id == todo.id)
         if( changed ) {
@@ -196,7 +196,7 @@ export const useTodoStore = defineStore('todo', () => {
       })
 
 
-      sortTodoList()
+      sortTodoDateList()
     } catch (err) {
       error.value = err.response?.data?.message || 'Todo rearranging failed';
       throw err
@@ -206,38 +206,38 @@ export const useTodoStore = defineStore('todo', () => {
     }
   };
 
-  const deleteTodo = async (id) => {
+  async function deleteTodoDate(id){
+
     loading.value = true;
     error.value = null;
 
-    // todos.value = todos.value.filter((todo) => todo.id !== id);
-
     try {
-      await apiClient.delete(`/todos/${id}`);
-      todos.value = todos.value.filter((todo) => todo.id !== id);
+      await deleteDate(id)
+      todo_dates.value = todo_dates.value.filter((todo) => todo.id !== id);
     } catch (err) {
       error.value = err.response?.data?.message || 'Todo delete failed';
       throw err
     } finally {
       loading.value = false;
     }
-  };
+
+  }
+
 
   return {
-    todos: computed(() => todos.value),
-    todo: computed(() => todo.value),
     loading: computed(() => loading.value),
     error: computed(() => error.value),
-    fetchTodos,
-    fetchTodo,
-    createTodo,
-    updateTodo,
-    rearrangeMyTodos,
-    deleteTodo,
-    fetchMyTodos,
-    updateTodoStatus,
-    getTodosByDate,
-
-
+    todo_dates: computed(() => todo_dates.value),
+    todo_date: computed(() => todo_date.value),
+    fetchTodoDates,
+    fetchTodoDate,
+    createTodoDate,
+    updateTodoDate,
+    rearrangeMyTodoDates,
+    deleteTodoDate,
+    fetchMyTodoDates,
+    updateStatus,
+    getTodoDatesByDate,
+    setNewTodoDate
   };
 });

@@ -1,4 +1,5 @@
 <script setup>
+import { useTodoDateStore } from '@/stores/useTodoDateStore'
 import { useTodoStore } from '@/stores/useTodoStore'
 import { ref } from 'vue'
 import DraggableList from '../common/DraggableList.vue'
@@ -7,7 +8,7 @@ import UserAvatar from '../UserAvatar.vue'
 import TodoItemCard from './TodoItemCard.vue'
 
 const props = defineProps({
-  todos: {
+  todosDates: {
     type: Array,
     required: true,
   },
@@ -22,20 +23,21 @@ const props = defineProps({
 })
 
 const draggableTodos = ref(null)
-const emit = defineEmits(['clickTodo', 'clickEdit', 'update'])
+const emit = defineEmits(['clickTodo', 'clickEdit', 'addCarryClick', 'update'])
 
 const todoStore = useTodoStore()
+const todoDateStore = useTodoDateStore()
 
 async function handleClickDelete(todo) {
   if (confirm(`Are your sure want to delete todo\n'${todo?.title}'`)) {
-    await todoStore.deleteTodo(todo.id)
+    await todoDateStore.deleteTodoDate(todo.id)
     emit('update')
   }
 }
 
 async function handleClickComplete(todo, status) {
   if (confirm(`Are your sure?\nwant to change status to ${status} \ntodo: '${todo?.title}'`)) {
-    await todoStore.updateTodoStatus(todo.id, status)
+    await todoDateStore.updateStatus(todo.id, status)
     emit('update')
   }
 }
@@ -80,14 +82,19 @@ async function handleTodosRearrange() {
     </div>
 
     <div :date="date" max-items="all" class="w-full">
-      <DraggableList :items="todos" ref="draggableTodos" handle="handle" v-if="todos.length > 0">
-        <template #item="{ item: todo }">
+      <DraggableList
+        :items="todosDates"
+        ref="draggableTodos"
+        handle="handle"
+        v-if="todosDates.length > 0"
+      >
+        <template #item="{ item: todoDate }">
           <TodoItemCard
-            :todo="todo"
-            @clickTodo="(todo) => emit('clickTodo', todo)"
-            @clickEdit="(todo) => emit('clickEdit', todo)"
-            @clickDelete="(todo) => handleClickDelete(todo)"
-            @clickChangeStatus="(todo, status) => handleClickComplete(todo, status)"
+            :todoDate="todoDate"
+            @clickTodo="(todoDate) => emit('clickTodo', todoDate)"
+            @clickEdit="(todoDate) => emit('clickEdit', todoDate)"
+            @clickDelete="(todoDate) => handleClickDelete(todoDate)"
+            @clickChangeStatus="(todoDate, status) => handleClickComplete(todoDate, status)"
             hide-department
             hide-user
             class="border-b border-sky-200"
@@ -97,7 +104,7 @@ async function handleTodosRearrange() {
       </DraggableList>
 
       <div
-        v-if="todos.length === 0"
+        v-if="todosDates.length === 0"
         class="flex min-h-[38vh] items-center justify-center text-gray-400 text-center rounded-md"
       >
         No Todos

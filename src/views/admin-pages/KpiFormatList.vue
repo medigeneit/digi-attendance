@@ -2,8 +2,8 @@
 import LoaderView from '@/components/common/LoaderView.vue'
 import { useMonthlyAssessmentCriteriaStore } from '@/stores/monthly-assessment-criteria'
 import { storeToRefs } from 'pinia'
-import { ref, computed, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
 const route = useRoute()
@@ -13,7 +13,7 @@ const { items, meta, isLoading, error, hasNextPage, hasPrevPage } = storeToRefs(
 
 // ----- UI filters (sync with URL) -----
 const q = ref(route.query.q ?? '')
-const is_active = ref(route.query.is_active ?? '')          // '' | '0' | '1'
+const is_active = ref(route.query.is_active ?? '') // '' | '0' | '1'
 const sort_by = ref(route.query.sort_by ?? 'created_at')
 const sort_dir = ref(route.query.sort_dir ?? 'desc')
 const per_page = ref(Number(route.query.per_page ?? 15))
@@ -71,7 +71,13 @@ function toggleSort(column) {
 function formatDate(s) {
   if (!s) return ''
   const d = new Date(s)
-  return d.toLocaleString('en-US', { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+  return d.toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
 async function confirmDelete(row) {
@@ -179,9 +185,14 @@ function setPage(p) {
     </div>
 
     <!-- Empty -->
-    <div v-else-if="items.length === 0" class="rounded-xl border bg-white p-8 text-center text-gray-600">
+    <div
+      v-else-if="items.length === 0"
+      class="rounded-xl border bg-white p-8 text-center text-gray-600"
+    >
       No criteria found.
-      <RouterLink :to="{ name: 'KpiMonthlyAdd' }" class="ml-2 text-indigo-600 underline">Create one</RouterLink>
+      <RouterLink :to="{ name: 'KpiMonthlyAdd' }" class="ml-2 text-indigo-600 underline"
+        >Create one</RouterLink
+      >
     </div>
 
     <!-- Table -->
@@ -192,27 +203,38 @@ function setPage(p) {
             <th class="px-3 py-2 w-12">#</th>
             <th class="px-3 py-2 cursor-pointer" @click="toggleSort('name')">
               Title
-              <i v-if="sort_by==='name'" :class="sort_dir==='asc' ? 'far fa-arrow-up' : 'far fa-arrow-down'"></i>
+              <i
+                v-if="sort_by === 'name'"
+                :class="sort_dir === 'asc' ? 'far fa-arrow-up' : 'far fa-arrow-down'"
+              ></i>
             </th>
             <th class="px-3 py-2 w-28">Status</th>
             <th class="px-3 py-2 cursor-pointer w-48" @click="toggleSort('updated_at')">
               Updated
-              <i v-if="sort_by==='updated_at'" :class="sort_dir==='asc' ? 'far fa-arrow-up' : 'far fa-arrow-down'"></i>
+              <i
+                v-if="sort_by === 'updated_at'"
+                :class="sort_dir === 'asc' ? 'far fa-arrow-up' : 'far fa-arrow-down'"
+              ></i>
             </th>
             <th class="px-3 py-2 w-28 text-right">Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr
-            v-for="(row, idx) in items"
-            :key="row.id"
-            class="border-t hover:bg-gray-50"
-          >
-            <td class="px-3 py-2 align-top">{{ (meta.current_page - 1) * meta.per_page + idx + 1 }}</td>
+          <tr v-for="(row, idx) in items" :key="row.id" class="border-t hover:bg-gray-50">
+            <td class="px-3 py-2 align-top">
+              {{ (meta.current_page - 1) * meta.per_page + idx + 1 }}
+            </td>
             <td class="px-3 py-2">
               <div class="font-medium text-gray-900">{{ row.name }}</div>
               <div v-if="row.description" class="mt-0.5 line-clamp-6 text-gray-500">
-                <p v-html="row.description"></p>
+                <!-- <p v-html="row.description"></p> -->
+
+
+                  <div
+                    v-if="row?.description"
+                    v-html="row.description"
+                    class="richtext mt-0.5 text-gray-700 line-clamp-6"
+                  ></div>
               </div>
             </td>
             <td class="px-3 py-2">
@@ -233,7 +255,11 @@ function setPage(p) {
                 >
                   <i class="far fa-edit"></i>
                 </RouterLink>
-                <button class="btn-icon text-red-600 hover:text-red-700" @click="confirmDelete(row)" title="Delete">
+                <button
+                  class="btn-icon text-red-600 hover:text-red-700"
+                  @click="confirmDelete(row)"
+                  title="Delete"
+                >
                   <i class="far fa-trash-alt"></i>
                 </button>
               </div>
@@ -275,3 +301,10 @@ function setPage(p) {
     </div>
   </div>
 </template>
+
+<style scoped>
+.richtext :deep(ol) { @apply list-decimal pl-5 my-1; }
+.richtext :deep(ul) { @apply list-disc pl-5 my-1; }
+.richtext :deep(li) { @apply my-0.5; }
+.richtext :deep(p)  { @apply my-1; }
+</style>
