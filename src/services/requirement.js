@@ -6,8 +6,8 @@ export async function getRequirements({params = {}} = {}){
   return apiClient.get('/requirements', {params});
 }
 
-export async function getRequirementsWithTasks({params = {}} = {}){
-  return apiClient.get('/requirements-with-tasks', {params});
+export async function getRequirementsDetailsWithTasks({params = {}} = {}){
+  return apiClient.get('/requirement-details-with-tasks', {params});
 }
 
 export async function addRequirement(data){

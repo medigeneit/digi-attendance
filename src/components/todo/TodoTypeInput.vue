@@ -16,6 +16,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  readonly: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const emit = defineEmits(['update:todoType', 'update:todoTypeId', 'update:show'])
@@ -95,8 +99,10 @@ onBeforeUnmount(() => {
       :class="modelTodoTypeId ? '' : 'text-gray-400'"
       @click.stop="
         () => {
-          modelShow = true
-          updatePosition()
+          if (!readonly) {
+            modelShow = true
+            updatePosition()
+          }
         }
       "
     >
@@ -104,10 +110,11 @@ onBeforeUnmount(() => {
 
       <button
         class="btn-icon fas fa-times !size-8 text-sm ml-auto"
-        v-if="modelTodoTypeId"
+        v-if="modelTodoTypeId && !readonly"
         @click.prevent.stop="clearValue"
       ></button>
     </div>
+
     <Teleport to="body">
       <div
         v-if="modelShow"

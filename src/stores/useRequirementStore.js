@@ -1,4 +1,4 @@
-import { getRequirements, getRequirementsWithTasks } from '@/services/requirement';
+import { getRequirements, getRequirementsDetailsWithTasks } from '@/services/requirement';
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import apiClient from '../axios';
@@ -28,7 +28,7 @@ export const useRequirementStore = defineStore('requirement', () => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await getRequirementsWithTasks({params});
+      const response = await getRequirementsDetailsWithTasks({params});
       requirementDetails.value = response.data?.requirement_details || [];
       console.log({response})
     } catch (err) {

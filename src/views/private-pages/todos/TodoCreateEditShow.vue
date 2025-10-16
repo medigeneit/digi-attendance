@@ -41,6 +41,9 @@ function handleTodoDateUpdate() {
       @cancelClick="emit('cancelClick')"
       @update="handleTodoUpdate"
       :date="todoModal?.date"
+      :todoType="todoModal?.todoType"
+      :todoTypeId="todoModal?.todoTypeId"
+      :readonlyValues="todoModal?.formReadonlyValues || {}"
       :userRole="userRole"
     />
   </OverlyModal>
@@ -51,6 +54,7 @@ function handleTodoDateUpdate() {
       :date="todoModal?.date"
       :todoId="todoModal?.todo_id"
       :userRole="userRole"
+      :readonlyValues="todoModal?.formReadonlyValues || {}"
     />
   </OverlyModal>
 
@@ -60,6 +64,7 @@ function handleTodoDateUpdate() {
       @update="handleTodoUpdate"
       :todo="todoModal?.todo"
       :userRole="userRole"
+      :readonlyValues="todoModal?.formReadonlyValues || {}"
     />
   </OverlyModal>
 

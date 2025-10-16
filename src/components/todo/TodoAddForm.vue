@@ -1,7 +1,7 @@
 <script setup>
 import { getDisplayDate, getYearMonthDayFormat } from '@/libs/datetime'
 import { useTodoStore } from '@/stores/useTodoStore'
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import FormHandler from '../FormHandler.vue'
 import LoaderView from '../common/LoaderView.vue'
 import TodoTypeInput from './TodoTypeInput.vue'
@@ -9,6 +9,15 @@ import TodoTypeInput from './TodoTypeInput.vue'
 const props = defineProps({
   date: { type: String, default: getYearMonthDayFormat(new Date()) },
   userRole: { type: String, default: 'employee' },
+  todoType: { type: String, default: null },
+  todoTypeId: { type: String, default: null },
+  readonlyValues: {
+    type: Object,
+    default: () => ({
+      date: false,
+      todo_type_id: false,
+    }),
+  },
 })
 
 const state = ref()
@@ -45,6 +54,18 @@ async function handleFormSubmit() {
   }
 }
 
+watch(
+  () => ({
+    date: props.date,
+    todo_type: props.todoType,
+    todo_type_id: props.todoTypeId,
+  }),
+  (newValue) => {
+    form.value = newValue
+  },
+  { immediate: true },
+)
+
 const selectedDate = computed(() => {
   return new Date(props.date)
 })
@@ -75,6 +96,9 @@ onMounted(async () => {
         <h2 class="text-xl font-semibold">Add Todo</h2>
       </div>
 
+      <!-- <div>{{ props }}</div>
+      <div>{{ form }}</div> -->
+
       <div class="p-4 min-h-[10vh] max-h-[50vh] overflow-y-auto">
         <div class="mb-2">
           <span class="font-semibold"> Date </span>
@@ -95,12 +119,25 @@ onMounted(async () => {
         </div>
 
         <div class="mb-4">
+          <label class="block text-gray-700 font-medium mb-2">Date</label>
+          <input
+            :readonly="readonlyValues?.date"
+            v-model="form.date"
+            type="date"
+            required
+            placeholder="Enter todo title"
+            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div class="mb-4">
           <label class="block text-gray-700 font-medium mb-2">Task ID (optional)</label>
 
           <TodoTypeInput
             v-model:show="showTodoTypes"
             v-model:todoType="form.todo_type"
             v-model:todoTypeId="form.todo_type_id"
+            :readonly="readonlyValues?.todo_type_id"
           />
         </div>
       </div>

@@ -11,7 +11,7 @@
           <td
             class="border text-center text-xs text-gray-400 bg-gray-50/80 sticky -top-4 z-20 px-2 whitespace-nowrap"
           >
-            Sub Task
+            Task
           </td>
           <td
             class="border text-center text-xs text-gray-400 bg-gray-50/80 sticky -top-4 z-20 px-2 whitespace-nowrap"

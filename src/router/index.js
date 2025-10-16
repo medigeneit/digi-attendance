@@ -142,6 +142,12 @@ const router = createRouter({
           meta: { requiresAuth: true, title: 'Task List' },
         },
         {
+          path: 'requirement-tasks/:id',
+          name: 'RequirementTaskShow',
+          component: () => import('@/views/private-pages/tasks/RequirementTaskShow.vue'),
+          meta: { requiresAuth: true, title: 'Task List' },
+        },
+        {
           path: 'task-reports',
           name: 'MonthlyTaskReports',
           component: () => import('@/views/private-pages/tasks/MonthlyTaskReportPage.vue'),

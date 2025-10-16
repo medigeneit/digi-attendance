@@ -137,7 +137,7 @@ function handleClickAddTodo(yearMonthDay, mainTodoId) {
   }
 }
 
-function addTodoDate(todoId, yearMonthDay) {
+function handleClickAddTodoDate(todoId, yearMonthDay) {
   console.log({ yearMonthDay, todoId })
 
   todoModal.value = {
@@ -288,7 +288,7 @@ watch(
       @todoUpdate="handleTodoUpdate"
       @todoDateUpdate="handleTodoDateUpdate"
       @clickEdit="handleClickEditTodo"
-      @clickAddTodoDate="addTodoDate"
+      @clickAddTodoDate="handleClickAddTodoDate"
     />
   </div>
 </template>

@@ -255,16 +255,9 @@ const companyDepartments = computed(() => {
       <div class="flex justify-between items-start">
         <h2 class="text-2xl font-bold text-gray-800 leading-none h-10">Task List</h2>
 
-        <div class="ml-auto flex gap-6 items-center" v-if="!isMyTask">
-          <!--
-          <div v-if="listHasRearranged" class="flex gap-2 items-center">
-            <span class="text-red-500">Priority Changed</span>
-            <button class="btn-3" @click.prevent="emit('clickPrioritySave')">Save</button>
-            <button class="btn-3" @click.prevent="emit('clickPriorityDiscard')">Discard</button>
-          </div>
-          -->
+        <!-- <div class="ml-auto flex gap-6 items-center" v-if="!isMyTask">
           <button @click="emit('clickAddTask')" class="btn-1">Add Main Task / Project</button>
-        </div>
+        </div> -->
       </div>
       <!-- {{ employees }} -->
 
