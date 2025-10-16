@@ -1,10 +1,11 @@
-import { getRequirements } from '@/services/requirement';
+import { getRequirements, getRequirementsWithTasks } from '@/services/requirement';
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import apiClient from '../axios';
 
 export const useRequirementStore = defineStore('requirement', () => {
   const requirements = ref([]);
+  const requirementDetails = ref([]);
   const requirement = ref(null);
   const loading = ref(false);
   const error = ref(null);
@@ -18,6 +19,22 @@ export const useRequirementStore = defineStore('requirement', () => {
     } catch (err) {
       error.value = err.response?.data?.message || 'রিকোয়ারমেন্ট লোড করতে ব্যর্থ হয়েছে।';
       console.error('Error fetching requirements:', err);
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const fetchRequirementsWithTasks = async ( params = {}) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await getRequirementsWithTasks({params});
+      requirementDetails.value = response.data?.requirement_details || [];
+      console.log({response})
+    } catch (err) {
+      error.value = err.response?.data?.message || 'রিকোয়ারমেন্ট লোড করতে ব্যর্থ হয়েছে।';
+      console.error('Error fetching requirements:', err);
+      throw err;
     } finally {
       loading.value = false;
     }
@@ -86,9 +103,11 @@ export const useRequirementStore = defineStore('requirement', () => {
 
   return {
     requirements: computed(() => requirements.value),
+    requirementDetails: computed(() => requirementDetails.value),
     requirement: computed(() => requirement.value),
     loading: computed(() => loading.value),
     error: computed(() => error.value),
+    fetchRequirementsWithTasks,
     fetchRequirements,
     fetchRequirement,
     createRequirement,
