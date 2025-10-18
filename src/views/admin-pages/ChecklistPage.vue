@@ -63,7 +63,7 @@ const ORG = {
 </script>
 
 <template>
-  <div >
+  <div class="space-y-3" >
     <!-- Sticky toolbar -->
     <header class="print:hidden sticky top-0 z-10 -mx-4 md:-mx-6 bg-white/80 backdrop-blur border-b">
       <div class="mx-auto max-w-7xl px-4 md:px-6">
@@ -218,6 +218,7 @@ const ORG = {
             <th class="w-12 border border-gray-900 px-2 py-1 text-center">ক্রম.</th>
             <th class="border border-gray-900 px-2 py-1 text-left">বিষয়</th>
             <th class="w-40 border border-gray-900 px-2 py-1 text-center">সম্পন্ন হলে টিক চিহ্ন দিন</th>
+            <th class="border border-gray-900 px-2 py-1 text-center">Attachment</th>
             <th class="w-52 border border-gray-900 px-2 py-1 text-left">মন্তব্য</th>
           </tr>
         </thead>
@@ -229,6 +230,9 @@ const ORG = {
               <span class="inline-flex items-center justify-center align-middle border border-gray-900 w-4 h-4">
                 <span v-if="it.status == 'done'" class="leading-none text-[12px] font-bold">✓</span>
               </span>
+            </td>
+            <td class="border border-gray-900 px-2 py-1 text-center">
+             {{ it.attachment ? 'Yes' : 'No' }}
             </td>
             <td class="border border-gray-900 px-2 py-1">&nbsp;</td>
           </tr>
