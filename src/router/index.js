@@ -736,6 +736,17 @@ const router = createRouter({
           },
         },
 
+        { 
+          path: '/hrd/clearances', 
+          name: 'clearances', 
+          component: import('@/views/private-pages/ClearancePage.vue') ,
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Leave Application List',
+          },
+        },
+
         {
           path: '/hrd/short-leave-list',
           name: 'ShortLeaveList',
@@ -1214,7 +1225,13 @@ const router = createRouter({
           path: '/users/:userId/checklists/create/:templateId',
           name: 'checklist.create',
           component: () => import('@/views/admin-pages/ChecklistPage.vue')
-        }
+        },
+        { 
+          path: '/settings/department-item-assignments', 
+          name: 'ctdi', 
+          component: () => import('@/views/admin-pages/DepartmentItemAssignments.vue') 
+        },
+        
       ],
     },
   ],

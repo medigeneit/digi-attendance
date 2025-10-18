@@ -152,6 +152,15 @@ const hasAccessTo = (routeName) => {
       <i class="far fa-exclamation-circle text-3xl"></i>
       Shift Schedules
     </RouterLink>
+
+    <RouterLink
+      v-if="hasAccessTo('clearances')"
+      :to="{ name: 'clearances' }"
+      class="main-button"
+    >
+      <i class="far fa-exclamation-circle text-3xl"></i>
+      Clearances
+    </RouterLink>
   </div>
 </template>
 

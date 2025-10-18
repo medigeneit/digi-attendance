@@ -53,9 +53,10 @@
       <i class="far fa-file-chart-line text-3xl"></i>
       Monthly KPI Criteria
     </RouterLink>
-    <RouterLink :to="{ name: 'checklists.board' }" class="main-button">
+
+    <RouterLink :to="{ name: 'ctdi', query:{templateId:2} }" class="main-button">
       <i class="far fa-tasks text-3xl"></i>
-      Joining/Exit Checklist
+      Template Items Assign
     </RouterLink>
   </div>
 </template>
