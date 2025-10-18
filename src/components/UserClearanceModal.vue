@@ -1,250 +1,230 @@
 <script setup>
-import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue'
+import { computed, onBeforeUnmount, watch, ref, nextTick } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useClearanceStore } from '@/stores/clearance'
+import { useUserClearanceStore } from '@/stores/userClearance'
 
 const props = defineProps({
-  user: { type: Object, required: true }, // { id, name, employee_id? }
-  buttonClass: {
-    type: String,
-    default: 'px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700',
-  },
-  small: { type: Boolean, default: false },
+  user: { type: Object, required: true },
+  open: { type: Boolean, default: false }, // v-model:open
+  buttonClass: { type: String, default: 'px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700' },
+  hideTrigger: { type: Boolean, default: false },
+})
+const emit = defineEmits(['update:open'])
+const isOpen = computed({ get: () => props.open, set: v => emit('update:open', v) })
+
+/* Store */
+const s = useUserClearanceStore()
+const { items, loading, error, currentUserInfo } = storeToRefs(s)
+
+/* Header fields */
+const titleUser  = computed(() => currentUserInfo?.value?.name || props.user?.name || `#${props.user?.id}`)
+const employeeId = computed(() => currentUserInfo?.value?.employee_id || props.user?.employee_id || '')
+const userDept   = computed(() => currentUserInfo?.value?.department_name || props.user?.department_name || '')
+const userPost   = computed(() => currentUserInfo?.value?.post || currentUserInfo?.value?.designation || props.user?.post || '')
+
+/* Load */
+const load = async () => { if (!props.user?.id) return; s.setUser?.(props.user.id); await s.fetch?.() }
+
+/* Open/Close */
+function openModal(){ isOpen.value = true }
+function closeModal(){ isOpen.value = false }
+function onKeydown(e){ if (e.key === 'Escape') closeModal() }
+
+/* Effects */
+watch(isOpen, (v)=>{ if (v){ load(); window.addEventListener('keydown', onKeydown) } else { window.removeEventListener('keydown', onKeydown) } }, { immediate:true })
+watch(()=>props.user?.id, (id, old)=>{ if (id && id!==old && isOpen.value) load() })
+onBeforeUnmount(()=> window.removeEventListener('keydown', onKeydown))
+
+/* Grouping by handover_to (rowspan) */
+const LABELS = {
+  departmental_incharge:  'Departmental In-charge',
+  technical_support_team: 'Technical Support Team',
+  it_incharge:            'IT In-charge',
+  hr_department:          'HR Department',
+}
+const ORDER = ['Departmental In-charge','Technical Support Team','IT In-charge','HR Department']
+function mapGroup(row){ const k = String(row?.handover_to||'').toLowerCase(); return LABELS[k] || 'Departmental In-charge' }
+
+const printableRows = computed(()=>{
+  const list = Array.isArray(items?.value) ? items.value : []
+  const buckets = new Map(ORDER.map(k=>[k,[]]))
+  for (const row of list) buckets.get(mapGroup(row))?.push(row)
+  for (const [,arr] of buckets.entries()){
+    arr.sort((a,b)=>{
+      const ao = a.template_order_no ?? a.order_no ?? a.template_item_id ?? a.id ?? 0
+      const bo = b.template_order_no ?? b.order_no ?? b.template_item_id ?? b.id ?? 0
+      return ao-bo
+    })
+  }
+  const out=[]; let sl=1
+  for (const name of ORDER){
+    const rows=buckets.get(name)||[]
+    if (!rows.length) continue
+    rows.forEach((row,idx)=> out.push({ sl:sl++, group:name, isGroupFirst:idx===0, groupSpan:rows.length, row }))
+  }
+  return out
 })
 
-const open = ref(false)
-const debounceTimer = ref(null)
-
-const s = useClearanceStore()
-const { items, loading, error, sort, filters, summary, currentUserInfo } = storeToRefs(s)
-
-const titleUser = computed(() => currentUserInfo.value?.name || props.user?.name || `#${props.user?.id}`)
-const employeeId = computed(() => currentUserInfo.value?.employee_id || props.user?.employee_id || null)
-
-function onOpen() {
-  open.value = true
-  s.setUser(props.user.id)
-  s.fetch()
+/* Helpers */
+function prettyYesNo(v){
+  const t = String(v ?? '').trim().toLowerCase()
+  if (['y','yes','true','1','done','cleared','complete','completed','yes.','yes,'].includes(t)) return 'Yes'
+  if (['n','no','false','0','pending','not done','incomplete','no.','no,','rejected'].includes(t)) return 'No'
+  return '—'
 }
 
-function onClose() {
-  open.value = false
+/* Print: show ONLY modal sheet */
+async function doPrint(){
+  document.body.classList.add('print-modal')   // <- key
+  await nextTick()
+  window.print()
+  setTimeout(()=> document.body.classList.remove('print-modal'), 0)
 }
-
-function onSort(col) {
-  s.setSort(col)
-  s.fetch()
-}
-
-function onReset() {
-  s.resetFilters()
-  s.fetch()
-}
-
-/* --- debounce search --- */
-watch(() => filters.value.search, () => {
-  if (debounceTimer.value) clearTimeout(debounceTimer.value)
-  debounceTimer.value = setTimeout(() => s.fetch(), 400)
-})
-
-/* --- close on ESC --- */
-function onKeydown(e) {
-  if (e.key === 'Escape') onClose()
-}
-onMounted(() => window.addEventListener('keydown', onKeydown))
-onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 </script>
 
 <template>
-  <!-- Trigger button -->
-  <button :class="buttonClass" @click="onOpen">
-    {{ small ? 'Clearance' : 'View Clearance' }}
-  </button>
+  <!-- Optional trigger -->
+  <button v-if="!hideTrigger" :class="buttonClass" @click="openModal">View Clearance</button>
 
   <!-- Modal -->
-  <div v-if="open" class="fixed inset-0 z-[100]">
-    <!-- Overlay -->
-    <div class="absolute inset-0 bg-black/50" @click="onClose"></div>
+  <div v-if="isOpen" class="fixed inset-0 z-50 print:static print:z-auto">
+    <div class="absolute inset-0 bg-black/50 print:hidden" @click="closeModal"></div>
 
-    <!-- Panel -->
-    <div class="absolute inset-0 flex items-start justify-center overflow-y-auto">
-      <div class="mt-10 mb-10 w-[1100px] max-w-[95vw] rounded-2xl bg-white shadow-2xl">
+    <div class="absolute inset-0 flex items-start justify-center overflow-y-auto print:block print:overflow-visible">
+      <!-- Printable Sheet (tagged => modal-print) -->
+      <div class="modal-print mt-6 mb-10 w-[1150px] max-w-[96vw] rounded-2xl bg-white shadow-2xl
+                  print:w-[210mm] print:max-w-[210mm] print:rounded-none print:shadow-none print:m-0 print:mt-0">
         <!-- Header -->
-        <div class="flex items-center justify-between px-5 py-4 border-b">
-          <div>
-            <h3 class="text-lg font-semibold">
-              Clearance — {{ titleUser }}
-              <span v-if="employeeId" class="text-sm text-gray-500 font-normal"> ({{ employeeId }}) </span>
-            </h3>
-            <p class="text-xs text-gray-500">
-              Total: <span class="font-medium">{{ summary.total }}</span>
-              <span v-for="(c, k) in summary.by_status" :key="k" class="ml-3">
-                <span class="uppercase">{{ k }}</span>: <span class="font-medium">{{ c }}</span>
-              </span>
-            </p>
+        <div class="px-6 pt-6 pb-4 border-b print:px-[12mm] print:pt-[10mm] print:pb-[4mm]">
+          <div class="text-center">
+            <h1 class="text-2xl font-extrabold tracking-wide print:text-[20px]">GENESIS PG ORIENTATION CENTRE</h1>
+            <p class="text-sm text-gray-600 print:text-[12px]">230, New Elephant Road, Katabon Mor, Dhaka-1205</p>
           </div>
-          <div class="flex items-center gap-2">
-            <button class="px-3 py-1.5 rounded-md border hover:bg-gray-50" @click="onReset">Reset</button>
-            <button class="px-3 py-1.5 rounded-md bg-gray-800 text-white hover:bg-black" @click="onClose">Close</button>
+
+          <!-- Better form lines -->
+          <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm print:text-[12px]">
+            <div class="form-row">
+              <span class="label">Name:</span>
+              <span class="value">
+                <span class="value-text font-medium">{{ titleUser }}</span>
+                <span v-if="employeeId" class="value-extra">(ID: {{ employeeId }})</span>
+              </span>
+            </div>
+            <div class="form-row">
+              <span class="label">Department:</span>
+              <span class="value"><span class="value-text">{{ userDept || '—' }}</span></span>
+            </div>
+            <div class="form-row">
+              <span class="label">Post:</span>
+              <span class="value"><span class="value-text">{{ userPost || '—' }}</span></span>
+            </div>
+          </div>
+
+          <div class="mt-4 text-center">
+            <h2 class="inline-block text-base font-semibold px-4 py-1 border rounded print:text-[13px]">
+              Employment Resignation Checklist
+            </h2>
           </div>
         </div>
 
-        <!-- Filters -->
-        <div class="px-5 py-4 border-b grid grid-cols-1 md:grid-cols-5 gap-3">
-          <input
-            v-model="filters.search"
-            type="search"
-            placeholder="Search (dept, item, remarks, receiver)"
-            class="col-span-2 border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-
-          <select
-            v-model="filters.status"
-            class="border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            @change="s.fetch()"
-          >
-            <option value="">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="cleared">Cleared</option>
-            <option value="rejected">Rejected</option>
-          </select>
-
-          <input
-            v-model="filters.department_id"
-            type="number"
-            min="1"
-            placeholder="Department ID"
-            class="border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            @keyup.enter="s.fetch()"
-          />
-          <input
-            v-model="filters.template_item_id"
-            type="number"
-            min="1"
-            placeholder="Template Item ID"
-            class="border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            @keyup.enter="s.fetch()"
-          />
+        <!-- Actions (screen only) -->
+        <div class="px-6 py-3 flex justify-end gap-2 print:hidden">
+          <button class="rounded border px-3 py-1.5 hover:bg-gray-50" @click="doPrint">Print</button>
+          <button class="rounded bg-gray-900 px-3 py-1.5 text-white hover:bg-gray-800" @click="closeModal">Close</button>
         </div>
 
         <!-- Table -->
-        <div class="px-5 py-2 overflow-x-auto">
-          <table class="min-w-[900px] w-full">
+        <div class="px-6 pb-6 print:px-[12mm] print:pb-[12mm] overflow-x-auto print:overflow-visible">
+          <table class="w-full border border-gray-800 text-[13px] print:text-[12px]" style="border-collapse:collapse">
             <thead>
-              <tr class="text-left text-sm border-b">
-                <th class="py-2 pr-4">
-                  <button class="inline-flex items-center gap-1" @click="onSort('department_id')">
-                    Department
-                    <span v-if="sort.by === 'department_id'">({{ sort.dir }})</span>
-                  </button>
+              <tr class="bg-gray-100">
+                <th class="border border-gray-800 text-left px-2 py-1 w-[14mm]">S. L.</th>
+                <th class="border border-gray-800 text-left px-2 py-1 w-[28mm]">Handover To</th>
+                <th class="border border-gray-800 text-left px-2 py-1 w-[70mm]">
+                  Particulars <span class="block text-[11px] text-gray-600">Cleared by</span>
                 </th>
-                <th class="py-2 pr-4">
-                  <button class="inline-flex items-center gap-1" @click="onSort('template_item_id')">
-                    Item
-                    <span v-if="sort.by === 'template_item_id'">({{ sort.dir }})</span>
-                  </button>
-                </th>
-                <th class="py-2 pr-4">
-                  <button class="inline-flex items-center gap-1" @click="onSort('status')">
-                    Status
-                    <span v-if="sort.by === 'status'">({{ sort.dir }})</span>
-                  </button>
-                </th>
-                <th class="py-2 pr-4">Handover</th>
-                <th class="py-2 pr-4">Present Condition</th>
-                <th class="py-2 pr-4">Receiver</th>
-                <th class="py-2 pr-4">
-                  <button class="inline-flex items-center gap-1" @click="onSort('cleared_at')">
-                    Cleared By / At
-                    <span v-if="sort.by === 'cleared_at'">({{ sort.dir }})</span>
-                  </button>
-                </th>
-                <th class="py-2 pr-2">Remarks</th>
+                <th class="border border-gray-800 text-left px-2 py-1 w-[28mm]">Handed over (Yes/No)</th>
+                <th class="border border-gray-800 text-left px-2 py-1">Present Conditions (note please)</th>
+                <th class="border border-gray-800 text-left px-2 py-1 w-[42mm]">Receiver’s Name</th>
               </tr>
             </thead>
 
             <tbody>
-              <tr v-if="loading">
-                <td colspan="8" class="py-8 text-center text-gray-500">Loading…</td>
+              <tr v-if="loading?.value">
+                <td colspan="6" class="border border-gray-800 text-center py-6 text-gray-600">Loading…</td>
               </tr>
-              <tr v-else-if="error">
-                <td colspan="8" class="py-8 text-center text-red-600">{{ error }}</td>
+              <tr v-else-if="error?.value">
+                <td colspan="6" class="border border-gray-800 text-center py-6 text-red-600">{{ error.value }}</td>
               </tr>
-              <tr v-else-if="!items.length">
-                <td colspan="8" class="py-8 text-center text-gray-500">No items found</td>
+              <tr v-else-if="!printableRows.length">
+                <td colspan="6" class="border border-gray-800 text-center py-6 text-gray-600">No items found</td>
               </tr>
 
-              <tr v-for="row in items" :key="row.id" class="border-b hover:bg-gray-50">
-                <td class="py-2 pr-4">
+              <tr v-for="item in printableRows" :key="item.row.id" class="align-top">
+                <td class="border border-gray-800 px-2 py-1 align-top tabular-nums">{{ item.sl }}.</td>
+                <td v-if="item.isGroupFirst" :rowspan="item.groupSpan" class="border border-gray-800 px-2 py-1 align-top font-medium">
+                  {{ item.group }}
+                </td>
+                <td class="border border-gray-800 px-2 py-1">
                   <div class="font-medium">
-                    {{ row.department_name || `#${row.department_id}` }}
+                    {{ item.row.template_item_name || `#${item.row.template_item_id}` }}
+                  </div>
+                  <div class="text-[11px] text-gray-700 mt-0.5">
+                    Cleared by: <strong>{{ item.row.cleared_by_user?.name || (item.row.cleared_by ? `#${item.row.cleared_by}` : '—') }}</strong>
+                    <span v-if="item.row.cleared_at" class="text-gray-500">
+                      ({{ new Date(item.row.cleared_at).toLocaleString() }})
+                    </span>
                   </div>
                 </td>
-                <td class="py-2 pr-4">
-                  <div class="font-medium">
-                    {{ row.template_item_name || `#${row.template_item_id}` }}
-                  </div>
+                <td class="border border-gray-800 px-2 py-1">
+                  <span class="inline-block min-w-[22mm] text-center font-semibold">{{ prettyYesNo(item.row.handover_status) }}</span>
                 </td>
-                <td class="py-2 pr-4">
-                  <span
-                    class="px-2 py-0.5 rounded-full text-xs font-semibold"
-                    :class="{
-                      'bg-yellow-100 text-yellow-800': row.status === 'pending',
-                      'bg-green-100 text-green-700': row.status === 'cleared',
-                      'bg-red-100 text-red-700': row.status === 'rejected',
-                      'bg-gray-100 text-gray-700': !['pending','cleared','rejected'].includes(row.status)
-                    }"
-                  >
-                    {{ row.status || '—' }}
-                  </span>
+                <td class="border border-gray-800 px-2 py-1">
+                  <div class="whitespace-pre-line">{{ item.row.present_condition || '—' }}</div>
                 </td>
-                <td class="py-2 pr-4">
-                  <span class="text-xs rounded-full px-2 py-0.5 bg-gray-100 text-gray-700">
-                    {{ row.handover_status || '—' }}
-                  </span>
-                </td>
-                <td class="py-2 pr-4">
-                  <div class="text-sm text-gray-800 line-clamp-2">
-                    {{ row.present_condition || '—' }}
-                  </div>
-                </td>
-                <td class="py-2 pr-4">
-                  <div class="text-sm text-gray-800">
-                    {{ row.receiver_name || '—' }}
-                  </div>
-                </td>
-                <td class="py-2 pr-4">
-                  <div class="text-sm">
-                    <div class="text-gray-800">
-                      {{ row.cleared_by_user?.name || (row.cleared_by ? `#${row.cleared_by}` : '—') }}
-                    </div>
-                    <div class="text-xs text-gray-500">
-                      {{ row.cleared_at ? new Date(row.cleared_at).toLocaleString() : '' }}
-                    </div>
-                  </div>
-                </td>
-                <td class="py-2 pr-2 text-sm text-gray-700">
-                  <div class="max-w-[280px] line-clamp-2" :title="row.remarks || ''">
-                    {{ row.remarks || '—' }}
-                  </div>
+                <td class="border border-gray-800 px-2 py-1">
+                  <div>{{ item.row.receiver_name || '—' }}</div>
+                  <div v-if="item.row.remarks" class="text-[11px] text-gray-600 mt-0.5">{{ item.row.remarks }}</div>
                 </td>
               </tr>
             </tbody>
           </table>
-        </div>
 
+          <!-- Signatures -->
+          <div class="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm print:text-[12px]">
+            <div class="border-t border-gray-800 pt-6 text-center"><div class="font-medium">User Signature</div></div>
+            <div class="border-t border-gray-800 pt-6 text-center"><div class="font-medium">Received by Head of HR</div></div>
+            <div class="border-t border-gray-800 pt-6 text-center"><div class="font-medium">Verified by ACC/CC</div></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
+<!-- Header form-lines -->
 <style scoped>
-/* If Tailwind's line-clamp plugin isn't enabled */
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+.form-row{ display:flex; align-items:flex-end; gap:.5rem; }
+.form-row .label{ width:6.5rem; color:#6b7280; }
+.form-row .value{
+  flex:1; min-height:26px; border-bottom:1px solid #d1d5db;
+  display:flex; align-items:flex-end; justify-content:space-between; padding-bottom:2px;
+}
+.form-row .value-text{ line-height:1.1; }
+.form-row .value-extra{ font-size:11px; color:#6b7280; margin-left:.5rem; }
+@media print{ .form-row .value{ border-bottom-color:#999; min-height:22px; padding-bottom:1px; } }
+</style>
+
+<!-- GLOBAL print rules (unscoped) -->
+<style>
+@media print{
+  @page{ size:A4 portrait; margin:10mm 12mm; }
+  /* ডিফল্টে modal print-section হাইড থাকবে */
+  .modal-print{ display:none !important; }
+  /* শুধু modal থেকে Print দিলে (body.print-modal) সেটি দেখাও, এবং page-print লুকাও */
+  body.print-modal .modal-print{ display:block !important; }
+  body.print-modal .page-print{ display:none !important; }
+  /* modal layout normal flow */
+  .modal-print .fixed, .modal-print .absolute{ position:static !important; inset:auto !important; }
 }
 </style>
