@@ -41,6 +41,8 @@ const form = reactive({
   date_of_birth: '',
   joining_date: '',
   employment_type: 'Provisional',
+  provisional_month: 0,
+  extended_provisional_month: 0,
   employee_id: '',
   weekends: [],
   leave_approval_id: '',
@@ -96,6 +98,8 @@ const saveUser = async () => {
       joining_date: form.joining_date,
       employee_id: form.employee_id,
       employment_type: form.employment_type,
+      provisional_month: form.provisional_month,
+      extended_provisional_month: form.extended_provisional_month,
       weekends: form.weekends,
       selected_weekend: selectedWeekend.value,
       leave_approval_id: form.leave_approval_id,
@@ -239,6 +243,26 @@ const computedDesignations = computed(() => {
                   <option value="Intern">Intern</option>
                 </select>
               </div>
+
+              <template v-if="form.employment_type === 'Provisional'">
+                <div>
+                  <label>Provisional (month)</label>
+                  <input
+                    v-model="form.provisional_month"
+                    type="number"
+                    class="w-full p-2 border rounded"
+                  />
+                </div>
+                <div>
+                  <label>Extended Provisional (month)</label>
+                  <input
+                    v-model="form.extended_provisional_month"
+                    type="number"
+                    class="w-full p-2 border rounded"
+                  />
+                </div>
+              </template>
+
               <div>
                 <label>Line Type</label>
                 <select v-model="form.type" class="w-full p-2 border rounded" required>
