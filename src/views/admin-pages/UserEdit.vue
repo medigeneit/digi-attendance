@@ -33,13 +33,9 @@ const form = reactive({
   nid: '',
   date_of_birth: '',
   joining_date: '',
-<<<<<<< HEAD
   employment_type: 'Probationary',
-=======
-  employment_type: 'Provisional',
   provisional_month: 0,
   extended_provisional_month: 0,
->>>>>>> eb18ac9cbbe90c87dee7f5b2f6b4026b560bb604
   employee_id: '',
   weekends: [],
   leave_approval_id: '',
