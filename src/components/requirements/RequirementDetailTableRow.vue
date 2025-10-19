@@ -132,7 +132,7 @@ function handleCreateAssignButtonClick() {
       <template v-if="task.id">
         <td class="border-2 border-gray-700 p-3 text-center">
           <RouterLink
-            :to="{ name: 'TaskShow', params: { id: task.id } }"
+            :to="{ name: 'RequirementTaskShow', params: { id: task.id } }"
             class="hover:underline text-gray-900 hover:text-blue-600 whitespace-nowrap block"
             target="_blank"
           >
