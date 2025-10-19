@@ -5,7 +5,7 @@ import { useTodoDateStore } from './useTodoDateStore';
 
 
 export const useTodoStore = defineStore('todo', () => {
-  // const todos = ref([]);
+
   const todo = ref(null);
   const loading = ref(false);
   const updatingPriority = ref(false)
@@ -14,7 +14,7 @@ export const useTodoStore = defineStore('todo', () => {
   const todoDateStore = useTodoDateStore()
 
   const fetchTodos = async (params) => {
-
+    todos.value = []
     loading.value = true;
     error.value = null;
     try {

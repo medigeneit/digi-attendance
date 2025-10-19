@@ -69,7 +69,7 @@ const filterEmployees = ref([])
 
 /* ---------- Lifecycle ---------- */
 onMounted(async () => {
-  await companyStore.fetchCompanies()
+  await companyStore.fetchCompanies({ ignore_permission: true })
   if (selectedCompanyId.value) {
     await loadCompanyDeps(selectedCompanyId.value)
   }

@@ -53,7 +53,7 @@ watch(
 </script>
 <template>
   <div
-    class="flex w-full text-gray-800 bg-white border mb-5 rounded-md shadow"
+    class="flex w-full text-gray-800 bg-white border rounded-md shadow"
     :class="{
       'border-blue-500': index % 2 === 0,
       'border-purple-500': index % 2 === 1,
@@ -110,6 +110,7 @@ watch(
             @editClick="handleChildEditClick"
             @employeeAssignClick="handleChildEmployeeAssignClick"
             class="*:mb-0"
+            :taskLinkTo="(task) => ({ name: 'RequirementTaskShow', params: { id: task?.id || 0 } })"
           >
             <template #tree-item-end="{ task, level }">
               <slot name="item-end" :level="level" :task="task"></slot>

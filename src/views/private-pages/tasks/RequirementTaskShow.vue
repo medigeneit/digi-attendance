@@ -4,12 +4,10 @@ import OverlyModal from '@/components/common/OverlyModal.vue'
 import DescriptionView from '@/components/DescriptionView.vue'
 import SubTaskProgress from '@/components/tasks/SubTaskProgress.vue'
 import { default as TaskDeletingFrom } from '@/components/tasks/TaskDeletingFrom.vue'
-import TaskImportantBadge from '@/components/tasks/TaskImportantBadge.vue'
 import TaskProgressTable from '@/components/tasks/TaskProgressTable.vue'
 import TaskStatus from '@/components/tasks/TaskStatus.vue'
 import TaskStatusManager from '@/components/tasks/TaskStatusManager.vue'
 import TaskSupervisorAndEmployee from '@/components/tasks/TaskSupervisorAndEmployee.vue'
-import TaskUrgentBadge from '@/components/tasks/TaskUrgentBadge.vue'
 import TaskUserDateUpdate from '@/components/tasks/TaskUserDateUpdate.vue'
 import TodoDateItemCard from '@/components/todo/TodoDateItemCard.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
@@ -260,23 +258,12 @@ function handleClickAddTodo() {
         <section class="grid grid-cols-4">
           <div class="mb-4 flex col-span-full">
             <div>
-              <h2 class="font-medium text-xl">
+              <h2 class="font-medium text-xl flex items-center gap-2">
+                <button class="btn-icon size-6 text-sm text-sky-500" @click="router.back()">
+                  <i class="fas fa-arrow-left"></i>
+                </button>
                 {{ store.task.title }}
               </h2>
-
-              <div class="flex items-center gap-3 text-xs text-gray-500 mt-2 opacity-80 text-left">
-                <div
-                  v-if="store.task.parent_id == 0"
-                  class="text-white bg-green-700 text-[12px] uppercase px-2 py-[2px] rounded-full border border-green-200 opacity-80"
-                >
-                  MAIN TASK
-                </div>
-                <div class="font-semibold">#{{ store.task?.serial }}</div>
-
-                <TaskImportantBadge v-if="store.task?.is_important" />
-
-                <TaskUrgentBadge v-if="store.task?.is_urgent" />
-              </div>
 
               <div class="mt-2 col-span-full flex items-center">
                 <div class="text-gray-400 text-xs">
@@ -366,23 +353,8 @@ function handleClickAddTodo() {
               >
                 <i class="fas fa-users-cog"></i> Assign Users
               </RouterLink>
-
-              <button
-                class="border-2 border-indigo-500 hover:bg-indigo-500 hover:text-white text-indigo-500 font-semibold px-3 py-0.5 rounded-full transition disabled:opacity-30 disabled:pointer-events-none whitespace-nowrap"
-                @click="router.back()"
-              >
-                <i class="fas fa-arrow-left"></i> Back
-              </button>
-
-              <RouterLink
-                :to="backLink"
-                class="border-2 border-indigo-500 hover:bg-indigo-500 hover:text-white ml-2 text-indigo-500 font-semibold px-3 py-0.5 rounded-full transition disabled:opacity-30 disabled:pointer-events-none whitespace-nowrap"
-                @click="$event.stopPropagation()"
-              >
-                <i class="fas fa-arrow-left"></i> Parent Task
-              </RouterLink>
             </div>
-            <div class="lg:ml-auto flex gap-4 items-center">
+            <div class="lg:ml-auto flex gap-4 items-center" v-if="false">
               <template
                 v-if="store.task?.children_task_count === 0 && store.task?.status === 'PENDING'"
               >

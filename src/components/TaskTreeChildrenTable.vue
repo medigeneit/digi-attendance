@@ -63,6 +63,7 @@
                       :task="task"
                       :sub-tasks-open="false"
                       :isMyTask="isMyTask"
+                      :to="taskLinkTo"
                     />
                   </div>
 
@@ -199,6 +200,7 @@ const props = defineProps({
   parentTreeLevel: { type: Number },
   maxItem: { Number, default: 5 },
   isMyTask: { type: Boolean, default: false },
+  taskLinkTo: { type: Function, default: null },
 })
 
 const showAll = ref(false)

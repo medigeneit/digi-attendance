@@ -49,7 +49,7 @@ const userWiseTodos = (todos) => {
   const grouped = {}
 
   todos.forEach((todo) => {
-    const userId = todo.user.id // taking full user object, not just id
+    const userId = todo.user?.id // taking full user object, not just id
     if (!grouped[userId]) {
       grouped[userId] = {
         ...todo.user, // spread user info

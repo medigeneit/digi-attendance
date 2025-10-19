@@ -51,6 +51,7 @@ const login = async () => {
               class="input-1 w-full"
               placeholder="Enter your email number"
               required
+              autofocus
             />
           </div>
           <div>
@@ -63,7 +64,6 @@ const login = async () => {
               class="input-1 w-full"
               placeholder="Enter your password"
               required
-              autofocus
             />
           </div>
           <div v-if="error" class="mt-4 text-sm text-red-500 text-center">{{ error }}</div>

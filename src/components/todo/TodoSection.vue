@@ -200,6 +200,7 @@ async function fetchTodos() {
 }
 
 onMounted(() => {
+  todoDateStore.emptyTodoDates()
   fetchTodos()
 })
 
@@ -246,7 +247,7 @@ watch(
             <slot name="bottomHeader" v-bind="params"></slot>
             <div
               v-if="todoDateStore.error"
-              class="text-red-600 py-4 text-semibold text-center text-xl"
+              class="text-red-600 py-4 text-semibold text-center text-xl min-h-[50vh] flex items-center justify-center"
             >
               {{ todoDateStore.error }}
             </div>
@@ -259,7 +260,7 @@ watch(
 
       <TodoCalenderView
         :month="getMonthString"
-        v-if="selected.type == 'month-view'"
+        v-if="selected.type == 'month-view' && companyId"
         class="bg-white"
         @dateClick="handleDateClick"
         @clickTodo="handleClickTodo"
@@ -268,7 +269,7 @@ watch(
 
       <TodosInDailyView
         :date="getDateString"
-        v-if="selected.type == 'day-view'"
+        v-if="selected.type == 'day-view' && companyId"
         :userRole="userRole"
         @clickTodo="handleClickTodo"
         @clickEdit="handleClickEditTodo"

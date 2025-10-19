@@ -1,9 +1,21 @@
 <script setup>
-defineProps({
+import { computed } from 'vue'
+
+const props = defineProps({
   task: Object,
   subTasksOpen: { type: Boolean, default: false },
   isMyTask: { type: Boolean, default: false },
   titleClass: { type: String, default: '' },
+  to: { type: Function, default: null },
+})
+
+const routerTo = computed(() => {
+  return typeof props.to == 'function'
+    ? props.to(props.task)
+    : {
+        name: props.isMyTask ? 'MyTaskShow' : 'TaskShow',
+        params: { id: props.task.id },
+      }
 })
 </script>
 <template>
@@ -20,10 +32,7 @@ defineProps({
       "
     ></i>
     <RouterLink
-      :to="{
-        name: isMyTask ? 'MyTaskShow' : 'TaskShow',
-        params: { id: task.id },
-      }"
+      :to="routerTo"
       :title="task.title"
       class="font-medium text-gray-700 cursor-pointer hover:text-blue-700 whitespace-normal line-clamp-1 w-full"
       :class="titleClass"

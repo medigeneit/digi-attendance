@@ -12,6 +12,9 @@ export const useTodoDateStore = defineStore('todo-date', () => {
   const error = ref(null);
   const todo_dates = ref([])
 
+
+  const emptyTodoDates = () => todo_date.value = []
+
   const fetchTodoDates = async (params) => {
 
     loading.value = true;
@@ -238,6 +241,7 @@ export const useTodoDateStore = defineStore('todo-date', () => {
     fetchMyTodoDates,
     updateStatus,
     getTodoDatesByDate,
-    setNewTodoDate
+    setNewTodoDate,
+    emptyTodoDates
   };
 });
