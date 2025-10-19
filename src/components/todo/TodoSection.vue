@@ -260,7 +260,7 @@ watch(
 
       <TodoCalenderView
         :month="getMonthString"
-        v-if="selected.type == 'month-view' && companyId"
+        v-if="selected.type == 'month-view' && (companyId || userRole == 'employee')"
         class="bg-white"
         @dateClick="handleDateClick"
         @clickTodo="handleClickTodo"
@@ -269,7 +269,7 @@ watch(
 
       <TodosInDailyView
         :date="getDateString"
-        v-if="selected.type == 'day-view' && companyId"
+        v-if="selected.type == 'day-view' && (companyId || userRole == 'employee')"
         :userRole="userRole"
         @clickTodo="handleClickTodo"
         @clickEdit="handleClickEditTodo"

@@ -165,11 +165,11 @@ const logout = () => {
           <h4 v-if="open">Requirement</h4>
         </RouterLink>
         <RouterLink
-          to="/tasks"
+          to="/requirement-tasks"
           class="side-menu"
           :class="{
             'flex justify-center': !open,
-            'side-menu-active': currentRoute.includes('/tasks'),
+            'side-menu-active': currentRoute.match(/requirement-tasks-*/),
           }"
         >
           <i class="fad fa-tasks py-2"></i>

@@ -53,7 +53,7 @@ watch(
 </script>
 <template>
   <div
-    class="flex w-full text-gray-800 bg-white border rounded-md shadow"
+    class="flex w-full text-gray-800 bg-white"
     :class="{
       'border-blue-500': index % 2 === 0,
       'border-purple-500': index % 2 === 1,
