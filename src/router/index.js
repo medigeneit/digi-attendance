@@ -739,7 +739,7 @@ const router = createRouter({
         { 
           path: '/hrd/clearances', 
           name: 'UserClearance', 
-          component: import('@/views/private-pages/ClearancePage.vue') ,
+          component: import('@/views/admin-pages/ClearancePage.vue') ,
           meta: {
             requiresAuth: true,
             roles: ['admin', 'super_admin', 'developer'],
