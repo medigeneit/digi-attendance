@@ -738,7 +738,7 @@ const router = createRouter({
 
         { 
           path: '/hrd/clearances', 
-          name: 'clearances', 
+          name: 'UserClearance', 
           component: import('@/views/private-pages/ClearancePage.vue') ,
           meta: {
             requiresAuth: true,

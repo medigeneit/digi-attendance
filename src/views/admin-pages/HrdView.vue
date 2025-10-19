@@ -155,7 +155,7 @@ const hasAccessTo = (routeName) => {
 
     <RouterLink
       v-if="hasAccessTo('clearances')"
-      :to="{ name: 'clearances' }"
+      :to="{ name: 'UserClearance' }"
       class="main-button"
     >
       <i class="far fa-exclamation-circle text-3xl"></i>
