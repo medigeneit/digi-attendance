@@ -159,7 +159,7 @@ const hasAccessTo = (routeName) => {
       class="main-button"
     >
       <i class="far fa-exclamation-circle text-3xl"></i>
-      Clearances
+      User Clearances
     </RouterLink>
   </div>
 </template>

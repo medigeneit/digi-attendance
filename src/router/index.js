@@ -1153,6 +1153,11 @@ const router = createRouter({
           name: 'MonthlyKpiFormEdit',
           component: () => import('@/views/admin-pages/MonthlyKpiFormForm.vue'),
           props: true,
+          meta: {
+            requiresAuth: true,
+            roles: ['super_admin', 'developer'],
+            title: 'MonthlyKpi FormE dit',
+          },
         },
 
         {
@@ -1207,19 +1212,33 @@ const router = createRouter({
           path: '/admin/checklist-templates/:id/items',
           name: 'TemplateItems',
           component: () => import('@/views/admin-pages/TemplateItemsManager.vue'),
-          props: true
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Template Items',
+          },
         },
 
         {
           path: '/checklists/board',
           name: 'checklists.board',
-          component: () => import('@/views/admin-pages/JoiningExitBoard.vue')
+          component: () => import('@/views/admin-pages/JoiningExitBoard.vue'),
+           meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Checklists',
+          },
         },
 
         {
           path: '/users/:userId/checklists/:checklistId',
           name: 'checklist.show',
-          component: () => import('@/views/admin-pages/ChecklistPage.vue')
+          component: () => import('@/views/admin-pages/ChecklistPage.vue'),
+           meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Checklist Show',
+          },
         },
         {
           path: '/users/:userId/checklists/create/:templateId',
@@ -1229,7 +1248,12 @@ const router = createRouter({
         { 
           path: '/settings/department-item-assignments', 
           name: 'ctdi', 
-          component: () => import('@/views/admin-pages/DepartmentItemAssignments.vue') 
+          component: () => import('@/views/admin-pages/DepartmentItemAssignments.vue'),
+           meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Department Assign',
+          },
         },
         
       ],
