@@ -67,7 +67,7 @@ const logout = () => {
       <!-- Default Menus (hidden for adminMode ON + admin roles) -->
       <RouterLink
         to="/dashboard"
-        class="side-menu md:py-5"
+        class="side-menu"
         :class="{
           'side-menu-active': currentRoute.includes('/dashboard'),
           'flex justify-center': !open,
