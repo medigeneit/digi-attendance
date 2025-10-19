@@ -743,7 +743,7 @@ const router = createRouter({
           meta: {
             requiresAuth: true,
             roles: ['admin', 'super_admin', 'developer'],
-            title: 'Leave Application List',
+            title: 'User Clearance',
           },
         },
 
