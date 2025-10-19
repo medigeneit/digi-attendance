@@ -119,23 +119,13 @@ function getProbationInfo(u) {
   const isProb = normType(u?.employment_type) === 'probationary'
   if (!isProb) return { enabled: false }
 
-  const start =
-    asDate(u?.probation_start_at) ||
-    asDate(u?.probation_start_date) ||
-    asDate(u?.joining_date) ||
-    asDate(u?.join_date) ||
-    asDate(u?.created_at)
+  const start = asDate(u?.joining_date) || asDate(u?.created_at)
 
   // months
   const baseMonths =
-    Number(u?.probation_months) ||
-    Number(u?.provisional_month) ||
-    Number(u?.probation_duration_months) ||
-    6
-  const extMonths =
-    Number(u?.probation_extension_months) ||
-    Number(u?.extended_provisional_month) ||
-    0
+    Number(u?.probation_months) ||  0
+
+  const extMonths = Number(u?.probation_extension_months) || 0
 
   if (!start || Number.isNaN(baseMonths)) return { enabled: false }
 
@@ -239,7 +229,7 @@ function getProbationInfo(u) {
                 <div class="min-w-0">
                   <div class="font-medium truncate">{{ u.name || u.full_name || u.email }}</div>
                   <div class="text-[11px] text-gray-500 space-x-2 truncate">
-                    <span v-if="u.employee_id">ID: {{ u.employee_id }}</span>
+                    <span v-if="u.joining_date">ID: {{ u.joining_date }}</span>
                     <span class="hidden sm:inline">Dept: {{ u.department || '—' }}</span>
                   </div>
                 </div>

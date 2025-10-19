@@ -308,9 +308,9 @@ const computedDesignations = computed(() => {
                 </select>
               </div>
 
-              <template v-if="form.employment_type === 'Provisional'">
+              <template v-if="form.employment_type === 'Probationary'">
                 <div>
-                  <label>Provisional (month)</label>
+                  <label>Probationary Period (month)</label>
                   <input
                     v-model="form.provisional_month"
                     type="number"
@@ -319,7 +319,7 @@ const computedDesignations = computed(() => {
                   />
                 </div>
                 <div>
-                  <label>Extended Provisional (month)</label>
+                  <label>Extended Probationary (month)</label>
                   <input
                     v-model="form.extended_provisional_month"
                     type="number"
