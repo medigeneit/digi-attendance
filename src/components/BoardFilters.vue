@@ -1,10 +1,10 @@
 <script setup>
-import { reactive, watch, nextTick } from 'vue'
+import { reactive, watch, nextTick, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import EmployeeFilter from './common/EmployeeFilter.vue'
 
 const props = defineProps({
-  modelValue: { type: Object, required: true }, // { type, companyId, departmentId, employeeId, lineType }
+  modelValue: { type: Object, required: true }, // { type, companyId, departmentId, employeeId, lineType, user_type }
   companies: { type: Array, default: () => [] },
   departments: { type: Array, default: () => [] },
 })
@@ -13,8 +13,7 @@ const emit = defineEmits(['update:modelValue', 'submit'])
 const route = useRoute()
 const router = useRouter()
 
-// === mapping: parent camelCase <-> local snake_case (EmployeeFilter) ===
-const DEFAULTS = { type: 'joining' }
+const DEFAULTS = { type: null, user_type: 'Probationary' }
 
 const toLocal = (v = {}) => ({
   type: v.type ?? DEFAULTS.type,
@@ -22,6 +21,7 @@ const toLocal = (v = {}) => ({
   department_id: v.departmentId ?? null,
   employee_id: v.employeeId ?? null,
   line_type: v.lineType ?? null,
+  user_type: v.user_type ?? DEFAULTS.user_type,
 })
 const toModel = (l = {}) => ({
   type: l.type ?? DEFAULTS.type,
@@ -29,6 +29,7 @@ const toModel = (l = {}) => ({
   departmentId: l.department_id ?? null,
   employeeId: l.employee_id ?? null,
   lineType: l.line_type ?? null,
+  user_type: l.user_type ?? DEFAULTS.user_type,
 })
 
 // one local copy for the UI
@@ -41,7 +42,8 @@ function emitUpdate() {
 }
 
 // ======== Route query sync (debounced) ========
-const FILTER_KEYS = ['type', 'company_id', 'department_id', 'employee_id', 'line_type']
+// ⬇️ user_type এখানে যোগ করা হলো
+const FILTER_KEYS = ['type', 'company_id', 'department_id', 'employee_id', 'line_type', 'user_type']
 // '' | null | undefined | 'all' => treat as blank for URL
 const isBlank = (v) => v === '' || v === null || v === undefined || v === 'all'
 
@@ -49,12 +51,17 @@ function pickFiltersFromLocal() {
   const q = {}
 
   // include type only if not default (keeps URL clean)
-  if (!isBlank(local.type) && String(local.type) !== DEFAULTS.type) q.type = String(local.type)
+  if (!isBlank(local.type) && String(local.type) !== String(DEFAULTS.type)) q.type = String(local.type)
 
   if (!isBlank(local.company_id)) q.company_id = String(local.company_id)
   if (!isBlank(local.department_id)) q.department_id = String(local.department_id)
   if (!isBlank(local.employee_id)) q.employee_id = String(local.employee_id)
   if (!isBlank(local.line_type)) q.line_type = String(local.line_type)
+
+  // ⬇️ user_type শুধু তখনই URL এ যাবে যখন ডিফল্ট ('probationary') নয়
+  if (!isBlank(local.user_type) && String(local.user_type) !== DEFAULTS.user_type) {
+    q.user_type = String(local.user_type)
+  }
   return q
 }
 
@@ -110,15 +117,25 @@ watch(
 )
 
 // local changes -> parent model + URL (debounced)
-// unselect => query key removed automatically
 watch(
-  () => [local.type, local.company_id, local.department_id, local.employee_id, local.line_type],
+  () => [local.type, local.company_id, local.department_id, local.employee_id, local.line_type, local.user_type],
   () => {
     emitUpdate()
     syncRouteQuery({ replace: true, debounce: 150 })
   }
 )
+
+// ✅ initial load এবং browser back/forward এ query → state sync
+onMounted(() => {
+  if (route.query.user_type) {
+    local.user_type = String(route.query.user_type)
+  }
+})
+watch(() => route.query.user_type, (v) => {
+  if (v !== undefined && v !== null) local.user_type = String(v)
+})
 </script>
+
 
 <template>
   <div class="flex flex-wrap items-end gap-3">
@@ -129,6 +146,14 @@ watch(
         <option value="exit">Exit</option>
       </select>
     </div> -->
+    
+    <div>
+      <label class="block text-xs text-gray-500 mb-1">User Type</label>
+      <select v-model="local.user_type" class="border rounded px-2 py-1">
+        <option value="Probationary">Probationary</option>
+        <option value="Permanent">Permanent</option>
+      </select>
+    </div>
 
     <EmployeeFilter
       v-model:company_id="local.company_id"

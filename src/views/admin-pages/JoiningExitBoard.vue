@@ -12,13 +12,13 @@ const router = useRouter()
 const companies = ref([])
 const departments = ref([])
 
-// ---- query <-> model mappers
 const fromQuery = (q = {}) => ({
   type: q.type ?? store.type,
   companyId: q.company_id ? Number(q.company_id) : null,
   departmentId: q.department_id ? Number(q.department_id) : null,
   employeeId: q.employee_id ? Number(q.employee_id) : null,
   lineType: q.line_type ?? null,
+  user_type: q.user_type ?? null,
   search: q.search ?? store.search,
 })
 const toQuery = (m = {}) => {
@@ -28,6 +28,7 @@ const toQuery = (m = {}) => {
     department_id: m.departmentId || undefined,
     employee_id: m.employeeId || undefined,
     line_type: m.lineType || undefined,
+    user_type: m.user_type || undefined,
     search: m.search || undefined,
   }
   // strip null/undefined
@@ -42,6 +43,7 @@ const filterModel = ref({
   departmentId: store.departmentId,
   employeeId: null,
   lineType: null,
+  user_type: null,
   search: store.search,
 })
 
@@ -50,6 +52,7 @@ watch(
   filterModel,
   (v) => {
     store.type = v.type
+    store.user_type = v.user_type
     store.companyId = v.companyId ?? null
     store.departmentId = v.departmentId ?? null
     store.search = v.search ?? ''
@@ -66,6 +69,7 @@ async function applyFilters() {
     department_id: filterModel.value.departmentId,
     employee_id: filterModel.value.employeeId,
     line_type: filterModel.value.lineType,
+    user_type: filterModel.value.user_type,
     search: filterModel.value.search,
   })
 }
