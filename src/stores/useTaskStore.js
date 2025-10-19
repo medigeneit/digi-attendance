@@ -4,6 +4,7 @@ import apiClient from '../axios';
 
 export const useTaskStore = defineStore('task', () => {
   const tasks = ref([]);
+  const task_todo_dates = ref([]);
   const task_todos = ref([]);
   const task = ref(null);
   const loading = ref(false);
@@ -134,6 +135,7 @@ export const useTaskStore = defineStore('task', () => {
       if( !options.fetchOnly ) {
         task.value = response.data?.task || {};
         task_todos.value = response.data?.todos || {};
+        task_todo_dates.value = response.data?.todo_dates || {};
         tasks.value = response.data.sub_tasks || []
       }
       return response.data;
@@ -240,6 +242,7 @@ export const useTaskStore = defineStore('task', () => {
   return {
     tasks: computed(() => tasks.value),
     task_todos: computed(() => task_todos.value),
+    task_todo_dates: computed(() => task_todo_dates.value),
     task: computed(() => task.value),
     loading: computed(() => loading.value),
     error: computed(() => error.value),

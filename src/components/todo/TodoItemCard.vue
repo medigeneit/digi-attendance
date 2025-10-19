@@ -16,6 +16,10 @@ defineProps({
     type: Boolean,
     default: false,
   },
+  hideSortingBtn: {
+    type: Boolean,
+    default: false,
+  },
   userRole: {
     type: String,
     default: 'employee',
@@ -120,6 +124,7 @@ const emit = defineEmits([
         </button>
       </template>
       <button
+        v-if="!hideSortingBtn"
         @click.stop.prevent="() => null"
         class="btn-icon bg-gray-400 text-white hover:bg-gray-600 hover:text-white handle"
       >

@@ -33,8 +33,5 @@ const iconClassName = computed(() => {
   <div class="px-2 py-0.5 text-xs rounded-full border flex items-center gap-1" :class="className">
     <i :class="iconClassName"></i>
     <span>{{ status }} </span>
-    <span v-if="progressPercent !== null || progressPercent !== undefined"
-      >{{ progressPercent }}%
-    </span>
   </div>
 </template>

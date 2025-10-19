@@ -9,6 +9,10 @@ import TaskUserDateUpdate from './TaskUserDateUpdate.vue'
 
 const props = defineProps({
   task: { type: Object },
+  hideTimeline: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const emit = defineEmits(['updateStatus', 'error'])
@@ -146,6 +150,8 @@ const timelineItems = computed(() => {
 </script>
 <template>
   <div class="border py-8 px-4 rounded" :class="mainClass">
+    <slot name="top"></slot>
+
     <div v-if="taskStatus === 'BLOCKED'">
       <div class="flex flex-col items-center">
         <i class="fas fa-lock-alt fa-4x text-violet-500"></i>
@@ -153,7 +159,7 @@ const timelineItems = computed(() => {
       </div>
     </div>
     <div v-else class="flex">
-      <div class="border-r-2 border-dashed pr-6 border-gray-300">
+      <div class="border-r-2 border-dashed pr-6 border-gray-300" v-if="!hideTimeline">
         <div
           v-if="props.task?.is_target"
           class="bg-yellow-200 px-2 py-0.5 rounded-lg text-yellow-900 border border-yellow-400 w-full mb-6 text-center"

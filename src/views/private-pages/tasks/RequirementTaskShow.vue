@@ -1,31 +1,32 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
 import OverlyModal from '@/components/common/OverlyModal.vue'
+import DepartmentChip from '@/components/DepartmentChip.vue'
 import DescriptionView from '@/components/DescriptionView.vue'
-import SubTaskProgress from '@/components/tasks/SubTaskProgress.vue'
+import TaskAssignedUsers from '@/components/tasks/TaskAssignedUsers.vue'
 import { default as TaskDeletingFrom } from '@/components/tasks/TaskDeletingFrom.vue'
-import TaskProgressTable from '@/components/tasks/TaskProgressTable.vue'
 import TaskStatus from '@/components/tasks/TaskStatus.vue'
 import TaskStatusManager from '@/components/tasks/TaskStatusManager.vue'
-import TaskSupervisorAndEmployee from '@/components/tasks/TaskSupervisorAndEmployee.vue'
 import TaskUserDateUpdate from '@/components/tasks/TaskUserDateUpdate.vue'
-import TodoDateItemCard from '@/components/todo/TodoDateItemCard.vue'
+import TodoItemCard from '@/components/todo/TodoItemCard.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
-import { getDisplayDateTime } from '@/libs/datetime'
+import { getDisplayDate, getDisplayDateTime } from '@/libs/datetime'
 import { scrollToID } from '@/libs/dom'
-import { getTaskProgressUsers } from '@/libs/task-progress'
+import { useAuthStore } from '@/stores/auth'
 import { useTaskStore } from '@/stores/useTaskStore'
+import { useTodoDateStore } from '@/stores/useTodoDateStore'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TodoCreateEditShow from '../todos/TodoCreateEditShow.vue'
 
 const store = useTaskStore()
+const authStore = useAuthStore()
+const todoDateStore = useTodoDateStore()
 const route = useRoute()
 const router = useRouter()
 const state = ref('')
 
 // const subTasks = computed(() => taskTree.getTaskListTree())
-const progress = ref({})
 const taskDeleting = reactive({
   open: false,
   task: null,
@@ -33,7 +34,7 @@ const taskDeleting = reactive({
 
 onMounted(async () => {
   state.value = 'loading'
-  await fetchTaskList(route.params.id)
+  await fetchTask(route.params.id)
   state.value = ''
   if (route.hash == '#sub-tasks') {
     setTimeout(() => scrollToID(route.hash, 66), 0)
@@ -45,16 +46,12 @@ const dateUpdateModal = reactive({
   type: '',
 })
 
-async function fetchTaskList(taskId) {
+async function fetchTask(taskId) {
   await store.fetchTask(taskId, { with_todos: 'true' })
 }
 
-const taskProgressUsers = computed(() =>
-  getTaskProgressUsers(store.task.users, store.task.task_reports || []),
-)
-
 async function handleUpdateDate() {
-  await fetchTaskList(route.params.id)
+  await fetchTask(route.params.id)
   dateUpdateModal.user = null
   dateUpdateModal.type = ''
 }
@@ -80,11 +77,6 @@ const backLink = computed(() => {
   }
 })
 
-function handleDeleteButtonClick() {
-  taskDeleting.open = true
-  taskDeleting.task = store.task
-}
-
 function handleDeleteSuccess() {
   taskDeleting.open = false
   console.log({ STATE: 'Deleted', backLink: backLink.value })
@@ -101,6 +93,10 @@ const getBreadCrumbFromTask = (task, is_current_page = false) => {
     is_current_page,
   }
 }
+
+const authUserHasTaskAssigned = computed(() => {
+  return store?.task?.users?.find((u) => authStore.user?.id == u.id)
+})
 
 const breadcrumbTaskItems = computed(() => {
   const parents = []
@@ -120,7 +116,7 @@ watch(
   () => route.params.id,
   async (taskId) => {
     state.value = 'changing'
-    await fetchTaskList(taskId)
+    await fetchTask(taskId)
     state.value = ''
   },
 )
@@ -136,20 +132,38 @@ const todoModal = ref({
   action: null,
 })
 
-// const todoStore = useTodoStore()
+const groupWiseTodoDates = computed(() => {
+  const items = store?.task_todo_dates || []
+
+  const grouped = items.reduce((acc, item) => {
+    const date = item.date
+    if (!acc[date]) acc[date] = []
+    acc[date].push(item)
+    return acc
+  }, {})
+
+  return Object.keys(grouped)
+    .sort((a, b) => new Date(b) - new Date(a)) // ascending sort by date
+    .map((date) => ({
+      date,
+      todo_dates: grouped[date],
+    }))
+})
 
 function handleTodoUpdate() {
   todoModal.value = { ...todoModal.value, action: '' }
   // fetchTodos()
-  fetchTaskList(route.params.id)
+  fetchTask(route.params.id)
 }
 
 function handleTodoDateUpdate() {
   todoModal.value = { ...todoModal.value, action: '' }
-  fetchTaskList(route.params.id)
+  fetchTask(route.params.id)
 }
 
 function handleClickEditTodo(todo) {
+  console.log({ todo })
+
   todoModal.value = {
     ...todoModal.value,
     action: 'edit',
@@ -198,6 +212,20 @@ function handleClickAddTodo() {
     },
   }
 }
+
+async function handleClickComplete(todo, status) {
+  if (confirm(`Are your sure?\nwant to change status to ${status} \ntodo: '${todo?.title}'`)) {
+    await todoDateStore.updateStatus(todo.id, status)
+    fetchTask(route.params?.id)
+  }
+}
+
+async function handleClickDelete(todoDate) {
+  if (confirm(`Are your sure want to delete todo\n'${todoDate?.title}'`)) {
+    await todoDateStore.deleteTodoDate(todoDate.id)
+    fetchTask(route.params?.id)
+  }
+}
 </script>
 
 <template>
@@ -220,7 +248,7 @@ function handleClickAddTodo() {
       />
     </OverlyModal>
 
-    <LoaderView v-if="state === 'loading'" />
+    <LoaderView v-if="state === 'loading'" class="h-[80vh] items-center justify-center" />
 
     <div class="max-w-8xl min-h-64 mx-auto bg-white shadow-lg rounded-lg p-6 relative" v-else>
       <template v-if="store.task">
@@ -255,8 +283,8 @@ function handleClickAddTodo() {
           </ol>
         </nav>
 
-        <section class="grid grid-cols-4">
-          <div class="mb-4 flex col-span-full">
+        <div class="grid grid-cols-12 gap-x-8 gap-y-3">
+          <div class="col-span-full lg:col-span-9 row-span-10">
             <div>
               <h2 class="font-medium text-xl flex items-center gap-2">
                 <button class="btn-icon size-6 text-sm text-sky-500" @click="router.back()">
@@ -282,69 +310,115 @@ function handleClickAddTodo() {
               </div>
             </div>
 
-            <div
-              class="text-right col-span-full md:col-span-1 ml-auto flex items-start justify-center gap-4 !text-lg"
-            >
-              <TaskStatus
-                :status="store.task?.status"
-                :progressPercent="store.task?.progress_percent"
-                class="h-6 !text-lg"
-              />
-              <SubTaskProgress
-                v-if="store.task"
-                :task="store.task"
-                ref="progress"
-                class="!text-lg"
-              />
-            </div>
-          </div>
-
-          <div class="col-span-full mb-4">
             <DescriptionView>
               <p v-html="store.task?.description" class="text-justify" />
             </DescriptionView>
+
+            <div>
+              <div class="flex justify-between items-end mt-6 mb-2">
+                <h3 class="font-semibold text-xl">Todos</h3>
+                <button
+                  class="btn btn-3 h-8"
+                  @click.prevent="() => handleClickAddTodo()"
+                  v-if="authUserHasTaskAssigned"
+                >
+                  <i class="fas fa-plus"></i> Add Todo
+                </button>
+              </div>
+
+              <div>
+                <div
+                  v-if="groupWiseTodoDates.length === 0"
+                  class="border flex items-center justify-center h-96 rounded bg-gray-50 text-sm italic"
+                >
+                  No Todos
+                </div>
+
+                <div
+                  v-for="datewise in groupWiseTodoDates"
+                  :key="datewise.date"
+                  class="border rounded-md overflow-hidden mb-4"
+                >
+                  <div
+                    class="text-gray-700 bg-gradient-to-tl from-sky-400/60 to-sky-400 border-b py-2 px-4 flex items-center"
+                  >
+                    <div class="font-semibold flex items-center gap-2">
+                      <div class="text-white text-base">{{ getDisplayDate(datewise.date) }}</div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <TodoItemCard
+                      v-for="todoDate in datewise?.todo_dates || []"
+                      :key="todoDate.id"
+                      :todoDate="todoDate"
+                      @clickTodo="(todoDate) => handleClickTodo(todoDate)"
+                      @clickEdit="() => handleClickEditTodo(todoDate?.todo)"
+                      @clickChangeStatus="
+                        (todoDate, status) => handleClickComplete(todoDate, status)
+                      "
+                      @clickDelete="(todoDate) => handleClickDelete(todoDate)"
+                      hide-sorting-btn
+                      class="border-b border-sky-200"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <TaskSupervisorAndEmployee
-            :task="store?.task"
-            :tree-level="store?.task?.level"
-            class="justify-center border col-span-full border-dashed rounded-lg"
-          />
-
-          <section class="mt-4 col-span-full mb-6" v-if="store.task.children_task_count > 0">
-            <TaskProgressTable
-              :task-users="store.task?.users || []"
-              :task="store.task"
-              :sub-tasks="store.tasks"
-              :progress-users="taskProgressUsers"
+          <div class="col-span-full lg:col-span-3 space-y-4 sticky top-16">
+            <TaskStatusManager
+              v-if="store?.task"
+              :task="store?.task || {}"
+              class="col-span-full"
+              @updateStatus="() => fetchTask(store?.task?.id)"
+              hide-timeline
             >
-              <template #caption>
-                <div class="text-sm py-1 text-left uppercase font-semibold text-gray-600">
-                  Assigned Users
+              <template #top>
+                <div class="flex items-start justify-center !text-lg mb-4">
+                  <TaskStatus
+                    :status="store.task?.status"
+                    :progressPercent="store.task?.progress_percent"
+                    class="h-6 !text-lg"
+                  />
                 </div>
               </template>
-            </TaskProgressTable>
-          </section>
+            </TaskStatusManager>
 
-          <TaskStatusManager
-            v-if="store?.task"
-            :task="store?.task || {}"
-            class="col-span-full mt-4"
-            @updateStatus="() => fetchTaskList(store?.task?.id)"
-          />
+            <div class="border col-span-3 p-3 rounded shadow">
+              <div>
+                <div class="flex items-center gap-2 mb-4">
+                  <div class="text-gray-500 text-sm">From</div>
+                  <DepartmentChip :department="store?.task?.from_department" />
+                </div>
+                <div class="text-gray-600 text-sm mb-2 border-b border-dashed">Supervisors</div>
+                <TaskAssignedUsers
+                  class="flex items-center gap-x-3 gap-y-2 flex-wrap"
+                  :users="store?.task?.supervisors || []"
+                  listType="supervisors"
+                  :maxItem="3"
+                />
+              </div>
 
-          <div
-            class="mt-2 py-2 flex flex-col lg:flex-row gap-y-4 justify-center items-center gap-2 col-span-full"
-          >
-            <div class="flex items-center gap-4 flex-wrap justify-center">
-              <button
-                @click.stop="goToEdit(store.task?.id)"
-                class="btn-2 py-0.5 disabled:opacity-30 disabled:pointer-events-none"
-                :disabled="!!store.task.closed_at"
-              >
-                <i class="fas fa-edit"></i> Edit
-              </button>
+              <hr class="my-4" />
 
+              <div>
+                <div class="flex items-center gap-2 mb-4">
+                  <div class="text-gray-500 text-sm">To</div>
+                  <DepartmentChip :department="store?.task?.to_department" />
+                </div>
+                <div class="text-gray-600 text-sm mb-2 border-b border-dashed">Assigned Users</div>
+                <TaskAssignedUsers
+                  class="flex items-center gap-x-3 gap-y-2 flex-wrap"
+                  :users="store?.task?.users || []"
+                  :isTargetTask="store?.task?.is_target"
+                  :maxItem="5"
+                />
+              </div>
+            </div>
+
+            <div class="flex items-center gap-4 flex-wrap justify-between col-span-3">
               <RouterLink
                 :to="{ name: 'TaskUserAssign', params: { id: store.task?.id } }"
                 class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-3 py-0.5 rounded-full transition whitespace-nowrap"
@@ -353,68 +427,14 @@ function handleClickAddTodo() {
               >
                 <i class="fas fa-users-cog"></i> Assign Users
               </RouterLink>
-            </div>
-            <div class="lg:ml-auto flex gap-4 items-center" v-if="false">
-              <template
-                v-if="store.task?.children_task_count === 0 && store.task?.status === 'PENDING'"
+
+              <button
+                @click.stop="goToEdit(store.task?.id)"
+                class="btn-2 py-0.5 disabled:opacity-30 disabled:pointer-events-none"
+                :disabled="!!store.task.closed_at"
               >
-                <button class="btn-2-red h-8" @click.prevent="handleDeleteButtonClick">
-                  Delete
-                </button>
-              </template>
-
-              <RouterLink
-                :to="{
-                  name: 'TaskReports',
-                  params: { id: store.task?.id },
-                  query: { ['is-my-task']: isMyTask },
-                  hash: '#task-reports',
-                }"
-                @click="$event.stopPropagation()"
-                class="py-0.5 btn-3 text-sm h-8"
-                :class="{ 'bg-blue-500 text-white': route.name == 'TaskReports' }"
-              >
-                <i class="fal fa-file-alt"></i> Reports
-              </RouterLink>
-            </div>
-          </div>
-        </section>
-
-        <hr />
-
-        <div class="mt-4">
-          <div class="mb-3 flex justify-between items-end">
-            <h3 class="font-semibold text-xl">Todos</h3>
-            <button class="btn btn-3 h-8" @click.prevent="() => handleClickAddTodo()">
-              <i class="fas fa-plus"></i> Add Todo
-            </button>
-          </div>
-
-          <div>
-            <div
-              v-for="todo in store.task_todos"
-              :key="todo.id"
-              class="mb-4 border rounded-md border-blue-300"
-            >
-              <div class="px-4 py-1 bg-sky-400 text-white rounded-t-md flex items-center">
-                <h4>
-                  {{ todo.title }}
-                </h4>
-
-                <button
-                  class="ml-auto btn-2 h-7 px-3 bg-sky-500 text-white hover:bg-sky-600 hover:text-white bg-none"
-                  @click.prevent.stop="() => handleClickEditTodo(todo)"
-                >
-                  <i class="fas fa-pen"></i> Edit
-                </button>
-              </div>
-              <div v-for="todoDate in todo.dates" :key="todoDate.id">
-                <TodoDateItemCard
-                  :todo-date="todoDate"
-                  @clickTodo="() => handleClickTodo(todoDate)"
-                  class="border-t"
-                />
-              </div>
+                <i class="fas fa-edit"></i> Edit
+              </button>
             </div>
           </div>
         </div>
@@ -435,9 +455,6 @@ function handleClickAddTodo() {
       <LoaderView class="absolute bg-opacity-80 inset-0 z-20" v-if="state === 'changing'" />
     </div>
 
-    <!--
-      :userRole="userRole"
-      -->
     <TodoCreateEditShow
       userRole="employee"
       :todoModal="todoModal"
