@@ -76,6 +76,9 @@
                       <TaskImportantBadge v-if="task?.is_important" />
                       <TaskUrgentBadge v-if="task?.is_urgent" />
                     </div>
+                    <div class="text-xs flex items-center gap-1 text-sky-400 ml-2">
+                      <i class="fas fa-tasks"></i> {{ task?.todos_count }}
+                    </div>
                   </div>
                 </div>
 

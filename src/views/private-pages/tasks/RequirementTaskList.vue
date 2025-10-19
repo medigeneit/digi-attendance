@@ -8,6 +8,7 @@ import TaskAddForm from '@/components/tasks/TaskAddForm.vue'
 import TaskEditForm from '@/components/tasks/TaskEditForm.vue'
 import TaskHeader from '@/components/tasks/TaskHeader.vue'
 import TaskUserAssignForm from '@/components/tasks/TaskUserAssignForm.vue'
+import UserAvatar from '@/components/UserAvatar.vue'
 import useTaskPriorityUpdate from '@/libs/task-priority'
 import { useRequirementStore } from '@/stores/useRequirementStore'
 import { useTaskStore } from '@/stores/useTaskStore'
@@ -196,19 +197,22 @@ const taskFilter = computed({
 
     <div class="relative min-h-[20vh]">
       <template v-if="route.query?.view === 'userwise'">
-        <div v-for="user in taskUsers" :key="user.id" class="my-4 shadow rounded-md">
+        <div
+          v-for="user in taskUsers"
+          :key="user.id"
+          class="my-4 rounded-md border-2 border-sky-300"
+        >
           <div
-            class="text-gray-700 bg-gradient-to-tl from-sky-400/60 to-sky-400 rounded-t-md py-2 px-4 flex items-center"
+            class="sticky top-14 z-40 text-gray-700 bg-gradient-to-tl from-sky-400/60 to-sky-400 py-2 px-4 flex items-center"
           >
             <div class="font-semibold flex items-center gap-2">
               <UserAvatar :user="user" />
               <div class="text-white text-base">{{ user.label }}</div>
             </div>
           </div>
-          <div class="border rounded-b-md">
-            <div class="p-4 space-y-4">
-              <!-- {{ getRequirementDetailsByUser(user.id) }} -->
 
+          <div class="rounded-b-md p-3">
+            <div class="space-y-3">
               <RequirementDetailItemWithTaskList
                 v-for="(detail, index) in getRequirementDetailsByUser(user.id)"
                 :key="detail.id"
@@ -217,7 +221,7 @@ const taskFilter = computed({
                 @editClick="(taskId) => (editingId = taskId)"
                 @addClick="(taskId) => goToAdd(taskId)"
                 @employeeAssignClick="(taskId) => openEmployeeAssignForm(taskId)"
-                class=""
+                class="border rounded-md"
               />
             </div>
           </div>
@@ -233,15 +237,15 @@ const taskFilter = computed({
           @editClick="(taskId) => (editingId = taskId)"
           @addClick="(taskId) => goToAdd(taskId)"
           @employeeAssignClick="(taskId) => openEmployeeAssignForm(taskId)"
-          class="mt-6"
+          class="border rounded-md my-4"
         />
       </template>
 
       <div
         v-if="state !== 'loading' && requirementStore.requirementDetails?.length === 0"
-        class="text-center py-4 text-gray-500 border h-[30vh] flex items-center justify-center text-xl rounded bg-gray-50"
+        class="text-center py-4 text-gray-500 border h-[30vh] flex items-center justify-center rounded bg-gray-50 italic"
       >
-        No tasks found.
+        No tasks
       </div>
       <LoaderView
         v-if="state === 'loading'"

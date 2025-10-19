@@ -38,9 +38,7 @@ const formatDate = (date) => {
         >
           Change Password
         </button>
-        <RouterLink to="/profile/edit" class="btn-2">
-          <i class="far fa-edit"></i> Edit
-        </RouterLink>
+        <RouterLink to="/profile/edit" class="btn-2"> <i class="far fa-edit"></i> Edit </RouterLink>
       </div>
       <LoaderView v-if="isLoading" class="shadow-none" />
       <div v-else class="grid gap-2">
@@ -95,6 +93,23 @@ const formatDate = (date) => {
               <p class="text-lg text-gray-800">{{ formatDate(user?.joining_date) }}</p>
             </div>
           </div>
+        </div>
+        <div class="flex mt-4 gap-4">
+          <RouterLink
+            to="/tasks"
+            class="flex items-center gap-2 hover:bg-sky-500 hover:text-white border border-sky-400 text-sky-600 px-4 rounded-lg"
+            v-if="authStore.isAdminMood"
+          >
+            <i class="fas fa-tasks py-2"></i>
+            <h4>Task Management</h4>
+          </RouterLink>
+          <RouterLink
+            to="/my-tasks"
+            class="flex items-center gap-2 hover:bg-sky-500 hover:text-white border border-sky-400 text-sky-600 px-4 rounded-lg"
+          >
+            <i class="fas fa-tasks py-2"></i>
+            <h4>My Task List</h4>
+          </RouterLink>
         </div>
       </div>
     </div>
