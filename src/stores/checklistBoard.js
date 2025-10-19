@@ -9,6 +9,7 @@ export const useChecklistBoardStore = defineStore('checklistBoard', () => {
 
   // filters (camelCase in store; mapped to snake_case for API)
   const type = ref('joining')          // 'joining' | 'exit'
+  const user_type = ref('Probationary')          // 'joining' | 'exit'
   const companyId = ref(null)
   const departmentId = ref(null)
   const search = ref('')
@@ -37,6 +38,7 @@ export const useChecklistBoardStore = defineStore('checklistBoard', () => {
   // Build snake_case params for the API
   const buildUserParams = (extra = {}) => {
     const p = {
+      user_type: user_type.value || undefined,
       type: type.value || undefined,
       company_id: companyId.value || undefined,
       department_id: departmentId.value || undefined,
@@ -70,6 +72,15 @@ export const useChecklistBoardStore = defineStore('checklistBoard', () => {
       throw e
     }
   }
+
+  async function updateEmploymentType(userId, employment_type) {
+     
+      const { data } = await apiClient.patch(`/user/${userId}/employment-type`, { employment_type: employment_type })
+      const i = users.value.findIndex(u => u.id === userId)
+      if (i !== -1) this.users[i] = { ...this.users[i], employment_type: type }
+      if (this.rows[userId]) this.rows[userId] = { ...this.rows[userId] }
+      return data
+    }
 
 
   async function loadUsers(extraParams = {}) {
@@ -168,5 +179,6 @@ export const useChecklistBoardStore = defineStore('checklistBoard', () => {
     // actions
     loadBoard, loadTemplates, loadUsers,
     setUsers, setFilters, resetFilters, clearRowCache,
+    updateEmploymentType
   }
 })

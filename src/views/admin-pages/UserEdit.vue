@@ -33,7 +33,7 @@ const form = reactive({
   nid: '',
   date_of_birth: '',
   joining_date: '',
-  employment_type: 'Provisional',
+  employment_type: 'Probationary',
   employee_id: '',
   weekends: [],
   leave_approval_id: '',
@@ -294,7 +294,7 @@ const computedDesignations = computed(() => {
               <div>
                 <label>Employment Type</label>
                 <select v-model="form.employment_type" class="w-full p-2 border rounded">
-                  <option value="Provisional">Provisional</option>
+                  <option value="Probationary">Probationary</option>
                   <option value="Permanent">Permanent</option>
                   <option value="Part_Time">Part Time</option>
                   <option value="Remote">Remote</option>
