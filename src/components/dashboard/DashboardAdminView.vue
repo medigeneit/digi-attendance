@@ -1,12 +1,19 @@
 <script setup>
+import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
+import { computed } from 'vue'
 const userStore = useUserStore()
+const authStore = useAuthStore()
 const { dashboardInfo, selectedDate } = storeToRefs(userStore)
+
+const date = computed(() => {
+  return new Date()
+})
 </script>
 
 <template>
-  <div class="grid gap-4 md:grid-cols-3 mt-4 container mx-auto">
+  <div class="grid gap-4 md:grid-cols-3 mt-4 px-4 container mx-auto">
     <RouterLink
       :to="{ name: 'TodayAttendanceReport', query: { status: 'all' } }"
       class="main-button"
@@ -94,14 +101,42 @@ const { dashboardInfo, selectedDate } = storeToRefs(userStore)
       </span>
       Upcoming leaves
     </RouterLink>
+
     <RouterLink
       :to="{
         name: 'TodoList',
-        query: { applicationType: 'after', date: selectedDate },
+        query: {
+          day: date.getDate(),
+          month: date.getMonth() + 1,
+          year: date.getFullYear(),
+          type: 'day-view',
+          // company_id: authStore.user?.company_id,
+        },
       }"
       class="main-button"
     >
-      Todos
+      <span class="text-3xl">
+        {{ dashboardInfo?.todayTotalTodos }}
+      </span>
+      Today Todos
+    </RouterLink>
+
+    <RouterLink
+      :to="{
+        name: 'TodoList',
+        query: {
+          month: date.getMonth() + 1,
+          year: date.getFullYear(),
+          type: 'month-view',
+          // company_id: authStore.user?.company_id,
+        },
+      }"
+      class="main-button"
+    >
+      <span class="text-3xl">
+        {{ dashboardInfo?.thisMonthTotalTodos }}
+      </span>
+      Todos In This Month
     </RouterLink>
   </div>
 </template>
