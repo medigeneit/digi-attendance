@@ -446,7 +446,7 @@ const companyDepartments = computed(() => {
             },
           }"
         >
-          TaskWise List
+          Department Wise List
         </RouterLink>
       </div>
     </div>

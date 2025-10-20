@@ -1,10 +1,14 @@
 <template>
-  <div class="w-full">
+  <div class="w-full p-1">
+    <!-- <pre>
+      {{ requirementDetails }}
+    </pre> -->
+
     <table class="w-full" v-if="tasks?.length > 0">
       <thead>
         <tr>
           <td
-            class="border-y text-center text-xs text-gray-400 bg-gray-50/80 w-[30px] sticky -top-4 z-20"
+            class="border text-center text-xs text-gray-400 bg-gray-50/80 w-[30px] sticky -top-4 z-20"
           >
             SL
           </td>
@@ -18,40 +22,49 @@
           >
             Assign Person
           </td>
-          <td
-            class="border text-center text-xs text-gray-400 bg-gray-50/80 sticky -top-4 z-20 px-2 whitespace-nowrap"
-          >
-            Assign Date
-          </td>
+
           <td
             class="border text-center text-xs text-gray-400 bg-gray-50/80 sticky -top-4 z-20 px-2 whitespace-nowrap"
           >
             Deadline
           </td>
+
           <td
-            class="border text-center text-xs text-gray-400 bg-gray-50/80 sticky -top-4 z-20 px-2 whitespace-nowrap"
-          >
-            Started
-          </td>
-          <td
-            class="border-y text-center text-xs text-gray-400 bg-gray-50/80 -top-4 z-20 sticky right-0 border-l bg-sky-50 px-2 whitespace-nowrap"
+            class="border text-center text-xs text-gray-400 bg-gray-50/80 -top-4 z-20 sticky right-0 border-l bg-sky-50 px-2 whitespace-nowrap"
           >
             Status
           </td>
         </tr>
       </thead>
       <tbody>
-        <template v-for="(task, index) in slicedTasks" :key="task.id">
+        <template v-for="(detail, detailIndex) in requirementDetails" :key="detail.id">
+          <tr class="" v-if="requirementDetails.length > 1">
+            <th colspan="10" class="font-semibold border" :class="[detailIndex > 0 ? '' : '']">
+              <div
+                class="text-left pt-4 pb-2 px-2"
+                :class="[
+                  detail.id === 0 ? 'text-gray-500' : 'text-sky-800',
+                  // detail.id === 0 ? 'bg-gray-50' : 'bg-gray-50',
+                ]"
+              >
+                <div class="line-clamp-1">
+                  {{ detail?.title }}
+                </div>
+              </div>
+            </th>
+          </tr>
           <tr
+            v-for="(task, taskIndex) in detail.tasks"
+            :key="task.id"
             class="group/sub-task-row"
             :class="{
               ' bg-green-400/20': task.status == 'COMPLETED',
               ' bg-white hover:bg-slate-50': task.status !== 'COMPLETED',
             }"
           >
-            <td class="border-y text-center py-2 px-1 border-gray-200">
-              <div class="text-base font-semibold text-purple-600" v-if="index !== undefined">
-                {{ index + 1 }}.
+            <td class="border text-center py-2 px-1 border-gray-200">
+              <div class="text-base font-semibold text-purple-600" v-if="taskIndex !== undefined">
+                {{ taskIndex + 1 }}.
               </div>
             </td>
             <td class="border px-3 py-1 border-gray-200 relative">
@@ -118,13 +131,13 @@
                 </div>
               </div>
             </td>
-            <td class="border px-3 py-1 border-gray-200 text-center">
+            <!-- <td class="border px-3 py-1 border-gray-200 text-center">
               <span class="text-gray-500 text-sm" v-if="task.assigned_at">
                 <span class="font-semibold text-blue-800 whitespace-nowrap">{{
                   getDisplayDate(task.assigned_at)
                 }}</span>
               </span>
-            </td>
+            </td> -->
             <td class="border px-3 py-1 border-gray-200 text-center">
               <span class="ml-4 text-gray-500 text-sm" v-if="task.deadline">
                 <span class="text-blue-500 font-semibold whitespace-nowrap">{{
@@ -132,14 +145,14 @@
                 }}</span>
               </span>
             </td>
-            <td class="border px-3 py-1 border-gray-200 text-center">
+            <!-- <td class="border px-3 py-1 border-gray-200 text-center">
               <span class="text-gray-500 text-sm whitespace-nowrap" v-if="task.started_at">
                 <span class="font-semibold text-blue-800">{{
                   getDisplayDate(task.started_at)
                 }}</span>
               </span>
-            </td>
-            <td class="border-y px-3 border-gray-200 sticky right-0 border-l bg-sky-50">
+            </td> -->
+            <td class="border px-3 border-gray-200 sticky right-0 border-l bg-sky-50">
               <div class="flex justify-end flex-wrap gap-2 py-2">
                 <TaskIsClosedBadge v-if="task.closed_at" />
                 <TaskStatus
@@ -159,17 +172,6 @@
         </template>
       </tbody>
     </table>
-    <div class="flex gap-1 items-center text-sm mb-2">
-      <template v-if="tasks.length > 0">
-        <button
-          class="hover:bg-blue-600 hover:text-white text-indigo-600 font-semibold px-3 py-0.5 rounded-full transition border ml-2 mt-2 sticky left-2"
-          @click.prevent.stop="handleShowAllTask"
-          v-if="hiddenTasks.length > 0 || showAll"
-        >
-          +{{ hiddenTasks.length }} {{ showAll ? 'Show Less' : 'Show All' }}
-        </button>
-      </template>
-    </div>
   </div>
 </template>
 
@@ -193,25 +195,30 @@ const props = defineProps({
   taskLinkTo: { type: Function, default: null },
 })
 
-const showAll = ref(false)
+const requirementDetails = computed(() => {
+  return props.tasks
+    .reduce((details, task) => {
+      const key = task.requirement_detail?.id || '-'
 
-const slicedTasks = computed(() => {
-  if (showAll.value) {
-    return props.tasks
-  }
-  return props.tasks.slice(0, props.maxItem)
+      const detailList = [...details]
+
+      const foundDetail = detailList.find((d) => d?.key == key)
+
+      if (!foundDetail) {
+        detailList.push({
+          key: key,
+          position: task?.requirement_detail ? 0 : 1,
+          ...(task?.requirement_detail || { title: '(Other tasks)', id: 0 }),
+          tasks: [task],
+        })
+      } else {
+        foundDetail.tasks = [...foundDetail.tasks, task]
+      }
+
+      return detailList
+    }, [])
+    .sort((detailA, detailB) => detailA.position - detailB.position)
 })
-
-const hiddenTasks = computed(() => {
-  if (showAll.value) {
-    return []
-  }
-  return props.tasks.slice(props.maxItem)
-})
-
-function handleShowAllTask() {
-  showAll.value = !showAll.value
-}
 
 // @editClick="(taskId) => (editingId = taskId)"
 

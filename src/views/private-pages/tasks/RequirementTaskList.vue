@@ -1,10 +1,10 @@
+div
 <script setup>
 // import Draggable from '@/components/common/Draggable.js'
 // import draggable from 'vuedraggable'
 import LoaderView from '@/components/common/LoaderView.vue'
 import OverlyModal from '@/components/common/OverlyModal.vue'
 import DepartmentChip from '@/components/DepartmentChip.vue'
-import RequirementDetailItemWithTaskList from '@/components/tasks/RequirementDetailItemWithTaskList.vue'
 import TaskAddForm from '@/components/tasks/TaskAddForm.vue'
 import TaskEditForm from '@/components/tasks/TaskEditForm.vue'
 import TaskHeader from '@/components/tasks/TaskHeader.vue'
@@ -36,14 +36,10 @@ const employeeAssignForm = reactive({
 })
 
 const taskUsers = computed(() => {
-  return []
   const selectedUserIds = route.query['user-ids'] || null
-
-  const userList = requirementStore.requirementDetails.flatMap((requirementDetail) =>
-    (requirementDetail.tasks || []).flatMap((task) =>
-      selectedUserIds ? task.users?.filter((u) => selectedUserIds.includes(u.id)) : task.users,
-    ),
-  )
+  const userList = (store.tasks || []).flatMap((task) => {
+    return selectedUserIds ? task.users?.filter((u) => selectedUserIds.includes(u.id)) : task.users
+  })
 
   // Deduplicate by user.id
   const uniqueUsers = [...new Map(userList.map((user) => [user.id, user])).values()]
@@ -70,17 +66,6 @@ const taskDepartmentGroups = computed(() => {
 
     return deptGroups
   }, [])
-
-  const userList = requirementStore.requirementDetails.flatMap((requirementDetail) =>
-    (requirementDetail.tasks || []).flatMap((task) =>
-      selectedUserIds ? task.users?.filter((u) => selectedUserIds.includes(u.id)) : task.users,
-    ),
-  )
-
-  // Deduplicate by user.id
-  const uniqueUsers = [...new Map(userList.map((user) => [user.id, user])).values()]
-
-  return uniqueUsers.sort((userA, userB) => userA.id - userB.id)
 })
 
 const draggableTaskList = ref(null)
@@ -139,13 +124,10 @@ async function handleTaskPrioritySave() {
   }
 }
 
-function getRequirementDetailsByUser(userId) {
-  return requirementStore.requirementDetails.filter((requirementDetail) => {
+function getTaskListByUserId(userId) {
+  return store.tasks.filter((task) => {
     // Check if any task inside this requirementDetail
-    // has a user matching the given userId
-    return (requirementDetail.tasks || []).some((task) =>
-      (task.users || []).some((user) => user.id === userId),
-    )
+    return (task.users || []).some((user) => user.id === userId)
   })
 }
 
@@ -230,12 +212,13 @@ const taskFilter = computed({
       {{ requirementStore.error }}
     </div>
 
+    <!-- <pre>{{ taskUsers }}</pre> -->
     <div class="relative min-h-[20vh]">
       <template v-if="route.query?.view === 'userwise'">
         <div
           v-for="user in taskUsers"
           :key="user.id"
-          class="my-4 rounded-md border-2 border-sky-300"
+          class="mt-8 rounded-md border-2 border-sky-300"
         >
           <div
             class="sticky top-14 z-40 text-gray-700 bg-gradient-to-tl from-sky-400/60 to-sky-400 py-2 px-4 flex items-center"
@@ -246,19 +229,18 @@ const taskFilter = computed({
             </div>
           </div>
 
-          <div class="rounded-b-md p-3">
-            <div class="space-y-3">
-              <RequirementDetailItemWithTaskList
-                v-for="(detail, index) in getRequirementDetailsByUser(user.id)"
-                :key="detail.id"
-                :index="index"
-                :detail="detail"
-                @editClick="(taskId) => (editingId = taskId)"
-                @addClick="(taskId) => goToAdd(taskId)"
-                @employeeAssignClick="(taskId) => openEmployeeAssignForm(taskId)"
-                class="border rounded-md"
-              />
-            </div>
+          <div class="rounded-b-md overflow-y-auto">
+            <TaskTable
+              :tasks="getTaskListByUserId(user.id)"
+              @editClick="(taskId) => (editingId = taskId)"
+              @addClick="(taskId) => goToAdd(taskId)"
+              @employeeAssignClick="(taskId) => openEmployeeAssignForm(taskId)"
+              :taskLinkTo="
+                (task) => {
+                  return { name: 'RequirementTaskShow', params: { id: task?.id || 0 } }
+                }
+              "
+            />
           </div>
         </div>
       </template>
@@ -267,31 +249,32 @@ const taskFilter = computed({
         <div
           v-for="deptGroup in taskDepartmentGroups"
           :key="deptGroup.key"
-          class="my-4 rounded-md border-2 border-sky-300"
+          class="mt-8 rounded-md border-2 border-sky-300"
         >
           <div
             class="sticky top-14 z-40 text-gray-700 bg-gradient-to-tl from-sky-400/60 to-sky-400 py-2 px-4 flex items-center"
           >
             <div class="font-semibold flex items-center gap-2">
+              <span class="text-white text-sm">From</span>
               <DepartmentChip :department="deptGroup.from_department" />
+              <span class="text-white text-sm">To</span>
               <DepartmentChip :department="deptGroup.to_department" />
             </div>
           </div>
 
           <div class="rounded-b-md overflow-y-auto">
-            <div class="space-y-3">
-              <TaskTable
-                :tasks="deptGroup.tasks"
-                @editClick="(taskId) => (editingId = taskId)"
-                @addClick="(taskId) => goToAdd(taskId)"
-                @employeeAssignClick="(taskId) => openEmployeeAssignForm(taskId)"
-                :taskLinkTo="
-                  (task) => {
-                    return { name: 'RequirementTaskShow', params: { id: task?.id || 0 } }
-                  }
-                "
-              />
-            </div>
+            <TaskTable
+              :tasks="deptGroup.tasks"
+              groupBy="requirement_details"
+              @editClick="(taskId) => (editingId = taskId)"
+              @addClick="(taskId) => goToAdd(taskId)"
+              @employeeAssignClick="(taskId) => openEmployeeAssignForm(taskId)"
+              :taskLinkTo="
+                (task) => {
+                  return { name: 'RequirementTaskShow', params: { id: task?.id || 0 } }
+                }
+              "
+            />
           </div>
         </div>
 

@@ -18,6 +18,7 @@ import { useTodoDateStore } from '@/stores/useTodoDateStore'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TodoCreateEditShow from '../todos/TodoCreateEditShow.vue'
+import TaskTimeline from './TaskTimeline.vue'
 
 const store = useTaskStore()
 const authStore = useAuthStore()
@@ -286,7 +287,7 @@ async function handleClickDelete(todoDate) {
         <div class="grid grid-cols-12 gap-x-8 gap-y-3">
           <div class="col-span-full lg:col-span-9 row-span-10">
             <div>
-              <h2 class="font-medium text-xl flex items-center gap-2">
+              <h2 class="font-medium text-xl flex items-start gap-2">
                 <button class="btn-icon size-6 text-sm text-sky-500" @click="router.back()">
                   <i class="fas fa-arrow-left"></i>
                 </button>
@@ -368,29 +369,11 @@ async function handleClickDelete(todoDate) {
           </div>
 
           <div class="col-span-full lg:col-span-3 space-y-4 sticky top-16">
-            <TaskStatusManager
-              v-if="store?.task"
-              :task="store?.task || {}"
-              class="col-span-full"
-              @updateStatus="() => fetchTask(store?.task?.id)"
-              hide-timeline
-            >
-              <template #top>
-                <div class="flex items-start justify-center !text-lg mb-4">
-                  <TaskStatus
-                    :status="store.task?.status"
-                    :progressPercent="store.task?.progress_percent"
-                    class="h-6 !text-lg"
-                  />
-                </div>
-              </template>
-            </TaskStatusManager>
-
             <div class="border col-span-3 p-3 rounded shadow">
               <div>
                 <div class="flex items-center gap-2 mb-4">
                   <div class="text-gray-500 text-sm">From</div>
-                  <DepartmentChip :department="store?.task?.from_department" />
+                  <DepartmentChip :department="store?.task?.from_department" :short-name="true" />
                 </div>
                 <div class="text-gray-600 text-sm mb-2 border-b border-dashed">Supervisors</div>
                 <TaskAssignedUsers
@@ -406,7 +389,7 @@ async function handleClickDelete(todoDate) {
               <div>
                 <div class="flex items-center gap-2 mb-4">
                   <div class="text-gray-500 text-sm">To</div>
-                  <DepartmentChip :department="store?.task?.to_department" />
+                  <DepartmentChip :department="store?.task?.to_department" :short-name="true" />
                 </div>
                 <div class="text-gray-600 text-sm mb-2 border-b border-dashed">Assigned Users</div>
                 <TaskAssignedUsers
@@ -436,6 +419,24 @@ async function handleClickDelete(todoDate) {
                 <i class="fas fa-edit"></i> Edit
               </button>
             </div>
+            <TaskTimeline :task="store?.task" />
+            <TaskStatusManager
+              v-if="store?.task"
+              :task="store?.task || {}"
+              class="col-span-full"
+              @updateStatus="() => fetchTask(store?.task?.id)"
+              hide-timeline
+            >
+              <template #top>
+                <div class="flex items-start justify-center !text-lg mb-4">
+                  <TaskStatus
+                    :status="store.task?.status"
+                    :progressPercent="store.task?.progress_percent"
+                    class="h-6 !text-lg"
+                  />
+                </div>
+              </template>
+            </TaskStatusManager>
           </div>
         </div>
 
