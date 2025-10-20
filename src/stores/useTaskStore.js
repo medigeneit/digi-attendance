@@ -1,3 +1,4 @@
+import { getRequirementsDetailsWithTasks } from '@/services/requirement';
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import apiClient from '../axios';
@@ -40,6 +41,23 @@ export const useTaskStore = defineStore('task', () => {
     currentPage.value = 1
     tasks.value = []
   }
+
+
+  const fetchAllTasks = async ( params = {}) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await getRequirementsDetailsWithTasks({params});
+      tasks.value = response.data?.tasks || [];
+      console.log({response})
+    } catch (err) {
+      error.value = err.response?.data?.message || 'রিকোয়ারমেন্ট লোড করতে ব্যর্থ হয়েছে।';
+      console.error('Error fetching requirements:', err);
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
 
   async function fetchTasks(params, config = {}) {
     error.value = null;
@@ -248,6 +266,7 @@ export const useTaskStore = defineStore('task', () => {
     error: computed(() => error.value),
     taskListTree: computed(getTaskListTree),
     flattenedTasks: computed(getFlattenedTasks),
+    fetchAllTasks,
     fetchTasks,
     hasMoreTask,
     fetchMyTasks,

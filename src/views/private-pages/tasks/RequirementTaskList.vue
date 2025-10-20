@@ -3,6 +3,7 @@
 // import draggable from 'vuedraggable'
 import LoaderView from '@/components/common/LoaderView.vue'
 import OverlyModal from '@/components/common/OverlyModal.vue'
+import DepartmentChip from '@/components/DepartmentChip.vue'
 import RequirementDetailItemWithTaskList from '@/components/tasks/RequirementDetailItemWithTaskList.vue'
 import TaskAddForm from '@/components/tasks/TaskAddForm.vue'
 import TaskEditForm from '@/components/tasks/TaskEditForm.vue'
@@ -14,6 +15,7 @@ import { useRequirementStore } from '@/stores/useRequirementStore'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import TaskTable from './TaskTable.vue'
 
 const store = useTaskStore()
 const requirementStore = useRequirementStore()
@@ -34,7 +36,40 @@ const employeeAssignForm = reactive({
 })
 
 const taskUsers = computed(() => {
+  return []
   const selectedUserIds = route.query['user-ids'] || null
+
+  const userList = requirementStore.requirementDetails.flatMap((requirementDetail) =>
+    (requirementDetail.tasks || []).flatMap((task) =>
+      selectedUserIds ? task.users?.filter((u) => selectedUserIds.includes(u.id)) : task.users,
+    ),
+  )
+
+  // Deduplicate by user.id
+  const uniqueUsers = [...new Map(userList.map((user) => [user.id, user])).values()]
+
+  return uniqueUsers.sort((userA, userB) => userA.id - userB.id)
+})
+
+const taskDepartmentGroups = computed(() => {
+  return (store.tasks || []).reduce((deptGroups, task) => {
+    const groupKey = `${task.from_department_id}-${task.to_department_id}`
+
+    const foundGroup = deptGroups.find((g) => g.key == groupKey)
+
+    if (!foundGroup) {
+      deptGroups.push({
+        key: groupKey,
+        from_department: task.from_department,
+        to_department: task.to_department,
+        tasks: [task],
+      })
+    } else {
+      foundGroup.tasks = [...foundGroup.tasks, task]
+    }
+
+    return deptGroups
+  }, [])
 
   const userList = requirementStore.requirementDetails.flatMap((requirementDetail) =>
     (requirementDetail.tasks || []).flatMap((task) =>
@@ -63,7 +98,7 @@ onMounted(() => {
 async function fetchTasks() {
   let data
 
-  await requirementStore.fetchRequirementsWithTasks({
+  await store.fetchAllTasks({
     ...route.query,
     ...{ page: 1 },
   })
@@ -229,7 +264,38 @@ const taskFilter = computed({
       </template>
 
       <template v-else>
-        <RequirementDetailItemWithTaskList
+        <div
+          v-for="deptGroup in taskDepartmentGroups"
+          :key="deptGroup.key"
+          class="my-4 rounded-md border-2 border-sky-300"
+        >
+          <div
+            class="sticky top-14 z-40 text-gray-700 bg-gradient-to-tl from-sky-400/60 to-sky-400 py-2 px-4 flex items-center"
+          >
+            <div class="font-semibold flex items-center gap-2">
+              <DepartmentChip :department="deptGroup.from_department" />
+              <DepartmentChip :department="deptGroup.to_department" />
+            </div>
+          </div>
+
+          <div class="rounded-b-md overflow-y-auto">
+            <div class="space-y-3">
+              <TaskTable
+                :tasks="deptGroup.tasks"
+                @editClick="(taskId) => (editingId = taskId)"
+                @addClick="(taskId) => goToAdd(taskId)"
+                @employeeAssignClick="(taskId) => openEmployeeAssignForm(taskId)"
+                :taskLinkTo="
+                  (task) => {
+                    return { name: 'RequirementTaskShow', params: { id: task?.id || 0 } }
+                  }
+                "
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- <RequirementDetailItemWithTaskList
           v-for="(detail, index) in requirementStore.requirementDetails"
           :key="detail.id"
           :index="index"
@@ -238,11 +304,15 @@ const taskFilter = computed({
           @addClick="(taskId) => goToAdd(taskId)"
           @employeeAssignClick="(taskId) => openEmployeeAssignForm(taskId)"
           class="border rounded-md my-4"
-        />
+        /> -->
       </template>
 
+      <!-- <pre>
+        {{ taskDepartmentGroups }}
+      </pre> -->
+
       <div
-        v-if="state !== 'loading' && requirementStore.requirementDetails?.length === 0"
+        v-if="state !== 'loading' && store.tasks?.length === 0"
         class="text-center py-4 text-gray-500 border h-[30vh] flex items-center justify-center rounded bg-gray-50 italic"
       >
         No tasks
@@ -250,7 +320,7 @@ const taskFilter = computed({
       <LoaderView
         v-if="state === 'loading'"
         class="absolute inset-0 flex items-center z-50 bg-opacity-60 h-full shadow-none border"
-        :class="[requirementStore.requirementDetails?.length === 0 ? 'justify-center' : '']"
+        :class="[store.tasks?.length === 0 ? 'justify-center' : '']"
       />
     </div>
   </div>
