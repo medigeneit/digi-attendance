@@ -2,32 +2,46 @@ name: Build and Deploy
 
 on:
   push:
-    branches:
-      - main # Change this to your source branch
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v3
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: 20 # Use the version of Node.js you need
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
 
-    - name: Install Dependencies
-      run: npm install
+      - name: Install Dependencies
+        run: npm ci
 
-    - name: Build Project
-      run: npm run build
+      - name: Build Project
+        run: npm run build
 
-    - name: Deploy to Branch
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./dist # Path to the build output directory
-        publish_branch: live # Change to your target branch
-        
+      # ✅ SPA fallback (optional): client-side routing fix for GitHub Pages
+      - name: Add 404 fallback (SPA only)
+        run: |
+          if [ -d dist ] && [ -f dist/index.html ]; then
+            cp dist/index.html dist/404.html
+          fi
+
+      - name: Deploy to Branch
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist          # Vite = dist, CRA = build, Next export = out
+          publish_branch: live         # আপনার টার্গেট ব্রাঞ্চ
+          # cname: example.com          # কাস্টম ডোমেইন হলে আনকমেন্ট করুন
