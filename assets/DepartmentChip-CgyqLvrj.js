@@ -1,1 +1,0 @@
-import{c as o,o as r,t as s}from"./index-DpOrr75N.js";const n={class:"border border-sky-400 rounded-full text-sky-500 font-semibold bg-sky-50 px-1 py-0.5 text-xs inline-block"},i={__name:"DepartmentChip",props:{department:Object},setup(t){return(a,c)=>{var e;return r(),o("div",n,s((e=t.department)==null?void 0:e.name),1)}}};export{i as _};
