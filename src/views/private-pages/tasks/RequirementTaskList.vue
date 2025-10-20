@@ -104,7 +104,7 @@ async function fetchTasks() {
   })
 
   state.value = ''
-  queryLogs.value = data.query_log || []
+  queryLogs.value = data?.query_log || []
 }
 
 const goToAdd = (parentId) => {
@@ -158,8 +158,8 @@ watch(
       store.resetTaskList()
       state.value = 'loading'
       await fetchTasks()
-    } catch {
-      console.warn('...')
+    } catch (err) {
+      console.warn(err)
     }
   },
 )
