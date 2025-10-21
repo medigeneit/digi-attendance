@@ -20,7 +20,7 @@ const routerTo = computed(() => {
 </script>
 <template>
   <div class="flex items-center gap-2">
-    <i
+    <!-- <i
       class="fad"
       :class="
         task?.children_task_count > 0
@@ -30,11 +30,11 @@ const routerTo = computed(() => {
             }
           : 'fa-file-alt text-gray-400'
       "
-    ></i>
+    ></i> -->
     <RouterLink
       :to="routerTo"
       :title="task.title"
-      class="font-medium text-gray-700 cursor-pointer hover:text-blue-700 whitespace-normal line-clamp-1 w-full"
+      class="text-gray-700 cursor-pointer hover:text-blue-700 whitespace-normal line-clamp-1 w-full"
       :class="titleClass"
     >
       <div>

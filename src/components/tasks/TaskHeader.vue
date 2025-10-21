@@ -310,7 +310,7 @@ const companyDepartments = computed(() => {
               :className="{
                 select: 'h-10 text-sm border-2 border-gray-300  ',
               }"
-              v-if="route.name !== 'MyTaskList'"
+              v-if="route.name !== 'MyRequirementTaskList'"
               defaultOption="--ALL DEPARTMENT--"
             >
               <template #label>

@@ -1,9 +1,5 @@
 <template>
   <div class="w-full p-1">
-    <!-- <pre>
-      {{ requirementDetails }}
-    </pre> -->
-
     <table class="w-full" v-if="tasks?.length > 0">
       <thead>
         <tr>
@@ -70,7 +66,7 @@
             <td class="border px-3 py-1 border-gray-200 relative">
               <div class="flex items-center justify-between gap-2">
                 <div>
-                  <div class="flex items-center gap-3">
+                  <div class="flex items-center gap-3 mb-0.5">
                     <TaskTitleRouterLink
                       titleClass="text-sm"
                       :task="task"
@@ -116,7 +112,8 @@
                   :isTargetTask="task.is_target"
                   :maxItem="1"
                   :route-to="
-                    (user) => `/tasks?status=not-completed&view=userwise&user-ids=${user.id}`
+                    (user) =>
+                      `/requirement-tasks?status=not-completed&view=userwise&user-ids=${user.id}`
                   "
                 />
                 <div class="shrink-0">
@@ -131,27 +128,15 @@
                 </div>
               </div>
             </td>
-            <!-- <td class="border px-3 py-1 border-gray-200 text-center">
-              <span class="text-gray-500 text-sm" v-if="task.assigned_at">
-                <span class="font-semibold text-blue-800 whitespace-nowrap">{{
-                  getDisplayDate(task.assigned_at)
-                }}</span>
-              </span>
-            </td> -->
+
             <td class="border px-3 py-1 border-gray-200 text-center">
               <span class="ml-4 text-gray-500 text-sm" v-if="task.deadline">
-                <span class="text-blue-500 font-semibold whitespace-nowrap">{{
-                  getDisplayDate(task.deadline)
-                }}</span>
+                <span class="text-blue-500 font-semibold whitespace-nowrap">
+                  {{ getDisplayDate(task.deadline) }}
+                </span>
               </span>
             </td>
-            <!-- <td class="border px-3 py-1 border-gray-200 text-center">
-              <span class="text-gray-500 text-sm whitespace-nowrap" v-if="task.started_at">
-                <span class="font-semibold text-blue-800">{{
-                  getDisplayDate(task.started_at)
-                }}</span>
-              </span>
-            </td> -->
+
             <td class="border px-3 border-gray-200 sticky right-0 border-l bg-sky-50">
               <div class="flex justify-end flex-wrap gap-2 py-2">
                 <TaskIsClosedBadge v-if="task.closed_at" />
