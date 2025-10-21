@@ -34,7 +34,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['update:todoType', 'update:taskId', 'update:show'])
+const emit = defineEmits(['update:todoType', 'update:taskId', 'update:show', 'addNewTaskClick'])
 
 const searchText = ref('')
 
@@ -201,9 +201,10 @@ const searchedTasks = computed(() => {
           </div>
           <div
             v-else
-            class="border h-[150px] flex items-center justify-center italic text-gray-500 text-sm"
+            class="border h-[150px] flex flex-col items-center justify-center italic text-gray-500 text-sm"
           >
-            No Tasks Found
+            <div>No Tasks Found</div>
+            <button @click.prevent="emit('addNewTaskClick')" class="btn-3">Add New Task</button>
           </div>
         </div>
       </div>
