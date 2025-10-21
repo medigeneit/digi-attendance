@@ -1,7 +1,7 @@
 <script setup>
-import { getDisplayDate, getYearMonthDayFormat } from '@/libs/datetime'
+import { getYearMonthDayFormat } from '@/libs/datetime'
 import { useTodoStore } from '@/stores/useTodoStore'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { nextTick, onMounted, ref, watch } from 'vue'
 import FormHandler from '../FormHandler.vue'
 import LoaderView from '../common/LoaderView.vue'
 import TodoTypeInput from './TodoTypeInput.vue'
@@ -9,7 +9,7 @@ import TodoTypeInput from './TodoTypeInput.vue'
 const props = defineProps({
   date: { type: String, default: getYearMonthDayFormat(new Date()) },
   userRole: { type: String, default: 'employee' },
-  todoType: { type: String, default: null },
+  todoType: { type: String, default: 'task' },
   todoTypeId: { type: String, default: null },
   readonlyValues: {
     type: Object,
@@ -30,7 +30,7 @@ const emit = defineEmits(['update', 'cancelClick'])
 const form = ref({
   title: '',
   date: props.date || '',
-  todo_type: '',
+  todo_type: 'task',
   todo_type_id: '',
 })
 
@@ -66,10 +66,6 @@ watch(
   { immediate: true },
 )
 
-const selectedDate = computed(() => {
-  return new Date(props.date)
-})
-
 onMounted(async () => {
   await nextTick()
   titleRef.value?.focus()
@@ -78,6 +74,7 @@ onMounted(async () => {
 
 <template>
   <div @click="showTodoTypes = false">
+    <pre>{{ form }}</pre>
     <LoaderView
       v-if="todoStore.loading"
       class="absolute inset-0 bg-opacity-80 text-center py-4 text-gray-500 z-10 flex items-center justify-center"
@@ -95,9 +92,6 @@ onMounted(async () => {
       <div class="border-b py-2 px-4">
         <h2 class="text-xl font-semibold">Add Todo</h2>
       </div>
-
-      <!-- <div>{{ props }}</div>
-      <div>{{ form }}</div> -->
 
       <div class="p-4 min-h-[10vh] max-h-[50vh] overflow-y-auto">
         <div class="mb-4">

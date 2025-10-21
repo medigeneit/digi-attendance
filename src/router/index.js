@@ -142,6 +142,12 @@ const router = createRouter({
           meta: { requiresAuth: true, title: 'Task List' },
         },
         {
+          path: 'my-requirement-tasks',
+          name: 'MyRequirementTaskList',
+          component: () => import('@/views/private-pages/tasks/RequirementTaskList.vue'),
+          meta: { requiresAuth: true, title: 'My Task List' },
+        },
+        {
           path: 'requirement-tasks/:id',
           name: 'RequirementTaskShow',
           component: () => import('@/views/private-pages/tasks/RequirementTaskShow.vue'),
@@ -736,9 +742,9 @@ const router = createRouter({
           },
         },
 
-        { 
-          path: '/hrd/user-clearances', 
-          name: 'UserClearance', 
+        {
+          path: '/hrd/user-clearances',
+          name: 'UserClearance',
           component: () => import('@/views/admin-pages/UserClearance.vue') ,
           meta: {
             requiresAuth: true,
@@ -1245,9 +1251,9 @@ const router = createRouter({
           name: 'checklist.create',
           component: () => import('@/views/admin-pages/ChecklistPage.vue')
         },
-        { 
-          path: '/settings/department-item-assignments', 
-          name: 'ctdi', 
+        {
+          path: '/settings/department-item-assignments',
+          name: 'ctdi',
           component: () => import('@/views/admin-pages/DepartmentItemAssignments.vue'),
            meta: {
             requiresAuth: true,
@@ -1255,7 +1261,7 @@ const router = createRouter({
             title: 'Department Assign',
           },
         },
-        
+
       ],
     },
   ],

@@ -11,6 +11,7 @@ import TaskHeader from '@/components/tasks/TaskHeader.vue'
 import TaskUserAssignForm from '@/components/tasks/TaskUserAssignForm.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import useTaskPriorityUpdate from '@/libs/task-priority'
+import { useAuthStore } from '@/stores/auth'
 import { useRequirementStore } from '@/stores/useRequirementStore'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
@@ -24,6 +25,7 @@ const router = useRouter()
 const state = ref('')
 const editingId = ref(null)
 const addForm = ref(false)
+const authStore = useAuthStore()
 
 const addFormData = reactive({
   parentId: 0,
@@ -83,10 +85,21 @@ onMounted(() => {
 async function fetchTasks() {
   let data
 
-  await store.fetchAllTasks({
-    ...route.query,
-    ...{ page: 1 },
-  })
+  console.log({ name: route.name })
+
+  if (route.name == 'RequirementTaskList') {
+    await store.fetchAllTasks({
+      ...route.query,
+      ...{ page: 1 },
+    })
+  }
+
+  if (route.name == 'MyRequirementTaskList') {
+    await store.fetchAllMyTasks({
+      ...route.query,
+      ...{ page: 1 },
+    })
+  }
 
   state.value = ''
   queryLogs.value = data?.query_log || []
@@ -143,6 +156,20 @@ watch(
     } catch (err) {
       console.warn(err)
     }
+  },
+)
+
+watch(
+  () => authStore.isAdminMood,
+  (adminMode) => {
+    if (!adminMode) {
+      router.push({ name: 'MyRequirementTaskList' })
+    } else {
+      router.push({ name: 'RequirementTaskList' })
+    }
+  },
+  {
+    immediate: true,
   },
 )
 

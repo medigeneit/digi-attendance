@@ -79,11 +79,11 @@ const logout = () => {
 
       <template v-if="!authStore.isAdminMood || !isAdmin">
         <RouterLink
-          :to="`/tasks?status=not-completed`"
+          :to="`/my-requirement-tasks`"
           class="side-menu"
           :class="{
             'flex justify-center': !open,
-            'side-menu-active': currentRoute.includes('/tasks'),
+            'side-menu-active': currentRoute.includes('/my-requirement-tasks'),
           }"
         >
           <i class="fad fa-tasks py-2"></i>
