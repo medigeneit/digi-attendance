@@ -74,7 +74,6 @@ onMounted(async () => {
 
 <template>
   <div @click="showTodoTypes = false">
-    <pre>{{ form }}</pre>
     <LoaderView
       v-if="todoStore.loading"
       class="absolute inset-0 bg-opacity-80 text-center py-4 text-gray-500 z-10 flex items-center justify-center"
