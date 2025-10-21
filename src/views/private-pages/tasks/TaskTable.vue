@@ -41,7 +41,7 @@
           <tr class="" v-if="requirementDetails.length > 1">
             <th colspan="10" class="font-semibold border" :class="[detailIndex > 0 ? '' : '']">
               <div
-                class="text-left pt-4 pb-2 px-2"
+                class="text-left pt-4 pb-1 px-2"
                 :class="[
                   detail.id === 0 ? 'text-gray-500' : 'text-sky-800',
                   // detail.id === 0 ? 'bg-gray-50' : 'bg-gray-50',
@@ -184,7 +184,7 @@ import TaskStatus from '@/components/tasks/TaskStatus.vue'
 import TaskTitleRouterLink from '@/components/tasks/TaskTitleRouterLink.vue'
 import TaskUrgentBadge from '@/components/tasks/TaskUrgentBadge.vue'
 import { getDisplayDate, getDisplayDateTime } from '@/libs/datetime'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
 const props = defineProps({
   tasks: { type: Array, required: true, default: () => [] },
