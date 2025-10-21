@@ -76,7 +76,7 @@ const emit = defineEmits([
         class="text-blue-600 font-semibold underline hover:text-sky-400"
         @click.stop="null"
         :to="{
-          name: userRole == 'employee' ? 'MyTaskShow' : 'TaskShow',
+          name: 'RequirementTaskShow',
           params: { id: todoDate.todo?.todo_type_id },
         }"
       >

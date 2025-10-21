@@ -134,6 +134,7 @@ function handleClickAddTodo(yearMonthDay, mainTodoId) {
     action: 'add',
     date: yearMonthDay,
     todo_id: mainTodoId,
+    formReadonlyValues: { date: true },
   }
 }
 

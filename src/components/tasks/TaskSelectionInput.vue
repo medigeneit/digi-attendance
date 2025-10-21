@@ -67,6 +67,7 @@ onMounted(async () => {
 
   window.addEventListener('resize', updatePosition)
   document.addEventListener('scroll', updatePosition)
+  await taskStore.fetchAllMyTasks()
 })
 
 const taskStore = useTaskStore()
@@ -126,8 +127,8 @@ const searchedTasks = computed(() => {
         }
       "
     >
-      <div v-if="selectedTask.title" class="line-clamp-1">
-        {{ selectedTask.id }} - {{ selectedTask.title }}
+      <div v-if="selectedTask?.title" class="line-clamp-1">
+        {{ selectedTask?.id }} - {{ selectedTask?.title }}
       </div>
       <div v-else>Click to select todo</div>
 

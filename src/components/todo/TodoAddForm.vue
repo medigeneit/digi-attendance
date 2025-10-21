@@ -100,15 +100,8 @@ onMounted(async () => {
       <div>{{ form }}</div> -->
 
       <div class="p-4 min-h-[10vh] max-h-[50vh] overflow-y-auto">
-        <div class="mb-2">
-          <span class="font-semibold"> Date </span>
-          <span>
-            {{ getDisplayDate(selectedDate, { weekDay: 'long' }) }}
-          </span>
-        </div>
-
         <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-2">Title</label>
+          <label class="block text-gray-700 font-medium mb-1 text-sm">Title</label>
           <input
             ref="titleRef"
             v-model="form.title"
@@ -119,7 +112,7 @@ onMounted(async () => {
         </div>
 
         <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-2">Date</label>
+          <label class="block text-gray-700 font-medium mb-1 text-sm">Date</label>
           <input
             :readonly="readonlyValues?.date"
             v-model="form.date"
@@ -131,7 +124,7 @@ onMounted(async () => {
         </div>
 
         <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-2">Task ID (optional)</label>
+          <label class="block text-gray-700 font-medium mb-1 text-sm">Task ID (optional)</label>
 
           <TodoTypeInput
             v-model:show="showTodoTypes"

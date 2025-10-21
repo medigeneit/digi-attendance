@@ -11,7 +11,7 @@ export async function getTasksWithRequirement({params = {}} = {}){
 }
 
 export async function getMyTasksWithRequirement({params = {}} = {}){
-  return apiClient.get('/tasks-with-requirement', {params});
+  return apiClient.get('/my-tasks-with-requirement', {params});
 }
 
 export async function addRequirement(data){

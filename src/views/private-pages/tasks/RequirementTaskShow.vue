@@ -287,11 +287,14 @@ async function handleClickDelete(todoDate) {
         <div class="grid grid-cols-12 gap-x-8 gap-y-3">
           <div class="col-span-full lg:col-span-9 row-span-10">
             <div>
-              <h2 class="font-medium text-xl flex items-start gap-2">
+              <h2 class="font-medium text-md flex items-start gap-2">
                 <button class="btn-icon size-6 text-sm text-sky-500" @click="router.back()">
                   <i class="fas fa-arrow-left"></i>
                 </button>
-                {{ store.task.title }}
+
+                <DescriptionView>
+                  {{ store.task.title }}
+                </DescriptionView>
               </h2>
 
               <div class="mt-2 col-span-full flex items-center">
