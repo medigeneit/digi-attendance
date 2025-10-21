@@ -1,8 +1,6 @@
 <script setup>
 import RequiredIcon from '@/components/RequiredIcon.vue'
-import { findRequirement } from '@/services/requirement'
 import { findRequirementDetail, updateRequirementDetail } from '@/services/requirement-detail'
-import { useDepartmentStore } from '@/stores/department'
 import { useUserStore } from '@/stores/user'
 import { onMounted, ref } from 'vue'
 import LoaderView from '../common/LoaderView.vue'
@@ -24,7 +22,6 @@ const emit = defineEmits(['update', 'closeClick', 'error'])
 
 const formContainerRef = ref()
 const userStore = useUserStore()
-const departmentStore = useDepartmentStore()
 const detail = ref(null)
 const state = ref('')
 const error = ref()
@@ -36,7 +33,6 @@ const form = ref({
   supervisor_id: null,
 })
 const employees = ref([])
-const supervisors = ref([])
 
 async function submit() {
   state.value = 'submitting'
@@ -61,10 +57,7 @@ onMounted(async () => {
   try {
     employees.value = await userStore.fetchDepartmentWiseEmployees()
 
-    const requirement = (await findRequirement(props.requirementId)).data?.requirement || {}
-    supervisors.value = await departmentStore.fetchDepartmentEmployee([
-      requirement.from_department_id,
-    ])
+    await userStore.fetchTypeWiseEmployees({ type: 'academy_body,doctor,executive' })
 
     detail.value = (await findRequirementDetail(props.requirementId, props.detailId)).data?.detail
     form.value = {
@@ -132,8 +125,8 @@ onMounted(async () => {
           <SelectDropdown
             v-model="form.supervisor_id"
             :options="[
-              ...supervisors,
-              ...(!supervisors.find((sup) => sup.id == detail?.supervisor?.id)
+              ...(userStore.users || []),
+              ...(!(userStore.users || []).find((sup) => sup.id == detail?.supervisor?.id)
                 ? [detail?.supervisor]
                 : []),
             ]"

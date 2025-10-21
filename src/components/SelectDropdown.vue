@@ -74,7 +74,7 @@
               >
                 {{ getSelectionLabel(selectedItems) }}
               </span>
-              <span v-else class="text-gray-500">{{ placeholder || 'Select...' }}</span>
+              <span v-else class="text-gray-500 text-sm">{{ placeholder || 'Select...' }}</span>
             </slot>
           </div>
         </template>

@@ -133,7 +133,7 @@ const hasAccessOnMyCompanyDepartment = computed(() => {
 
         <div v-if="!hasAccessOnMyCompanyDepartment" class="mb-4">
           <label class="block text-gray-600 text-sm mb1 font-medium"> From Department </label>
-          <div>
+          <div class="border rounded px-2 py-1 text-gray-600 bg-gray-50">
             {{ requirement?.from_department?.name }}
           </div>
         </div>

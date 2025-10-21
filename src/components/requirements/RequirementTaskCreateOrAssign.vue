@@ -12,7 +12,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['parentIdSelect', 'cancelClick', 'assignTask'])
+const emit = defineEmits(['addNewTaskClick', 'cancelClick', 'assignTask'])
 const taskStore = useTaskStore()
 const assignType = ref('')
 const selectedTask = ref(null)
@@ -28,9 +28,7 @@ async function handleAssignClick() {
 <template>
   <div class="text-left p-4">
     <div class="flex items-center gap-6 justify-center my-16">
-      <button @click.prevent="emit('parentIdSelect', 0, assignType)" class="btn-3">
-        Add New Task
-      </button>
+      <button @click.prevent="emit('addNewTaskClick')" class="btn-3">Add New Task</button>
 
       <span>or</span>
       <button
@@ -52,6 +50,7 @@ async function handleAssignClick() {
           v-model:show="taskListShown"
           :isOnlyMyTask="false"
           :taskQueryParams="{ 'from-department-id': fromDepartmentId }"
+          :filterTasks="(task) => !task.requirement_detail_id"
         />
         <div class="flex justify-center">
           <button class="btn-2 h-12 rounded-md">Save</button>

@@ -1,6 +1,6 @@
 <script setup>
 import { useAuthStore } from '@/stores/auth'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import DescriptionView from '../DescriptionView.vue'
 import TaskUserChip from '../tasks/TaskUserChip.vue'
 
@@ -13,6 +13,8 @@ const props = defineProps({
 
 const emit = defineEmits(['editClick', 'deleteClick', 'taskCreateClick'])
 const auth = useAuthStore()
+
+const state = ref('')
 
 const rowsOfTask = computed(() => {
   if (props.detail?.tasks?.length > 0) {

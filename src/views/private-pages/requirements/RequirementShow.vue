@@ -9,7 +9,7 @@ import RequirementDetailEditForm from '@/components/requirements/RequirementDeta
 import RequirementDetailTableRow from '@/components/requirements/RequirementDetailTableRow.vue'
 import RequirementFeedbackEditForm from '@/components/requirements/RequirementFeedbackEditForm.vue'
 import RequirementSubmissionHandler from '@/components/requirements/RequirementSubmissionHandler.vue'
-import TaskParentIdSelector from '@/components/requirements/TaskParentIdSelector.vue'
+import RequirementTaskCreateOrAssign from '@/components/requirements/RequirementTaskCreateOrAssign.vue'
 import TaskAddForm from '@/components/tasks/TaskAddForm.vue'
 import { findRequirement } from '@/services/requirement'
 import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
@@ -104,6 +104,7 @@ const addFormData = reactive({
   requirementId: 0,
   taskDefaultValues: {},
   requirementDetail: null,
+  creating: false,
 })
 
 async function handleTaskUpdate() {
@@ -119,12 +120,11 @@ async function handleTaskAddClose() {
   addFormData.parentId = null
   addFormData.modalShown = false
   addFormData.requirementDetail = null
+  addFormData.creating = false
 }
 </script>
 <template>
   <div class="container mx-auto p-6 print:p-0 w-full print:max-w-full">
-    <!-- {{ addFormData }} -->
-
     <OverlyModal v-if="detailAddForm.open" class="*:max-w-4xl">
       <RequirementDetailAddForm
         :requirementId="requirement.id"
@@ -188,19 +188,23 @@ async function handleTaskAddClose() {
         <i class="fas fa-times-circle"></i>
       </button>
 
-      <TaskParentIdSelector
-        v-if="addFormData.parentId === null"
+      <RequirementTaskCreateOrAssign
+        v-if="!addFormData?.creating"
         :from-department-id="requirement?.from_department_id"
         :requirementDetail="addFormData?.requirementDetail"
-        @parentIdSelect="(parentId) => (addFormData.parentId = parentId)"
         @cancelClick="handleTaskAddClose"
+        @addNewTaskClick="
+          () => {
+            addFormData.modalShown = true
+            addFormData.creating = true
+          }
+        "
         @assignTask="handleTaskUpdate"
       >
-      </TaskParentIdSelector>
+      </RequirementTaskCreateOrAssign>
 
       <TaskAddForm
-        v-else
-        :parentTaskId="addFormData.parentId"
+        v-if="addFormData?.creating"
         :requirementDetailId="addFormData?.requirementDetail?.id"
         :requirementId="requirement.id"
         @close="handleTaskAddClose"
@@ -233,6 +237,7 @@ async function handleTaskAddClose() {
           <RouterLink class="btn-2" :to="`/requirements/edit/${requirement?.id}`">Edit</RouterLink>
         </div>
       </div>
+
       <div class="text-center text-xl font-bold mb-2 underline">Requirement Form</div>
       <div class="mb-4 flex items-center gap-1 print:mb-1">
         <div class="text-gray-500 text-sm">Requirement ID:</div>
@@ -346,18 +351,6 @@ async function handleTaskAddClose() {
                   :isPrinting="isPrinting"
                 />
                 <tr class="">
-                  <!--
-                    <td
-                    class="whitespace-nowrap print:whitespace-break-spaces print:px-0 p-3 text-center border-2 border-gray-800"
-                    >
-                    <div class="text-gray-900 text-base">
-                      For '{{
-                        requirement.to_department?.short_name || requirement.to_department?.name
-                        }}' Use
-                        </div>
-                      <div class="text-gray-800 text-xs">(Feedback)</div>
-                    </td>
-                    -->
                   <td class="p-3 border-2 border-gray-800" colspan="5">
                     <div class="font-semibold text-gray-500 print:text-gray-800 text-sm mb-1">
                       '{{

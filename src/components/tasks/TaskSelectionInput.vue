@@ -28,6 +28,10 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  filterTasks: {
+    type: Function,
+    default: null,
+  },
 })
 
 const emit = defineEmits(['update:todoType', 'update:taskId', 'update:show'])
@@ -105,17 +109,21 @@ const selectedTask = computed(() => {
 })
 
 const searchedTasks = computed(() => {
+  const filteredTasks =
+    typeof props.filterTasks === 'function'
+      ? [...(taskStore.tasks || [])].filter((task) => props.filterTasks(task))
+      : taskStore.tasks || []
   const text = searchText.value.trim().toUpperCase()
 
   if (text.length) {
-    return [...(taskStore.tasks || [])].filter((task) => {
+    return filteredTasks.filter((task) => {
       return String(task.title || '')
         .toUpperCase()
         .includes(text)
     })
   }
 
-  return taskStore.tasks
+  return filteredTasks
 })
 </script>
 <template>
@@ -179,8 +187,8 @@ const searchedTasks = computed(() => {
           </div>
         </div>
 
-        <div class="h-[250px] overflow-y-auto">
-          <div class="border">
+        <div class="max-h-[200px] min-h-[60px] overflow-y-auto">
+          <div class="border" v-if="searchedTasks?.length > 0">
             <TodoInputTaskItem
               v-for="task in searchedTasks"
               :key="task.id"
@@ -190,6 +198,12 @@ const searchedTasks = computed(() => {
               class="group/main"
             >
             </TodoInputTaskItem>
+          </div>
+          <div
+            v-else
+            class="border h-[150px] flex items-center justify-center italic text-gray-500 text-sm"
+          >
+            No Tasks Found
           </div>
         </div>
       </div>

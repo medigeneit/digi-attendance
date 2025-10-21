@@ -34,7 +34,7 @@
       </thead>
       <tbody>
         <template v-for="(detail, detailIndex) in requirementDetails" :key="detail.id">
-          <tr class="" v-if="requirementDetails.length > 1">
+          <tr v-if="!(requirementDetails.length === 1 && requirementDetails[0]?.id == 0)">
             <th colspan="10" class="font-semibold border" :class="[detailIndex > 0 ? '' : '']">
               <div
                 class="text-left pt-4 pb-1 px-2"
@@ -85,10 +85,10 @@
                       <TaskImportantBadge v-if="task?.is_important" />
                       <TaskUrgentBadge v-if="task?.is_urgent" />
                     </div>
-                    <div class="text-xs flex items-center gap-1 text-sky-400 ml-2">
+                    <div class="text-xs flex items-center gap-1 text-sky-400 ml-4">
                       <i class="fas fa-tasks"></i> {{ task?.todos_count }}
                     </div>
-                    <div class="text-xs flex items-center gap-1 text-sky-400 ml-2">
+                    <div class="text-xs flex items-center gap-1 text-sky-400 ml-3">
                       <i class="fas fa-book"></i> {{ task?.requirement_detail?.id }}
                     </div>
                   </div>

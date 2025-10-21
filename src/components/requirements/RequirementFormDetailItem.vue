@@ -1,6 +1,7 @@
 <script setup>
 import RequiredIcon from '@/components/RequiredIcon.vue'
 import { useDepartmentStore } from '@/stores/department'
+import { useUserStore } from '@/stores/user'
 import { onMounted, ref, watch } from 'vue'
 import SelectDropdown from '../SelectDropdown.vue'
 import UserChip from '../user/UserChip.vue'
@@ -22,7 +23,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update', 'removeClick'])
 
-const departmentStore = useDepartmentStore()
+const userStore = useUserStore()
 
 const form = ref({
   title: '',
@@ -32,22 +33,14 @@ const form = ref({
   supervisor_id: '',
 })
 
-const supervisors = ref([])
-
 onMounted(async () => {
-  supervisors.value = await departmentStore.fetchDepartmentEmployee([props.fromDepartmentId])
+  // supervisors.value = await departmentStore.fetchDepartmentEmployee([props.fromDepartmentId])
+  await userStore.fetchTypeWiseEmployees({ type: 'academy_body,doctor,executive' })
 })
 
 const handleRemoveClick = () => {
   confirm('Are you sure?') ? emit('removeClick', props.uuid) : null
 }
-
-watch(
-  () => props.fromDepartmentId,
-  async () => {
-    supervisors.value = await departmentStore.fetchDepartmentEmployee([props.fromDepartmentId])
-  },
-)
 
 watch(
   () => ({ ...form.value }),
@@ -123,7 +116,7 @@ watch(
         <label class="block text-gray-600 text-sm mb-1 font-medium">Supervisor </label>
         <SelectDropdown
           v-model="form.supervisor_id"
-          :options="supervisors"
+          :options="userStore.users"
           placeholder="--NO SUPERVISOR--"
           class="h-10 w-full"
           clearable
