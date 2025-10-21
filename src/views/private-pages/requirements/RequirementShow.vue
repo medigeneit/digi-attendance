@@ -68,8 +68,8 @@ function goToTaskAdd(detail) {
   addFormData.to_department_id = requirement.value.to_department_id
 
   addFormData.taskDefaultValues = {
-    title: detail.title,
-    description: detail.description,
+    title: '',
+    description: '',
     from_department_id: requirement.value.from_department_id,
     to_department_id: requirement.value.to_department_id,
     is_important: detail?.priority == 'IMPORTANT',

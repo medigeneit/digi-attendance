@@ -1,6 +1,6 @@
 <script setup>
 import { useTaskStore } from '@/stores/useTaskStore'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import TodoInputTaskItem from '../todo/TodoInputTaskItem.vue'
 
 const props = defineProps({
@@ -14,11 +14,19 @@ const props = defineProps({
   },
   show: {
     type: Boolean,
-    default: false,
+    default: true,
   },
   readonly: {
     type: Boolean,
     default: false,
+  },
+  taskQueryParams: {
+    type: Object,
+    default: () => {},
+  },
+  isOnlyMyTask: {
+    type: Boolean,
+    default: true,
   },
 })
 
@@ -62,24 +70,21 @@ function updatePosition() {
 }
 
 onMounted(async () => {
+  fetchTasks()
   await nextTick()
-  // updatePosition()
-
   window.addEventListener('resize', updatePosition)
   document.addEventListener('scroll', updatePosition)
-  await taskStore.fetchAllMyTasks()
 })
 
-const taskStore = useTaskStore()
+async function fetchTasks() {
+  if (props.isOnlyMyTask) {
+    await taskStore.fetchAllMyTasks(props.taskQueryParams)
+  } else {
+    await taskStore.fetchAllTasks(props.taskQueryParams)
+  }
+}
 
-watch(
-  () => modelShow.value,
-  async (shown) => {
-    if (shown) {
-      await taskStore.fetchAllMyTasks()
-    }
-  },
-)
+const taskStore = useTaskStore()
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updatePosition)
@@ -90,7 +95,7 @@ function handleTaskClick(task) {
   modelTaskId.value = task.id
   modelShow.value = false
 }
-function clearValue(_task) {
+function clearValue() {
   modelTaskId.value = ''
   modelShow.value = false
 }
@@ -114,10 +119,9 @@ const searchedTasks = computed(() => {
 })
 </script>
 <template>
-  <div class="relative" ref="anchor">
+  <div class="relative border rounded-md shadow-sm flex items-center" ref="anchor">
     <div
-      class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 cursor-pointer flex items-center shadow-sm"
-      :class="modelTaskId ? '' : 'text-gray-400'"
+      class="w-full px-4 py-2 focus:ring-2 focus:ring-blue-500 cursor-pointer flex items-center"
       @click.stop="
         () => {
           if (!readonly) {
@@ -130,13 +134,16 @@ const searchedTasks = computed(() => {
       <div v-if="selectedTask?.title" class="line-clamp-1">
         {{ selectedTask?.id }} - {{ selectedTask?.title }}
       </div>
-      <div v-else>Click to select todo</div>
+      <div v-else class="text-gray-500">Click to select todo</div>
 
-      <button
-        class="btn-icon fas fa-times !size-8 text-sm ml-auto"
-        v-if="modelTaskId && !readonly"
-        @click.prevent.stop="clearValue"
-      ></button>
+      <div class="ml-auto flex items-center justify-center h-full gap-2">
+        <button
+          class="btn-icon fas fa-times !size-8 text-sm"
+          v-if="modelTaskId && !readonly"
+          @click.prevent.stop="() => clearValue()"
+        ></button>
+        <span class="fas fa-caret-down"></span>
+      </div>
     </div>
 
     <Teleport to="body">
@@ -147,6 +154,10 @@ const searchedTasks = computed(() => {
       >
         <div class="flex items-center mb-2">
           <h2 class="text-sky-800 text-sm uppercase">Task List</h2>
+          <button
+            class="fas fa-redo text-gray-500 text-sm ml-4"
+            @click.prevent="fetchTasks()"
+          ></button>
           <button @click.prevent="() => (modelShow = false)" class="ml-auto">
             <i class="fas fa-times-circle text-red-700 text-xl hover:text-red-500"></i>
           </button>
@@ -169,10 +180,6 @@ const searchedTasks = computed(() => {
         </div>
 
         <div class="h-[250px] overflow-y-auto">
-          <!-- <pre>
-          {{ selectedTask }}
-      {{ searchedTasks }}
-          </pre> -->
           <div class="border">
             <TodoInputTaskItem
               v-for="task in searchedTasks"

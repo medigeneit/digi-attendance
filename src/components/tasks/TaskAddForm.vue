@@ -154,10 +154,19 @@ async function submit() {
     </div>
 
     <form @submit.prevent="submit" class="z-0">
-      <p class="text-center mt-2 mb-6" v-if="requirementDetailId && requirementDetail?.title">
-        Task under requirement <span class="text-sky-600">{{ requirementDetail.title }}</span>
+
+      <p class="mt-2 mb-6" v-if="requirementDetailId && requirementDetail?.title" :title="requirementDetail.title">
+        <div class="text-sm">
+          Requirement
+        </div>
+        <div class="text-sky-600  border rounded px-4 py-2">
+          <p class="line-clamp-1 ">
+            {{ requirementDetail.title }}
+          </p>
+        </div>
       </p>
-      <p class="text-center mt-2 mb-6" v-if="parentTaskId && task?.title">
+
+      <p class="mt-2 mb-6" v-if="parentTaskId && task?.title">
         Sub task under <span class="text-sky-600">{{ task.title }}</span>
       </p>
 

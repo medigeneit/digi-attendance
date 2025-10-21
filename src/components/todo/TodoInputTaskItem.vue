@@ -2,7 +2,7 @@
 defineProps({
   task: Object,
   level: Number,
-  selected: Number,
+  selected: { type: [Number, String], default: null },
 })
 
 const emit = defineEmits(['select'])
