@@ -26,7 +26,7 @@ async function handleAssignClick() {
 }
 </script>
 <template>
-  <div class="text-left p-4">
+  <div class="text-left p-4" :class="[assignType && !selectedTask ? 'min-h-[400px]' : '']">
     <div class="flex items-center gap-6 justify-center my-16">
       <button @click.prevent="emit('addNewTaskClick')" class="btn-3">Add New Task</button>
 
