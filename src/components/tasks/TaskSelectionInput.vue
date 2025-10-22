@@ -195,7 +195,6 @@ const searchedTasks = computed(() => {
               :task="task"
               @select="handleTaskClick"
               :selected="modelTaskId"
-              class="group/main"
             >
             </TodoInputTaskItem>
           </div>

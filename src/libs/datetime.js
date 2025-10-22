@@ -171,25 +171,60 @@ export function getDateRangeArray(start, end) {
 }
 
 
-export function dateIsToday(givenDate){
-
-  if (!givenDate || !givenDate instanceof Date) {
-    return false
-  }
-
-  // Get today's date without time
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const selectedDate = givenDate instanceof Date ? givenDate: new Date( givenDate )
-
-  // Also remove time from given date
-  selectedDate.setHours(0, 0, 0, 0);
-
-  return  selectedDate.getTime() === today.getTime();
-
+function normalizeDate(date) {
+  const d = date instanceof Date ? date : new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
 }
 
+function isValidDate(date) {
+  return date && (date instanceof Date || !isNaN(new Date(date).getTime()));
+}
+
+export function dateIsToday(givenDate) {
+  if (!isValidDate(givenDate)) return false;
+
+  const today = normalizeDate(new Date());
+  const selectedDate = normalizeDate(givenDate);
+
+  return selectedDate.getTime() === today.getTime();
+}
+
+export function dateIsGreaterThanToday(givenDate) {
+  if (!isValidDate(givenDate)) return false;
+
+  const today = normalizeDate(new Date());
+  const selectedDate = normalizeDate(givenDate);
+
+  return selectedDate.getTime() > today.getTime();
+}
+
+export function dateIsLessThanToday(givenDate) {
+  if (!isValidDate(givenDate)) return false;
+
+  const today = normalizeDate(new Date());
+  const selectedDate = normalizeDate(givenDate);
+
+  return selectedDate.getTime() < today.getTime();
+}
+
+export function dateIsGreaterThanOrEqualToday(givenDate) {
+  if (!isValidDate(givenDate)) return false;
+
+  const today = normalizeDate(new Date());
+  const selectedDate = normalizeDate(givenDate);
+
+  return selectedDate.getTime() >= today.getTime();
+}
+
+export function dateIsLessThanOrEqualToday(givenDate) {
+  if (!isValidDate(givenDate)) return false;
+
+  const today = normalizeDate(new Date());
+  const selectedDate = normalizeDate(givenDate);
+
+  return selectedDate.getTime() <= today.getTime();
+}
 
 export function getLastDateOfMonth(year, month) {
   // month is 0-based (0 = January, 11 = December)

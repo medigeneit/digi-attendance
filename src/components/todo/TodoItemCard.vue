@@ -1,4 +1,5 @@
 <script setup>
+import { dateIsLessThanOrEqualToday, dateIsLessThanToday, dateIsToday } from '@/libs/datetime'
 import { useAuthStore } from '@/stores/auth'
 import DepartmentChip from '../DepartmentChip.vue'
 import UserChip from '../user/UserChip.vue'
@@ -43,6 +44,8 @@ const emit = defineEmits([
     :class="{
       'bg-green-100': todoDate.status == 'COMPLETED',
       'hover:bg-gray-50': todoDate.status != 'COMPLETED',
+      'bg-orange-100 text-orange-800 border-b border-orange-200 hover:bg-orange-100':
+        todoDate.status == 'WORKING' && dateIsLessThanToday(todoDate.date),
     }"
     @click.prevent="emit('clickTodo', todoDate)"
   >
@@ -86,7 +89,10 @@ const emit = defineEmits([
     </div>
 
     <div class="md:ml-auto w-full md:w-auto flex items-center justify-center gap-2">
-      <div class="flex items-center gap-1 text-red-600" v-if="todoDate.status == 'WORKING'">
+      <div
+        class="flex items-center gap-1 text-red-600"
+        v-if="todoDate.status == 'WORKING' && dateIsToday(todoDate.date)"
+      >
         <span class="fas fa-circle animate-pulse text-xs"></span>
         <span class="text-xs">Working</span>
       </div>
@@ -101,7 +107,7 @@ const emit = defineEmits([
         </button>
 
         <button
-          v-if="todoDate.status === 'PENDING'"
+          v-if="todoDate.status === 'PENDING' && dateIsLessThanOrEqualToday(todoDate.date)"
           title="Start Working"
           class="btn-icon bg-transparent text-red-400 border-red-400 border hover:bg-red-400 hover:text-white"
           @click.prevent.stop="() => emit('clickChangeStatus', todoDate, 'WORKING')"
