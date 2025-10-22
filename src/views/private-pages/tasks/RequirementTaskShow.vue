@@ -86,14 +86,14 @@ function handleDeleteSuccess() {
 
 const isMyTask = computed(() => route.name == 'MyTaskShow' || !!route.query['is-my-task'])
 
-const getBreadCrumbFromTask = (task, is_current_page = false) => {
-  return {
-    id: task?.id,
-    title: task?.title,
-    status: task?.status,
-    is_current_page,
-  }
-}
+// const getBreadCrumbFromTask = (task, is_current_page = false) => {
+//   return {
+//     id: task?.id,
+//     title: task?.title,
+//     status: task?.status,
+//     is_current_page,
+//   }
+// }
 
 const authUserHasTaskAssigned = computed(() => {
   return store?.task?.users?.find((u) => authStore.user?.id == u.id)
@@ -102,15 +102,22 @@ const authUserHasTaskAssigned = computed(() => {
 const breadcrumbTaskItems = computed(() => {
   const parents = []
 
-  if (store?.task?.parent) {
-    parents.push(getBreadCrumbFromTask(store.task?.parent))
+  parents.push({
+    id: store.task?.requirement_detail?.id,
+    title: store.task?.requirement_detail?.title,
+    // status: store.task?.status,
+    is_current_page: false,
+  })
 
-    if (store?.task?.parent?.parent) {
-      parents.push(getBreadCrumbFromTask(store.task?.parent?.parent))
-    }
-  }
+  parents.push({
+    id: store.task?.id,
+    title: store.task?.title,
+    // status: store.task?.status,
+    is_current_page: true,
+  })
+  return parents
 
-  return [...parents.reverse(), ...[getBreadCrumbFromTask(store.task, true)]]
+  // return [...parents.reverse(), ...[getBreadCrumbFromTask(store.task, true)]]
 })
 
 watch(
@@ -230,7 +237,7 @@ async function handleClickDelete(todoDate) {
 </script>
 
 <template>
-  <div class="container mx-auto p-6">
+  <div class="container mx-auto px-4">
     <OverlyModal v-if="dateUpdateModal.user">
       <TaskUserDateUpdate
         :task="store.task"
@@ -251,10 +258,10 @@ async function handleClickDelete(todoDate) {
 
     <LoaderView v-if="state === 'loading'" class="h-[80vh] items-center justify-center" />
 
-    <div class="max-w-8xl min-h-64 mx-auto bg-white shadow-lg rounded-lg p-6 relative" v-else>
+    <div class="w-full xl:max-w-8xl min-h-64 mx-auto relative" v-else>
       <template v-if="store.task">
         <nav
-          class="text-sm mb-2 border-b"
+          class="text-sm mb-4 border-b"
           aria-label="Breadcrumb"
           v-if="breadcrumbTaskItems.length > 1"
         >
@@ -265,7 +272,7 @@ async function handleClickDelete(todoDate) {
             >
               <li aria-hidden="true" class="text-gray-400 text-base" v-if="index > 0">/</li>
               <li :title="breadcrumbTask?.title" class="text-gray-600 line-clamp-1">
-                <RouterLink
+                <div
                   :to="`${isMyTask ? '/my-tasks' : '/tasks'}/${breadcrumbTask.id}`"
                   class="hover:text-gray-900 hover:underline transition"
                   :class="{
@@ -275,7 +282,7 @@ async function handleClickDelete(todoDate) {
                   v-if="!breadcrumbTask.is_current_page"
                 >
                   {{ breadcrumbTask?.title }}
-                </RouterLink>
+                </div>
                 <span v-else class="text-gray-900 font-medium line-clamp-1" aria-current="page">
                   {{ breadcrumbTask?.title }}
                 </span>
@@ -284,8 +291,15 @@ async function handleClickDelete(todoDate) {
           </ol>
         </nav>
 
-        <div class="grid grid-cols-12 gap-x-8 gap-y-3">
-          <div class="col-span-full lg:col-span-9 row-span-10">
+        <div class="grid grid-cols-12 gap-x-6 gap-y-3">
+          <div
+            class="col-span-full md:col-span-7 xl:col-span-8 2xl:col-span-9 row-span-10 bg-white shadow rounded-lg p-6"
+          >
+            <!-- IGNORE
+            <pre>
+              {{ store.task }}
+              </pre>
+              -->
             <div>
               <h2 class="font-medium text-md flex items-start gap-2">
                 <button class="btn-icon size-6 text-sm text-sky-500" @click="router.back()">
@@ -371,8 +385,10 @@ async function handleClickDelete(todoDate) {
             </div>
           </div>
 
-          <div class="col-span-full lg:col-span-3 space-y-4 sticky top-16">
-            <div class="border col-span-3 p-3 rounded shadow">
+          <div
+            class="col-span-full md:col-span-5 xl:col-span-4 2xl:col-span-3 space-y-4 sticky top-16 bg-white shadow rounded-lg p-4 pb-0"
+          >
+            <div class="border col-span-3 p-3 rounded-md">
               <div>
                 <div class="flex items-center gap-2 mb-4">
                   <div class="text-gray-500 text-sm">From</div>
@@ -404,25 +420,8 @@ async function handleClickDelete(todoDate) {
               </div>
             </div>
 
-            <div class="flex items-center gap-4 flex-wrap justify-between col-span-3">
-              <RouterLink
-                :to="{ name: 'TaskUserAssign', params: { id: store.task?.id } }"
-                class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-3 py-0.5 rounded-full transition whitespace-nowrap"
-                @click="$event.stopPropagation()"
-                :class="!!store.task.closed_at ? 'opacity-30 pointer-events-none' : ''"
-              >
-                <i class="fas fa-users-cog"></i> Assign Users
-              </RouterLink>
-
-              <button
-                @click.stop="goToEdit(store.task?.id)"
-                class="btn-2 py-0.5 disabled:opacity-30 disabled:pointer-events-none"
-                :disabled="!!store.task.closed_at"
-              >
-                <i class="fas fa-edit"></i> Edit
-              </button>
-            </div>
             <TaskTimeline :task="store?.task" />
+
             <TaskStatusManager
               v-if="store?.task"
               :task="store?.task || {}"
@@ -440,6 +439,27 @@ async function handleClickDelete(todoDate) {
                 </div>
               </template>
             </TaskStatusManager>
+
+            <div
+              class="flex items-center gap-4 flex-wrap justify-between col-span-3 sticky bottom-0 bg-white py-4"
+            >
+              <RouterLink
+                :to="{ name: 'TaskUserAssign', params: { id: store.task?.id } }"
+                class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-3 py-0.5 rounded-full transition whitespace-nowrap"
+                @click="$event.stopPropagation()"
+                :class="!!store.task.closed_at ? 'opacity-30 pointer-events-none' : ''"
+              >
+                <i class="fas fa-users-cog"></i> Assign Users
+              </RouterLink>
+
+              <button
+                @click.stop="goToEdit(store.task?.id)"
+                class="btn-2 py-0.5 disabled:opacity-30 disabled:pointer-events-none"
+                :disabled="!!store.task.closed_at"
+              >
+                <i class="fas fa-edit"></i> Edit
+              </button>
+            </div>
           </div>
         </div>
 
