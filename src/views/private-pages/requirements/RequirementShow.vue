@@ -15,6 +15,7 @@ import TaskAddForm from '@/components/tasks/TaskAddForm.vue'
 import { findRequirement } from '@/services/requirement'
 import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import RequirementApprovalItem from './RequirementApprovalItem.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -413,89 +414,28 @@ async function handleTaskAddClose() {
         </div>
 
         <div class="mt-12 mb-8">
-          <div class="whitespace-nowrap border-gray-200 grid grid-cols-2 mb-10 items-center">
-            <div class="flex flex-col items-center gax-x-1 justify-between">
-              <div class="text-base text-gray-900 font-semibold">
-                <span>
-                  {{
-                    requirement?.from_department?.short_name || requirement?.from_department?.name
-                  }}
-                </span>
-                <span> In Charge</span>
-              </div>
-              <UserChip
-                :user="requirement?.from_department?.in_charge"
-                v-if="requirement?.from_department?.in_charge"
-                avatar-size="xsmall"
-              />
-              <div v-else>
-                <span class="italic text-xs text-gray-400">N/A</span>
-              </div>
-            </div>
+          <div class="whitespace-nowrap border-gray-200 grid grid-cols-2 mb-12 items-center">
+            <RequirementApprovalItem
+              :requirement="requirement"
+              approval-type="from_department_in_charge"
+            />
 
-            <div class="flex flex-col items-center gax-x-1 justify-between">
-              <div class="text-base text-gray-900 font-semibold">
-                <span>
-                  {{
-                    requirement?.from_department?.short_name || requirement?.from_department?.name
-                  }}
-                </span>
-                <span> Coordinator</span>
-              </div>
-              <UserChip
-                :user="requirement?.from_coordinator"
-                v-if="requirement?.from_coordinator"
-                avatar-size="xsmall"
-              />
-              <div v-else>
-                <div
-                  v-if="requirement?.from_department?.coordinator_id"
-                  class="text-xs text-red-300"
-                >
-                  Approval Pending
-                </div>
-                <div v-else class="italic text-sm text-gray-400">N/A</div>
-              </div>
-            </div>
+            <RequirementApprovalItem
+              :requirement="requirement"
+              approval-type="from_department_coordinator"
+            />
           </div>
 
           <div class="whitespace-nowrap border-gray-200 grid grid-cols-2 gap-2 items-center">
-            <div class="flex flex-col items-center gax-x-1 justify-between">
-              <div class="text-base text-gray-900 font-semibold">
-                <span>
-                  {{ requirement?.to_department?.short_name || requirement?.to_department?.name }}
-                </span>
-                <span>In Charge</span>
-              </div>
-              <UserChip
-                :user="requirement?.from_department?.in_charge"
-                v-if="requirement?.from_department?.in_charge"
-                avatar-size="xsmall"
-              />
-              <div v-else>
-                <span class="italic text-xs text-gray-400">N/A</span>
-              </div>
-            </div>
+            <RequirementApprovalItem
+              :requirement="requirement"
+              approval-type="to_department_in_charge"
+            />
 
-            <div class="flex flex-col items-center gax-x-1 justify-between">
-              <div class="text-base text-gray-900 font-semibold">
-                <span>
-                  {{ requirement?.to_department?.short_name || requirement?.to_department?.name }}
-                </span>
-                <span>Coordinator</span>
-              </div>
-              <UserChip
-                :user="requirement?.to_coordinator"
-                v-if="requirement?.to_coordinator"
-                avatar-size="xsmall"
-              />
-              <div v-else>
-                <div v-if="requirement?.to_department?.coordinator_id" class="text-xs text-red-300">
-                  Approval Pending
-                </div>
-                <div v-else class="italic text-xs text-gray-400">N/A</div>
-              </div>
-            </div>
+            <RequirementApprovalItem
+              :requirement="requirement"
+              approval-type="to_department_coordinator"
+            />
           </div>
         </div>
 
