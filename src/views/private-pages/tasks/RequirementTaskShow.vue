@@ -444,6 +444,7 @@ async function handleClickDelete(todoDate) {
 
             <div
               class="flex items-center gap-4 flex-wrap justify-between col-span-3 sticky bottom-0 bg-white py-4"
+              v-if="authStore.isAdminMood"
             >
               <RouterLink
                 :to="{ name: 'TaskUserAssign', params: { id: store.task?.id } }"
@@ -462,6 +463,7 @@ async function handleClickDelete(todoDate) {
                 <i class="fas fa-edit"></i> Edit
               </button>
             </div>
+            <div v-else class="h-1"></div>
           </div>
         </div>
 

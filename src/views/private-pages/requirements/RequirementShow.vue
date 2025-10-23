@@ -412,10 +412,10 @@ async function handleTaskAddClose() {
           </div>
         </div>
 
-        <div class="mt-8">
+        <div class="mt-12 mb-8">
           <div class="whitespace-nowrap border-gray-200 grid grid-cols-2 mb-10 items-center">
             <div class="flex flex-col items-center gax-x-1 justify-between">
-              <div class="text-sm text-gray-900 font-semibold">
+              <div class="text-base text-gray-900 font-semibold">
                 <span>
                   {{
                     requirement?.from_department?.short_name || requirement?.from_department?.name
@@ -434,7 +434,7 @@ async function handleTaskAddClose() {
             </div>
 
             <div class="flex flex-col items-center gax-x-1 justify-between">
-              <div class="text-sm text-gray-900 font-semibold">
+              <div class="text-base text-gray-900 font-semibold">
                 <span>
                   {{
                     requirement?.from_department?.short_name || requirement?.from_department?.name
@@ -461,7 +461,7 @@ async function handleTaskAddClose() {
 
           <div class="whitespace-nowrap border-gray-200 grid grid-cols-2 gap-2 items-center">
             <div class="flex flex-col items-center gax-x-1 justify-between">
-              <div class="text-sm text-gray-900 font-semibold">
+              <div class="text-base text-gray-900 font-semibold">
                 <span>
                   {{ requirement?.to_department?.short_name || requirement?.to_department?.name }}
                 </span>
@@ -478,7 +478,7 @@ async function handleTaskAddClose() {
             </div>
 
             <div class="flex flex-col items-center gax-x-1 justify-between">
-              <div class="text-sm text-gray-900 font-semibold">
+              <div class="text-base text-gray-900 font-semibold">
                 <span>
                   {{ requirement?.to_department?.short_name || requirement?.to_department?.name }}
                 </span>
