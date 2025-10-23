@@ -1,0 +1,1 @@
+import{_ as s}from"./_plugin-vue_export-helper-DlAUqK2U.js";import{c as t,o,a as r,j as a}from"./index-B4NzZsrh.js";const c={},n={class:"border rounded-full px-2 bg-blue-500/60 text-white flex items-center text-sm"};function l(d,e){return o(),t("div",n,e[0]||(e[0]=[r("i",{class:"fas fa-lock mr-2 text-sm"},null,-1),a("CLOSED ")]))}const i=s(c,[["render",l]]);export{i as T};
