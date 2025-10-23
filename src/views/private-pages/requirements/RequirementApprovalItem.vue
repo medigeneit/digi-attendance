@@ -1,6 +1,5 @@
 <script setup>
 import UserChip from '@/components/user/UserChip.vue'
-import { useAuthStore } from '@/stores/auth'
 import { computed } from 'vue'
 
 const props = defineProps({
@@ -83,7 +82,16 @@ const approvalData = computed(() => {
         {{ approvalData.department?.short_name || approvalData.department?.name }}
       </span>
       <span class="ml-2">{{ approvalData.userType }}</span>
-      <span class="fas fa-check-circle ml-2 text-green-500" v-if="approvalData.approved"></span>
+      <!-- <span class="fas fa-check-circle ml-2 text-green-500" v-if="approvalData.approved"></span>
+      <span class="fas fa-check ml-2 text-green-500" v-else></span> -->
+
+      <template v-if="approvalData.department_user">
+        <span v-if="approvalData.approved" class="text-green-600 ml-2">(✔)</span>
+        <span v-else class="ml-2 text-yellow-700">
+          <i class="fad fa-spinner"></i>
+        </span>
+      </template>
+
       <!-- <span v-else>
         <button
           class="text-xs border rounded-md px-2 py-0.5 ml-2 bg-sky-500 text-white"
