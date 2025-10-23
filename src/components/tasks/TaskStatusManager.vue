@@ -262,7 +262,7 @@ const timelineItems = computed(() => {
           class="flex flex-col justify-center items-center"
         >
           <i class="fad fa-check-circle fa-6x text-green-500"></i>
-          <div class="text-green-700 text-2xl">Task Has been completed</div>
+          <div class="text-green-700 text-xl">Task Has been completed</div>
           <button class="btn-3 mt-8" @click.prevent="changingStatus = 'CLOSED'">Close Task</button>
         </div>
       </div>

@@ -255,9 +255,9 @@ const companyDepartments = computed(() => {
       <div class="flex justify-between items-start">
         <h2 class="text-2xl font-bold text-gray-800 leading-none h-10">Task List</h2>
 
-        <!-- <div class="ml-auto flex gap-6 items-center" v-if="!isMyTask">
+        <div class="ml-auto flex gap-6 items-center" v-if="!isMyTask">
           <button @click="emit('clickAddTask')" class="btn-1">Add Main Task / Project</button>
-        </div> -->
+        </div>
       </div>
       <!-- {{ employees }} -->
 

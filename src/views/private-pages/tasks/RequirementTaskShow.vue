@@ -102,12 +102,14 @@ const authUserHasTaskAssigned = computed(() => {
 const breadcrumbTaskItems = computed(() => {
   const parents = []
 
-  parents.push({
-    id: store.task?.requirement_detail?.id,
-    title: store.task?.requirement_detail?.title,
-    // status: store.task?.status,
-    is_current_page: false,
-  })
+  if (store.task?.requirement_detail?.id) {
+    parents.push({
+      id: store.task?.requirement_detail?.id,
+      title: store.task?.requirement_detail?.title,
+      // status: store.task?.status,
+      is_current_page: false,
+    })
+  }
 
   parents.push({
     id: store.task?.id,
@@ -291,7 +293,7 @@ async function handleClickDelete(todoDate) {
           </ol>
         </nav>
 
-        <div class="grid grid-cols-12 gap-x-6 gap-y-3">
+        <div class="grid grid-cols-12 gap-x-4 gap-y-3">
           <div
             class="col-span-full md:col-span-7 xl:col-span-8 2xl:col-span-9 row-span-10 bg-white shadow rounded-lg p-6"
           >
@@ -386,7 +388,7 @@ async function handleClickDelete(todoDate) {
           </div>
 
           <div
-            class="col-span-full md:col-span-5 xl:col-span-4 2xl:col-span-3 space-y-4 sticky top-16 bg-white shadow rounded-lg p-4 pb-0"
+            class="col-span-full md:col-span-5 xl:col-span-4 2xl:col-span-3 space-y-4 sticky top-[74px] bg-white shadow rounded-lg p-4 pb-0"
           >
             <div class="border col-span-3 p-3 rounded-md">
               <div>

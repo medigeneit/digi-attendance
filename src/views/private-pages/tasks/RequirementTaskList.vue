@@ -225,7 +225,7 @@ const taskFilter = computed({
       @clickPrioritySave="handleTaskPrioritySave"
       @clickPriorityDiscard="() => (listHasRearranged ? draggableTaskList.resetItems : null)"
       :list-has-rearranged="listHasRearranged"
-      :isMyTask="route.name === 'MyTaskList'"
+      :isMyTask="route.name === 'MyRequirementTaskList'"
       class="mb-6"
     />
 

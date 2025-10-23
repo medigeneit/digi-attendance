@@ -2,6 +2,7 @@ ii
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
 import OverlyModal from '@/components/common/OverlyModal.vue'
+import ShareComponent from '@/components/common/ShareComponent.vue'
 import DescriptionView from '@/components/DescriptionView.vue'
 import RequirementDetailAddForm from '@/components/requirements/RequirementDetailAddForm.vue'
 import RequirementDetailDeleteForm from '@/components/requirements/RequirementDetailDeleteForm.vue'
@@ -217,7 +218,7 @@ async function handleTaskAddClose() {
       />
     </OverlyModal>
 
-    <div class="bg-white rounded shadow print:shadow-none p-4 print:p-0 relative">
+    <div class="bg-white rounded shadow print:shadow-none p-4 print:p-0 relative mb-6 print:mb-0">
       <div class="flex items-start">
         <div class="mb-4 text-lg print:black print:font-bold">
           <div class="text-gray-800 leading-none">To</div>
@@ -410,6 +411,94 @@ async function handleTaskAddClose() {
             </RequirementSubmissionHandler>
           </div>
         </div>
+
+        <div class="mt-8">
+          <div class="whitespace-nowrap border-gray-200 grid grid-cols-2 mb-10 items-center">
+            <div class="flex flex-col items-center gax-x-1 justify-between">
+              <div class="text-sm text-gray-900 font-semibold">
+                <span>
+                  {{
+                    requirement?.from_department?.short_name || requirement?.from_department?.name
+                  }}
+                </span>
+                <span> In Charge</span>
+              </div>
+              <UserChip
+                :user="requirement?.from_department?.in_charge"
+                v-if="requirement?.from_department?.in_charge"
+                avatar-size="xsmall"
+              />
+              <div v-else>
+                <span class="italic text-xs text-gray-400">N/A</span>
+              </div>
+            </div>
+
+            <div class="flex flex-col items-center gax-x-1 justify-between">
+              <div class="text-sm text-gray-900 font-semibold">
+                <span>
+                  {{
+                    requirement?.from_department?.short_name || requirement?.from_department?.name
+                  }}
+                </span>
+                <span> Coordinator</span>
+              </div>
+              <UserChip
+                :user="requirement?.from_coordinator"
+                v-if="requirement?.from_coordinator"
+                avatar-size="xsmall"
+              />
+              <div v-else>
+                <div
+                  v-if="requirement?.from_department?.coordinator_id"
+                  class="text-xs text-red-300"
+                >
+                  Approval Pending
+                </div>
+                <div v-else class="italic text-sm text-gray-400">N/A</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="whitespace-nowrap border-gray-200 grid grid-cols-2 gap-2 items-center">
+            <div class="flex flex-col items-center gax-x-1 justify-between">
+              <div class="text-sm text-gray-900 font-semibold">
+                <span>
+                  {{ requirement?.to_department?.short_name || requirement?.to_department?.name }}
+                </span>
+                <span>In Charge</span>
+              </div>
+              <UserChip
+                :user="requirement?.from_department?.in_charge"
+                v-if="requirement?.from_department?.in_charge"
+                avatar-size="xsmall"
+              />
+              <div v-else>
+                <span class="italic text-xs text-gray-400">N/A</span>
+              </div>
+            </div>
+
+            <div class="flex flex-col items-center gax-x-1 justify-between">
+              <div class="text-sm text-gray-900 font-semibold">
+                <span>
+                  {{ requirement?.to_department?.short_name || requirement?.to_department?.name }}
+                </span>
+                <span>Coordinator</span>
+              </div>
+              <UserChip
+                :user="requirement?.to_coordinator"
+                v-if="requirement?.to_coordinator"
+                avatar-size="xsmall"
+              />
+              <div v-else>
+                <div v-if="requirement?.to_department?.coordinator_id" class="text-xs text-red-300">
+                  Approval Pending
+                </div>
+                <div v-else class="italic text-xs text-gray-400">N/A</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="mt-2 text-right print:hidden" v-if="state != 'loading' && !requirement?.status">
           <p class="text-yellow-800 text-sm">
             <span class="fas fa-exclamation-circle"></span>
@@ -420,5 +509,7 @@ async function handleTaskAddClose() {
 
       <LoaderView class="absolute inset-0 bg-opacity-90" v-if="state === 'loading'" />
     </div>
+
+    <ShareComponent />
   </div>
 </template>
