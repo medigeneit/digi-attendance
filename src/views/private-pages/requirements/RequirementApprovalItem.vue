@@ -67,7 +67,7 @@ const approvalData = computed(() => {
 </script>
 
 <template>
-  <div class="flex flex-col items-center gax-x-1 justify-between">
+  <div class="flex flex-col items-center gax-x-1 justify-between pt-16">
     <div v-if="approvalData.department_user">
       <UserChip :user="approvalData.department_user" avatar-size="xsmall" />
     </div>

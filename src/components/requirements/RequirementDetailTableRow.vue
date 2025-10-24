@@ -152,6 +152,7 @@ function handleCreateAssignButtonClick() {
               ]"
             />
           </RouterLink>
+          <button></button>
         </td>
         <td class="border-2 border-gray-700 p-3">
           <div class="whitespace-nowrap text-center print:whitespace-break-spaces">

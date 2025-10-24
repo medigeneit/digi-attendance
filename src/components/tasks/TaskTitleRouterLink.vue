@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import TaskTitle from './TaskTitle.vue'
 
 const props = defineProps({
   task: Object,
@@ -37,9 +38,7 @@ const routerTo = computed(() => {
       class="text-gray-700 cursor-pointer hover:text-blue-700 whitespace-normal line-clamp-1 w-full"
       :class="titleClass"
     >
-      <div>
-        {{ task.title }}
-      </div>
+      <TaskTitle :title="task.title" />
     </RouterLink>
   </div>
 </template>

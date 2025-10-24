@@ -1,5 +1,7 @@
 <script setup>
-defineProps({
+import TaskTitle from '../tasks/TaskTitle.vue'
+
+const props = defineProps({
   task: Object,
   level: Number,
   selected: { type: [Number, String], default: null },
@@ -16,7 +18,7 @@ const emit = defineEmits(['select'])
     @click.prevent="() => emit('select', task)"
     :title="task.title"
   >
-    <div :class="['line-clamp-1 mr-4 ']">{{ task.id }} - {{ task.title }}</div>
+    <div :class="['line-clamp-1 mr-4 ']">{{ task.id }} - <TaskTitle :title="task.title" /></div>
     <button class="border btn-2 ml-auto" v-if="task.id != selected">Select</button>
   </div>
 </template>

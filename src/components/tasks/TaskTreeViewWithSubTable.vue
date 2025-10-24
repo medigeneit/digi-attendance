@@ -58,6 +58,12 @@
             </div>
           </div>
 
+          <div v-if="Object.keys(route.query).includes('make-task-convertible')">
+            <button class="btn-2" @click.prevent="handleTaskConversion">
+              Migrate To Requirement
+            </button>
+          </div>
+
           <div class="flex items-center justify-between gap-16 w-full">
             <div class="flex-shrink-0">
               <div class="flex items-center">
@@ -193,6 +199,7 @@
 </template>
 
 <script setup>
+import apiClient from '@/axios'
 import SubTaskProgress from '@/components/tasks/SubTaskProgress.vue'
 import TaskStatus from '@/components/tasks/TaskStatus.vue'
 import { getDisplayDate, getDisplayDateTime } from '@/libs/datetime.js'
@@ -272,4 +279,14 @@ watch(
   },
   { deep: true },
 )
+
+async function handleTaskConversion() {
+  if (confirm('Are you sure?')) {
+    try {
+      await apiClient.post(`/tasks/${props.task?.id}/convert-to-requirement`)
+    } catch (err) {
+      alert(err?.response?.data?.message)
+    }
+  }
+}
 </script>

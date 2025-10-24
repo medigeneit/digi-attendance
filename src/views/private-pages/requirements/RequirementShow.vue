@@ -413,8 +413,8 @@ async function handleTaskAddClose() {
           </div>
         </div>
 
-        <div class="mt-12 mb-8">
-          <div class="whitespace-nowrap border-gray-200 grid grid-cols-2 mb-12 items-center">
+        <div class="mt-4 mb-8 break-before-avoid-page">
+          <div class="whitespace-nowrap border-gray-200 grid grid-cols-2 items-center">
             <RequirementApprovalItem
               :requirement="requirement"
               approval-type="from_department_in_charge"

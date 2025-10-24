@@ -19,6 +19,7 @@ const user = ref(null)
 const userInitial = computed(() => (user?.value ? getUserInitials(user?.value) : ''))
 
 onMounted(async () => {
+  console.log('AppLayout Mounted')
   if (!authStore.user) {
     await authStore.fetchUser()
   }
@@ -80,7 +81,7 @@ onUnmounted(() => {
         </div>
       </header>
 
-      <main class="flex-grow py-4 print:py-0">
+      <main class="flex-grow py-4 print:py-0 flex-none">
         <RouterView />
       </main>
 
