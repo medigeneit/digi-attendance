@@ -17,6 +17,10 @@ defineProps({
     type: Boolean,
     default: false,
   },
+  hideBtns: {
+    type: Boolean,
+    default: false,
+  },
   userRole: {
     type: String,
     default: 'employee',
@@ -82,7 +86,10 @@ const emit = defineEmits([
       </RouterLink>
     </div>
 
-    <div class="md:ml-auto w-full md:w-auto flex items-center justify-center gap-2">
+    <div
+      class="md:ml-auto w-full md:w-auto flex items-center justify-center gap-2"
+      v-if="!hideBtns"
+    >
       <div class="flex items-center gap-1 text-red-600" v-if="todoDate.status == 'WORKING'">
         <span class="fas fa-circle animate-pulse text-xs"></span>
         <span class="text-xs">Working</span>

@@ -182,6 +182,13 @@ const taskFilter = computed({
     router.push({ query: { ...value } })
   },
 })
+
+function getTaskRouterLink(task) {
+  return {
+    name: 'RequirementTaskShow',
+    params: { id: task?.id || 0 },
+  }
+}
 </script>
 
 <template>
@@ -296,30 +303,12 @@ const taskFilter = computed({
               @editClick="(taskId) => (editingId = taskId)"
               @addClick="(taskId) => goToAdd(taskId)"
               @employeeAssignClick="(taskId) => openEmployeeAssignForm(taskId)"
-              :taskLinkTo="
-                (task) => {
-                  return { name: 'RequirementTaskShow', params: { id: task?.id || 0 } }
-                }
-              "
+              :hideButtons="route?.name !== 'RequirementTaskList'"
+              :taskLinkTo="getTaskRouterLink"
             />
           </div>
         </div>
-
-        <!-- <RequirementDetailItemWithTaskList
-          v-for="(detail, index) in requirementStore.requirementDetails"
-          :key="detail.id"
-          :index="index"
-          :detail="detail"
-          @editClick="(taskId) => (editingId = taskId)"
-          @addClick="(taskId) => goToAdd(taskId)"
-          @employeeAssignClick="(taskId) => openEmployeeAssignForm(taskId)"
-          class="border rounded-md my-4"
-        /> -->
       </template>
-
-      <!-- <pre>
-        {{ taskDepartmentGroups }}
-      </pre> -->
 
       <div
         v-if="state !== 'loading' && store.tasks?.length === 0"

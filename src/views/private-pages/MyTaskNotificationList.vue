@@ -127,15 +127,6 @@ const formattedType = computed(() => {
               </template>
             </p>
           </div>
-
-          <ApproveAndReject
-            class="ml-auto"
-            :notificationType="route.params.type"
-            :applicationId="notification?.application_id"
-            :onSuccess="onSuccess"
-            :variant="2"
-            @loading="(isLoading) => (loading = isLoading)"
-          />
         </div>
       </div>
     </div>

@@ -34,24 +34,27 @@ function handleCreateAssignButtonClick() {
   }
   emit('taskCreateClick', props.detail)
 }
+
+const tdRowSpan = computed(() => {
+  return (props.detail?.tasks?.length || 1) + (props.isPrinting ? 0 : 1)
+})
 </script>
 <template>
   <template v-for="(task, taskIndex) in rowsOfTask" :key="task.id">
+    <!-- <tr>
+      <td>
+        {{ detail?.tasks?.length }}
+      </td>
+    </tr> -->
     <tr
       class="group/item border text-gray-800 py-4 shadow-sm mb-4 px-4 rounded-md hover:bg-blue-50"
     >
       <template v-if="taskIndex === 0">
-        <td
-          class="border-2 border-gray-700 p-3 align-top"
-          :rowspan="(detail?.tasks?.length || 1) + (isPrinting ? 0 : 1)"
-        >
+        <td class="border-2 border-gray-700 p-3 align-baseline" :rowspan="tdRowSpan">
           <span class="text-2xl font-medium">{{ serial }}</span>
         </td>
 
-        <td
-          class="border-2 border-gray-700 p-3"
-          :rowspan="(detail?.tasks?.length || 1) + (isPrinting ? 0 : 1)"
-        >
+        <td class="border-2 border-gray-700 p-3 align-baseline" :rowspan="tdRowSpan">
           <!-- {{ requirement.to_department }} -->
           <div>
             <div class="text-lg font-semibold mb-2 flex items-start gap-3">
@@ -116,16 +119,18 @@ function handleCreateAssignButtonClick() {
 
         <td
           class="border-2 border-gray-700 p-3 whitespace-nowrap print:whitespace-break-spaces print:px-0"
-          :rowspan="(detail?.tasks?.length || 1) + (isPrinting ? 0 : 1)"
+          :rowspan="tdRowSpan"
         >
           <div class="text-center print:text-xs">
             {{
-              new Date(detail.better_to_complete_on).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                weekday: 'short',
-              })
+              detail.better_to_complete_on
+                ? new Date(detail.better_to_complete_on).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    weekday: 'short',
+                  })
+                : ''
             }}
           </div>
         </td>
@@ -152,7 +157,6 @@ function handleCreateAssignButtonClick() {
               ]"
             />
           </RouterLink>
-          <button></button>
         </td>
         <td class="border-2 border-gray-700 p-3">
           <div class="whitespace-nowrap text-center print:whitespace-break-spaces">
@@ -170,6 +174,7 @@ function handleCreateAssignButtonClick() {
           </div>
         </td>
       </template>
+
       <template v-else>
         <td colspan="2" class="border-2 border-gray-700 p-3 text-center" v-if="isPrinting">
           <button

@@ -413,37 +413,36 @@ async function handleTaskAddClose() {
           </div>
         </div>
 
-        <div class="mt-4 mb-8 break-before-avoid-page">
-          <div class="whitespace-nowrap border-gray-200 grid grid-cols-2 items-center">
-            <RequirementApprovalItem
-              :requirement="requirement"
-              approval-type="from_department_in_charge"
-            />
-
-            <RequirementApprovalItem
-              :requirement="requirement"
-              approval-type="from_department_coordinator"
-            />
-          </div>
-
-          <div class="whitespace-nowrap border-gray-200 grid grid-cols-2 gap-2 items-center">
-            <RequirementApprovalItem
-              :requirement="requirement"
-              approval-type="to_department_in_charge"
-            />
-
-            <RequirementApprovalItem
-              :requirement="requirement"
-              approval-type="to_department_coordinator"
-            />
-          </div>
-        </div>
-
         <div class="mt-2 text-right print:hidden" v-if="state != 'loading' && !requirement?.status">
           <p class="text-yellow-800 text-sm">
             <span class="fas fa-exclamation-circle"></span>
             After submitting you cannot add requirement no more
           </p>
+        </div>
+
+        <div class="mt-4 mb-8 break-before-avoid-page" v-if="requirement?.status">
+          <div class="whitespace-nowrap border-gray-200 grid grid-cols-2 items-center">
+            <RequirementApprovalItem
+              v-for="approvalType in ['from_in_charge', 'from_coordinator']"
+              :key="approvalType"
+              :requirement="requirement"
+              :approval-type="approvalType"
+              @update-approval="() => fetchRequirement()"
+            />
+          </div>
+
+          <div
+            class="whitespace-nowrap border-gray-200 grid grid-cols-2 gap-2 items-center"
+            v-if="requirement.from_department_id !== requirement?.to_department_id"
+          >
+            <RequirementApprovalItem
+              v-for="approvalType in ['to_in_charge', 'to_coordinator']"
+              :key="approvalType"
+              :requirement="requirement"
+              :approval-type="approvalType"
+              @update-approval="() => fetchRequirement()"
+            />
+          </div>
         </div>
       </div>
 
