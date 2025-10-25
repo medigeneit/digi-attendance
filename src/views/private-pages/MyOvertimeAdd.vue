@@ -1,10 +1,13 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
 import TimePickerAsFloatHour from '@/components/common/TimePickerAsFloatHour.vue'
+import TodoItemCard from '@/components/todo/TodoItemCard.vue'
+import { getDisplayDate } from '@/libs/datetime'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useAuthStore } from '@/stores/auth'
 import { useDepartmentStore } from '@/stores/department'
 import { useOvertimeStore } from '@/stores/overtime'
+import { useTodoDateStore } from '@/stores/useTodoDateStore'
 import { onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -14,6 +17,7 @@ const departmentStore = useDepartmentStore()
 const overtimeStore = useOvertimeStore()
 const attendanceStore = useAttendanceStore()
 const authStore = useAuthStore()
+const todoDateStore = useTodoDateStore()
 
 const loading = ref(false)
 const attendanceLog = ref({})
@@ -22,7 +26,7 @@ const HOUR_MIN = 1
 const HOUR_MAX = 24
 
 const form = ref({
-  date: '',                    // will be prefixed from route.query
+  date: '', // will be prefixed from route.query
   duty_type: '',
   request_overtime_hours: '',
   assigned_in_charge_user_id: '',
@@ -112,6 +116,16 @@ const fetchAttendance = async () => {
   } finally {
     loading.value = false
   }
+
+  /** Fetch todo on that date for */
+  try {
+    await todoDateStore.fetchMyTodoDates({
+      'start-date': form.value.date,
+      'end-date': form.value.date,
+    })
+  } catch (err) {
+    console.error(err.response?.date?.message)
+  }
 }
 
 /* ---------------- route prefill ---------------- */
@@ -172,7 +186,7 @@ watch(
   async () => {
     await prefillFromQuery()
   },
-  { deep: true }
+  { deep: true },
 )
 </script>
 
@@ -277,6 +291,30 @@ watch(
           Details (Reason / Work description)
         </label>
         <textarea rows="6" v-model="form.work_details" class="input-1 w-full" required></textarea>
+      </div>
+
+      <div v-if="todoDateStore.todo_dates?.length && form.date">
+        <h4 class="text-gray-700 mb-2 border-b">
+          Todos on
+          <span class="font-semibold text-sky-800 ml-2">
+            <i class="fas fa-calendar-day"></i>
+            <span class="ml-1">
+              {{ getDisplayDate(form.date, { weekDay: 'long' }) }}
+            </span>
+          </span>
+        </h4>
+
+        <div class="max-h-[150px] overflow-y-auto">
+          <TodoItemCard
+            v-for="todoDate in todoDateStore.todo_dates"
+            :key="todoDate.id"
+            :todo-date="todoDate"
+            hide-department
+            hide-user
+            hide-btns
+          />
+        </div>
+        <!-- {{ todoDateStore.todo_dates }} -->
       </div>
 
       <hr />
