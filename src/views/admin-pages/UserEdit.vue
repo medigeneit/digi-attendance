@@ -23,7 +23,7 @@ const form = reactive({
   role: 'employee',
   type: '',
   address: '',
-  note:'',
+  note: '',
   device_user_id: null,
   is_active: true,
   company_id: '',
@@ -34,6 +34,7 @@ const form = reactive({
   date_of_birth: '',
   joining_date: '',
   employment_type: 'Probationary',
+  contract_month: 0,
   provisional_month: 0,
   extended_provisional_month: 0,
   employee_id: '',
@@ -117,8 +118,9 @@ const loadUser = async () => {
     form.joining_date = user.joining_date
     form.employment_type = user.employment_type
     form.employee_id = user.employee_id || ''
-    form.provisional_month= user.provisional_month
-    form.extended_provisional_month= user.extended_provisional_month
+    form.provisional_month = user.provisional_month
+    form.extended_provisional_month = user.extended_provisional_month
+    form.contract_month = user.contract_month
     form.weekends = user.weekends || []
     form.is_active = user.is_active
     form.company_id = user.company_id
@@ -127,8 +129,8 @@ const loadUser = async () => {
     form.shift_id = user.shift_id
     form.role = user.role || ''
     form.type = user.type || ''
-    ;(form.device_user_id = user.device_user_id || ''),
-      (form.leave_approval_id = user.leave_approval_id || '')
+    ;((form.device_user_id = user.device_user_id || ''),
+      (form.leave_approval_id = user.leave_approval_id || ''))
     form.other_approval_id = user.other_approval_id || ''
   } catch (error) {
     const errorMessage = error.response?.data?.message || 'Failed to load user data'
@@ -329,6 +331,21 @@ const computedDesignations = computed(() => {
                 </div>
               </template>
 
+              <template v-if="form.employment_type === 'Contract'">
+                <div>
+                  <label>Contract (month)</label>
+                  <input
+                    v-model.number="form.contract_month"
+                    type="number"
+                    min="0"
+                    max="120"
+                    placeholder="e.g. 6"
+                    class="w-full p-2 border rounded"
+                    required
+                  />
+                </div>
+              </template>
+
               <div>
                 <label>Line Type</label>
                 <select v-model="form.type" class="w-full p-2 border rounded" required>
@@ -398,16 +415,16 @@ const computedDesignations = computed(() => {
                   <option :value="false">Inactive</option>
                 </select>
               </div>
-             <div class="col-span-full" v-if="!form.is_active">
-              <label>InActive Note</label>
-              <input
-                v-model="form.note"
-                type="text"
-                class="w-full p-2 border rounded"
-                placeholder="Note ..."
-                :required="!form.is_active"
-              />
-            </div>
+              <div class="col-span-full" v-if="!form.is_active">
+                <label>InActive Note</label>
+                <input
+                  v-model="form.note"
+                  type="text"
+                  class="w-full p-2 border rounded"
+                  placeholder="Note ..."
+                  :required="!form.is_active"
+                />
+              </div>
             </div>
           </div>
 

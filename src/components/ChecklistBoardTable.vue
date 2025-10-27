@@ -77,6 +77,7 @@ const preparedUsers = computed(() => {
 const EMP_TYPES = [
   { value: 'probationary', label: 'Probationary' },
   { value: 'permanent', label: 'Permanent' },
+  { value: 'contract', label: 'Contract' },
 ]
 const normType = (v) => String(v || '').toLowerCase()
 
@@ -88,6 +89,7 @@ const typeBadgeClass = (v) => {
   const t = normType(v)
   if (t === 'probationary') return 'bg-amber-50 text-amber-700 ring-amber-200'
   if (t === 'permanent') return 'bg-green-50 text-green-700 ring-green-200'
+  if (t === 'contract') return 'bg-blue-50 text-blue-700 ring-blue-200'
   return 'bg-gray-50 text-gray-700 ring-gray-200'
 }
 
@@ -229,7 +231,7 @@ function getProbationInfo(u) {
                 <div class="min-w-0">
                   <div class="font-medium truncate">{{ u.name || u.full_name || u.email }}</div>
                   <div class="text-[11px] text-gray-500 space-x-2 truncate">
-                    <span v-if="u.joining_date">ID: {{ u.joining_date }}</span>
+                    <span v-if="u.joining_date">Joining Date: {{ u.joining_date }}</span>
                     <span class="hidden sm:inline">Dept: {{ u.department || '—' }}</span>
                   </div>
                 </div>
