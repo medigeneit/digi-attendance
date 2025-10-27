@@ -1261,6 +1261,21 @@ const router = createRouter({
             title: 'Department Assign',
           },
         },
+        {
+          path: '/kpi-reviews/:employeeId',
+          name: 'KpiReview',
+          component: () => import('@/components/KpiReviewForm.vue'),
+           meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Department Assign',
+          },
+        },
+        {
+          path: '/lane-overrides',
+          name: 'LaneOverrides',
+          component: () => import('@/views/admin-pages/LaneOverridesPage.vue')
+        },
 
       ],
     },
