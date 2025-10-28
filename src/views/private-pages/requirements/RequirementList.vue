@@ -1,8 +1,8 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import DepartmentChip from '@/components/DepartmentChip.vue'
+import RequirementTable from '@/components/requirements/RequirementTable.vue'
 import RequirementHeader from '@/components/tasks/RequirementHeader.vue'
-import UserChip from '@/components/user/UserChip.vue'
-import { useAuthStore } from '@/stores/auth'
 import { useRequirementStore } from '@/stores/useRequirementStore'
 import { computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -10,7 +10,6 @@ import { useRoute, useRouter } from 'vue-router'
 const store = useRequirementStore()
 const router = useRouter()
 const route = useRoute()
-const auth = useAuthStore()
 
 const filters = computed({
   get() {
@@ -36,6 +35,28 @@ watch(
 const goToAdd = () => {
   router.push({ name: 'RequirementAdd' })
 }
+
+const requirementDepartmentGroups = computed(() => {
+  // return []
+  return (store.requirements || []).reduce((deptGroups, requirement) => {
+    const groupKey = `${requirement.from_department_id}-${requirement.to_department_id}`
+
+    const foundGroup = deptGroups.find((g) => g.key == groupKey)
+
+    if (!foundGroup) {
+      deptGroups.push({
+        key: groupKey,
+        from_department: requirement.from_department,
+        to_department: requirement.to_department,
+        requirements: [requirement],
+      })
+    } else {
+      foundGroup.requirements = [...foundGroup.requirements, requirement]
+    }
+
+    return deptGroups
+  }, [])
+})
 </script>
 
 <template>
@@ -44,6 +65,7 @@ const goToAdd = () => {
       <h2 class="text-2xl font-bold text-gray-800">Requirements</h2>
       <button @click="goToAdd" class="btn-1">Add Requirement</button>
     </div>
+
     <div class="bg-white shadow-md rounded-lg p-4">
       <RequirementHeader v-model="filters" class="mt-2 mb-6" />
 
@@ -58,214 +80,28 @@ const goToAdd = () => {
         {{ store.error }}
       </div>
 
-      <div v-else class="overflow-x-auto border-x xl:border-x-0">
-        <table class="min-w-full bg-white border overflow-hidden table table-fixed">
-          <thead class="bg-gray-100 text-gray-700">
-            <tr>
-              <th class="px-4 py-2 text-center whitespace-nowrap border w-[4%]">#</th>
-              <th class="px-4 py-2 text-left whitespace-nowrap border w-[60%]">Requirement</th>
-              <th class="px-4 py-2 text-center whitespace-nowrap w-[12%] border">
-                From Department
-              </th>
-              <th class="px-4 py-2 text-center whitespace-nowrap w-[12%] border">To Department</th>
-              <th class="px-4 py-2 text-center whitespace-nowrap w-[12%] border">Submitted At</th>
-              <th class="px-4 py-2 text-center whitespace-nowrap w-[12%] border">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <template v-if="store.requirements?.length === 0">
-              <tr>
-                <td colspan="10" class="p-4">
-                  <div class="text-gray-500 italic w-full h-64 flex items-center justify-center">
-                    No Requirement Found
-                  </div>
-                </td>
-              </tr>
-            </template>
-            <template v-else>
-              <tr
-                v-for="(req, serial) in store.requirements"
-                :key="req.id"
-                class="border-t hover:bg-blue-50 odd:bg-gray-50 group/item"
-              >
-                <td
-                  class="px-4 py-4 font-semibold text-xl text-gray-700 border border-gray-200 text-center"
-                >
-                  {{ serial + 1 }}
-                </td>
-                <td class="px-4 py-4 min-w-[300px] md:min-w-[400px] border border-gray-200">
-                  <div class="space-y-4">
-                    <div
-                      class="text-blue-800"
-                      v-if="req?.details?.length > 0 && Array.isArray(req?.details)"
-                    >
-                      <div class="line-clamp-1 font-semibold" :title="req?.details[0].title">
-                        {{ req?.details[0].title }}
-                      </div>
-                    </div>
-                    <div v-else class="text-gray-400 text-sm italic">No Requirement added</div>
-                    <RouterLink
-                      :to="{ name: 'RequirementShow', params: { id: req?.id } }"
-                      class="text-blue-600 text-sm hover:underline hover:text-blue-800"
-                    >
-                      <span v-if="req?.details?.length - 1 > 0">
-                        {{ req?.details?.length - 1 }} More Requirement
-                      </span>
-                      <span v-else class="">Show Form</span>
-                    </RouterLink>
-                  </div>
+      <template v-else>
+        <div
+          v-for="deptGroup in requirementDepartmentGroups"
+          :key="deptGroup.key"
+          class="mt-8 rounded-md border-2 border-sky-300"
+        >
+          <div
+            class="sticky top-14 z-40 text-gray-700 bg-gradient-to-tl from-sky-400/60 to-sky-400 py-2 px-4 flex items-center"
+          >
+            <div class="font-semibold flex items-center gap-2">
+              <span class="text-white text-sm">From</span>
+              <DepartmentChip :department="deptGroup.from_department" />
+              <span class="text-white text-sm">To</span>
+              <DepartmentChip :department="deptGroup.to_department" />
+            </div>
+          </div>
 
-                  <div class="flex gap-6 items-center mt-6">
-                    <div
-                      class="text-gray-600 text-xs flex items-center gap-2 whitespace-nowrap"
-                      v-if="req.created_at"
-                    >
-                      <i class="fas fa-clock text-sky-800/50"></i>
-                      <div>
-                        {{
-                          new Date(req.created_at).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            hour12: true,
-                          })
-                        }}
-                      </div>
-                    </div>
-                    <div class="flex items-center gap-2 whitespace-nowrap">
-                      <span class="text-xs text-gray-500">By:</span>
-                      <UserChip :user="req.created_by" v-if="req.created_by" avatar-size="xsmall" />
-                    </div>
-                  </div>
-                  <!-- <div class="flex items-center gap-2 mt-4">
-                  <span class="text-gray-400">By</span> <UserChip :user="req.created_by" />
-                </div> -->
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap border border-gray-200">
-                  <span
-                    :title="req?.from_department?.name"
-                    :class="{
-                      'bg-green-500 text-white group-hover/item:text-white':
-                        req?.from_department?.id == auth?.user?.department_id,
-                    }"
-                    class="text-blue-500 font-semibold flex-shrink-0 border border-blue-500 bg-blue-50 rounded-full px-2 text-xs"
-                  >
-                    {{ req?.from_department?.short_name || req?.from_department?.name }}
-                  </span>
-
-                  <div class="flex items-center gap-2 mt-4">
-                    <div class="text-xs text-gray-500">In Charge:</div>
-                    <UserChip
-                      :user="req?.from_department?.in_charge"
-                      v-if="req?.from_department?.in_charge"
-                      avatar-size="xsmall"
-                    />
-                    <div v-else>
-                      <span class="italic text-xs text-gray-400">N/A</span>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-2 mt-1">
-                    <div class="text-xs text-gray-500">Coordinator:</div>
-                    <UserChip
-                      :user="req.from_coordinator"
-                      v-if="req.from_coordinator"
-                      avatar-size="xsmall"
-                    />
-                    <div v-else>
-                      <div v-if="req?.from_department?.coordinator_id" class="text-xs text-red-300">
-                        Approval Pending
-                      </div>
-                      <div v-else class="italic text-xs text-gray-400">N/A</div>
-                    </div>
-                  </div>
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap border border-gray-200">
-                  <span
-                    :title="req?.to_department?.name"
-                    :class="{
-                      'bg-sky-500 !text-white  ':
-                        req?.to_department?.id == auth?.user?.department_id,
-                    }"
-                    class="text-sky-500 font-semibold flex-shrink-0 border border-sky-500 bg-blue-50 rounded-full px-2 text-xs"
-                    >{{ req?.to_department?.short_name || req?.to_department?.name }}
-                  </span>
-
-                  <div class="flex items-center gap-2 mt-4">
-                    <div class="text-xs text-gray-500">In Charge:</div>
-                    <UserChip :user="req.to_incharge" v-if="req.to_incharge" avatar-size="xsmall" />
-                    <div v-else>
-                      <div v-if="req?.to_department?.incharge_id" class="text-xs text-red-300">
-                        Approval Pending
-                      </div>
-                      <div v-else class="italic text-xs text-gray-400">N/A</div>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-2 mt-2">
-                    <div class="text-xs text-gray-500">Coordinator:</div>
-                    <UserChip
-                      :user="req.to_coordinator"
-                      v-if="req.to_coordinator"
-                      avatar-size="xsmall"
-                    />
-                    <div v-else>
-                      <div v-if="req?.to_department?.coordinator_id" class="text-xs text-red-300">
-                        Approval Pending
-                      </div>
-
-                      <div v-else class="italic text-xs text-gray-400">N/A</div>
-                    </div>
-                  </div>
-                </td>
-
-                <td class="px-4 py-4 text-center whitespace-nowrap border border-gray-200">
-                  <div class="text-gray-600" v-if="req.submission_date">
-                    <div>
-                      {{
-                        new Date(req.submission_date).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                        })
-                      }}
-                    </div>
-                    <div>
-                      {{
-                        new Date(req.submission_date).toLocaleTimeString('en-US', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          hour12: true,
-                        })
-                      }}
-                    </div>
-                  </div>
-                  <div v-else>-</div>
-                </td>
-
-                <td class="px-4 py-4 text-center border border-gray-200">
-                  <div class="flex gap-4 items-center justify-center">
-                    <RouterLink
-                      :to="{ name: 'RequirementShow', params: { id: req?.id } }"
-                      class="btn-2"
-                      @click="$event.stopPropagation()"
-                    >
-                      <i class="fad fa-eye"></i> Show
-                    </RouterLink>
-                    <RouterLink
-                      :to="{ name: 'RequirementEdit', params: { id: req?.id } }"
-                      class="btn-4 border border-blue-500 hover:bg-blue-500 hover:text-white"
-                      @click="$event.stopPropagation()"
-                    >
-                      <i class="fad fa-edit"></i> Edit
-                    </RouterLink>
-                  </div>
-                </td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
-      </div>
+          <div class="rounded-b-md overflow-x-auto border-x xl:border-x-0">
+            <RequirementTable :requirements="deptGroup.requirements" />
+          </div>
+        </div>
+      </template>
     </div>
   </div>
 </template>
