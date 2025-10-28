@@ -58,5 +58,13 @@
       <i class="far fa-tasks text-3xl"></i>
       Template Items Assign
     </RouterLink>
+    <RouterLink :to="{ name: 'KpiCycles' }" class="main-button">
+      <i class="far fa-tasks text-3xl"></i>
+      KPI Forms
+    </RouterLink>
+    <RouterLink :to="{ name: 'LaneOverrides' }" class="main-button">
+      <i class="far fa-tasks text-3xl"></i>
+      KPI Permissions
+    </RouterLink>
   </div>
 </template>

@@ -284,7 +284,7 @@ const refreshPaycutList = async () => { await fetchAttendance() }
 
             <td class="td">
               <p class="text-xs w-10 text-gray-600">
-                {{ log?.total_first_short_leave || 0 }} of {{ log?.actual_late_day || 0 }}
+                {{ log?.total_first_short_leave || 0 }} of <span :class="{'text-red-600 font-bold' : log?.actual_late_day >= 4}">{{ log?.actual_late_day || 0 }}</span>
               </p>
             </td>
 
