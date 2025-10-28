@@ -299,6 +299,27 @@ function getTaskRouterLink(task) {
               <span class="text-white text-sm">To</span>
               <DepartmentChip :department="deptGroup.to_department" />
             </div>
+            <div class="ml-auto">
+              <button
+                v-if="route?.name == 'RequirementTaskList'"
+                @click="
+                  () =>
+                    goToAdd(
+                      {
+                        from_department_id: deptGroup?.from_department?.id,
+                        to_department_id: deptGroup?.to_department?.id,
+                      },
+                      {
+                        from_department_id: true,
+                        to_department_id: true,
+                      },
+                    )
+                "
+                class="btn-3 h-6 whitespace-nowrap bg-white border-white px-2"
+              >
+                Add Task
+              </button>
+            </div>
           </div>
 
           <div class="rounded-b-md overflow-y-auto">

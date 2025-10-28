@@ -34,10 +34,17 @@
       </thead>
       <tbody>
         <template v-for="(detail, detailIndex) in requirementDetails" :key="detail.id">
-          <tr v-if="!(requirementDetails.length === 1 && requirementDetails[0]?.id == 0)">
-            <th colspan="10" class="font-semibold border" :class="[detailIndex > 0 ? '' : '']">
+          <tr
+            v-if="!(requirementDetails.length === 1 && requirementDetails[0]?.id == 0)"
+            class="group/dept"
+          >
+            <th
+              colspan="10"
+              class="font-semibold border hover:bg-orange-50"
+              :class="[detailIndex > 0 ? '' : '']"
+            >
               <div
-                class="text-left pt-4 pb-1 px-2 flex"
+                class="text-left pt-8 pb-1 px-2 flex"
                 :class="[
                   detail.id === 0 ? 'text-gray-500' : 'text-sky-800',
                   // detail.id === 0 ? 'bg-gray-50' : 'bg-gray-50',
@@ -68,8 +75,9 @@
                         },
                       )
                     "
-                    class="btn-2 whitespace-nowrap"
+                    class="btn-2 whitespace-nowrap h-8 px-3 opacity-20 group-hover/dept:opacity-100"
                   >
+                    <i class="fas fa-plus-circle"></i>
                     Add Task
                   </button>
                 </div>
@@ -106,7 +114,7 @@
                   <div class="flex items-center flex-none lg:w-full order-0 lg:order-1">
                     <div class="text-gray-400 text-xs mr-4 whitespace-nowrap">
                       <i class="fas fa-clock"></i>
-                      {{ getDisplayDateTime(task.created_at) }}
+                      <span>{{ getDisplayDateTime(task.created_at) }}</span>
                     </div>
                     <div class="flex items-center gap-2 text-xs text-gray-500 opacity-80 text-left">
                       <TaskImportantBadge v-if="task?.is_important" />
