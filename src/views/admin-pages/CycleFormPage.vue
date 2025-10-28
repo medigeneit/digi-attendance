@@ -210,7 +210,7 @@ async function makeActive() {
 
     <!-- Basics -->
     <div class="grid md:grid-cols-3 gap-3">
-      <div class="rounded-xl border p-3">
+      <div class="rounded-xl border card-bg p-3">
         <div class="text-sm font-medium mb-2">Basic</div>
         <div class="space-y-2">
           <input v-model="title" class="border rounded-lg px-3 py-2 w-full" placeholder="Title e.g., KPI 2025" />
@@ -220,7 +220,7 @@ async function makeActive() {
       </div>
 
       <!-- Grading -->
-      <div class="rounded-xl border p-3 md:col-span-2">
+      <div class="rounded-xl border card-bg p-3 md:col-span-2">
         <div class="text-sm font-medium mb-2">Grading (0–100)</div>
         <div class="grid md:grid-cols-3 gap-2">
           <div v-for="(range, key) in grading" :key="key" class="border rounded-lg p-2">
@@ -236,7 +236,7 @@ async function makeActive() {
     </div>
 
     <!-- Lanes -->
-    <div class="rounded-xl border p-3">
+    <div class="rounded-xl border card-bg p-3">
       <div class="flex items-center justify-between mb-2">
         <div class="text-sm font-medium">Reviewer Lanes & Hierarchy</div>
         <button class="px-3 py-1.5 border rounded" @click="addLane">Add Lane</button>
@@ -298,7 +298,7 @@ async function makeActive() {
       </div>
 
       <div class="space-y-4 mt-3">
-        <div v-for="(g, gi) in groups" :key="g.id" class="rounded-lg border">
+        <div v-for="(g, gi) in groups" :key="g.id" class="rounded-lg border card-bg">
           <div class="flex items-center justify-between bg-slate-50 px-3 py-2">
             <div class="font-medium">{{ gi+1 }}. {{ g.label }}</div>
             <div class="flex items-center gap-2">

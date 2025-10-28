@@ -132,7 +132,7 @@ watch([tab, selectedCycleId], () => {
 <template>
   <div class="max-w-6xl mx-auto p-4 space-y-5">
     <!-- Pro Header -->
-    <header class="sticky top-0 z-10 bg-white/85 backdrop-blur border-b -mx-4 px-4">
+    <header class="sticky top-0 z-10 bg-white/85 backdrop-blur border-b card-bg -mx-4 px-4">
       <div class="flex flex-col gap-2 py-3">
         <div class="flex items-center justify-between gap-3">
           <div>
@@ -172,7 +172,7 @@ watch([tab, selectedCycleId], () => {
 
     <!-- Target pickers -->
     <div class="grid md:grid-cols-2 gap-4">
-      <div v-if="tab==='department'" class="rounded-2xl border p-4">
+      <div v-if="tab==='department'" class="rounded-2xl border card-bg p-4">
         <div class="text-sm mb-2 font-medium">Select Department</div>
         <div class="relative">
           <input v-model="searchDept" @input="doLookupDepartments" placeholder="Search department…"
@@ -188,7 +188,7 @@ watch([tab, selectedCycleId], () => {
         </div>
       </div>
 
-      <div v-else class="rounded-2xl border p-4">
+      <div v-else class="rounded-2xl border p-4 card-bg">
         <div class="text-sm mb-2 font-medium">Select Employee</div>
         <div class="relative">
           <input v-model="searchUser" @input="doLookupUsers" placeholder="Search employee…"
@@ -204,9 +204,9 @@ watch([tab, selectedCycleId], () => {
         </div>
       </div>
     </div>
-sujon
+
     <!-- Lanes table (pro look) -->
-    <div class="rounded-2xl border">
+    <div class="rounded-2xl border card-bg">
       <table class="w-full text-sm">
         <thead class="bg-slate-50">
           <tr>
