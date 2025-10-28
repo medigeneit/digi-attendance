@@ -431,6 +431,12 @@ function afterAssigned() {
                     >
                       <i class="far fa-edit"></i>
                     </RouterLink>
+                    <RouterLink
+                      :to="{ name: 'KpiReview', params: { employeeId: user.id } }"
+                      class="btn-icon"
+                    >
+                      KPI
+                    </RouterLink>
                   </div>
                 </td>
               </tr>
