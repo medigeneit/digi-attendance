@@ -239,7 +239,7 @@ async function makeActive() {
     <div class="rounded-xl border card-bg p-3">
       <div class="flex items-center justify-between mb-2">
         <div class="text-sm font-medium">Reviewer Lanes & Hierarchy</div>
-        <button class="px-3 py-1.5 border rounded" @click="addLane">Add Lane</button>
+        <button class="btn-2" @click="addLane">Add Lane</button>
       </div>
 
       <div class="overflow-auto">
@@ -294,7 +294,7 @@ async function makeActive() {
     <div class="rounded-xl border p-3">
       <div class="flex items-center justify-between">
         <div class="text-sm font-medium">Groups & Items</div>
-        <button @click="addGroup" class="px-3 py-1.5 rounded-lg border">Add Group</button>
+        <button @click="addGroup" class="btn-2">Add Group</button>
       </div>
 
       <div class="space-y-4 mt-3">
@@ -335,7 +335,7 @@ async function makeActive() {
             </table>
 
             <div class="mt-2">
-              <button @click="addItem(g)" class="px-3 py-1.5 border rounded">Add Item</button>
+              <button @click="addItem(g)" class="btn-2">Add Item</button>
               <span class="text-xs text-slate-600 ml-3">Group total: {{ g.items.reduce((a,b)=>a+Number(b.max||0),0) }}</span>
             </div>
           </div>
