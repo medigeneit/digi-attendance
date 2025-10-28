@@ -136,7 +136,7 @@ watch([tab, selectedCycleId], () => {
       <div class="flex flex-col gap-2 py-3">
         <div class="flex items-center justify-between gap-3">
           <div>
-            <h1 class="text-lg md:text-xl font-semibold">KPI — Lane Overrides</h1>
+            <h1 class="text-lg md:text-xl font-semibold">KPI — Permissions</h1>
             <div class="text-xs text-slate-600">
               <span>{{ targetSummary }}</span>
               <span v-if="dirty" class="ml-2 inline-flex items-center text-amber-700">• Unsaved changes</span>

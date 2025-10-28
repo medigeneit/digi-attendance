@@ -23,6 +23,12 @@ export const useKpiStore = defineStore('kpi', {
       const { data } = await axios.get(`/kpi/summary/${cycleId}/${employeeId}`)
       return data
     },
+
+    async submitFinalResult(cycleId, employeeId) {
+      const { data } = await axios.post(`/kpi/finalize/${cycleId}/${employeeId}`)
+      return data
+    },
+
     async fetchLanes(cycleId, employeeId) {
         const { data } = await axios.get(`/kpi/lanes/${cycleId}/${employeeId}`)
         return data 

@@ -380,6 +380,26 @@ const router = createRouter({
             title: 'Permissions Add',
           },
         },
+         {
+          path: '/settings/lane-overrides',
+          name: 'LaneOverrides',
+          component: () => import('@/views/admin-pages/LaneOverridesPage.vue')
+        },
+        {
+          path: '/settings/kpi-cycles',
+          name: 'KpiCycles',
+          component: () => import('@/views/admin-pages/CycleSetupPage.vue')
+        },
+        {
+          path: '/settings/kpi/cycles/new',
+          name: 'kpi-cycle-new',
+          component: () => import('@/views/admin-pages/CycleFormPage.vue')
+        },
+        {
+          path: '/settings/kpi/cycles/:id',
+          name: 'kpi-cycle-edit',
+          component: () => import('@/views/admin-pages/CycleFormPage.vue')
+        },
         {
           path: '/settings/permissions-edit/:id',
           name: 'PermissionEdit',
@@ -1271,11 +1291,7 @@ const router = createRouter({
             title: 'Department Assign',
           },
         },
-        {
-          path: '/lane-overrides',
-          name: 'LaneOverrides',
-          component: () => import('@/views/admin-pages/LaneOverridesPage.vue')
-        },
+       
 
       ],
     },
