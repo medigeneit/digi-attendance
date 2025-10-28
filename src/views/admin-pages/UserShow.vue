@@ -127,6 +127,13 @@ onMounted(async () => {
               <p class="text-sm font-bold text-gray-600">Employment Type:</p>
               <p class="text-lg text-gray-800">{{ user?.employment_type }}</p>
             </div>
+
+            <div v-if="['contract'].includes((user?.employment_type || '').toLowerCase())">
+              <p class="text-sm font-bold text-gray-600">Month:</p>
+              <p class="text-lg text-gray-800">
+                {{ user?.contract_month || (user?.joining_date ? dayjs(user.joining_date).format('MMMM YYYY') : 'N/A') }}
+              </p>
+            </div>
             <div>
               <p class="text-sm font-bold text-gray-600">Status:</p>
               <p class="text-lg text-gray-800">{{ user?.is_active ? 'Active' : 'Inactive' }}</p>

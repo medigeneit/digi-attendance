@@ -146,12 +146,13 @@ watch(() => route.query.user_type, (v) => {
         <option value="exit">Exit</option>
       </select>
     </div> -->
-    
+
     <div>
       <label class="block text-xs text-gray-500 mb-1">User Type</label>
       <select v-model="local.user_type" class="border rounded px-2 py-1">
         <option value="Probationary">Probationary</option>
         <option value="Permanent">Permanent</option>
+        <option value="Contract">Contract</option>
       </select>
     </div>
 

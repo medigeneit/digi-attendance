@@ -77,6 +77,7 @@ const preparedUsers = computed(() => {
 const EMP_TYPES = [
   { value: 'probationary', label: 'Probationary' },
   { value: 'permanent', label: 'Permanent' },
+  { value: 'contract', label: 'Contract' },
 ]
 const normType = (v) => String(v || '').toLowerCase()
 
@@ -88,6 +89,7 @@ const typeBadgeClass = (v) => {
   const t = normType(v)
   if (t === 'probationary') return 'bg-amber-50 text-amber-700 ring-amber-200'
   if (t === 'permanent') return 'bg-green-50 text-green-700 ring-green-200'
+  if (t === 'contract') return 'bg-blue-50 text-blue-700 ring-blue-200'
   return 'bg-gray-50 text-gray-700 ring-gray-200'
 }
 
@@ -148,6 +150,67 @@ function getProbationInfo(u) {
     pct,
     leftDays,
     status, // 'active' | 'near_end' | 'overdue'
+  }
+}
+
+function getContractInfo(u) {
+  const isContract = normType(u?.employment_type) === 'contract'
+  if (!isContract) return { enabled: false }
+
+  const start = asDate(u?.joining_date) || asDate(u?.created_at)
+
+  // supports: contract_month | contract_months | contract_duration_months
+  const baseMonths = Number(
+    u?.contract_month ?? u?.contract_months ?? u?.contract_duration_months ?? 0
+  )
+  const extMonths = Number(u?.contract_extension_months ?? 0)
+
+  if (!start || Number.isNaN(baseMonths) || baseMonths <= 0) {
+    return { enabled: false }
+  }
+
+  const totalMonths = Math.max(1, baseMonths + (extMonths || 0))
+  const end = addMonths(start, totalMonths)
+
+  const today = new Date()
+  const totalDays   = Math.max(1, diffDays(end, start))
+  const elapsedDays = Math.max(0, Math.min(totalDays, diffDays(today, start)))
+  const leftDays    = diffDays(end, today)
+
+  const pct = nice((elapsedDays / totalDays) * 100)
+  // near_end: 30 days window (change to 14 if you prefer)
+  const status = leftDays < 0 ? 'overdue' : leftDays <= 30 ? 'near_end' : 'active'
+
+  return { enabled: true, start, end, pct, leftDays, status }
+}
+
+const fmtDate = (d) =>
+  d ? d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : ''
+
+// percent short/over info (UI label)
+const checklistInfo = (actual, target) => {
+  const a = clamp(actual, 0, 100)
+  const t = clamp(target, 1, 100)
+  const diff = Math.max(0, t - a)
+  return a >= t ? { text: 'Met', tone: 'ok', diff: 0 } : { text: `Short by ${diff}%`, tone: 'warn', diff }
+}
+
+// palette helpers
+const barGradient = (ok) =>
+  ok ? 'bg-gradient-to-r from-emerald-500 to-emerald-600'
+     : 'bg-gradient-to-r from-amber-500 to-amber-600'
+
+const microColors = (status, base='amber') => {
+  if (status === 'overdue') return { track: 'bg-red-100', fill: 'bg-red-500', tone: 'text-red-600' }
+  if (status === 'near_end') return {
+    track: base === 'blue' ? 'bg-indigo-100' : 'bg-orange-100',
+    fill : base === 'blue' ? 'bg-indigo-500' : 'bg-orange-500',
+    tone : 'text-gray-700'
+  }
+  return {
+    track: base === 'blue' ? 'bg-blue-100' : 'bg-amber-100',
+    fill : base === 'blue' ? 'bg-blue-500' : 'bg-amber-500',
+    tone : 'text-gray-600'
   }
 }
 </script>
@@ -229,7 +292,7 @@ function getProbationInfo(u) {
                 <div class="min-w-0">
                   <div class="font-medium truncate">{{ u.name || u.full_name || u.email }}</div>
                   <div class="text-[11px] text-gray-500 space-x-2 truncate">
-                    <span v-if="u.joining_date">ID: {{ u.joining_date }}</span>
+                    <span v-if="u.joining_date">Joining Date: {{ u.joining_date }}</span>
                     <span class="hidden sm:inline">Dept: {{ u.department || '—' }}</span>
                   </div>
                 </div>
@@ -242,61 +305,109 @@ function getProbationInfo(u) {
             </td>
 
             <!-- Progress (Checklist + Probation micro bar) -->
-            <td class="p-2">
-              <!-- Checklist progress -->
-              <div class="relative w-full rounded-full bg-gray-200 h-2 overflow-hidden">
+            <!-- Progress (Checklist + Probation/Contract micro bars) -->
+          <td class="p-2 card-bg mt-2 mb-2">
+            <!-- Checklist progress -->
+            <div class="group relative w-full border-b">
+              <div class="relative h-2 w-full overflow-hidden rounded-full bg-gray-100 ring-1 ring-inset ring-gray-200">
+                <!-- target marker -->
                 <div
                   class="pointer-events-none absolute top-0 h-2 w-0.5 bg-gray-600/60"
                   :style="{ left: `calc(${targetPercent(u)}% - 1px)` }"
-                  :title="`Checklist target ${targetPercent(u)}%`"
                 />
+                <!-- progress fill -->
                 <div
-                  class="h-2 transition-all"
-                  :class="actualPercent(u) >= targetPercent(u) ? 'bg-green-500' : 'bg-amber-500'"
+                  class="h-2 transition-all duration-500 ease-out will-change-[width]"
+                  :class="barGradient(actualPercent(u) >= targetPercent(u))"
                   :style="{ width: actualPercent(u) + '%' }"
-                  :title="`Checklist: ${actualPercent(u)}% (Target ${targetPercent(u)}%)`"
+                  :aria-valuemin="0"
+                  :aria-valuemax="100"
+                  :aria-valuenow="actualPercent(u)"
+                  role="progressbar"
                 />
               </div>
 
-              <!-- Meta line -->
+              <!-- labels row -->
               <div class="mt-1 flex items-center justify-between text-[11px] text-gray-600">
-                <span>Actual: {{ actualPercent(u) }}%</span>
-                <span>Target: {{ targetPercent(u) }}%</span>
+                <div class="flex items-center gap-2">
+                  <span class="font-medium">Actual: {{ actualPercent(u) }}%</span>
+                  <span class="hidden sm:inline">Target: {{ targetPercent(u) }}%</span>
+                </div>
+                <span
+                  class="rounded-full px-1.5 py-0.5 ring-1 text-[10px]"
+                  :class="( () => {
+                    const info = checklistInfo(actualPercent(u), targetPercent(u))
+                    return info.tone === 'ok'
+                      ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
+                      : 'bg-amber-50 text-amber-700 ring-amber-200'
+                  })()"
+                >
+                  {{ checklistInfo(actualPercent(u), targetPercent(u)).text }}
+                </span>
               </div>
 
-              <!-- Probation micro progress (if applicable) -->
-              <template v-if="getProbationInfo(u).enabled">
-                <div class="mt-1">
+              <!-- hover detail (optional, subtle) -->
+              <div
+                class="pointer-events-none absolute inset-x-0 -bottom-6 hidden justify-between text-[10px] text-gray-500 group-hover:flex"
+              >
+                <span>Target marker indicates {{ targetPercent(u) }}%</span>
+                <span>Progress updates live</span>
+              </div>
+            </div>
+
+            <!-- Probation micro progress -->
+            <template v-if="getProbationInfo(u).enabled">
+              <div class="mt-1">
+                <div
+                  class="relative w-full h-1.5 overflow-hidden rounded-full"
+                  :class="microColors(getProbationInfo(u).status).track"
+                >
                   <div
-                    class="relative w-full rounded-full h-1.5 overflow-hidden"
-                    :class="{
-                      'bg-amber-100': getProbationInfo(u).status !== 'overdue',
-                      'bg-red-100': getProbationInfo(u).status === 'overdue',
-                    }"
-                    :title="`Probation ${getProbationInfo(u).pct}% | Ends ${getProbationInfo(u).end.toLocaleDateString()}`"
-                  >
-                    <div
-                      class="h-1.5 transition-all"
-                      :class="{
-                        'bg-amber-500': getProbationInfo(u).status === 'active',
-                        'bg-orange-500': getProbationInfo(u).status === 'near_end',
-                        'bg-red-500': getProbationInfo(u).status === 'overdue',
-                      }"
-                      :style="{ width: getProbationInfo(u).pct + '%' }"
-                    />
-                  </div>
-                  <div class="mt-1 flex items-center justify-between text-[11px] text-gray-600">
-                    <span>Probation: {{ getProbationInfo(u).pct }}%</span>
-                    <span v-if="getProbationInfo(u).leftDays >= 0">
-                      {{ getProbationInfo(u).leftDays }}d left
-                    </span>
-                    <span v-else class="text-red-600">
-                      Overdue {{ Math.abs(getProbationInfo(u).leftDays) }}d
-                    </span>
-                  </div>
+                    class="h-1.5 transition-all duration-500 ease-out"
+                    :class="microColors(getProbationInfo(u).status).fill"
+                    :style="{ width: getProbationInfo(u).pct + '%' }"
+                  />
                 </div>
-              </template>
-            </td>
+                <div class="mt-1 flex items-center justify-between text-[11px]"
+                    :class="microColors(getProbationInfo(u).status).tone">
+                  <span>Probation: {{ getProbationInfo(u).pct }}%</span>
+                  <span v-if="getProbationInfo(u).leftDays >= 0">
+                    {{ fmtDate(getProbationInfo(u).start) }} → {{ fmtDate(getProbationInfo(u).end) }} · {{ getProbationInfo(u).leftDays }}d left
+                  </span>
+                  <span v-else class="text-red-600">
+                    {{ fmtDate(getProbationInfo(u).start) }} → {{ fmtDate(getProbationInfo(u).end) }} · Overdue {{ Math.abs(getProbationInfo(u).leftDays) }}d
+                  </span>
+                </div>
+              </div>
+            </template>
+
+            <!-- Contract micro progress (always independent; চাইলে Probation-এর সাথে একসাথে দেখাবেন) -->
+            <template v-if="getContractInfo(u).enabled">
+              <div class="mt-1">
+                <div
+                  class="relative w-full h-1.5 overflow-hidden rounded-full"
+                  :class="microColors(getContractInfo(u).status, 'blue').track"
+                >
+                  <div
+                    class="h-1.5 transition-all duration-500 ease-out"
+                    :class="microColors(getContractInfo(u).status, 'blue').fill"
+                    :style="{ width: getContractInfo(u).pct + '%' }"
+                  />
+                </div>
+                <div class="mt-1 flex items-center justify-between text-[11px]"
+                    :class="microColors(getContractInfo(u).status, 'blue').tone">
+                  <span>Contract: {{ getContractInfo(u).pct }}%</span>
+                  <span v-if="getContractInfo(u).leftDays >= 0">
+                    {{ fmtDate(getContractInfo(u).start) }} → {{ fmtDate(getContractInfo(u).end) }} · {{ getContractInfo(u).leftDays }}d left
+                  </span>
+                  <span v-else class="text-red-600">
+                    {{ fmtDate(getContractInfo(u).start) }} → {{ fmtDate(getContractInfo(u).end) }} · Expired {{ Math.abs(getContractInfo(u).leftDays) }}d
+                  </span>
+                </div>
+              </div>
+            </template>
+          </td>
+
 
             <!-- Status -->
             <td class="p-2">
