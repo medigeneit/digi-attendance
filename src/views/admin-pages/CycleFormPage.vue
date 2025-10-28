@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useKpiCycleAdmin } from '@/stores/kpiCycleAdmin'
 
@@ -62,7 +62,65 @@ const totalMax = computed(() => {
   return Number(t.toFixed(2))
 })
 function move(arr, i, dir){ const j = i+dir; if (j<0||j>=arr.length) return; [arr[i],arr[j]]=[arr[j],arr[i]] }
-function addGroup(){ const id = prompt('Group ID (slug):'); if(!id) return; groups.value.push({id,label:id,items:[]}) }
+
+// ============ NEW: Add Group Modal state ============
+const showGroupModal = ref(false)
+const groupDraft = ref({ id:'', label:'' })
+const groupIdTouched = ref(false)
+const groupErrors = ref({ id:'', label:'' })
+
+function slugify(s){
+  const slug = String(s || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^\w]+/g,'_')        // non-word → underscore
+    .replace(/^_+|_+$/g,'')        // trim underscores
+    .slice(0, 40)
+  return slug || `group_${groups.value.length + 1}`
+}
+watch(() => groupDraft.value.label, (v) => {
+  if (!groupIdTouched.value) {
+    groupDraft.value.id = slugify(v)
+  }
+})
+function onIdInput(){ groupIdTouched.value = true }
+
+function validateGroupDraft(){
+  groupErrors.value = { id:'', label:'' }
+  const { id, label } = groupDraft.value
+  let ok = true
+
+  if (!label || !label.trim()) {
+    groupErrors.value.label = 'Label is required'
+    ok = false
+  }
+  if (!id || !/^[A-Za-z0-9_]+$/.test(id)) {
+    groupErrors.value.id = 'ID must be letters/numbers/underscore only'
+    ok = false
+  }
+  if (groups.value.some(g => g.id === id)) {
+    groupErrors.value.id = 'This ID already exists'
+    ok = false
+  }
+  return ok
+}
+
+function openAddGroupModal(){
+  showGroupModal.value = true
+  groupDraft.value = { id:'', label:'' }
+  groupIdTouched.value = false
+  groupErrors.value = { id:'', label:'' }
+}
+function closeGroupModal(){ showGroupModal.value = false }
+
+function saveNewGroup(){
+  if (!validateGroupDraft()) return
+  const { id, label } = groupDraft.value
+  groups.value.push({ id, label, items: [] })
+  closeGroupModal()
+}
+
+// ============ Items ops ============
 function addItem(g){ g.items.push({id:'item_'+(g.items.length+1), label:'New Item', max:1}) }
 function removeGroup(i){ groups.value.splice(i,1) }
 function removeItem(g,i){ g.items.splice(i,1) }
@@ -294,7 +352,7 @@ async function makeActive() {
     <div class="rounded-xl border p-3">
       <div class="flex items-center justify-between">
         <div class="text-sm font-medium">Groups & Items</div>
-        <button @click="addGroup" class="btn-2">Add Group</button>
+        <button @click="openAddGroupModal" class="btn-2">Add Group</button>
       </div>
 
       <div class="space-y-4 mt-3">
@@ -347,5 +405,58 @@ async function makeActive() {
         <button @click="saveDraft" class="btn-2">Save Draft</button>
       </div>
     </div>
+
+    <!-- ================= Add Group Modal ================= -->
+  <div v-if="showGroupModal" class="fixed inset-0 z-50">
+    <!-- backdrop -->
+    <div class="absolute inset-0 bg-black/40" @click="closeGroupModal"></div>
+
+    <!-- dialog -->
+    <div
+      class="absolute left-1/2 top-1/2 w-[92vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border bg-white shadow-xl"
+      role="dialog" aria-modal="true" aria-labelledby="addGroupTitle"
+    >
+      <div class="px-4 py-3 border-b flex items-center justify-between">
+        <h3 id="addGroupTitle" class="text-sm font-semibold">Add Group</h3>
+        <button class="text-slate-500 hover:text-slate-700" @click="closeGroupModal">✕</button>
+      </div>
+
+      <div class="p-4 space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Group Label</label>
+          <input
+            v-model="groupDraft.label"
+            type="text"
+            class="w-full rounded-lg border px-3 py-2"
+            placeholder="e.g., Training (15)"
+          />
+          <p v-if="groupErrors.label" class="mt-1 text-xs text-red-600">{{ groupErrors.label }}</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">
+            Group ID (slug)
+            <span class="text-[11px] text-slate-500 ml-1">(letters/numbers/_ only)</span>
+          </label>
+          <input
+            v-model="groupDraft.id"
+            @input="onIdInput"
+            type="text"
+            class="w-full rounded-lg border px-3 py-2 font-mono"
+            placeholder="e.g., training"
+          />
+          <p v-if="groupErrors.id" class="mt-1 text-xs text-red-600">{{ groupErrors.id }}</p>
+        </div>
+      </div>
+
+      <div class="px-4 py-3 border-t flex items-center justify-end gap-2">
+        <button class="px-3 py-1.5 rounded-lg border" @click="closeGroupModal">Cancel</button>
+        <button class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700" @click="saveNewGroup">
+          Add
+        </button>
+      </div>
+    </div>
+  </div>
+  
   </div>
 </template>
