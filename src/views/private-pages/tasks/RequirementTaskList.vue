@@ -30,6 +30,7 @@ const authStore = useAuthStore()
 const addFormData = reactive({
   parentId: 0,
   requirementId: 0,
+  params: {},
 })
 
 const employeeAssignForm = reactive({
@@ -105,10 +106,11 @@ async function fetchTasks() {
   queryLogs.value = data?.query_log || []
 }
 
-const goToAdd = (parentId) => {
+const goToAdd = (params, readonlyValues) => {
   //router.push({ name: 'TaskAdd' })
   addForm.value = true
-  addFormData.parentId = parentId
+  addFormData.params = params
+  addFormData.readonlyValues = readonlyValues
 }
 
 const openEmployeeAssignForm = (taskId) => {
@@ -119,14 +121,14 @@ const openEmployeeAssignForm = (taskId) => {
 async function handleTaskUpdate() {
   editingId.value = null
   addForm.value = false
-  addFormData.parentId = 0
   state.value = 'loading'
+  addFormData.params = {}
   await fetchTasks()
 }
 
 async function handleTaskAddClose() {
   addForm.value = false
-  addFormData.parentId = 0
+  addFormData.params = {}
   await fetchTasks()
 }
 
@@ -200,7 +202,10 @@ function getTaskRouterLink(task) {
     <OverlyModal v-if="addForm">
       <TaskAddForm
         :parentTaskId="addFormData.parentId"
-        :requirementId="addFormData.requirementId"
+        :requirementId="addFormData.params?.requirement_id"
+        :requirementDetailId="addFormData.params?.requirement_detail_id"
+        :default-values="addFormData.params"
+        :readonly-fields="addFormData.readonlyValues"
         @close="handleTaskAddClose"
         @taskCreated="handleTaskUpdate"
       />
@@ -301,7 +306,7 @@ function getTaskRouterLink(task) {
               :tasks="deptGroup.tasks"
               groupBy="requirement_details"
               @editClick="(taskId) => (editingId = taskId)"
-              @addClick="(taskId) => goToAdd(taskId)"
+              @clickAddTask="(params, readonlyValues) => goToAdd(params, readonlyValues)"
               @employeeAssignClick="(taskId) => openEmployeeAssignForm(taskId)"
               :hideButtons="route?.name !== 'RequirementTaskList'"
               :taskLinkTo="getTaskRouterLink"

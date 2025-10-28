@@ -37,14 +37,41 @@
           <tr v-if="!(requirementDetails.length === 1 && requirementDetails[0]?.id == 0)">
             <th colspan="10" class="font-semibold border" :class="[detailIndex > 0 ? '' : '']">
               <div
-                class="text-left pt-4 pb-1 px-2"
+                class="text-left pt-4 pb-1 px-2 flex"
                 :class="[
                   detail.id === 0 ? 'text-gray-500' : 'text-sky-800',
                   // detail.id === 0 ? 'bg-gray-50' : 'bg-gray-50',
                 ]"
               >
-                <div class="line-clamp-1">
-                  {{ detail?.title }}
+                <div>
+                  <p class="line-clamp-1">
+                    {{ detail?.title }}
+                  </p>
+                </div>
+
+                <div class="ml-auto">
+                  <button
+                    v-if="route?.name == 'RequirementTaskList'"
+                    @click="
+                      emits(
+                        'clickAddTask',
+                        {
+                          requirement_id: detail.requirement?.id,
+                          requirement_detail_id: detail.id,
+                          from_department_id: detail.requirement?.from_department_id,
+                          to_department_id: detail.requirement?.to_department_id,
+                        },
+                        {
+                          requirement_id: true,
+                          from_department_id: true,
+                          to_department_id: true,
+                        },
+                      )
+                    "
+                    class="btn-2 whitespace-nowrap"
+                  >
+                    Add Task
+                  </button>
                 </div>
               </div>
             </th>
@@ -71,7 +98,7 @@
                       titleClass="text-sm"
                       :task="task"
                       :sub-tasks-open="false"
-                      :isMyTask="isMyTask"
+                      :isMyTask="route.name == 'RequirementList'"
                       :to="taskLinkTo"
                     />
                   </div>
@@ -170,6 +197,7 @@ import TaskTitleRouterLink from '@/components/tasks/TaskTitleRouterLink.vue'
 import TaskUrgentBadge from '@/components/tasks/TaskUrgentBadge.vue'
 import { getDisplayDate, getDisplayDateTime } from '@/libs/datetime'
 import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 
 const props = defineProps({
   tasks: { type: Array, required: true, default: () => [] },
@@ -179,6 +207,8 @@ const props = defineProps({
   isMyTask: { type: Boolean, default: false },
   taskLinkTo: { type: Function, default: null },
 })
+
+const route = useRoute()
 
 const requirementDetails = computed(() => {
   return props.tasks
@@ -207,5 +237,5 @@ const requirementDetails = computed(() => {
 
 // @editClick="(taskId) => (editingId = taskId)"
 
-const emits = defineEmits(['editClick', 'addClick', 'employeeAssignClick'])
+const emits = defineEmits(['editClick', 'addClick', 'employeeAssignClick', 'clickAddClick'])
 </script>

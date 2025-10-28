@@ -84,8 +84,9 @@ onMounted(async () => {
 })
 
 watch(
-  () => ({ parentTaskId: props.parentTaskId, requirement: props.requirementDetailId }),
+  () => ({  requirement: props.requirementDetailId }),
   async () => {
+
     if (props.requirementDetailId > 0) {
       console.log({ id: props.requirementDetailId })
       requirementDetail.value = (
@@ -154,6 +155,7 @@ async function submit() {
     </div>
 
     <form @submit.prevent="submit" class="z-0">
+
 
       <p class="mt-2 mb-6" v-if="requirementDetailId && requirementDetail?.title" :title="requirementDetail.title">
         <div class="text-sm">
