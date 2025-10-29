@@ -20,8 +20,12 @@ const color = computed(() => {
 
 <template>
   <span :class="color">
-    <i class="fa fa-exclamation-square" v-if="todoDate.status == 'PENDING'" title="Pending"></i>
-    <i class="fa fa-pause" v-if="todoDate.status == 'WORKING'" title="Working"></i>
-    <i class="fa fa-check-square" v-if="todoDate.status == 'COMPLETED'" title="Completed"></i>
+    <i class="fas fa-clock text-base" v-if="todoDate.status == 'PENDING'" title="Pending"></i>
+    <i class="fas fa-sync text-base" v-if="todoDate.status == 'WORKING'" title="Working"></i>
+    <i
+      class="fas fa-check-square text-lg"
+      v-if="todoDate.status == 'COMPLETED'"
+      title="Completed"
+    ></i>
   </span>
 </template>
