@@ -1,6 +1,6 @@
 <template>
   <div class="w-full p-1">
-    <table class="w-full" v-if="tasks?.length > 0">
+    <table class="w-full rounded-b" v-if="tasks?.length > 0">
       <thead>
         <tr>
           <td
@@ -37,15 +37,16 @@
           <tr class="group/dept">
             <th colspan="10" class="font-semibold" :class="[detailIndex > 0 ? '' : '']">
               <div
-                class="text-left mt-2 -mx-[2px] -mb-[1px] py-2 px-2 flex items-center border border-b-0 rounded-t bg-blue-50"
+                class="text-left -mx-[2px] -mb-[1px] py-2 px-2 flex items-center border border-b-0 rounded-t bg-emerald-50"
                 :class="[
                   detail.id === 0 ? 'text-gray-500' : 'text-sky-800',
+                  detailIndex > 0 ? 'mt-4' : '',
                   // detail.id === 0 ? 'bg-gray-50' : 'bg-gray-50',
                 ]"
               >
-                <div class="flex gap-1 items-center">
-                  <div class="">{{ detailIndex + 1 }}.</div>
-                  <p class="line-clamp-1">
+                <div class="flex gap-1 items-start text-base">
+                  <div class="font-bold text-lime-600">{{ detailIndex + 1 }}.</div>
+                  <p class="line-clamp-2">
                     {{ detail?.title }}
                   </p>
                 </div>
@@ -166,7 +167,7 @@
               </span>
             </td>
 
-            <td class="border px-3 border-gray-200 sticky right-0 border-l bg-sky-50">
+            <td class="border px-3 border-gray-200 sticky right-0 border-l bg-gray-50">
               <div class="flex justify-end flex-wrap gap-2 py-2">
                 <TaskIsClosedBadge v-if="task.closed_at" />
                 <TaskStatus

@@ -250,7 +250,7 @@ function getTaskRouterLink(task) {
 
     <!-- <pre>{{ taskUsers }}</pre> -->
     <div class="relative min-h-[20vh]">
-      <template v-if="route.query?.view === 'userwise'">
+      <div v-if="route.query?.view === 'userwise'" class="space-y-6">
         <div v-for="user in taskUsers" :key="user.id" class="rounded-md border-2 border-sky-300">
           <div
             class="sticky top-14 z-40 text-gray-700 bg-gradient-to-tl from-sky-400/60 to-sky-400 py-2 px-4 flex items-center"
@@ -275,9 +275,9 @@ function getTaskRouterLink(task) {
             />
           </div>
         </div>
-      </template>
+      </div>
 
-      <template v-else>
+      <div v-else class="space-y-6">
         <div
           v-for="deptGroup in taskDepartmentGroups"
           :key="deptGroup.key"
@@ -327,7 +327,7 @@ function getTaskRouterLink(task) {
             />
           </div>
         </div>
-      </template>
+      </div>
 
       <div
         v-if="state !== 'loading' && store.tasks?.length === 0"
