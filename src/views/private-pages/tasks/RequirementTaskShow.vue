@@ -4,6 +4,7 @@ import OverlyModal from '@/components/common/OverlyModal.vue'
 import DepartmentChip from '@/components/DepartmentChip.vue'
 import DescriptionView from '@/components/DescriptionView.vue'
 import TaskAssignedUsers from '@/components/tasks/TaskAssignedUsers.vue'
+import TaskClosingForm from '@/components/tasks/TaskClosingForm.vue'
 import { default as TaskDeletingFrom } from '@/components/tasks/TaskDeletingFrom.vue'
 import TaskStatus from '@/components/tasks/TaskStatus.vue'
 import TaskStatusManager from '@/components/tasks/TaskStatusManager.vue'
@@ -33,9 +34,30 @@ const taskDeleting = reactive({
   task: null,
 })
 
+const taskClosing = reactive({
+  open: false,
+  task: null,
+})
+
+function handleDeleteButtonClick() {
+  taskDeleting.open = true
+  taskDeleting.task = store.task
+}
+
+function handleCloseButtonClick() {
+  taskClosing.open = true
+  taskClosing.task = store.task
+}
+
 onMounted(async () => {
   state.value = 'loading'
-  await fetchTask(route.params.id)
+  try {
+    await fetchTask(route.params.id)
+  } catch (err) {
+    if (err.response.status === 404) {
+      router.push({ name: 'RequirementTaskList' })
+    }
+  }
   state.value = ''
   if (route.hash == '#sub-tasks') {
     setTimeout(() => scrollToID(route.hash, 66), 0)
@@ -61,30 +83,11 @@ const goToEdit = (id) => {
   router.push({ name: 'TaskEdit', params: { id } })
 }
 
-const backLink = computed(() => {
-  if (!store.task) {
-    return null
-  }
-
-  if (store.task?.parent_id == 0) {
-    return { name: isMyTask.value ? 'MyTaskList' : 'TaskList' }
-  }
-
-  return {
-    params: {
-      id: store.task?.parent_id,
-    },
-    query: { ['is-my-task']: isMyTask.value },
-  }
-})
-
 function handleDeleteSuccess() {
   taskDeleting.open = false
-  console.log({ STATE: 'Deleted', backLink: backLink.value })
-  router.push(backLink.value)
-}
 
-const isMyTask = computed(() => route.name == 'MyTaskShow' || !!route.query['is-my-task'])
+  router.back()
+}
 
 // const getBreadCrumbFromTask = (task, is_current_page = false) => {
 //   return {
@@ -422,6 +425,28 @@ async function handleClickDelete(todoDate) {
               </div>
             </div>
 
+            <div
+              class="flex items-center gap-4 flex-wrap justify-between col-span-3 sticky bottom-0 bg-white"
+              v-if="authStore.isAdminMood"
+            >
+              <RouterLink
+                :to="{ name: 'TaskUserAssign', params: { id: store.task?.id } }"
+                class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-3 py-0.5 rounded-full transition whitespace-nowrap"
+                @click="$event.stopPropagation()"
+                :class="!!store.task.closed_at ? 'opacity-30 pointer-events-none' : ''"
+              >
+                <i class="fas fa-users-cog"></i> Employees
+              </RouterLink>
+
+              <button
+                @click.stop="goToEdit(store.task?.id)"
+                class="btn-2 py-0.5 disabled:opacity-30 disabled:pointer-events-none"
+                :disabled="!!store.task.closed_at"
+              >
+                <i class="fas fa-edit"></i> Edit
+              </button>
+            </div>
+
             <TaskTimeline :task="store?.task" />
 
             <TaskStatusManager
@@ -432,7 +457,10 @@ async function handleClickDelete(todoDate) {
               hide-timeline
             >
               <template #top>
-                <div class="flex items-start justify-center !text-lg mb-4">
+                <div
+                  class="flex items-start justify-center !text-lg mb-4"
+                  v-if="!store.task?.closed_at"
+                >
                   <TaskStatus
                     :status="store.task?.status"
                     :progressPercent="store.task?.progress_percent"
@@ -442,25 +470,14 @@ async function handleClickDelete(todoDate) {
               </template>
             </TaskStatusManager>
 
-            <div
-              class="flex items-center gap-4 flex-wrap justify-between col-span-3 sticky bottom-0 bg-white py-4"
-              v-if="authStore.isAdminMood"
-            >
-              <RouterLink
-                :to="{ name: 'TaskUserAssign', params: { id: store.task?.id } }"
-                class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-3 py-0.5 rounded-full transition whitespace-nowrap"
-                @click="$event.stopPropagation()"
-                :class="!!store.task.closed_at ? 'opacity-30 pointer-events-none' : ''"
-              >
-                <i class="fas fa-users-cog"></i> Assign Users
-              </RouterLink>
-
+            <div v-if="authStore.isAdminMood" class="py-4 flex items-center justify-between">
+              <button class="btn-2-red h-8" @click.prevent="handleDeleteButtonClick">Delete</button>
               <button
-                @click.stop="goToEdit(store.task?.id)"
-                class="btn-2 py-0.5 disabled:opacity-30 disabled:pointer-events-none"
-                :disabled="!!store.task.closed_at"
+                class="btn-3 h-8"
+                @click.prevent="handleCloseButtonClick"
+                v-if="!store.task?.closed_at"
               >
-                <i class="fas fa-edit"></i> Edit
+                Close Task
               </button>
             </div>
             <div v-else class="h-1"></div>
@@ -492,5 +509,9 @@ async function handleClickDelete(todoDate) {
       @clickEdit="handleClickEditTodo"
       @clickAddTodoDate="addTodoDate"
     />
+
+    <OverlyModal v-if="taskClosing.open">
+      <TaskClosingForm :task="store.task" @clickCancel="taskClosing.open = false" />
+    </OverlyModal>
   </div>
 </template>

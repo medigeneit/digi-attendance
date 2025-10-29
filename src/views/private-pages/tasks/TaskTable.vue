@@ -1,6 +1,6 @@
 <template>
   <div class="w-full p-1">
-    <table class="w-full" v-if="tasks?.length > 0">
+    <table class="w-full rounded-b" v-if="tasks?.length > 0">
       <thead>
         <tr>
           <td
@@ -34,17 +34,19 @@
       </thead>
       <tbody>
         <template v-for="(detail, detailIndex) in requirementDetails" :key="detail.id">
-          <tr v-if="!(requirementDetails.length === 1 && requirementDetails[0]?.id == 0)">
-            <th colspan="10" class="font-semibold border" :class="[detailIndex > 0 ? '' : '']">
+          <tr class="group/dept">
+            <th colspan="10" class="font-semibold" :class="[detailIndex > 0 ? '' : '']">
               <div
-                class="text-left pt-4 pb-1 px-2 flex"
+                class="text-left -mx-[2px] -mb-[1px] py-2 px-2 flex items-center border border-b-0 rounded-t bg-emerald-50"
                 :class="[
                   detail.id === 0 ? 'text-gray-500' : 'text-sky-800',
+                  detailIndex > 0 ? 'mt-4' : '',
                   // detail.id === 0 ? 'bg-gray-50' : 'bg-gray-50',
                 ]"
               >
-                <div>
-                  <p class="line-clamp-1">
+                <div class="flex gap-1 items-start text-base">
+                  <div class="font-bold text-lime-600">{{ detailIndex + 1 }}.</div>
+                  <p class="line-clamp-2">
                     {{ detail?.title }}
                   </p>
                 </div>
@@ -68,8 +70,9 @@
                         },
                       )
                     "
-                    class="btn-2 whitespace-nowrap"
+                    class="btn-2 whitespace-nowrap h-6 px-3 opacity-20 group-hover/dept:opacity-100"
                   >
+                    <i class="fas fa-plus-circle"></i>
                     Add Task
                   </button>
                 </div>
@@ -86,8 +89,8 @@
             }"
           >
             <td class="border text-center py-2 px-1 border-gray-200">
-              <div class="text-base font-semibold text-purple-600" v-if="taskIndex !== undefined">
-                {{ taskIndex + 1 }}.
+              <div class="font-semibold text-purple-400 text-sm" v-if="taskIndex !== undefined">
+                {{ detailIndex + 1 }}.{{ taskIndex + 1 }}
               </div>
             </td>
             <td class="border px-3 py-1 border-gray-200 relative">
@@ -106,7 +109,7 @@
                   <div class="flex items-center flex-none lg:w-full order-0 lg:order-1">
                     <div class="text-gray-400 text-xs mr-4 whitespace-nowrap">
                       <i class="fas fa-clock"></i>
-                      {{ getDisplayDateTime(task.created_at) }}
+                      <span>{{ getDisplayDateTime(task.created_at) }}</span>
                     </div>
                     <div class="flex items-center gap-2 text-xs text-gray-500 opacity-80 text-left">
                       <TaskImportantBadge v-if="task?.is_important" />
@@ -164,7 +167,7 @@
               </span>
             </td>
 
-            <td class="border px-3 border-gray-200 sticky right-0 border-l bg-sky-50">
+            <td class="border px-3 border-gray-200 sticky right-0 border-l bg-gray-50">
               <div class="flex justify-end flex-wrap gap-2 py-2">
                 <TaskIsClosedBadge v-if="task.closed_at" />
                 <TaskStatus

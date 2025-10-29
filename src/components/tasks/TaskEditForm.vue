@@ -5,7 +5,6 @@ import { useCompanyStore } from '@/stores/company'
 import { useTagStore } from '@/stores/tags'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
 import SectionLoading from '../common/SectionLoading.vue'
 import MultiselectDropdown from '../MultiselectDropdown.vue'
 
@@ -138,73 +137,56 @@ const update = async () => {
         </div>
       </div>
 
-      <template v-if="task?.parent_id === 0">
-        <div class="mb-4">
-          <label class="block text-gray-600 text-sm mb-1 font-medium">
-            From Department <RequiredIcon />
-          </label>
+      <div class="mb-4">
+        <label class="block text-gray-600 text-sm mb-1 font-medium">
+          From Department <RequiredIcon />
+        </label>
 
-          <select
-            v-model="form.from_department_id"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+        <select
+          v-model="form.from_department_id"
+          class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">--select department--</option>
+          <optgroup
+            v-for="company in companyStore.companies"
+            :key="company.id"
+            :label="company.name"
           >
-            <option value="">--select department--</option>
-            <optgroup
-              v-for="company in companyStore.companies"
-              :key="company.id"
-              :label="company.name"
+            <option
+              v-for="department in company.departments"
+              :value="department.id"
+              :key="department.id"
             >
-              <option
-                v-for="department in company.departments"
-                :value="department.id"
-                :key="department.id"
-              >
-                {{ department.name }}
-              </option>
-            </optgroup>
-          </select>
-        </div>
+              {{ department.name }}
+            </option>
+          </optgroup>
+        </select>
+      </div>
 
-        <div class="mb-4">
-          <label class="block text-gray-600 text-sm mb-1 font-medium">
-            To Department <RequiredIcon />
-          </label>
-          <select
-            v-model="form.to_department_id"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+      <div class="mb-4">
+        <label class="block text-gray-600 text-sm mb-1 font-medium">
+          To Department <RequiredIcon />
+        </label>
+        <select
+          v-model="form.to_department_id"
+          class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">--select department--</option>
+          <optgroup
+            v-for="company in companyStore.companies"
+            :key="company.id"
+            :label="company.name"
           >
-            <option value="">--select department--</option>
-            <optgroup
-              v-for="company in companyStore.companies"
-              :key="company.id"
-              :label="company.name"
+            <option
+              v-for="department in company.departments"
+              :value="department.id"
+              :key="department.id"
             >
-              <option
-                v-for="department in company.departments"
-                :value="department.id"
-                :key="department.id"
-              >
-                {{ department.name }}
-              </option>
-            </optgroup>
-          </select>
-        </div>
-      </template>
-
-      <!-- <div class="grid grid-cols-2 gap-4 mb-4" v-if="task?.children_task_count === 0">
-        <div>
-          <label class="block text-gray-700 font-medium mb-2">Status</label>
-          <select
-            v-model="form.status"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-          >
-            <option>PENDING</option>
-            <option>IN_PROGRESS</option>
-            <option>COMPLETED</option>
-            <option>BLOCKED</option>
-          </select>
-        </div>
-      </div> -->
+              {{ department.name }}
+            </option>
+          </optgroup>
+        </select>
+      </div>
 
       <div class="mb-4">
         <label class="block text-gray-700 font-medium mb-2">Description</label>
