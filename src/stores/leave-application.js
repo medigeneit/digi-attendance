@@ -67,13 +67,15 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
         const month = opts.month || monthMaybe;
         if (!month) throw new Error('Month is required');
 
-        const { companyId = null, departmentId = null, includeEmpty = false } = opts;
+        const { companyId = null, departmentId = null, employee_id, line_type, includeEmpty = false } = opts;
 
         const { data } = await apiClient.get('/reports/monthly-applications', {
           params: {
             month,
             company_id: companyId || undefined,
             department_id: departmentId || undefined,
+            employee_id: employee_id || null,
+            line_type: line_type || 'all',
             include_empty: includeEmpty ? 1 : 0,
           },
         });

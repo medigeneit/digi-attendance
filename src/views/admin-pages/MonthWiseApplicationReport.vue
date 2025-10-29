@@ -25,6 +25,8 @@ const filters = ref({
   company_id: route.query.company_id || '',
   department_id: route.query.department_id || 'all',
   line_type: route.query.line_type || 'all',
+  employee_id: route.query.employee_id || 'all',
+  line_type: route.query.line_type || 'all',
 })
 
 /* ---- table ui ---- */
@@ -89,6 +91,7 @@ const coreRows = computed(() =>
       _cl: safeNum(_leaveBy.CL),
       _ml: safeNum(_leaveBy.ML),
       _sl: safeNum(_leaveBy.SL),
+      _wpl: safeNum(_leaveBy.WPL),
       _leaveTotal: safeNum(r?.leave?.total_days),
 
       _otReq: safeNum(r?.overtime?.requested_hours),
@@ -138,13 +141,13 @@ const filteredRows = computed(() => {
 
 const totals = computed(() => {
   const t = {
-    cl: 0, ml: 0, sl: 0, leaveTotal: 0,
+    cl: 0, ml: 0, sl: 0, wpl: 0, leaveTotal: 0,
     otReq: 0, otAppr: 0, otApps: 0,
     exOff: 0, exShift: 0,
     slTotal: 0, slMinutes: 0, manual: 0,
   }
   for (const r of filteredRows.value) {
-    t.cl += r._cl; t.ml += r._ml; t.sl += r._sl; t.leaveTotal += r._leaveTotal
+    t.cl += r._cl; t.ml += r._ml; t.sl += r._sl; t.wpl += r._wpl; t.leaveTotal += r._leaveTotal
     t.otReq += r._otReq; t.otAppr += r._otAppr; t.otApps += r._otApps
     t.exOff += r._exOff; t.exShift += r._exShift
     t.slTotal += r._slTotal; t.slMinutes += r._slMinutes; t.manual += r._manual
@@ -155,7 +158,7 @@ const totals = computed(() => {
 /* dynamic colspans for group headers */
 const groupColspan = (g) => {
   if (g === 'ot') return cols.value.ot ? 3 : 0
-  if (g === 'leave') return cols.value.leave ? 4 : 0
+  if (g === 'leave') return cols.value.leave ? 5 : 0
   if (g === 'ex') return cols.value.ex ? 2 : 0
   if (g === 'sl') return cols.value.sl ? 2 : 0
   if (g === 'manual') return cols.value.manual ? 1 : 0
@@ -174,6 +177,8 @@ const fetchSummary = async () => {
         !filters.value.department_id || filters.value.department_id === 'all'
           ? null
           : filters.value.department_id,
+      employee_id: filters.value.employee_id,
+      line_type: filters.value.line_type,
       includeEmpty: true,
     })
     const list =
@@ -200,7 +205,7 @@ watch(selectedMonth, (m) => {
   fetchSummary()
 })
 watch(
-  () => [filters.value.company_id, filters.value.department_id, filters.value.line_type],
+  () => [filters.value.company_id, filters.value.department_id, filters.value.employee_id, filters.value.line_type],
   () => {
     router.replace({
       query: {
@@ -208,6 +213,7 @@ watch(
         company_id: filters.value.company_id || '',
         department_id: filters.value.department_id || 'all',
         line_type: filters.value.line_type || 'all',
+        employee_id: filters.value.employee_id || 'all',
       },
     })
     fetchSummary()
@@ -273,6 +279,7 @@ const printTable = () => window.print()
       <EmployeeFilter
         v-model:company_id="filters.company_id"
         v-model:department_id="filters.department_id"
+        v-model:employee_id="filters.employee_id"
         v-model:line_type="filters.line_type"
         :with-type="true"
         :initial-value="$route.query"
@@ -352,6 +359,7 @@ const printTable = () => window.print()
               <th class="th-col th-leave" title="Casual Leave">CL</th>
               <th class="th-col th-leave" title="Medical Leave">ML</th>
               <th class="th-col th-leave" title="Sick Leave">SL</th>
+              <th class="th-col th-leave" title="Sick Leave">WPL</th>
               <th class="th-col th-leave" title="Total Leave Days">Total</th>
             </template>
 
@@ -378,7 +386,7 @@ const printTable = () => window.print()
           <tr
             v-for="(u, idx) in filteredRows"
             :key="u.user_id || idx"
-            class="hover:bg-slate-50/80"
+            class="hover:bg-gray-200"
             :class="dense ? 'h-9' : 'h-11'"
           >
             <!-- sticky cells -->
@@ -407,6 +415,7 @@ const printTable = () => window.print()
               <td class="text-center"><span :class="u._cl>0?'badge-soft-emerald':'muted'">{{ u._cl }}</span></td>
               <td class="text-center"><span :class="u._ml>0?'badge-soft-emerald':'muted'">{{ u._ml }}</span></td>
               <td class="text-center"><span :class="u._sl>0?'badge-soft-emerald':'muted'">{{ u._sl }}</span></td>
+              <td class="text-center"><span :class="u._sl>0?'badge-soft-emerald':'muted'">{{ u._wpl }}</span></td>
               <td class="text-center font-medium"><span :class="u._leaveTotal>0?'badge-strong':'muted'">{{ u._leaveTotal }}</span></td>
             </template>
 
@@ -442,6 +451,7 @@ const printTable = () => window.print()
             <template v-if="cols.leave">
               <td class="text-center">{{ totals.cl }}</td>
               <td class="text-center">{{ totals.ml }}</td>
+              <td class="text-center">{{ totals.sl }}</td>
               <td class="text-center">{{ totals.sl }}</td>
               <td class="text-center">{{ totals.leaveTotal }}</td>
             </template>
