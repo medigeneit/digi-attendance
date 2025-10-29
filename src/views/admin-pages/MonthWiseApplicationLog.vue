@@ -3,9 +3,10 @@ import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import DisplayFormattedWorkingHours from '@/components/overtime/DisplayFormattedWorkingHours.vue'
 import SelectedEmployeeCard from '@/components/user/SelectedEmployeeCard.vue'
+
 import { useLeaveApplicationStore } from '@/stores/leave-application'
 import { useUserStore } from '@/stores/user'
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -24,6 +25,36 @@ const filters = ref({
   category: '',
 })
 
+// labels + order for group tabs
+const GROUP_LABELS = {
+  overtime: 'Overtime',
+  leave_application: 'Leave Applications',
+  short_leave: 'Short Leave',
+  exchange_offday: 'Exchange Offday',
+  exchange_shift: 'Exchange Shift',
+  manual_attendance: 'Manual Attendance',
+}
+const GROUP_ORDER = ['overtime','leave_application','short_leave','exchange_offday','exchange_shift','manual_attendance']
+
+const availableGroups = computed(() => {
+  const log = leaveApplicationStore.applicationLog || {}
+  return GROUP_ORDER
+    .filter(k => Array.isArray(log[k]) && log[k].length)
+    .map(k => ({ key: k, label: GROUP_LABELS[k] || k, count: log[k].length }))
+})
+
+const activeGroup = ref(route.query.group || (availableGroups.value[0]?.key || null))
+watch(availableGroups, (list) => {
+  if (!list.length) { activeGroup.value = null; return }
+  if (!list.find(g => g.key === activeGroup.value)) activeGroup.value = list[0].key
+})
+
+watch(activeGroup, (g) => {
+  router.replace({ query: { ...route.query, group: g || undefined } })
+})
+
+const isLoading = computed(() => leaveApplicationStore.loading)
+
 // Fetch selected user info
 const fetchUser = async (employeeId) => {
   if (employeeId) {
@@ -34,83 +65,54 @@ const fetchUser = async (employeeId) => {
   }
 }
 
-// Fetch attendance
+// Fetch applications
 const fetchApplications = async () => {
   if (filters.value.employee_id && selectedMonth.value) {
     await leaveApplicationStore.getMonthlyApplicationLog(filters.value.employee_id, selectedMonth.value)
   }
 }
 
-// Initial fetch on mount
+// Initial fetch
 onMounted(async () => {
-
-   if (filters.value.employee_id) {
-    await fetchUser(filters.value.employee_id)
-  }
-
-  if (filters.value.employee_id && selectedMonth.value) {
-    await fetchApplications()
-  }
-
+  if (filters.value.employee_id) await fetchUser(filters.value.employee_id)
+  if (filters.value.employee_id && selectedMonth.value) await fetchApplications()
 })
 
-// Watch employee_id changes
-watch(
-  () => filters.value.employee_id,
-  async (newVal, oldVal) => {
-    if (newVal) {
-      await fetchUser(newVal)
-      if (selectedMonth.value) {
-        await fetchApplications()
-      }
-      router.replace({
-        query: { ...route.query, employee_id: newVal },
-      })
-    } else {
-      selectedUser.value = null
-    }
-  },
-  { immediate: true } // ✅ প্রথমবারেও চালু হবে
-)
+// Watch employee change
+watch(() => filters.value.employee_id, async (val) => {
+  if (val) {
+    await fetchUser(val)
+    if (selectedMonth.value) await fetchApplications()
+    router.replace({ query: { ...route.query, employee_id: val } })
+  } else {
+    selectedUser.value = null
+  }
+}, { immediate: true })
 
 // Watch month change
-watch(
-  selectedMonth,
-  (newDate) => {
-    router.replace({ query: { ...route.query, date: newDate } })
-    if (filters.value.employee_id && newDate) {
-      fetchApplications()
-    }
-  },
-  { immediate: true } // ✅ প্রথমবারেও চালু হবে
-)
+watch(selectedMonth, (newDate) => {
+  router.replace({ query: { ...route.query, date: newDate } })
+  if (filters.value.employee_id && newDate) fetchApplications()
+}, { immediate: true })
 
-// Go back
 const goBack = () => router.go(-1)
 
-// Format time
 const formatTime = (timestamp) => {
+  if (!timestamp) return 'N/A'
   const d = new Date(timestamp)
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
-
 const formatOnlyTime = (timeStr) => {
-  const d = new Date(`1970-01-01T${timeStr}`);
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-};
-
-
-const formatDateTime = (timestamp) => {
-  const d = new Date(timestamp)
-  const date = d.toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric'
-  }) 
-  return `${date}`
+  if (!timeStr) return 'N/A'
+  const d = new Date(`1970-01-01T${timeStr}`)
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+const formatDate = (ts) => {
+  if (!ts) return ''
+  const d = new Date(ts)
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-// Apply filters from EmployeeFilter component
 const handleFilterChange = () => {
   router.replace({
     query: {
@@ -121,6 +123,8 @@ const handleFilterChange = () => {
       employee_id: filters.value.employee_id,
     },
   })
+  // optional immediate refresh
+  if (filters.value.employee_id && selectedMonth.value) fetchApplications()
 }
 
 const specifications = {
@@ -128,344 +132,352 @@ const specifications = {
   exchange_offday: 'ExchangeOffdayShow',
 }
 
-</script>
+// status chip classes
+const statusChip = (s) => {
+  const key = (s || '').toLowerCase()
+  if (key === 'approved' || key === 'success') return 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
+  if (key === 'rejected' || key === 'declined') return 'bg-rose-50 text-rose-700 ring-1 ring-rose-200'
+  if (key === 'pending') return 'bg-amber-50 text-amber-700 ring-1 ring-amber-200'
+  if (key === 'processing' || key === 'reviewing') return 'bg-blue-50 text-blue-700 ring-1 ring-blue-200'
+  return 'bg-slate-100 text-slate-700 ring-1 ring-slate-200'
+}
 
+const tableBase = 'min-w-full text-sm'
+const thBase = 'px-3 py-2 text-left font-semibold text-slate-700 whitespace-nowrap'
+const tdBase = 'px-3 py-2 align-top text-slate-700'
+</script>
 
 <template>
   <div class="px-4 space-y-4">
-    <div class="flex items-center justify-between gap-2">
-      <button class="btn-3" @click="goBack">
-        <i class="far fa-arrow-left"></i>
-        <span class="hidden md:flex">Back</span>
+    <!-- Page header -->
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <button class="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 hover:bg-slate-50" @click="goBack">
+        <i class="far fa-arrow-left"></i><span class="hidden md:inline">Back</span>
       </button>
-      <h1 class="title-md md:title-lg flex-wrap text-center">Monthly Application Log</h1>
-      <div></div>
-    </div>
 
-    <div class="flex flex-wrap gap-4">
+      <h1 class="text-xl md:text-2xl font-semibold tracking-tight text-slate-800">
+        Monthly Application Log
+      </h1>
 
-        <EmployeeFilter
-          v-model:company_id="filters.company_id"
-          v-model:department_id="filters.department_id"
-          v-model:employee_id="filters.employee_id"
-          v-model:line_type="filters.line_type"
-          :with-type="true"
-          :initial-value="$route.query"
-         @filter-change="handleFilterChange"
-      />
-      <!-- <MultiselectDropdown
-        v-model="selectedUser"
-        :options="userStore.users"
-        :multiple="false"
-        label="label"
-        placeholder="Select Employee"
-      /> -->
-      <div>
+      <div class="flex items-center gap-2">
         <input
           id="monthSelect"
           type="month"
           v-model="selectedMonth"
           @change="fetchApplications"
-          class="input-1"
+          class="input-1 py-1 rounded-lg border-slate-300"
         />
+        <button
+          class="btn-2"
+          @click="fetchApplications"
+        >
+          <i class="far fa-rotate-right"></i><span class="hidden md:inline">Refresh</span>
+        </button>
       </div>
     </div>
 
-    <div v-if="selectedUser" class="flex justify-between gap-4 text-sm">
-        <SelectedEmployeeCard :user="selectedUser"/>
+    <!-- Filters -->
+    <div class="rounded-xl border bg-white p-3 md:p-4">
+      <EmployeeFilter
+        v-model:company_id="filters.company_id"
+        v-model:department_id="filters.department_id"
+        v-model:employee_id="filters.employee_id"
+        v-model:line_type="filters.line_type"
+        :with-type="true"
+        :initial-value="$route.query"
+        @filter-change="handleFilterChange"
+      />
     </div>
 
-    <LoaderView v-if="leaveApplicationStore.loading" />
+    <!-- Selected employee -->
+    <div v-if="selectedUser" class="flex">
+      <SelectedEmployeeCard :user="selectedUser" />
+    </div>
 
-    <div class="space-y-5">
-    <div
-      v-for="(items, groupKey) in leaveApplicationStore.applicationLog"
-      :key="groupKey"
-      class="bg-gray-50 p-4 rounded shadow"
-    >
-      <!-- Group Title -->
-      <h2 class="text-base font-semibold text-blue-400 mb-2 text-center capitalize">
-        {{ groupKey.replaceAll('_', ' ') }} <span class="text-gray-500">({{ items.length }})</span>
-      </h2>
+    <!-- Loader -->
+    <LoaderView v-if="isLoading" />
 
-      <!-- Group Table -->
-       <div class="overflow-x-auto rounded border bg-white" v-if="groupKey === 'overtime'">
-          <table
-                  class="min-w-full table-auto border-collapse border border-gray-200 bg-white rounded-md text-sm"
-                >
-                  <thead>
-                    <tr class="bg-gray-200 *:py-1">
-                      <th class="border border-gray-300 px-2 text-center">#</th>
-                      <th class="border border-gray-300 px-2 text-center">Date</th>
-                      <th class="border border-gray-300 px-2 text-center">Type</th>
-                      <th class="border border-gray-300 px-2 text-center">Shift</th>
-                      <th class="border border-gray-300 px-2 text-center">Check-In</th>
-                      <th class="border border-gray-300 px-2 text-center">Check-Out</th>
-                      <th class="border border-gray-300 px-2 text-center">Working (hour)</th>
-                      <th class="border border-gray-300 px-2 text-center">Request (hour)</th>
-                      <th class="border border-gray-300 px-2 text-center">Approved (hour)</th>
-                      <th class="border border-gray-300 px-2 text-center">Details</th>
-                      <th class="border border-gray-300 px-2 text-center">Status</th>
-                      <th class="border border-gray-300 px-2 text-center">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr
-                      v-for="(overtime, index) in items"
-                        :key="`${groupKey}-${index}`"
-                      class="border-b border-gray-200 hover:bg-blue-200 *:py-2"
-                    >
-                      <td class="border border-gray-300 px-2 text-center">{{ index + 1 }}</td>
-                      <td class="border border-gray-300 px-2 text-center">
-                        {{
-                          new Date(overtime.date).toLocaleDateString('en-GB', {
-                            day: '2-digit',
-                            month: 'long',
-                            year: 'numeric',
-                          })
-                        }}
-                      </td>
-                      <td class="border border-gray-300 px-2 text-center">
-                        {{ overtime.duty_type }}
-                      </td>
-                      <td class="border border-gray-300 px-2 text-center">
-                        {{ overtime.shift }}
-                      </td>
-                      <td class="border border-gray-300 px-2 text-center">
-                        {{ overtime.check_in || '- : -' }}
-                      </td>
-                      <td class="border border-gray-300 px-2 text-center">
-                        {{ overtime.check_out || '- : -' }}
-                      </td>
-                      <td class="border border-gray-300 px-2 text-center">
-                        <DisplayFormattedWorkingHours :workingHours="overtime.working_hours" />
-                      </td>
-                      <td class="border border-gray-300 px-2 text-center">
-                        <DisplayFormattedWorkingHours :workingHours="overtime.request_overtime_hours" />
-                      </td>
-                      <td class="border border-gray-300 px-2 text-center">
-                        <DisplayFormattedWorkingHours :workingHours="overtime.approval_overtime_hours" />
-                      </td>
-                      <td class="border border-gray-300 px-2 text-center">
-                        {{ overtime.work_details || '' }}
-                      </td>
-                      <td class="border border-gray-300 px-2 text-center">
-                        {{ overtime.status || 'Pending' }}
-                      </td>
-                      <td class="border border-gray-300 px-2 text-center !py-0.5">
-                        <RouterLink
-                          :to="{
-                            name: 'MyOvertimeShow',
-                            params: { id: overtime.id },
-                          }"
-                          class="text-blue-800"
-                        >
-                          <i class="far fa-eye text-lg"></i>
-                        </RouterLink>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-       </div>
-      <div class="overflow-x-auto rounded border bg-white" v-if="groupKey === 'leave_application'">
-        <table class="min-w-full text-sm text-left">
-          <thead class="bg-gray-100 text-gray-700 text-xs uppercase">
-            <tr>
-              <!-- <th class="p-2">Type</th> -->
-              <th class="p-2">#</th>
-              <th class="p-2">Create Date</th>
-              <th class="p-2">Last Working Date</th>
-              <th class="p-2">Resumption Date</th>
-              <th class="p-2">Type</th>
-              <th class="p-2">Reason</th>
-              <th class="p-2">Status</th>
-              <th class="p-2">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="(item, index) in items"
-              :key="`${groupKey}-${index}`"
-              class="border-t hover:bg-gray-50 text-sm"
-            >
-              <td class="p-2">{{ index+=1 }}</td>
-              <td class="p-2">{{ formatDateTime(item.create_date)  }}</td>
-              <td class="p-2">{{ item.from  }}</td>
-              <td class="p-2">{{ item.to  }}</td>
-              <td class="p-2 whitespace-pre-line">
-                {{ item.application_types }}
-              </td>
-              <td class="p-2 whitespace-pre-line">
-                {{ item.reason }}
-              </td>
-              <td class="p-2 whitespace-pre-line">
-                {{ item.status }}
-              </td>
-              <td class="p-2 text-sm text-gray-600">
-                <RouterLink
-                  :to="{
-                    name: 'LeaveApplicationShow',
-                    params: { id: item.id },
-                  }"
-                  class="inline-flex items-center gap-1 text-blue-600 hover:underline"
-                >
-                  <i class="far fa-eye"></i> View
-                </RouterLink>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <!-- Empty state -->
+    <div v-else-if="!availableGroups.length" class="rounded-xl border bg-white p-10 text-center">
+      <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50">
+        <i class="far fa-clipboard-list text-emerald-600 text-xl"></i>
       </div>
-      <div class="overflow-x-auto rounded border bg-white" v-if="groupKey === 'short_leave'">
-        <table class="min-w-full text-sm text-left">
-          <thead class="bg-gray-100 text-gray-700 text-xs uppercase">
-            <tr>
-              <!-- <th class="p-2">Type</th> -->
-              <th class="p-2">#</th>
-              <th class="p-2">Create Date</th>
-              <th class="p-2">Type</th>
-              <th class="p-2">Date</th>
-              <th class="p-2">Check In</th>
-              <th class="p-2">Check Out</th>
-              <th class="p-2">Duration</th>
-              <th class="p-2">Attachment</th>
-              <th class="p-2">Status</th>
-              <th class="p-2">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(item, index) in items"   :key="`${groupKey}-${index}`"  class="border-t hover:bg-gray-50 text-sm" >
-              <td class="p-2">{{ index+=1 }}</td>
-              <td class="p-2">{{ formatDateTime(item.create_date)  }}</td>
-              <td class="p-2">{{ item.application_types  }}</td>
-              <td class="p-2">{{ item.date  }}</td>
-              <td class="p-2 whitespace-pre-line">
-                {{ formatOnlyTime(item.start_time) }}
-                
-              </td>
-              <td class="p-2 whitespace-pre-line">
-                {{ formatOnlyTime(item.end_time) }}
-              </td>
-              <td class="p-2 whitespace-pre-line">
-                {{ item.duration }} m
-              </td>
-              <td class="p-2 whitespace-pre-line  text-center">
-                <a
-                  v-if="item.attachment"
-                  :href="item.attachment"
-                  target="_blank"
-                  rel="noopener"
-                  class="text-blue-600 hover:underline"
-                >
-                 <i class="far fa-eye"></i> 
-                </a>
-                <span v-else class="text-gray-400">No file</span>
-              </td>
+      <h3 class="text-lg font-semibold text-slate-800">No applications found</h3>
+      <p class="mt-1 text-sm text-slate-500">Choose an employee and month to view logs.</p>
+    </div>
 
-              <td class="p-2 whitespace-pre-line">
-                {{ item.status }}
-              </td>
-              <td class="p-2 text-sm text-gray-600">
-                <RouterLink
-                  :to="{
-                    name: 'ShortLeaveShow',
-                    params: { id: item.id },
-                  }"
-                  class="inline-flex items-center gap-1 text-blue-600 hover:underline"
-                >
-                  <i class="far fa-eye"></i> View
-                </RouterLink>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <!-- Groups: chips -->
+    <div v-else class="space-y-4">
+      <div class="flex flex-wrap items-center gap-2">
+        <button
+          v-for="g in availableGroups"
+          :key="g.key"
+          type="button"
+          @click="activeGroup = g.key"
+          class="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm"
+          :class="activeGroup === g.key ? 'border-emerald-600 text-emerald-700 bg-emerald-50' : 'border-slate-200 text-slate-700 hover:bg-slate-50'"
+        >
+          <span>{{ g.label }}</span>
+          <span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-black/5 px-1 text-[12px] font-semibold">{{ g.count }}</span>
+        </button>
       </div>
-      <div class="overflow-x-auto rounded border bg-white" v-if="groupKey === 'exchange_offday' || groupKey === 'exchange_shift'">
-        <table class="min-w-full text-sm text-left">
-          <thead class="bg-gray-100 text-gray-700 text-xs uppercase">
-            <tr>
-              <!-- <th class="p-2">Type</th> -->
-              <th class="p-2">#</th>
-              <th class="p-2">Create Date</th>
-              <th class="p-2">Current Date</th>
-              <th class="p-2">Exchange Date</th>
-              <th class="p-2">Shift</th>
-              <th class="p-2">Status</th>
-              <th class="p-2">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(item, index) in items"   :key="`${groupKey}-${index}`"  class="border-t hover:bg-gray-50 text-sm" >
-              <td class="p-2">{{ index+=1 }}</td>
-              <td class="p-2">{{ formatDateTime(item.create_date)  }}</td>
-              <td class="p-2">{{ item.current_date  }}</td>
-              <td class="p-2">{{ item.exchange_date  }}</td>
-              <td class="p-2 whitespace-pre-line">
-                {{  item?.shift || 'N/A' }}
-                
-              </td>
-              <td class="p-2 whitespace-pre-line">
-                {{ item.status }}
-              </td>
-              <td class="p-2 text-sm text-gray-600">
-                <RouterLink
-                  :to="{
-                    name: specifications[item.type],
-                    params: { id: item.id },
-                  }"
-                  class="inline-flex items-center gap-1 text-blue-600 hover:underline"
-                >
-                  <i class="far fa-eye"></i> View
-                </RouterLink>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="overflow-x-auto rounded border bg-white" v-if="groupKey === 'manual_attendance'">
-        <table class="min-w-full text-sm text-left">
-          <thead class="bg-gray-100 text-gray-700 text-xs uppercase">
-            <tr>
-              <!-- <th class="p-2">Type</th> -->
-              <th class="p-2">#</th>
-              <th class="p-2">Create Date</th>
-              <th class="p-2">Date</th>
-              <th class="p-2">Type</th>
-              <th class="p-2">Check In</th>
-              <th class="p-2">Check Out</th>
-              <th class="p-2">Status</th>
-              <th class="p-2">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(item, index) in items"   :key="`${groupKey}-${index}`"  class="border-t hover:bg-gray-50 text-sm" >
-              <td class="p-2">{{ index+=1 }}</td>
-              <td class="p-2">{{ formatDateTime(item.create_date)  }}</td>
-              <td class="p-2"> {{ formatDateTime(item.check_in  || item.check_out)  }}</td>
-              <td class="p-2">{{ item.application_types  }}</td>
-              <td class="p-2">{{ formatTime(item.check_in) || 'N/A' }}</td>
-              <td class="p-2">{{ formatTime(item.check_out) || 'N/A' }}</td>
-              <td class="p-2 whitespace-pre-line">
-                {{ item.status }}
-              </td>
-              <td class="p-2 text-sm text-gray-600">
-                <RouterLink
-                  :to="{
-                    name: 'ManualAttendanceShow',
-                    params: { id: item.id },
-                  }"
-                  class="inline-flex items-center gap-1 text-blue-600 hover:underline"
-                >
-                  <i class="far fa-eye"></i> View
-                </RouterLink>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+
+      <!-- Active table card -->
+      <div class="rounded-xl border bg-white overflow-hidden">
+        <div class="border-b bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-800">
+          {{ GROUP_LABELS[activeGroup] || activeGroup }}
+        </div>
+
+        <!-- OVERTIME -->
+        <div v-if="activeGroup==='overtime'" class="overflow-x-auto">
+          <table :class="tableBase">
+            <thead class="sticky top-0 bg-white/90 backdrop-blur border-b">
+              <tr class="text-xs uppercase text-slate-600">
+                <th :class="thBase">#</th>
+                <th :class="thBase">Date</th>
+                <th :class="thBase">Type</th>
+                <th :class="thBase">Shift</th>
+                <th :class="thBase">Check-In</th>
+                <th :class="thBase">Check-Out</th>
+                <th :class="thBase">Working</th>
+                <th :class="thBase">Request</th>
+                <th :class="thBase">Approved</th>
+                <th :class="thBase">Details</th>
+                <th :class="thBase">Status</th>
+                <th :class="thBase">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="(overtime, i) in leaveApplicationStore.applicationLog.overtime"
+                :key="`ot-${overtime.id || i}`"
+                class="border-b hover:bg-slate-50"
+              >
+                <td :class="tdBase">{{ i + 1 }}</td>
+                <td :class="tdBase">{{ formatDate(overtime.date) }}</td>
+                <td :class="tdBase">{{ overtime.duty_type }}</td>
+                <td :class="tdBase">{{ overtime.shift }}</td>
+                <td :class="tdBase">{{ overtime.check_in || '—' }}</td>
+                <td :class="tdBase">{{ overtime.check_out || '—' }}</td>
+                <td :class="tdBase"><DisplayFormattedWorkingHours :workingHours="overtime.working_hours" /></td>
+                <td :class="tdBase"><DisplayFormattedWorkingHours :workingHours="overtime.request_overtime_hours" /></td>
+                <td :class="tdBase"><DisplayFormattedWorkingHours :workingHours="overtime.approval_overtime_hours" /></td>
+                <td :class="tdBase">{{ overtime.work_details || '' }}</td>
+                <td :class="tdBase">
+                  <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1"
+                        :class="statusChip(overtime.status)">
+                    {{ overtime.status || 'Pending' }}
+                  </span>
+                </td>
+                <td :class="tdBase + ' text-right'">
+                  <RouterLink
+                    :to="{ name:'MyOvertimeShow', params:{ id: overtime.id } }"
+                    class="inline-flex items-center gap-1 text-emerald-700 hover:underline"
+                  >
+                    <i class="far fa-eye"></i> View
+                  </RouterLink>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- LEAVE APPLICATION -->
+        <div v-else-if="activeGroup==='leave_application'" class="overflow-x-auto">
+          <table :class="tableBase">
+            <thead class="sticky top-0 bg-white/90 backdrop-blur border-b">
+              <tr class="text-xs uppercase text-slate-600">
+                <th :class="thBase">#</th>
+                <th :class="thBase">Create Date</th>
+                <th :class="thBase">Last Working</th>
+                <th :class="thBase">Resumption</th>
+                <th :class="thBase">Type</th>
+                <th :class="thBase">Reason</th>
+                <th :class="thBase">Status</th>
+                <th :class="thBase">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="(item, i) in leaveApplicationStore.applicationLog.leave_application"
+                :key="`la-${item.id || i}`"
+                class="border-b hover:bg-slate-50"
+              >
+                <td :class="tdBase">{{ i + 1 }}</td>
+                <td :class="tdBase">{{ formatDate(item.create_date) }}</td>
+                <td :class="tdBase">{{ item.from }}</td>
+                <td :class="tdBase">{{ item.to }}</td>
+                <td :class="tdBase" class="whitespace-pre-line">{{ item.application_types }}</td>
+                <td :class="tdBase" class="whitespace-pre-line">{{ item.reason }}</td>
+                <td :class="tdBase">
+                  <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1"
+                        :class="statusChip(item.status)">
+                    {{ item.status }}
+                  </span>
+                </td>
+                <td :class="tdBase + ' text-right'">
+                  <RouterLink
+                    :to="{ name:'LeaveApplicationShow', params:{ id: item.id } }"
+                    class="inline-flex items-center gap-1 text-emerald-700 hover:underline"
+                  >
+                    <i class="far fa-eye"></i> View
+                  </RouterLink>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- SHORT LEAVE -->
+        <div v-else-if="activeGroup==='short_leave'" class="overflow-x-auto">
+          <table :class="tableBase">
+            <thead class="sticky top-0 bg-white/90 backdrop-blur border-b">
+              <tr class="text-xs uppercase text-slate-600">
+                <th :class="thBase">#</th>
+                <th :class="thBase">Create Date</th>
+                <th :class="thBase">Type</th>
+                <th :class="thBase">Date</th>
+                <th :class="thBase">Check-In</th>
+                <th :class="thBase">Check-Out</th>
+                <th :class="thBase">Duration</th>
+                <th :class="thBase">Attachment</th>
+                <th :class="thBase">Status</th>
+                <th :class="thBase" class="text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="(item, i) in leaveApplicationStore.applicationLog.short_leave"
+                :key="`sl-${item.id || i}`"
+                class="border-b hover:bg-slate-50"
+              >
+                <td :class="tdBase">{{ i + 1 }}</td>
+                <td :class="tdBase">{{ formatDate(item.create_date) }}</td>
+                <td :class="tdBase">{{ item.application_types }}</td>
+                <td :class="tdBase">{{ item.date }}</td>
+                <td :class="tdBase">{{ formatOnlyTime(item.start_time) }}</td>
+                <td :class="tdBase">{{ formatOnlyTime(item.end_time) }}</td>
+                <td :class="tdBase">{{ item.duration }} m</td>
+                <td :class="tdBase + ' text-center'">
+                  <a v-if="item.attachment" :href="item.attachment" target="_blank" rel="noopener" class="text-emerald-700 hover:underline">
+                    <i class="far fa-eye"></i>
+                  </a>
+                  <span v-else class="text-slate-400">No file</span>
+                </td>
+                <td :class="tdBase">
+                  <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1"
+                        :class="statusChip(item.status)">
+                    {{ item.status }}
+                  </span>
+                </td>
+                <td :class="tdBase + ' text-right'">
+                  <RouterLink
+                    :to="{ name:'ShortLeaveShow', params:{ id: item.id } }"
+                    class="inline-flex items-center gap-1 text-emerald-700 hover:underline"
+                  >
+                    <i class="far fa-eye"></i> View
+                  </RouterLink>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- EXCHANGE (offday/shift) -->
+        <div v-else-if="activeGroup==='exchange_offday' || activeGroup==='exchange_shift'" class="overflow-x-auto">
+          <table :class="tableBase">
+            <thead class="sticky top-0 bg-white/90 backdrop-blur border-b">
+              <tr class="text-xs uppercase text-slate-600">
+                <th :class="thBase">#</th>
+                <th :class="thBase">Create Date</th>
+                <th :class="thBase">Current Date</th>
+                <th :class="thBase">Exchange Date</th>
+                <th :class="thBase">Shift</th>
+                <th :class="thBase">Status</th>
+                <th :class="thBase" class="text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="(item, i) in leaveApplicationStore.applicationLog[activeGroup]"
+                :key="`ex-${item.id || i}`"
+                class="border-b hover:bg-slate-50"
+              >
+                <td :class="tdBase">{{ i + 1 }}</td>
+                <td :class="tdBase">{{ formatDate(item.create_date) }}</td>
+                <td :class="tdBase">{{ item.current_date }}</td>
+                <td :class="tdBase">{{ item.exchange_date }}</td>
+                <td :class="tdBase">{{ item?.shift || 'N/A' }}</td>
+                <td :class="tdBase">
+                  <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1"
+                        :class="statusChip(item.status)">
+                    {{ item.status }}
+                  </span>
+                </td>
+                <td :class="tdBase + ' text-right'">
+                  <RouterLink
+                    :to="{ name: specifications[item.type], params:{ id: item.id } }"
+                    class="inline-flex items-center gap-1 text-emerald-700 hover:underline"
+                  >
+                    <i class="far fa-eye"></i> View
+                  </RouterLink>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- MANUAL ATTENDANCE -->
+        <div v-else-if="activeGroup==='manual_attendance'" class="overflow-x-auto">
+          <table :class="tableBase">
+            <thead class="sticky top-0 bg-white/90 backdrop-blur border-b">
+              <tr class="text-xs uppercase text-slate-600">
+                <th :class="thBase">#</th>
+                <th :class="thBase">Create Date</th>
+                <th :class="thBase">Date</th>
+                <th :class="thBase">Type</th>
+                <th :class="thBase">Check-In</th>
+                <th :class="thBase">Check-Out</th>
+                <th :class="thBase">Status</th>
+                <th :class="thBase" class="text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="(item, i) in leaveApplicationStore.applicationLog.manual_attendance"
+                :key="`ma-${item.id || i}`"
+                class="border-b hover:bg-slate-50"
+              >
+                <td :class="tdBase">{{ i + 1 }}</td>
+                <td :class="tdBase">{{ formatDate(item.create_date) }}</td>
+                <td :class="tdBase">{{ formatDate(item.check_in || item.check_out) }}</td>
+                <td :class="tdBase">{{ item.application_types }}</td>
+                <td :class="tdBase">{{ formatTime(item.check_in) }}</td>
+                <td :class="tdBase">{{ formatTime(item.check_out) }}</td>
+                <td :class="tdBase">
+                  <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1"
+                        :class="statusChip(item.status)">
+                    {{ item.status }}
+                  </span>
+                </td>
+                <td :class="tdBase + ' text-right'">
+                  <RouterLink
+                    :to="{ name:'ManualAttendanceShow', params:{ id: item.id } }"
+                    class="inline-flex items-center gap-1 text-emerald-700 hover:underline"
+                  >
+                    <i class="far fa-eye"></i> View
+                  </RouterLink>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- fallback -->
+        <div v-else class="p-6 text-center text-slate-500">
+          No data for this group.
+        </div>
       </div>
     </div>
-  </div>
-
-    
   </div>
 </template>
