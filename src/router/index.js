@@ -1291,7 +1291,7 @@ const router = createRouter({
             title: 'Department Assign',
           },
         },
-       
+
 
       ],
     },
@@ -1304,6 +1304,12 @@ const router = createRouter({
 router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore()
   const isAuthenticated = !!authStore.token || localStorage.getItem('auth_token')
+
+  if( to.name == 'RequirementTaskList') {
+    if( !authStore.isAdminMood ) {
+      next({ name: 'MyRequirementTaskList' })
+    }
+  }
 
   // 1) Auth থাকলে public page বা '/' এ গেলে dashboard এ পাঠানো হবে
   const guestOnly = to.meta.guestOnly || ['/', '/login', '/register', '/about', '/privacy-policy'].includes(to.path)

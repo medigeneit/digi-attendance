@@ -178,7 +178,8 @@ export const useTaskStore = defineStore('task', () => {
       if( !options.fetchOnly ) {
         error.value = msg;
       }
-      return msg
+      throw err
+
     } finally {
       if( !options.fetchOnly ) {
         loading.value = false;

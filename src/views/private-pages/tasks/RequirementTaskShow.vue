@@ -4,6 +4,7 @@ import OverlyModal from '@/components/common/OverlyModal.vue'
 import DepartmentChip from '@/components/DepartmentChip.vue'
 import DescriptionView from '@/components/DescriptionView.vue'
 import TaskAssignedUsers from '@/components/tasks/TaskAssignedUsers.vue'
+import TaskClosingForm from '@/components/tasks/TaskClosingForm.vue'
 import { default as TaskDeletingFrom } from '@/components/tasks/TaskDeletingFrom.vue'
 import TaskStatus from '@/components/tasks/TaskStatus.vue'
 import TaskStatusManager from '@/components/tasks/TaskStatusManager.vue'
@@ -33,14 +34,30 @@ const taskDeleting = reactive({
   task: null,
 })
 
+const taskClosing = reactive({
+  open: false,
+  task: null,
+})
+
 function handleDeleteButtonClick() {
   taskDeleting.open = true
   taskDeleting.task = store.task
 }
 
+function handleCloseButtonClick() {
+  taskClosing.open = true
+  taskClosing.task = store.task
+}
+
 onMounted(async () => {
   state.value = 'loading'
-  await fetchTask(route.params.id)
+  try {
+    await fetchTask(route.params.id)
+  } catch (err) {
+    if (err.response.status === 404) {
+      router.push({ name: 'RequirementTaskList' })
+    }
+  }
   state.value = ''
   if (route.hash == '#sub-tasks') {
     setTimeout(() => scrollToID(route.hash, 66), 0)
@@ -440,7 +457,10 @@ async function handleClickDelete(todoDate) {
               hide-timeline
             >
               <template #top>
-                <div class="flex items-start justify-center !text-lg mb-4">
+                <div
+                  class="flex items-start justify-center !text-lg mb-4"
+                  v-if="!store.task?.closed_at"
+                >
                   <TaskStatus
                     :status="store.task?.status"
                     :progressPercent="store.task?.progress_percent"
@@ -450,8 +470,15 @@ async function handleClickDelete(todoDate) {
               </template>
             </TaskStatusManager>
 
-            <div v-if="store.task?.status === 'PENDING' && authStore.isAdminMood" class="py-4">
+            <div v-if="authStore.isAdminMood" class="py-4 flex items-center justify-between">
               <button class="btn-2-red h-8" @click.prevent="handleDeleteButtonClick">Delete</button>
+              <button
+                class="btn-3 h-8"
+                @click.prevent="handleCloseButtonClick"
+                v-if="!store.task?.closed_at"
+              >
+                Close Task
+              </button>
             </div>
             <div v-else class="h-1"></div>
           </div>
@@ -482,5 +509,9 @@ async function handleClickDelete(todoDate) {
       @clickEdit="handleClickEditTodo"
       @clickAddTodoDate="addTodoDate"
     />
+
+    <OverlyModal v-if="taskClosing.open">
+      <TaskClosingForm :task="store.task" @clickCancel="taskClosing.open = false" />
+    </OverlyModal>
   </div>
 </template>

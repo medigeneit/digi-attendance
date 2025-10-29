@@ -165,13 +165,10 @@ watch(
   () => authStore.isAdminMood,
   (adminMode) => {
     if (!adminMode) {
-      router.push({ name: 'MyRequirementTaskList' })
+      router.push({ name: 'MyRequirementTaskList', query: route.query })
     } else {
-      router.push({ name: 'RequirementTaskList' })
+      router.push({ name: 'RequirementTaskList', query: route.query })
     }
-  },
-  {
-    immediate: true,
   },
 )
 
@@ -238,7 +235,7 @@ function getTaskRouterLink(task) {
       @clickPriorityDiscard="() => (listHasRearranged ? draggableTaskList.resetItems : null)"
       :list-has-rearranged="listHasRearranged"
       :isMyTask="route.name === 'MyRequirementTaskList'"
-      class="mb-6"
+      class="mb-4"
     />
 
     <template v-if="route?.query?.['query-log'] == 'true'">
@@ -254,11 +251,7 @@ function getTaskRouterLink(task) {
     <!-- <pre>{{ taskUsers }}</pre> -->
     <div class="relative min-h-[20vh]">
       <template v-if="route.query?.view === 'userwise'">
-        <div
-          v-for="user in taskUsers"
-          :key="user.id"
-          class="mt-8 rounded-md border-2 border-sky-300"
-        >
+        <div v-for="user in taskUsers" :key="user.id" class="rounded-md border-2 border-sky-300">
           <div
             class="sticky top-14 z-40 text-gray-700 bg-gradient-to-tl from-sky-400/60 to-sky-400 py-2 px-4 flex items-center"
           >
@@ -288,7 +281,7 @@ function getTaskRouterLink(task) {
         <div
           v-for="deptGroup in taskDepartmentGroups"
           :key="deptGroup.key"
-          class="mt-8 rounded-md border-2 border-sky-300"
+          class="rounded-md border-2 border-sky-300"
         >
           <div
             class="sticky top-14 z-40 text-gray-700 bg-gradient-to-tl from-sky-400/60 to-sky-400 py-2 px-4 flex items-center"

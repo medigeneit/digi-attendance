@@ -34,23 +34,17 @@
       </thead>
       <tbody>
         <template v-for="(detail, detailIndex) in requirementDetails" :key="detail.id">
-          <tr
-            v-if="!(requirementDetails.length === 1 && requirementDetails[0]?.id == 0)"
-            class="group/dept"
-          >
-            <th
-              colspan="10"
-              class="font-semibold border hover:bg-orange-50"
-              :class="[detailIndex > 0 ? '' : '']"
-            >
+          <tr class="group/dept">
+            <th colspan="10" class="font-semibold" :class="[detailIndex > 0 ? '' : '']">
               <div
-                class="text-left pt-8 pb-1 px-2 flex"
+                class="text-left mt-2 -mx-[2px] -mb-[1px] py-2 px-2 flex items-center border border-b-0 rounded-t bg-blue-50"
                 :class="[
                   detail.id === 0 ? 'text-gray-500' : 'text-sky-800',
                   // detail.id === 0 ? 'bg-gray-50' : 'bg-gray-50',
                 ]"
               >
-                <div>
+                <div class="flex gap-1 items-center">
+                  <div class="">{{ detailIndex + 1 }}.</div>
                   <p class="line-clamp-1">
                     {{ detail?.title }}
                   </p>
@@ -75,7 +69,7 @@
                         },
                       )
                     "
-                    class="btn-2 whitespace-nowrap h-8 px-3 opacity-20 group-hover/dept:opacity-100"
+                    class="btn-2 whitespace-nowrap h-6 px-3 opacity-20 group-hover/dept:opacity-100"
                   >
                     <i class="fas fa-plus-circle"></i>
                     Add Task
@@ -94,8 +88,8 @@
             }"
           >
             <td class="border text-center py-2 px-1 border-gray-200">
-              <div class="text-base font-semibold text-purple-600" v-if="taskIndex !== undefined">
-                {{ taskIndex + 1 }}.
+              <div class="font-semibold text-purple-400 text-sm" v-if="taskIndex !== undefined">
+                {{ detailIndex + 1 }}.{{ taskIndex + 1 }}
               </div>
             </td>
             <td class="border px-3 py-1 border-gray-200 relative">
