@@ -33,21 +33,21 @@
         </tr>
       </thead>
       <tbody>
-        <template v-for="(detail, detailIndex) in requirementDetails" :key="detail.id">
+        <template v-for="(requirement, requirementIndex) in requirements" :key="requirement.id">
           <tr class="group/dept">
-            <th colspan="10" class="font-semibold" :class="[detailIndex > 0 ? '' : '']">
+            <th colspan="10" class="font-semibold" :class="[requirementIndex > 0 ? '' : '']">
               <div
                 class="text-left -mx-[2px] -mb-[1px] py-2 px-2 flex items-center border border-b-0 rounded-t bg-emerald-50"
                 :class="[
-                  detail.id === 0 ? 'text-gray-500' : 'text-sky-800',
-                  detailIndex > 0 ? 'mt-4' : '',
-                  // detail.id === 0 ? 'bg-gray-50' : 'bg-gray-50',
+                  requirement.id === 0 ? 'text-gray-500' : 'text-sky-800',
+                  requirementIndex > 0 ? 'mt-4' : '',
+                  // requirement.id === 0 ? 'bg-gray-50' : 'bg-gray-50',
                 ]"
               >
                 <div class="flex gap-1 items-start text-base">
-                  <div class="font-bold text-lime-600">{{ detailIndex + 1 }}.</div>
+                  <div class="font-bold text-lime-600">{{ requirementIndex + 1 }}.</div>
                   <p class="line-clamp-2">
-                    {{ detail?.title }}
+                    {{ requirement.title }}
                   </p>
                 </div>
 
@@ -58,10 +58,9 @@
                       emits(
                         'clickAddTask',
                         {
-                          requirement_id: detail.requirement?.id,
-                          requirement_detail_id: detail.id,
-                          from_department_id: detail.requirement?.from_department_id,
-                          to_department_id: detail.requirement?.to_department_id,
+                          requirement_id: requirement?.id,
+                          from_department_id: requirement?.from_department_id,
+                          to_department_id: requirement?.to_department_id,
                         },
                         {
                           requirement_id: true,
@@ -80,7 +79,7 @@
             </th>
           </tr>
           <tr
-            v-for="(task, taskIndex) in detail.tasks"
+            v-for="(task, taskIndex) in requirement.tasks"
             :key="task.id"
             class="group/sub-task-row"
             :class="{
@@ -90,7 +89,7 @@
           >
             <td class="border text-center py-2 px-1 border-gray-200">
               <div class="font-semibold text-purple-400 text-sm" v-if="taskIndex !== undefined">
-                {{ detailIndex + 1 }}.{{ taskIndex + 1 }}
+                {{ requirementIndex + 1 }}.{{ taskIndex + 1 }}
               </div>
             </td>
             <td class="border px-3 py-1 border-gray-200 relative">
@@ -119,7 +118,7 @@
                       <i class="fas fa-tasks"></i> {{ task?.todos_count }}
                     </div>
                     <div class="text-xs flex items-center gap-1 text-sky-400 ml-3">
-                      <i class="fas fa-book"></i> {{ task?.requirement_detail?.id }}
+                      <i class="fas fa-book"></i> {{ task?.requirement?.id }}
                     </div>
                   </div>
                 </div>
@@ -213,29 +212,29 @@ const props = defineProps({
 
 const route = useRoute()
 
-const requirementDetails = computed(() => {
+const requirements = computed(() => {
   return props.tasks
-    .reduce((details, task) => {
-      const key = task.requirement_detail?.id || '-'
+    .reduce((requirements, task) => {
+      const key = task.requirement?.id || '-'
 
-      const detailList = [...details]
+      const requirementList = [...requirements]
 
-      const foundDetail = detailList.find((d) => d?.key == key)
+      const foundRequirement = requirementList.find((d) => d?.key == key)
 
-      if (!foundDetail) {
-        detailList.push({
+      if (!foundRequirement) {
+        requirementList.push({
           key: key,
-          position: task?.requirement_detail ? 0 : 1,
-          ...(task?.requirement_detail || { title: '(Other tasks)', id: 0 }),
+          position: task?.requirement ? 0 : 1,
+          ...(task?.requirement || { title: '(Other tasks)', id: 0 }),
           tasks: [task],
         })
       } else {
-        foundDetail.tasks = [...foundDetail.tasks, task]
+        foundRequirement.tasks = [...foundRequirement.tasks, task]
       }
 
-      return detailList
+      return requirementList
     }, [])
-    .sort((detailA, detailB) => detailA.position - detailB.position)
+    .sort((requirementA, requirementB) => requirementA.position - requirementB.position)
 })
 
 // @editClick="(taskId) => (editingId = taskId)"

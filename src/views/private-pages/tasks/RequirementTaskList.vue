@@ -318,7 +318,7 @@ function getTaskRouterLink(task) {
           <div class="rounded-b-md overflow-y-auto">
             <TaskTable
               :tasks="deptGroup.tasks"
-              groupBy="requirement_details"
+              groupBy="requirement"
               @editClick="(taskId) => (editingId = taskId)"
               @clickAddTask="(params, readonlyValues) => goToAdd(params, readonlyValues)"
               @employeeAssignClick="(taskId) => openEmployeeAssignForm(taskId)"

@@ -1,9 +1,5 @@
 <script setup>
-import { findRequirement } from '@/services/requirement'
-import {
-  findRequirementDetail,
-  updateRequirementDetailFeedback,
-} from '@/services/requirement-detail'
+import { findRequirement, updateRequirementFeedback } from '@/services/requirement'
 import { onMounted, ref } from 'vue'
 import LoaderView from '../common/LoaderView.vue'
 import DescriptionView from '../DescriptionView.vue'
@@ -13,7 +9,7 @@ const props = defineProps({
     type: [Number, String],
     required: true,
   },
-  detailId: {
+  requirementId: {
     type: [Number, String],
     required: true,
   },
@@ -22,7 +18,7 @@ const props = defineProps({
 const emit = defineEmits(['update', 'closeClick', 'error'])
 
 const formContainerRef = ref()
-const detail = ref(null)
+const requirement = ref(null)
 const state = ref('')
 const error = ref()
 const form = ref({
@@ -33,16 +29,12 @@ async function submit() {
   state.value = 'submitting'
 
   try {
-    const response = await updateRequirementDetailFeedback(
-      props.requirementId,
-      props.detailId,
-      form.value.feedback,
-    )
+    const response = await updateRequirementFeedback(props.requirementId, form.value.feedback)
     emit('update', response)
     state.value = 'create'
   } catch (err) {
     state.value = 'error'
-    error.value = err.response?.data?.message || 'Failed to update requirement detail'
+    error.value = err.response?.data?.message || 'Failed to update requirement requirement'
     emit('error', error.value)
   }
 }
@@ -52,12 +44,12 @@ onMounted(async () => {
   try {
     await findRequirement(props.requirementId)
 
-    detail.value = (await findRequirementDetail(props.requirementId, props.detailId)).data?.detail
+    requirement.value = (await findRequirement(props.requirementId)).data?.requirement
     form.value = {
-      feedback: detail.value?.feedback,
+      feedback: requirement.value?.feedback,
     }
   } catch (err) {
-    error.value = err.response?.data?.message || 'Failed to fetch requirement detail'
+    error.value = err.response?.data?.message || 'Failed to fetch requirement requirement'
   } finally {
     state.value = ''
   }
@@ -91,7 +83,7 @@ onMounted(async () => {
               button: 'mt-0',
             }"
           >
-            {{ detail?.title }}
+            {{ requirement?.title }}
           </DescriptionView>
         </div>
 
@@ -122,7 +114,7 @@ onMounted(async () => {
             {{
               state == 'submitting'
                 ? 'Saving...'
-                : detail?.feedback
+                : requirement?.feedback
                   ? 'Update Feedback'
                   : 'Add Feedback'
             }}
