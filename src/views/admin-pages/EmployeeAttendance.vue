@@ -189,89 +189,109 @@ const hasSelection = computed(() => !!filters.value.employee_id)
       <div></div>
     </div>
 
-    <div class="rounded-xl border border-zinc-200 bg-white shadow-sm p-3">
-      <div class="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
-        <p class="text-sm text-zinc-600"><i class="fas fa-filter mr-2"></i> Filters</p>
-        <div
-          class="h-1 w-32 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-400 rounded-full"
-        ></div>
-      </div>
-      <div class="w-full flex flex-wrap gap-4 items-center md:w-auto">
-        <EmployeeFilter
-          v-model:company_id="filters.company_id"
-          v-model:department_id="filters.department_id"
-          v-model:employee_id="filters.employee_id"
-          v-model:line_type="filters.line_type"
-          :with-type="true"
-          :initial-value="$route.query"
-          @filter-change="handleFilterChange"
-          class="w-full"
-        />
-        <div>
-          <input
-            id="monthSelect"
-            type="month"
-            v-model="selectedMonth"
-            @change="fetchAttendance"
-            class="input-1"
-            aria-label="Select month"
-          />
-        </div>
+    <EmployeeFilter
+      v-model:company_id="filters.company_id"
+      v-model:department_id="filters.department_id"
+      v-model:employee_id="filters.employee_id"
+      v-model:line_type="filters.line_type"
+      :with-type="true"
+      :initial-value="$route.query"
+      @filter-change="handleFilterChange"
+      class="w-full"
+    >
+    <input
+      id="monthSelect"
+      type="month"
+      v-model="selectedMonth"
+      @change="fetchAttendance"
+      class="input-1 py-0.5"
+      aria-label="Select month"
+    />
+    </EmployeeFilter>
+    <div class="sticky top-14 z-40 text-gray-700 bg-gradient-to-tl">
+      <div class="grid md:grid-cols-2 gap-4 text-sm mt-2">
+        <SelectedEmployeeCard v-if="hasSelection" :user="selectedUser" />
+        
+        <div class="card-bg p-4 gap-1">
+            <!-- Header: tighter -->
+            <div class="flex justify-between items-center">
+              <h2 class="text-sm md:text-base font-semibold text-zinc-900">Attendance Summary</h2>
+              <router-link
+                :to="{ name: 'MonthWiseApplicationLog', query: { ...$route.query } }"
+                class="inline-flex items-center gap-1 rounded-md border border-zinc-200 bg-white px-2.5 py-1 text-[12px] font-medium text-zinc-700 hover:bg-zinc-50 active:scale-[.99]"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <i class="far fa-clock text-[12px]"></i>
+                <span class="hidden sm:inline">Application History</span>
+                <span class="sm:hidden">History</span>
+              </router-link>
+            </div>
+
+            <!-- Slim gradient divider, <hr> বাদ -->
+            <div class="h-px w-full bg-gradient-to-r from-indigo-500/70 via-sky-400/70 to-cyan-400/70"></div>
+
+            <!-- KPI chips: compact, mobile-scrollable -->
+            <div class="px-1 pt-1 pb-0.5 overflow-hidden">
+              <div class="-mx-1 flex items-center gap-2 overflow-x-auto px-1">
+                <span
+                  v-if="presentRate !== null"
+                  class="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700 whitespace-nowrap"
+                >
+                  <i class="far fa-check-circle text-[11px]"></i>
+                 Present  <strong>{{ attendanceStore?.summary?.total_present_days || 0 }}d</strong>
+                </span>
+                <span  class="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-medium text-amber-700 whitespace-nowrap"
+                >
+                  <i class="far fa-clock text-[11px]"></i>
+                  Late <strong>{{ attendanceStore?.summary?.actual_late_day }}d</strong>
+                </span>
+                <span
+                  class="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-[11px] font-medium text-red-700 whitespace-nowrap"
+                >
+                  <i class="far fa-user-times text-[11px]"></i>
+                  Absent <strong>{{ attendanceStore?.summary?.total_absent_days || 0 }}d</strong>
+                </span>
+                <span
+                  class="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-2.5 py-0.5 text-[11px] font-medium text-sky-700 whitespace-nowrap"
+                >
+                  <i class="far fa-bolt text-[11px]"></i>
+                  Total Weekends <strong>{{attendanceStore?.summary?.total_weekend_days}}d</strong>
+                </span>
+              </div>
+            </div>
+
+            <!-- Compact stats grid -->
+            <div class="grid md:grid-cols-3 gap-2 mt-1">
+              <div class="flex items-center justify-between rounded-lg border border-zinc-100 bg-zinc-50 px-3 py-2">
+                <span class="flex items-center gap-2 text-[12px] text-zinc-600">
+                  <i class="far fa-briefcase text-[12px]"></i> Total Working Days
+                </span>
+                <strong class="text-sm text-zinc-900">{{ attendanceStore?.summary?.total_working_days || 0 }}</strong>
+              </div>
+              <div class="flex items-center justify-between rounded-lg border border-zinc-100 bg-zinc-50 px-3 py-2">
+                <span class="flex items-center gap-2 text-[12px] text-zinc-600">
+                  <i class="far fa-hourglass-half text-[12px]"></i> Working Hours
+                </span>
+                <strong class="text-sm text-zinc-900">
+                  {{ (attendanceStore?.summary?.total_working_hours ?? '').toString().trim() || '—' }}
+                </strong>
+              </div>
+
+              <div class="flex items-center justify-between rounded-lg border border-zinc-100 bg-zinc-50 px-3 py-2">
+                <span class="flex items-center gap-2 text-[12px] text-zinc-600">
+                  <i class="far fa-bolt text-[12px]"></i> Overtime Hours
+                </span>
+                <strong class="text-sm text-zinc-900">
+                  {{ attendanceStore?.summary?.total_overtime_hours || '—'  }}
+                </strong>
+              </div>
+            </div>
+          </div>
       </div>
     </div>
 
-    <div v-if="selectedUser" class="grid md:grid-cols-2 gap-4 text-sm">
-      <SelectedEmployeeCard v-if="hasSelection" :user="selectedUser" />
-      <!-- <div class="card-bg p-4 gap-1">
-        <h2 class="title-md">Selected Employee Info</h2>
-        <hr />
-        <div class="grid md:grid-cols-2">
-          <p><strong>Name:</strong> {{ selectedUser.name }}</p>
-          <p><strong>Designation:</strong> {{ selectedUser.designation?.title || 'N/A' }}</p>
-          <p><strong>Department:</strong> {{ selectedUser.department?.name || 'N/A' }}</p>
-          <p><strong>Company:</strong> {{ selectedUser.company?.name || 'N/A' }}</p>
-          <p><strong>Phone:</strong> {{ selectedUser.phone }}</p>
-          <p><strong>Email:</strong> {{ selectedUser.email || 'N/A' }}</p>
-          <p><strong>Employee ID:</strong> {{ selectedUser.employee_id || 'N/A' }}</p>
-          <p><strong>Joining Date:</strong> {{ selectedUser.joining_date || 'N/A' }}</p>
-          <p><strong>Blood Group:</strong> {{ selectedUser.blood || 'N/A' }}</p>
-        </div>
-      </div> -->
-
-      <div class="card-bg p-4 gap-1">
-        <div class="flex justify-between items-center">
-          <h2 class="title-md">Attendance Summary</h2>
-          <router-link
-            :to="{ name: 'MonthWiseApplicationLog', query: { ...$route.query } }"
-            class="btn-2"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Application History
-          </router-link>
-        </div>
-        <hr />
-        <div class="grid md:grid-cols-2">
-          <p>
-            <strong>Total Working Days:</strong> {{ attendanceStore?.summary?.total_working_days }}
-          </p>
-          <p><strong>Present Days:</strong> {{ attendanceStore?.summary?.total_present_days }}</p>
-          <p><strong>Absent Days:</strong> {{ attendanceStore?.summary?.total_absent_days }}</p>
-          <p><strong>Late Days:</strong> {{ attendanceStore?.summary?.actual_late_day }}</p>
-          <p><strong>Total Weekends:</strong> {{ attendanceStore?.summary?.total_weekend_days }}</p>
-          <p>
-            <strong>Total Working Hours:</strong>
-            {{ attendanceStore?.summary?.total_working_hours }}
-          </p>
-          <p>
-            <strong>Total Overtime Hours:</strong>
-            {{ attendanceStore?.summary?.total_overtime_hours }}
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <div v-else>
+    <div v-if="!selectedUser">
       <p class="text-gray-400 text-center text-2xl italic">Select an employee, please.</p>
     </div>
 

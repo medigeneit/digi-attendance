@@ -229,7 +229,7 @@ function clearType() {
 </script>
 
 <template>
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+  <div class="grid grid-cols-1 md:grid-cols-5 gap-2">
     <!-- Company -->
     <div class="relative">
       <SelectDropdown
@@ -320,6 +320,10 @@ function clearType() {
       <div class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30">
         Employee
       </div>
+    </div>
+
+    <div class="relative">
+      <slot></slot>
     </div>
   </div>
 </template>

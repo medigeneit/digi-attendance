@@ -170,7 +170,7 @@ const refreshPaycutList = async () => { await fetchAttendance() }
       <div class="flex items-end gap-3">
         <div class="flex flex-col">
           <label class="text-xs text-gray-600 mb-1">Month</label>
-          <input type="month" v-model="selectedMonth" class="input-1" />
+          <input type="month" v-model="selectedMonth" class="input-1 py-0.5" />
         </div>
         <button type="button" @click="fetchAttendance()" class="btn-2">Search</button>
       </div>

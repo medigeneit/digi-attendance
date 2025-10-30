@@ -1,22 +1,22 @@
 <template>
   <section
-    class="rounded-2xl border border-zinc-200 bg-white shadow-sm overflow-hidden"
+    class="rounded-2xl border border-zinc-200 bg-white/90 shadow-sm overflow-hidden supports-[backdrop-filter]:bg-white/70 backdrop-blur"
     aria-labelledby="employee-info-title"
   >
     <!-- Accent header -->
     <div class="relative isolate">
       <div class="h-1 w-full bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-400"></div>
 
-      <header class="flex items-center justify-between px-5 pt-4 pb-3">
-        <div class="flex items-center gap-3">
+      <header class="flex items-center justify-between px-4 md:px-5 pt-3 pb-2 md:pt-4 md:pb-3">
+        <div class="flex min-w-0 items-center gap-3">
           <!-- Avatar -->
           <div
-            class="grid h-10 w-10 place-items-center rounded-full bg-indigo-100 text-indigo-700 font-semibold"
+            class="relative grid h-10 w-10 place-items-center rounded-full bg-indigo-100 text-indigo-700 font-semibold shrink-0"
             aria-hidden="true"
           >
             <img
-              v-if="avatar"
-              :src="avatar"
+              v-if="avatarUrl"
+              :src="avatarUrl"
               :alt="safe(user?.name)"
               class="h-10 w-10 rounded-full object-cover"
             />
@@ -24,54 +24,40 @@
           </div>
 
           <div class="min-w-0">
-            <h2 id="employee-info-title" class="truncate text-lg font-semibold">
+            <h2 id="employee-info-title" class="truncate text-base md:text-lg font-semibold text-zinc-900">
               {{ safe(user?.name) }}
             </h2>
-            <p class="mt-0.5 line-clamp-1 text-xs text-zinc-500">
-              Selected Employee Info
+            <p v-if="subtitle" class="mt-0.5 line-clamp-1 text-[11px] md:text-xs text-zinc-500">
+              {{ subtitle }}
             </p>
           </div>
         </div>
 
-        <div class="flex items-center gap-2">
-          <slot name="actions" />
+        <div class="flex items-center gap-1 md:gap-2">
+          <InfoRow label="Phone" :value="formatPhone(user.phone)"/>
         </div>
       </header>
     </div>
 
-    <!-- Chips -->
-    <div v-if="user" class="px-5 pb-2">
-      <div class="flex flex-wrap items-center gap-2">
+    <!-- Chips (horizontal scroll on mobile for tight spaces) -->
+    <div v-if="user && badgeList.length" class="px-4 md:px-5 pb-2 overflow-hidden">
+      <div class="-mx-1 flex items-center gap-2 overflow-x-auto py-0.5 px-1">
         <span
-          v-if="user.company?.name"
-          class="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700"
+          v-for="b in badgeList"
+          :key="b.key"
+          class="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-medium whitespace-nowrap"
+          :class="b.class"
         >
-          <i class="far fa-briefcase text-[11px]"></i>
-          {{ user.company.name }}
-        </span>
-
-        <span
-          v-if="user.department?.name"
-          class="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700"
-        >
-          <i class="far fa-building text-[11px]"></i>
-          {{ user.department.name }}
-        </span>
-
-        <span
-          v-if="user.designation?.title"
-          class="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700"
-        >
-          <i class="far fa-id-badge text-[11px]"></i>
-          {{ user.designation.title }}
+          <i :class="b.icon" class="text-[11px]"></i>
+          {{ b.label }}
         </span>
       </div>
     </div>
 
-    <hr class="border-zinc-100" />
+    <!-- <hr class="border-zinc-100" /> -->
 
     <!-- Loading -->
-    <div v-if="loading" class="grid gap-3 p-5 md:grid-cols-2">
+    <div v-if="loading" class="grid gap-3 p-4 md:p-5 md:grid-cols-2">
       <div class="col-span-full flex items-center gap-3 pb-1">
         <BaseSkeleton class="h-10 w-10 rounded-full" />
         <div class="flex-1">
@@ -83,51 +69,16 @@
     </div>
 
     <!-- Empty -->
-    <div v-else-if="!user" class="px-5 py-5 text-center">
+    <div v-else-if="!user" class="px-5 py-8 text-center">
       <div
         class="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-full bg-zinc-100 text-zinc-500"
       >
         <i class="far fa-user text-lg"></i>
       </div>
       <p class="text-sm text-zinc-500">No employee selected.</p>
-      <p class="mt-1 text-xs text-zinc-400">
-        Choose an employee from the list to view details here.
-      </p>
+      <p class="mt-1 text-xs text-zinc-400">Choose an employee from the list to view details here.</p>
     </div>
-
-    <!-- Content -->
-    <dl v-else class="grid gap-x-8 gap-y-3 px-5 py-1 md:grid-cols-2">
-      <!-- <InfoRow label="Name"         :value="safe(user.name)"          icon="fa-user" /> -->
-      <InfoRow label="Phone"        :value="formatPhone(user.phone)"  icon="fa-phone">
-        <template #valueRight v-if="user.phone">
-          <button
-            class="ml-2 inline-flex items-center rounded-md border px-2 py-0.5 text-xs hover:bg-zinc-50"
-            @click="copy(user.phone)"
-          >
-            <i :class="[copiedKey==='phone' ? 'fas fa-check' : 'far fa-copy', 'text-[11px]']"></i>
-          </button>
-        </template>
-      </InfoRow>
-      <InfoRow label="Employee ID"  :value="safe(user.employee_id)"   icon="fa-hashtag" />
- 
-      <!-- <InfoRow label="Designation"  :value="safe(user.designation?.title)" icon="fa-id-badge" /> -->
-      <!-- <InfoRow label="Department"   :value="safe(user.department?.name)"   icon="fa-building" /> -->
-      <!-- <InfoRow label="Company"      :value="safe(user.company?.name)"      icon="fa-briefcase" /> -->
-      <InfoRow label="Joining Date" :value="formatDate(user.joining_date)" icon="fa-calendar" />
-      <InfoRow label="Blood Group"  :value="safe(user.blood)"              icon="fa-tint" />
-      <InfoRow label="Email"        :value="formatEmail(user.email)"  icon="fa-envelope">
-        <template #valueRight v-if="user.email">
-          <button
-            class="ml-2 inline-flex items-center rounded-md border px-2 py-0.5 text-xs hover:bg-zinc-50"
-            @click="copy(user.email, 'email')"
-          >
-            <i :class="[copiedKey==='email' ? 'fas fa-check' : 'far fa-copy', 'text-[11px]']"></i>
-          </button>
-        </template>
-      </InfoRow>
-    </dl>
-
-    <footer class="px-5 pb-5">
+    <footer class="px-4 md:px-5 pb-4 md:pb-5">
       <slot />
     </footer>
   </section>
@@ -143,17 +94,35 @@ const props = defineProps({
   loading: { type: Boolean, default: false },
   placeholder: { type: String, default: 'N/A' },
   dateLocale: { type: String, default: undefined },
+  /** Optional: direct avatar url */
   avatar: { type: String, default: '' },
 })
 
 const copiedKey = ref('')
 
-const avatar = computed(() => props.photo || props.user?.photo || '')
+// ✅ Fix: avoid name collision & bad prop reference; prefer provided prop > user.photo
+const avatarUrl = computed(() => props.avatar || props.user?.photo || '')
 
 const initials = computed(() => {
   const name = (props.user?.name || '').trim()
   const [a = '', b = ''] = name.split(' ')
   return (a[0] || '').toUpperCase() + (b[0] || '').toUpperCase()
+})
+
+const subtitle = computed(() => {
+  const title = props.user?.designation?.title
+  const dept = props.user?.department?.name
+  if (title && dept) return `${title} · ${dept}`
+  return title || dept || ''
+})
+
+const badgeList = computed(() => {
+  const out = []
+   if (props.user?.email) out.push({ key: 'email', label: props.user.email, icon: 'far fa-envelope', class: 'border-emerald-200 bg-emerald-50 text-emerald-700' })
+  if (props.user?.blood) out.push({ key: 'blood', label: props.user?.blood, icon: 'far fa-tint', class: 'border-red-200 bg-sky-50 text-red-700' })
+  if (props.user?.employee_id) out.push({ key: 'id', label: props.user.employee_id, icon: 'far fa-hashtag', class: 'border-amber-200 bg-amber-50 text-amber-700' })
+  if (props.user?.joining_date) out.push({ key: 'date', label: formatDate(props.user.joining_date), icon: 'far fa-calendar', class: 'border-sky-200 bg-sky-50 text-sky-700' })
+  return out
 })
 
 function safe(val) {
