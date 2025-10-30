@@ -212,7 +212,7 @@ const hasSelection = computed(() => !!filters.value.employee_id)
       <div class="grid md:grid-cols-2 gap-4 text-sm mt-2">
         <SelectedEmployeeCard v-if="hasSelection" :user="selectedUser" />
         
-        <div class="card-bg p-4 gap-1">
+        <div class="card-bg p-4 gap-1" v-if="hasSelection">
             <!-- Header: tighter -->
             <div class="flex justify-between items-center">
               <h2 class="text-sm md:text-base font-semibold text-zinc-900">Attendance Summary</h2>
