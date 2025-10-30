@@ -34,7 +34,7 @@
         </div>
 
         <div class="flex items-center gap-1 md:gap-2">
-          <InfoRow label="Phone" :value="formatPhone(user.phone)"/>
+          <InfoRow label="Phone" :value="formatPhone(user?.phone)"/>
         </div>
       </header>
     </div>
@@ -121,7 +121,7 @@ const badgeList = computed(() => {
    if (props.user?.email) out.push({ key: 'email', label: props.user.email, icon: 'far fa-envelope', class: 'border-emerald-200 bg-emerald-50 text-emerald-700' })
   if (props.user?.blood) out.push({ key: 'blood', label: props.user?.blood, icon: 'far fa-tint', class: 'border-red-200 bg-sky-50 text-red-700' })
   if (props.user?.employee_id) out.push({ key: 'id', label: props.user.employee_id, icon: 'far fa-hashtag', class: 'border-amber-200 bg-amber-50 text-amber-700' })
-  if (props.user?.joining_date) out.push({ key: 'date', label: formatDate(props.user.joining_date), icon: 'far fa-calendar', class: 'border-sky-200 bg-sky-50 text-sky-700' })
+  if (props.user?.joining_date) out.push({ key: 'date', label: ' Joining Date : ' + formatDate(props.user.joining_date), icon: 'far fa-calendar', class: 'border-sky-200 bg-sky-50 text-sky-700' })
   return out
 })
 
