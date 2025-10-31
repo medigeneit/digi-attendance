@@ -127,7 +127,7 @@
                   :href="`/tasks/edit/${task.id}`"
                   @click.stop.prevent="emits('editClick', task.id)"
                   class="btn-3 py-1.5 px-1.5 !border-0 size-7 text-sm opacity-40 group-hover/sub-task-row:opacity-100 duration-100"
-                  v-if="!task.is_closed && !hideButtons"
+                  v-if="!task.closed_at && !hideButtons"
                 >
                   <i class="fas fa-edit"></i>
                 </a>
@@ -145,11 +145,11 @@
                       `/requirement-tasks?status=not-completed&view=userwise&user-ids=${user.id}`
                   "
                 />
-                <div class="shrink-0">
+                <div class="shrink-0" v-if="!task.closed_at">
                   <a
                     :href="`/tasks/${task.id}/assign-users`"
                     @click.stop.prevent="emits('employeeAssignClick', task.id)"
-                    v-if="!task.is_closed && !hideButtons"
+                    v-if="!hideButtons"
                     class="btn-3 py-1.5 px-1.5 !border-0 size-7 text-sm opacity-40 group-hover/sub-task-row:opacity-100 duration-100 flex-shrink-0"
                   >
                     <i class="fas fa-users-cog"></i>

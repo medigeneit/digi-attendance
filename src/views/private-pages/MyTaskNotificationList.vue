@@ -63,10 +63,10 @@ const formattedType = computed(() => {
     <h2 class="md:text-2xl font-semibold capitalize text-gray-700">
       {{ formattedType || 'Notifications' }}
       <span
-        v-if="notification_count[route.params.type]"
+        v-if="notification_count?.[route.params.type]"
         class="ml-auto text-xs bg-red-500 text-white rounded-full px-2 py-0.5 font-semibold"
       >
-        {{ notification_count[route.params.type] }}
+        {{ notification_count?.[route.params.type] || 0 }}
       </span>
     </h2>
 
@@ -75,25 +75,24 @@ const formattedType = computed(() => {
       class="absolute inset-0 flex items-center justify-center bg-opacity-80 !shadow-none min-h-[80vh]"
     />
 
-    <div v-if="notifications?.length > 0" class="space-y-4">
+    <div v-if="!loading && notifications?.length > 0" class="space-y-4">
       <div
         v-for="notification in notifications"
         :key="notification.application_id"
         class="bg-white p-3 md:p-4 rounded-xl shadow border grid gap-2"
       >
         <div class="flex gap-2 md:gap-3 items-center">
-          <!-- <div class="shrink-0 grow-0 btn-1 size-8 p-0">{{ icons[route.params.type] }}</div> -->
+          <!-- {{ notification }} -->
           <div class="shrink grow font-semibold text-sm md:text-base">
             <div
               class="flex items-center text-green-600 text-xs md:text-sm lg:text-base"
-              v-html="notification.title"
+              v-html="notification?.title"
             ></div>
             <div>
-              {{ notification.user_name }}
+              {{ notification?.user_name }}
             </div>
           </div>
           <div class="ml-auto shrink-0 grow-0 flex gap-2 md:gap-3 items-center">
-            <!-- {{ showRoute(notification) }} -->
             <RouterLink :to="showRoute(notification)" class="btn-1 px-3">
               <i class="far fa-eye"></i>
             </RouterLink>
@@ -102,23 +101,23 @@ const formattedType = computed(() => {
 
         <div
           class="text-red-600 text-xs md:text-sm lg:text-base line-clamp-1 pr-12"
-          v-html="notification.description"
+          v-html="notification?.description"
         ></div>
 
         <div
-          v-if="notification.type"
+          v-if="notification?.type"
           class="flex flex-wrap gap-y-1 gap-x-3 items-center text-xs md:text-sm lg:text-base"
         >
-          <div v-if="notification.type">
+          <div v-if="notification?.type">
             <span class="text-gray-400">Type:</span>
-            {{ notification.type }}
+            {{ notification?.type }}
           </div>
         </div>
 
         <div class="flex gap-3 items-center">
           <div class="flex items-center gap-8">
             <p
-              v-if="notification.messages?.length"
+              v-if="notification?.messages?.length"
               class="flex flex-wrap flex-col md:flex-row gap-x-1 text-xs md:text-sm text-left"
             >
               <template v-for="(message, index) in notification.messages" :key="index">
@@ -127,6 +126,14 @@ const formattedType = computed(() => {
               </template>
             </p>
           </div>
+
+          <ApproveAndReject
+            class="ml-auto"
+            :notificationType="route.params.type"
+            :applicationId="notification?.application_id"
+            :onSuccess="onSuccess"
+            :variant="2"
+          />
         </div>
       </div>
     </div>
@@ -134,7 +141,7 @@ const formattedType = computed(() => {
       v-else-if="!loading"
       class="h-[80vh] flex items-center justify-center border rounded-md bg-white/50 text-gray-400"
     >
-      No notifications found.
+      No notifications.
     </div>
   </div>
 </template>
