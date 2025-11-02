@@ -40,10 +40,19 @@ export const useTaskNotificationStore = defineStore( 'task-notification', () => 
 
     try {
       const response = await apiClient.get(`/task-notifications/${notificationType}`)
-      notifications.value = response?.data?.notifications
+
+      notifications.value = response?.data?.notifications || []
       notification_count.value[notificationType] = response?.data?.notification_count || 0
 
+      console.log({response: notifications.value });
+
+
       return response?.data
+
+      // notifications.value = response?.data?.notifications
+      // notification_count.value[notificationType] = response?.data?.notification_count || 0
+
+      // return response?.data
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch notifications'
       throw err;
@@ -77,6 +86,7 @@ export const useTaskNotificationStore = defineStore( 'task-notification', () => 
     if( Object.values(notification_count.value).length === 0) {
       return 0;
     }
+
     return Object.values(notification_count.value).reduce((sum, n) => sum + n, 0)
   })
 

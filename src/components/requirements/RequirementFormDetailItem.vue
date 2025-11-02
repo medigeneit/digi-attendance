@@ -1,6 +1,5 @@
 <script setup>
 import RequiredIcon from '@/components/RequiredIcon.vue'
-import { useDepartmentStore } from '@/stores/department'
 import { useUserStore } from '@/stores/user'
 import { onMounted, ref, watch } from 'vue'
 import SelectDropdown from '../SelectDropdown.vue'
@@ -52,7 +51,7 @@ watch(
 
 <template>
   <tr>
-    <td
+    <!-- <td
       class="border-2 border-gray-800 text-left px-4 py-4 text-gray-800 print:text-black align-top"
     >
       <div class="font-semibold whitespace-nowrap text-2xl">
@@ -61,7 +60,7 @@ watch(
       <button type="button" @click.prevent="handleRemoveClick" class="btn-2-red mt-8">
         Remove
       </button>
-    </td>
+    </td> -->
     <td
       class="border-2 border-gray-800 px-2 pb-2 pt-8 text-gray-800 print:text-black text-base whitespace-nowrap"
     >

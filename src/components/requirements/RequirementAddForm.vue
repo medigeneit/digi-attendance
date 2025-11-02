@@ -22,7 +22,14 @@ const form = ref({
   from_department_id: '',
   to_department_id: '',
   website_tags: [],
-  details: [],
+})
+
+const requirementDetail = ref({
+  title: '',
+  description: '',
+  priority: '',
+  better_to_complete_on: '',
+  supervisor_id: '',
 })
 
 onMounted(async () => {
@@ -47,6 +54,7 @@ async function submit() {
 
   const payload = {
     ...form.value,
+    ...requirementDetail.value,
   }
 
   try {
@@ -60,23 +68,19 @@ async function submit() {
   }
 }
 
-function handleDetailUpdate(uuid, detailData) {
-  form.value.details = form.value.details.map((detail) => {
-    if (detail.uuid === uuid) {
-      console.log({ uuid })
-      return { ...detail, ...detailData }
-    }
+function handleDetailUpdate(detailData) {
+  requirementDetail.value = detailData
 
-    return {
-      ...detail,
-    }
-  })
-}
+  // form.value.details = form.value.details.map((detail) => {
+  //   if (detail.uuid === uuid) {
+  //     console.log({ uuid })
+  //     return { ...detail, ...detailData }
+  //   }
 
-function handleDetailRemove(uuid) {
-  form.value.details = form.value.details.filter((detail) => {
-    return detail.uuid !== uuid
-  })
+  //   return {
+  //     ...detail,
+  //   }
+  // })
 }
 
 function handleDetailAdd() {
@@ -88,7 +92,7 @@ function handleDetailAdd() {
       description: '',
       priority: '',
       better_to_complete_on: '',
-      supervisor_id: '4',
+      supervisor_id: '',
     },
   ]
 }
@@ -158,11 +162,11 @@ function handleDetailAdd() {
           <table class="w-full table-auto print:table-fixed mt-8">
             <thead>
               <tr>
-                <th
+                <!-- <th
                   class="border-2 border-gray-800 text-left px-4 text-gray-800 print:text-black text-xl font-semibold whitespace-nowrap w-[5%]"
                 >
                   SL
-                </th>
+                </th> -->
                 <th
                   class="border-2 border-gray-800 text-center text-gray-800 print:text-black text-base font-semibold whitespace-nowrap w-[65%]"
                 >
@@ -177,19 +181,16 @@ function handleDetailAdd() {
             </thead>
 
             <tbody>
-              <template v-for="(detail, index) in form?.details || []" :key="detail.uuid">
-                <RequirementFormDetailItem
-                  :serial="index + 1"
-                  :uuid="detail.uuid"
-                  :from-department-id="form.from_department_id"
-                  @update="(updatedDetail) => handleDetailUpdate(detail.uuid, updatedDetail)"
-                  @removeClick="(uuid) => handleDetailRemove(uuid)"
-                />
-              </template>
+              <RequirementFormDetailItem
+                :serial="1"
+                :uuid="requirementDetail.uuid"
+                :from-department-id="form.from_department_id"
+                @update="(updatedDetail) => handleDetailUpdate(updatedDetail)"
+              />
             </tbody>
           </table>
         </div>
-
+        <!--
         <div class="mb-4 rounded-md flex items-center justify-center">
           <button
             class="btn-icon flex justify-center items-center"
@@ -197,7 +198,7 @@ function handleDetailAdd() {
           >
             <i class="fad fa-plus-circle text-2xl"></i>
           </button>
-        </div>
+        </div> -->
 
         <div class="sticky bottom-0 bg-white py-4 border-t -mx-6 px-6">
           <div v-if="error" class="mb-4 text-red-500 font-medium">

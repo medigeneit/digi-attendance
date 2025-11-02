@@ -4,7 +4,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useCompanyStore } from '@/stores/company'
 
 // import { useTaskStore } from '@/stores/useTaskStore'
-import { findRequirementDetail } from '@/services/requirement-detail'
+import { findRequirement } from '@/services/requirement'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { computed, onMounted, ref, watch } from 'vue'
 import CompanyDepartmentSelectInput from '../common/CompanyDepartmentSelectInput.vue'
@@ -18,12 +18,10 @@ const props = defineProps({
     type: [Number, String],
     required: true,
   },
-  requirementDetailId: {
-    type: [Number, String],
-  },
   requirementId: {
     type: [Number, String],
   },
+
   defaultValues: {
     type: Object,
     default: () => {},
@@ -44,7 +42,7 @@ const selectedUser = ref([])
 const user_ids = computed(() => selectedUser.value.map((u) => u.id))
 
 const state = ref('')
-const requirementDetail = ref()
+const requirement = ref()
 
 const assign_type = ref(null)
 
@@ -84,14 +82,14 @@ onMounted(async () => {
 })
 
 watch(
-  () => ({  requirement: props.requirementDetailId }),
+  () => ({  requirement: props.requirementId }),
   async () => {
 
-    if (props.requirementDetailId > 0) {
-      console.log({ id: props.requirementDetailId })
-      requirementDetail.value = (
-        await findRequirementDetail(props.requirementId, props.requirementDetailId)
-      )?.data?.detail
+    if (props.requirementId > 0) {
+      console.log({ id: props.requirementId })
+      requirement.value = (
+        await findRequirement(props.requirementId)
+      )?.data?.requirement
     }
 
     if (props.parentTaskId > 0) {
@@ -120,7 +118,7 @@ async function submit() {
   const payload = {
     ...form.value,
     parent_id: task?.value?.id || 0,
-    requirement_detail_id: requirementDetail?.value?.id || null,
+    requirement_id: requirement?.value?.id || null,
   }
 
   try {
@@ -140,7 +138,7 @@ async function submit() {
   >
     <div class="sticky top-0 pt-4 bg-white z-10">
       <h2 class="text-xl font-semibold text-gray-800">
-        <span v-if="requirementId && requirementDetail?.title">Add Task to Requirement</span>
+        <span v-if="requirementId && requirement?.title">Add Task to Requirement</span>
         <span v-else> Add Task  </span>
       </h2>
 
@@ -157,13 +155,13 @@ async function submit() {
     <form @submit.prevent="submit" class="z-0">
 
 
-      <p class="mt-2 mb-6" v-if="requirementDetailId && requirementDetail?.title" :title="requirementDetail.title">
+      <p class="mt-2 mb-6" v-if="requirementId && requirement?.title" :title="requirement.title">
         <div class="text-sm">
           Requirement
         </div>
         <div class="text-sky-600  border rounded px-4 py-2">
           <p class="line-clamp-1 ">
-            {{ requirementDetail.title }}
+            {{ requirement.title }}
           </p>
         </div>
       </p>

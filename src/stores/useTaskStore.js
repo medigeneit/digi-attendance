@@ -258,11 +258,11 @@ export const useTaskStore = defineStore('task', () => {
   };
 
 
-  const setTaskRequirement =  async (taskId, detailId) => {
+  const setTaskRequirement =  async (taskId, requirementId) => {
     loading.value = true;
     error.value = null;
     try {
-      await apiClient.patch(`/tasks/${taskId}/update-requirement-detail/${detailId}`);
+      await apiClient.patch(`/tasks/${taskId}/update-requirement/${requirementId}`);
       tasks.value = tasks.value.filter((t) => t.id !== taskId);
     } catch (err) {
       error.value = err.response?.data?.message || `টাস্ক (ID: ${taskId}) রেকয়্যারমেন্ট সেট করতে ব্যর্থ হয়েছে।`;

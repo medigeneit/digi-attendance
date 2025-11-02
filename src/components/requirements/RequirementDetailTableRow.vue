@@ -5,7 +5,6 @@ import DescriptionView from '../DescriptionView.vue'
 import TaskUserChip from '../tasks/TaskUserChip.vue'
 
 const props = defineProps({
-  detail: { type: Object },
   requirement: { type: Object },
   serial: { type: Number },
   isPrinting: { type: Boolean },
@@ -17,8 +16,8 @@ const auth = useAuthStore()
 const state = ref('')
 
 const rowsOfTask = computed(() => {
-  if (props.detail?.tasks?.length > 0) {
-    return props.detail?.tasks
+  if (props.requirement?.tasks?.length > 0) {
+    return props.requirement?.tasks
   }
   return [{ id: 0 }]
 })
@@ -32,72 +31,66 @@ function handleCreateAssignButtonClick() {
       `You can't create or assign task for this requirement. \nOnly ${props.requirement?.to_department?.name}'s In charge can create or assign.`,
     )
   }
-  emit('taskCreateClick', props.detail)
+  emit('taskCreateClick', props.requirement)
 }
 
 const tdRowSpan = computed(() => {
-  return (props.detail?.tasks?.length || 1) + (props.isPrinting ? 0 : 1)
+  return (props.requirement?.tasks?.length || 1) + (props.isPrinting ? 0 : 1)
 })
 </script>
 <template>
   <template v-for="(task, taskIndex) in rowsOfTask" :key="task.id">
-    <!-- <tr>
-      <td>
-        {{ detail?.tasks?.length }}
-      </td>
-    </tr> -->
     <tr
       class="group/item border text-gray-800 py-4 shadow-sm mb-4 px-4 rounded-md hover:bg-blue-50"
     >
       <template v-if="taskIndex === 0">
-        <td class="border-2 border-gray-700 p-3 align-baseline" :rowspan="tdRowSpan">
-          <span class="text-2xl font-medium">{{ serial }}</span>
-        </td>
-
         <td class="border-2 border-gray-700 p-3 align-baseline" :rowspan="tdRowSpan">
           <!-- {{ requirement.to_department }} -->
           <div>
             <div class="text-lg font-semibold mb-2 flex items-start gap-3">
               <DescriptionView line-clamp="3" class="grow">
                 <template #default>
-                  {{ detail.title }}
+                  {{ requirement.title }}
                 </template>
                 <template #btnText="{ lineClampClass }">
                   {{ lineClampClass ? 'More' : 'Less' }}
                 </template>
               </DescriptionView>
-              <div v-if="detail.priority">
+              <div v-if="requirement.priority">
                 <span
                   :class="[
                     'font-semibold text-sm',
                     {
-                      'text-yellow-600 ': detail.priority == 'IMPORTANT',
-                      'text-red-700 ': detail.priority == 'URGENT',
+                      'text-yellow-600 ': requirement.priority == 'IMPORTANT',
+                      'text-red-700 ': requirement.priority == 'URGENT',
                     },
                   ]"
-                  >{{ detail.priority }}</span
+                  >{{ requirement.priority }}</span
                 >
               </div>
             </div>
             <hr class="mb-4 -mx-4" />
 
-            <div class="mb-5" v-if="detail.description">
+            <div class="mb-5" v-if="requirement.description">
               <div class="text-gray-400 mr-2 text-xs uppercase font-semibold">Description</div>
 
               <DescriptionView
                 :line-clamp="4"
                 :class-name="{ button: 'group-hover/item:underline' }"
               >
-                <p v-html="detail.description" class="text-justify"></p>
+                <p v-html="requirement.description" class="text-justify"></p>
               </DescriptionView>
             </div>
           </div>
 
           <div class="flex items-end">
-            <div class="mt-4 flex justify-between items-end print:pb-0" v-if="detail.supervisor">
+            <div
+              class="mt-4 flex justify-between items-end print:pb-0"
+              v-if="requirement.supervisor"
+            >
               <div class="">
                 <div class="text-gray-400 mr-2 text-xs uppercase font-semibold">Supervisor:</div>
-                <TaskUserChip :user="detail.supervisor" />
+                <TaskUserChip :user="requirement.supervisor" />
               </div>
             </div>
             <div
@@ -106,12 +99,8 @@ const tdRowSpan = computed(() => {
                 (state != 'loading' && !requirement?.status) || auth?.user?.role == 'super_admin'
               "
             >
-              <button class="btn-2" @click.prevent="emit('editClick', detail)">
+              <button class="btn-2" @click.prevent="emit('editClick', requirement)">
                 <i class="fas fa-edit"></i>Edit
-              </button>
-
-              <button class="btn-2-red" @click.prevent="emit('deleteClick', detail)">
-                <i class="fas fa-trash-alt"></i>Delete
               </button>
             </div>
           </div>
@@ -123,8 +112,8 @@ const tdRowSpan = computed(() => {
         >
           <div class="text-center print:text-xs">
             {{
-              detail.better_to_complete_on
-                ? new Date(detail.better_to_complete_on).toLocaleDateString('en-US', {
+              requirement.better_to_complete_on
+                ? new Date(requirement.better_to_complete_on).toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'short',
                     day: 'numeric',

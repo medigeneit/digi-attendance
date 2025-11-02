@@ -17,7 +17,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { useTodoDateStore } from '@/stores/useTodoDateStore'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import TodoCreateEditShow from '../todos/TodoCreateEditShow.vue'
 import TaskTimeline from './TaskTimeline.vue'
 
@@ -105,10 +105,10 @@ const authUserHasTaskAssigned = computed(() => {
 const breadcrumbTaskItems = computed(() => {
   const parents = []
 
-  if (store.task?.requirement_detail?.id) {
+  if (store.task?.requirement?.id) {
     parents.push({
-      id: store.task?.requirement_detail?.id,
-      title: store.task?.requirement_detail?.title,
+      id: store.task?.requirement?.id,
+      title: store.task?.requirement?.title,
       // status: store.task?.status,
       is_current_page: false,
     })
@@ -277,8 +277,9 @@ async function handleClickDelete(todoDate) {
             >
               <li aria-hidden="true" class="text-gray-400 text-base" v-if="index > 0">/</li>
               <li :title="breadcrumbTask?.title" class="text-gray-600 line-clamp-1">
-                <div
-                  :to="`${isMyTask ? '/my-tasks' : '/tasks'}/${breadcrumbTask.id}`"
+                <component
+                  :is="authStore.isAdminMood ? RouterLink : div"
+                  :to="`${authStore.isAdminMood ? '/requirements/show/' + breadcrumbTask.id : '/tasks'}`"
                   class="hover:text-gray-900 hover:underline transition"
                   :class="{
                     'line-clamp-1 text-justify': index > 0,
@@ -287,7 +288,7 @@ async function handleClickDelete(todoDate) {
                   v-if="!breadcrumbTask.is_current_page"
                 >
                   {{ breadcrumbTask?.title }}
-                </div>
+                </component>
                 <span v-else class="text-gray-900 font-medium line-clamp-1" aria-current="page">
                   {{ breadcrumbTask?.title }}
                 </span>
@@ -511,7 +512,16 @@ async function handleClickDelete(todoDate) {
     />
 
     <OverlyModal v-if="taskClosing.open">
-      <TaskClosingForm :task="store.task" @clickCancel="taskClosing.open = false" />
+      <TaskClosingForm
+        :task="store.task"
+        @clickCancel="taskClosing.open = false"
+        @updateStatus="
+          () => {
+            fetchTask(store.task?.id)
+            taskClosing.open = false
+          }
+        "
+      />
     </OverlyModal>
   </div>
 </template>

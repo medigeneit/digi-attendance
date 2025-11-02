@@ -28,6 +28,10 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  showAddBtnIfNotFound: {
+    type: Boolean,
+    default: false,
+  },
   filterTasks: {
     type: Function,
     default: null,
@@ -203,7 +207,13 @@ const searchedTasks = computed(() => {
             class="border h-[150px] flex flex-col items-center justify-center italic text-gray-500 text-sm"
           >
             <div>No Tasks Found</div>
-            <button @click.prevent="emit('addNewTaskClick')" class="btn-3">Add New Task</button>
+            <button
+              @click.prevent="emit('addNewTaskClick')"
+              class="btn-3"
+              v-if="showAddBtnIfNotFound"
+            >
+              Add New Task
+            </button>
           </div>
         </div>
       </div>

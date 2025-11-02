@@ -61,10 +61,10 @@ async function fetchRequirement() {
   state.value = ''
 }
 
-function goToTaskAdd(detail) {
+function goToTaskAdd() {
   //router.push({ name: 'TaskAdd' })
 
-  console.log({ detail })
+  console.log({ requirement })
   addFormData.modalShown = true
   addFormData.from_department_id = requirement.value.from_department_id
   addFormData.to_department_id = requirement.value.to_department_id
@@ -74,11 +74,11 @@ function goToTaskAdd(detail) {
     description: '',
     from_department_id: requirement.value.from_department_id,
     to_department_id: requirement.value.to_department_id,
-    is_important: detail?.priority == 'IMPORTANT',
-    is_urgent: detail?.priority == 'URGENT',
-    supervisor_ids: detail?.supervisor_id ? [detail?.supervisor_id] : [],
+    is_important: requirement.value?.priority == 'IMPORTANT',
+    is_urgent: requirement.value?.priority == 'URGENT',
+    supervisor_ids: requirement.value?.supervisor_id ? [requirement.value?.supervisor_id] : [],
   }
-  addFormData.requirementDetail = detail
+  addFormData.requirement = requirement.value
 }
 
 function handleAddRequirementDetail() {
@@ -101,27 +101,24 @@ function handlePrint() {
 }
 
 const addFormData = reactive({
-  parentId: null,
   modalShown: false,
   requirementId: 0,
   taskDefaultValues: {},
-  requirementDetail: null,
+  requirement: null,
   creating: false,
 })
 
 async function handleTaskUpdate() {
-  addFormData.parentId = 0
-  addFormData.parentId = null
   addFormData.modalShown = false
-  addFormData.requirementDetail = null
+  addFormData.requirement = null
   state.value = 'loading'
+  handleTaskAddClose()
   await fetchRequirement()
 }
 
 async function handleTaskAddClose() {
-  addFormData.parentId = null
   addFormData.modalShown = false
-  addFormData.requirementDetail = null
+  addFormData.requirement = null
   addFormData.creating = false
 }
 </script>
@@ -143,7 +140,7 @@ async function handleTaskAddClose() {
     <OverlyModal v-if="detailEditForm.open">
       <RequirementDetailEditForm
         :requirementId="requirement.id"
-        :detailId="detailEditForm.detail?.id"
+        :detailId="detailEditForm.requirement.value?.id"
         @closeClick="detailEditForm.open = false"
         @update="
           async () => {
@@ -157,7 +154,7 @@ async function handleTaskAddClose() {
     <OverlyModal v-if="feedbackEditForm.open">
       <RequirementFeedbackEditForm
         :requirementId="requirement.id"
-        :detailId="feedbackEditForm.detail?.id"
+        :detailId="feedbackEditForm.requirement.value?.id"
         @closeClick="feedbackEditForm.open = false"
         @update="
           async () => {
@@ -171,7 +168,7 @@ async function handleTaskAddClose() {
     <OverlyModal v-if="detailDeleteForm.open">
       <RequirementDetailDeleteForm
         :requirementId="requirement.id"
-        :detailId="detailDeleteForm.detail?.id"
+        :detailId="detailDeleteForm.requirement.value?.id"
         @closeClick="detailDeleteForm.open = false"
         @delete="
           async () => {
@@ -193,7 +190,7 @@ async function handleTaskAddClose() {
       <RequirementTaskCreateOrAssign
         v-if="!addFormData?.creating"
         :from-department-id="requirement?.from_department_id"
-        :requirementDetail="addFormData?.requirementDetail"
+        :requirement="addFormData?.requirement"
         @cancelClick="handleTaskAddClose"
         @addNewTaskClick="
           () => {
@@ -207,7 +204,7 @@ async function handleTaskAddClose() {
 
       <TaskAddForm
         v-if="addFormData?.creating"
-        :requirementDetailId="addFormData?.requirementDetail?.id"
+        :requirementDetailId="addFormData?.requirement.value?.id"
         :requirementId="requirement.id"
         @close="handleTaskAddClose"
         @taskCreated="handleTaskUpdate"
@@ -228,11 +225,7 @@ async function handleTaskAddClose() {
           </div>
         </div>
         <div class="ml-auto print:hidden flex gap-2 items-center">
-          <button
-            class="btn-3 font-semibold !pl-2 !pr-4"
-            v-if="(requirement?.details || []).length > 0"
-            @click.prevent="handlePrint"
-          >
+          <button class="btn-3 font-semibold !pl-2 !pr-4" @click.prevent="handlePrint">
             <i class="fad fa-print text-xl"></i>Print
           </button>
           <button class="btn-3" @click.prevent="() => router.back()">Back</button>
@@ -293,19 +286,10 @@ async function handleTaskAddClose() {
           <div class="ml-auto print:hidden flex gap-2 text-sm"></div>
         </div>
 
-        <div
-          v-if="(requirement?.details || []).length > 0"
-          class="overflow-x-auto print:overflow-visible"
-        >
+        <div class="overflow-x-auto print:overflow-visible" v-if="requirement">
           <table class="w-full table-auto print:table-fixed">
             <thead>
               <tr>
-                <th
-                  rowspan="2"
-                  class="border-2 border-gray-800 text-left px-4 print:px-2 text-gray-800 print:text-black text-xl font-semibold whitespace-nowrap w-[8%]"
-                >
-                  SL
-                </th>
                 <th
                   rowspan="2"
                   class="border-2 border-gray-800 text-center text-gray-800 print:text-black text-base font-semibold whitespace-nowrap print:whitespace-normal w-[65%]"
@@ -323,7 +307,7 @@ async function handleTaskAddClose() {
                   class="w-[30%] border-2 border-gray-800 text-center text-gray-800 print:text-black text-base font-semibold whitespace-nowrap px-3 py-1 print:whitespace-normal"
                 >
                   For '{{
-                    requirement.to_department?.short_name || requirement.to_department?.name
+                    requirement?.to_department?.short_name || requirement?.to_department?.name
                   }}' Use
                 </th>
               </tr>
@@ -342,49 +326,50 @@ async function handleTaskAddClose() {
             </thead>
 
             <tbody>
-              <template v-for="(detail, index) in requirement?.details || []" :key="detail.id">
-                <RequirementDetailTableRow
-                  :requirement="requirement"
-                  :detail="detail"
-                  :serial="index + 1"
-                  @editClick="handleEditRequirementDetail"
-                  @deleteClick="handleDeleteRequirementDetail"
-                  @taskCreateClick="goToTaskAdd"
-                  :isPrinting="isPrinting"
-                />
-                <tr class="">
-                  <td class="p-3 border-2 border-gray-800" colspan="5">
-                    <div class="font-semibold text-gray-500 print:text-gray-800 text-sm mb-1">
-                      '{{
-                        requirement.to_department?.short_name || requirement.to_department?.name
-                      }}' Feedback
-                    </div>
-                    <div v-if="state != 'loading' && requirement?.status">
-                      <DescriptionView
-                        v-if="detail?.feedback"
-                        lineClamp="2"
-                        :className="{ button: '  underline' }"
-                        class="mb-4 print:mb-0"
+              <RequirementDetailTableRow
+                :requirement="requirement"
+                :serial="index + 1"
+                @editClick="handleEditRequirementDetail"
+                @deleteClick="handleDeleteRequirementDetail"
+                @taskCreateClick="goToTaskAdd"
+                :isPrinting="isPrinting"
+              />
+
+              <tr class="">
+                <td class="p-3 border-2 border-gray-800" colspan="5">
+                  <div class="font-semibold text-gray-500 print:text-gray-800 text-sm mb-1">
+                    '{{
+                      requirement?.to_department?.short_name || requirement?.to_department?.name
+                    }}' Feedback
+                  </div>
+                  <div v-if="state != 'loading' && requirement?.status">
+                    <DescriptionView
+                      v-if="requirement?.feedback"
+                      lineClamp="2"
+                      :className="{ button: '  underline' }"
+                      class="mb-4 print:mb-0"
+                    >
+                      <p
+                        class="text-sky-800 text-sm text-justify"
+                        v-html="requirement?.feedback"
+                      ></p>
+                    </DescriptionView>
+                    <div>
+                      <button
+                        class="btn-3 print:hidden"
+                        @click.prevent="
+                          () => {
+                            feedbackEditForm.open = true
+                            feedbackEditForm.requirement = requirement
+                          }
+                        "
                       >
-                        <p class="text-sky-800 text-sm text-justify" v-html="detail?.feedback"></p>
-                      </DescriptionView>
-                      <div>
-                        <button
-                          class="btn-3 print:hidden"
-                          @click.prevent="
-                            () => {
-                              feedbackEditForm.open = true
-                              feedbackEditForm.detail = detail
-                            }
-                          "
-                        >
-                          {{ detail.feedback ? 'Update Feedback' : 'Add feedback' }}
-                        </button>
-                      </div>
+                        {{ requirement.feedback ? 'Update Feedback' : 'Add feedback' }}
+                      </button>
                     </div>
-                  </td>
-                </tr>
-              </template>
+                  </div>
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -413,13 +398,6 @@ async function handleTaskAddClose() {
           </div>
         </div>
 
-        <div class="mt-2 text-right print:hidden" v-if="state != 'loading' && !requirement?.status">
-          <p class="text-yellow-800 text-sm">
-            <span class="fas fa-exclamation-circle"></span>
-            After submitting you cannot add requirement no more
-          </p>
-        </div>
-
         <div class="mt-4 mb-8 break-before-avoid-page" v-if="requirement?.status">
           <div class="whitespace-nowrap border-gray-200 grid grid-cols-2 items-center">
             <RequirementApprovalItem
@@ -433,7 +411,7 @@ async function handleTaskAddClose() {
 
           <div
             class="whitespace-nowrap border-gray-200 grid grid-cols-2 gap-2 items-center"
-            v-if="requirement.from_department_id !== requirement?.to_department_id"
+            v-if="requirement?.from_department_id !== requirement?.to_department_id"
           >
             <RequirementApprovalItem
               v-for="approvalType in ['to_in_charge', 'to_coordinator']"

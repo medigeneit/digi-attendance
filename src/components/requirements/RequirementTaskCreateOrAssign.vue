@@ -7,7 +7,7 @@ const props = defineProps({
   fromDepartmentId: {
     type: Number,
   },
-  requirementDetail: {
+  requirement: {
     type: Object,
   },
 })
@@ -21,7 +21,7 @@ const taskId = ref('')
 const taskListShown = ref(false)
 
 async function handleAssignClick() {
-  await taskStore.setTaskRequirement(taskId.value, props.requirementDetail.id)
+  await taskStore.setTaskRequirement(taskId.value, props.requirement.id)
   emit('assignTask')
 }
 </script>
@@ -50,8 +50,9 @@ async function handleAssignClick() {
           v-model:show="taskListShown"
           :isOnlyMyTask="false"
           :taskQueryParams="{ 'from-department-id': fromDepartmentId }"
-          :filterTasks="(task) => !task.requirement_detail_id"
+          :filterTasks="(task) => !task.requirement_id"
           @addNewTaskClick="emit('addNewTaskClick')"
+          :showAddBtnIfNotFound="true"
         />
         <div class="flex justify-center">
           <button class="btn-2 h-12 rounded-md">Save</button>

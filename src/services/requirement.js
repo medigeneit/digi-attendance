@@ -26,6 +26,12 @@ export async function updateRequirement(requirementId, data){
   return apiClient.put(`/requirements/${requirementId}`, data);
 }
 
+
+export async function updateRequirementFeedback(requirementId, feedback){
+  return apiClient.put(`/requirements/${requirementId}/update-feedback`, {feedback});
+}
+
+
 export async function submitRequirement(requirementId, data){
   return apiClient.put(`/requirements/${requirementId}/submit`, data);
 }

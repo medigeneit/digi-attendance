@@ -137,6 +137,7 @@ const update = async () => {
         </div>
       </div>
 
+      <!--
       <div class="mb-4">
         <label class="block text-gray-600 text-sm mb-1 font-medium">
           From Department <RequiredIcon />
@@ -187,6 +188,7 @@ const update = async () => {
           </optgroup>
         </select>
       </div>
+      -->
 
       <div class="mb-4">
         <label class="block text-gray-700 font-medium mb-2">Description</label>
