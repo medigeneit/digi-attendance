@@ -251,8 +251,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
               <p v-if="editErrors.present_condition" class="text-xs text-rose-600 mt-1">{{ editErrors.present_condition }}</p>
             </div>
 
-            <!-- Receiver: hidden section entirely when not applicable -->
-            <div v-if="editForm.show_receiver">
+            
+            <div>
               <label class="block text-sm font-medium mb-1">Receiver</label>
               <textarea
                 class="w-full resize-none bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 leading-6 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
