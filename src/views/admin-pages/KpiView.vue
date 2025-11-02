@@ -13,6 +13,10 @@
       <i class="far fa-file-chart-line text-3xl"></i>
       Evaluation List
     </RouterLink>
+    <RouterLink :to="{ name: 'YearlyEvaluationList' }" class="main-button">
+      <i class="far fa-file-chart-line text-3xl"></i>
+      Yearly Evaluation
+    </RouterLink>
     <RouterLink :to="{ name: 'MonthlyKpiReportList' }" class="main-button">
       <i class="far fa-file-chart-line text-3xl"></i>
       Monthly KPI Reports
