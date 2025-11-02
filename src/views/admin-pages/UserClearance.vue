@@ -273,7 +273,6 @@ onBeforeRouteLeave((to, from, next) => {
           <div class="h-4 bg-gray-200 rounded"></div>
         </div>
       </div>
-
       <ClearanceEditorTable
         v-else
         :rows="itemsForTable"
