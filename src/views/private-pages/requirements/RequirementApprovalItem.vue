@@ -96,11 +96,7 @@ function onSuccess() {
       <span class="fas fa-check ml-2 text-green-500" v-else></span> -->
 
       <template v-if="approvalData.department_user">
-        <span
-          v-if="approvalData.approved || props.requirement?.status === 'approved'"
-          class="text-green-600 ml-2"
-          >(✔)</span
-        >
+        <span v-if="approvalData.approved" class="text-green-600 ml-2">(✔)</span>
         <span v-else class="ml-2 text-yellow-700">
           <i class="fad fa-spinner"></i>
         </span>
