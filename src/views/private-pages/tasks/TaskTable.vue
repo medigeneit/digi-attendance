@@ -46,9 +46,14 @@
               >
                 <div class="flex gap-1 items-start text-base">
                   <div class="font-bold text-lime-600">{{ requirementIndex + 1 }}.</div>
-                  <p class="line-clamp-2">
+                  <p v-if="requirement.id === 0">{{ requirement.title }}</p>
+                  <RouterLink
+                    v-else
+                    :to="`requirements/show/${requirement.id}`"
+                    class="line-clamp-2 hover:underline"
+                  >
                     {{ requirement.title }}
-                  </p>
+                  </RouterLink>
                 </div>
 
                 <div class="ml-auto">
