@@ -52,6 +52,7 @@ async function handleAssignClick() {
           :taskQueryParams="{ 'from-department-id': fromDepartmentId }"
           :filterTasks="(task) => !task.requirement_id"
           @addNewTaskClick="emit('addNewTaskClick')"
+          :showAddBtnIfNotFound="true"
         />
         <div class="flex justify-center">
           <button class="btn-2 h-12 rounded-md">Save</button>

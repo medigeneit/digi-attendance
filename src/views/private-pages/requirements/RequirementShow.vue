@@ -101,7 +101,6 @@ function handlePrint() {
 }
 
 const addFormData = reactive({
-  parentId: null,
   modalShown: false,
   requirementId: 0,
   taskDefaultValues: {},
@@ -110,16 +109,14 @@ const addFormData = reactive({
 })
 
 async function handleTaskUpdate() {
-  addFormData.parentId = 0
-  addFormData.parentId = null
   addFormData.modalShown = false
   addFormData.requirement = null
   state.value = 'loading'
+  handleTaskAddClose()
   await fetchRequirement()
 }
 
 async function handleTaskAddClose() {
-  addFormData.parentId = null
   addFormData.modalShown = false
   addFormData.requirement = null
   addFormData.creating = false
@@ -337,6 +334,7 @@ async function handleTaskAddClose() {
                 @taskCreateClick="goToTaskAdd"
                 :isPrinting="isPrinting"
               />
+
               <tr class="">
                 <td class="p-3 border-2 border-gray-800" colspan="5">
                   <div class="font-semibold text-gray-500 print:text-gray-800 text-sm mb-1">
