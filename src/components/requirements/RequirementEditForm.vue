@@ -48,6 +48,8 @@ onMounted(async () => {
 
 watch(requirement, function (fetchedRequirement) {
   if (fetchedRequirement) {
+    form.value.title = fetchedRequirement.title
+    form.value.description = fetchedRequirement.description
     form.value.from_department_id = fetchedRequirement.from_department_id
     form.value.to_department_id = fetchedRequirement.to_department_id
 
@@ -116,6 +118,23 @@ const hasAccessOnMyCompanyDepartment = computed(() => {
 
     <form @submit.prevent="submit" class="z-0">
       <template v-if="state !== 'loading' && state !== 'submitting'">
+        <div class="mb-4">
+          <label class="text-gray-800">Title</label>
+          <input
+            v-model="form.title"
+            required
+            placeholder="Ender Requirement detail title"
+            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div class="mb-4">
+          <label class="text-gray-800">Description</label>
+          <textarea
+            v-model="form.description"
+            placeholder="Ender Requirement detail title"
+            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
         <div class="mb-4">
           <label class="text-gray-800">Websites</label>
 

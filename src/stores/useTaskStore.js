@@ -216,7 +216,7 @@ export const useTaskStore = defineStore('task', () => {
     error.value = null;
     try {
       const response = await apiClient.put(`/tasks/${id}`, data);
-      const index = tasks.value.findIndex((t) => t.id === id);
+      const index = tasks.value.findIndex((t) => t?.id === id);
       if (index !== -1) {
         tasks.value[index] = response.data.data;
       }

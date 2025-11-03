@@ -3,17 +3,23 @@ ii
 import LoaderView from '@/components/common/LoaderView.vue'
 import OverlyModal from '@/components/common/OverlyModal.vue'
 import ShareComponent from '@/components/common/ShareComponent.vue'
+import DepartmentChip from '@/components/DepartmentChip.vue'
 import DescriptionView from '@/components/DescriptionView.vue'
-import RequirementDetailAddForm from '@/components/requirements/RequirementDetailAddForm.vue'
 import RequirementDetailDeleteForm from '@/components/requirements/RequirementDetailDeleteForm.vue'
-import RequirementDetailEditForm from '@/components/requirements/RequirementDetailEditForm.vue'
 import RequirementDetailTableRow from '@/components/requirements/RequirementDetailTableRow.vue'
 import RequirementFeedbackEditForm from '@/components/requirements/RequirementFeedbackEditForm.vue'
 import RequirementSubmissionHandler from '@/components/requirements/RequirementSubmissionHandler.vue'
 import RequirementTaskCreateOrAssign from '@/components/requirements/RequirementTaskCreateOrAssign.vue'
 import TaskAddForm from '@/components/tasks/TaskAddForm.vue'
+import TaskEditForm from '@/components/tasks/TaskEditForm.vue'
+import TaskTableRow from '@/components/tasks/TaskTableRow.vue'
+import TaskUserAssignForm from '@/components/tasks/TaskUserAssignForm.vue'
+import TextWithHr from '@/components/TextWithHr.vue'
+import UserChip from '@/components/user/UserChip.vue'
+import { getDisplayDateTime } from '@/libs/datetime'
 import { findRequirement } from '@/services/requirement'
-import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+import { nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import RequirementApprovalItem from './RequirementApprovalItem.vue'
 
@@ -21,10 +27,12 @@ const route = useRoute()
 const router = useRouter()
 const state = ref('')
 
+const auth = useAuthStore()
+
+const sidebarTop = ref()
+const shareComponent = ref()
+
 const requirement = ref(null)
-const detailAddForm = reactive({
-  open: false,
-})
 const detailEditForm = reactive({
   detail: null,
   open: false,
@@ -41,19 +49,40 @@ const detailDeleteForm = reactive({
 })
 
 const isPrinting = ref(false)
-
 const beforePrint = () => (isPrinting.value = true)
 const afterPrint = () => (isPrinting.value = false)
+
+const editingId = ref()
+
+const employeeAssignForm = ref({
+  isOpen: false,
+  taskId: null,
+})
 
 onMounted(async () => {
   await fetchRequirement()
   window.addEventListener('beforeprint', beforePrint)
   window.addEventListener('afterprint', afterPrint)
+  window.addEventListener('resize', setShareComponentStyle)
+
+  await nextTick()
+
+  setShareComponentStyle()
 })
+
+function setShareComponentStyle() {
+  const sidebarTopValue = sidebarTop.value
+  const shareComp = shareComponent.value?.$el
+
+  if (sidebarTopValue && shareComp && sidebarTopValue?.offsetHeight) {
+    shareComp.style.top = `${sidebarTopValue?.offsetHeight + 90}px`
+  }
+}
 
 onBeforeUnmount(() => {
   window.removeEventListener('beforeprint', beforePrint)
   window.removeEventListener('afterprint', afterPrint)
+  window.removeEventListener('resize', setShareComponentStyle)
 })
 async function fetchRequirement() {
   state.value = 'loading'
@@ -63,6 +92,15 @@ async function fetchRequirement() {
 
 function goToTaskAdd() {
   //router.push({ name: 'TaskAdd' })
+
+  if (
+    auth.user.role !== 'super_admin' &&
+    auth.user?.id !== requirement.value?.to_department?.incharge_id
+  ) {
+    return alert(
+      `You can't create or assign task for this requirement. \nOnly ${requirement.value?.to_department?.name}'s In charge can create or assign.`,
+    )
+  }
 
   console.log({ requirement })
   addFormData.modalShown = true
@@ -81,10 +119,6 @@ function goToTaskAdd() {
   addFormData.requirement = requirement.value
 }
 
-function handleAddRequirementDetail() {
-  detailAddForm.open = true
-}
-
 function handleEditRequirementDetail(detail) {
   detailEditForm.open = true
   detailEditForm.detail = detail
@@ -93,11 +127,6 @@ function handleEditRequirementDetail(detail) {
 function handleDeleteRequirementDetail(detail) {
   detailDeleteForm.open = true
   detailDeleteForm.detail = detail
-}
-
-function handlePrint() {
-  setTimeout(() => window.print())
-  isPrinting.value = true
 }
 
 const addFormData = reactive({
@@ -109,10 +138,7 @@ const addFormData = reactive({
 })
 
 async function handleTaskUpdate() {
-  addFormData.modalShown = false
-  addFormData.requirement = null
-  state.value = 'loading'
-  handleTaskAddClose()
+  editingId.value = null
   await fetchRequirement()
 }
 
@@ -123,34 +149,7 @@ async function handleTaskAddClose() {
 }
 </script>
 <template>
-  <div class="container mx-auto p-6 print:p-0 w-full print:max-w-full">
-    <OverlyModal v-if="detailAddForm.open" class="*:max-w-4xl">
-      <RequirementDetailAddForm
-        :requirementId="requirement.id"
-        @closeClick="detailAddForm.open = false"
-        @create="
-          async () => {
-            detailAddForm.open = false
-            await fetchRequirement()
-          }
-        "
-      />
-    </OverlyModal>
-
-    <OverlyModal v-if="detailEditForm.open">
-      <RequirementDetailEditForm
-        :requirementId="requirement.id"
-        :detailId="detailEditForm.requirement.value?.id"
-        @closeClick="detailEditForm.open = false"
-        @update="
-          async () => {
-            detailEditForm.open = false
-            await fetchRequirement()
-          }
-        "
-      />
-    </OverlyModal>
-
+  <div class="container mx-auto print:p-0 w-full print:max-w-full">
     <OverlyModal v-if="feedbackEditForm.open">
       <RequirementFeedbackEditForm
         :requirementId="requirement.id"
@@ -216,217 +215,397 @@ async function handleTaskAddClose() {
       />
     </OverlyModal>
 
-    <div class="bg-white rounded shadow print:shadow-none p-4 print:p-0 relative mb-6 print:mb-0">
-      <div class="flex items-start">
-        <div class="mb-4 text-lg print:black print:font-bold">
-          <div class="text-gray-800 leading-none">To</div>
+    <OverlyModal v-if="editingId">
+      <TaskEditForm :taskId="editingId" @close="editingId = null" @updated="handleTaskUpdate" />
+    </OverlyModal>
+
+    <OverlyModal v-if="employeeAssignForm.isOpen" class="*:max-w-4xl">
+      <TaskUserAssignForm
+        :taskId="employeeAssignForm.taskId"
+        @cancelClick="
+          () => {
+            employeeAssignForm.isOpen = false
+            employeeAssignForm.taskId = 0
+          }
+        "
+        @success="
+          () => {
+            employeeAssignForm.isOpen = false
+            employeeAssignForm.taskId = 0
+            state = 'loading'
+            fetchRequirement()
+          }
+        "
+      />
+    </OverlyModal>
+
+    <div class="print:shadow-none print:p-0 relative min-h-[50vh] mx-4">
+      <div class="grid grid-cols-12 gap-x-4 gap-y-3" v-if="requirement">
+        <div
+          class="col-span-full md:col-span-8 xl:col-span-8 2xl:col-span-9 row-span-10 bg-white shadow rounded-lg p-6"
+        >
+          <div class="text-center text-xl font-bold mb-2 flex items-center">
+            <button class="btn-3 h-8 px-4" @click.prevent="() => router.back()">Back</button>
+            <div class="text-2xl ml-4">Requirement Form</div>
+          </div>
+
+          <hr class="mb-4" />
+
           <div>
-            {{ requirement?.to_department?.name }}
-          </div>
-        </div>
-        <div class="ml-auto print:hidden flex gap-2 items-center">
-          <button class="btn-3 font-semibold !pl-2 !pr-4" @click.prevent="handlePrint">
-            <i class="fad fa-print text-xl"></i>Print
-          </button>
-          <button class="btn-3" @click.prevent="() => router.back()">Back</button>
-          <RouterLink class="btn-2" :to="`/requirements/edit/${requirement?.id}`">Edit</RouterLink>
-        </div>
-      </div>
-
-      <div class="text-center text-xl font-bold mb-2 underline">Requirement Form</div>
-      <div class="mb-4 flex items-center gap-1 print:mb-1">
-        <div class="text-gray-500 text-sm">Requirement ID:</div>
-        <div class="font-bold print:text-gray-900">
-          {{ requirement?.id }}
-        </div>
-      </div>
-
-      <div class="mb-3 flex items-center gap-3 print:mb-1">
-        <div class="text-gray-500 text-sm">From</div>
-        <div class="print:text-gray-900">
-          {{ requirement?.from_department?.name }}
-        </div>
-      </div>
-
-      <div
-        class="mb-3 flex items-center gap-3 print:mb-1"
-        v-if="requirement?.website_tags?.length > 0"
-      >
-        <div class="text-gray-500 text-sm">Website</div>
-
-        <div class="flex items-center gap-2 print:text-gray-900 flex-wrap">
-          <div
-            v-for="website_tag in requirement?.website_tags || []"
-            :key="website_tag.id"
-            class="border px-2 rounded-md bg-gray-50 shadow-sm whitespace-nowrap"
-          >
-            {{ website_tag.name }}
-          </div>
-        </div>
-      </div>
-
-      <div class="mb-3 flex items-center gap-3 print:mb-1" v-if="requirement?.submission_date">
-        <div class="text-gray-500 text-sm">Submission Date</div>
-        <div class="print:text-gray-900">
-          {{
-            new Date(requirement?.submission_date).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-            })
-          }}
-        </div>
-      </div>
-
-      <hr class="mb-4" />
-
-      <div>
-        <div class="flex items-end mb-3">
-          <h2 class="text-xl font-semibold">Requirements</h2>
-          <div class="ml-auto print:hidden flex gap-2 text-sm"></div>
-        </div>
-
-        <div class="overflow-x-auto print:overflow-visible" v-if="requirement">
-          <table class="w-full table-auto print:table-fixed">
-            <thead>
-              <tr>
-                <th
-                  rowspan="2"
-                  class="border-2 border-gray-800 text-center text-gray-800 print:text-black text-base font-semibold whitespace-nowrap print:whitespace-normal w-[65%]"
-                >
-                  Requirement Details
-                </th>
-                <th
-                  rowspan="2"
-                  class="border-2 border-gray-800 text-center text-gray-800 print:text-black text-base px-3 font-semibold whitespace-nowrap print:whitespace-normal print:p-0 w-[15%]"
-                >
-                  Better To Complete
-                </th>
-                <th
-                  colspan="2"
-                  class="w-[30%] border-2 border-gray-800 text-center text-gray-800 print:text-black text-base font-semibold whitespace-nowrap px-3 py-1 print:whitespace-normal"
-                >
-                  For '{{
-                    requirement?.to_department?.short_name || requirement?.to_department?.name
-                  }}' Use
-                </th>
-              </tr>
-              <tr>
-                <td
-                  class="whitespace-nowrap border-2 border-gray-800 text-center text-gray-800 print:text-black text-sm font-semibold print:text-xs"
-                >
-                  Task No
-                </td>
-                <td
-                  class="border-2 border-gray-800 text-center text-gray-800 print:text-black text-sm font-semibold whitespace-nowrap p-3 print:text-xs print:p-0"
-                >
-                  Expected Date
-                </td>
-              </tr>
-            </thead>
-
-            <tbody>
-              <RequirementDetailTableRow
-                :requirement="requirement"
-                :serial="index + 1"
-                @editClick="handleEditRequirementDetail"
-                @deleteClick="handleDeleteRequirementDetail"
-                @taskCreateClick="goToTaskAdd"
-                :isPrinting="isPrinting"
-              />
-
-              <tr class="">
-                <td class="p-3 border-2 border-gray-800" colspan="5">
-                  <div class="font-semibold text-gray-500 print:text-gray-800 text-sm mb-1">
-                    '{{
-                      requirement?.to_department?.short_name || requirement?.to_department?.name
-                    }}' Feedback
-                  </div>
-                  <div v-if="state != 'loading' && requirement?.status">
-                    <DescriptionView
-                      v-if="requirement?.feedback"
-                      lineClamp="2"
-                      :className="{ button: '  underline' }"
-                      class="mb-4 print:mb-0"
-                    >
-                      <p
-                        class="text-sky-800 text-sm text-justify"
-                        v-html="requirement?.feedback"
-                      ></p>
-                    </DescriptionView>
-                    <div>
-                      <button
-                        class="btn-3 print:hidden"
-                        @click.prevent="
-                          () => {
-                            feedbackEditForm.open = true
-                            feedbackEditForm.requirement = requirement
-                          }
-                        "
-                      >
-                        {{ requirement.feedback ? 'Update Feedback' : 'Add feedback' }}
-                      </button>
+            <div class="mb-8">
+              <div>
+                <div class="text-lg font-semibold mb-2">
+                  <DescriptionView line-clamp="3" class="mb-2">
+                    <template #default>
+                      {{ requirement.title }}
+                    </template>
+                    <template #btnText="{ lineClampClass }">
+                      {{ lineClampClass ? 'More' : 'Less' }}
+                    </template>
+                  </DescriptionView>
+                  <div class="flex gap-4 items-center text-gray-500">
+                    <div class="text-sm">
+                      <span class="fas fa-calendar text-sm text-gray-400"></span>
+                      {{ getDisplayDateTime(requirement.created_at) }}
+                    </div>
+                    <div v-if="requirement.created_by" class="flex items-center gap-1">
+                      <span class="text-gray-400 text-sm">By</span>
+                      <UserChip
+                        avatar-size="xsmall"
+                        :user="requirement.created_by"
+                        class="border-sky-300"
+                      />
                     </div>
                   </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+                </div>
 
-        <div
-          class="mt-8 border rounded-md p-8 flex items-start justify-between bg-gray-50 print:hidden"
-          v-if="state != 'loading' && !requirement?.status"
-        >
-          <button class="btn-2 pl-2 text-base" @click.prevent="handleAddRequirementDetail">
-            <i class="fad fa-plus-circle text-2xl mr-2"></i>Add Requirement
-          </button>
+                <div class="mb-5" v-if="requirement.description">
+                  <div class="text-gray-400 mr-2 text-xs uppercase font-semibold">Description</div>
 
-          <div class="flex flex-col items-end">
-            <RequirementSubmissionHandler
-              :requirement-id="requirement?.id"
-              @success="fetchRequirement"
+                  <DescriptionView
+                    :line-clamp="4"
+                    :class-name="{ button: 'group-hover/item:underline' }"
+                    class="text-sm"
+                  >
+                    <p v-html="requirement.description" class="text-justify"></p>
+                  </DescriptionView>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-8">
+              <TextWithHr class="mb-4">
+                <h2 class="font-semibold text-lg px-2">Task List</h2>
+              </TextWithHr>
+              <div class="w-full border rounded-lg border-gray-300 overflow-y-auto">
+                <table class="w-full border-collapse">
+                  <thead>
+                    <tr>
+                      <th class="border-x px-1 font-medium text-xs text-gray-400">SL</th>
+                      <th class="border-x px-1 font-medium text-xs text-gray-400">Task</th>
+                      <th class="border-x px-1 font-medium text-xs text-gray-400">Assigns</th>
+                      <th class="border-x px-1 font-medium text-xs text-gray-400">Deadline</th>
+                      <th
+                        class="border-x px-1 font-medium text-xs text-gray-400 sticky right-0 bg-gray-50"
+                      >
+                        Status
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-if="state != 'loading' && requirement?.tasks?.length === 0">
+                      <td class="py-4 px-3 border-t text-center text-gray-400 text-sm" colspan="10">
+                        No Task
+                      </td>
+                    </tr>
+                    <template v-else>
+                      <TaskTableRow
+                        v-for="(task, index) in requirement?.tasks || []"
+                        :key="task.id"
+                        :task="task"
+                        :indexing="index + 1"
+                        class="*:py-3 *:border-b-0"
+                        @editClick="(taskId) => (editingId = taskId)"
+                        @employeeAssignClick="
+                          (taskId) => {
+                            employeeAssignForm.isOpen = true
+                            employeeAssignForm.taskId = taskId
+                          }
+                        "
+                      />
+                      <!-- hide-buttons -->
+                    </template>
+                  </tbody>
+                </table>
+
+                <!-- {{ requirement.tasks }} -->
+              </div>
+            </div>
+
+            <div class="mb-8">
+              <TextWithHr class="mb-4">
+                <h2 class="font-semibold text-lg px-2">Feedback</h2>
+              </TextWithHr>
+
+              <div class="p-3 border border-dashed rounded-lg border-sky-600" colspan="5">
+                <div class="font-semibold text-gray-500 print:text-gray-800 text-sm mb-1">
+                  '{{ requirement?.to_department?.short_name || requirement?.to_department?.name }}'
+                  Feedback
+                </div>
+                <div v-if="state != 'loading' && requirement?.status">
+                  <DescriptionView
+                    v-if="requirement?.feedback"
+                    lineClamp="2"
+                    :className="{ button: '  underline' }"
+                    class="mb-4 print:mb-0"
+                  >
+                    <p class="text-sky-800 text-sm text-justify" v-html="requirement?.feedback"></p>
+                  </DescriptionView>
+                  <div>
+                    <button
+                      class="btn-3 print:hidden"
+                      @click.prevent="
+                        () => {
+                          feedbackEditForm.open = true
+                          feedbackEditForm.requirement = requirement
+                        }
+                      "
+                    >
+                      {{ requirement.feedback ? 'Update Feedback' : 'Add feedback' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto print:overflow-visible" v-if="requirement && false">
+              <table class="w-full table-auto print:table-fixed">
+                <thead>
+                  <tr>
+                    <th
+                      rowspan="2"
+                      class="border-2 border-gray-800 text-center text-gray-800 print:text-black text-base font-semibold whitespace-nowrap print:whitespace-normal w-[65%]"
+                    >
+                      Requirement Details
+                    </th>
+                    <th
+                      rowspan="2"
+                      class="border-2 border-gray-800 text-center text-gray-800 print:text-black text-base px-3 font-semibold whitespace-nowrap print:whitespace-normal print:p-0 w-[15%]"
+                    >
+                      Better To Complete
+                    </th>
+                    <th
+                      colspan="2"
+                      class="w-[30%] border-2 border-gray-800 text-center text-gray-800 print:text-black text-base font-semibold whitespace-nowrap px-3 py-1 print:whitespace-normal"
+                    >
+                      For '{{
+                        requirement?.to_department?.short_name || requirement?.to_department?.name
+                      }}' Use
+                    </th>
+                  </tr>
+                  <tr>
+                    <td
+                      class="whitespace-nowrap border-2 border-gray-800 text-center text-gray-800 print:text-black text-sm font-semibold print:text-xs"
+                    >
+                      Task No
+                    </td>
+                    <td
+                      class="border-2 border-gray-800 text-center text-gray-800 print:text-black text-sm font-semibold whitespace-nowrap p-3 print:text-xs print:p-0"
+                    >
+                      Expected Date
+                    </td>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  <RequirementDetailTableRow
+                    :requirement="requirement"
+                    :serial="index + 1"
+                    @editClick="handleEditRequirementDetail"
+                    @deleteClick="handleDeleteRequirementDetail"
+                    @taskCreateClick="goToTaskAdd"
+                    :isPrinting="isPrinting"
+                  />
+                </tbody>
+              </table>
+            </div>
+
+            <div
+              class="mt-8 border rounded-md p-8 flex items-start justify-between bg-gray-50 print:hidden"
+              v-if="state != 'loading' && !requirement?.status"
             >
-              <template #heading> Requirement Submission </template>
-              <template #acceptButtonLabel>
-                <span class="btn-2 pl-2 text-base">
-                  <i class="fad fa-paper-plane text-lg mr-2"></i>Submit Requirement
-                </span>
-              </template>
-              <template #submitButtonLabel> Submit Requirement </template>
-            </RequirementSubmissionHandler>
+              <div class="flex flex-col items-end">
+                <RequirementSubmissionHandler
+                  :requirement-id="requirement?.id"
+                  @success="fetchRequirement"
+                >
+                  <template #heading> Requirement Submission </template>
+                  <template #acceptButtonLabel>
+                    <span class="btn-2 pl-2 text-base">
+                      <i class="fad fa-paper-plane text-lg mr-2"></i>Submit Requirement
+                    </span>
+                  </template>
+                  <template #submitButtonLabel> Submit Requirement </template>
+                </RequirementSubmissionHandler>
+              </div>
+            </div>
+
+            <div class="mt-6 mb-8 break-before-avoid-page" v-if="requirement?.status">
+              <TextWithHr>
+                <h2 class="font-semibold text-lg px-2">Approvals</h2>
+              </TextWithHr>
+              <div class="whitespace-nowrap border-gray-200 grid grid-cols-2 items-center">
+                <RequirementApprovalItem
+                  class="pt-12"
+                  v-for="approvalType in ['from_in_charge', 'from_coordinator']"
+                  :key="approvalType"
+                  :requirement="requirement"
+                  :approval-type="approvalType"
+                  @update-approval="() => fetchRequirement()"
+                />
+              </div>
+
+              <div
+                class="whitespace-nowrap border-gray-200 grid grid-cols-2 gap-2 items-center"
+                v-if="requirement?.from_department_id !== requirement?.to_department_id"
+              >
+                <RequirementApprovalItem
+                  class="pt-12"
+                  v-for="approvalType in ['to_in_charge', 'to_coordinator']"
+                  :key="approvalType"
+                  :requirement="requirement"
+                  :approval-type="approvalType"
+                  @update-approval="() => fetchRequirement()"
+                />
+              </div>
+            </div>
           </div>
         </div>
+        <div
+          class="col-span-full md:col-span-4 xl:col-span-4 2xl:col-span-3 space-y-4 sticky top-[74px] bg-white shadow rounded-lg p-4 break-before-avoid-page"
+          ref="sidebarTop"
+        >
+          <div class="border col-span-3 p-3 rounded-md">
+            <div>
+              <div class="flex items-center gap-2 mb-4">
+                <div class="text-gray-500 text-sm">From</div>
+                <DepartmentChip :department="requirement?.from_department" :short-name="true" />
+              </div>
 
-        <div class="mt-4 mb-8 break-before-avoid-page" v-if="requirement?.status">
-          <div class="whitespace-nowrap border-gray-200 grid grid-cols-2 items-center">
-            <RequirementApprovalItem
-              v-for="approvalType in ['from_in_charge', 'from_coordinator']"
-              :key="approvalType"
-              :requirement="requirement"
-              :approval-type="approvalType"
-              @update-approval="() => fetchRequirement()"
-            />
+              <div class="text-gray-600 text-sm mb-2 border-b border-dashed">Supervisor</div>
+              <div class="flex items-center gap-x-3 gap-y-2 flex-wrap">
+                <UserChip :user="requirement?.supervisor" v-if="requirement?.supervisor" />
+              </div>
+            </div>
+
+            <hr class="my-4" />
+
+            <div>
+              <div class="flex items-center gap-2 mb-4">
+                <div class="text-gray-500 text-sm">To</div>
+                <DepartmentChip :department="requirement?.to_department" :short-name="true" />
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-4 flex items-center justify-between gap-1 print:mb-1">
+            <div class="text-gray-500 text-sm">Requirement ID:</div>
+            <div class="font-bold print:text-gray-900">
+              {{ requirement?.id }}
+            </div>
           </div>
 
           <div
-            class="whitespace-nowrap border-gray-200 grid grid-cols-2 gap-2 items-center"
-            v-if="requirement?.from_department_id !== requirement?.to_department_id"
+            class="mb-3 flex items-start gap-3 print:mb-1"
+            v-if="requirement?.website_tags?.length > 0"
           >
-            <RequirementApprovalItem
-              v-for="approvalType in ['to_in_charge', 'to_coordinator']"
-              :key="approvalType"
-              :requirement="requirement"
-              :approval-type="approvalType"
-              @update-approval="() => fetchRequirement()"
-            />
+            <div class="text-gray-500 text-sm">Website</div>
+
+            <div class="flex items-center gap-2 print:text-gray-900 flex-wrap">
+              <div
+                v-for="website_tag in requirement?.website_tags || []"
+                :key="website_tag.id"
+                class="border px-1 rounded-md bg-sky-100 border-sky-400 text-sky-700 whitespace-nowrap text-xs"
+              >
+                {{ website_tag.name }}
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="mb-3 flex items-center justify-between gap-3 print:mb-1"
+            v-if="requirement?.submission_date"
+          >
+            <div class="text-gray-500 text-sm">Submission Date</div>
+            <div class="print:text-gray-900">
+              {{ getDisplayDateTime(requirement?.submission_date) }}
+            </div>
+          </div>
+
+          <div
+            class="mb-3 flex items-center justify-between gap-3 print:mb-1"
+            v-if="requirement?.better_to_complete_on"
+          >
+            <div class="text-gray-500 text-sm">Better To Complete</div>
+            <div class="print:text-gray-900">
+              {{ getDisplayDateTime(requirement?.better_to_complete_on) }}
+            </div>
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center mb-4">
+              <span class="text-gray-500 text-sm">Priority:</span>
+              <div>
+                <span
+                  :class="[
+                    'font-semibold text-sm',
+                    {
+                      'text-yellow-600 ': requirement.priority == 'IMPORTANT',
+                      'text-red-700 ': requirement.priority == 'URGENT',
+                    },
+                  ]"
+                  >{{ requirement.priority || 'NORMAL' }}</span
+                >
+              </div>
+            </div>
+            <div class="mb-6">
+              <div class="flex justify-between items-center">
+                <span class="text-gray-500 text-sm">Status:</span>
+                <span
+                  class="border rounded-lg px-2 text-sm py-0.5"
+                  :class="{
+                    'bg-red-300 text-red-700 border-red-400': requirement.status != 'approved',
+                    'bg-green-300 text-green-700 border-green-400':
+                      requirement.status == 'approved',
+                  }"
+                >
+                  {{ String(requirement.status).toUpperCase() }}
+                </span>
+              </div>
+            </div>
+
+            <hr class="mb-3" />
+            <div class="print:hidden flex gap-2 items-center justify-between w-full text-sm">
+              <button class="btn-3 font-semibold h-8 !pl-2 !pr-4" @click.prevent="goToTaskAdd">
+                <i class="fas fa-plus text-sm"></i> Add/Assign Task
+              </button>
+              <!-- <button class="btn-3 font-semibold !pl-2 !pr-4" @click.prevent="handlePrint">
+                <i class="fad fa-print text-xl"></i>Print
+              </button> -->
+
+              <RouterLink class="btn-2 h-8" :to="`/requirements/edit/${requirement?.id}`">
+                Edit
+              </RouterLink>
+            </div>
           </div>
         </div>
+        <ShareComponent
+          class="col-span-full md:col-span-4 xl:col-span-4 2xl:col-span-3 md:sticky"
+          ref="shareComponent"
+        />
       </div>
 
       <LoaderView class="absolute inset-0 bg-opacity-90" v-if="state === 'loading'" />
     </div>
-
-    <ShareComponent />
   </div>
 </template>

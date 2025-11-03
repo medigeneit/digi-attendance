@@ -90,6 +90,7 @@ const update = async () => {
     await store.updateTask(props.taskId, payload, { loadingBeforeFetch: false })
     emit('updated')
   } catch (err) {
+    console.error(err)
     errorMessage.value = err.response?.data?.message || 'An error occurred while updating the task.'
   } finally {
     loading.value = false

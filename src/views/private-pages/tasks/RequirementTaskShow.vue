@@ -271,6 +271,12 @@ async function handleClickDelete(todoDate) {
           v-if="breadcrumbTaskItems.length > 1"
         >
           <ol class="flex items-center gap-2">
+            <li class="text-gray-500 hover:text-blue-500 hover:underline text-base">
+              <RouterLink to="/dashboard" class="text-sm"
+                ><i class="fas fa-home"></i> Home</RouterLink
+              >
+            </li>
+            <li aria-hidden="true" class="text-gray-400 text-base">/</li>
             <template
               v-for="(breadcrumbTask, index) in breadcrumbTaskItems"
               :key="breadcrumbTask.id"
@@ -280,10 +286,10 @@ async function handleClickDelete(todoDate) {
                 <component
                   :is="authStore.isAdminMood ? RouterLink : div"
                   :to="`${authStore.isAdminMood ? '/requirements/show/' + breadcrumbTask.id : '/tasks'}`"
-                  class="hover:text-gray-900 hover:underline transition"
+                  class="transition"
                   :class="{
-                    'line-clamp-1 text-justify': index > 0,
-                    'whitespace-nowrap': index === 0,
+                    'line-clamp-1 text-justify hover:text-blue-500 hover:underline': index > 0,
+                    'whitespace-nowrap hover:text-blue-500 hover:underline': index === 0,
                   }"
                   v-if="!breadcrumbTask.is_current_page"
                 >

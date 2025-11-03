@@ -60,9 +60,7 @@ onMounted(async () => {
 
   task.value = taskData.task
 
-  employees.value = task.value?.parent
-    ? task.value.parent?.users
-    : taskData?.to_department_users || []
+  employees.value = taskData?.to_department_users || []
 
   setTaskOnFormData(task.value)
   selectedUsers.value = task.value.users
@@ -75,7 +73,7 @@ const employeeOptions = computed(() => {
 })
 
 const supervisorOptions = computed(() => {
-  const supervisors = task.value?.parent ? task.value.parent?.supervisors : userStore.users
+  const supervisors = userStore.users || []
   return [...supervisors, ...(task.value?.supervisors?.length ? [...task.value.supervisors] : [])]
 })
 
