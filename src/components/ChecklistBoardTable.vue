@@ -112,7 +112,7 @@ async function onConfirmTypeChange(u, nextValue) {
         >✕</button>
       </div>
 
-      <div class="rounded-lg border p-1 text-xs">
+      <!-- <div class="rounded-lg border p-1 text-xs">
         <button
           class="rounded-md px-2 py-1"
           :class="showOnlyMissing ? '' : 'bg-gray-900 text-white'"
@@ -130,7 +130,7 @@ async function onConfirmTypeChange(u, nextValue) {
         <option value="progress_desc">Sort: Progress ↓</option>
         <option value="progress_asc">Sort: Progress ↑</option>
         <option value="name_asc">Sort: Name A–Z</option>
-      </select>
+      </select> -->
 
       <div class="ml-auto">
         <span class="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs text-blue-700">
