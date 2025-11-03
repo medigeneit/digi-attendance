@@ -54,10 +54,10 @@
       Monthly KPI Criteria
     </RouterLink>
 
-    <RouterLink :to="{ name: 'ctdi', query:{templateId:2} }" class="main-button">
+    <!-- <RouterLink :to="{ name: 'ctdi', query:{templateId:2} }" class="main-button">
       <i class="far fa-tasks text-3xl"></i>
       Clearance Items Assign
-    </RouterLink>
+    </RouterLink> -->
     <RouterLink :to="{ name: 'KpiCycles' }" class="main-button">
       <i class="far fa-tasks text-3xl"></i>
       KPI Forms

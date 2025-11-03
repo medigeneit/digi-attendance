@@ -30,6 +30,7 @@ const clearanceUser = computed(() => ({
 
 /* ---- boot & data load ---- */
 onMounted(() => { if (route.query.open === 'clearance') clearanceOpen.value = true })
+
 async function loadFromRoute() {
   if (!userId.value) return
   pageLoading.value = true
@@ -176,6 +177,7 @@ const ORG = {
     </section>
 
     <!-- Clearance Modal (unchanged behaviour) -->
+     
     <UserClearanceModal
       v-model:open="clearanceOpen"
       :user="clearanceUser"
