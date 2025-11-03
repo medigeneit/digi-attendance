@@ -344,14 +344,17 @@ async function handleTaskAddClose() {
 
             <div class="mb-8">
               <TextWithHr class="mb-4">
-                <h2 class="font-semibold text-lg px-2">Feedback</h2>
-              </TextWithHr>
-
-              <div class="p-3 border border-dashed rounded-lg border-sky-600" colspan="5">
-                <div class="font-semibold text-gray-500 print:text-gray-800 text-sm mb-1">
+                <h2 class="font-semibold text-lg px-2">
                   '{{ requirement?.to_department?.short_name || requirement?.to_department?.name }}'
                   Feedback
-                </div>
+                </h2>
+              </TextWithHr>
+
+              <div
+                class="px-3 border border-dashed rounded-lg border-sky-600"
+                colspan="5"
+                :class="[requirement?.feedback ? 'py-3' : 'py-8']"
+              >
                 <div v-if="state != 'loading' && requirement?.status">
                   <DescriptionView
                     v-if="requirement?.feedback"
@@ -359,9 +362,16 @@ async function handleTaskAddClose() {
                     :className="{ button: '  underline' }"
                     class="mb-4 print:mb-0"
                   >
-                    <p class="text-sky-800 text-sm text-justify" v-html="requirement?.feedback"></p>
+                    <p class="text-sm text-justify" v-html="requirement?.feedback"></p>
                   </DescriptionView>
-                  <div>
+
+                  <div
+                    :class="[
+                      !requirement?.feedback
+                        ? 'w-full flex justify-center'
+                        : 'w-full flex justify-center',
+                    ]"
+                  >
                     <button
                       class="btn-3 print:hidden"
                       @click.prevent="
@@ -572,6 +582,7 @@ async function handleTaskAddClose() {
               <div class="flex justify-between items-center">
                 <span class="text-gray-500 text-sm">Status:</span>
                 <span
+                  v-if="requirement.status"
                   class="border rounded-lg px-2 text-sm py-0.5"
                   :class="{
                     'bg-red-300 text-red-700 border-red-400': requirement.status != 'approved',
@@ -581,12 +592,17 @@ async function handleTaskAddClose() {
                 >
                   {{ String(requirement.status).toUpperCase() }}
                 </span>
+                <span v-else class="text-red-600">...</span>
               </div>
             </div>
 
             <hr class="mb-3" />
             <div class="print:hidden flex gap-2 items-center justify-between w-full text-sm">
-              <button class="btn-3 font-semibold h-8 !pl-2 !pr-4" @click.prevent="goToTaskAdd">
+              <button
+                class="btn-3 font-semibold h-8 !pl-2 !pr-4"
+                @click.prevent="goToTaskAdd"
+                v-if="requirement.status == 'approved'"
+              >
                 <i class="fas fa-plus text-sm"></i> Add/Assign Task
               </button>
               <!-- <button class="btn-3 font-semibold !pl-2 !pr-4" @click.prevent="handlePrint">

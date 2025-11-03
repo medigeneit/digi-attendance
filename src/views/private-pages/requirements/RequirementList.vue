@@ -60,7 +60,7 @@ const requirementDepartmentGroups = computed(() => {
 </script>
 
 <template>
-  <div class="container mx-auto p-6">
+  <div class="container mx-auto">
     <div class="flex justify-between items-center mb-6">
       <h2 class="text-2xl font-bold text-gray-800">Requirements</h2>
       <button @click="goToAdd" class="btn-1">Add Requirement</button>
