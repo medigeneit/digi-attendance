@@ -1305,6 +1305,36 @@ const router = createRouter({
         },
 
         {
+          path: '/careers/jobs',
+          name: 'AdminCareersJobs',
+          component: () => import('@/views/admin-pages/JobsIndex.vue'),
+          meta: { 
+            requiresAuth: true, 
+            roles: ['admin', 'super_admin', 'developer'],
+            title:'Careers Jobs'
+          }
+        },
+        {
+          path: '/careers/jobs/new',
+          name: 'AdminCareersJobCreate',
+          component: () => import('@/views/admin-pages/JobEdit.vue'),
+          meta: { requiresAuth: true, roles:  ['admin', 'super_admin', 'developer'] }
+        },
+        {
+          path: '/careers/jobs/:id/edit',
+          name: 'AdminCareersJobEdit',
+          component: () => import('@/views/admin-pages/JobEdit.vue'),
+          props: true,
+          meta: { requiresAuth: true, roles:  ['admin', 'super_admin', 'developer'] }
+        },
+        {
+          path: '/careers/applications',
+          name: 'AdminCareersApplications',
+          component: () => import('@/views/admin-pages/ApplicationsIndex.vue'),
+          meta: { requiresAuth: true, roles:  ['admin', 'super_admin', 'developer'] }
+        },
+
+        {
           path: '/404',
           name: 'NotFound',
           component: () => import('@/views/public-pages/NotFound.vue'),
