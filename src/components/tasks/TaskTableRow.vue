@@ -38,7 +38,7 @@ const route = useRoute()
         <div>
           <div class="flex items-center gap-3 mb-0.5">
             <TaskTitleRouterLink
-              titleClass="text-sm"
+              titleClass="text-sm text-blue-400 font-semibold"
               :task="task"
               :sub-tasks-open="false"
               :isMyTask="route.name == 'RequirementList'"
