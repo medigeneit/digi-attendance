@@ -177,7 +177,7 @@ const toggleSection = (key) => { sections.value[key] = !sections.value[key] }
         </div>
         <div class="flex items-center gap-2">
           <!-- ✅ Only pending count -->
-          <span class="text-[11px] rounded-full bg-gray-100 text-gray-700 px-2 py-0.5">{{ leavePendingCount }}</span>
+          <span class="text-[11px] rounded-full bg-yellow-100 text-gray-700 px-2 py-0.5">{{ leavePendingCount }}</span>
           <RouterLink
             :to="{ name: 'MyLeaveApplications' }"
             class="text-[11px] text-blue-700 hover:underline"
@@ -256,7 +256,7 @@ const toggleSection = (key) => { sections.value[key] = !sections.value[key] }
         </div>
         <div class="flex items-center gap-2">
           <!-- ✅ Only pending count -->
-          <span class="text-[11px] rounded-full bg-gray-100 text-gray-700 px-2 py-0.5">{{ shortPendingCount }}</span>
+          <span class="text-[11px] rounded-full bg-yellow-100 text-gray-700 px-2 py-0.5">{{ shortPendingCount }}</span>
           <RouterLink :to="{ name: 'MyShortLeaves' }" class="text-[11px] text-blue-700 hover:underline" @click.stop>
             See all
           </RouterLink>
@@ -312,7 +312,7 @@ const toggleSection = (key) => { sections.value[key] = !sections.value[key] }
         </div>
         <div class="flex items-center gap-2">
           <!-- ✅ Only pending count -->
-          <span class="text-[11px] rounded-full bg-gray-100 text-gray-700 px-2 py-0.5">{{ exchPendingCount }}</span>
+          <span class="text-[11px] rounded-full bg-yellow-100 text-gray-700 px-2 py-0.5">{{ exchPendingCount }}</span>
           <!-- 2টা see all link রাখা হল -->
           <RouterLink :to="{ name: 'MyShiftExchangeList' }" class="text-[11px] text-blue-700 hover:underline" @click.stop>
             Shift
@@ -372,7 +372,7 @@ const toggleSection = (key) => { sections.value[key] = !sections.value[key] }
         </div>
         <div class="flex items-center gap-2">
           <!-- ✅ Only pending count -->
-          <span class="text-[11px] rounded-full bg-gray-100 text-gray-700 px-2 py-0.5">{{ manualPendingCount }}</span>
+          <span class="text-[11px] rounded-full bg-yellow-100 text-gray-700 px-2 py-0.5">{{ manualPendingCount }}</span>
           <RouterLink :to="{ name: 'MyManualAttendanceList' }" class="text-[11px] text-blue-700 hover:underline" @click.stop>
             See all
           </RouterLink>
