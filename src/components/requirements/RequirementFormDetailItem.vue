@@ -3,6 +3,7 @@ import RequiredIcon from '@/components/RequiredIcon.vue'
 import { useUserStore } from '@/stores/user'
 import { onMounted, ref, watch } from 'vue'
 import SelectDropdown from '../SelectDropdown.vue'
+import TextEditor from '../TextEditor.vue'
 import UserChip from '../user/UserChip.vue'
 
 const props = defineProps({
@@ -36,10 +37,6 @@ onMounted(async () => {
   // supervisors.value = await departmentStore.fetchDepartmentEmployee([props.fromDepartmentId])
   await userStore.fetchTypeWiseEmployees({ type: 'academy_body,doctor,executive' })
 })
-
-const handleRemoveClick = () => {
-  confirm('Are you sure?') ? emit('removeClick', props.uuid) : null
-}
 
 watch(
   () => ({ ...form.value }),
@@ -76,12 +73,14 @@ watch(
 
       <div class="">
         <label class="block text-gray-600 text-sm mb-1 font-medium">Description</label>
-        <textarea
+
+        <TextEditor v-model="form.description" class="w-full" />
+        <!-- <textarea
           rows="5"
           v-model="form.description"
           placeholder="Enter Requirement description"
           class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-        ></textarea>
+        ></textarea> -->
       </div>
 
       <div class="flex items-center justify-between h-full"></div>

@@ -7,6 +7,7 @@ import { useTagStore } from '@/stores/tags'
 import { computed, onMounted, ref, watch } from 'vue'
 import LoaderView from '../common/LoaderView.vue'
 import SelectDropdown from '../SelectDropdown.vue'
+import TextEditor from '../TextEditor.vue'
 
 const props = defineProps({
   requirementId: {
@@ -129,11 +130,11 @@ const hasAccessOnMyCompanyDepartment = computed(() => {
         </div>
         <div class="mb-4">
           <label class="text-gray-800">Description</label>
-          <textarea
-            v-model="form.description"
+          <TextEditor v-model="form.description" />
+          <!-- <textarea
             placeholder="Ender Requirement detail title"
             class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-          />
+          /> -->
         </div>
         <div class="mb-4">
           <label class="text-gray-800">Websites</label>
@@ -161,6 +162,7 @@ const hasAccessOnMyCompanyDepartment = computed(() => {
           v-else
           v-model="form.from_department_id"
           :companies="companyStore?.myCompanies || []"
+          :disabled="requirement.status"
           class="mb-4"
         >
           <template #label>
@@ -173,6 +175,7 @@ const hasAccessOnMyCompanyDepartment = computed(() => {
         <CompanyDepartmentSelectInput
           v-model="form.to_department_id"
           :companies="companyStore?.companies || []"
+          :disabled="requirement.status"
           class="mb-4"
         >
           <template #label>

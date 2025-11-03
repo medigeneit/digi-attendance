@@ -29,7 +29,7 @@ const userInitial = computed(() => (props.user ? getUserInitials(props.user) : '
         @error="showUserPhoto = false"
         :src="user.photo"
         :alt="userInitial"
-        class="object-cover w-full h-full"
+        class="object-cover w-full h-full rounded-full"
       />
       <span v-else class="text-white font-bold pt-2 p-2">{{ userInitial }}</span>
     </div>

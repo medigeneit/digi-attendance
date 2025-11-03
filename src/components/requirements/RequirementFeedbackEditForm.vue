@@ -3,6 +3,7 @@ import { findRequirement, updateRequirementFeedback } from '@/services/requireme
 import { onMounted, ref } from 'vue'
 import LoaderView from '../common/LoaderView.vue'
 import DescriptionView from '../DescriptionView.vue'
+import TextEditor from '../TextEditor.vue'
 
 const props = defineProps({
   requirementId: {
@@ -89,12 +90,13 @@ onMounted(async () => {
 
         <div class="mb-4">
           <label class="block text-gray-600 text-sm mb-1 font-medium">Feedback</label>
-          <textarea
+          <TextEditor v-model="form.feedback" />
+          <!-- <textarea
             rows="5"
             v-model="form.feedback"
             placeholder="Enter requirement feedback"
             class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-          ></textarea>
+          ></textarea> -->
         </div>
       </template>
 
