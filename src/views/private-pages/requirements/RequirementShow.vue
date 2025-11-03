@@ -357,7 +357,7 @@ async function handleTaskAddClose() {
               >
                 <div v-if="state != 'loading' && requirement?.status">
                   <DescriptionView
-                    v-if="requirement?.feedback"
+                    v-if="String(requirement?.feedback).trim().length > 0"
                     lineClamp="2"
                     :className="{ button: '  underline' }"
                     class="mb-4 print:mb-0"
