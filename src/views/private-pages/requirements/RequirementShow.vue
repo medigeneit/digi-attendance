@@ -547,7 +547,7 @@ async function handleTaskAddClose() {
             v-if="requirement?.submission_date"
           >
             <div class="text-gray-500 text-sm">Submission Date</div>
-            <div class="print:text-gray-900">
+            <div class="print:text-gray-900 text-sm text-right">
               {{ getDisplayDateTime(requirement?.submission_date) }}
             </div>
           </div>
@@ -557,7 +557,7 @@ async function handleTaskAddClose() {
             v-if="requirement?.better_to_complete_on"
           >
             <div class="text-gray-500 text-sm">Better To Complete</div>
-            <div class="print:text-gray-900">
+            <div class="print:text-gray-900 text-sm text-right">
               {{ getDisplayDateTime(requirement?.better_to_complete_on) }}
             </div>
           </div>
@@ -596,7 +596,23 @@ async function handleTaskAddClose() {
               </div>
             </div>
 
+            <div class="mb-6" v-if="requirement.rejected_by">
+              <div class="flex justify-between items-center">
+                <span class="text-gray-500 text-sm">Rejected By:</span>
+                <UserChip :user="requirement.rejected_by" />
+              </div>
+            </div>
+
+            <div
+              class="text-center mb-4 text-red-700 mt-8 text-sm"
+              v-if="requirement.rejection_reason"
+            >
+              <p class="text-gray-600 mb-1 italic">Reason</p>
+              <p>{{ requirement.rejection_reason }}</p>
+            </div>
+
             <hr class="mb-3" />
+
             <div class="print:hidden flex gap-2 items-center justify-between w-full text-sm">
               <button
                 class="btn-3 font-semibold h-8 !pl-2 !pr-4"

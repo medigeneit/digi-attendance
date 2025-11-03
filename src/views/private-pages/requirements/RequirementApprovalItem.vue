@@ -1,4 +1,5 @@
 <script setup>
+import DescriptionView from '@/components/DescriptionView.vue'
 import ApproveAndReject from '@/components/task-notifications/ApproveAndReject.vue'
 import UserChip from '@/components/user/UserChip.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -52,7 +53,6 @@ const previousApproverApproved = computed(() => {
 
 const approvalData = computed(() => {
   let department = null
-
   let approval_user = null
   let userType = ''
   let approval_note = ''
@@ -85,11 +85,14 @@ const approvalData = computed(() => {
     approval_note = props.requirement?.to_coordinator_note
   }
 
+  const department_user = departmentUsers.value?.[props.approvalType]
+
   return {
     department,
-    department_user: departmentUsers.value?.[props.approvalType],
+    department_user,
     approved: allApprovals.value?.[props.approvalType],
     approval_user,
+    is_rejected: props.requirement?.rejected_by_user_id == department_user?.id,
     userType,
     approval_note,
   }
@@ -98,10 +101,6 @@ const approvalData = computed(() => {
 function onSuccess() {
   emit('updateApproval')
 }
-
-// const userIsApprobate = computed(() => {
-//   return authStore.user?.id == approvalData?.value?.department_user?.id
-// })
 </script>
 
 <template>
@@ -109,11 +108,39 @@ function onSuccess() {
     <div v-if="approvalData.department_user">
       <UserChip :user="approvalData.department_user" avatar-size="xsmall" />
     </div>
+
     <div v-else>
       <span class="italic text-xs text-gray-400">N/A</span>
     </div>
-    <div class="text-sm text-gray-600">{{ approvalData.approval_note }}</div>
 
+    <div class="text-sm text-gray-600 whitespace-normal w-64">
+      <DescriptionView
+        v-if="approvalData.is_rejected"
+        :line-clamp="1"
+        class="text-center mt-2 text-red-600"
+      >
+        {{ requirement.rejection_reason }}
+      </DescriptionView>
+      <DescriptionView v-else :line-clamp="1" class="text-center mt-2">
+        {{ approvalData.approval_note }}
+      </DescriptionView>
+    </div>
+
+    <div>
+      <ApproveAndReject
+        class="ml-auto z-[5000000]"
+        notificationType="pending-requirements"
+        :applicationId="props.requirement?.id"
+        :onSuccess="onSuccess"
+        :variant="1"
+        v-if="
+          !approvalData.is_rejected &&
+          !approvalData.approved &&
+          previousApproverApproved &&
+          authStore.user?.id == approvalData?.department_user?.id
+        "
+      />
+    </div>
     <hr class="my-2 border-gray-600 w-64" />
 
     <div class="text-base text-gray-900 font-semibold">
@@ -123,25 +150,12 @@ function onSuccess() {
       <span class="ml-2">{{ approvalData.userType }}</span>
 
       <template v-if="approvalData.department_user">
-        <span v-if="approvalData.approved" class="text-green-600 ml-2">(✔)</span>
+        <span v-if="approvalData.is_rejected" class="text-red-700 text-sm"> (Rejected)</span>
+        <span v-else-if="approvalData.approved" class="text-green-600 ml-2">(✔)</span>
         <span v-else class="ml-2 text-yellow-700">
           <i class="fad fa-spinner"></i>
         </span>
       </template>
-
-      <!-- @loading="(isLoading) => (loading = isLoading)" -->
-      <ApproveAndReject
-        class="ml-auto z-[5000000]"
-        notificationType="pending-requirements"
-        :applicationId="props.requirement?.id"
-        :onSuccess="onSuccess"
-        :variant="1"
-        v-if="
-          !approvalData.approved &&
-          previousApproverApproved &&
-          authStore.user?.id == approvalData?.department_user?.id
-        "
-      />
     </div>
   </div>
 </template>

@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 const props = defineProps({
-  modelValue: String
+  modelValue: String,
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -19,7 +19,7 @@ const activeCommands = ref({
   justifyCenter: false,
   justifyRight: false,
   foreColor: '',
-  fontSize: '16px' // default font size
+  fontSize: '16px', // default font size
 })
 
 // Dropdown visibility states
@@ -35,7 +35,7 @@ const fontSizeMap = {
   4: '18px',
   5: '24px',
   6: '32px',
-  7: '48px'
+  7: '48px',
 }
 
 // Computed property to get the current alignment icon
@@ -57,7 +57,7 @@ watch(
     if (editor.value && editor.value.innerHTML !== newVal) {
       editor.value.innerHTML = newVal
     }
-  }
+  },
 )
 
 const formatText = (command, value = null) => {
@@ -80,7 +80,7 @@ const updateActiveCommands = () => {
     justifyCenter: document.queryCommandState('justifyCenter'),
     justifyRight: document.queryCommandState('justifyRight'),
     foreColor: document.queryCommandValue('foreColor'),
-    fontSize: fontSizeMap[document.queryCommandValue('fontSize')] || '16px'
+    fontSize: fontSizeMap[document.queryCommandValue('fontSize')] || '16px',
   }
 }
 
@@ -98,7 +98,7 @@ onMounted(() => {
     document.execCommand('insertText', false, text)
   })
 
-  editor.value.innerHTML = props.modelValue;
+  editor.value.innerHTML = props.modelValue
 })
 
 onBeforeUnmount(() => {
@@ -135,7 +135,7 @@ onBeforeUnmount(() => {
         @click.stop.prevent="formatText('bold')"
         :class="{
           'bg-blue-200 text-blue-700': activeCommands.bold,
-          'hover:bg-gray-200': !activeCommands.bold
+          'hover:bg-gray-200': !activeCommands.bold,
         }"
         class="p-2 flex items-center justify-center transition"
       >
@@ -146,7 +146,7 @@ onBeforeUnmount(() => {
         @click.stop.prevent="formatText('italic')"
         :class="{
           'bg-blue-200 text-blue-700': activeCommands.italic,
-          'hover:bg-gray-200': !activeCommands.italic
+          'hover:bg-gray-200': !activeCommands.italic,
         }"
         class="p-2 rounded flex items-center justify-center transition"
       >
@@ -157,7 +157,7 @@ onBeforeUnmount(() => {
         @click.stop.prevent="formatText('underline')"
         :class="{
           'bg-blue-200 text-blue-700': activeCommands.underline,
-          'hover:bg-gray-200': !activeCommands.underline
+          'hover:bg-gray-200': !activeCommands.underline,
         }"
         class="p-2 rounded flex items-center justify-center transition"
       >
@@ -168,7 +168,7 @@ onBeforeUnmount(() => {
         @click.stop.prevent="formatText('insertUnorderedList')"
         :class="{
           'bg-blue-200 text-blue-700': activeCommands.insertUnorderedList,
-          'hover:bg-gray-200': !activeCommands.insertUnorderedList
+          'hover:bg-gray-200': !activeCommands.insertUnorderedList,
         }"
         class="p-2 rounded flex items-center justify-center transition"
       >
@@ -179,7 +179,7 @@ onBeforeUnmount(() => {
         @click.stop.prevent="formatText('insertOrderedList')"
         :class="{
           'bg-blue-200 text-blue-700': activeCommands.insertOrderedList,
-          'hover:bg-gray-200': !activeCommands.insertOrderedList
+          'hover:bg-gray-200': !activeCommands.insertOrderedList,
         }"
         class="p-2 rounded flex items-center justify-center transition"
       >
@@ -203,7 +203,7 @@ onBeforeUnmount(() => {
             @click.stop.prevent="formatText('justifyLeft')"
             :class="{
               'bg-blue-200 text-blue-700': activeCommands.justifyLeft,
-              'hover:bg-gray-200': !activeCommands.justifyLeft
+              'hover:bg-gray-200': !activeCommands.justifyLeft,
             }"
             class="p-2 flex items-center justify-center"
           >
@@ -213,7 +213,7 @@ onBeforeUnmount(() => {
             @click.stop.prevent="formatText('justifyCenter')"
             :class="{
               'bg-blue-200 text-blue-700': activeCommands.justifyCenter,
-              'hover:bg-gray-200': !activeCommands.justifyCenter
+              'hover:bg-gray-200': !activeCommands.justifyCenter,
             }"
             class="p-2 flex items-center justify-center"
           >
@@ -223,7 +223,7 @@ onBeforeUnmount(() => {
             @click.stop.prevent="formatText('justifyRight')"
             :class="{
               'bg-blue-200 text-blue-700': activeCommands.justifyRight,
-              'hover:bg-gray-200': !activeCommands.justifyRight
+              'hover:bg-gray-200': !activeCommands.justifyRight,
             }"
             class="p-2 flex items-center justify-center"
           >
@@ -297,23 +297,23 @@ onBeforeUnmount(() => {
       ref="editor"
       contenteditable="true"
       @input="onDescriptionInput"
-      class="border border-gray-300 p-4 rounded-md min-h-[200px] bg-white"
+      class="border border-gray-300 p-4 rounded-md min-h-[200px] bg-white whitespace-normal"
       placeholder="Description"
     ></div>
   </div>
 </template>
 
 <style>
-[contenteditable="true"] ul,
-[contenteditable="true"] ol {
+[contenteditable='true'] ul,
+[contenteditable='true'] ol {
   padding-left: 20px;
 }
 
-[contenteditable="true"] ul {
+[contenteditable='true'] ul {
   list-style-type: disc;
 }
 
-[contenteditable="true"] ol {
+[contenteditable='true'] ol {
   list-style-type: decimal;
 }
 
