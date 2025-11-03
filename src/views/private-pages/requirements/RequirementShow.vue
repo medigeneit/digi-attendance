@@ -464,7 +464,7 @@ async function handleTaskAddClose() {
               <TextWithHr>
                 <h2 class="font-semibold text-lg px-2">Approvals</h2>
               </TextWithHr>
-              <div class="whitespace-nowrap border-gray-200 grid grid-cols-2 items-center">
+              <div class="whitespace-nowrap border-gray-200 grid grid-cols-2 items-stretch">
                 <RequirementApprovalItem
                   class="pt-12"
                   v-for="approvalType in ['from_in_charge', 'from_coordinator']"
@@ -476,7 +476,7 @@ async function handleTaskAddClose() {
               </div>
 
               <div
-                class="whitespace-nowrap border-gray-200 grid grid-cols-2 gap-2 items-center"
+                class="whitespace-nowrap border-gray-200 grid grid-cols-2 gap-2 items-stretch"
                 v-if="requirement?.from_department_id !== requirement?.to_department_id"
               >
                 <RequirementApprovalItem
