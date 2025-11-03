@@ -23,6 +23,7 @@ const HANDOVER_LABELS = {
   technical_support_team: 'Technical Support Team',
   it_incharge:            'IT In-charge',
   hr_department:          'HR Department',
+  inventory_incharge:     'Inventory Incharge',
 }
 const HANDOVER_OPTIONS = [
   { value: '',                         label: 'All handovers' },
@@ -30,6 +31,7 @@ const HANDOVER_OPTIONS = [
   { value: 'technical_support_team',   label: HANDOVER_LABELS.technical_support_team },
   { value: 'it_incharge',              label: HANDOVER_LABELS.it_incharge },
   { value: 'hr_department',            label: HANDOVER_LABELS.hr_department },
+  { value: 'inventory_incharge',            label: HANDOVER_LABELS.inventory_incharge },
 ]
 const STATUS_OPTIONS = [
   { value: '',           label: 'All status' },
@@ -94,6 +96,7 @@ async function submitModal(payload) {
         required: !!payload.required,
         order_no: payload.order_no ?? editing.value.order_no,
         handover_to: payload.handover_to, // <- NEW
+        handover_to_id: payload.handover_to_id, // <- NEW
       }
       await s.update(editing.value.id, patch)
     }
@@ -159,7 +162,7 @@ function resetFilters() {
         title="Filter by Handover target"
       >
         <option v-for="o in HANDOVER_OPTIONS" :key="o.value" :value="o.value">
-          {{ o.label }}
+          {{ o.label }} 
         </option>
       </select>
 
@@ -199,9 +202,10 @@ function resetFilters() {
         <thead class="bg-gray-50 text-left">
           <tr>
             <th class="px-3 py-2 w-20">Order</th>
-            <th class="px-3 py-2">Item Key</th>
+            <!-- <th class="px-3 py-2">Item Key</th> -->
             <th class="px-3 py-2">Label</th>
             <th class="px-3 py-2">Handover To</th>
+            <th class="px-3 py-2">Handover By</th>
             <th class="px-3 py-2 w-28">Required</th>
             <th class="px-3 py-2 w-28">Status</th>
             <th class="px-3 py-2 w-40">Actions</th>
@@ -240,9 +244,9 @@ function resetFilters() {
             </td>
 
             <!-- Item key -->
-            <td class="px-3 py-2 font-mono text-xs text-gray-700">
+            <!-- <td class="px-3 py-2 font-mono text-xs text-gray-700">
               {{ row.item_key }}
-            </td>
+            </td> -->
 
             <!-- Label -->
             <td class="px-3 py-2">
@@ -259,11 +263,15 @@ function resetFilters() {
                   'bg-amber-100 text-amber-800': row.handover_to === 'technical_support_team',
                   'bg-indigo-100 text-indigo-700': row.handover_to === 'it_incharge',
                   'bg-emerald-100 text-emerald-700': row.handover_to === 'hr_department',
+                  'bg-emerald-700 text-emerald-50': row.handover_to === 'inventory_incharge',
                 }"
                 :title="HANDOVER_LABELS[row.handover_to] || '—'"
               >
                 {{ HANDOVER_LABELS[row.handover_to] || '—' }}
               </span>
+            </td>
+            <td>
+              <span>{{ row?.handover_user?.name }}</span>
             </td>
 
             <!-- Required -->

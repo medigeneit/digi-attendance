@@ -16,24 +16,53 @@ export const useClearanceStore = defineStore('clearance', () => {
   const saving  = ref(false)
   const error   = ref('')
 
-  const itemsForTable = computed(() => {
-    const list = assignedItems.value
-      .slice()
-      .sort((a, b) => (a.order_no ?? 0) - (b.order_no ?? 0))
-      .map(ai => {
-        const row = clearanceByItemId.value.get(ai.template_item_id) || {}
-        return {
-          template_item_id: ai.template_item_id,
-          label: ai.label || ai.item_label || ai.item_key,
-          status: row.status || 'PENDING',
-          handover_status: row.handover_status || 'NA',
-          present_condition: row.present_condition || '',
-          receiver_name: row.receiver_name || '',
-          remarks: row.remarks || '',
-        }
-      })
-    return statusFilter.value ? list.filter(x => x.status === statusFilter.value) : list
-  })
+const itemsForTable = computed(() => {
+  const list = (assignedItems.value ?? [])
+    .slice()
+    .sort((a, b) => (a.order_no ?? 0) - (b.order_no ?? 0))
+    .map((ai) => {
+      // row => user-এর লাইভ ইনপুট/সেভ স্টেট (clearance)
+      const row = clearanceByItemId.value.get(ai.id) || {}
+
+      // show/hide receiver: server flag > fallback to handover_to
+      const showReceiver =
+        typeof ai.show_receiver !== 'undefined'
+          ? !!ai.show_receiver
+          : (ai.handover_to !== 'departmental_incharge')
+
+      // receiver default: saved row > server handover_user > ''
+      const serverReceiver =
+        row.receiver_name ??
+        ai.handover_user?.name ??
+        ai.handover_user?.label ??
+        ''
+
+      return {
+        // IDs (always include both)
+        id: ai.id,
+        template_item_id: ai.id,
+
+        // display + sort
+        label: ai.label || ai.item_label || ai.item_key,
+        order_no: ai.order_no ?? 0,
+
+        // handover meta (for UI hide/show & badges)
+        handover_to: ai.handover_to ?? null,
+        show_receiver: showReceiver,
+
+        // editable fields (with safe defaults)
+        status: row.status ?? 'PENDING',
+        handover_status: row.handover_status ?? 'NA',
+        present_condition: row.present_condition ?? '',
+        receiver_name: showReceiver ? serverReceiver : '', // hide করলে প্রি-ফিল না
+        remarks: row.remarks ?? '',
+      }
+    })
+
+  return statusFilter.value
+    ? list.filter(x => x.status === statusFilter.value)
+    : list
+})
 
   function markDirty(tid, v = true) {
     if (v) dirty.value.add(tid)
@@ -74,11 +103,7 @@ export const useClearanceStore = defineStore('clearance', () => {
     try {
       const res = await apiClient.get('/department-clearance-items')
       const raw = res.data?.data || res.data || []
-      assignedItems.value = raw.map(r => ({
-        template_item_id: r.template_item_id ?? r.templateItem?.id,
-        label: r.templateItem?.label ?? r.templateItem?.item_key ?? r.label,
-        order_no: r.templateItem?.order_no ?? 0,
-      })).filter(x => x.template_item_id)
+      assignedItems.value = raw
     } catch (e) {
       error.value = 'Failed to load assigned items'
       console.error(e)

@@ -56,7 +56,7 @@
 
     <RouterLink :to="{ name: 'ctdi', query:{templateId:2} }" class="main-button">
       <i class="far fa-tasks text-3xl"></i>
-      Template Items Assign
+      Clearance Items Assign
     </RouterLink>
     <RouterLink :to="{ name: 'KpiCycles' }" class="main-button">
       <i class="far fa-tasks text-3xl"></i>
@@ -66,5 +66,16 @@
       <i class="far fa-tasks text-3xl"></i>
       KPI Permissions
     </RouterLink>
+
+    <RouterLink :to="{ name: 'TemplateItems', params:{id:1} }" class="main-button">
+      <i class="far fa-tasks text-3xl"></i>
+      Joining Template Items
+    </RouterLink>
+
+    <RouterLink :to="{ name: 'TemplateItems', params:{id:2} }" class="main-button">
+      <i class="far fa-tasks text-3xl"></i>
+      Exit Template Items
+    </RouterLink>
+
   </div>
 </template>

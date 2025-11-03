@@ -1196,6 +1196,18 @@ const router = createRouter({
             title: 'Evaluation List',
           },
         },
+
+        {
+          path: '/kpi/yearly-evaluations',
+          name: 'YearlyEvaluationList',
+          component: () => import('@/views/admin-pages/YearlyEvaluationList.vue'),
+           meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Evaluation List',
+          },
+        },
+
         {
           path: '/kpi/evaluations/:id',
           name: 'EvaluationShow',
@@ -1292,7 +1304,16 @@ const router = createRouter({
           },
         },
 
-
+        {
+          path: '/404',
+          name: 'NotFound',
+          component: () => import('@/views/public-pages/NotFound.vue'),
+          meta: { title: 'Page Not Found' },
+        },
+        {
+          path: '/:pathMatch(.*)*',
+          redirect: (to) => ({ name: 'NotFound', query: { from: to.fullPath } }),
+        },
       ],
     },
   ],

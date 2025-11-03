@@ -1,5 +1,4 @@
 <script setup>
-/* ===== Imports ===== */
 import LoaderView from '@/components/common/LoaderView.vue'
 import { useKpiReportStore } from '@/stores/kpi-report'
 import { storeToRefs } from 'pinia'
@@ -428,7 +427,7 @@ onMounted(() => {
     </div>
 
     <!-- ===== Desktop Table (md+) ===== -->
-    <div v-else class="hidden md:block overflow-x-auto rounded-xl border bg-white shadow-sm">
+    <div class="hidden md:block overflow-x-auto rounded-xl border bg-white shadow-sm">
       <table class="min-w-[900px] w-full text-sm">
         <thead class="text-gray-800 sticky top-0 z-[5]">
           <!-- Row 1: group headers -->

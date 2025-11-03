@@ -165,7 +165,7 @@ function applyFilter() {
   let filtered = [...rawEmployees.value]
 
   // 2) apply department
-  if (selectedDepartmentId.value) {
+  if (selectedDepartmentId.value && selectedDepartmentId.value !== 'all') {
     filtered = filtered.filter(
       (e) => String(e.department_id) === String(selectedDepartmentId.value),
     )
