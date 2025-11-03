@@ -109,7 +109,6 @@ const breadcrumbTaskItems = computed(() => {
     parents.push({
       id: store.task?.requirement?.id,
       title: store.task?.requirement?.title,
-      // status: store.task?.status,
       is_current_page: false,
     })
   }
@@ -117,12 +116,9 @@ const breadcrumbTaskItems = computed(() => {
   parents.push({
     id: store.task?.id,
     title: store.task?.title,
-    // status: store.task?.status,
     is_current_page: true,
   })
   return parents
-
-  // return [...parents.reverse(), ...[getBreadCrumbFromTask(store.task, true)]]
 })
 
 watch(
@@ -284,7 +280,7 @@ async function handleClickDelete(todoDate) {
               <li aria-hidden="true" class="text-gray-400 text-base" v-if="index > 0">/</li>
               <li :title="breadcrumbTask?.title" class="text-gray-600 line-clamp-1">
                 <component
-                  :is="authStore.isAdminMood ? RouterLink : div"
+                  :is="authStore.isAdminMood ? RouterLink : 'div'"
                   :to="`${authStore.isAdminMood ? '/requirements/show/' + breadcrumbTask.id : '/tasks'}`"
                   class="transition"
                   :class="{
