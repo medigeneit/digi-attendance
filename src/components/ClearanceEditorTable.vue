@@ -9,6 +9,7 @@ const props = defineProps({
   maxHeight: { type: String, default: '60vh' },
   disabled: { type: Boolean, default: false },
 })
+
 const emit = defineEmits(['update:row'])       // (tid, patch)
 
 /* ---------- Local (optimistic) copy ---------- */
@@ -23,11 +24,13 @@ const STATUS_META = {
   WORKING:   { label: 'Working',   dot: 'bg-sky-500',     pill: 'bg-sky-50 text-sky-800 border-sky-200' },
   COMPLETED: { label: 'Completed', dot: 'bg-emerald-500', pill: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
 }
+
 const H_META = {
   YES: { label: 'Yes', pill: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   NO:  { label: 'No',  pill: 'bg-rose-50 text-rose-700 border-rose-200' },
   NA:  { label: 'N/A', pill: 'bg-slate-50 text-slate-700 border-slate-200' },
 }
+
 const rowAccent = (s) =>
   s === 'COMPLETED' ? 'border-l-4 border-emerald-400'
 : s === 'WORKING'   ? 'border-l-4 border-sky-400'
