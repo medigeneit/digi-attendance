@@ -11,12 +11,7 @@ const props = defineProps({
 })
 
 const routerTo = computed(() => {
-  return typeof props.to == 'function'
-    ? props.to(props.task)
-    : {
-        name: props.isMyTask ? 'MyTaskShow' : 'TaskShow',
-        params: { id: props.task.id },
-      }
+  return typeof props.to == 'function' ? props.to(props.task) : null
 })
 </script>
 <template>

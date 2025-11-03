@@ -100,7 +100,7 @@ export const getDisplayDateTime = (dateTime) => {
     const ampm = hours >= 12 ? 'PM' : 'AM'
     hours = hours % 12 || 12 // convert to 12-hour format
 
-    return `${day}-${month}-${year} ${hours}:${minutes} ${ampm}`
+    return `${day}-${month}-${year} ${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')} ${ampm}`
   } catch (e) {
     return ''
   }

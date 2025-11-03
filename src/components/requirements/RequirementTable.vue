@@ -43,20 +43,19 @@ const auth = useAuthStore()
           </td>
           <td class="px-4 py-4 min-w-[300px] md:min-w-[400px] border border-gray-200">
             <div class="space-y-4">
-              <div class="text-blue-800">
-                <div class="line-clamp-1 font-semibold" :title="req?.title">
-                  {{ req?.title }}
-                </div>
-              </div>
-
               <RouterLink
                 :to="{ name: 'RequirementShow', params: { id: req?.id } }"
                 class="text-blue-600 text-sm hover:underline hover:text-blue-800"
               >
+                <div class="text-blue-800">
+                  <div class="line-clamp-1 font-semibold" :title="req?.title">
+                    {{ req?.title }}
+                  </div>
+                </div>
+
                 <span v-if="req?.details?.length - 1 > 0">
                   {{ req?.details?.length - 1 }} More Requirement
                 </span>
-                <span v-else class="">Show Form</span>
               </RouterLink>
             </div>
 
@@ -160,8 +159,8 @@ const auth = useAuthStore()
           </td>
 
           <td class="px-4 py-4 text-center whitespace-nowrap border border-gray-200">
-            <div class="text-gray-600" v-if="req.submission_date">
-              <div>
+            <div class="text-gray-600 text-sm" v-if="req.submission_date">
+              <div class="mb-1">
                 {{
                   new Date(req.submission_date).toLocaleDateString('en-US', {
                     year: 'numeric',
@@ -169,8 +168,7 @@ const auth = useAuthStore()
                     day: 'numeric',
                   })
                 }}
-              </div>
-              <div>
+
                 {{
                   new Date(req.submission_date).toLocaleTimeString('en-US', {
                     hour: '2-digit',
@@ -178,6 +176,18 @@ const auth = useAuthStore()
                     hour12: true,
                   })
                 }}
+              </div>
+              <div class="flex justify-between items-center gap-1">
+                <span class="text-gray-500 text-sm">Status: </span>
+                <span
+                  class="border rounded-lg px-2 text-sm py-0.5 text-xs"
+                  :class="{
+                    'bg-red-300 text-red-700 border-red-400': req.status != 'approved',
+                    'bg-green-300 text-green-700 border-green-400': req.status == 'approved',
+                  }"
+                >
+                  {{ String(req.status).toUpperCase() }}
+                </span>
               </div>
             </div>
             <div v-else>-</div>
