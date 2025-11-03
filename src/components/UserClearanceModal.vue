@@ -19,8 +19,8 @@ const { items, loading, error, currentUserInfo } = storeToRefs(s)
 /* Header fields */
 const titleUser  = computed(() => currentUserInfo?.value?.name || props.user?.name || `#${props.user?.id}`)
 const employeeId = computed(() => currentUserInfo?.value?.employee_id || props.user?.employee_id || '')
-const userDept   = computed(() => currentUserInfo?.value?.department_name || props.user?.department_name || '')
-const userPost   = computed(() => currentUserInfo?.value?.post || currentUserInfo?.value?.designation || props.user?.post || '')
+const userDept   = computed(() => currentUserInfo?.value?.department?.name || props.user?.department?.name || '')
+const userPost   = computed(() => currentUserInfo?.value?.designation?.title || props.user?.designation?.title  || '')
 
 /* Open/Close */
 function openModal(){ isOpen.value = true }
