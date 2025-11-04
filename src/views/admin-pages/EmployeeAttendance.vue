@@ -176,6 +176,15 @@ const handleFilterChange = () => {
 }
 
 const hasSelection = computed(() => !!filters.value.employee_id)
+
+const fmtHours = (v) => {
+  const n = Number(v ?? 0);
+  if (!Number.isFinite(n) || n <= 0) return '0h';
+  const totalMins = Math.round(n * 60);      // assume value is in HOURS (decimal)
+  const h = Math.floor(totalMins / 60);
+  const m = totalMins % 60;
+  return m ? `${h}h ${m}m` : `${h}h`;
+};
 </script>
 
 <template>
@@ -282,9 +291,12 @@ const hasSelection = computed(() => !!filters.value.employee_id)
                 <span class="flex items-center gap-2 text-[12px] text-zinc-600">
                   <i class="far fa-bolt text-[12px]"></i> Overtime Hours
                 </span>
-                <strong class="text-sm text-zinc-900">
-                  {{ attendanceStore?.summary?.total_overtime_hours || '—'  }}
+                <strong v-if="!attendanceStore?.loading" class="text-sm text-zinc-900">
+                  {{ fmtHours(attendanceStore?.summary?.approved_overtimes) }}
+                  of
+                  {{ attendanceStore?.summary?.total_overtime_hours }}
                 </strong>
+                <span v-else class="inline-block h-4 w-28 rounded bg-zinc-200 animate-pulse" />
               </div>
             </div>
           </div>
