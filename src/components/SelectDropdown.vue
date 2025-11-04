@@ -121,7 +121,7 @@
             placeholder="Search..."
             @focus="$emit('search:focus')"
             @blur="$emit('search:blur')"
-            @keydown.stop.enter="($event) => $event.preventDefault()"
+            @keydown.stop.enter="($event) => handleSearchEnter($event)"
           />
         </slot>
       </div>
@@ -130,7 +130,10 @@
 
       <ul class="max-h-60 overflow-y-auto py-2">
         <template v-if="filteredOptions.length">
-          <template v-for="option in filteredOptions" :key="getOptionKey(option)">
+          <template
+            v-for="(option, filteredOptionIndex) in filteredOptions"
+            :key="getOptionKey(option)"
+          >
             <li v-if="isOptionGroup">
               <div class="mx-2 text-sm font-semibold">
                 {{ option?.[groupLabel] }}
@@ -155,7 +158,10 @@
             <li
               v-else
               tabindex="0"
-              :class="{ 'bg-blue-50': isSelected(option) }"
+              :class="{
+                'bg-blue-50': isSelected(option),
+                'border border-blue-700': focusIndex === filteredOptionIndex,
+              }"
               class="px-3 py-1 my-0.5 hover:bg-blue-100 focus:bg-blue-100 focus:outline-blue-500 cursor-pointer"
               @click="selectOption(option)"
               @keydown.prevent.space="selectOption(option)"
@@ -229,6 +235,7 @@ const dropdownRef = ref()
 const dropdownMenuRef = ref()
 const dropdownPosition = ref(props.position)
 const selectedGroup = ref('')
+const focusIndex = ref(0)
 
 function handleOutsideClick(event) {
   if (dropdownRef.value && !dropdownRef.value.contains(event.target)) {
@@ -247,8 +254,39 @@ function findOptionById(optionId) {
   return options.find((opt) => opt?.[props.value] == optionId)
 }
 
+function handleKeydown(e) {
+  console.log(`handleKeydown:${e.key}`)
+
+  if (!isOpen.value || props.isOptionGroup) return
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    if (focusIndex.value < filteredOptions.value.length) {
+      focusIndex.value++
+    }
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    if (focusIndex.value > 0) {
+      focusIndex.value--
+    }
+  }
+}
+
+const handleSearchEnter = (e) => {
+  if (!isOpen.value || props.isOptionGroup) return
+
+  if (focusIndex.value >= 0 && e.key === 'Enter') {
+    const option = filteredOptions.value[focusIndex.value]
+
+    if (option) {
+      selectOption(option)
+    }
+  }
+}
+
 onMounted(() => {
   document.addEventListener('click', handleOutsideClick)
+  window.addEventListener('keydown', handleKeydown)
   props.containment?.addEventListener('scroll', () => {
     // console.log('containment', props.containment)
     calculatePosition(isOpen.value)
@@ -261,6 +299,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener('click', handleOutsideClick)
+  window.removeEventListener('keydown', handleKeydown)
   props.containment?.removeEventListener('scroll', () => calculatePosition(isOpen.value))
 })
 
