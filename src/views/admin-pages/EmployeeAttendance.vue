@@ -283,7 +283,7 @@ const hasSelection = computed(() => !!filters.value.employee_id)
                   <i class="far fa-bolt text-[12px]"></i> Overtime Hours
                 </span>
                 <strong class="text-sm text-zinc-900">
-                  {{ attendanceStore?.summary?.total_overtime_hours || '—'  }}
+                  {{  attendanceStore?.summary?.approved_over_times }} Of {{ attendanceStore?.summary?.total_overtime_hours || 0  }} 
                 </strong>
               </div>
             </div>
