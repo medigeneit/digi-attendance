@@ -141,9 +141,9 @@ function onSuccess() {
         "
       />
     </div>
-    <hr class="my-2 border-gray-600 w-64" />
+    <hr class="my-2 border-gray-600 w-40 md:w-48 lg:w-64" />
 
-    <div class="text-base text-gray-900 font-semibold">
+    <div class="text-gray-900 font-semibold text-sm md:text-base">
       <span>
         {{ approvalData.department?.short_name || approvalData.department?.name }}
       </span>

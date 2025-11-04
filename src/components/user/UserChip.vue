@@ -11,7 +11,7 @@ defineProps({
 <template>
   <div
     class="inline-flex items-center border rounded-full px-1 py-0.5 bg-slate-100 shadow-sm gap-1"
-    :title="user?.name"
+    :title="`${user?.id ? user?.id + ' - ' : ''} ${user?.employee_id ? user?.employee_id + ' - ' : ''} ${user?.name}`"
   >
     <UserAvatar :user="user" class="avatar !text-xs" :class="avatarClass" :size="avatarSize" />
     <div class="text-xs">

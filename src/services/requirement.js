@@ -36,6 +36,15 @@ export async function submitRequirement(requirementId, data){
   return apiClient.put(`/requirements/${requirementId}/submit`, data);
 }
 
+
+export async function closeRequirement(requirementId, note){
+  return apiClient.put(`/requirements/${requirementId}/close`, {note});
+}
+
+export async function reOpenRequirement(requirementId){
+  return apiClient.put(`/requirements/${requirementId}/re-open`);
+}
+
 export async function deleteRequirement(taskId, {params = {}} = {}){
   const query = objectToQuery(params)
   return apiClient.delete(`/requirements/${taskId}${query ? '?' + query :''}`);

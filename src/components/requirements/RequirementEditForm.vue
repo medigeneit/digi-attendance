@@ -1,13 +1,16 @@
 <script setup>
 import CompanyDepartmentSelectInput from '@/components/common/CompanyDepartmentSelectInput.vue'
 import RequiredIcon from '@/components/RequiredIcon.vue'
+import { getDisplayDateTime } from '@/libs/datetime'
 import { findRequirement, updateRequirement } from '@/services/requirement'
 import { useCompanyStore } from '@/stores/company'
 import { useTagStore } from '@/stores/tags'
 import { computed, onMounted, ref, watch } from 'vue'
 import LoaderView from '../common/LoaderView.vue'
+import DescriptionView from '../DescriptionView.vue'
 import SelectDropdown from '../SelectDropdown.vue'
 import TextEditor from '../TextEditor.vue'
+import UserChip from '../user/UserChip.vue'
 
 const props = defineProps({
   requirementId: {
@@ -28,6 +31,7 @@ const form = ref({
   from_department_id: '',
   to_department_id: '',
   website_tags: [],
+  priority: '',
 })
 
 onMounted(async () => {
@@ -50,6 +54,7 @@ onMounted(async () => {
 watch(requirement, function (fetchedRequirement) {
   if (fetchedRequirement) {
     form.value.title = fetchedRequirement.title
+    form.value.priority = fetchedRequirement.priority || ''
     form.value.description = fetchedRequirement.description
     form.value.from_department_id = fetchedRequirement.from_department_id
     form.value.to_department_id = fetchedRequirement.to_department_id
@@ -117,73 +122,134 @@ const hasAccessOnMyCompanyDepartment = computed(() => {
       </div>
     </div>
 
+    <div class="text-lg font-semibold mb-4 text-center" v-if="requirement">
+      <DescriptionView line-clamp="3" class="mb-2">
+        <template #default>
+          {{ requirement.title }}
+        </template>
+        <template #btnText="{ lineClampClass }">
+          {{ lineClampClass ? 'More' : 'Less' }}
+        </template>
+      </DescriptionView>
+      <div class="flex gap-4 items-center justify-center text-gray-500">
+        <div class="text-sm">
+          <span class="fas fa-calendar text-sm text-gray-400"></span>
+          {{ getDisplayDateTime(requirement.created_at) }}
+        </div>
+        <div v-if="requirement.created_by" class="flex items-center gap-1">
+          <span class="text-gray-400 text-sm">By</span>
+          <UserChip avatar-size="xsmall" :user="requirement.created_by" class="border-sky-300" />
+        </div>
+      </div>
+    </div>
+
     <form @submit.prevent="submit" class="z-0">
       <template v-if="state !== 'loading' && state !== 'submitting'">
-        <div class="mb-4">
-          <label class="text-gray-800">Title</label>
-          <input
-            v-model="form.title"
-            required
-            placeholder="Ender Requirement detail title"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        <div class="mb-4">
-          <label class="text-gray-800">Description</label>
-          <TextEditor v-model="form.description" />
-          <!-- <textarea
-            placeholder="Ender Requirement detail title"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-          /> -->
-        </div>
-        <div class="mb-4">
-          <label class="text-gray-800">Websites</label>
-
-          <SelectDropdown
-            :options="tagStore.tags"
-            v-model="form.website_tags"
-            taggable
-            label="name"
-            value="name"
-            class="py-2"
-          />
-        </div>
-
-        <!-- <pre>{{ hasAccessOnMyCompanyDepartment }}</pre> -->
-
-        <div v-if="!hasAccessOnMyCompanyDepartment" class="mb-4">
-          <label class="block text-gray-600 text-sm mb1 font-medium"> From Department </label>
-          <div class="border rounded px-2 py-1 text-gray-600 bg-gray-50">
-            {{ requirement?.from_department?.name }}
+        <div
+          v-if="requirement?.closed_at"
+          class="mb-4 flex flex-col gap-2 items-center justify-center bg-gray-50 bg-opacity-70 hover:bg-opacity-90 p-6 border border-gray-100 rounded-md"
+        >
+          <div class="text-sm flex items-center gap-2 text-red-400 font-semibold">
+            <span class="fad fa-lock"></span>
+            <span class="mt-[2px]">CLOSED AT</span>
+            <span class="mt-[2px]">
+              {{
+                new Date(requirement.closed_at).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: true,
+                })
+              }}
+            </span>
+          </div>
+          <div class="text-gray-800 flex items-center gap-2" v-if="requirement.closed_by_user">
+            <span class="text-sm">Closed by</span>
+            <UserChip :user="requirement.closed_by_user" avatar-size="xsmall" />
+          </div>
+          <div class="flex gap-4 items-center justify-center">
+            <RouterLink
+              :to="{ name: 'RequirementShow', params: { id: req?.id } }"
+              class="btn-2 h-6"
+              @click="$event.stopPropagation()"
+            >
+              <i class="fad fa-eye"></i> Show
+            </RouterLink>
           </div>
         </div>
+        <template v-else>
+          <div class="mb-4">
+            <label class="text-gray-800">Title</label>
+            <input
+              v-model="form.title"
+              required
+              placeholder="Ender Requirement detail title"
+              class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div class="mb-4">
+            <label class="text-gray-800">Priority</label>
+            <select
+              v-model="form.priority"
+              class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Normal</option>
+              <option value="IMPORTANT">Important</option>
+              <option value="URGENT">Urgent</option>
+            </select>
+          </div>
+          <div class="mb-4">
+            <label class="text-gray-800">Description</label>
+            <TextEditor v-model="form.description" />
+          </div>
+          <div class="mb-4">
+            <label class="text-gray-800">Websites</label>
 
-        <CompanyDepartmentSelectInput
-          v-else
-          v-model="form.from_department_id"
-          :companies="companyStore?.myCompanies || []"
-          :disabled="requirement.status"
-          class="mb-4"
-        >
-          <template #label>
-            <label class="block text-gray-600 text-sm mb1 font-medium">
-              From Department <RequiredIcon />
-            </label>
-          </template>
-        </CompanyDepartmentSelectInput>
+            <SelectDropdown
+              :options="tagStore.tags"
+              v-model="form.website_tags"
+              taggable
+              label="name"
+              value="name"
+            />
+          </div>
 
-        <CompanyDepartmentSelectInput
-          v-model="form.to_department_id"
-          :companies="companyStore?.companies || []"
-          :disabled="requirement.status"
-          class="mb-4"
-        >
-          <template #label>
-            <label class="block text-gray-600 text-sm mb-1 font-medium">
-              To Department <RequiredIcon />
-            </label>
-          </template>
-        </CompanyDepartmentSelectInput>
+          <div v-if="!hasAccessOnMyCompanyDepartment" class="mb-4">
+            <label class="block text-gray-600 text-sm mb1 font-medium"> From Department </label>
+            <div class="border rounded px-2 py-1 text-gray-600 bg-gray-50">
+              {{ requirement?.from_department?.name }}
+            </div>
+          </div>
+
+          <CompanyDepartmentSelectInput
+            v-else
+            v-model="form.from_department_id"
+            :companies="companyStore?.myCompanies || []"
+            :disabled="!!requirement.status"
+            class="mb-4"
+          >
+            <template #label>
+              <label class="block text-gray-600 text-sm mb1 font-medium">
+                From Department <RequiredIcon />
+              </label>
+            </template>
+          </CompanyDepartmentSelectInput>
+
+          <CompanyDepartmentSelectInput
+            v-model="form.to_department_id"
+            :companies="companyStore?.companies || []"
+            :disabled="!!requirement?.status"
+            class="mb-4"
+          >
+            <template #label>
+              <label class="block text-gray-600 text-sm mb-1 font-medium">
+                To Department <RequiredIcon />
+              </label>
+            </template>
+          </CompanyDepartmentSelectInput>
+        </template>
       </template>
 
       <div class="sticky bottom-0 bg-white py-4 border-t -mx-6 px-6">
