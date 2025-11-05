@@ -145,6 +145,7 @@ const addFormData = reactive({
 
 async function handleTaskUpdate() {
   editingId.value = null
+  addFormData.modalShown = false
   await fetchRequirement()
 }
 

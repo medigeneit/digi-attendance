@@ -148,7 +148,6 @@ function handleDetailAdd() {
             taggable
             label="name"
             value="name"
-            class="min-h-10 py-1"
           />
         </div>
       </template>

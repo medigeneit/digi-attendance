@@ -6,6 +6,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import CompanyDepartmentSelectInput from '../common/CompanyDepartmentSelectInput.vue'
 import EmployeeDropdownInput from '../EmployeeDropdownInput.vue'
+import SearchInput from '../SearchInput.vue'
 import SelectDropdown from '../SelectDropdown.vue'
 import UserChip from '../user/UserChip.vue'
 
@@ -27,6 +28,7 @@ const month = computed(setAndGetModelValue('month'))
 const priority = computed(setAndGetModelValue('priority'))
 const status = computed(setAndGetModelValue('status'))
 const isClosed = computed(setAndGetModelValue('is-closed'))
+const search = computed(setAndGetModelValue('search'))
 
 const emit = defineEmits([
   'update:modelValue',
@@ -103,7 +105,7 @@ const companyDepartments = computed(() => {
   <div>
     <div class="flex flex-wrap items-center w-full gap-2">
       <h2 class="text-2xl font-bold text-gray-800">Requirements</h2>
-      <button @click.prevent="emit('clickAdd')" class="btn-icon size-8 border border-gray-400">
+      <button @click.prevent="emit('clickAdd')" class="btn-icon size-7 border border-gray-400">
         <i class="fas fa-plus text-sm"></i>
       </button>
 
@@ -117,12 +119,6 @@ const companyDepartments = computed(() => {
             class="border border-gray-300 rounded h-8 bg-white !text-sm"
             clearable
           >
-            <!-- <template #selected-option="{ option }">
-              <div class="line-clamp-1 text-sm text-gray-900" :title="option?.name">
-                <span v-if="option?.name">{{ option?.name }}</span>
-                <span v-else class="text-gray-500 whitespace-nowrap">--ALL COMPANY--</span>
-              </div>
-            </template> -->
             <template #selected-option="{ option }">
               <span class="text-xs">
                 <span
@@ -309,6 +305,14 @@ const companyDepartments = computed(() => {
           />
         </div>
       </div>
+    </div>
+    <div class="mt-4 flex items-end">
+      <div class="text-sm text-gray-700">Showing all requirements</div>
+      <SearchInput
+        v-model="search"
+        class="ml-auto !border !border-gray-400 w-96 h-10 px-4"
+        placeholder="Search requirements "
+      />
     </div>
   </div>
 </template>

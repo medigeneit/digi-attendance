@@ -58,6 +58,11 @@ function departmentFilterBy(options, term) {
           </div>
         </slot>
       </template>
+      <template #option="{ option }">
+        <div class="w-40 my-0.5">
+          {{ option.name }}
+        </div>
+      </template>
     </SelectDropdown>
   </div>
 </template>

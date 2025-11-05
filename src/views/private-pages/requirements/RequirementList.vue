@@ -61,13 +61,8 @@ const requirementDepartmentGroups = computed(() => {
 
 <template>
   <div class="container mx-auto">
-    <!-- <div class="flex justify-between items-center mb-6">
-      <h2 class="text-2xl font-bold text-gray-800">Requirements</h2>
-      <button @click="goToAdd" class="btn-1">Add Requirement</button>
-    </div> -->
-
     <div class="bg-white shadow-md rounded-lg p-4">
-      <RequirementHeader v-model="filters" @clickAdd="goToAdd" class="mb-4" />
+      <RequirementHeader v-model="filters" @clickAdd="goToAdd" class="mb-2" />
 
       <LoaderView
         v-if="store.loading"
