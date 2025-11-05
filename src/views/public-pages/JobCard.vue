@@ -5,7 +5,7 @@
         {{ job.title }}
       </RouterLink>
     </h3>
-    <p class="text-sm text-gray-600 mt-1">{{ job.summary }}</p>
+    <p class="text-sm text-gray-600 mt-1 line-clamp-3" v-html="job.summary"></p>
 
     <div class="mt-3 text-sm flex flex-wrap gap-2">
       <span v-if="job.department?.name" class="px-2 py-1 rounded bg-gray-100 border">
