@@ -6,7 +6,9 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import CompanyDepartmentSelectInput from '../common/CompanyDepartmentSelectInput.vue'
 import EmployeeDropdownInput from '../EmployeeDropdownInput.vue'
+import SearchInput from '../SearchInput.vue'
 import SelectDropdown from '../SelectDropdown.vue'
+import UserChip from '../user/UserChip.vue'
 
 const props = defineProps({
   modelValue: { type: Object, default: () => ({}) },
@@ -23,12 +25,17 @@ const fromDepartmentId = computed(setAndGetModelValue('from-department-id'))
 const toDepartmentId = computed(setAndGetModelValue('to-department-id'))
 const selectedEmployeeId = computed(setAndGetModelValue('created-by'))
 const month = computed(setAndGetModelValue('month'))
+const priority = computed(setAndGetModelValue('priority'))
+const status = computed(setAndGetModelValue('status'))
+const isClosed = computed(setAndGetModelValue('is-closed'))
+const search = computed(setAndGetModelValue('search'))
 
 const emit = defineEmits([
   'update:modelValue',
   'clickPrioritySave',
   'clickPriorityDiscard',
   'clickAddTask',
+  'clickAdd',
 ])
 
 const companyStore = useCompanyStore()
@@ -96,96 +103,216 @@ const companyDepartments = computed(() => {
 
 <template>
   <div>
-    <div class="mb-3 task-header">
-      <div class="flex flex-wrap items-center justify-center gap-2 mt-3">
-        <div class="flex flex-wrap gap-x-4 gap-y-3 justify-between">
-          <div class="relative">
-            <SelectDropdown
-              v-model="companyId"
-              :options="companyStore?.companies || []"
-              label="name"
-              id="id"
-              class="border-2 border-gray-300 rounded h-[40px] w-full md:w-48 bg-white text-sm"
-              clearable
-            >
-              <template #selected-option="{ option }">
-                <div class="line-clamp-1 text-sm text-gray-900" :title="option?.name">
-                  <span v-if="option?.name">{{ option?.name }}</span>
-                  <span v-else class="text-gray-500 whitespace-nowrap">--ALL COMPANY--</span>
-                </div>
-              </template>
-            </SelectDropdown>
-            <div
-              class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30"
-            >
-              Company
-            </div>
-          </div>
+    <div class="flex flex-wrap items-center w-full gap-2">
+      <h2 class="text-2xl font-bold text-gray-800">Requirements</h2>
+      <button @click.prevent="emit('clickAdd')" class="btn-icon size-7 border border-gray-400">
+        <i class="fas fa-plus text-sm"></i>
+      </button>
 
-          <CompanyDepartmentSelectInput
-            v-model="fromDepartmentId"
-            :companies="companyDepartments || []"
-            class="relative w-full md:w-48 flex-grow"
-            :className="{ select: 'h-10 text-sm border-2 border-gray-300' }"
-            defaultOption="--ALL DEPARTMENT--"
+      <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-3 ml-auto">
+        <div class="relative">
+          <SelectDropdown
+            v-model="companyId"
+            :options="companyStore?.companies || []"
+            label="name"
+            id="id"
+            class="border border-gray-300 rounded h-8 bg-white !text-sm"
+            clearable
           >
-            <template #label>
-              <div
-                class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30"
-              >
-                Task From Department
+            <template #selected-option="{ option }">
+              <span class="text-xs">
+                <span
+                  v-if="option"
+                  :title="option?.name"
+                  class="max-w-28 line-clamp-1 text-sky-500 font-semibold"
+                >
+                  {{ option?.name }}
+                </span>
+                <span v-else>Company</span>
+              </span>
+            </template>
+            <template #option="{ option }">
+              <div class="w-36 my-0.5">
+                {{ option.name }}
               </div>
             </template>
-          </CompanyDepartmentSelectInput>
+          </SelectDropdown>
+        </div>
 
-          <CompanyDepartmentSelectInput
-            v-model="toDepartmentId"
-            :companies="companyDepartments || []"
-            class="relative w-full md:w-48 flex-grow"
-            :className="{
-              select: 'h-10 text-sm border-2 border-gray-300  ',
-            }"
-            v-if="route.name !== 'MyTaskList'"
-            defaultOption="--ALL DEPARTMENT--"
-          >
-            <template #label>
-              <div
-                class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30"
+        <CompanyDepartmentSelectInput
+          v-model="fromDepartmentId"
+          :companies="companyDepartments || []"
+          class="relative"
+          :className="{ select: 'border border-gray-300 rounded h-8 bg-white !text-sm' }"
+          defaultOption="--ALL DEPARTMENT--"
+        >
+          <template #label>
+            <span></span>
+          </template>
+          <template #selectedOption="{ option }">
+            <span class="text-xs">
+              <span
+                v-if="option"
+                :user="option"
+                avatar-size="xsmall"
+                class="max-w-28 line-clamp-1"
+                :title="option?.name"
               >
-                Task To Department
-              </div>
-            </template>
-          </CompanyDepartmentSelectInput>
+                <span class="text-gray-400">From:</span>
+                <span class="text-sky-500 font-semibold mr-1">
+                  {{ option?.short_name || option?.name }}
+                </span>
+              </span>
+              <span v-else class="text-gray-600">--From Department--</span>
+            </span>
+          </template>
+        </CompanyDepartmentSelectInput>
 
-          <div
-            class="relative w-full md:w-56 lg:flex-grow"
-            v-if="auth.isAdminMood && auth?.user?.role !== 'employee'"
+        <CompanyDepartmentSelectInput
+          v-model="toDepartmentId"
+          :companies="companyDepartments || []"
+          class="relative"
+          :className="{
+            select: 'border border-gray-300 rounded h-8 bg-white !text-sm',
+          }"
+          v-if="route.name !== 'MyTaskList'"
+          defaultOption="--ALL DEPARTMENT--"
+        >
+          <template #label><span></span></template>
+          <template #selectedOption="{ option }">
+            <span class="text-xs">
+              <span
+                v-if="option"
+                :user="option"
+                avatar-size="xsmall"
+                class="max-w-28 line-clamp-1"
+                :title="option?.name"
+              >
+                <span class="text-gray-400 mr-1">To:</span>
+                <span class="text-sky-500 font-semibold">
+                  {{ option?.short_name || option?.name }}
+                </span>
+              </span>
+              <span v-else class="text-gray-600">--To Department--</span>
+            </span>
+          </template>
+        </CompanyDepartmentSelectInput>
+
+        <div
+          class="relative lg:flex-grow"
+          v-if="auth.isAdminMood && auth?.user?.role !== 'employee'"
+        >
+          <EmployeeDropdownInput
+            :employees="employees"
+            v-model="selectedEmployeeId"
+            class="border border-gray-300 rounded h-8 bg-white max-w-64 !text-sm"
           >
-            <EmployeeDropdownInput
-              :employees="employees"
-              v-model="selectedEmployeeId"
-              class="border-2 border-gray-300 rounded h-[40px] w-full bg-white !text-sm"
-            />
+            <template #selectedOption="{ option }">
+              <span class="text-xs">
+                <span v-if="option" class="flex items-center gap-1 overflow-hidden text-xs">
+                  <span class="text-gray-400">User: </span>
+                  <UserChip :user="option" avatar-size="xsmall" class="inline" />
+                </span>
+                <span v-else class="text-gray-600">--All Employee--</span>
+              </span>
+            </template>
+          </EmployeeDropdownInput>
+        </div>
 
-            <label class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 z-50">
-              Created By
-            </label>
-          </div>
+        <div class="relative">
+          <SelectDropdown
+            v-model="priority"
+            :searchable="false"
+            :clearable="true"
+            :options="[
+              { label: 'Normal', id: 'normal' },
+              { label: 'IMPORTANT', id: 'IMPORTANT' },
+              { label: 'URGENT', id: 'URGENT' },
+            ]"
+            class="border border-gray-300 rounded h-8 bg-white !text-sm"
+          >
+            <template #selected-option="{ option }">
+              <span class="text-xs">
+                <span
+                  v-if="option"
+                  :user="option"
+                  avatar-size="xsmall"
+                  class="max-w-28 line-clamp-1 text-sky-500 font-semibold"
+                >
+                  {{ option?.label }}
+                </span>
+                <span v-else>--Any Priority--</span>
+              </span>
+            </template>
+          </SelectDropdown>
+        </div>
 
-          <div class="text-gray-600 w-full md:w-32 relative">
-            <label class="absolute text-xs left-2.5 -top-1.5 bg-slate-100 text-blue-500"
-              >Month</label
+        <div class="relative">
+          <SelectDropdown
+            v-model="status"
+            :searchable="false"
+            :clearable="true"
+            :options="[
+              { label: 'Pending', id: 'pending' },
+              { label: 'Approved', id: 'approved' },
+              { label: 'Rejected', id: 'rejected' },
+            ]"
+            class="border border-gray-300 rounded h-8 bg-white !text-sm"
+          >
+            <template #selected-option="{ option }">
+              <span class="text-xs">
+                <span
+                  v-if="option"
+                  :user="option"
+                  avatar-size="xsmall"
+                  class="max-w-28 line-clamp-1 text-sky-500 font-semibold"
+                >
+                  {{ option?.label }}
+                </span>
+                <span v-else>--ALL Status--</span>
+              </span>
+            </template>
+          </SelectDropdown>
+        </div>
+
+        <div>
+          <label
+            class="flex items-center text-xs gap-1 text-gray-600 max-w-36 relative rounded h-8 border border-gray-300 bg-white px-2"
+          >
+            <input type="checkbox" class="size-[15px]" v-model="isClosed" />
+            <span class="font-semibold" :class="[isClosed ? 'text-sky-500 font-semibold' : '']"
+              >Is Closed</span
             >
-            <input
-              id="month-filter"
-              v-model="month"
-              type="month"
-              class="h-10 text-xs px-2 text-gray-600 border-2 border-gray-400 rounded-md w-full"
-              placeholder="All month"
-            />
-          </div>
+          </label>
+        </div>
+
+        <div
+          class="!text-sm flex text-gray-600 relative rounded h-8 border border-gray-300 bg-white pl-2"
+        >
+          <label
+            class="top-2 bottom-2 left-2 flex items-center text-xs text-gray-500 mr-1"
+            for="month-filter"
+          >
+            Month:
+          </label>
+          <input
+            id="month-filter"
+            v-model="month"
+            type="month"
+            class="rounded h-full !text-xs w-full appearance-none text-gray-800 font-semibold outline-none pr-1"
+            :class="[isClosed ? 'text-sky-500 font-semibold' : '']"
+            placeholder="All month"
+          />
         </div>
       </div>
+    </div>
+    <div class="mt-4 flex items-end">
+      <div class="text-sm text-gray-700">Showing all requirements</div>
+      <SearchInput
+        v-model="search"
+        class="ml-auto !border !border-gray-400 w-96 h-10 px-4"
+        placeholder="Search requirements "
+      />
     </div>
   </div>
 </template>

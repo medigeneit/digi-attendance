@@ -5,6 +5,8 @@ import OverlyModal from '@/components/common/OverlyModal.vue'
 import ShareComponent from '@/components/common/ShareComponent.vue'
 import DepartmentChip from '@/components/DepartmentChip.vue'
 import DescriptionView from '@/components/DescriptionView.vue'
+import RequirementCloseInfo from '@/components/requirements/RequirementCloseInfo.vue'
+import RequirementClosingForm from '@/components/requirements/RequirementClosingForm.vue'
 import RequirementDetailDeleteForm from '@/components/requirements/RequirementDetailDeleteForm.vue'
 import RequirementDetailTableRow from '@/components/requirements/RequirementDetailTableRow.vue'
 import RequirementFeedbackEditForm from '@/components/requirements/RequirementFeedbackEditForm.vue'
@@ -17,6 +19,7 @@ import TaskUserAssignForm from '@/components/tasks/TaskUserAssignForm.vue'
 import TextWithHr from '@/components/TextWithHr.vue'
 import UserChip from '@/components/user/UserChip.vue'
 import { getDisplayDateTime } from '@/libs/datetime'
+import { createMutationObserver } from '@/libs/dom'
 import { findRequirement } from '@/services/requirement'
 import { useAuthStore } from '@/stores/auth'
 import { nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
@@ -67,16 +70,19 @@ onMounted(async () => {
 
   await nextTick()
 
+  createMutationObserver(sidebarTop.value, () => {
+    setShareComponentStyle()
+  })
+
   setShareComponentStyle()
 })
 
 function setShareComponentStyle() {
-  const sidebarTopValue = sidebarTop.value
-  const shareComp = shareComponent.value?.$el
-
-  if (sidebarTopValue && shareComp && sidebarTopValue?.offsetHeight) {
-    shareComp.style.top = `${sidebarTopValue?.offsetHeight + 90}px`
-  }
+  // const sidebarTopValue = sidebarTop.value
+  // const shareComp = shareComponent.value?.$el
+  // if (sidebarTopValue && shareComp && sidebarTopValue?.offsetHeight) {
+  //   shareComp.style.top = `${sidebarTopValue?.offsetHeight + 90}px`
+  // }
 }
 
 onBeforeUnmount(() => {
@@ -139,6 +145,7 @@ const addFormData = reactive({
 
 async function handleTaskUpdate() {
   editingId.value = null
+  addFormData.modalShown = false
   await fetchRequirement()
 }
 
@@ -147,6 +154,10 @@ async function handleTaskAddClose() {
   addFormData.requirement = null
   addFormData.creating = false
 }
+
+const reqClosingModal = ref({
+  open: false,
+})
 </script>
 <template>
   <div class="container mx-auto print:p-0 w-full print:max-w-full">
@@ -234,6 +245,19 @@ async function handleTaskAddClose() {
             employeeAssignForm.taskId = 0
             state = 'loading'
             fetchRequirement()
+          }
+        "
+      />
+    </OverlyModal>
+
+    <OverlyModal v-if="reqClosingModal.open">
+      <RequirementClosingForm
+        :requirement="requirement"
+        @clickCancel="reqClosingModal.open = false"
+        @updateStatus="
+          () => {
+            fetchRequirement()
+            reqClosingModal.open = false
           }
         "
       />
@@ -380,6 +404,7 @@ async function handleTaskAddClose() {
                           feedbackEditForm.requirement = requirement
                         }
                       "
+                      v-if="!requirement.closed_at"
                     >
                       {{ requirement.feedback ? 'Update Feedback' : 'Add feedback' }}
                     </button>
@@ -464,7 +489,9 @@ async function handleTaskAddClose() {
               <TextWithHr>
                 <h2 class="font-semibold text-lg px-2">Approvals</h2>
               </TextWithHr>
-              <div class="whitespace-nowrap border-gray-200 grid grid-cols-2 items-stretch">
+              <div
+                class="whitespace-nowrap border-gray-200 grid grid-cols-1 lg:grid-cols-2 items-stretch"
+              >
                 <RequirementApprovalItem
                   class="pt-12"
                   v-for="approvalType in ['from_in_charge', 'from_coordinator']"
@@ -476,7 +503,7 @@ async function handleTaskAddClose() {
               </div>
 
               <div
-                class="whitespace-nowrap border-gray-200 grid grid-cols-2 gap-2 items-stretch"
+                class="whitespace-nowrap border-gray-200 grid grid-cols-1 lg:grid-cols-2 gap-2 items-stretch"
                 v-if="requirement?.from_department_id !== requirement?.to_department_id"
               >
                 <RequirementApprovalItem
@@ -491,150 +518,171 @@ async function handleTaskAddClose() {
             </div>
           </div>
         </div>
+
         <div
-          class="col-span-full md:col-span-4 xl:col-span-4 2xl:col-span-3 space-y-4 sticky top-[74px] bg-white shadow rounded-lg p-4 break-before-avoid-page"
+          class="col-span-full md:col-span-4 xl:col-span-4 2xl:col-span-3 sticky top-[74px] break-before-avoid-page"
           ref="sidebarTop"
         >
-          <div class="border col-span-3 p-3 rounded-md">
-            <div>
-              <div class="flex items-center gap-2 mb-4">
-                <div class="text-gray-500 text-sm">From</div>
-                <DepartmentChip :department="requirement?.from_department" :short-name="true" />
-              </div>
-
-              <div class="text-gray-600 text-sm mb-2 border-b border-dashed">Supervisor</div>
-              <div class="flex items-center gap-x-3 gap-y-2 flex-wrap">
-                <UserChip :user="requirement?.supervisor" v-if="requirement?.supervisor" />
-              </div>
-            </div>
-
-            <hr class="my-4" />
-
-            <div>
-              <div class="flex items-center gap-2 mb-4">
-                <div class="text-gray-500 text-sm">To</div>
-                <DepartmentChip :department="requirement?.to_department" :short-name="true" />
-              </div>
-            </div>
-          </div>
-
-          <div class="mb-4 flex items-center justify-between gap-1 print:mb-1">
-            <div class="text-gray-500 text-sm">Requirement ID:</div>
-            <div class="font-bold print:text-gray-900">
-              {{ requirement?.id }}
-            </div>
-          </div>
-
-          <div
-            class="mb-3 flex items-start gap-3 print:mb-1"
-            v-if="requirement?.website_tags?.length > 0"
-          >
-            <div class="text-gray-500 text-sm">Website</div>
-
-            <div class="flex items-center gap-2 print:text-gray-900 flex-wrap">
-              <div
-                v-for="website_tag in requirement?.website_tags || []"
-                :key="website_tag.id"
-                class="border px-1 rounded-md bg-sky-100 border-sky-400 text-sky-700 whitespace-nowrap text-xs"
-              >
-                {{ website_tag.name }}
-              </div>
-            </div>
-          </div>
-
-          <div
-            class="mb-3 flex items-center justify-between gap-3 print:mb-1"
-            v-if="requirement?.submission_date"
-          >
-            <div class="text-gray-500 text-sm">Submission Date</div>
-            <div class="print:text-gray-900 text-sm text-right">
-              {{ getDisplayDateTime(requirement?.submission_date) }}
-            </div>
-          </div>
-
-          <div
-            class="mb-3 flex items-center justify-between gap-3 print:mb-1"
-            v-if="requirement?.better_to_complete_on"
-          >
-            <div class="text-gray-500 text-sm">Better To Complete</div>
-            <div class="print:text-gray-900 text-sm text-right">
-              {{ getDisplayDateTime(requirement?.better_to_complete_on) }}
-            </div>
-          </div>
-
-          <div>
-            <div class="flex justify-between items-center mb-4">
-              <span class="text-gray-500 text-sm">Priority:</span>
+          <div class="bg-white shadow rounded-lg space-y-4 p-4">
+            <div class="border col-span-3 p-3 rounded-md">
               <div>
-                <span
-                  :class="[
-                    'font-semibold text-sm',
-                    {
-                      'text-yellow-600 ': requirement.priority == 'IMPORTANT',
-                      'text-red-700 ': requirement.priority == 'URGENT',
-                    },
-                  ]"
-                  >{{ requirement.priority || 'NORMAL' }}</span
-                >
+                <div class="flex items-center gap-2 mb-4">
+                  <div class="text-gray-500 text-sm">From</div>
+                  <DepartmentChip :department="requirement?.from_department" :short-name="true" />
+                </div>
+                <div class="text-gray-600 text-sm mb-2 border-b border-dashed">Supervisor</div>
+                <div class="flex items-center gap-x-3 gap-y-2 flex-wrap">
+                  <UserChip :user="requirement?.supervisor" v-if="requirement?.supervisor" />
+                </div>
               </div>
-            </div>
-            <div class="mb-6">
-              <div class="flex justify-between items-center">
-                <span class="text-gray-500 text-sm">Status:</span>
-                <span
-                  v-if="requirement.status"
-                  class="border rounded-lg px-2 text-sm py-0.5"
-                  :class="{
-                    'bg-red-300 text-red-700 border-red-400': requirement.status != 'approved',
-                    'bg-green-300 text-green-700 border-green-400':
-                      requirement.status == 'approved',
-                  }"
-                >
-                  {{ String(requirement.status).toUpperCase() }}
-                </span>
-                <span v-else class="text-red-600">...</span>
+
+              <hr class="my-4" />
+
+              <div>
+                <div class="flex items-center gap-2 mb-4">
+                  <div class="text-gray-500 text-sm">To</div>
+                  <DepartmentChip :department="requirement?.to_department" :short-name="true" />
+                </div>
               </div>
             </div>
 
-            <div class="mb-6" v-if="requirement.rejected_by">
-              <div class="flex justify-between items-center">
-                <span class="text-gray-500 text-sm">Rejected By:</span>
-                <UserChip :user="requirement.rejected_by" />
+            <div class="mb-4 flex items-center justify-between gap-1 print:mb-1">
+              <div class="text-gray-500 text-sm">Requirement ID:</div>
+              <div class="font-bold print:text-gray-900">
+                {{ requirement?.id }}
               </div>
             </div>
 
             <div
-              class="text-center mb-4 text-red-700 mt-8 text-sm"
-              v-if="requirement.rejection_reason"
+              class="mb-3 flex items-start gap-3 print:mb-1"
+              v-if="requirement?.website_tags?.length > 0"
             >
-              <p class="text-gray-600 mb-1 italic">Reason</p>
-              <p>{{ requirement.rejection_reason }}</p>
+              <div class="text-gray-500 text-sm">Website</div>
+
+              <div class="flex items-center gap-2 print:text-gray-900 flex-wrap">
+                <div
+                  v-for="website_tag in requirement?.website_tags || []"
+                  :key="website_tag.id"
+                  class="border px-1 rounded-md bg-sky-100 border-sky-400 text-sky-700 whitespace-nowrap text-xs"
+                >
+                  {{ website_tag.name }}
+                </div>
+              </div>
             </div>
 
-            <hr class="mb-3" />
+            <div
+              class="mb-3 flex items-center justify-between gap-3 print:mb-1"
+              v-if="requirement?.submission_date"
+            >
+              <div class="text-gray-500 text-sm">Submission Date</div>
+              <div class="print:text-gray-900 text-sm text-right">
+                {{ getDisplayDateTime(requirement?.submission_date) }}
+              </div>
+            </div>
 
-            <div class="print:hidden flex gap-2 items-center justify-between w-full text-sm">
-              <button
-                class="btn-3 font-semibold h-8 !pl-2 !pr-4"
-                @click.prevent="goToTaskAdd"
-                v-if="requirement.status == 'approved'"
+            <div
+              class="mb-3 flex items-center justify-between gap-3 print:mb-1"
+              v-if="requirement?.better_to_complete_on"
+            >
+              <div class="text-gray-500 text-sm">Better To Complete</div>
+              <div class="print:text-gray-900 text-sm text-right">
+                {{ getDisplayDateTime(requirement?.better_to_complete_on) }}
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between items-center mb-4">
+                <span class="text-gray-500 text-sm">Priority:</span>
+                <div>
+                  <span
+                    :class="[
+                      'font-semibold text-sm',
+                      {
+                        'text-yellow-600 ': requirement.priority == 'IMPORTANT',
+                        'text-red-700 ': requirement.priority == 'URGENT',
+                      },
+                    ]"
+                    >{{ requirement.priority || 'NORMAL' }}</span
+                  >
+                </div>
+              </div>
+              <div class="mb-6">
+                <div class="flex justify-between items-center">
+                  <span class="text-gray-500 text-sm">Status:</span>
+                  <span
+                    v-if="requirement.status"
+                    class="border rounded-lg px-2 text-sm py-0.5"
+                    :class="{
+                      'bg-red-300 text-red-700 border-red-400': requirement.status != 'approved',
+                      'bg-green-300 text-green-700 border-green-400':
+                        requirement.status == 'approved',
+                    }"
+                  >
+                    {{ String(requirement.status).toUpperCase() }}
+                  </span>
+                  <span v-else class="text-red-600">...</span>
+                </div>
+              </div>
+
+              <div class="mb-6" v-if="!requirement.closed_at">
+                <div class="text-center text-sky-500">
+                  <div>Requirement is Open</div>
+                  <button class="btn-3 inline-block" @click.prevent="reqClosingModal.open = true">
+                    Close Requirement
+                  </button>
+                </div>
+              </div>
+
+              <div class="mb-6" v-if="requirement.rejected_by">
+                <div class="flex justify-between items-center">
+                  <span class="text-gray-500 text-sm">Rejected By:</span>
+                  <UserChip :user="requirement.rejected_by" />
+                </div>
+              </div>
+
+              <div
+                class="text-center mb-4 text-red-700 mt-8 text-sm"
+                v-if="requirement.rejection_reason"
               >
-                <i class="fas fa-plus text-sm"></i> Add/Assign Task
-              </button>
-              <!-- <button class="btn-3 font-semibold !pl-2 !pr-4" @click.prevent="handlePrint">
+                <p class="text-gray-600 mb-1 italic">Reason</p>
+                <p>{{ requirement.rejection_reason }}</p>
+              </div>
+
+              <hr class="mb-3" />
+
+              <RequirementCloseInfo
+                v-if="requirement?.closed_at"
+                :requirement="requirement"
+                @reOpenClick="reqClosingModal.open = true"
+              />
+
+              <div
+                v-else
+                class="print:hidden flex gap-2 items-center justify-between w-full text-sm"
+              >
+                <button
+                  class="btn-3 font-semibold h-8 !pl-2 !pr-4"
+                  @click.prevent="goToTaskAdd"
+                  v-if="requirement.status == 'approved'"
+                >
+                  <i class="fas fa-plus text-sm"></i> Add/Assign Task
+                </button>
+                <!-- <button class="btn-3 font-semibold !pl-2 !pr-4" @click.prevent="handlePrint">
                 <i class="fad fa-print text-xl"></i>Print
               </button> -->
 
-              <RouterLink class="btn-2 h-8" :to="`/requirements/edit/${requirement?.id}`">
-                Edit
-              </RouterLink>
+                <RouterLink class="btn-2 h-8" :to="`/requirements/edit/${requirement?.id}`">
+                  Edit
+                </RouterLink>
+              </div>
             </div>
           </div>
+
+          <ShareComponent
+            class="mt-4 md:col-span-4 xl:col-span-4 2xl:col-span-3 md:sticky"
+            ref="shareComponent"
+          />
         </div>
-        <ShareComponent
-          class="col-span-full md:col-span-4 xl:col-span-4 2xl:col-span-3 md:sticky"
-          ref="shareComponent"
-        />
       </div>
 
       <LoaderView class="absolute inset-0 bg-opacity-90" v-if="state === 'loading'" />

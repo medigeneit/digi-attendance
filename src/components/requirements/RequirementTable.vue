@@ -16,7 +16,8 @@ const auth = useAuthStore()
         <th class="px-4 py-0.5 text-left whitespace-nowrap border w-[60%]">Requirement</th>
         <th class="px-4 py-0.5 text-center whitespace-nowrap w-[12%] border">From Department</th>
         <th class="px-4 py-0.5 text-center whitespace-nowrap w-[12%] border">To Department</th>
-        <th class="px-4 py-0.5 text-center whitespace-nowrap w-[12%] border">Submitted At</th>
+        <th class="px-4 py-0.5 text-center whitespace-nowrap w-[12%] border"></th>
+        <th class="px-4 py-0.5 text-center whitespace-nowrap w-[12%] border">Status</th>
         <th class="px-4 py-0.5 text-center whitespace-nowrap w-[12%] border">Actions</th>
       </tr>
     </thead>
@@ -34,7 +35,7 @@ const auth = useAuthStore()
         <tr
           v-for="(req, serial) in requirements"
           :key="req.id"
-          class="border-t hover:bg-blue-50 odd:bg-gray-50 group/item"
+          class="border-t hover:bg-blue-50 odd:bg-gray-50 group/item relative"
         >
           <td
             class="px-4 py-4 font-semibold text-xl text-gray-700 border border-gray-200 text-center"
@@ -45,12 +46,20 @@ const auth = useAuthStore()
             <div class="space-y-4">
               <RouterLink
                 :to="{ name: 'RequirementShow', params: { id: req?.id } }"
-                class="text-blue-600 text-sm hover:underline hover:text-blue-800"
+                class="text-blue-600 hover:underline hover:text-blue-800 z-20"
               >
+                <div class="text-xl" :title="req?.title">
+                  <!-- <span class="text-gray-400 mr-1">ID:</span> -->
+                  <span class="text-sky-800 font-bold">{{ req?.id }}</span>
+                </div>
                 <div class="text-blue-800">
-                  <div class="line-clamp-1 font-semibold" :title="req?.title">
+                  <div class="line-clamp-2 font-semibold" :title="req?.title">
                     {{ req?.title }}
                   </div>
+                </div>
+
+                <div class="text-gray-400 text-xs mt-2">
+                  <div class="line-clamp-2" :title="req?.description" v-html="req?.description" />
                 </div>
 
                 <span v-if="req?.details?.length - 1 > 0">
@@ -59,7 +68,7 @@ const auth = useAuthStore()
               </RouterLink>
             </div>
 
-            <div class="flex gap-6 items-center mt-6">
+            <div class="flex gap-6 items-center mt-4">
               <div
                 class="text-gray-600 text-xs flex items-center gap-2 whitespace-nowrap"
                 v-if="req.created_at"
@@ -82,10 +91,18 @@ const auth = useAuthStore()
                 <span class="text-xs text-gray-500">By:</span>
                 <UserChip :user="req.created_by" v-if="req.created_by" avatar-size="xsmall" />
               </div>
+              <span
+                v-if="req.priority"
+                :class="[
+                  'font-semibold text-sm border rounded-full px-2',
+                  {
+                    'bg-yellow-50 text-yellow-700 border-yellow-700 ': req.priority == 'IMPORTANT',
+                    'bg-red-700 text-red-50 ': req.priority == 'URGENT',
+                  },
+                ]"
+                >{{ req.priority }}</span
+              >
             </div>
-            <!-- <div class="flex items-center gap-2 mt-4">
-                  <span class="text-gray-400">By</span> <UserChip :user="req.created_by" />
-                </div> -->
           </td>
           <td class="px-4 py-4 whitespace-nowrap border border-gray-200">
             <span
@@ -110,7 +127,7 @@ const auth = useAuthStore()
                 <span class="italic text-xs text-gray-400">N/A</span>
               </div>
             </div>
-            <div class="flex items-center gap-2 mt-1">
+            <div class="flex items-center gap-2 mt-3">
               <div class="text-xs text-gray-500">Coordinator:</div>
               <UserChip
                 :user="req.from_coordinator"
@@ -145,7 +162,7 @@ const auth = useAuthStore()
                 <div v-else class="italic text-xs text-gray-400">N/A</div>
               </div>
             </div>
-            <div class="flex items-center gap-2 mt-2">
+            <div class="flex items-center gap-2 mt-3">
               <div class="text-xs text-gray-500">Coordinator:</div>
               <UserChip :user="req.to_coordinator" v-if="req.to_coordinator" avatar-size="xsmall" />
               <div v-else>
@@ -160,55 +177,128 @@ const auth = useAuthStore()
 
           <td class="px-4 py-4 text-center whitespace-nowrap border border-gray-200">
             <div class="text-gray-600 text-sm" v-if="req.submission_date">
-              <div class="mb-1">
-                {{
-                  new Date(req.submission_date).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                  })
-                }}
+              <div class="mb-6 w-full flex flex-col justify-between items-start">
+                <span class="text-xs font-bold">Submitted:</span>
+                <div>
+                  {{
+                    new Date(req.submission_date).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })
+                  }}
 
-                {{
-                  new Date(req.submission_date).toLocaleTimeString('en-US', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: true,
-                  })
-                }}
+                  {{
+                    new Date(req.submission_date).toLocaleTimeString('en-US', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: true,
+                    })
+                  }}
+                </div>
               </div>
-              <div class="flex justify-between items-center gap-1">
-                <span class="text-gray-500 text-sm">Status: </span>
-                <span
-                  class="border rounded-lg px-2 text-sm py-0.5 text-xs"
-                  :class="{
-                    'bg-red-300 text-red-700 border-red-400': req.status != 'approved',
-                    'bg-green-300 text-green-700 border-green-400': req.status == 'approved',
-                  }"
-                >
-                  {{ String(req.status).toUpperCase() }}
-                </span>
+              <div class="w-full flex flex-col justify-between items-start">
+                <span class="text-xs font-bold">Better To Complete:</span>
+                <div>
+                  {{
+                    new Date(req.submission_date).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })
+                  }}
+
+                  {{
+                    new Date(req.submission_date).toLocaleTimeString('en-US', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: true,
+                    })
+                  }}
+                </div>
               </div>
             </div>
             <div v-else>-</div>
           </td>
 
           <td class="px-4 py-4 text-center border border-gray-200">
+            <div class="flex justify-center items-center gap-1">
+              <span
+                class="border rounded-lg px-2 py-0.5 text-xs"
+                :class="{
+                  'bg-red-300 text-red-700 border-red-400': req.status != 'approved',
+                  'bg-green-300 text-green-700 border-green-400': req.status == 'approved',
+                }"
+              >
+                {{ String(req.status).toUpperCase() }}
+              </span>
+            </div>
+            <div class="whitespace-nowrap text-sm mt-4">
+              {{ req.completed_tasks_count }}/{{ req.tasks_count }} task(s) done
+            </div>
+          </td>
+          <td class="px-4 py-4 text-center border border-gray-200">
             <div class="flex gap-4 items-center justify-center">
               <RouterLink
                 :to="{ name: 'RequirementShow', params: { id: req?.id } }"
-                class="btn-2"
+                class="btn-2 px-4"
                 @click="$event.stopPropagation()"
               >
-                <i class="fad fa-eye"></i> Show
+                <i class="fad fa-eye"></i>
               </RouterLink>
               <RouterLink
                 :to="{ name: 'RequirementEdit', params: { id: req?.id } }"
-                class="btn-4 border border-blue-500 hover:bg-blue-500 hover:text-white"
+                class="btn-4 px-4 border border-blue-500 hover:bg-blue-500 hover:text-white"
                 @click="$event.stopPropagation()"
               >
-                <i class="fad fa-edit"></i> Edit
+                <i class="fad fa-edit"></i>
               </RouterLink>
+            </div>
+
+            <div
+              class="absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-50"
+              v-if="req.closed_at"
+            >
+              <div
+                class="flex flex-col gap-2 items-center justify-center bg-gray-50 bg-opacity-70 hover:bg-opacity-90 p-6 border border-gray-100 rounded-md"
+              >
+                <div class="text-sm flex items-center gap-2 text-red-400 font-semibold">
+                  <span class="fad fa-lock"></span>
+                  <span class="mt-[2px]">CLOSED AT</span>
+                  <span class="mt-[2px]">
+                    {{
+                      new Date(req.closed_at).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true,
+                      })
+                    }}
+                  </span>
+                </div>
+                <div class="text-gray-800 flex items-center gap-2">
+                  <span class="text-sm">Closed by</span>
+                  <UserChip :user="req.closed_by_user" avatar-size="xsmall" />
+                </div>
+                <div class="flex gap-4 items-center justify-center">
+                  <RouterLink
+                    :to="{ name: 'RequirementShow', params: { id: req?.id } }"
+                    class="btn-2 h-6"
+                    @click="$event.stopPropagation()"
+                  >
+                    <i class="fad fa-eye"></i> Show
+                  </RouterLink>
+                  <RouterLink
+                    :to="{ name: 'RequirementEdit', params: { id: req?.id } }"
+                    class="btn-4 h-6 border border-blue-500 hover:bg-blue-500 hover:text-white"
+                    @click="$event.stopPropagation()"
+                  >
+                    <i class="fad fa-edit"></i> Edit
+                  </RouterLink>
+                </div>
+              </div>
             </div>
           </td>
         </tr>

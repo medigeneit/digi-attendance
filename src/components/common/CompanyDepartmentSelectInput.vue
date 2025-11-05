@@ -51,9 +51,16 @@ function departmentFilterBy(options, term) {
       :disabled="disabled"
     >
       <template #selected-option="{ option }">
-        <div>
-          <span v-if="option?.name" class="text-gray-800 line-clamp-1">{{ option?.name }}</span>
-          <span v-else class="text-gray-500 whitespace-nowrap">{{ defaultOption }}</span>
+        <slot name="selectedOption" :option="option">
+          <div>
+            <span v-if="option?.name" class="text-gray-800 line-clamp-1">{{ option?.name }}</span>
+            <span v-else class="text-gray-500 whitespace-nowrap">{{ defaultOption }}</span>
+          </div>
+        </slot>
+      </template>
+      <template #option="{ option }">
+        <div class="w-40 my-0.5">
+          {{ option.name }}
         </div>
       </template>
     </SelectDropdown>

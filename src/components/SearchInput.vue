@@ -30,13 +30,13 @@ const search = computed({
 })
 </script>
 <template>
-  <div class="text-gray-600 relative">
+  <div class="text-gray-600 relative rounded-md px-2 py-1 border-2 border-gray-400">
     <input
       ref="searchInput"
       id="search"
       v-model="search"
       type="text"
-      class="!pr-7 w-full rounded-md px-2 py-1 border-2 border-gray-400 placeholder:text-sm focus:outline-gray-400 h-full"
+      class="!pr-7 w-full placeholder:text-sm focus:outline-none h-full"
       :placeholder="placeholder"
     />
     <label class="absolute text-xs left-2.5 -top-1.5 bg-slate-100 text-blue-500">Search</label>

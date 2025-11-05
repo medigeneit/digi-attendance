@@ -15,3 +15,25 @@ export function scrollToID(querySelector, topOffset = 0) {
   }
 
 }
+
+
+export function createMutationObserver(target, callback, options = { childList: true, subtree: true }) {
+  if (!target) {
+    console.warn('MutationObserver target is missing.')
+    return null
+  }
+
+  const observer = new MutationObserver(callback)
+  observer.observe(target, options)
+
+  return {
+    observer,
+    disconnect() {
+      observer.disconnect()
+    },
+    reconnect(newTarget = target) {
+      observer.disconnect()
+      observer.observe(newTarget, options)
+    }
+  }
+}

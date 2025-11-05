@@ -107,7 +107,7 @@
     <!-- Dropdown -->
     <div
       v-show="isOpen"
-      class="absolute w-full border rounded shadow-[0px_0px_10px_0px_rgba(0,0,0,0.25)] z-50 border-teal-500 bg-white"
+      class="absolute border rounded shadow-[0px_0px_10px_0px_rgba(0,0,0,0.25)] z-50 border-teal-500 bg-white"
       ref="dropdownMenuRef"
       :class="positionClass"
     >
