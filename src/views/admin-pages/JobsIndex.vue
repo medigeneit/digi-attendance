@@ -118,7 +118,7 @@ watch([page, per_page], load)
               <div class="text-xs text-gray-500 line-clamp-1">{{ row.summary }}</div>
             </td>
             <td class="px-4 py-3">{{ row.department?.name || '—' }}</td>
-            <td class="px-4 py-3">{{ row.location?.name || row.location?.city || '—' }}</td>
+            <td class="px-4 py-3">{{ row.location || '—' }}</td>
             <td class="px-4 py-3 capitalize">{{ (row.employment_type || '').replace('_',' ') }}</td>
             <td class="px-4 py-3">
               <span v-if="row.application_deadline" class="text-xs px-2 py-1 rounded bg-amber-100 text-amber-800">

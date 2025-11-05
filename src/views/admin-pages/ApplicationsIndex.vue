@@ -84,8 +84,8 @@ watch([page, per_page], load)
               <div class="text-xs text-gray-500">{{ row.email }}</div>
             </td>
             <td class="px-4 py-3">
-              <div class="font-medium">{{ row.job?.title || '—' }}</div>
-              <div class="text-xs text-gray-500">{{ row.job?.slug }}</div>
+              <div class="font-medium">{{ row.career?.title || '—' }}</div>
+              <div class="text-xs text-gray-500">{{ row.career?.slug }}</div>
             </td>
             <td class="px-4 py-3">{{ (row.applied_at || '').toString().slice(0,19).replace('T',' ') }}</td>
             <td class="px-4 py-3">
@@ -158,7 +158,7 @@ watch([page, per_page], load)
 
           <div>
             <div class="text-gray-500">Resume</div>
-            <a :href="`/storage/${current.resume_path}`" target="_blank" class="text-indigo-600 underline">Download resume</a>
+            <a :href="`https://hrm-file.s3.ap-southeast-1.amazonaws.com/${current.resume_path}`" target="_blank" class="text-indigo-600 underline">Download resume</a>
           </div>
 
           <div v-if="current.answers">

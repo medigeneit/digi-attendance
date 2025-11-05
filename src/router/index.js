@@ -9,22 +9,15 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: '/',
+      path: '/home',
       component: GuestLayout,
       children: [
-        {
-          path: '/',
-          name: 'Home',
-          component: HomeView,
-          meta: { title: 'Home' },
-        },
-
-        {
-          path: '/about',
-          name: 'About',
-          component: () => import('@/views/public-pages/AboutView.vue'),
-          meta: { title: 'About' },
-        },
+        { path: '', name: 'Home', component: HomeView, meta: { title: 'Home', guestOnly: true } },
+        { 
+          path: '/about', 
+          name: 'About', 
+          component: () => import('@/views/public-pages/AboutView.vue'), 
+          meta: { title: 'About', guestOnly: true } },
 
         {
           path: '/login',
@@ -45,6 +38,29 @@ const router = createRouter({
           name: 'PrivacyPolicy',
           component: () => import('@/views/public-pages/PrivacyPolicy.vue'),
           meta: { title: 'Privacy Policy' },
+        },
+
+        { 
+          path: '/careers', 
+          name: 'careers.index', 
+          component: () => import('@/views/public-pages/CareersIndex.vue'), 
+          meta: { title: 'Careers', guestOnly: true } },
+        { 
+          path: '/careers/jobs/:slug', 
+          name: 'careers.show', 
+          component: () => import('@/views/public-pages/CareerShow.vue'), 
+          props: true, 
+          meta: { title: 'Job Details', guestOnly: true } },
+
+         {
+          path: '/404',
+          name: 'NotFound',
+          component: () => import('@/views/public-pages/NotFound.vue'),
+          meta: { title: 'Page Not Found' },
+        },
+        {
+          path: '/:pathMatch(.*)*',
+          redirect: (to) => ({ name: 'NotFound', query: { from: to.fullPath } }),
         },
       ],
     },
@@ -1304,45 +1320,45 @@ const router = createRouter({
           },
         },
 
+         {
+          path: '/admin/careers',
+          name: 'CareerView',
+          component: () => import('@/views/admin-pages/CareerView.vue'),
+          meta: { 
+            requiresAuth: true, 
+            roles: ['super_admin', 'developer'], 
+            title: 'Career View' 
+          },
+        },
+
         {
-          path: '/careers/jobs',
+          path: '/admin/careers/jobs',
           name: 'AdminCareersJobs',
           component: () => import('@/views/admin-pages/JobsIndex.vue'),
           meta: { 
             requiresAuth: true, 
-            roles: ['admin', 'super_admin', 'developer'],
+            roles: ['super_admin', 'developer'],
             title:'Careers Jobs'
           }
         },
         {
-          path: '/careers/jobs/new',
+          path: '/admin/careers/jobs/new',
           name: 'AdminCareersJobCreate',
           component: () => import('@/views/admin-pages/JobEdit.vue'),
-          meta: { requiresAuth: true, roles:  ['admin', 'super_admin', 'developer'] }
+          meta: { requiresAuth: true, roles:  ['super_admin', 'developer'] }
         },
         {
-          path: '/careers/jobs/:id/edit',
+          path: '/admin/careers/jobs/:id/edit',
           name: 'AdminCareersJobEdit',
           component: () => import('@/views/admin-pages/JobEdit.vue'),
           props: true,
-          meta: { requiresAuth: true, roles:  ['admin', 'super_admin', 'developer'] }
+          meta: { requiresAuth: true, roles:  ['super_admin', 'developer'] }
         },
         {
-          path: '/careers/applications',
+          path: '/admin/careers/applications',
           name: 'AdminCareersApplications',
           component: () => import('@/views/admin-pages/ApplicationsIndex.vue'),
-          meta: { requiresAuth: true, roles:  ['admin', 'super_admin', 'developer'] }
-        },
-
-        {
-          path: '/404',
-          name: 'NotFound',
-          component: () => import('@/views/public-pages/NotFound.vue'),
-          meta: { title: 'Page Not Found' },
-        },
-        {
-          path: '/:pathMatch(.*)*',
-          redirect: (to) => ({ name: 'NotFound', query: { from: to.fullPath } }),
+          meta: { requiresAuth: true, roles:  ['super_admin', 'developer'] }
         },
       ],
     },
