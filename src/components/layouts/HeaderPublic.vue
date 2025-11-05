@@ -43,9 +43,10 @@ onMounted(async () => {
       <div class="flex gap-4 items-center">
         <div class="flex gap-4">
           <div class="hidden md:flex items-center gap-8">
-            <RouterLink to="/" class="font-medium hover:text-blue-600">Home</RouterLink>
-            <RouterLink to="/" class="font-medium hover:text-blue-600">About</RouterLink>
-            <RouterLink to="/" class="font-medium hover:text-blue-600">Contact</RouterLink>
+            <RouterLink to="/home" class="font-medium hover:text-blue-600">Home</RouterLink>
+            <RouterLink to="/careers" class="font-medium hover:text-blue-600">Careers</RouterLink>
+            <RouterLink to="/about" class="font-medium hover:text-blue-600">About</RouterLink>
+            <RouterLink to="/contact" class="font-medium hover:text-blue-600">Contact</RouterLink>
           </div>
           <div class="hidden md:flex gap-4 items-center">
             <RouterLink v-if="!isAuthenticated" :to="buttonLink" class="btn-2">
