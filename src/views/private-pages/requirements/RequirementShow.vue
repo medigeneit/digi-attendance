@@ -529,7 +529,6 @@ const reqClosingModal = ref({
                   <div class="text-gray-500 text-sm">From</div>
                   <DepartmentChip :department="requirement?.from_department" :short-name="true" />
                 </div>
-
                 <div class="text-gray-600 text-sm mb-2 border-b border-dashed">Supervisor</div>
                 <div class="flex items-center gap-x-3 gap-y-2 flex-wrap">
                   <UserChip :user="requirement?.supervisor" v-if="requirement?.supervisor" />
@@ -625,9 +624,9 @@ const reqClosingModal = ref({
               </div>
 
               <div class="mb-6" v-if="!requirement.closed_at">
-                <div class="flex justify-center items-center gap-2 text-sky-500">
-                  <div>Task is Open</div>
-                  <button class="btn-3 h-8" @click.prevent="reqClosingModal.open = true">
+                <div class="text-center text-sky-500">
+                  <div>Requirement is Open</div>
+                  <button class="btn-3 inline-block" @click.prevent="reqClosingModal.open = true">
                     Close Requirement
                   </button>
                 </div>

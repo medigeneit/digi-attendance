@@ -26,6 +26,7 @@ const selectedEmployeeId = computed(setAndGetModelValue('created-by'))
 const month = computed(setAndGetModelValue('month'))
 const priority = computed(setAndGetModelValue('priority'))
 const status = computed(setAndGetModelValue('status'))
+const isClosed = computed(setAndGetModelValue('is-closed'))
 
 const emit = defineEmits([
   'update:modelValue',
@@ -123,10 +124,21 @@ const companyDepartments = computed(() => {
               </div>
             </template> -->
             <template #selected-option="{ option }">
-              <span v-if="option" :title="option?.name" class="max-w-28 line-clamp-1">
-                {{ option?.name }}
+              <span class="text-xs">
+                <span
+                  v-if="option"
+                  :title="option?.name"
+                  class="max-w-28 line-clamp-1 text-sky-500 font-semibold"
+                >
+                  {{ option?.name }}
+                </span>
+                <span v-else>Company</span>
               </span>
-              <span v-else>Company</span>
+            </template>
+            <template #option="{ option }">
+              <div class="w-36 my-0.5">
+                {{ option.name }}
+              </div>
             </template>
           </SelectDropdown>
         </div>
@@ -142,16 +154,21 @@ const companyDepartments = computed(() => {
             <span></span>
           </template>
           <template #selectedOption="{ option }">
-            <span
-              v-if="option"
-              :user="option"
-              avatar-size="xsmall"
-              class="max-w-28 line-clamp-1"
-              :title="option?.name"
-            >
-              <span class="text-gray-400">From:</span> {{ option?.short_name || option?.name }}
+            <span class="text-xs">
+              <span
+                v-if="option"
+                :user="option"
+                avatar-size="xsmall"
+                class="max-w-28 line-clamp-1"
+                :title="option?.name"
+              >
+                <span class="text-gray-400">From:</span>
+                <span class="text-sky-500 font-semibold mr-1">
+                  {{ option?.short_name || option?.name }}
+                </span>
+              </span>
+              <span v-else class="text-gray-600">--From Department--</span>
             </span>
-            <span v-else>From Department</span>
           </template>
         </CompanyDepartmentSelectInput>
 
@@ -167,16 +184,21 @@ const companyDepartments = computed(() => {
         >
           <template #label><span></span></template>
           <template #selectedOption="{ option }">
-            <span
-              v-if="option"
-              :user="option"
-              avatar-size="xsmall"
-              class="max-w-28 line-clamp-1"
-              :title="option?.name"
-            >
-              <span class="text-gray-400">To:</span> {{ option?.short_name || option?.name }}
+            <span class="text-xs">
+              <span
+                v-if="option"
+                :user="option"
+                avatar-size="xsmall"
+                class="max-w-28 line-clamp-1"
+                :title="option?.name"
+              >
+                <span class="text-gray-400 mr-1">To:</span>
+                <span class="text-sky-500 font-semibold">
+                  {{ option?.short_name || option?.name }}
+                </span>
+              </span>
+              <span v-else class="text-gray-600">--To Department--</span>
             </span>
-            <span v-else>To Department</span>
           </template>
         </CompanyDepartmentSelectInput>
 
@@ -190,12 +212,14 @@ const companyDepartments = computed(() => {
             class="border border-gray-300 rounded h-8 bg-white max-w-64 !text-sm"
           >
             <template #selectedOption="{ option }">
-              <span v-if="option" class="flex items-center gap-1 overflow-hidden">
-                <span class="text-gray-400">User: </span>
-                <UserChip :user="option" avatar-size="xsmall" class="inline" />
+              <span class="text-xs">
+                <span v-if="option" class="flex items-center gap-1 overflow-hidden text-xs">
+                  <span class="text-gray-400">User: </span>
+                  <UserChip :user="option" avatar-size="xsmall" class="inline" />
+                </span>
+                <span v-else class="text-gray-600">--All Employee--</span>
               </span>
-              <span v-else>Employee</span></template
-            >
+            </template>
           </EmployeeDropdownInput>
         </div>
 
@@ -205,7 +229,6 @@ const companyDepartments = computed(() => {
             :searchable="false"
             :clearable="true"
             :options="[
-              { label: '--Any Priority--', id: '' },
               { label: 'Normal', id: 'normal' },
               { label: 'IMPORTANT', id: 'IMPORTANT' },
               { label: 'URGENT', id: 'URGENT' },
@@ -213,10 +236,17 @@ const companyDepartments = computed(() => {
             class="border border-gray-300 rounded h-8 bg-white !text-sm"
           >
             <template #selected-option="{ option }">
-              <span v-if="option" :user="option" avatar-size="xsmall" class="max-w-28 line-clamp-1">
-                {{ option?.label }}
+              <span class="text-xs">
+                <span
+                  v-if="option"
+                  :user="option"
+                  avatar-size="xsmall"
+                  class="max-w-28 line-clamp-1 text-sky-500 font-semibold"
+                >
+                  {{ option?.label }}
+                </span>
+                <span v-else>--Any Priority--</span>
               </span>
-              <span v-else>Priority</span>
             </template>
           </SelectDropdown>
         </div>
@@ -227,7 +257,6 @@ const companyDepartments = computed(() => {
             :searchable="false"
             :clearable="true"
             :options="[
-              { label: '--ALL Status--', id: '' },
               { label: 'Pending', id: 'pending' },
               { label: 'Approved', id: 'approved' },
               { label: 'Rejected', id: 'rejected' },
@@ -235,30 +264,49 @@ const companyDepartments = computed(() => {
             class="border border-gray-300 rounded h-8 bg-white !text-sm"
           >
             <template #selected-option="{ option }">
-              <span v-if="option" :user="option" avatar-size="xsmall" class="max-w-28 line-clamp-1">
-                {{ option?.label }}
+              <span class="text-xs">
+                <span
+                  v-if="option"
+                  :user="option"
+                  avatar-size="xsmall"
+                  class="max-w-28 line-clamp-1 text-sky-500 font-semibold"
+                >
+                  {{ option?.label }}
+                </span>
+                <span v-else>--ALL Status--</span>
               </span>
-              <span v-else>Status</span>
             </template>
           </SelectDropdown>
         </div>
 
-        <div class="text-gray-600 max-w-40 relative rounded h-8 border border-gray-300 bg-white">
-          <div class="!text-sm h-full">
-            <label
-              class="text-sm bg-white absolute top-0 bottom-0 left-2 right-8 flex items-center"
-              v-if="!month"
+        <div>
+          <label
+            class="flex items-center text-xs gap-1 text-gray-600 max-w-36 relative rounded h-8 border border-gray-300 bg-white px-2"
+          >
+            <input type="checkbox" class="size-[15px]" v-model="isClosed" />
+            <span class="font-semibold" :class="[isClosed ? 'text-sky-500 font-semibold' : '']"
+              >Is Closed</span
             >
-              Month
-            </label>
-            <input
-              id="month-filter"
-              v-model="month"
-              type="month"
-              class="rounded h-full !text-sm px-4 w-full"
-              placeholder="All month"
-            />
-          </div>
+          </label>
+        </div>
+
+        <div
+          class="!text-sm flex text-gray-600 relative rounded h-8 border border-gray-300 bg-white pl-2"
+        >
+          <label
+            class="top-2 bottom-2 left-2 flex items-center text-xs text-gray-500 mr-1"
+            for="month-filter"
+          >
+            Month:
+          </label>
+          <input
+            id="month-filter"
+            v-model="month"
+            type="month"
+            class="rounded h-full !text-xs w-full appearance-none text-gray-800 font-semibold outline-none pr-1"
+            :class="[isClosed ? 'text-sky-500 font-semibold' : '']"
+            placeholder="All month"
+          />
         </div>
       </div>
     </div>
