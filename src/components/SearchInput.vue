@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 
 const props = defineProps({
   modelValue: String,
+  label: { type: String, default: 'Search' },
   placeholder: { type: String, default: 'Type to search...' },
   debounceTime: { type: Number, default: 500 },
 })
@@ -39,7 +40,9 @@ const search = computed({
       class="!pr-7 w-full placeholder:text-sm focus:outline-none h-full"
       :placeholder="placeholder"
     />
-    <label class="absolute text-xs left-2.5 -top-1.5 bg-slate-100 text-blue-500">Search</label>
+    <label class="absolute text-xs left-2.5 -top-1.5 bg-slate-100 text-blue-500" v-if="label">
+      {{ label }}
+    </label>
     <div class="absolute right-2 top-[50%] translate-y-[-50%] flex gap-1">
       <i
         class="fas fa-times opacity-35 hover:opacity-60 cursor-pointer"

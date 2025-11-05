@@ -103,13 +103,17 @@ const companyDepartments = computed(() => {
 
 <template>
   <div>
-    <div class="flex flex-wrap items-center w-full gap-2">
-      <h2 class="text-2xl font-bold text-gray-800">Requirements</h2>
-      <button @click.prevent="emit('clickAdd')" class="btn-icon size-7 border border-gray-400">
-        <i class="fas fa-plus text-sm"></i>
-      </button>
+    <div class="flex flex-col sm:flex-row flex-wrap items-start w-full gap-2">
+      <div class="w-full sm:w-auto flex items-center gap-4">
+        <h2 class="text-lg 2xl:text-2xl font-bold text-gray-800">Requirements</h2>
+        <button @click.prevent="emit('clickAdd')" class="btn-icon size-7 border-gray-400">
+          <i class="fas fa-plus text-sm"></i>
+        </button>
+      </div>
 
-      <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-3 ml-auto">
+      <div
+        class="grid 2xl:flex grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 md:ml-auto flex-wrap items-center justify-center gap-x-4 gap-y-3 w-full lg:w-auto"
+      >
         <div class="relative">
           <SelectDropdown
             v-model="companyId"
@@ -198,14 +202,11 @@ const companyDepartments = computed(() => {
           </template>
         </CompanyDepartmentSelectInput>
 
-        <div
-          class="relative lg:flex-grow"
-          v-if="auth.isAdminMood && auth?.user?.role !== 'employee'"
-        >
+        <div class="relative" v-if="auth.isAdminMood && auth?.user?.role !== 'employee'">
           <EmployeeDropdownInput
             :employees="employees"
             v-model="selectedEmployeeId"
-            class="border border-gray-300 rounded h-8 bg-white max-w-64 !text-sm"
+            class="border border-gray-300 rounded h-8 bg-white w-full lg:max-w-64 !text-sm"
           >
             <template #selectedOption="{ option }">
               <span class="text-xs">
@@ -277,7 +278,7 @@ const companyDepartments = computed(() => {
 
         <div>
           <label
-            class="flex items-center text-xs gap-1 text-gray-600 max-w-36 relative rounded h-8 border border-gray-300 bg-white px-2"
+            class="flex items-center text-xs gap-1 text-gray-600 relative rounded h-8 border border-gray-300 bg-white px-2"
           >
             <input type="checkbox" class="size-[15px]" v-model="isClosed" />
             <span class="font-semibold" :class="[isClosed ? 'text-sky-500 font-semibold' : '']"
@@ -287,7 +288,7 @@ const companyDepartments = computed(() => {
         </div>
 
         <div
-          class="!text-sm flex text-gray-600 relative rounded h-8 border border-gray-300 bg-white pl-2"
+          class="!text-sm flex text-gray-600 relative rounded h-8 border border-gray-300 bg-white pl-2 md:col-span-2 lg:col-span-1"
         >
           <label
             class="top-2 bottom-2 left-2 flex items-center text-xs text-gray-500 mr-1"
@@ -306,12 +307,13 @@ const companyDepartments = computed(() => {
         </div>
       </div>
     </div>
-    <div class="mt-4 flex items-end">
-      <div class="text-sm text-gray-700">Showing all requirements</div>
+    <div class="mt-4 flex-col lg:flex-row flex lg:items-end">
+      <div class="text-sm text-gray-700 mb-4 lg:mb-0">Showing requirements</div>
       <SearchInput
         v-model="search"
-        class="ml-auto !border !border-gray-400 w-96 h-10 px-4"
+        class="lg:ml-auto !border !border-gray-300 w-full lg:w-96 h-[40px] px-4"
         placeholder="Search requirements "
+        :label="null"
       />
     </div>
   </div>

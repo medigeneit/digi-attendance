@@ -48,7 +48,7 @@ const auth = useAuthStore()
                 :to="{ name: 'RequirementShow', params: { id: req?.id } }"
                 class="text-blue-600 hover:underline hover:text-blue-800 z-20"
               >
-                <div class="text-xl" :title="req?.title">
+                <div class="text-xl mb-4" :title="req?.title">
                   <!-- <span class="text-gray-400 mr-1">ID:</span> -->
                   <span class="text-sky-800 font-bold">{{ req?.id }}</span>
                 </div>
@@ -58,7 +58,7 @@ const auth = useAuthStore()
                   </div>
                 </div>
 
-                <div class="text-gray-400 text-xs mt-2">
+                <div class="text-gray-400 text-xs mt-4">
                   <div class="line-clamp-2" :title="req?.description" v-html="req?.description" />
                 </div>
 
@@ -117,7 +117,7 @@ const auth = useAuthStore()
             </span>
 
             <div class="flex items-center gap-2 mt-4">
-              <div class="text-xs text-gray-500">In Charge:</div>
+              <div class="text-xs text-gray-500 w-16 mr-1">In Charge:</div>
               <UserChip
                 :user="req?.from_department?.in_charge"
                 v-if="req?.from_department?.in_charge"
@@ -128,7 +128,7 @@ const auth = useAuthStore()
               </div>
             </div>
             <div class="flex items-center gap-2 mt-3">
-              <div class="text-xs text-gray-500">Coordinator:</div>
+              <div class="text-xs text-gray-500 w-16 mr-1">Coordinator:</div>
               <UserChip
                 :user="req.from_coordinator"
                 v-if="req.from_coordinator"
@@ -153,7 +153,7 @@ const auth = useAuthStore()
             </span>
 
             <div class="flex items-center gap-2 mt-4">
-              <div class="text-xs text-gray-500">In Charge:</div>
+              <div class="text-xs text-gray-500 w-16 mr-1">In Charge:</div>
               <UserChip :user="req.to_incharge" v-if="req.to_incharge" avatar-size="xsmall" />
               <div v-else>
                 <div v-if="req?.to_department?.incharge_id" class="text-xs text-red-300">
@@ -163,7 +163,7 @@ const auth = useAuthStore()
               </div>
             </div>
             <div class="flex items-center gap-2 mt-3">
-              <div class="text-xs text-gray-500">Coordinator:</div>
+              <div class="text-xs text-gray-500 w-16 mr-1">Coordinator:</div>
               <UserChip :user="req.to_coordinator" v-if="req.to_coordinator" avatar-size="xsmall" />
               <div v-else>
                 <div v-if="req?.to_department?.coordinator_id" class="text-xs text-red-300">
@@ -177,7 +177,7 @@ const auth = useAuthStore()
 
           <td class="px-4 py-4 text-center whitespace-nowrap border border-gray-200">
             <div class="text-gray-600 text-sm" v-if="req.submission_date">
-              <div class="mb-6 w-full flex flex-col justify-between items-start">
+              <div class="mb-4 w-full flex flex-col justify-between items-start">
                 <span class="text-xs font-bold">Submitted:</span>
                 <div>
                   {{

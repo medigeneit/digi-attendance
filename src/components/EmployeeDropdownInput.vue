@@ -40,7 +40,7 @@ const selectedEmployeeId = computed({
     clearable
   >
     <template #option="{ option }">
-      <UserChip :user="option || {}" class="w-full overflow-hidden border relative" />
+      <UserChip :user="option || {}" class="w-full min-w-48 overflow-hidden border relative" />
     </template>
 
     <template #list-header>
@@ -51,9 +51,9 @@ const selectedEmployeeId = computed({
       </div>
     </template>
 
-    <template #no-options
-      ><span class="text-xs whitespace-nowrap">No Employee(s) found</span></template
-    >
+    <template #no-options>
+      <span class="text-xs whitespace-nowrap">No Employee(s) found</span>
+    </template>
 
     <template #selected-option="{ option }">
       <slot name="selectedOption" :option="option">
