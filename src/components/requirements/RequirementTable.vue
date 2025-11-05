@@ -207,14 +207,6 @@ const auth = useAuthStore()
                       day: 'numeric',
                     })
                   }}
-
-                  {{
-                    new Date(req.submission_date).toLocaleTimeString('en-US', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      hour12: true,
-                    })
-                  }}
                 </div>
               </div>
             </div>
@@ -233,7 +225,17 @@ const auth = useAuthStore()
                 {{ String(req.status).toUpperCase() }}
               </span>
             </div>
-            <div class="whitespace-nowrap text-sm mt-4">
+            <div
+              class="whitespace-nowrap text-sm mt-4"
+              :class="[
+                {
+                  'text-green-700 font-semibold':
+                    req.tasks_count > 0 && req.completed_tasks_count == req.tasks_count,
+                  'text-red-700 font-semibold':
+                    req.tasks_count == 0 || req.completed_tasks_count != req.tasks_count,
+                },
+              ]"
+            >
               {{ req.completed_tasks_count }}/{{ req.tasks_count }} task(s) done
             </div>
           </td>

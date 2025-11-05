@@ -112,7 +112,7 @@ const companyDepartments = computed(() => {
       </div>
 
       <div
-        class="grid 2xl:flex grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 md:ml-auto flex-wrap items-center justify-center gap-x-4 gap-y-3 w-full lg:w-auto"
+        class="grid xl:flex grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 md:ml-auto flex-wrap items-center justify-center gap-x-4 gap-y-3 w-full lg:w-auto"
       >
         <div class="relative">
           <SelectDropdown

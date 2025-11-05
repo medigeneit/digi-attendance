@@ -17,14 +17,14 @@ defineProps({
     <div class="text-xs">
       <div class="flex items-center" :class="titleClass">
         <span
-          class="text-gray-600 mr-1 whitespace-nowrap"
+          class="text-gray-400 mr-1 whitespace-nowrap"
           v-if="user?.employee_id && !hideEmployeeId"
         >
           {{ user?.employee_id }} -
         </span>
         <div>
           <span
-            class="text-gray-900 font-semibold w-full line-clamp-1"
+            class="text-gray-800 font-semibold w-full line-clamp-1"
             :class="{ '  ': user?.employee_id && !hideEmployeeId }"
           >
             {{ user?.name }}

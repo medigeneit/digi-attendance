@@ -26,7 +26,7 @@ async function handleStatusSubmit() {
   isLoading.value = true
   try {
     if (props.requirement?.closed_at) {
-      await reOpenRequirement(props.requirement.id)
+      await reOpenRequirement(props.requirement.id, note.value)
     } else {
       await closeRequirement(props.requirement.id, note.value)
     }
@@ -61,21 +61,17 @@ async function handleStatusSubmit() {
         <span
           class="border px-2 rounded-md bg-gray-50 border-blue-300 text-blue-400 inline-flex items-center gap-1"
         >
-          <i
-            class="text-sm fas text-blue-600"
-            :class="[requirement?.closed_at ? 'fa-unlock' : 'fa-lock']"
-          ></i
-          >{{ requirement?.closed_at ? 'Re-Open' : 'Close' }}</span
-        >
+          {{ requirement?.closed_at ? 'Re-Open' : 'Close' }}
+        </span>
         the requirement?
       </div>
 
-      <div class="mt-4" v-if="!requirement?.closed_at">
+      <div class="mt-4">
         <textarea
           v-model="note"
           rows="4"
-          placeholder="Write about why are you closing the requirement?"
-          class="w-full border rounded-lg p-2 text-gray-700"
+          :placeholder="`Write about why are you ${requirement?.closed_at ? 'Re-Opening' : 'Closing'} the requirement?`"
+          class="w-full border rounded-lg p-2 text-gray-700 border-gray-400 placeholder:text-gray-400"
           :required="currentAction === 'reject'"
           @input="
             note.length > acceptedCharacterCount
@@ -99,10 +95,6 @@ async function handleStatusSubmit() {
       <div class="flex justify-between mt-3">
         <button class="btn-3" @click.prevent="emit('clickCancel')">Cancel</button>
         <button class="btn-2">
-          <i
-            class="text-xl text-white fas"
-            :class="[requirement?.closed_at ? 'fa-unlock' : 'fa-lock']"
-          ></i>
           {{ requirement?.closed_at ? 'Re-Open' : 'Close' }}
         </button>
       </div>

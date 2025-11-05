@@ -18,7 +18,7 @@ import TaskTableRow from '@/components/tasks/TaskTableRow.vue'
 import TaskUserAssignForm from '@/components/tasks/TaskUserAssignForm.vue'
 import TextWithHr from '@/components/TextWithHr.vue'
 import UserChip from '@/components/user/UserChip.vue'
-import { getDisplayDateTime } from '@/libs/datetime'
+import { getDisplayDate, getDisplayDateTime } from '@/libs/datetime'
 import { createMutationObserver } from '@/libs/dom'
 import { findRequirement } from '@/services/requirement'
 import { useAuthStore } from '@/stores/auth'
@@ -319,7 +319,26 @@ const reqClosingModal = ref({
 
             <div class="mb-8">
               <TextWithHr class="mb-4">
-                <h2 class="font-semibold text-lg px-2">Task List</h2>
+                <h2 class="font-semibold text-lg px-2">
+                  <span>Task List </span>
+                  <span
+                    v-if="requirement.status == 'approved'"
+                    class="whitespace-nowrap mt-4"
+                    :class="[
+                      {
+                        'text-green-700 font-semibold':
+                          requirement.tasks_count > 0 &&
+                          requirement.completed_tasks_count == requirement.tasks_count,
+                        'text-red-700 font-semibold':
+                          requirement.tasks_count == 0 ||
+                          requirement.completed_tasks_count != requirement.tasks_count,
+                      },
+                    ]"
+                  >
+                    ({{ requirement.completed_tasks_count }}/{{ requirement.tasks_count }} task(s)
+                    done)
+                  </span>
+                </h2>
               </TextWithHr>
               <div class="w-full border rounded-lg border-gray-300 overflow-y-auto">
                 <table class="w-full border-collapse">
@@ -381,13 +400,14 @@ const reqClosingModal = ref({
               >
                 <div v-if="state != 'loading' && requirement?.status">
                   <DescriptionView
-                    v-if="String(requirement?.feedback).trim().length > 0"
+                    v-if="String(requirement?.feedback || '').trim().length > 0"
                     lineClamp="2"
                     :className="{ button: '  underline' }"
                     class="mb-4 print:mb-0"
                   >
                     <p class="text-sm text-justify" v-html="requirement?.feedback"></p>
                   </DescriptionView>
+                  <div v-else class="text-center my-2 text-gray-400">No Feedback</div>
 
                   <div
                     :class="[
@@ -586,7 +606,7 @@ const reqClosingModal = ref({
             >
               <div class="text-gray-500 text-sm">Better To Complete</div>
               <div class="print:text-gray-900 text-sm text-right">
-                {{ getDisplayDateTime(requirement?.better_to_complete_on) }}
+                {{ getDisplayDate(requirement?.better_to_complete_on, { weekDay: 'long' }) }}
               </div>
             </div>
 
@@ -625,9 +645,11 @@ const reqClosingModal = ref({
               </div>
 
               <div class="mb-6" v-if="!requirement.closed_at">
-                <div class="text-center text-sky-500">
-                  <div>Requirement is Open</div>
-                  <button class="btn-3 inline-block" @click.prevent="reqClosingModal.open = true">
+                <div class="flex justify-end text-sky-500">
+                  <button
+                    class="btn-1 border border-sky-800"
+                    @click.prevent="reqClosingModal.open = true"
+                  >
                     Close Requirement
                   </button>
                 </div>

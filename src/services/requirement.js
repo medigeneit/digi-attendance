@@ -41,8 +41,8 @@ export async function closeRequirement(requirementId, note){
   return apiClient.put(`/requirements/${requirementId}/close`, {note});
 }
 
-export async function reOpenRequirement(requirementId){
-  return apiClient.put(`/requirements/${requirementId}/re-open`);
+export async function reOpenRequirement(requirementId , note){
+  return apiClient.put(`/requirements/${requirementId}/re-open`, {note});
 }
 
 export async function deleteRequirement(taskId, {params = {}} = {}){
