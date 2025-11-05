@@ -45,7 +45,7 @@
         <span
           v-for="b in badgeList"
           :key="b.key"
-          class="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-medium whitespace-nowrap"
+          class="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[13px] font-medium whitespace-nowrap"
           :class="b.class"
         >
           <i :class="b.icon" class="text-[11px]"></i>

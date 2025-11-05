@@ -145,10 +145,10 @@ const itemBtn = 'block w-full text-left rounded-md px-2.5 py-2 hover:bg-slate-50
 
 /* ===== Expand/Collapse (FIRST collapsed) ===== */
 const sections = ref({
-  apps: leavePendingCount.value ? true :  false,
-  short: shortPendingCount.value ? true :  false,
-  exch: exchPendingCount.value ? true :  false,
-  manual: manualPendingCount.value ? true :  false,
+  apps:  Boolean(leavePendingCount.value),
+  short: Boolean(shortPendingCount.value),
+  exch:  Boolean(exchPendingCount.value),
+  manual:Boolean(manualPendingCount.value),
 })
 
 const toggleSection = (key) => { sections.value[key] = !sections.value[key] }
@@ -177,7 +177,7 @@ const toggleSection = (key) => { sections.value[key] = !sections.value[key] }
         </div>
         <div class="flex items-center gap-2">
           <!-- ✅ Only pending count -->
-          <span class="text-[11px] rounded-full bg-yellow-100 text-gray-700 px-2 py-0.5">{{ leavePendingCount }}</span>
+          <span class="text-[11px] rounded-full bg-yellow-100 text-gray-700 px-2 py-0.5">{{ leavePendingCount }} </span>
           <RouterLink
             :to="{ name: 'MyLeaveApplications' }"
             class="text-[11px] text-blue-700 hover:underline"
