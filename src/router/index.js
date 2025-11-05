@@ -878,7 +878,7 @@ const router = createRouter({
           meta: {
             requiresAuth: true,
             roles: ['super_admin', 'developer'],
-            title: 'Hrd Admin Leave Application',
+            title: 'Annual Leave Application',
           },
         },
 

@@ -120,11 +120,11 @@ const closeLeaveTypeModal = () => {
         <span class="hidden md:flex">Back</span>
       </button>
 
-      <h1 class="title-md md:title-lg flex-wrap text-center">Leave Applications</h1>
+      <h1 class="title-md md:title-lg flex-wrap text-center">Annual Leave Applications</h1>
       <div></div>
     </div>
 
-    <div class="flex flex-wrap gap-2">
+    <div class="flex flex-wrap gap-2 py-4">
       <EmployeeFilter
          v-model:company_id="filters.company_id"
           v-model:department_id="filters.department_id"
@@ -134,11 +134,11 @@ const closeLeaveTypeModal = () => {
           :initial-value="$route.query"
         @filter-change="handleFilterChange"
       />
-      <div>
+      <!-- <div>
         <select v-model="selectedYear" @change="fetchApplicationsByUser" class="input-1">
           <option v-for="year in yearOptions" :key="year" :value="year">{{ year }}</option>
         </select>
-      </div>
+      </div> -->
     </div>
 
     <div v-if="leaveApplicationStore.loading" class="text-center py-4">
@@ -148,7 +148,7 @@ const closeLeaveTypeModal = () => {
     <div v-else class="space-y-4">
       <div v-if="filters?.employee_id" class="bg-sky-100/30 p-4 rounded-lg shadow mb-6 space-y-6">
         <!-- Section Title -->
-        <h2 class="text-xl font-bold text-gray-800 text-center">Employee Overview</h2>
+        <!-- <h2 class="text-xl font-bold text-gray-800 text-center">Employee Overview</h2> -->
 
         <!-- Grid for Info and Leave -->
         <div class="grid md:grid-cols-2 gap-6">
@@ -156,7 +156,7 @@ const closeLeaveTypeModal = () => {
 
           <!-- Leave Balance Card -->
           <div class="bg-white border rounded-lg p-4 shadow">
-            <div class="flex justify-between items-center">
+            <div class="flex justify-between items-start">
               <h3 class="text-lg font-semibold text-gray-700 mb-4">Leave Balance</h3>
               <button @click="openAddModal" type="button" class="btn-2">Set Leave Balance</button>
             </div>
