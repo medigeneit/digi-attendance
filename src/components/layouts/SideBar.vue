@@ -237,6 +237,19 @@ const logout = () => {
           <i class="fas fa-cogs py-2"></i>
           <h4 v-if="open">Settings</h4>
         </RouterLink>
+
+        <RouterLink
+          v-if="['super_admin', 'developer'].includes(user?.role)"
+          to="/admin/careers"
+          class="side-menu"
+          :class="{
+            'flex justify-center': !open,
+            'side-menu-active': currentRoute.includes('/admin/careers'),
+          }"
+        >
+          <i class="far fa-briefcase"></i>
+          <h4 v-if="open">Careers</h4>
+        </RouterLink>
       </template>
 
       <!-- Logout -->
