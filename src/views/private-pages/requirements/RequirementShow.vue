@@ -33,6 +33,7 @@ const state = ref('')
 const auth = useAuthStore()
 
 const sidebarTop = ref()
+const closingHistoryShown = ref(false)
 const shareComponent = ref()
 
 const requirement = ref(null)
@@ -261,6 +262,37 @@ const reqClosingModal = ref({
           }
         "
       />
+    </OverlyModal>
+
+    <OverlyModal v-if="closingHistoryShown">
+      <div class="border-b px-4 py-2 bg-gray-50 flex items-center justify-between rounded-t-md">
+        <h3 class="text-xl font-semibold">Closing History</h3>
+        <button class="btn-icon" @click.prevent="closingHistoryShown = false">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div v-if="requirement?.closing_history && requirement?.closing_history?.length">
+        <table class="border table-auto w-full">
+          <thead>
+            <tr>
+              <th class="border-y py-1 text-sm px-4 text-left">Closed AT</th>
+              <th class="border-y py-1 text-sm px-4 text-left">Note</th>
+              <th class="border-y py-1 text-sm px-4 text-center">Status</th>
+              <th class="border-y py-1 text-sm px-4 text-center">Close/Open</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="history in requirement?.closing_history || []" :key="history.at">
+              <td class="border-y px-4 py-1">
+                {{ history.at ? getDisplayDateTime(history.at) : '' }}
+              </td>
+              <td class="border-y px-4 py-1">{{ history?.closing_note }}</td>
+              <td class="border-y px-4 py-1 text-center">{{ history?.status }}</td>
+              <td class="border-y px-4 py-1 text-center">{{ history?.type }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </OverlyModal>
 
     <div class="print:shadow-none print:p-0 relative min-h-[50vh] mx-4">
@@ -644,7 +676,7 @@ const reqClosingModal = ref({
                 </div>
               </div>
 
-              <div class="mb-6" v-if="!requirement.closed_at">
+              <div class="mb-2" v-if="!requirement.closed_at">
                 <div class="flex justify-end text-sky-500">
                   <button
                     class="btn-1 border border-sky-800"
@@ -653,6 +685,15 @@ const reqClosingModal = ref({
                     Close Requirement
                   </button>
                 </div>
+              </div>
+
+              <div class="text-right w-full mb-4" v-if="requirement?.closing_history?.length > 1">
+                <button
+                  @click="closingHistoryShown = !closingHistoryShown"
+                  class="text-sm text-sky-400 hover:underline"
+                >
+                  Show Closing History
+                </button>
               </div>
 
               <div class="mb-6" v-if="requirement.rejected_by">

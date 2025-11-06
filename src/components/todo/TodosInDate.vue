@@ -83,7 +83,7 @@ const todoDatesInDate = computed(() => {
                 :class="[todo_date.status == 'COMPLETED' ? '!text-white' : '']"
               />
 
-              <div class="line-clamp-1">{{ todo_date.title }}</div>
+              <div class="line-clamp-1 text-[10px]">{{ todo_date.title }}</div>
 
               <template v-if="todo_date.user">
                 <UserAvatar :user="todo_date.user" size="xsmall" class="ml-auto" />

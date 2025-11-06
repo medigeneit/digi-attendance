@@ -22,7 +22,7 @@ const route = useRoute()
 </script>
 <template>
   <tr
-    class="group/sub-task-row"
+    class="group/sub-task-row h-20"
     :class="{
       ' bg-green-400/20': task.status == 'COMPLETED',
       ' bg-white hover:bg-slate-50': task.status !== 'COMPLETED',

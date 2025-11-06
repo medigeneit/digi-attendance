@@ -30,7 +30,7 @@ const routerTo = computed(() => {
     <RouterLink
       :to="routerTo"
       :title="task.title"
-      class="text-gray-700 cursor-pointer hover:text-blue-700 whitespace-normal line-clamp-1 w-full"
+      class="text-gray-700 cursor-pointer hover:text-blue-700 whitespace-normal line-clamp-2 w-full"
       :class="titleClass"
     >
       <TaskTitle :title="task.title" />

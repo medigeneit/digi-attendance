@@ -103,6 +103,31 @@ const auth = useAuthStore()
                 >{{ req.priority }}</span
               >
             </div>
+
+            <div
+              class="flex gap-2 items-center bg-gray-50 bg-opacity-70 hover:bg-opacity-90 border-gray-100 rounded-md mt-1"
+            >
+              <div class="text-sm flex items-center gap-2 text-red-400 font-semibold">
+                <span class="fad fa-lock"></span>
+                <span class="mt-[2px] whitespace-nowrap mr-2">CLOSED AT</span>
+                <span class="mt-[2px] whitespace-nowrap">
+                  {{
+                    new Date(req.closed_at).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: true,
+                    })
+                  }}
+                </span>
+              </div>
+              <div class="text-gray-800 flex items-center gap-2">
+                <span class="text-sm whitespace-nowrap">Closed by</span>
+                <UserChip :user="req.closed_by_user" avatar-size="xsmall" />
+              </div>
+            </div>
           </td>
           <td class="px-4 py-4 whitespace-nowrap border border-gray-200">
             <span
@@ -259,10 +284,10 @@ const auth = useAuthStore()
 
             <div
               class="absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-50"
-              v-if="req.closed_at"
+              v-if="req.closed_at && false"
             >
               <div
-                class="flex flex-col gap-2 items-center justify-center bg-gray-50 bg-opacity-70 hover:bg-opacity-90 p-6 border border-gray-100 rounded-md"
+                class="flex flex-col gap-2 items-center justify-center bg-gray-50 bg-opacity-70 hover:bg-opacity-90 p-6 border-gray-100 rounded-md"
               >
                 <div class="text-sm flex items-center gap-2 text-red-400 font-semibold">
                   <span class="fad fa-lock"></span>

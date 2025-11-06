@@ -267,7 +267,9 @@ async function handleClickDelete(todoDate) {
           v-if="breadcrumbTaskItems.length > 1"
         >
           <ol class="flex items-center gap-2">
-            <li class="text-gray-500 hover:text-blue-500 hover:underline text-base">
+            <li
+              class="text-gray-500 hover:text-blue-500 hover:underline text-base whitespace-nowrap"
+            >
               <RouterLink to="/dashboard" class="text-sm"
                 ><i class="fas fa-home"></i> Home</RouterLink
               >
