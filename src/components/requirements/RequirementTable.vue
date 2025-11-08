@@ -106,6 +106,7 @@ const auth = useAuthStore()
 
             <div
               class="flex gap-2 items-center bg-gray-50 bg-opacity-70 hover:bg-opacity-90 border-gray-100 rounded-md mt-1"
+              v-if="req.closed_at"
             >
               <div class="text-sm flex items-center gap-2 text-red-400 font-semibold">
                 <span class="fad fa-lock"></span>
