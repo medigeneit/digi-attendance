@@ -14,8 +14,13 @@ export async function getMyTasksWithRequirement({params = {}} = {}){
   return apiClient.get('/my-tasks-with-requirement', {params});
 }
 
-export async function addRequirement(data){
-  return apiClient.post('/requirements', data);
+
+export async function addRequirement(data) {
+  return apiClient.post('/requirements', data, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
 }
 
 export async function findRequirement(requirementId, {params = {}} = {}){

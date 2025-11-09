@@ -5,6 +5,7 @@ import OverlyModal from '@/components/common/OverlyModal.vue'
 import ShareComponent from '@/components/common/ShareComponent.vue'
 import DepartmentChip from '@/components/DepartmentChip.vue'
 import DescriptionView from '@/components/DescriptionView.vue'
+import RequirementAttachments from '@/components/requirements/RequirementAttachments.vue'
 import RequirementCloseInfo from '@/components/requirements/RequirementCloseInfo.vue'
 import RequirementClosingForm from '@/components/requirements/RequirementClosingForm.vue'
 import RequirementDetailDeleteForm from '@/components/requirements/RequirementDetailDeleteForm.vue'
@@ -741,8 +742,13 @@ const reqClosingModal = ref({
             </div>
           </div>
 
+          <RequirementAttachments
+            :requirement="requirement"
+            class="mt-4 md:col-span-4 xl:col-span-4 2xl:col-span-3"
+          />
+
           <ShareComponent
-            class="mt-4 md:col-span-4 xl:col-span-4 2xl:col-span-3 md:sticky"
+            class="mt-4 md:col-span-4 xl:col-span-4 2xl:col-span-3"
             ref="shareComponent"
           />
         </div>
