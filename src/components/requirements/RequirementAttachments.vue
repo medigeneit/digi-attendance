@@ -1,7 +1,7 @@
 <template>
-  <div class="card-bg p-4" v-if="attachments && attachments.length">
+  <div class="card-bg p-4 pt-2" v-if="attachments && attachments.length">
     <div v-if="attachments && attachments.length">
-      <h4 class="text-gray-700 font-medium mb-2">Attachments</h4>
+      <h4 class="text-gray-900 font-semibold mb-3 border-b font-e">Attachments</h4>
 
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 w-full">
         <div
