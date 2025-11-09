@@ -5,6 +5,7 @@ div
 import LoaderView from '@/components/common/LoaderView.vue'
 import OverlyModal from '@/components/common/OverlyModal.vue'
 import DepartmentChip from '@/components/DepartmentChip.vue'
+import RequirementAttachmentShow from '@/components/requirements/RequirementAttachmentShow.vue'
 import TaskAddForm from '@/components/tasks/TaskAddForm.vue'
 import TaskEditForm from '@/components/tasks/TaskEditForm.vue'
 import TaskHeader from '@/components/tasks/TaskHeader.vue'
@@ -26,6 +27,11 @@ const state = ref('')
 const editingId = ref(null)
 const addForm = ref(false)
 const authStore = useAuthStore()
+
+const reqAttachShow = reactive({
+  show: false,
+  attachments: [],
+})
 
 const addFormData = reactive({
   parentId: 0,
@@ -267,6 +273,12 @@ function getTaskRouterLink(task) {
               @editClick="(taskId) => (editingId = taskId)"
               @addClick="(taskId) => goToAdd(taskId)"
               @employeeAssignClick="(taskId) => openEmployeeAssignForm(taskId)"
+              @clickAttachment="
+                (attachments) => {
+                  reqAttachShow.show = true
+                  reqAttachShow.attachments = attachments
+                }
+              "
               :taskLinkTo="
                 (task) => {
                   return { name: 'RequirementTaskShow', params: { id: task?.id || 0 } }
@@ -322,6 +334,12 @@ function getTaskRouterLink(task) {
               @editClick="(taskId) => (editingId = taskId)"
               @clickAddTask="(params, readonlyValues) => goToAdd(params, readonlyValues)"
               @employeeAssignClick="(taskId) => openEmployeeAssignForm(taskId)"
+              @clickAttachment="
+                (attachments) => {
+                  reqAttachShow.show = true
+                  reqAttachShow.attachments = attachments
+                }
+              "
               :hideButtons="route?.name !== 'RequirementTaskList'"
               :taskLinkTo="getTaskRouterLink"
             />
@@ -341,5 +359,11 @@ function getTaskRouterLink(task) {
         :class="[store.tasks?.length === 0 ? 'justify-center' : '']"
       />
     </div>
+    <OverlyModal v-if="reqAttachShow.show">
+      <RequirementAttachmentShow
+        :attachments="reqAttachShow.attachments || []"
+        @clickClose="reqAttachShow.show = false"
+      />
+    </OverlyModal>
   </div>
 </template>

@@ -10,7 +10,12 @@
             :key="index"
             class="border p-1 rounded aspect-square flex items-center justify-center bg-gray-50 relative"
             tabindex="0"
-            @click.prevent="selectedFile = file"
+            @click.prevent="
+              () => {
+                attachmentShow.show = true
+                attachmentShow.selectedFile = file
+              }
+            "
           >
             <!-- Image preview -->
             <img
@@ -54,50 +59,22 @@
       />
     </OverlyModal>
 
-    <OverlyModal v-if="selectedFile" class="*:max-w-4xl *:min-h-[60vh]">
-      <div class="border-b flex items-center px-2 py-1">
-        <h2 class="text-xl font-semibold">Attachment view</h2>
-        <a
-          :href="fileUrl(selectedFile)"
-          target="_blank"
-          class="text-sky-600 hover:text-sky-400 hover:underline ml-2"
-        >
-          <i class="fas fa-external-link"></i> <span class="hidden md:inline">Open In New tab</span>
-        </a>
-        <div class="ml-auto flex items-center gap-2">
-          <button @click.prevent="handlePrev" class="btn-icon">
-            <i class="fas fa-angle-left"></i>
-          </button>
-          <button @click.prevent="handleNext" class="btn-icon">
-            <i class="fas fa-angle-right"></i>
-          </button>
-          <button @click.prevent="selectedFile = null" class="btn-icon ml-6">&times;</button>
-        </div>
-      </div>
-      <div class="mt-4 p-2 min-h-[50vh] max-h-[70vh] overflow-y-auto">
-        <!-- Image preview -->
-        <img
-          v-if="isImage(selectedFile)"
-          :src="fileUrl(selectedFile)"
-          alt="attachment"
-          class="object-cover w-full h-full rounded"
-        />
-
-        <!-- PDF preview -->
-        <iframe
-          v-else-if="isPDF(selectedFile)"
-          :src="fileUrl(selectedFile)"
-          class="w-full h-[60vh] border rounded-md"
-        />
-      </div>
+    <OverlyModal v-if="attachmentShow.show" class="*:max-w-4xl *:min-h-[60vh]">
+      <RequirementAttachmentShow
+        :attachments="attachments"
+        :selected="attachmentShow.selectedFile"
+        @clickClose="attachmentShow.show = false"
+      />
     </OverlyModal>
   </div>
 </template>
 
 <script setup>
-import { computed, reactive, ref } from 'vue'
+import { fileUrl, isImage, isPDF } from '@/libs/attachment-functions'
+import { computed, reactive } from 'vue'
 import OverlyModal from '../common/OverlyModal.vue'
 import RequirementAttachmentForm from './RequirementAttachmentForm.vue'
+import RequirementAttachmentShow from './RequirementAttachmentShow.vue'
 
 // Props
 const props = defineProps({
@@ -114,48 +91,10 @@ const addAttachmentForm = reactive({
   show: false,
 })
 
+const attachmentShow = reactive({
+  show: false,
+  selectedFile: '',
+})
+
 // handle file input
-
-const selectedFile = ref(null)
-
-function handlePrev() {
-  const currentIndex = attachments.value.indexOf(selectedFile.value)
-
-  if (currentIndex > 0) {
-    selectedFile.value = attachments.value?.[currentIndex - 1]
-  }
-}
-
-function handleNext() {
-  const currentIndex = attachments.value.indexOf(selectedFile.value)
-
-  if (currentIndex < attachments.value?.length - 1) {
-    selectedFile.value = attachments.value?.[currentIndex + 1]
-  }
-}
-
-// Helper functions
-function isImage(file) {
-  if (!file) return false
-  const ext = fileExtension(file)
-  return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'jfif'].includes(ext)
-}
-
-function isPDF(file) {
-  return fileExtension(file) === 'pdf'
-}
-
-function fileExtension(file) {
-  if (typeof file === 'string') {
-    return file.split('.').pop().toLowerCase()
-  }
-  return ''
-}
-
-function fileUrl(file) {
-  // If Laravel stores full URL, use directly; otherwise, prepend base path
-  return file.startsWith('http')
-    ? file
-    : `${import.meta.env.VITE_API_BASE_URL || ''}/storage/${file}`
-}
 </script>

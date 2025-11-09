@@ -44,7 +44,7 @@
                   // requirement.id === 0 ? 'bg-gray-50' : 'bg-gray-50',
                 ]"
               >
-                <div class="flex gap-1 items-start text-base">
+                <div class="flex gap-1 items-center text-base">
                   <div class="font-bold text-lime-600">{{ requirementIndex + 1 }}.</div>
                   <p v-if="requirement.id === 0">{{ requirement.title }}</p>
                   <RouterLink
@@ -54,6 +54,16 @@
                   >
                     {{ requirement.title }}
                   </RouterLink>
+                  <button
+                    v-if="requirement.attachments?.length > 0"
+                    class="text-sky-400 text-sm"
+                    @click.prevent="emits('clickAttachment', requirement.attachments)"
+                  >
+                    <i class="fas fa-paperclip"></i>
+                    {{ requirement.attachments?.length }} Attachment{{
+                      requirement.attachments?.length > 1 ? 's' : ''
+                    }}
+                  </button>
                 </div>
 
                 <div class="ml-auto">
@@ -142,5 +152,11 @@ const requirements = computed(() => {
 
 // @editClick="(taskId) => (editingId = taskId)"
 
-const emits = defineEmits(['editClick', 'addClick', 'employeeAssignClick', 'clickAddClick'])
+const emits = defineEmits([
+  'editClick',
+  'addClick',
+  'employeeAssignClick',
+  'clickAddClick',
+  'clickAttachment',
+])
 </script>
