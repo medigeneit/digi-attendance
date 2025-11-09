@@ -38,7 +38,7 @@
 
     <OverlyModal v-if="selectedFile" class="*:max-w-4xl *:min-h-[60vh]">
       <div class="border-b flex items-center px-2 py-1">
-        <h2 class="text-xl font-semibold">Attachment preview</h2>
+        <h2 class="text-xl font-semibold">Attachment view</h2>
         <a
           :href="fileUrl(selectedFile)"
           target="_blank"
@@ -48,7 +48,7 @@
         </a>
         <button @click.prevent="selectedFile = null" class="btn-icon ml-auto">&times;</button>
       </div>
-      <div class="mt-4 p-2">
+      <div class="mt-4 p-2 min-h-[50vh] max-h-[70vh] overflow-y-auto">
         <!-- Image preview -->
         <img
           v-if="isImage(selectedFile)"
