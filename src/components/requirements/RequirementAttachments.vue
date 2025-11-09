@@ -1,40 +1,58 @@
 <template>
-  <div class="card-bg p-4 pt-2" v-if="attachments && attachments.length">
-    <div v-if="attachments && attachments.length">
+  <div class="card-bg p-4 pt-2">
+    <div>
       <h4 class="text-gray-900 font-semibold mb-3 border-b font-e">Attachments</h4>
 
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 w-full">
-        <div
-          v-for="(file, index) in attachments"
-          :key="index"
-          class="border rounded aspect-square flex items-center justify-center bg-gray-50 relative"
-          tabindex="0"
-          @click.prevent="selectedFile = file"
-        >
-          <!-- Image preview -->
-          <img
-            v-if="isImage(file)"
-            :src="fileUrl(file)"
-            alt="attachment"
-            class="object-cover w-full h-full rounded"
-          />
-
-          <!-- PDF preview -->
-          <a
-            v-else-if="isPDF(file)"
-            :href="fileUrl(file)"
-            target="_blank"
-            class="text-xs text-blue-600 text-center break-words hover:underline"
+        <template v-if="attachments && attachments.length">
+          <div
+            v-for="(file, index) in attachments"
+            :key="index"
+            class="border p-1 rounded aspect-square flex items-center justify-center bg-gray-50 relative"
+            tabindex="0"
+            @click.prevent="selectedFile = file"
           >
-            <i class="fas fa-file-pdf fa-2x mb-1 text-amber-700"></i>
-            <div class="whitespace-nowrap text-xs mt-1">Open PDF</div>
-          </a>
+            <!-- Image preview -->
+            <img
+              v-if="isImage(file)"
+              :src="fileUrl(file)"
+              alt="attachment"
+              class="object-cover w-full h-full rounded"
+            />
 
-          <!-- Unknown file type -->
-          <span v-else class="text-xs text-gray-500 text-center">Unknown</span>
-        </div>
+            <!-- PDF preview -->
+            <a
+              v-else-if="isPDF(file)"
+              :href="fileUrl(file)"
+              target="_blank"
+              class="text-xs text-blue-600 text-center break-words hover:underline"
+            >
+              <i class="fas fa-file-pdf fa-2x mb-1 text-amber-700"></i>
+              <div class="whitespace-nowrap text-xs mt-1">Open PDF</div>
+            </a>
+
+            <!-- Unknown file type -->
+            <span v-else class="text-xs text-gray-500 text-center">Unknown</span>
+          </div>
+        </template>
+
+        <button
+          title="Add Attachments"
+          @click.prevent="addAttachmentForm.show = !addAttachmentForm.show"
+          class="border rounded aspect-square flex items-center justify-center bg-gray-50 relative group/btn"
+        >
+          <i class="fas fa-plus-circle text-2xl text-blue-300 group-hover/btn:text-blue-500"></i>
+        </button>
       </div>
     </div>
+
+    <OverlyModal v-if="addAttachmentForm.show">
+      <RequirementAttachmentForm
+        @clickBack="addAttachmentForm.show = false"
+        :requirementId="requirement.id"
+        class="max-h-[70vh]"
+      />
+    </OverlyModal>
 
     <OverlyModal v-if="selectedFile" class="*:max-w-4xl *:min-h-[60vh]">
       <div class="border-b flex items-center px-2 py-1">
@@ -46,7 +64,15 @@
         >
           <i class="fas fa-external-link"></i> <span class="hidden md:inline">Open In New tab</span>
         </a>
-        <button @click.prevent="selectedFile = null" class="btn-icon ml-auto">&times;</button>
+        <div class="ml-auto flex items-center gap-2">
+          <button @click.prevent="handlePrev" class="btn-icon">
+            <i class="fas fa-angle-left"></i>
+          </button>
+          <button @click.prevent="handleNext" class="btn-icon">
+            <i class="fas fa-angle-right"></i>
+          </button>
+          <button @click.prevent="selectedFile = null" class="btn-icon ml-6">&times;</button>
+        </div>
       </div>
       <div class="mt-4 p-2 min-h-[50vh] max-h-[70vh] overflow-y-auto">
         <!-- Image preview -->
@@ -69,8 +95,9 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import OverlyModal from '../common/OverlyModal.vue'
+import RequirementAttachmentForm from './RequirementAttachmentForm.vue'
 
 // Props
 const props = defineProps({
@@ -79,18 +106,39 @@ const props = defineProps({
     default: () => [],
   },
 })
-
 const attachments = computed(() => {
   return props.requirement?.attachments || []
 })
 
+const addAttachmentForm = reactive({
+  show: false,
+})
+
+// handle file input
+
 const selectedFile = ref(null)
+
+function handlePrev() {
+  const currentIndex = attachments.value.indexOf(selectedFile.value)
+
+  if (currentIndex > 0) {
+    selectedFile.value = attachments.value?.[currentIndex - 1]
+  }
+}
+
+function handleNext() {
+  const currentIndex = attachments.value.indexOf(selectedFile.value)
+
+  if (currentIndex < attachments.value?.length - 1) {
+    selectedFile.value = attachments.value?.[currentIndex + 1]
+  }
+}
 
 // Helper functions
 function isImage(file) {
   if (!file) return false
   const ext = fileExtension(file)
-  return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext)
+  return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'jfif'].includes(ext)
 }
 
 function isPDF(file) {

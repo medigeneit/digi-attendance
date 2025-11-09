@@ -23,6 +23,14 @@ export async function addRequirement(data) {
   })
 }
 
+export async function addRequirementAttachments(requirementId,data) {
+  return apiClient.post(`/requirements/${requirementId}/attachments`, data, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
+}
+
 export async function findRequirement(requirementId, {params = {}} = {}){
   return apiClient.get(`/requirements/${requirementId}`, {params});
 }

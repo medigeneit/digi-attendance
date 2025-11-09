@@ -15,16 +15,19 @@
 
       <!-- PDF preview -->
       <div v-else-if="file.type === 'pdf'" class="flex items-center gap-2">
-        <span class="text-red-500 text-lg">📄</span>
-        <a :href="file.url" target="_blank" class="text-blue-600 hover:underline text-sm truncate">
-          {{ file.name }}
-        </a>
+        <span class="text-red-500 text-lg w-16 h-16 border flex items-center justify-center"
+          ><i class="fas fa-file-pdf fa-2x"></i
+        ></span>
       </div>
+
+      <a :href="file.url" target="_blank" class="text-blue-600 hover:underline text-sm truncate">
+        {{ file.name }}
+      </a>
 
       <!-- Remove button -->
       <button
         type="button"
-        class="ml-auto text-gray-500 hover:text-red-600 text-xs"
+        class="ml-auto text-gray-700 hover:text-red-500 text-xs whitespace-nowrap"
         @click="$emit('remove', index)"
       >
         ✕ Remove
