@@ -1,5 +1,5 @@
 <template>
-  <div class="card-bg p-4">
+  <div class="card-bg p-4" v-if="attachments && attachments.length">
     <div v-if="attachments && attachments.length">
       <h4 class="text-gray-700 font-medium mb-2">Attachments</h4>
 
