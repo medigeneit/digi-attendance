@@ -7,6 +7,7 @@ import { useTaskStore } from '@/stores/useTaskStore'
 import { onMounted, ref, watch } from 'vue'
 import SectionLoading from '../common/SectionLoading.vue'
 import MultiselectDropdown from '../MultiselectDropdown.vue'
+import TextEditor from '../TextEditor.vue'
 
 const props = defineProps({
   taskId: {
@@ -193,12 +194,8 @@ const update = async () => {
 
       <div class="mb-4">
         <label class="block text-gray-700 font-medium mb-2">Description</label>
-        <textarea
-          v-model="form.description"
-          rows="4"
-          placeholder="Enter task description"
-          class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-        ></textarea>
+        <div v-if="loading"></div>
+        <TextEditor v-model="form.description" v-else />
       </div>
 
       <div class="sticky bottom-0 bg-white py-4 border-t">

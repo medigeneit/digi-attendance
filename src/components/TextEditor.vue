@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 const props = defineProps({
-  modelValue: String,
+  modelValue: { type: String, default: '' },
 })
 
 const emit = defineEmits(['update:modelValue'])

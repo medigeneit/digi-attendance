@@ -9,6 +9,7 @@ import { useTaskStore } from '@/stores/useTaskStore'
 import { computed, onMounted, ref, watch } from 'vue'
 import CompanyDepartmentSelectInput from '../common/CompanyDepartmentSelectInput.vue'
 import SectionLoading from '../common/SectionLoading.vue'
+import TextEditor from '../TextEditor.vue'
 import TextWithHr from '../TextWithHr.vue'
 import IsTargetTaskInput from './IsTargetTaskInput.vue'
 import TaskUrgencyInput from './TaskUrgencyInput.vue'
@@ -53,7 +54,7 @@ const form = ref({
   user_ids: [],
   priority: 0,
   status: 'PENDING',
-  description: '',
+  description: ' ',
   is_important: false,
   is_urgent: false,
   assigned_at: null,
@@ -220,12 +221,8 @@ async function submit() {
 
       <div class="mb-4">
         <label class="block text-gray-600 text-sm mb-1 font-medium">Description</label>
-        <textarea
-          v-model="form.description"
-          rows="4"
-          placeholder="Enter task description"
-          class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-        ></textarea>
+
+        <TextEditor v-model="form.description" />
       </div>
 
       <template v-if="auth.user?.role != 'employee' && auth.isAdminMood">
