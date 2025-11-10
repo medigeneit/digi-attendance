@@ -1,0 +1,1 @@
+import{x as p,c as a,o as n,b as o,j as m,t as r}from"./index-5QuK440Q.js";const u={key:0},k={__name:"TaskTitle",props:{title:String},setup(c){const l=c,t=p(()=>String(l.title).split("->"));return(i,_)=>{var e,s;return n(),a("span",null,[o(r(t.value[0])+" ",1),(e=t.value)!=null&&e[1]?(n(),a("span",u,"»")):m("",!0),o(" "+r((s=t.value)==null?void 0:s[1]),1)])}}};export{k as _};
