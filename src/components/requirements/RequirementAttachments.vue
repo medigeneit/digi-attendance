@@ -54,6 +54,7 @@
     <OverlyModal v-if="addAttachmentForm.show">
       <RequirementAttachmentForm
         @clickBack="addAttachmentForm.show = false"
+        @uploaded="addAttachmentForm.show = false"
         :requirementId="requirement.id"
         class="max-h-[70vh]"
       />
