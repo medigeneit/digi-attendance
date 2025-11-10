@@ -65,6 +65,11 @@ const formatDateTime = (timestamp) => {
   const time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
   return `${date} , ${time}`
 }
+const formatDate = (timestamp) => {
+  if (!timestamp) return ''
+  const d = new Date(timestamp)
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+}
 
 const isImageUrl = (url) => /\.(png|jpe?g|webp|gif)$/i.test(url || '')
 
@@ -227,7 +232,7 @@ const removeAttachment = async () => {
           <div class="flex justify-end gap-4">
             <!-- summary -->
             <div>
-              <h1 class="font-bold">Summary</h1>
+              <h1 class="font-semibold">Summary</h1>
               <table class="table-auto border border-black bg-white text-xs">
                 <thead>
                   <tr class="bg-gray-200 border border-black">
@@ -256,7 +261,7 @@ const removeAttachment = async () => {
 
             <!-- last leave -->
             <div>
-              <h1 class="font-bold">Last Leave</h1>
+              <h1 class="font-semibold">Last Leave</h1>
               <table class="table-auto border border-black bg-white text-xs">
                 <thead>
                   <tr class="bg-gray-200 border border-black">
@@ -264,7 +269,7 @@ const removeAttachment = async () => {
                   </tr>
                   <tr class="border border-black">
                     <td colspan="2" class="border border-black px-2 w-32">
-                      {{ leaveApplication?.last_leave?.date || 'N/A' }}
+                      {{ formatDate(leaveApplication?.last_leave?.date) || 'N/A' }}
                     </td>
                   </tr>
                   <tr class="bg-gray-200 border border-black">
@@ -296,13 +301,13 @@ const removeAttachment = async () => {
         <!-- details -->
         <div>
           <h3 class="font-bold">Leave Details:</h3>
-          <div class="grid print:grid-cols-2 md:grid-cols-2 text-sm">
+          <div class="grid print:grid-cols-2 md:grid-cols-2 text-sm list-none px-2">
             <li><strong>Reason: </strong>{{ leaveApplication?.reason || 'No reason provided' }}</li>
-            <li><strong>Leave Days:</strong> {{ leaveApplication?.leave_period }}</li>
+            <li><strong>Leave Days:</strong> {{ formatDate(leaveApplication?.leave_period) }}</li>
             <li><strong>Total Days:</strong> {{ leaveApplication?.total_leave_days }}</li>
             <li><strong>Weekends:</strong> {{ leaveApplication?.user?.assign_weekend?.weekends?.join(', ') }}</li>
-            <li><strong>Last Working Date:</strong> {{ leaveApplication?.last_working_date }}</li>
-            <li><strong>Resumption Date:</strong> {{ leaveApplication?.resumption_date }}</li>
+            <li><strong>Last Working Date:</strong> {{ formatDate(leaveApplication?.last_working_date) }}</li>
+            <li><strong>Resumption Date:</strong> {{ formatDate(leaveApplication?.resumption_date) }}</li>
             <li><strong>Create Date:</strong> {{ formatDateTime(leaveApplication?.created_at) }}</li>
           </div>
         </div>
@@ -325,7 +330,7 @@ const removeAttachment = async () => {
             <p><strong>Designation:</strong> {{ leaveApplication?.user?.designation?.title }}</p>
             <p><strong>Department:</strong> {{ leaveApplication?.user?.department?.name }}</p>
             <p><strong>Phone:</strong> {{ leaveApplication?.user?.phone }}</p>
-            <p><strong>Joining Date:</strong> {{ leaveApplication?.user?.joining_date }}</p>
+            <p><strong>Joining Date:</strong> {{ formatDate(leaveApplication?.user?.joining_date) }}</p>
           </div>
 
           <ApprovalItem
@@ -370,7 +375,26 @@ const removeAttachment = async () => {
 
       <!-- status + approval sections -->
       <div class="space-y-14">
-        <p class="font-bold text-center text-lg">
+            <div class="flex items-center gap-4 justify-center">
+              <span class="text-sm font-semibold">Leave Application Status : </span>
+                  <span
+                    class="inline-flex items-center gap-2 px-3 py-1.5 font-semibold rounded-full text-xs  ring-1"
+                    :class="{
+                      'bg-yellow-50  text-yellow-800 ring-yellow-200': leaveApplication?.status === 'Pending',
+                      'bg-green-50 text-green-700 ring-green-200': leaveApplication?.status === 'Approved',
+                      'bg-red-50 text-red-700 ring-red-200': leaveApplication?.status === 'Rejected',
+                    }"
+                  >
+                    <span class="h-1.5 w-1.5 rounded-full"
+                          :class="{
+                            'bg-yellow-500': leaveApplication?.status === 'Pending',
+                            'bg-green-600': leaveApplication?.status === 'Approved',
+                            'bg-red-600': leaveApplication?.status === 'Rejected',
+                          }"></span>
+                    {{ leaveApplication?.status || 'N/A' }}
+                  </span>
+            </div>
+        <!-- <p class="font-bold text-center text-lg">
           Leave Approval:
           <b :class="{
               'text-yellow-600': leaveApplication?.status === 'Pending',
@@ -379,7 +403,7 @@ const removeAttachment = async () => {
             }">
             {{ leaveApplication?.status || 'N/A' }}
           </b>
-        </p>
+        </p> -->
 
         <div v-if="leaveApplication?.status === 'Rejected'">
           <p><b>Rejected by: </b> {{ leaveApplication?.rejected_by_user?.name }}</p>
