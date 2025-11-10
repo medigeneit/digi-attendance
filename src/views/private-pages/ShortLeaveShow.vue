@@ -4,13 +4,11 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import ScreenshotCapture from '@/components/common/ScreenshotCapture.vue'
 import ShareComponent from '@/components/common/ShareComponent.vue'
 import { useAuthStore } from '@/stores/auth'
-import { useNotificationStore } from '@/stores/notification'
 import { useShortLeaveStore } from '@/stores/short-leave'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 
-const notificationStore = useNotificationStore()
 const toast = useToast()
 const router = useRouter()
 const route = useRoute()
@@ -20,6 +18,12 @@ const attachment = ref(null)
 const loading = ref(true)
 
 const shortLeave = computed(() => shortLeaveStore.shortLeave)
+
+const formatDate = (timestamp) => {
+  if (!timestamp) return ''
+  const d = new Date(timestamp)
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+}
 
 onMounted(async () => {
   const { id } = route.params
@@ -66,7 +70,6 @@ const fileUploadLink = async (event) => {
   }
 }
 
-const formatDate = (dateString) => new Date(dateString).toISOString().slice(0, 10)
 
 const formatTime = (timeString) => {
   if (!timeString) return 'N/A' // Return a fallback value if timeString is undefined
@@ -138,7 +141,7 @@ const onAction = async () => {
             <b>To:</b>
             {{ shortLeave?.end_time ? formatTime(shortLeave?.end_time) : '' }}
           </div>
-          <div><b>Short Leave Date:</b> {{ shortLeave?.date }}</div>
+          <div><b>Short Leave Date:</b> {{ formatDate(shortLeave?.date) }}</div>
           <div><b>Total Minutes:</b> {{ shortLeave?.total_minutes }}</div>
         </div>
         <div class="grid md:grid-cols-3 gap-x-4 pt-2 md:justify-between items-end md:items-start">

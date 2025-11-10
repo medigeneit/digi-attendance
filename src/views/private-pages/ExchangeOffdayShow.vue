@@ -66,7 +66,11 @@ function print() {
 
 const goBack = () => router.go(-1)
 
-const formatDate = (dateString) => new Date(dateString).toISOString().slice(0, 10)
+const formatDate = (timestamp) => {
+  if (!timestamp) return ''
+  const d = new Date(timestamp)
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+}
 
 const getDayName = (dateString) => {
   const date = new Date(dateString)
@@ -121,9 +125,9 @@ const onAction = async () => {
 
       <div class="grid md:grid-cols-2 pt-3">
         <div><b>Holiday Day:</b> {{ getDayName(exchange?.current_date) }}</div>
-        <div><b>Date:</b> {{ exchange?.current_date }}</div>
+        <div><b>Date:</b> {{ formatDate(exchange?.current_date) }}</div>
         <div><b>Exchange Day:</b> {{ getDayName(exchange?.exchange_date) }}</div>
-        <div><b>Date:</b> {{ exchange?.exchange_date }}</div>
+        <div><b>Date:</b> {{ formatDate(exchange?.exchange_date) }}</div>
         <div class="col-span-2 pt-2"><b>Reason:</b> {{ exchange?.reason || 'N/A' }}</div>
       </div>
 
