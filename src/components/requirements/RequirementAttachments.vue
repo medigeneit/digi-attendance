@@ -44,7 +44,7 @@
         <button
           title="Add Attachments"
           @click.prevent="addAttachmentForm.show = !addAttachmentForm.show"
-          class="border rounded aspect-square flex items-center justify-center bg-gray-50 relative group/btn"
+          class="border rounded aspect-square flex items-center justify-center bg-sky-50 hover:bg-sky-100 relative group/btn"
         >
           <i class="fas fa-plus-circle text-2xl text-blue-300 group-hover/btn:text-blue-500"></i>
         </button>

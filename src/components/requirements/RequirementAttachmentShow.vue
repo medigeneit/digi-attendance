@@ -1,6 +1,6 @@
 <script setup>
 import { fileUrl, isImage, isPDF } from '@/libs/attachment-functions'
-import { ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 
 const props = defineProps({
   attachments: { type: Array, default: () => [] },
@@ -35,6 +35,10 @@ function handleNext() {
   }
 }
 
+onMounted(() => {
+  fileToShow.value = props.attachments?.length == 1 ? props.attachments[0] : fileToShow.value
+})
+
 watch(
   () => props.selected,
   (selectedFile) => (fileToShow.value = selectedFile),
@@ -56,13 +60,15 @@ watch(
       </a>
 
       <div class="ml-auto flex items-center gap-2">
-        <template v-if="fileToShow">
+        <template v-if="fileToShow && attachments.length > 1">
           <button @click.prevent="handleClickFile('')" class="btn-icon">
             <i class="fas fa-list"></i>
           </button>
+
           <button @click.prevent="handlePrev" class="btn-icon">
             <i class="fas fa-angle-left"></i>
           </button>
+
           <button @click.prevent="handleNext" class="btn-icon">
             <i class="fas fa-angle-right"></i>
           </button>

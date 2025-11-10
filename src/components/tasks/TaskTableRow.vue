@@ -57,8 +57,19 @@ const route = useRoute()
               <TaskImportantBadge v-if="task?.is_important" />
               <TaskUrgentBadge v-if="task?.is_urgent" />
             </div>
-            <div class="text-xs flex items-center gap-1 text-sky-400 ml-4">
-              <i class="fas fa-tasks"></i> {{ task?.todos_count }}
+
+            <div
+              class="text-xs flex items-center gap-1 text-sky-400 ml-4"
+              v-if="task?.todo_dates_count === null"
+            >
+              <i class="fas fa-tasks"></i>
+              <span>
+                {{ task?.completed_todo_dates_count }}
+              </span>
+              <span>/</span>
+              <span>
+                {{ task?.todo_dates_count }}
+              </span>
             </div>
           </div>
         </div>

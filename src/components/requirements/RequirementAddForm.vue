@@ -193,7 +193,7 @@ function handleDetailAdd() {
                     <input
                       v-model="form.title"
                       required
-                      placeholder="Ender Requirement detail title"
+                      placeholder="Enter Requirement title"
                       class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
