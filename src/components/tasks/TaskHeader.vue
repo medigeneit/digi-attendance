@@ -7,7 +7,6 @@ import { useRoute } from 'vue-router'
 import CompanyDepartmentSelectInput from '../common/CompanyDepartmentSelectInput.vue'
 import EmployeeDropdownInput from '../EmployeeDropdownInput.vue'
 import SearchInput from '../SearchInput.vue'
-import SelectDropdown from '../SelectDropdown.vue'
 
 const props = defineProps({
   modelValue: { type: Object, default: () => ({}) },
@@ -263,33 +262,10 @@ const companyDepartments = computed(() => {
 
       <div class="flex flex-wrap items-center justify-center gap-2 mt-3">
         <div class="flex flex-wrap gap-x-4 gap-y-3 justify-between">
-          <div class="relative">
-            <SelectDropdown
-              v-model="companyId"
-              :options="companyStore?.companies || []"
-              label="name"
-              id="id"
-              class="border-2 border-gray-300 rounded h-[40px] w-full md:w-48 bg-white text-sm"
-              clearable
-            >
-              <template #selected-option="{ option }">
-                <div class="line-clamp-1 text-sm text-gray-900" :title="option?.name">
-                  <span v-if="option?.name">{{ option?.name }}</span>
-                  <span v-else class="text-gray-500 whitespace-nowrap">--Select Company--</span>
-                </div>
-              </template>
-            </SelectDropdown>
-            <div
-              class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30"
-            >
-              Company
-            </div>
-          </div>
-
           <CompanyDepartmentSelectInput
             v-model="fromDepartmentId"
             :companies="companyDepartments || []"
-            class="relative w-full md:w-40 flex-grow"
+            class="relative w-full md:w-48 flex-grow"
             :className="{ select: 'h-10 text-sm border-2 border-gray-300' }"
             defaultOption="--ALL DEPARTMENT--"
           >
