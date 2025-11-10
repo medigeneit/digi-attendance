@@ -2,6 +2,7 @@
 import { addRequirementAttachments } from '@/services/requirement'
 import { ref } from 'vue'
 import AttachmentPreview from '../AttachmentPreview.vue'
+import LoaderView from '../common/LoaderView.vue'
 
 const props = defineProps({ requirementId: [String, Number], default: () => null })
 const form = ref({ attachments: [] })
@@ -33,6 +34,7 @@ async function submit() {
 
   try {
     const response = await addRequirementAttachments(props.requirementId, payload)
+    form.value.attachments = []
     emit('uploaded', response)
     state.value = 'uploaded'
   } catch (err) {
@@ -44,10 +46,21 @@ async function submit() {
 </script>
 
 <template>
-  <form class="p-4 flex flex-col" @submit.prevent="submit">
+  <form class="p-4 flex flex-col relative" @submit.prevent="submit">
+    <LoaderView
+      class="absolute inset-0 bg-opacity-80 flex items-center justify-center"
+      v-if="state == 'submitting'"
+    />
     <div class="flex items-center border-b w-full pb-2">
       <h3>Requirement Attachment</h3>
-      <button class="btn-icon ml-auto" @click.prevent="emit('clickBack')">
+      <button
+        class="btn-icon ml-auto"
+        @click.prevent="
+          () => {
+            emit('clickBack')
+          }
+        "
+      >
         <span class="fas fa-times"></span>
       </button>
     </div>
