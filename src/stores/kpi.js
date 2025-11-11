@@ -11,10 +11,10 @@ export const useKpiStore = defineStore('kpi', {
   }),
 
   actions: {
-    async fetchActiveCycle() {
+    async fetchActiveCycle(employeeId) {
       try {
         this.loading = true
-        const { data } = await apiClient.get('/kpi/active')
+        const { data } = await apiClient.get(`/kpi/active/${employeeId}`)
         this.cycle = data
       } finally { this.loading = false }
     },
