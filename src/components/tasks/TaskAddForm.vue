@@ -251,7 +251,7 @@ function handleDescriptionCopy(){
       <div class="mb-4">
         <label class=" text-gray-600 text-sm mb-1 font-medium flex items-end">
           <span>
-            Description {{ requirementHasDescription }}
+            Description
           </span>
           <span class="ml-auto" v-if="requirementIsLinked">
             <button
