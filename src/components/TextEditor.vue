@@ -297,7 +297,7 @@ onBeforeUnmount(() => {
       ref="editor"
       contenteditable="true"
       @input="onDescriptionInput"
-      class="border border-gray-300 p-4 rounded-md min-h-[200px] bg-white whitespace-normal"
+      class="editable-div border border-gray-300 p-4 rounded-md min-h-[200px] focus:outline-sky-600 max-h-[1000px] bg-white overflow-auto resize-y whitespace-normal"
       placeholder="Description"
     ></div>
   </div>
@@ -321,5 +321,11 @@ onBeforeUnmount(() => {
   width: 20px;
   height: 20px;
   border-radius: 4px;
+}
+
+/* Allow resizing and show scrollbar when needed */
+.editable-div {
+  resize: vertical; /* allows vertical resizing */
+  overflow: auto; /* scrolls when content exceeds max height */
 }
 </style>

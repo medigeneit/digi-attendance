@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useCompanyStore } from '@/stores/company'
 
 // import { useTaskStore } from '@/stores/useTaskStore'
+import { stripTags } from '@/libs/string'
 import { findRequirement } from '@/services/requirement'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -131,6 +132,23 @@ async function submit() {
     state.value = 'taskCreatingError'
   }
 }
+
+const requirementIsLinked = computed(() => props.requirementId && requirement?.value?.title)
+const requirementHasDescription = computed(() => {
+  if( !requirement.value?.description ){
+    return false
+  }
+
+  return stripTags(String(requirement.value?.description).trim()).length > 0
+})
+
+function handleDescriptionCopy(){
+    if(!requirementHasDescription.value) {
+      alert('Requirement has no description')
+    }
+    form.value.description=requirement.value.description
+}
+
 </script>
 
 <template>
@@ -156,7 +174,7 @@ async function submit() {
     <form @submit.prevent="submit" class="z-0">
 
 
-      <p class="mt-2 mb-6" v-if="requirementId && requirement?.title" :title="requirement.title">
+      <p class="mt-2 mb-6" v-if="requirementIsLinked" :title="requirement.title">
         <div class="text-sm">
           Requirement
         </div>
@@ -176,8 +194,19 @@ async function submit() {
       </div>
 
       <div class="mb-4">
-        <label class="block text-gray-600 text-sm mb-1 font-medium">
-          Task Title <RequiredIcon />
+        <label class="text-gray-600 text-sm mb-1 font-medium flex items-end">
+          <span>
+            Task Title
+            <RequiredIcon />
+          </span>
+          <span class="ml-auto" v-if="requirementIsLinked">
+            <button
+              class="border rounded-md px-3 border-sky-400 text-sky-400 hover:bg-sky-500 hover:text-white"
+              @click.prevent="form.title=requirement.title"
+            >
+              Copy From Requirement Title
+            </button>
+          </span>
         </label>
         <input
           v-model="form.title"
@@ -220,7 +249,23 @@ async function submit() {
       </template>
 
       <div class="mb-4">
-        <label class="block text-gray-600 text-sm mb-1 font-medium">Description</label>
+        <label class=" text-gray-600 text-sm mb-1 font-medium flex items-end">
+          <span>
+            Description {{ requirementHasDescription }}
+          </span>
+          <span class="ml-auto" v-if="requirementIsLinked">
+            <button
+
+              :title="!requirementHasDescription ? 'Requirement has not description':''"
+              class="border rounded-md px-3 border-sky-400 text-sky-400 hover:bg-sky-500 hover:text-white  "
+              @click.prevent="
+                handleDescriptionCopy
+              "
+            >
+              Copy From Requirement Title
+            </button>
+          </span>
+        </label>
 
         <TextEditor v-model="form.description" />
       </div>

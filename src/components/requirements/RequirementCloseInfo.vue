@@ -13,9 +13,13 @@ const emit = defineEmits(['reOpenClick'])
     class="mb-4 flex flex-col gap-2 items-center justify-center bg-gray-50 bg-opacity-70 hover:bg-opacity-90 p-6 border border-gray-100 rounded-md"
   >
     <div class="text-red-400 font-bold text-xl">Requirement Closed</div>
-    <div class="text-sm flex items-center gap-2 text-red-400 font-semibold">
-      <span class="fad fa-lock"></span>
-      <span class="mt-[2px]">CLOSED AT</span>
+    <div
+      class="text-sm flex flex-col xl:flex-row items-center mt-2 xl:mt-0 gap-x-2 text-red-400 font-semibold whitespace-nowrap"
+    >
+      <span class="flex items-center gap-2 text-gray-600">
+        <span class="fad fa-lock"></span>
+        <span class="mt-[2px]">CLOSED AT</span>
+      </span>
       <span class="mt-[2px]">
         {{
           new Date(requirement.closed_at).toLocaleDateString('en-US', {
