@@ -11,6 +11,7 @@ const editingId = ref(route.params.id ? Number(route.params.id) : null)
 
 // ----- state -----
 const title = ref('KPI 2025')
+const slug = ref('executives')
 const year  = ref(new Date().getFullYear())
 
 const groups = ref([
@@ -197,6 +198,7 @@ onMounted(async () => {
   if (editingId.value) {
     const cy = await s.load(editingId.value)
     title.value   = cy.title
+    slug.value   = cy.slug
     year.value    = cy.year
     groups.value  = cy.groups_json || []
     lanes.value   = (cy.reviewer_lanes_json || []).map((ln, i) => normalizeLane(ln, i))
@@ -230,6 +232,7 @@ async function saveDraft() {
     assertUniqueLaneKeys(lanes.value)
     const payload = {
       title: title.value,
+      slug: slug.value,
       year: year.value,
       groups: groups.value,
       lanes: sanitizeLanes(lanes.value),
@@ -271,8 +274,14 @@ async function makeActive() {
       <div class="rounded-xl border card-bg p-3">
         <div class="text-sm font-medium mb-2">Basic</div>
         <div class="space-y-2">
-          <input v-model="title" class="border rounded-lg px-3 py-2 w-full" placeholder="Title e.g., KPI 2025" />
-          <input v-model="year" type="number" class="border rounded-lg px-3 py-2 w-full" placeholder="Year" />
+          <input v-model="title" class="input-1" placeholder="Title e.g., KPI 2025" />
+          <input v-model="year" type="number" class="input-1" placeholder="Year" />
+          <select v-model="slug" type="text" class="input-1" placeholder="Year">
+            <option value="executives">Executives</option>
+            <option value="support_staff">Support Staff</option>
+            <option value="academy_body">Academy Body</option>
+            <option value="doctor">Doctor</option>
+          </select>
           <div class="text-xs text-slate-600">Total Max: <b>{{ totalMax }}</b></div>
         </div>
       </div>

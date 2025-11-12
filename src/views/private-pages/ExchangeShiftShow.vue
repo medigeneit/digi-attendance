@@ -5,12 +5,10 @@ import ScreenshotCapture from '@/components/common/ScreenshotCapture.vue'
 import ShareComponent from '@/components/common/ShareComponent.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useExchangeStore } from '@/stores/exchange'
-import { useNotificationStore } from '@/stores/notification'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 
-const notificationStore = useNotificationStore()
 const router = useRouter()
 const route = useRoute()
 const exchangeStore = useExchangeStore()
@@ -66,7 +64,11 @@ function print() {
 
 const goBack = () => router.go(-1)
 
-const formatDate = (dateString) => new Date(dateString).toISOString().slice(0, 10)
+const formatDate = (timestamp) => {
+  if (!timestamp) return ''
+  const d = new Date(timestamp)
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+}
 
 const getDayName = (dateString) => {
   const date = new Date(dateString)
@@ -125,7 +127,7 @@ const onAction = async () => {
 
       <div class="grid md:grid-cols-2 pt-2">
         <div><b>Exchange Day:</b> {{ getDayName(exchange?.exchange_date) }}</div>
-        <div><b>Date:</b> {{ exchange?.exchange_date }}</div>
+        <div><b>Date:</b> {{formatDate(exchange?.exchange_date) }}</div>
         <div><b>From:</b> {{ exchange?.current_shift?.name }}</div>
         <div><b>To:</b> {{ exchange?.shift?.name }}</div>
         <div class="col-span-2 pt-2"><b>Reason:</b> {{ exchange?.reason || 'N/A' }}</div>

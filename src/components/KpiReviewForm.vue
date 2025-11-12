@@ -140,7 +140,7 @@ const serialMap = computed(() => {
 
 /* ---------- Init ---------- */
 onMounted(async () => {
-  if (!store.cycle) await store.fetchActiveCycle()
+  if (!store.cycle) await store.fetchActiveCycle(Number(route.params.employeeId))
 
   const resp = await store.fetchLanes(store.cycle.id, Number(route.params.employeeId))
 
