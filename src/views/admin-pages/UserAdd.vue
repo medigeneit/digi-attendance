@@ -40,7 +40,7 @@ const form = reactive({
   nid: '',
   date_of_birth: '',
   joining_date: '',
-  employment_type: 'Provisional',
+  employment_type: 'Probationary',
   provisional_month: 0,
   extended_provisional_month: 0,
   employee_id: '',
@@ -234,7 +234,7 @@ const computedDesignations = computed(() => {
               <div>
                 <label>Employment Type</label>
                 <select v-model="form.employment_type" class="w-full p-2 border rounded">
-                  <option value="Provisional">Provisional</option>
+                  <option value="Probationary">Probationary</option>
                   <option value="Permanent">Permanent</option>
                   <option value="Part_Time">Part Time</option>
                   <option value="Remote">Remote</option>
@@ -244,9 +244,9 @@ const computedDesignations = computed(() => {
                 </select>
               </div>
 
-              <template v-if="form.employment_type === 'Provisional'">
+              <template v-if="form.employment_type === 'Probationary'">
                 <div>
-                  <label>Provisional (month)</label>
+                  <label>Probationary (month)</label>
                   <input
                     v-model="form.provisional_month"
                     type="number"
@@ -254,7 +254,7 @@ const computedDesignations = computed(() => {
                   />
                 </div>
                 <div>
-                  <label>Extended Provisional (month)</label>
+                  <label>Extended Probationary (month)</label>
                   <input
                     v-model="form.extended_provisional_month"
                     type="number"
