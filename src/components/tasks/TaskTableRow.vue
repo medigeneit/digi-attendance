@@ -23,10 +23,14 @@ const route = useRoute()
 <template>
   <tr
     class="group/sub-task-row h-20"
-    :class="{
-      ' bg-green-400/20': task.status == 'COMPLETED',
-      ' bg-white hover:bg-slate-50': task.status !== 'COMPLETED',
-    }"
+    :class="[
+      task.closed_at
+        ? 'bg-orange-50 opacity-60 hover:opacity-90'
+        : {
+            ' bg-green-400/20': task.status == 'COMPLETED',
+            ' bg-white hover:bg-slate-50': task.status !== 'COMPLETED',
+          },
+    ]"
   >
     <td class="border text-center py-2 px-1 border-gray-200">
       <div class="font-semibold text-purple-400 text-sm">
@@ -56,6 +60,7 @@ const route = useRoute()
             <div class="flex items-center gap-2 text-xs text-gray-500 opacity-80 text-left">
               <TaskImportantBadge v-if="task?.is_important" />
               <TaskUrgentBadge v-if="task?.is_urgent" />
+              <TaskIsClosedBadge v-if="task.closed_at" />
             </div>
 
             <div
@@ -118,7 +123,6 @@ const route = useRoute()
 
     <td class="border px-3 border-gray-200 sticky right-0 border-l bg-gray-50">
       <div class="flex justify-end flex-wrap gap-2 py-2">
-        <TaskIsClosedBadge v-if="task.closed_at" />
         <TaskStatus
           :status="task?.status"
           :progressPercent="task?.progress_percent || 0"

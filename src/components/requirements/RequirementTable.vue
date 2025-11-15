@@ -9,7 +9,7 @@ defineProps({
 const auth = useAuthStore()
 </script>
 <template>
-  <table class="min-w-full bg-white border overflow-hidden table table-fixed">
+  <table class="min-w-full bg-white border table table-fixed">
     <thead class="bg-gray-100 text-gray-400 text-xs">
       <tr>
         <th class="px-4 py-0.5 text-center whitespace-nowrap border w-[4%]">#</th>
@@ -17,8 +17,10 @@ const auth = useAuthStore()
         <th class="px-4 py-0.5 text-center whitespace-nowrap w-[12%] border">From Department</th>
         <th class="px-4 py-0.5 text-center whitespace-nowrap w-[12%] border">To Department</th>
         <th class="px-4 py-0.5 text-center whitespace-nowrap w-[12%] border"></th>
-        <th class="px-4 py-0.5 text-center whitespace-nowrap w-[12%] border">Status</th>
-        <th class="px-4 py-0.5 text-center whitespace-nowrap w-[12%] border">Actions</th>
+
+        <th
+          class="px-4 py-0.5 text-center whitespace-nowrap w-[12%] border bg-sky-50 sm:sticky right-0"
+        ></th>
       </tr>
     </thead>
     <tbody>
@@ -239,7 +241,9 @@ const auth = useAuthStore()
             <div v-else>-</div>
           </td>
 
-          <td class="px-4 py-4 text-center border border-gray-200">
+          <td
+            class="px-4 py-2 md:py-4 text-center border border-gray-200 bg-sky-50 sm:sticky right-0"
+          >
             <div class="flex justify-center items-center gap-1">
               <span
                 class="border rounded-lg px-2 py-0.5 text-xs"
@@ -252,7 +256,7 @@ const auth = useAuthStore()
               </span>
             </div>
             <div
-              class="whitespace-nowrap text-sm mt-4"
+              class="whitespace-nowrap text-sm mt-1"
               :class="[
                 {
                   'text-green-700 font-semibold':
@@ -264,9 +268,8 @@ const auth = useAuthStore()
             >
               {{ req.completed_tasks_count }}/{{ req.tasks_count }} task(s) done
             </div>
-          </td>
-          <td class="px-4 py-4 text-center border border-gray-200">
-            <div class="flex gap-4 items-center justify-center">
+
+            <div class="flex gap-2 md:gap-4 items-center justify-center mt-3">
               <RouterLink
                 :to="{ name: 'RequirementShow', params: { id: req?.id } }"
                 class="btn-2 px-4"

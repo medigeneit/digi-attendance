@@ -27,6 +27,7 @@ const taskStatus = computed(setAndGetModelValue('status'))
 const isImportant = computed(setAndGetModelValue('is-important'))
 const isUrgent = computed(setAndGetModelValue('is-urgent'))
 const isTarget = computed(setAndGetModelValue('is-target'))
+const isClosed = computed(setAndGetModelValue('is-closed'))
 const search = computed(setAndGetModelValue('search'))
 
 const emit = defineEmits([
@@ -252,7 +253,9 @@ const companyDepartments = computed(() => {
   <div>
     <div class="mb-3 task-header">
       <div class="flex justify-between items-start">
-        <h2 class="text-2xl font-bold text-gray-800 leading-none h-10">Task List</h2>
+        <h2 class="text-2xl font-bold text-gray-800 leading-none h-10">
+          {{ isClosed ? 'Closed' : '' }} Task List
+        </h2>
 
         <div class="ml-auto flex gap-6 items-center" v-if="!isMyTask">
           <button @click="emit('clickAddTask')" class="btn-1">Add Main Task / Project</button>
@@ -348,6 +351,15 @@ const companyDepartments = computed(() => {
             <label class="flex gap-2">
               <input type="checkbox" v-model="isTarget" />
               <span>Is Target</span>
+            </label>
+            <label
+              class="flex gap-2 border px-2 rounded"
+              :class="[
+                isClosed ? 'bg-sky-800 text-white border-sky-500' : 'text-sky-800 border-sky-500',
+              ]"
+            >
+              <input type="checkbox" v-model="isClosed" />
+              <span>Closed</span>
             </label>
           </div>
 
