@@ -9,14 +9,15 @@ const emit = defineEmits(['submit', 'clickCancel'])
 </script>
 
 <template>
-  <form @submit.prevent="emit('submit')">
+  <form @submit.prevent="emit('submit')" class="overflow-hidden">
     <slot></slot>
-    <div class="bg-white border-t px-4 py-4 sticky bottom-0 rounded-b-md">
+    <div class="bg-white border-t px-4 py-4 sticky bottom-0 rounded-b-md shadow-lg shadow-red-600">
       <slot name="error">
         <div v-if="error" class="mb-4 text-red-500 font-medium">
           {{ error }}
         </div>
       </slot>
+
       <div v-if="isSubmitting" class="mb-4 text-blue-500 font-medium">Saving changes...</div>
 
       <slot name="footer">
