@@ -452,7 +452,7 @@ async function handleClickDelete(todoDate) {
               </button>
             </div>
 
-            <TaskTimeline :task="store?.task" />
+            <TaskTimeline :task="store?.task" @update="() => fetchTask(store?.task?.id)" />
 
             <TaskStatusManager
               v-if="store?.task"
