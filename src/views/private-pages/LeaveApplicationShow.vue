@@ -303,7 +303,7 @@ const removeAttachment = async () => {
           <h3 class="font-bold">Leave Details:</h3>
           <div class="grid print:grid-cols-2 md:grid-cols-2 text-sm list-none px-2">
             <li><strong>Reason: </strong>{{ leaveApplication?.reason || 'No reason provided' }}</li>
-            <li><strong>Leave Days:</strong> {{ formatDate(leaveApplication?.leave_period) }}</li>
+            <li><strong>Leave Days:</strong> {{ leaveApplication?.leave_period }}</li>
             <li><strong>Total Days:</strong> {{ leaveApplication?.total_leave_days }}</li>
             <li><strong>Weekends:</strong> {{ leaveApplication?.user?.assign_weekend?.weekends?.join(', ') }}</li>
             <li><strong>Last Working Date:</strong> {{ formatDate(leaveApplication?.last_working_date) }}</li>
