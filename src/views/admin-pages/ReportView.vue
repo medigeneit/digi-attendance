@@ -1,8 +1,11 @@
 <script setup>
-import router from '@/router'
 import { useAuthStore } from '@/stores/auth'
 import { storeToRefs } from 'pinia'
-const { user } = storeToRefs(useAuthStore)
+import { useRouter } from 'vue-router'
+
+const authStore = useAuthStore()
+const { user } = storeToRefs(authStore)
+const router = useRouter()
 
 const hasAccessTo = (routeName) => {
   const route = router.getRoutes().find(r => r.name === routeName)
