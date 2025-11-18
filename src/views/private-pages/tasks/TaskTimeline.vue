@@ -1,4 +1,6 @@
 <script setup>
+import OverlyModal from '@/components/common/OverlyModal.vue'
+import TaskUserDateUpdate from '@/components/tasks/TaskUserDateUpdate.vue'
 import { getDisplayDate } from '@/libs/datetime'
 import { useAuthStore } from '@/stores/auth'
 import { computed, reactive } from 'vue'
@@ -7,7 +9,7 @@ const props = defineProps({
   task: { type: Object },
 })
 
-const emit = defineEmits(['updateStatus', 'error'])
+const emit = defineEmits(['update', 'error'])
 const auth = useAuthStore()
 const dateUpdateModal = reactive({
   user: null,
@@ -42,6 +44,12 @@ const mainClass = computed(() => {
 const taskStatus = computed(() => {
   return props.task?.status
 })
+
+async function handleUpdateDate() {
+  emit('update')
+  dateUpdateModal.user = null
+  dateUpdateModal.type = ''
+}
 
 const timelineItems = computed(() => {
   return [
@@ -150,5 +158,15 @@ const timelineItems = computed(() => {
         </li>
       </ol>
     </div>
+
+    <OverlyModal v-if="dateUpdateModal.user">
+      <TaskUserDateUpdate
+        :task="props.task"
+        :user="dateUpdateModal.user"
+        :type="dateUpdateModal.type"
+        @closeClick="dateUpdateModal.user = null"
+        @updateDate="handleUpdateDate"
+      />
+    </OverlyModal>
   </div>
 </template>

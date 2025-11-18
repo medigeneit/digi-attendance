@@ -154,7 +154,7 @@ const searchedTasks = computed(() => {
           v-if="modelTaskId && !readonly"
           @click.prevent.stop="() => clearValue()"
         ></button>
-        <span class="fas fa-caret-down"></span>
+        <span :class="[readonly ? 'text-gray-300' : '']" class="fas fa-caret-down"></span>
       </div>
     </div>
 

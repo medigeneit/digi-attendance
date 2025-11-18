@@ -85,94 +85,10 @@ onBeforeUnmount(() => {
 </script>
 <template>
   <div>
-    <TaskSelectionInput v-model:show="modelShow" v-model:taskId="modelTodoTypeId" />
+    <TaskSelectionInput
+      v-model:show="modelShow"
+      v-model:taskId="modelTodoTypeId"
+      :readonly="readonly"
+    />
   </div>
-  <!-- <div class="relative" ref="anchor">
-    <div
-      class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 cursor-pointer flex items-center shadow-sm"
-      :class="modelTodoTypeId ? '' : 'text-gray-400'"
-      @click.stop="
-        () => {
-          if (!readonly) {
-            modelShow = true
-            updatePosition()
-          }
-        }
-      "
-    >
-      {{ modelTodoTypeId || 'Click to select todo' }}
-
-      <button
-        class="btn-icon fas fa-times !size-8 text-sm ml-auto"
-        v-if="modelTodoTypeId && !readonly"
-        @click.prevent.stop="clearValue"
-      ></button>
-    </div>
-
-    <Teleport to="body">
-      <div
-        v-if="modelShow"
-        :style="style"
-        class="fixed bg-white rounded-b-md shadow-lg border z-[5000] p-4"
-      >
-        <div class="flex items-center mb-2">
-          <h2 class="text-sky-800 text-sm uppercase">Task List</h2>
-          <button @click.prevent="() => (modelShow = false)" class="ml-auto">
-            <i class="fas fa-times-circle text-red-700 text-xl hover:text-red-500"></i>
-          </button>
-        </div>
-        <div class="relative">
-          <div class="border flex rounded-t-md sticky top-0 bg-white">
-            <input
-              type="text"
-              placeholder="Search task"
-              class="w-full py-2 px-4 rounded-t-md outline-sky-200"
-            />
-            <label
-              class="ml-auto flex w-8 items-center justify-center absolute right-0 top-0 bottom-0"
-            >
-              <i class="fas fa-search"></i>
-            </label>
-          </div>
-        </div>
-
-        <div class="h-[300px] overflow-y-auto">
-          <div class="border">
-            <TodoInputTaskItem
-              v-for="task in taskStore.tasks"
-              :key="task.id"
-              :task="task"
-              @select="handleTaskClick"
-              :selected="modelTodoTypeId"
-              class="group/main"
-            >
-              <template #children="{ childrenTasks }">
-                <div class="border ml-4 mt-4">
-                  <TodoInputTaskItem
-                    v-for="task in childrenTasks"
-                    :key="task.id"
-                    :task="task"
-                    @select="handleTaskClick"
-                    :selected="modelTodoTypeId"
-                  >
-                    <template #children="{ childrenTasks }">
-                      <div class="border ml-4 mt-4">
-                        <TodoInputTaskItem
-                          v-for="task in childrenTasks"
-                          :key="task.id"
-                          :task="task"
-                          @select="handleTaskClick"
-                          :selected="modelTodoTypeId"
-                        ></TodoInputTaskItem>
-                      </div>
-                    </template>
-                  </TodoInputTaskItem>
-                </div>
-              </template>
-            </TodoInputTaskItem>
-          </div>
-        </div>
-      </div>
-    </Teleport>
-  </div> -->
 </template>
