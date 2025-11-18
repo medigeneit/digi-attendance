@@ -1,4 +1,16 @@
-<script setup></script>
+<script setup>
+import router from '@/router'
+import { useAuthStore } from '@/stores/auth'
+import { storeToRefs } from 'pinia'
+const { user } = storeToRefs(useAuthStore)
+
+const hasAccessTo = (routeName) => {
+  const route = router.getRoutes().find(r => r.name === routeName)
+  const allowedRoles = route?.meta?.roles
+  if (!allowedRoles) return true
+  return allowedRoles.includes(user.value?.role || [])
+}
+</script>
 <template>
   <div class="grid gap-4 md:grid-cols-3 lg:grid-cols-4 px-4">
     <RouterLink :to="{ name: 'TodayAttendanceReport' }" class="main-button">
