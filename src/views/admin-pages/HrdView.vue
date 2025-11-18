@@ -46,21 +46,12 @@ const hasAccessTo = (routeName) => {
     </RouterLink>
 
     <RouterLink
-      v-if="hasAccessTo('MonthWiseApplicationLog')"
-      :to="{ name: 'MonthWiseApplicationReport' }"
-      class="main-button"
-    >
-      <i class="far fa-file-contract text-3xl"></i>
-      Monthly Application Report
-    </RouterLink>
-
-    <RouterLink
       v-if="hasAccessTo('HrdAdminLeaveApplication')"
       :to="{ name: 'HrdAdminLeaveApplication' }"
       class="main-button"
     >
       <i class="far fa-file-signature text-3xl"></i>
-      Admin Leave Applications
+      Annual Leave Applications
     </RouterLink>
 
     <RouterLink

@@ -27,5 +27,14 @@
       Overtime Report
     </RouterLink>
 
+    <RouterLink
+      v-if="hasAccessTo('MonthWiseApplicationLog')"
+      :to="{ name: 'MonthWiseApplicationReport' }"
+      class="main-button"
+    >
+      <i class="far fa-file-contract text-3xl"></i>
+      Monthly Application Report
+    </RouterLink>
+
   </div>
 </template>
