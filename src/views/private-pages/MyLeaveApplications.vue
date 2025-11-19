@@ -1,21 +1,46 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
-import { computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const leaveApplicationStore = useLeaveApplicationStore()
 
+// ===== Year filter =====
+const year = ref('') // bound with v-model
+
+// Dropdown years (last 5 years, latest first)
+const years = computed(() => {
+  const current = new Date().getFullYear()
+  const span = 5 // current year + previous 4
+  return Array.from({ length: span }, (_, i) => current - i)
+})
+
+// Load data on mount (with current year if you want)
 onMounted(() => {
-  leaveApplicationStore.fetchMyLeaveApplications()
+  // যদি default e current year data চান:
+  // year.value = String(new Date().getFullYear())
+  leaveApplicationStore.fetchMyLeaveApplications({
+    year: year.value || null
+  })
+})
+
+// Year change হলে API call
+watch(year, (newYear) => {
+  leaveApplicationStore.fetchMyLeaveApplications({
+    year: newYear || null
+  })
 })
 
 const goBack = () => {
   router.go(-1)
 }
 
-const myLeaveApplications = computed(() => leaveApplicationStore.leaveApplications || [])
+// Always use whatever store returns
+const myLeaveApplications = computed(
+  () => leaveApplicationStore.leaveApplications || []
+)
 
 // Optional: nicer date format
 const formatDate = (date) => {
@@ -63,10 +88,21 @@ function deleteApplication(applicationId) {
         </p>
       </div>
 
-      <RouterLink :to="{ name: 'LeaveApplicationAdd' }" class="btn-2 flex items-center gap-2">
-        <i class="far fa-plus-circle"></i>
-        <span>Apply for Leave</span>
-      </RouterLink>
+      <div class="flex gap-3">
+        <div>
+          <select v-model="year" class="input-1">
+            <option value="">All Years</option>
+            <option v-for="y in years" :key="y" :value="y">
+              {{ y }}
+            </option>
+          </select>
+        </div>
+
+        <RouterLink :to="{ name: 'LeaveApplicationAdd' }" class="btn-2 flex items-center gap-2">
+          <i class="far fa-paper-plane"></i>
+          <span>Apply for Leave</span>
+        </RouterLink>
+      </div>
     </div>
 
     <!-- Loader -->
@@ -96,6 +132,9 @@ function deleteApplication(applicationId) {
         <div class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
           <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 text-sm text-gray-600">
             <span>Total Applications: <strong>{{ myLeaveApplications.length }}</strong></span>
+            <span v-if="year" class="text-xs text-gray-400">
+              Showing for year: <strong>{{ year }}</strong>
+            </span>
           </div>
 
           <div class="overflow-x-auto">
@@ -193,7 +232,7 @@ function deleteApplication(applicationId) {
       </div>
 
       <!-- Mobile cards -->
-      <div class="space-y-3 md:hidden">
+      <div class="space-y-3 md:hidden" >
         <div
           v-for="(application, index) in myLeaveApplications"
           :key="application?.id"
@@ -270,6 +309,7 @@ function deleteApplication(applicationId) {
           </div>
         </div>
       </div>
+      <!-- end mobile -->
     </div>
   </div>
 </template>
