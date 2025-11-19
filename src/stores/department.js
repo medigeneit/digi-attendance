@@ -39,32 +39,41 @@ export const useDepartmentStore = defineStore('department', () => {
     }
   };
 
-  const fetchDepartmentEmployee = async (department_ids) => {
-    loading.value = true;
-    error.value = null;
-    try {
-      console.log({department_ids})
-      const response = await apiClient.get("department-employees", {
-        params: { department_ids },
-      });
+const fetchDepartmentEmployee = async (department_ids, line_type) => {
+  loading.value = true
+  error.value   = null
 
-      employees.value = response?.data?.employees;
+  try {
+    console.log({ department_ids, line_type })
 
-      return response?.data?.employees;
+    const response = await apiClient.get('department-employees', {
+      params: {
+        department_ids,
+        line_type, // <-- backend এই নাম expect করলে
+      },
+    })
 
-    } catch (err) {
-      error.value = err.response?.data?.message || `ডিপার্টমেন্ট লোড করতে ব্যর্থ হয়েছে।`;
-      console.error(`Error fetching department with id:`, err);
-    } finally {
-      loading.value = false;
-    }
-  };
+    employees.value = response?.data?.employees || []
+
+    return employees.value
+  } catch (err) {
+    error.value =
+      err.response?.data?.message ||
+      'ডিপার্টমেন্টের এম্প্লয়ি লোড করতে ব্যর্থ হয়েছে।'
+    console.error('Error fetching department employees:', err)
+  } finally {
+    loading.value = false
+  }
+}
+
 
 
   const createDepartment = async (data) => {
     loading.value = true;
     error.value = null;
     try {
+      console.log({data});
+      
       const response = await apiClient.post('/departments', data);
       departments.value.push(response.data); // নতুন ডিপার্টমেন্ট লিস্টে যোগ করুন
       return response.data;

@@ -27,20 +27,31 @@ const form = reactive({
   all_departments: false,
   all_employees: false,
   file: null, // File
+
+  // receiver_type
+  receiver_type: 'executive', // doctor | executive | support_staff | academic_body
 })
 
+/* receiver type options */
+const receiverTypeOptions = [
+  { value: 'doctor',        label: 'Doctor' },
+  { value: 'executive',     label: 'Executive' },
+  { value: 'support_staff', label: 'Support Staff' },
+  { value: 'academic_body', label: 'Academic Body' },
+]
+
 /* ---------- selections ---------- */
-const selectedCompanies = ref([])
+const selectedCompanies   = ref([])
 const selectedDepartments = ref([])
-const selectedEmployees = ref([])
+const selectedEmployees   = ref([])
 
-const companiesList = computed(() => companies.value || [])
+const companiesList   = computed(() => companies.value || [])
 const departmentsList = computed(() => departmentStore.departments || [])
-const employeesList = computed(() => departmentStore.employees || [])
+const employeesList   = computed(() => departmentStore.employees || [])
 
-const company_ids = computed(() => selectedCompanies.value.map(c => c.id))
+const company_ids    = computed(() => selectedCompanies.value.map(c => c.id))
 const department_ids = computed(() => selectedDepartments.value.map(d => d.id))
-const employee_ids = computed(() => selectedEmployees.value.map(e => e.id))
+const employee_ids   = computed(() => selectedEmployees.value.map(e => e.id))
 
 /* ---------- ui state ---------- */
 const saving = ref(false)
@@ -54,6 +65,7 @@ const modeCompanies = computed({
     selectedCompanies.value = form.all_companies ? [...companiesList.value] : []
   }
 })
+
 const modeDepartments = computed({
   get: () => (form.all_departments ? 'all' : 'custom'),
   set: (v) => {
@@ -61,6 +73,7 @@ const modeDepartments = computed({
     selectedDepartments.value = form.all_departments ? [...departmentsList.value] : []
   }
 })
+
 const modeEmployees = computed({
   get: () => (form.all_employees ? 'all' : 'custom'),
   set: (v) => {
@@ -82,7 +95,7 @@ watch(() => form.all_companies, async (all) => {
   } else {
     await departmentStore.fetchDepartments(company_ids.value)
   }
-  // company scope বদলালে employees reset
+  // company scope change → reset employees
   departmentStore.employees = []
   selectedEmployees.value = []
 })
@@ -90,29 +103,44 @@ watch(() => form.all_companies, async (all) => {
 watch(company_ids, async (ids) => {
   if (!form.all_companies) {
     await departmentStore.fetchDepartments(ids)
-    // company selection বদলালে employees reset
+    // company selection change → reset employees
     departmentStore.employees = []
     selectedEmployees.value = []
   }
 })
 
-/* ---------- Departments → Employees (FIXED) ---------- */
-/* কোন কোন department থেকে employees আনবো—single source of truth */
+/* ---------- Departments → Employees (depends on receiver_type) ---------- */
 const effectiveDepartmentIds = computed(() => {
   return form.all_departments
-    ? (departmentsList.value || []).map(d => d.id)   // "All" হলে বর্তমান লিস্টের সব dept
-    : department_ids.value                           // custom হলে নির্বাচিত dept
+    ? (departmentsList.value || []).map(d => d.id)
+    : department_ids.value
 })
 
-/* এই আইডি-সেট বদলালেই ফেচ হবে; না থাকলে employees ক্লিয়ার */
-watch(effectiveDepartmentIds, async (ids) => {
-  if (Array.isArray(ids) && ids.length > 0) {
-    await departmentStore.fetchDepartmentEmployee(ids)
-  } else {
-    departmentStore.employees = []
-    selectedEmployees.value = []
-  }
-}, { immediate: true })
+watch(
+  [effectiveDepartmentIds, () => form.receiver_type],
+  async ([ids, receiverType]) => {
+    // receiver_type না থাকলে employees clear
+    if (!receiverType) {
+      departmentStore.employees = []
+      selectedEmployees.value = []
+      return
+    }
+
+    if (Array.isArray(ids) && ids.length > 0) {
+      // dept / receiver_type change হলেই previous selection clear
+      selectedEmployees.value = []
+      await departmentStore.fetchDepartmentEmployee(ids, receiverType)
+      // যদি "All" মোড on থাকে, নতুন লোড হওয়া সব employee select করে দেই
+      if (form.all_employees && Array.isArray(departmentStore.employees)) {
+        selectedEmployees.value = [...departmentStore.employees]
+      }
+    } else {
+      departmentStore.employees = []
+      selectedEmployees.value = []
+    }
+  },
+  { immediate: true }
+)
 
 /* ---------- “All” মোডে লিস্ট বদলালে সিলেকশন sync ---------- */
 watch(departmentsList, (list) => {
@@ -128,10 +156,12 @@ watch(employeesList, (list) => {
 
 /* ---------- sync “all_*” with actual selections ---------- */
 watch(selectedCompanies, list => {
-  form.all_companies = list.length === companiesList.value.length && list.length > 0
+  form.all_companies =
+    list.length === companiesList.value.length && list.length > 0
 })
 watch(selectedDepartments, list => {
-  form.all_departments = list.length === departmentsList.value.length && list.length > 0
+  form.all_departments =
+    list.length === departmentsList.value.length && list.length > 0
 })
 watch([selectedEmployees, employeesList], ([sel, all]) => {
   const total = Array.isArray(all) ? all.length : 0
@@ -177,7 +207,7 @@ const clearFile = () => { form.file = null }
 
 /* ---------- helpers ---------- */
 const shortChips = (items, labelKey = 'name', limit = 3) => {
-  const arr = Array.isArray(items) ? items : []
+  const arr  = Array.isArray(items) ? items : []
   const head = arr.slice(0, limit).map(x => x?.[labelKey] ?? '—')
   const more = Math.max(0, arr.length - limit)
   return { head, more }
@@ -187,15 +217,27 @@ const shortChips = (items, labelKey = 'name', limit = 3) => {
 const validDateRange = computed(() => {
   if (form.type === 2) return true // Policy: dates optional
   if (!form.published_at || !form.expired_at) return true
-  try { return new Date(form.expired_at) >= new Date(form.published_at) } catch { return true }
+  try {
+    return new Date(form.expired_at) >= new Date(form.published_at)
+  } catch {
+    return true
+  }
 })
 
 const validate = () => {
   Object.keys(errors).forEach(k => delete errors[k])
 
   if (!form.title?.trim()) errors.title = 'Title is required'
-  if (form.type !== 2 && !form.published_at) errors.published_at = 'Publish date is required'
-  if (!validDateRange.value) errors.expired_at = 'Expired date must be on/after publish date'
+  if (form.type !== 2 && !form.published_at) {
+    errors.published_at = 'Publish date is required'
+  }
+  if (!validDateRange.value) {
+    errors.expired_at = 'Expired date must be on/after publish date'
+  }
+
+  if (!form.receiver_type) {
+    errors.receiver_type = 'Receiver type is required'
+  }
 
   return Object.keys(errors).length === 0
 }
@@ -204,7 +246,8 @@ const canSave = computed(() =>
   !saving.value &&
   (!!form.title?.trim()) &&
   (form.type === 2 || !!form.published_at) &&
-  validDateRange.value
+  validDateRange.value &&
+  !!form.receiver_type
 )
 
 /* ---------- submit ---------- */
@@ -213,6 +256,7 @@ const saveNotice = async () => {
     toast.error('Please fix the errors and try again.')
     return
   }
+
   const payload = {
     title: form.title,
     type: form.type,
@@ -220,16 +264,22 @@ const saveNotice = async () => {
     published_at: form.type === 2 ? null : form.published_at,
     expired_at: form.type === 2 ? null : (form.expired_at || null),
 
-    all_companies: form.all_companies,
+    all_companies:   form.all_companies,
     all_departments: form.all_departments,
-    all_employees: form.all_employees,
+    all_employees:   form.all_employees,
 
-    company_ids: company_ids.value,
+    company_ids:    company_ids.value,
     department_ids: department_ids.value,
-    employee_ids: employee_ids.value,
+    employee_ids:   employee_ids.value,
 
     file: form.file,
+
+    receiver_type: form.receiver_type,
   }
+
+  console.log(payload);
+  
+
   try {
     saving.value = true
     await noticeStore.createNotice(payload)
@@ -246,9 +296,9 @@ const saveNotice = async () => {
 }
 
 /* ---------- summary counts ---------- */
-const totalCompanies = computed(() => companiesList.value.length)
+const totalCompanies   = computed(() => companiesList.value.length)
 const totalDepartments = computed(() => departmentsList.value.length)
-const totalEmployees = computed(() => employeesList.value.length)
+const totalEmployees   = computed(() => employeesList.value.length)
 </script>
 
 
@@ -277,6 +327,9 @@ const totalEmployees = computed(() => employeesList.value.length)
         </button>
       </div>
     </div>
+
+
+
 
     <!-- Summary Cards -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -385,6 +438,30 @@ const totalEmployees = computed(() => employeesList.value.length)
           Policies usually don’t require publish/expire dates and remain visible until replaced.
         </p>
       </section>
+
+          <!-- Receiver Type -->
+        <div class="md:col-span-3 rounded-2xl border bg-white/70 p-5 shadow-sm">
+          <label class="block font-medium mb-1">
+            Send To <span class="text-red-500">*</span>
+          </label>
+          <div class="flex flex-wrap gap-2">
+            <button
+              v-for="opt in receiverTypeOptions"
+              :key="opt.value"
+              type="button"
+              class="px-3 py-1.5 rounded-full border text-xs"
+              :class="form.receiver_type === opt.value
+                ? 'bg-blue-600 text-white border-blue-600'
+                : 'bg-white text-gray-700 hover:bg-gray-50'"
+              @click="form.receiver_type = opt.value"
+            >
+              {{ opt.label }}
+            </button>
+          </div>
+          <p v-if="errors.receiver_type" class="text-red-500 text-xs mt-1">
+            {{ errors.receiver_type }}
+          </p>
+        </div>
 
       <!-- Audience & Scope -->
       <section class="rounded-2xl border bg-white/70 p-5 shadow-sm space-y-6">
