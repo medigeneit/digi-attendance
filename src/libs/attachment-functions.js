@@ -17,6 +17,9 @@ export  function fileExtension(file) {
 }
 
 export  function fileUrl(file) {
+  if( typeof file !==  'string') {
+    return ''
+  }
   // If Laravel stores full URL, use directly; otherwise, prepend base path
   return file.startsWith('http')
     ? file
