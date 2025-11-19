@@ -179,7 +179,7 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
     error.value = null
     try {
       await apiClient.delete(`/my-leave-application/destroy/${applicationId}`)
-      await fetchLeaveApplications()
+      await fetchMyLeaveApplications()
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to store leave application'
       throw new Error(error.value)
