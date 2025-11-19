@@ -136,7 +136,7 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
     error.value = null
     try {
       const response = await apiClient.get('/my-leave-applications', { params: filters })
-      leaveApplications.value = response.data.data
+      leaveApplications.value = response.data
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch leave applications'
     } finally {

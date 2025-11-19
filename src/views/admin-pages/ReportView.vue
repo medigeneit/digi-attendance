@@ -1,4 +1,19 @@
-<script setup></script>
+<script setup>
+import { useAuthStore } from '@/stores/auth'
+import { storeToRefs } from 'pinia'
+import { useRouter } from 'vue-router'
+
+const authStore = useAuthStore()
+const { user } = storeToRefs(authStore)
+const router = useRouter()
+
+const hasAccessTo = (routeName) => {
+  const route = router.getRoutes().find(r => r.name === routeName)
+  const allowedRoles = route?.meta?.roles
+  if (!allowedRoles) return true
+  return allowedRoles.includes(user.value?.role || [])
+}
+</script>
 <template>
   <div class="grid gap-4 md:grid-cols-3 lg:grid-cols-4 px-4">
     <RouterLink :to="{ name: 'TodayAttendanceReport' }" class="main-button">
@@ -25,6 +40,15 @@
     <RouterLink :to="{ name: 'OvertimeReport' }" class="main-button">
       <i class="fas fa-calendar-day text-3xl"></i>
       Overtime Report
+    </RouterLink>
+
+    <RouterLink
+      v-if="hasAccessTo('MonthWiseApplicationLog')"
+      :to="{ name: 'MonthWiseApplicationReport' }"
+      class="main-button"
+    >
+      <i class="far fa-file-contract text-3xl"></i>
+      Monthly Application Report
     </RouterLink>
 
   </div>

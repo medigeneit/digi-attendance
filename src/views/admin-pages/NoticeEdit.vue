@@ -17,14 +17,14 @@ const route = useRoute()
 
 const isLoading = ref(false)
 const saving = ref(false)
-const initializing = ref(true) // ⬅️ in-flight guard for first load
+const initializing = ref(true) // first load guard
 
 const noticeStore = useNoticeStore()
 const companyStore = useCompanyStore()
 const departmentStore = useDepartmentStore()
 
 const { companies } = storeToRefs(companyStore)
-const { employees } = storeToRefs(departmentStore) // ref([])
+const { employees } = storeToRefs(departmentStore)
 
 // Local, derived refs for safety in template
 const departmentsList = computed(() => departmentStore.departments || [])
@@ -41,7 +41,18 @@ const form = reactive({
   all_departments: false,
   all_employees: false,
   file_url: null,
+
+  // 🔹 NEW: receiver_type
+  receiver_type: '', // doctor | executive | support_staff | academic_body
 })
+
+/* 🔹 receiver type options */
+const receiverTypeOptions = [
+  { value: 'doctor',        label: 'Doctor' },
+  { value: 'executive',     label: 'Executive' },
+  { value: 'support_staff', label: 'Support Staff' },
+  { value: 'academic_body', label: 'Academic Body' },
+]
 
 // Multi-select states
 const selectedCompanies = ref([])
@@ -93,6 +104,7 @@ const validDateRange = computed(() => {
 
 const canSave = computed(() =>
   !!form.title &&
+  !!form.receiver_type &&
   !isUploading.value &&
   validDateRange.value
 )
@@ -120,26 +132,57 @@ const modeEmployees = computed({
   }
 })
 
-/* ---------- Dependent Loading (guarded by `initializing`) ---------- */
+/* ---------- Dependent Loading (companies → departments) ---------- */
 // Companies → Departments
 watch(() => form.all_companies, async (all) => {
   if (initializing.value) return
-  if (all) await departmentStore.fetchDepartments()
+  if (all) {
+    await departmentStore.fetchDepartments()
+  } else {
+    await departmentStore.fetchDepartments(company_ids.value)
+  }
 })
 watch(company_ids, async (ids) => {
   if (initializing.value) return
-  if (!form.all_companies) await departmentStore.fetchDepartments(ids)
+  if (!form.all_companies) {
+    await departmentStore.fetchDepartments(ids)
+  }
 })
 
-// Departments → Employees
-watch(() => form.all_departments, async (all) => {
-  if (initializing.value) return
-  if (all) await departmentStore.fetchDepartmentEmployee('all')
+/* ---------- Departments → Employees (depends on receiver_type) ---------- */
+const effectiveDepartmentIds = computed(() => {
+  return form.all_departments
+    ? (departmentsList.value || []).map(d => d.id)
+    : department_ids.value
 })
-watch(department_ids, async (ids) => {
-  if (initializing.value) return
-  if (!form.all_departments) await departmentStore.fetchDepartmentEmployee(ids)
-})
+
+watch(
+  [effectiveDepartmentIds, () => form.receiver_type],
+  async ([ids, receiverType]) => {
+    if (initializing.value) return
+
+    // receiver_type নাই থাকলে employees clear
+    if (!receiverType) {
+      departmentStore.employees = []
+      selectedEmployees.value = []
+      form.all_employees = false
+      return
+    }
+
+    if (Array.isArray(ids) && ids.length > 0) {
+      await departmentStore.fetchDepartmentEmployee(ids, receiverType)
+      // যদি all_employees true থাকে, নতুন লিস্ট অনুযায়ী সব select করি
+      if (form.all_employees && Array.isArray(employeesList.value)) {
+        selectedEmployees.value = [...employeesList.value]
+      }
+    } else {
+      departmentStore.employees = []
+      selectedEmployees.value = []
+      form.all_employees = false
+    }
+  },
+  { immediate: true }
+)
 
 // Keep “Select All Employees” in sync with list size
 watch([selectedEmployees, employees], ([sel, all]) => {
@@ -161,6 +204,7 @@ const loadNotice = async () => {
     form.expired_at   = justDate(n.expired_at)
     form.description  = n.description ?? ''
     form.file_url     = n.file_url || n.file || null
+    form.receiver_type = n.receiver_type || ''
 
     // ---------- STEP 1: Companies ----------
     const hasCompanies = (n.companies_notice?.length ?? 0) > 0
@@ -190,20 +234,14 @@ const loadNotice = async () => {
       ? n.departments
       : [...departmentsList.value] // all depts for chosen companies
 
-    // Employees depend on departments
-    if (form.all_departments) {
-      await departmentStore.fetchDepartmentEmployee('all')
-    } else {
-      await departmentStore.fetchDepartmentEmployee(department_ids.value)
-    }
-
     // ---------- STEP 3: Employees ----------
     const hasEmployees = (n.employees?.length ?? 0) > 0
     form.all_employees = !hasEmployees
 
+    // initial selection from API (id-based track-by so object ref ok)
     selectedEmployees.value = hasEmployees
       ? n.employees
-      : [...employeesList.value] // all employees for selected depts
+      : [] // all employees later handled by watcher when employeesList fills
   } catch (error) {
     const msg = error?.response?.data?.message || 'Failed to load notice data'
     toast.error(msg)
@@ -274,6 +312,10 @@ const cancelUpload = () => {
 
 /* ---------- Update (JSON only) ---------- */
 const updateNotice = async () => {
+  if (!form.receiver_type) {
+    toast.error('Receiver type is required.')
+    return
+  }
   if (!validDateRange.value) {
     toast.error('Expire date must be the same or after Publish date.')
     return
@@ -296,6 +338,8 @@ const updateNotice = async () => {
       company_ids: company_ids.value,
       department_ids: department_ids.value,
       employee_ids: employee_ids.value,
+
+      receiver_type: form.receiver_type,
     }
 
     await noticeStore.updateNotice(id, payload)
@@ -383,7 +427,7 @@ const totalEmployees = computed(() => employeesList.value.length)
         <div class="border p-4 rounded-xl bg-white space-y-6 shadow-sm">
           <h2 class="text-lg font-semibold">Notice Information</h2>
 
-          <!-- Type -->
+          <!-- Type + Dates + Receiver Type -->
           <div class="grid md:grid-cols-3 gap-4">
             <div class="w-full">
               <label for="type" class="font-medium block mb-1">Type*</label>
@@ -419,6 +463,30 @@ const totalEmployees = computed(() => employeesList.value.length)
                 Expire date must be the same or after Publish date.
               </p>
             </div>
+          </div>
+
+          <!-- Receiver Type -->
+          <div class="space-y-2">
+            <label class="font-medium block mb-1">
+              Send To <span class="text-red-500">*</span>
+            </label>
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="opt in receiverTypeOptions"
+                :key="opt.value"
+                type="button"
+                class="px-3 py-1.5 rounded-full border text-xs"
+                :class="form.receiver_type === opt.value
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white text-gray-700 hover:bg-gray-50'"
+                @click="form.receiver_type = opt.value"
+              >
+                {{ opt.label }}
+              </button>
+            </div>
+            <p v-if="!form.receiver_type" class="text-xs text-red-500 mt-1">
+              Receiver type is required.
+            </p>
           </div>
 
           <!-- Companies -->

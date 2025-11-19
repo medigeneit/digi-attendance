@@ -145,6 +145,7 @@ export const useNoticeStore = defineStore('notice', () => {
         description: payload.description,
         published_at: payload.published_at,
         expired_at: payload.expired_at,
+        receiver_type: payload.receiver_type,
         all_companies: !!payload.all_companies,
         all_departments: !!payload.all_departments,
         all_employees: !!payload.all_employees,
