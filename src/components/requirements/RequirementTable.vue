@@ -104,6 +104,13 @@ const auth = useAuthStore()
                 ]"
                 >{{ req.priority }}</span
               >
+
+              <div class="flex items-center gap-1 text-sky-600" v-if="req.comments_count > 0">
+                <i class="fas fa-comment"></i>
+                <span class="text-sm">
+                  {{ req.comments_count }}
+                </span>
+              </div>
             </div>
 
             <div
