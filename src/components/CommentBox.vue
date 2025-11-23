@@ -4,6 +4,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 // তোমার existing components (create কোরো না)
 import TextEditor from '@/components/TextEditor.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
+import OverlyModal from './common/OverlyModal.vue'
 
 // ✅ Props: page থেকে এগুলো পাঠাবে
 const props = defineProps({
@@ -12,6 +13,60 @@ const props = defineProps({
   currentUser: { type: Object, required: true },
   // currentUser: {id, name, ...} --> user_id পাঠাতে লাগবে
 })
+
+// delete modal state
+const deleteOpen = ref(false)
+const deleteTarget = ref(null) // comment object
+
+const openDeleteModal = (c) => {
+  deleteTarget.value = c
+  deleteOpen.value = true
+}
+
+const closeDeleteModal = () => {
+  deleteOpen.value = false
+  deleteTarget.value = null
+}
+
+// confirm delete
+const confirmDelete = async () => {
+  if (!deleteTarget.value) return
+
+  const id = deleteTarget.value.id
+
+  // modal close first (optional)
+  closeDeleteModal()
+
+  // then delete
+  await removeComment(id)
+}
+
+const globalErrors = ref([]) // ✅ multiple overall errors
+const commentErrors = ref({}) // ✅ per-comment error map { [id]: [msg1,msg2] }
+
+// helper: add global error (duplicates avoid optional)
+const pushGlobalError = (msg) => {
+  if (!msg) return
+  globalErrors.value.push({
+    id: crypto.randomUUID(),
+    message: msg,
+    time: new Date().toISOString(),
+  })
+}
+
+// helper: add per-comment error
+const pushCommentError = (commentId, msg) => {
+  if (!commentId || !msg) return
+  if (!commentErrors.value[commentId]) {
+    commentErrors.value[commentId] = []
+  }
+  commentErrors.value[commentId].push(msg)
+}
+
+// clear a specific comment’s errors (optional)
+const clearCommentErrors = (commentId) => {
+  commentErrors.value[commentId] = []
+}
 
 const commentStore = useCommentStore()
 
@@ -31,7 +86,6 @@ const loadComments = async () => {
   })
 }
 
-// Add new comment
 const submitComment = async () => {
   if (!message.value || !message.value.trim()) return
 
@@ -43,15 +97,23 @@ const submitComment = async () => {
       user_id: props.currentUser.id,
       message: message.value,
     })
-    message.value = '' // reset editor
+
+    message.value = ''
+  } catch (e) {
+    pushGlobalError(e.message)
   } finally {
     isSubmitting.value = false
   }
 }
 
-// Delete comment
 const removeComment = async (id) => {
-  await commentStore.deleteComment(id)
+  clearCommentErrors(id)
+
+  try {
+    await commentStore.deleteComment(id)
+  } catch (e) {
+    pushCommentError(id, e.response?.data?.message)
+  }
 }
 
 onMounted(loadComments)
@@ -79,10 +141,32 @@ const isMine = (c) => c?.user_id === props.currentUser.id
 
 <template>
   <div class="space-y-4">
-    <!-- Comment List -->
+    <!-- ✅ Global Errors -->
+    <div v-if="globalErrors.length" class="space-y-2">
+      <div
+        v-for="err in globalErrors"
+        :key="err.id"
+        class="rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700 flex items-start justify-between gap-3"
+      >
+        <div>
+          <p class="font-semibold">Error</p>
+          <p class="text-xs opacity-80">{{ err.message }}</p>
+        </div>
+
+        <button
+          class="text-xs text-red-500 hover:underline"
+          @click="globalErrors = globalErrors.filter((e) => e.id !== err.id)"
+        >
+          Dismiss
+        </button>
+      </div>
+    </div>
+
     <!-- Comment List -->
     <div class="space-y-4">
-      <div v-if="loading" class="text-sm text-gray-500">Loading comments...</div>
+      <div v-if="loading && commentStore.action == 'fetching'" class="text-sm text-gray-500">
+        Loading comments...
+      </div>
 
       <div v-else-if="!comments.length" class="text-sm text-gray-500">No comments yet.</div>
 
@@ -130,10 +214,20 @@ const isMine = (c) => c?.user_id === props.currentUser.id
           >
             <button
               class="text-[11px] text-gray-400 hover:text-red-600 transition opacity-0 group-hover:opacity-100"
-              @click="removeComment(c.id)"
+              @click="openDeleteModal(c)"
             >
               Delete
             </button>
+          </div>
+          <div v-if="commentErrors[c.id]?.length" class="mt-2 space-y-1">
+            <p
+              v-for="(msg, i) in commentErrors[c.id]"
+              :key="i"
+              class="text-xs text-red-600"
+              :class="isMine(c) ? 'text-right' : 'text-left'"
+            >
+              {{ msg }}
+            </p>
           </div>
         </div>
 
@@ -167,5 +261,39 @@ const isMine = (c) => c?.user_id === props.currentUser.id
 
       <p v-if="error" class="text-xs text-red-600">{{ error }}</p>
     </div>
+
+    <!-- ✅ Delete Confirmation Modal -->
+    <OverlyModal v-if="deleteOpen">
+      <div class="bg-white rounded-2xl w-full max-w-md p-5 space-y-4">
+        <h3 class="text-lg font-semibold text-gray-900">Delete comment?</h3>
+
+        <p class="text-sm text-gray-600 leading-relaxed">
+          আপনি কি নিশ্চিত যে এই কমেন্টটি মুছে ফেলতে চান? মুছে ফেলা কমেন্ট পুনরুদ্ধার করা যাবে না।
+        </p>
+
+        <!-- preview -->
+        <div
+          class="rounded-xl bg-slate-50 border border-slate-100 p-3 text-sm text-gray-700 max-h-40 overflow-auto"
+        >
+          <div v-html="deleteTarget?.message"></div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button
+            class="px-4 py-2 rounded-lg border text-sm text-gray-700 hover:bg-gray-50"
+            @click="closeDeleteModal"
+          >
+            Cancel
+          </button>
+
+          <button
+            class="px-4 py-2 rounded-lg bg-red-600 text-white text-sm hover:bg-red-700"
+            @click="confirmDelete"
+          >
+            Yes, Delete
+          </button>
+        </div>
+      </div>
+    </OverlyModal>
   </div>
 </template>

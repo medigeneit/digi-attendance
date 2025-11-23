@@ -6,13 +6,14 @@ export const useCommentStore = defineStore('comment', () => {
   const comments = ref([]);
   const comment = ref(null); // ✅ single comment
   const loading = ref(false);
+  const action = ref('');
   const error = ref(null);
 
   // ✅ Fetch all comments
   const fetchComments = async (params) => {
     loading.value = true;
     error.value = null;
-    
+
     try {
       const response = await apiClient.get('/comments', {params});
       comments.value = response.data;
@@ -25,6 +26,7 @@ export const useCommentStore = defineStore('comment', () => {
 
   // ✅ Fetch a single comment by ID (for edit)
   const fetchComment = async (id) => {
+    action.value = 'fetching'
     loading.value = true;
     error.value = null;
     try {
@@ -33,12 +35,14 @@ export const useCommentStore = defineStore('comment', () => {
     } catch (err) {
       error.value = err.response?.data?.message || `কমেন্ট (ID: ${id}) লোড করতে ব্যর্থ হয়েছে।`;
     } finally {
+      action.value = ''
       loading.value = false;
     }
   };
 
   // ✅ Create new comment
   const createComment = async (data) => {
+    action.value = 'creating'
     loading.value = true;
     error.value = null;
     try {
@@ -47,13 +51,16 @@ export const useCommentStore = defineStore('comment', () => {
       return response.data.data;
     } catch (err) {
       error.value = err.response?.data?.message || 'কমেন্ট তৈরি করতে ব্যর্থ হয়েছে।';
+      throw err
     } finally {
       loading.value = false;
+      action.value = ''
     }
   };
 
   // ✅ Update comment
   const updateComment = async (id, data) => {
+    action.value = 'updating'
     loading.value = true;
     error.value = null;
     try {
@@ -68,11 +75,13 @@ export const useCommentStore = defineStore('comment', () => {
       throw err;
     } finally {
       loading.value = false;
+      action.value = ''
     }
   };
 
   // ✅ Delete comment
   const deleteComment = async (id) => {
+    action.value = 'deleting'
     loading.value = true;
     error.value = null;
     try {
@@ -80,8 +89,10 @@ export const useCommentStore = defineStore('comment', () => {
       comments.value = comments.value.filter((c) => c.id !== id);
     } catch (err) {
       error.value = err.response?.data?.message || `কমেন্ট (ID: ${id}) মুছতে ব্যর্থ হয়েছে।`;
+      throw err
     } finally {
       loading.value = false;
+      action.value = ''
     }
   };
 
@@ -90,6 +101,7 @@ export const useCommentStore = defineStore('comment', () => {
     comment: computed(() => comment.value),
     loading: computed(() => loading.value),
     error: computed(() => error.value),
+    action: computed(() => action.value),
     fetchComments,
     fetchComment,     // ✅ added
     createComment,
