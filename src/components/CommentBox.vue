@@ -117,7 +117,10 @@ const isMine = (c) => c?.user_id === props.currentUser.id
           </div>
 
           <!-- Message -->
-          <div class="prose prose-sm max-w-none text-gray-700 leading-relaxed" v-html="c.message" />
+          <div
+            class="prose prose-sm max-w-none text-gray-700 leading-relaxed text-sm"
+            v-html="c.message"
+          />
 
           <!-- Actions (visible on hover) -->
           <div
