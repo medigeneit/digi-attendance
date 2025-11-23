@@ -1,5 +1,6 @@
 ii
 <script setup>
+import CommentBox from '@/components/CommentBox.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import OverlyModal from '@/components/common/OverlyModal.vue'
 import ShareComponent from '@/components/common/ShareComponent.vue'
@@ -416,6 +417,17 @@ const reqClosingModal = ref({
 
                 <!-- {{ requirement.tasks }} -->
               </div>
+            </div>
+
+            <div class="mb-8">
+              <TextWithHr class="mb-4">
+                <h2 class="font-semibold text-lg px-2">Comments</h2>
+              </TextWithHr>
+              <CommentBox
+                commentable-type="requirement"
+                :commentable-id="requirement.id"
+                :current-user="auth.user"
+              />
             </div>
 
             <div class="mb-8">

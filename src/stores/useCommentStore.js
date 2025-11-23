@@ -9,11 +9,12 @@ export const useCommentStore = defineStore('comment', () => {
   const error = ref(null);
 
   // ✅ Fetch all comments
-  const fetchComments = async () => {
+  const fetchComments = async (params) => {
     loading.value = true;
     error.value = null;
+    
     try {
-      const response = await apiClient.get('/comments');
+      const response = await apiClient.get('/comments', {params});
       comments.value = response.data;
     } catch (err) {
       error.value = err.response?.data?.message || 'কমেন্ট লোড করতে ব্যর্থ হয়েছে।';

@@ -97,6 +97,11 @@ const requirementDepartmentGroups = computed(() => {
               <span class="text-white text-sm">To</span>
               <DepartmentChip :department="deptGroup.to_department" />
             </div>
+            <div class="border rounded text-sm px-2 text-white bg-sky-600 ml-auto">
+              {{ deptGroup.requirements.length }} requirement{{
+                deptGroup.requirements.length > 1 ? 's' : ''
+              }}
+            </div>
           </div>
 
           <div class="rounded-b-md overflow-x-auto border-x xl:border-x-0">

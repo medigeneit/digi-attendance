@@ -3,6 +3,7 @@ import { addRequirementAttachments } from '@/services/requirement'
 import { ref } from 'vue'
 import AttachmentPreview from '../AttachmentPreview.vue'
 import LoaderView from '../common/LoaderView.vue'
+import FileUploadInput from '../FileUploadInput.vue'
 
 const props = defineProps({ requirementId: [String, Number], default: () => null })
 const form = ref({ attachments: [] })
@@ -82,6 +83,7 @@ async function submit() {
       </label>
     </div>
 
+    <!-- <FileUploadInput class="mt-4" /> -->
     <AttachmentPreview
       :files="form?.attachments || []"
       @remove="removeFile"
