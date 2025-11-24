@@ -6,6 +6,7 @@ import OverlyModal from '@/components/common/OverlyModal.vue'
 import ShareComponent from '@/components/common/ShareComponent.vue'
 import DepartmentChip from '@/components/DepartmentChip.vue'
 import DescriptionView from '@/components/DescriptionView.vue'
+import HTMLTextBody from '@/components/HTMLTextBody.vue'
 import RequirementAttachments from '@/components/requirements/RequirementAttachments.vue'
 import RequirementCloseInfo from '@/components/requirements/RequirementCloseInfo.vue'
 import RequirementClosingForm from '@/components/requirements/RequirementClosingForm.vue'
@@ -267,30 +268,41 @@ const reqClosingModal = ref({
     </OverlyModal>
 
     <OverlyModal v-if="closingHistoryShown">
-      <div class="border-b px-4 py-2 bg-gray-50 flex items-center justify-between rounded-t-md">
+      <div class="border-b px-3 py-1 bg-gray-50 flex items-center justify-between rounded-t-md">
         <h3 class="text-xl font-semibold">Closing History</h3>
-        <button class="btn-icon" @click.prevent="closingHistoryShown = false">
+        <button class="btn-icon size-8" @click.prevent="closingHistoryShown = false">
           <i class="fas fa-times"></i>
         </button>
       </div>
-      <div v-if="requirement?.closing_history && requirement?.closing_history?.length">
+      <div
+        v-if="requirement?.closing_history && requirement?.closing_history?.length"
+        class="p-3 max-h-[50vh] overflow-auto"
+      >
         <table class="border table-auto w-full">
           <thead>
             <tr>
+              <th class="border-y py-1 text-sm px-4 text-right">Close/Open</th>
               <th class="border-y py-1 text-sm px-4 text-left">Closed AT</th>
               <th class="border-y py-1 text-sm px-4 text-left">Note</th>
               <th class="border-y py-1 text-sm px-4 text-center">Status</th>
-              <th class="border-y py-1 text-sm px-4 text-center">Close/Open</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="history in requirement?.closing_history || []" :key="history.at">
-              <td class="border-y px-4 py-1">
+            <tr
+              v-for="history in requirement?.closing_history || []"
+              :key="history.at"
+              class="text-sm"
+            >
+              <td class="border-y px-4 py-2 text-right">{{ history?.type }}</td>
+              <td class="border-y pr-4 py-2 whitespace-nowrap">
                 {{ history.at ? getDisplayDateTime(history.at) : '' }}
               </td>
-              <td class="border-y px-4 py-1">{{ history?.closing_note }}</td>
-              <td class="border-y px-4 py-1 text-center">{{ history?.status }}</td>
-              <td class="border-y px-4 py-1 text-center">{{ history?.type }}</td>
+              <td class="border-y px-4 py-2">
+                <div class="line-clamp-2 text-sm text-amber-950">
+                  {{ history?.closing_note }}
+                </div>
+              </td>
+              <td class="border-y px-4 py-2 text-center">{{ history?.status }}</td>
             </tr>
           </tbody>
         </table>
@@ -345,7 +357,7 @@ const reqClosingModal = ref({
                     :class-name="{ button: 'group-hover/item:underline' }"
                     class="text-sm"
                   >
-                    <p v-html="requirement.description" class="text-justify"></p>
+                    <HTMLTextBody :message="requirement.description" />
                   </DescriptionView>
                 </div>
               </div>
@@ -430,7 +442,7 @@ const reqClosingModal = ref({
               />
             </div>
 
-            <div class="mb-8">
+            <div v-if="false" class="mb-8">
               <TextWithHr class="mb-4">
                 <h2 class="font-semibold text-lg px-2">
                   '{{ requirement?.to_department?.short_name || requirement?.to_department?.name }}'
@@ -588,7 +600,7 @@ const reqClosingModal = ref({
           class="col-span-full md:col-span-4 xl:col-span-4 2xl:col-span-3 sticky top-[74px] break-before-avoid-page"
           ref="sidebarTop"
         >
-          <div class="bg-white shadow rounded-lg space-y-4 p-4">
+          <div class="bg-white shadow rounded-lg space-y-4 p-4 mb-4">
             <div class="border col-span-3 p-3 rounded-md">
               <div>
                 <div class="flex items-center gap-2 mb-4">
@@ -671,7 +683,8 @@ const reqClosingModal = ref({
                   >
                 </div>
               </div>
-              <div class="mb-6">
+
+              <div class="mb-4">
                 <div class="flex justify-between items-center">
                   <span class="text-gray-500 text-sm">Status:</span>
                   <span
@@ -689,27 +702,7 @@ const reqClosingModal = ref({
                 </div>
               </div>
 
-              <div class="mb-2" v-if="!requirement.closed_at">
-                <div class="flex justify-end text-sky-500">
-                  <button
-                    class="btn-1 border border-sky-800"
-                    @click.prevent="reqClosingModal.open = true"
-                  >
-                    Close Requirement
-                  </button>
-                </div>
-              </div>
-
-              <div class="text-right w-full mb-4" v-if="requirement?.closing_history?.length > 1">
-                <button
-                  @click="closingHistoryShown = !closingHistoryShown"
-                  class="text-sm text-sky-400 hover:underline"
-                >
-                  Show Closing History
-                </button>
-              </div>
-
-              <div class="mb-6" v-if="requirement.rejected_by">
+              <div class="mb-2" v-if="requirement.rejected_by">
                 <div class="flex justify-between items-center">
                   <span class="text-gray-500 text-sm">Rejected By:</span>
                   <UserChip :user="requirement.rejected_by" />
@@ -717,23 +710,17 @@ const reqClosingModal = ref({
               </div>
 
               <div
-                class="text-center mb-4 text-red-700 mt-8 text-sm"
+                class="mb-4 text-red-700 text-sm flex justify-between"
                 v-if="requirement.rejection_reason"
               >
-                <p class="text-gray-600 mb-1 italic">Reason</p>
+                <p class="text-gray-600 mb-1">Reason:</p>
                 <p>{{ requirement.rejection_reason }}</p>
               </div>
 
               <hr class="mb-3" />
 
-              <RequirementCloseInfo
-                v-if="requirement?.closed_at"
-                :requirement="requirement"
-                @reOpenClick="reqClosingModal.open = true"
-              />
-
               <div
-                v-else
+                v-if="!requirement?.closed_at"
                 class="print:hidden flex gap-2 items-center justify-between w-full text-sm"
               >
                 <button
@@ -754,10 +741,15 @@ const reqClosingModal = ref({
             </div>
           </div>
 
-          <RequirementAttachments
+          <RequirementCloseInfo
             :requirement="requirement"
-            class="mt-4 md:col-span-4 xl:col-span-4 2xl:col-span-3"
+            @reOpenClick="reqClosingModal.open = true"
+            class="mb-4 card-bg bg-white"
+            @closeClick="reqClosingModal.open = true"
+            @showHistoryClick="closingHistoryShown = !closingHistoryShown"
           />
+
+          <RequirementAttachments :requirement="requirement" class="mb-4" />
 
           <ShareComponent
             class="mt-4 md:col-span-4 xl:col-span-4 2xl:col-span-3"

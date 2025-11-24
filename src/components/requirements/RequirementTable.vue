@@ -48,14 +48,56 @@ const auth = useAuthStore()
             <div class="space-y-4">
               <RouterLink
                 :to="{ name: 'RequirementShow', params: { id: req?.id } }"
-                class="text-blue-600 hover:underline hover:text-blue-800 z-20"
+                class="text-blue-600 hover:text-blue-800 z-20"
               >
-                <div class="text-xl mb-4" :title="req?.title">
+                <div class="text-xl mb-4 flex gap-4 md:justify-between items-center">
                   <!-- <span class="text-gray-400 mr-1">ID:</span> -->
-                  <span class="text-sky-800 font-bold">{{ req?.id }}</span>
+                  <span class="text-sky-800 font-bold hover:underline md:mr-auto">{{
+                    req?.id
+                  }}</span>
+                  <div
+                    class="flex justify-center items-center gap-1 text-gray-600 mt-1"
+                    v-if="req.comments_count > 0"
+                    title="Comments"
+                  >
+                    <div class="relative">
+                      <i class="far fa-comment-alt"></i>
+                      <span class="text-xs absolute top-1 left-1/2 -translate-x-1/2 font-semibold">
+                        {{ req.comments_count }}
+                      </span>
+                    </div>
+                  </div>
+                  <div
+                    class="whitespace-nowrap text-sm"
+                    :class="[
+                      {
+                        'text-green-700 font-semibold':
+                          req.tasks_count > 0 && req.completed_tasks_count == req.tasks_count,
+                        'text-red-700 font-semibold':
+                          req.tasks_count == 0 || req.completed_tasks_count != req.tasks_count,
+                      },
+                    ]"
+                  >
+                    {{ req.completed_tasks_count }}/{{ req.tasks_count }}
+                    <span class="hidden md:inline">
+                      task{{ req.completed_tasks_count !== 1 ? 's' : '' }}
+                    </span>
+                    <span> done</span>
+                  </div>
+                  <div class="flex justify-center items-center gap-1">
+                    <span
+                      class="border rounded-lg px-2 py-0.5 text-xs"
+                      :class="{
+                        'bg-red-300 text-red-700 border-red-400': req.status != 'approved',
+                        'bg-green-300 text-green-700 border-green-400': req.status == 'approved',
+                      }"
+                    >
+                      {{ String(req.status).toUpperCase() }}
+                    </span>
+                  </div>
                 </div>
                 <div class="text-blue-800">
-                  <div class="line-clamp-2 font-semibold" :title="req?.title">
+                  <div class="line-clamp-2 font-semibold hover:underline" :title="req?.title">
                     {{ req?.title }}
                   </div>
                 </div>
@@ -104,13 +146,6 @@ const auth = useAuthStore()
                 ]"
                 >{{ req.priority }}</span
               >
-
-              <div class="flex items-center gap-1 text-sky-600" v-if="req.comments_count > 0">
-                <i class="fas fa-comment"></i>
-                <span class="text-sm">
-                  {{ req.comments_count }}
-                </span>
-              </div>
             </div>
 
             <div
@@ -251,31 +286,6 @@ const auth = useAuthStore()
           <td
             class="px-4 py-2 md:py-4 text-center border border-gray-200 bg-sky-50 sm:sticky right-0"
           >
-            <div class="flex justify-center items-center gap-1">
-              <span
-                class="border rounded-lg px-2 py-0.5 text-xs"
-                :class="{
-                  'bg-red-300 text-red-700 border-red-400': req.status != 'approved',
-                  'bg-green-300 text-green-700 border-green-400': req.status == 'approved',
-                }"
-              >
-                {{ String(req.status).toUpperCase() }}
-              </span>
-            </div>
-            <div
-              class="whitespace-nowrap text-sm mt-1"
-              :class="[
-                {
-                  'text-green-700 font-semibold':
-                    req.tasks_count > 0 && req.completed_tasks_count == req.tasks_count,
-                  'text-red-700 font-semibold':
-                    req.tasks_count == 0 || req.completed_tasks_count != req.tasks_count,
-                },
-              ]"
-            >
-              {{ req.completed_tasks_count }}/{{ req.tasks_count }} task(s) done
-            </div>
-
             <div class="flex gap-2 md:gap-4 items-center justify-center mt-3">
               <RouterLink
                 :to="{ name: 'RequirementShow', params: { id: req?.id } }"

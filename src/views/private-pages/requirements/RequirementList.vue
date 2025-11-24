@@ -93,14 +93,15 @@ const requirementDepartmentGroups = computed(() => {
           >
             <div class="font-semibold flex items-center gap-2">
               <span class="text-white text-sm">From</span>
-              <DepartmentChip :department="deptGroup.from_department" />
+              <DepartmentChip :department="deptGroup.from_department" :shortName="true" />
               <span class="text-white text-sm">To</span>
-              <DepartmentChip :department="deptGroup.to_department" />
+              <DepartmentChip :department="deptGroup.to_department" :shortName="true" />
             </div>
             <div class="border rounded text-sm px-2 text-white bg-sky-600 ml-auto">
-              {{ deptGroup.requirements.length }} requirement{{
-                deptGroup.requirements.length > 1 ? 's' : ''
-              }}
+              {{ deptGroup.requirements.length }}
+              <span class="hidden md:inline">
+                requirement{{ deptGroup.requirements.length > 1 ? 's' : '' }}</span
+              >
             </div>
           </div>
 

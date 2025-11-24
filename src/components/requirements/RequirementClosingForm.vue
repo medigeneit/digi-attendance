@@ -94,8 +94,9 @@ async function handleStatusSubmit() {
       <div class="text-red-600 text-center mt-2 text-sm">{{ error }}</div>
       <div class="flex justify-between mt-3">
         <button class="btn-3" @click.prevent="emit('clickCancel')">Cancel</button>
-        <button class="btn-2">
-          {{ requirement?.closed_at ? 'Re-Open' : 'Close' }}
+
+        <button class="btn-2 disabled:opacity-45" :disabled="note.trim().length == 0">
+          {{ requirement?.closed_at ? 'Re-Open Requirement' : 'Close Requirement' }}
         </button>
       </div>
     </div>

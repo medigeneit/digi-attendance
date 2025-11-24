@@ -1,10 +1,11 @@
 <script setup>
 import { useCommentStore } from '@/stores/useCommentStore' // path adjust as your project
 import { computed, onMounted, ref, watch } from 'vue'
-// তোমার existing components (create কোরো না)
 import TextEditor from '@/components/TextEditor.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
+import { stripTags } from '@/libs/string'
 import OverlyModal from './common/OverlyModal.vue'
+import HTMLTextBody from './HTMLTextBody.vue'
 
 // ✅ Props: page থেকে এগুলো পাঠাবে
 const props = defineProps({
@@ -87,7 +88,7 @@ const loadComments = async () => {
 }
 
 const submitComment = async () => {
-  if (!message.value || !message.value.trim()) return
+  if (!message.value || !stripTags(String(message.value)).trim()) return
 
   isSubmitting.value = true
   try {
@@ -201,10 +202,7 @@ const isMine = (c) => c?.user_id === props.currentUser.id
           </div>
 
           <!-- Message -->
-          <div
-            class="prose prose-sm max-w-none text-gray-700 leading-relaxed text-sm"
-            v-html="c.message"
-          />
+          <HTMLTextBody :message="c.message" />
 
           <!-- Actions (visible on hover) -->
           <div
@@ -252,7 +250,7 @@ const isMine = (c) => c?.user_id === props.currentUser.id
       <div class="flex items-center justify-end gap-2">
         <button
           class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm disabled:opacity-60"
-          :disabled="isSubmitting || !message.trim()"
+          :disabled="isSubmitting || !stripTags(String(message)).trim()"
           @click="submitComment"
         >
           {{ isSubmitting ? 'Posting...' : 'Post Comment' }}
