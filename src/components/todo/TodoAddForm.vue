@@ -117,7 +117,7 @@ onMounted(async () => {
         </div>
 
         <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-1 text-sm">Task ID (optional)</label>
+          <label class="block text-gray-700 font-medium mb-1 text-sm">Task (optional)</label>
 
           <TodoTypeInput
             v-model:show="showTodoTypes"
