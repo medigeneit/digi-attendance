@@ -1,9 +1,9 @@
 <script setup>
-import { useCommentStore } from '@/stores/useCommentStore' // path adjust as your project
-import { computed, onMounted, ref, watch } from 'vue'
 import TextEditor from '@/components/TextEditor.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import { stripTags } from '@/libs/string'
+import { useCommentStore } from '@/stores/useCommentStore' // path adjust as your project
+import { computed, onMounted, ref, watch } from 'vue'
 import OverlyModal from './common/OverlyModal.vue'
 import HTMLTextBody from './HTMLTextBody.vue'
 
@@ -184,12 +184,12 @@ const isMine = (c) => c?.user_id === props.currentUser.id
 
         <!-- Bubble -->
         <div
-          class="group relative min-w-[50%] max-w-[90%] rounded-md px-4 py-3 shadow-sm border"
+          class="group relative min-w-[25%] max-w-[90%] rounded-md px-4 py-3 shadow-sm border"
           :class="isMine(c) ? 'bg-indigo-50 border-indigo-100' : 'bg-white border-gray-100'"
         >
           <!-- Header -->
           <div
-            class="flex items-center gap-2 mb-1"
+            class="flex items-center gap-2 mb-2 pb-1 border-b border-dashed"
             :class="isMine(c) ? 'justify-end' : 'justify-start'"
           >
             <p class="text-sm font-semibold text-gray-800">

@@ -9,7 +9,7 @@ export function convertTaskLinks(html) {
       // শুধু text node-এ replace হবে
       if (child.nodeType === Node.TEXT_NODE) {
         const replaced = child.textContent.replace(regex, (match, id) => {
-          return `<a href="/tasks/${id}" class="text-pink-600 hover:underline font-bold">${match}</a>`
+          return `<a href="/requirement-tasks/${id}" class="text-pink-600 hover:underline font-bold">${match}</a>`
         })
 
         // শুধু তখনই replace করা লাগলে
