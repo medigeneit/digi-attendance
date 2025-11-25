@@ -68,7 +68,10 @@
 
                 <div class="ml-auto">
                   <button
-                    v-if="route?.name == 'RequirementTaskList'"
+                    v-if="
+                      route?.name == 'RequirementTaskList' &&
+                      authStore?.user?.department_id == requirement?.to_department_id
+                    "
                     @click="
                       emits(
                         'clickAddTask',
@@ -111,6 +114,7 @@
 
 <script setup>
 import TaskTableRow from '@/components/tasks/TaskTableRow.vue'
+import { useAuthStore } from '@/stores/auth'
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -124,6 +128,8 @@ const props = defineProps({
 })
 
 const route = useRoute()
+
+const authStore = useAuthStore()
 
 const requirements = computed(() => {
   return props.tasks

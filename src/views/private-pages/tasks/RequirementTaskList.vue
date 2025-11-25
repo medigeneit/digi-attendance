@@ -306,7 +306,10 @@ function getTaskRouterLink(task) {
             </div>
             <div class="ml-auto">
               <button
-                v-if="route?.name == 'RequirementTaskList'"
+                v-if="
+                  route?.name == 'RequirementTaskList' &&
+                  authStore?.user?.department_id == deptGroup?.to_department?.id
+                "
                 @click="
                   () =>
                     goToAdd(
