@@ -83,7 +83,27 @@ const leaveDaysMessage = computed(() => {
   const end = new Date(endDateStr)
   if (end <= start) return 'Resumption date must be after Last Working Date.'
   if (leaveDays.value.length === 0) return 'No leave days between the selected dates.'
-  return `Total leave days: ${leaveDays.value.length}`
+  return null
+})
+
+const leaveStats = computed(() => {
+  const total = leaveDays.value.length
+  if (!total) {
+    return { total: 0, weekends: 0, holidays: 0, assigned: 0, pending: 0 }
+  }
+
+  let weekends = 0
+  let holidays = 0
+  let assigned = 0
+  leaveDays.value.forEach((day) => {
+    const val = selectedLeaveTypes.value?.[day]
+    if (val === 'weekend') weekends += 1
+    else if (val === 'holiday') holidays += 1
+    else if (val) assigned += 1
+  })
+
+  const pending = Math.max(total - (weekends + holidays + assigned), 0)
+  return { total, weekends, holidays, assigned, pending }
 })
 
 /** count usage per numeric type id */
@@ -98,17 +118,53 @@ const typeUsageCounts = computed(() => {
 })
 
 /** exceeded types list (soft warning) */
+const normalizedRemaining = (type) => {
+  const raw = Number(type?.remaining_days)
+  return Number.isFinite(raw) ? raw : Infinity
+}
+
 const exceededTypes = computed(() => {
   const list = userLeaveBalance.value || []
   const over = []
   for (const t of list) {
     const used = typeUsageCounts.value[t.id] || 0
-    if (Number.isFinite(t.remaining_days) && used > t.remaining_days) {
-      over.push({ id: t.id, name: t.leave_type || t.name, used, remain: t.remaining_days })
+    const remain = normalizedRemaining(t)
+    if (remain !== Infinity && used > remain) {
+      over.push({ id: t.id, name: t.leave_type || t.name, used, remain })
     }
   }
   return over
 })
+
+const leaveLimitMessage = computed(() => {
+  if (!exceededTypes.value.length) return ''
+  const first = exceededTypes.value[0]
+  return `You requested ${first.used} ${first.name} day(s) but only ${first.remain} remaining.`
+})
+
+const getWeekdayLabel = (day) => {
+  return new Date(day).toLocaleString('en-us', { weekday: 'long' })
+}
+
+const getLeaveTypeName = (typeId) => {
+  const type = userLeaveBalance.value?.find((item) => item.id === typeId)
+  return type?.name || type?.leave_type || ''
+}
+
+const remainingDaysFor = (type) => {
+  const base = normalizedRemaining(type)
+  if (base === Infinity) return '∞'
+  const used = typeUsageCounts.value[type.id] || 0
+  return Math.max(base - used, 0)
+}
+
+const isTypeOptionDisabled = (type, currentSelection) => {
+  const base = normalizedRemaining(type)
+  if (base === Infinity) return false
+  if (currentSelection === type.id) return false
+  const used = typeUsageCounts.value[type.id] || 0
+  return used >= base
+}
 
 /** ✅ Range change হলে শুধু পুরোনো সিলেকশনগুলো রাখি; নতুন দিন -> খালি */
 const alignSelectionsToRange = () => {
@@ -265,140 +321,240 @@ const goBack = () => router.go(-1)
 </script>
 
 <template>
-  <div class="my-container max-w-3xl space-y-4">
-    <div class="flex items-center justify-between gap-2">
-      <button class="btn-3" @click="goBack">
-        <i class="far fa-arrow-left"></i>
-        <span class="hidden md:flex">Back</span>
-      </button>
-      <h1 class="title-md md:title-lg flex-wrap text-center">Leave Application Edit Form</h1>
-      <div>
+  <div class="my-container max-w-4xl space-y-6">
+    <section class="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm md:p-6">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <button class="btn-3" @click="goBack">
+          <i class="far fa-arrow-left"></i>
+          <span class="hidden md:flex">Back</span>
+        </button>
+        <div class="text-center">
+          <h1 class="title-md md:title-lg">Update Leave Plan</h1>
+          <p class="text-xs text-slate-500 md:text-sm">
+            Adjust your dates, reassign types, and keep approvers in the loop.
+          </p>
+        </div>
         <RouterLink to="/applications" class="btn-2">Home</RouterLink>
       </div>
-    </div>
+    </section>
 
     <LoaderView v-if="loading" />
 
-    <form v-else @submit.prevent="submitLeaveApplication" class="space-y-4 card-bg p-4 md:p-8">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <form
+      v-else
+      @submit.prevent="submitLeaveApplication"
+      class="relative space-y-6 rounded-2xl border border-slate-200 bg-white/80 p-4 pb-24 shadow-lg md:p-8 md:pb-28"
+    >
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
-          <label for="last-working-date" class="block text-sm font-medium">Last Working Date</label>
+          <label for="last-working-date" class="block text-sm font-medium text-slate-600">Last Working Date</label>
           <input
             type="date"
             id="last-working-date"
             v-model="form.last_working_date"
-            class="input-1 w-full"
+            class="input-1 mt-1 w-full"
             required
           />
         </div>
 
         <div>
-          <label for="resumption-date" class="block text-sm font-medium">Resumption Date</label>
+          <label for="resumption-date" class="block text-sm font-medium text-slate-600">Resumption Date</label>
           <input
             type="date"
             id="resumption-date"
             v-model="form.resumption_date"
-            class="input-1 w-full"
+            class="input-1 mt-1 w-full"
             required
           />
         </div>
       </div>
 
-      <div v-if="form.last_working_date && form.resumption_date">
-        <p class="text-blue-600 font-medium">{{ leaveDaysMessage }}</p>
+      <div v-if="form.last_working_date && form.resumption_date && leaveDaysMessage" class="rounded-lg bg-blue-50 p-3 text-sm text-blue-700">
+        {{ leaveDaysMessage }}
       </div>
 
-      <!-- Leave days (date-keyed radios) -->
-      <div v-if="leaveDays.length" class="bg-gray-100 p-2 rounded-md">
-        <h2 class="text-lg font-semibold">Leave Days</h2>
+      <div
+        v-if="leaveStats.total"
+        class="grid gap-3 rounded-xl border border-slate-100 bg-slate-50 p-4 sm:grid-cols-2 lg:grid-cols-4"
+      >
+        <div class="rounded-lg bg-white p-3 shadow-sm">
+          <p class="text-xs uppercase text-slate-400">Total Days</p>
+          <p class="text-2xl font-semibold text-slate-800">{{ leaveStats.total }}</p>
+        </div>
+        <div class="rounded-lg bg-white p-3 shadow-sm">
+          <p class="text-xs uppercase text-slate-400">Assigned</p>
+          <p class="text-xl font-semibold text-slate-800">{{ leaveStats.assigned }}</p>
+          <p class="text-xs text-slate-500">Leave types selected</p>
+        </div>
+        <div class="rounded-lg bg-white p-3 shadow-sm">
+          <p class="text-xs uppercase text-slate-400">Weekend / Holiday</p>
+          <p class="text-xl font-semibold text-slate-800">{{ leaveStats.weekends + leaveStats.holidays }}</p>
+          <p class="text-xs text-slate-500">Auto-excluded</p>
+        </div>
+        <div class="rounded-lg bg-white p-3 shadow-sm">
+          <p class="text-xs uppercase text-slate-400">Still Unassigned</p>
+          <p class="text-xl font-semibold text-amber-600">{{ leaveStats.pending }}</p>
+          <p class="text-xs text-slate-500">Select a leave type below</p>
+        </div>
+      </div>
 
-        <div v-for="(day, idx) in leaveDays" :key="day" class="flex gap-4 mb-2 bg-white p-2 rounded-md">
-          <div class="font-semibold w-32 shrink-0">{{ day }}</div>
+      <div
+        v-if="leaveLimitMessage"
+        class="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50/80 p-4 text-amber-800 shadow-sm"
+      >
+        <i class="fas fa-info-circle mt-1 text-amber-500"></i>
+        <p class="text-sm">{{ leaveLimitMessage }}</p>
+      </div>
 
-          <div class="flex flex-wrap gap-3">
-            <!-- numeric leave types -->
-            <label
-              v-for="type in userLeaveBalance"
-              :key="type.id"
-              class="flex items-center space-x-1"
-            >
-              <input
-                type="radio"
-                :name="'leaveType-' + day"
-                :value="type.id"
-                v-model="selectedLeaveTypes[day]"
-                :disabled="(typeUsageCounts[type.id] >= (type.remaining_days ?? Infinity)) && selectedLeaveTypes[day] !== type.id"
-              />
-              <span>{{ type.leave_type }}</span>
-            </label>
+      <div v-if="leaveDays.length" class="space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h2 class="text-lg font-semibold text-slate-700">Leave Days</h2>
+          <p class="text-xs text-slate-500">Tap a badge to classify each date</p>
+        </div>
+        <div class="max-h-[28rem] space-y-3 overflow-y-auto pr-1">
+          <div
+            v-for="day in leaveDays"
+            :key="day"
+            class="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition hover:border-blue-200 hover:shadow-md"
+          >
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p class="font-semibold text-slate-900">{{ day }}</p>
+                <p class="text-sm text-slate-500">{{ getWeekdayLabel(day) }}</p>
+              </div>
+              <span
+                v-if="selectedLeaveTypes[day]"
+                class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
+                :class="{
+                  'bg-amber-50 text-amber-700': selectedLeaveTypes[day] === 'weekend',
+                  'bg-emerald-50 text-emerald-700': selectedLeaveTypes[day] === 'holiday',
+                  'bg-blue-50 text-blue-700': selectedLeaveTypes[day] !== 'weekend' && selectedLeaveTypes[day] !== 'holiday',
+                }"
+              >
+                {{
+                  selectedLeaveTypes[day] === 'weekend'
+                    ? 'Weekend'
+                    : selectedLeaveTypes[day] === 'holiday'
+                    ? 'Holiday'
+                    : getLeaveTypeName(selectedLeaveTypes[day])
+                }}
+              </span>
+            </div>
 
-            <!-- weekend -->
-            <label class="flex items-center space-x-1">
-              <input
-                type="radio"
-                :name="'leaveType-' + day"
-                value="weekend"
-                v-model="selectedLeaveTypes[day]"
-              />
-              <span>Weekend</span>
-            </label>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <label
+                v-for="type in userLeaveBalance"
+                :key="type.id"
+                class="cursor-pointer rounded-full border px-3 py-1 text-sm font-medium transition"
+                :class="[
+                  selectedLeaveTypes[day] === type.id
+                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                    : 'border-slate-200 text-slate-600',
+                  isTypeOptionDisabled(type, selectedLeaveTypes[day])
+                    ? 'cursor-not-allowed opacity-40'
+                    : '',
+                ]"
+              >
+                <input
+                  type="radio"
+                  class="sr-only"
+                  :name="'leaveType-' + day"
+                  :value="type.id"
+                  v-model="selectedLeaveTypes[day]"
+                  :disabled="isTypeOptionDisabled(type, selectedLeaveTypes[day])"
+                />
+                <span>{{ type.name }} ({{ remainingDaysFor(type) }})</span>
+              </label>
 
-            <!-- holiday -->
-            <label class="flex items-center space-x-1">
-              <input
-                type="radio"
-                :name="'leaveType-' + day"
-                value="holiday"
-                v-model="selectedLeaveTypes[day]"
-              />
-              <span>Holiday</span>
-            </label>
+              <label
+                class="cursor-pointer rounded-full px-3 py-1 text-sm font-medium transition"
+                :class="selectedLeaveTypes[day] === 'weekend'
+                  ? 'border-amber-400 bg-amber-50 text-amber-700'
+                  : 'border-slate-200 text-slate-600 hover:border-amber-200 hover:text-amber-700'"
+              >
+                <input
+                  type="radio"
+                  class="sr-only"
+                  :name="'leaveType-' + day"
+                  value="weekend"
+                  v-model="selectedLeaveTypes[day]"
+                />
+                Weekend
+              </label>
+
+              <label
+                class="cursor-pointer rounded-full px-3 py-1 text-sm font-medium transition"
+                :class="selectedLeaveTypes[day] === 'holiday'
+                  ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
+                  : 'border-slate-200 text-slate-600 hover:border-emerald-200 hover:text-emerald-700'"
+              >
+                <input
+                  type="radio"
+                  class="sr-only"
+                  :name="'leaveType-' + day"
+                  value="holiday"
+                  v-model="selectedLeaveTypes[day]"
+                />
+                Holiday
+              </label>
+            </div>
           </div>
         </div>
-
-        <!-- soft warning if anything exceeded -->
-        <p v-if="exceededTypes.length" class="text-red-600 text-sm font-medium mt-2">
-          You have exceeded remaining days for:
-          {{ exceededTypes.map(t => `${t.name} (used ${t.used}/${t.remain})`).join(', ') }}
-        </p>
       </div>
 
-      <div>
-        <label for="reason" class="block text-sm font-medium">Reason</label>
+      <div class="space-y-1">
+        <label for="reason" class="text-sm font-medium text-slate-600">Reason</label>
         <textarea
           id="reason"
           v-model="form.reason"
           class="input-1 w-full"
-          placeholder="Enter your reason for leave"
+          placeholder="Let approvers know why you need the time off"
+          rows="3"
         ></textarea>
       </div>
 
-      <div>
-        <label for="handover-user" class="block text-sm font-medium">Handover User</label>
+      <div class="space-y-1">
+        <label for="handover-user" class="text-sm font-medium text-slate-600">Handover User</label>
         <MultiselectDropdown
           v-model="selectUser"
           :options="userStore.users"
           :multiple="false"
           label="label"
-          placeholder="Select user"
+          placeholder="Search teammate"
         />
       </div>
 
-      <div>
-        <label for="works-in-hand" class="block text-sm font-medium">Works in Hand</label>
+      <div class="space-y-1">
+        <label for="works-in-hand" class="text-sm font-medium text-slate-600">Works in Hand</label>
         <textarea
           id="works-in-hand"
           v-model="form.works_in_hand"
           class="input-1 w-full"
-          placeholder="Enter details of works in hand"
+          placeholder="Share current deliverables so the team has context"
           rows="6"
         ></textarea>
       </div>
 
-      <div v-if="error" class="text-red-500 text-sm">{{ error }}</div>
+      <div
+        v-if="error"
+        class="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-red-700 shadow-sm"
+      >
+        <div class="flex-shrink-0">
+          <i class="fas fa-exclamation-triangle text-red-500"></i>
+        </div>
+        <div class="flex-1 text-sm leading-5">
+          <p class="font-medium">Something went wrong!</p>
+          <p class="mt-0.5">{{ error }}</p>
+        </div>
+      </div>
 
-      <div class="flex justify-end">
-        <button type="submit" class="btn-1">Update</button>
+      <div
+        class="sticky inset-x-0 bottom-0 -mx-4 flex justify-end border-t border-slate-100 bg-white/95 px-4 py-4 backdrop-blur supports-[backdrop-filter]:bg-white/80 md:-mx-8 md:px-8"
+      >
+        <button type="submit" class="btn-2 inline-flex items-center gap-2 shadow-md">
+          <i class="far fa-save"></i>
+          Update Application
+        </button>
       </div>
     </form>
   </div>
