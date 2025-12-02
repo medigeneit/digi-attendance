@@ -197,7 +197,7 @@ const isMine = (c) => c?.user_id === props.currentUser.id
               class="flex items-center gap-2 mb-2 pb-1 border-b border-dashed"
               :class="isMine(c) ? 'justify-end' : 'justify-start'"
             >
-              <p class="text-sm font-semibold text-gray-800">
+              <p class="text-sm font-bold text-gray-800">
                 {{ isMine(c) ? 'You' : c.user?.name || 'Unknown' }}
               </p>
               <span class="text-xs text-gray-400">•</span>
