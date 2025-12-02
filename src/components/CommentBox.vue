@@ -178,59 +178,65 @@ const isMine = (c) => c?.user_id === props.currentUser.id
         :class="isMine(c) ? 'justify-end' : 'justify-start'"
       >
         <!-- Left avatar for others -->
-        <div v-if="!isMine(c)" class="shrink-0">
+        <div v-if="!isMine(c)" class="shrink-0 mt-2">
           <UserAvatar :user="c.user" />
         </div>
 
         <!-- Bubble -->
         <div
-          class="group relative min-w-[25%] max-w-[90%] rounded-md px-4 py-3 shadow-sm border"
-          :class="isMine(c) ? 'bg-indigo-50 border-indigo-100' : 'bg-white border-gray-100'"
+          class="group relative min-w-[25%] max-w-[90%] rounded-md shadow border bubble-arrow"
+          :class="
+            isMine(c)
+              ? 'bubble-right bg-indigo-50 border-indigo-100'
+              : 'bubble-left bg-white border-gray-100'
+          "
         >
-          <!-- Header -->
-          <div
-            class="flex items-center gap-2 mb-2 pb-1 border-b border-dashed"
-            :class="isMine(c) ? 'justify-end' : 'justify-start'"
-          >
-            <p class="text-sm font-semibold text-gray-800">
-              {{ isMine(c) ? 'You' : c.user?.name || 'Unknown' }}
-            </p>
-            <span class="text-xs text-gray-400">•</span>
-            <p class="text-xs text-gray-400">
-              {{ formatDate(c.created_at) }}
-            </p>
-          </div>
-
-          <!-- Message -->
-          <HTMLTextBody :message="c.message" />
-
-          <!-- Actions (visible on hover) -->
-          <div
-            v-if="canDelete(c)"
-            class="mt-2 flex"
-            :class="isMine(c) ? 'justify-end' : 'justify-start'"
-          >
-            <button
-              class="text-[11px] text-gray-400 hover:text-red-600 transition opacity-0 group-hover:opacity-100"
-              @click="openDeleteModal(c)"
+          <div class="bg-inherit bubble-inner px-4 py-3 rounded-md">
+            <!-- Header -->
+            <div
+              class="flex items-center gap-2 mb-2 pb-1 border-b border-dashed"
+              :class="isMine(c) ? 'justify-end' : 'justify-start'"
             >
-              Delete
-            </button>
-          </div>
-          <div v-if="commentErrors[c.id]?.length" class="mt-2 space-y-1">
-            <p
-              v-for="(msg, i) in commentErrors[c.id]"
-              :key="i"
-              class="text-xs text-red-600"
-              :class="isMine(c) ? 'text-right' : 'text-left'"
+              <p class="text-sm font-semibold text-gray-800">
+                {{ isMine(c) ? 'You' : c.user?.name || 'Unknown' }}
+              </p>
+              <span class="text-xs text-gray-400">•</span>
+              <p class="text-xs text-gray-400">
+                {{ formatDate(c.created_at) }}
+              </p>
+            </div>
+
+            <!-- Message -->
+            <HTMLTextBody :message="c.message" />
+
+            <!-- Actions (visible on hover) -->
+            <div
+              v-if="canDelete(c)"
+              class="mt-2 flex"
+              :class="isMine(c) ? 'justify-end' : 'justify-start'"
             >
-              {{ msg }}
-            </p>
+              <button
+                class="text-[11px] text-gray-400 hover:text-red-600 transition opacity-0 group-hover:opacity-100"
+                @click="openDeleteModal(c)"
+              >
+                Delete
+              </button>
+            </div>
+            <div v-if="commentErrors[c.id]?.length" class="mt-2 space-y-1">
+              <p
+                v-for="(msg, i) in commentErrors[c.id]"
+                :key="i"
+                class="text-xs text-red-600"
+                :class="isMine(c) ? 'text-right' : 'text-left'"
+              >
+                {{ msg }}
+              </p>
+            </div>
           </div>
         </div>
 
         <!-- Right avatar for mine -->
-        <div v-if="isMine(c)" class="shrink-0">
+        <div v-if="isMine(c)" class="shrink-0 mt-2">
           <UserAvatar :user="c.user || currentUser" />
         </div>
       </div>
@@ -262,7 +268,7 @@ const isMine = (c) => c?.user_id === props.currentUser.id
 
     <!-- ✅ Delete Confirmation Modal -->
     <OverlyModal v-if="deleteOpen">
-      <div class="bg-white rounded-2xl w-full max-w-md p-5 space-y-4">
+      <div class="bg-white rounded-2xl w-full p-5 space-y-4">
         <h3 class="text-lg font-semibold text-gray-900">Delete comment?</h3>
 
         <p class="text-sm text-gray-600 leading-relaxed">
@@ -295,3 +301,42 @@ const isMine = (c) => c?.user_id === props.currentUser.id
     </OverlyModal>
   </div>
 </template>
+
+<style scoped>
+.bubble-inner {
+  z-index: 4;
+  position: relative;
+}
+
+.bubble-arrow.bubble-right::before {
+  content: '';
+  position: absolute;
+  top: 12px;
+  right: -8px;
+  height: 14px;
+  width: 14px;
+  background-color: inherit;
+  border-color: inherit;
+  box-shadow: inherit;
+  border-width: inherit;
+  transform: rotate(-45deg);
+  z-index: 1;
+  @apply border-b border-r;
+}
+
+.bubble-arrow.bubble-left::before {
+  content: '';
+  position: absolute;
+  top: 12px;
+  left: -8px;
+  height: 14px;
+  width: 14px;
+  background-color: inherit;
+  border-color: inherit;
+  box-shadow: inherit;
+  border-width: inherit;
+  transform: rotate(45deg);
+  z-index: 1;
+  @apply border-b border-l;
+}
+</style>
