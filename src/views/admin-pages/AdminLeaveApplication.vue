@@ -167,6 +167,7 @@ const closeLeaveTypeModal = () => {
                     <th class="px-4 py-2 text-center">Type</th>
                     <th class="px-4 py-2 text-center">Total</th>
                     <th class="px-4 py-2 text-center">Used</th>
+                    <th class="px-4 py-2 text-center">Pending</th>
                     <th class="px-4 py-2 text-center">Remaining</th>
                   </tr>
                 </thead>
@@ -176,9 +177,10 @@ const closeLeaveTypeModal = () => {
                     :key="leave.id"
                     class="border-t hover:bg-gray-50"
                   >
-                    <td class="px-4 py-1 text-center font-medium">{{ leave.leave_type }}</td>
+                    <td class="px-4 py-1 text-center font-medium">{{ leave.name }}</td>
                     <td class="px-4 py-1 text-center">{{ leave.annual_quota }}</td>
                     <td class="px-4 py-1 text-center">{{ leave.used_days }}</td>
+                    <td class="px-4 py-1 text-center">{{ leave?.pending_days }}</td>
                     <td class="px-4 py-1 text-center">{{ leave.remaining_days }}</td>
                   </tr>
                 </tbody>

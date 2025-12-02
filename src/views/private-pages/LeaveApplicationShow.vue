@@ -352,14 +352,16 @@ const removeAttachment = async () => {
                   <th class="border border-gray-500 px-4 py-0.5 text-left">Leave Type</th>
                   <th class="border border-gray-500 px-4 py-0.5 text-center">Total Days</th>
                   <th class="border border-gray-500 px-4 py-0.5 text-center">Used Days</th>
+                  <th class="border border-gray-500 px-4 py-0.5 text-center">Pending Days</th>
                   <th class="border border-gray-500 px-4 py-0.5 text-center">Remaining Days</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="(b, i) in leaveApplication?.leave_balance" :key="i" class="hover:bg-blue-200">
-                  <td class="border border-gray-500 px-4 py-0.5 text-left">{{ b.leave_type }}</td>
+                  <td class="border border-gray-500 px-4 py-0.5 text-left">{{ b.name }}</td>
                   <td class="border border-gray-500 px-4 py-0.5 text-center">{{ b?.annual_quota }}</td>
                   <td class="border border-gray-500 px-4 py-0.5 text-center">{{ b.used_days }}</td>
+                  <td class="border border-gray-500 px-4 py-0.5 text-center">{{ b.pending_days }}</td>
                   <td
                     class="border border-gray-500 px-4 py-0.5 text-center"
                     :class="{ 'text-green-600 font-bold': b.remaining_days > 0, 'text-red-600 font-bold': b.remaining_days === 0 }"
