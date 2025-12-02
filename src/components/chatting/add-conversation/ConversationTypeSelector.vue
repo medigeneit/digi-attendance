@@ -10,11 +10,6 @@ const emit = defineEmits(['update:modelValue'])
 
 const options = computed(() => [
   {
-    label: 'Direct',
-    value: 'direct',
-    iconClass: 'fas fa-handshake',
-  },
-  {
     label: 'Group',
     value: 'group',
     iconClass: 'fas fa-users',

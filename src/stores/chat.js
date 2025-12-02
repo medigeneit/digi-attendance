@@ -14,6 +14,29 @@ export const useChatStore = defineStore('chat', () => {
   const activeConversationId = ref(null)
   const messages = ref([])
   const searchText = ref('')
+  const searchedUsers = ref([])
+
+  const searchUsers = async (query) => {
+    if (!query) {
+      searchedUsers.value = []
+      return
+    }
+    
+    loading.value = true
+    try {
+      const response = await apiClient.get('/chat/users/search', { params: { q: query } })
+      searchedUsers.value = response.data
+    } catch (err) {
+      console.error('Error searching users:', err)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const clearSearch = () => {
+    searchText.value = ''
+    searchedUsers.value = []
+  }
 
   const notificationCount = ref(0)
 
@@ -73,8 +96,19 @@ export const useChatStore = defineStore('chat', () => {
 
     try {
       const response = await apiClient.post('/chat/conversations', body)
-      activeConversationId.value = response.data.id
-      return response.data.id
+      const conversation = response.data
+      
+      // Add to list if not exists
+      const exists = conversations.value.find(c => c.id === conversation.id)
+      if (!exists) {
+        conversations.value.unshift(conversation)
+      } else {
+        // Update existing if needed (optional, but good for consistency)
+        Object.assign(exists, conversation)
+      }
+
+      activeConversationId.value = conversation.id
+      return conversation.id
     } catch (err) {
       error.value = err.response?.data?.message || 'ডাটা Create করতে ব্যর্থ হয়েছে।'
       console.error('Error creating conversation:', err)
@@ -250,5 +284,8 @@ export const useChatStore = defineStore('chat', () => {
     createConversationMessage,
     fetchNotificationCount,
     readAllForActiveConversation,
+    searchedUsers,
+    searchUsers,
+    clearSearch,
   }
 })

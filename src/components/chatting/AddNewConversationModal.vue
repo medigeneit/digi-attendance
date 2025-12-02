@@ -14,7 +14,7 @@ const chatStore = useChatStore()
 const router = useRouter()
 
 // state
-const conversationType = ref('')
+const conversationType = ref('group') // Default to group since direct is removed
 const companyId = ref('')
 const departmentId = ref('')
 const groupTitle = ref('')
@@ -28,7 +28,7 @@ const closeModal = () => {
 }
 
 function resetAll() {
-  conversationType.value = ''
+  conversationType.value = 'group'
   companyId.value = ''
   departmentId.value = ''
   groupTitle.value = ''
@@ -132,11 +132,7 @@ async function submit() {
           <button
             type="submit"
             class="px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 disabled:opacity-60"
-            :disabled="
-              conversationType === TYPES.DIRECT
-                ? selectedUserIds.length !== 1
-                : !groupTitle.trim() || selectedUserIds.length < 2
-            "
+            :disabled="!groupTitle.trim() || selectedUserIds.length < 2"
           >
             Create
           </button>
