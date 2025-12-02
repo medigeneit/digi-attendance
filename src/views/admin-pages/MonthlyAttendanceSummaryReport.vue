@@ -23,7 +23,6 @@ const toNum = (v) => {
   return Number.isFinite(n) ? n : 0
 }
 const sumBy = (rows, keyPath) => {
-  // keyPath can be 'total_cl_leave' or 'paycut.paycut_hours'
   return rows.reduce((acc, row) => {
     try {
       const val = keyPath.split('.').reduce((o, k) => (o ? o[k] : undefined), row)
@@ -55,16 +54,36 @@ const summaryRows = computed(() =>
 const totals = computed(() => {
   const rows = summaryRows.value
   return {
-    cl:  sumBy(rows, 'total_cl_leave'),
-    ml:  sumBy(rows, 'total_ml_leave'),
-    sl:  sumBy(rows, 'total_sl_leave'),
+    cl: sumBy(rows, 'total_cl_leave'),
+    ml: sumBy(rows, 'total_ml_leave'),
+    sl: sumBy(rows, 'total_sl_leave'),
     wplDays: sumBy(rows, 'total_wpl_leave'),
-    otHour:  sumBy(rows, 'total_overtime_hours'),
+    otHour: sumBy(rows, 'total_overtime_hours'),
     absentDays: sumBy(rows, 'total_absent'),
     wplHour: sumBy(rows, 'total_wpl_hour'),
     paycutHour: sumBy(rows, 'paycut.paycut_hours'),
     payableHour: sumBy(rows, 'payable_hour'),
   }
+})
+
+const viewMode = ref('table')
+const tableDensity = ref('cozy')
+const viewModeTabs = [
+  { label: 'Table', value: 'table', icon: 'fal fa-table' },
+  { label: 'Cards', value: 'cards', icon: 'fal fa-th-large' },
+]
+const densityTabs = [
+  { label: 'Cozy', value: 'cozy' },
+  { label: 'Compact', value: 'compact' },
+]
+
+const selectedMonthLabel = computed(() => {
+  const value = selectedMonth.value
+  if (!value) return 'Month not selected'
+  const [year, month] = value.split('-').map((n) => Number(n))
+  if (!year || !month) return value
+  const formatter = new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' })
+  return formatter.format(new Date(year, month - 1))
 })
 
 // ---------- data actions ----------
@@ -129,242 +148,466 @@ const getDownloadPDF = async () => {
   await attendanceStore.downloadPDF(filters.value.company_id, line_type, selectedMonth.value)
 }
 const goBack = () => router.go(-1)
-const refreshPaycutList = async () => { await fetchAttendance() }
+const refreshPaycutList = async () => {
+  await fetchAttendance()
+}
 </script>
 
 <template>
-  <div class="px-4 space-y-4">
+  <div class="px-4 space-y-6">
     <!-- Top Bar -->
-    <div class="flex items-center justify-between gap-2">
-      <button class="btn-3" @click="goBack">
-        <i class="far fa-arrow-left"></i>
-        <span class="hidden md:flex">Back</span>
-      </button>
+    <div class="report-hero glass-panel px-5 py-2">
+      <div class="space-y-4">
+        <div class="flex justify-between items-center gap-3">
+          <button class="btn-3 !h-12 !w-12 rounded-full shadow-sm" @click="goBack">
+            <i class="far fa-arrow-left text-lg"></i>
+          </button>
 
-      <h1 class="title-md md:title-lg flex-wrap text-center">
-        Monthly Attendance Summary Report
-      </h1>
-
-      <div class="flex gap-2">
-        <button type="button" @click="getExportExcel" class="btn-1" :disabled="!filters.company_id">
-          <i class="far fa-file-excel text-2xl text-green-500"></i>
-        </button>
-        <button type="button" @click="getDownloadPDF" class="btn-1" :disabled="!filters.company_id">
-          <i class="fal fa-file-pdf text-2xl text-red-500"></i>
-        </button>
-      </div>
-    </div>
-
-    <!-- Filters -->
-    <div class="flex flex-wrap items-end gap-4">
-      <EmployeeFilter
-        v-model:company_id="filters.company_id"
-        v-model:department_id="filters.department_id"
-        v-model:employee_id="filters.employee_id"
-        v-model:line_type="filters.line_type"
-        :with-type="true"
-        :initial-value="$route.query"
-        @filter-change="handleFilterChange"
-      />
-
-      <div class="flex items-end gap-3">
-        <div class="flex flex-col">
-          <label class="text-xs text-gray-600 mb-1">Month</label>
-          <input type="month" v-model="selectedMonth" class="input-1 py-0.5" />
+          <div class="space-y-1">
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Monthly overview</p>
+            <h1 class="title-md">Monthly Attendance Summary</h1>
+            <p class="text-sm text-gray-500">
+              Keep teams aligned with a compact snapshot of utilization, leaves, and pay-impact in one view.
+            </p>
+          </div>
         </div>
-        <button type="button" @click="fetchAttendance()" class="btn-2">Search</button>
+      </div>
+
+      <div class="report-hero__actions">
+        <div class="report-toolbar">
+          <div class="report-toolbar__group">
+            <span class="toolbar-label">View</span>
+            <div class="segmented-control">
+              <button
+                v-for="tab in viewModeTabs"
+                :key="tab.value"
+                type="button"
+                class="segmented-control__btn"
+                :class="{ 'is-active': viewMode === tab.value }"
+                @click="viewMode = tab.value"
+              >
+                <i :class="tab.icon"></i>
+                <span>{{ tab.label }}</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="report-toolbar__group">
+            <span class="toolbar-label">Density</span>
+            <div class="segmented-control segmented-control--ghost">
+              <button
+                v-for="option in densityTabs"
+                :key="option.value"
+                type="button"
+                class="segmented-control__btn"
+                :class="{ 'is-active': tableDensity === option.value }"
+                @click="tableDensity = option.value"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+          </div>
+
+          <p class="report-toolbar__meta">
+            {{ summaryRows.length }} employees | {{ selectedMonthLabel }}
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            @click="getExportExcel"
+            class="btn-1 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold shadow-sm"
+            :disabled="!filters.company_id"
+          >
+            <i class="far fa-file-excel text-base text-green-500"></i>
+            <span class="hidden sm:inline">Excel</span>
+          </button>
+
+          <button
+            type="button"
+            @click="getDownloadPDF"
+            class="btn-1 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold shadow-sm"
+            :disabled="!filters.company_id"
+          >
+            <i class="fal fa-file-pdf text-base text-red-500"></i>
+            <span class="hidden sm:inline">PDF</span>
+          </button>
+        </div>
       </div>
     </div>
+    <!-- Filters -->
+    <div class="glass-panel space-y-3 relative z-50">
+      <div class="flex flex-wrap items-end gap-4 p-2">
+        <EmployeeFilter
+          v-model:company_id="filters.company_id"
+          v-model:department_id="filters.department_id"
+          v-model:employee_id="filters.employee_id"
+          v-model:line_type="filters.line_type"
+          :with-type="true"
+          :initial-value="$route.query"
+          @filter-change="handleFilterChange"
+        />
+
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-semibold text-gray-600">Month</label>
+          <div class="flex items-end gap-2">
+            <input type="month" v-model="selectedMonth" class="input-1 py-0.5" />
+            <button type="button" @click="fetchAttendance()" class="btn-2">Search</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    
 
     <!-- Loading -->
     <LoaderView v-if="attendanceStore.isLoading" />
 
-    <!-- Empty / Select prompt -->
-    <div v-else-if="!filters.company_id" class="text-center text-red-500 text-lg italic mt-10">
-      Please select company
-    </div>
+    <div v-else>
+      <!-- Empty / Select prompt -->
+      <div v-if="!filters.company_id" class="empty-state glass-panel">
+        <p class="text-base font-semibold text-red-500">Select a company to start the report.</p>
+        <p class="text-sm text-gray-500">Choose a company & filters above to preview this month.</p>
+      </div>
 
-    <!-- Empty state -->
-    <div v-else-if="summaryRows.length === 0" class="card-bg p-8 border rounded-lg text-center text-gray-600">
-      No attendance found for the selected month & filters.
-    </div>
+      <!-- Empty state -->
+      <div v-else-if="summaryRows.length === 0" class="empty-state glass-panel">
+        <p class="text-base font-semibold text-gray-700">No attendance found</p>
+        <p class="text-sm text-gray-500">Try a different set of filters or a different month.</p>
+      </div>
 
-    <!-- Table -->
-    <div v-else class="overflow-x-auto card-bg border rounded-lg">
-      <table class="min-w-full table-auto border-collapse">
-        <thead class="sticky top-0 z-10 bg-white shadow-sm">
-          <tr class="bg-gray-50 text-sm">
-            <th rowspan="2" class="th">#</th>
-            <th rowspan="2" class="th text-left">Employee Name</th>
-            <th rowspan="2" class="th text-left">Designation</th>
-            <th colspan="5" class="th">Attendance Summary</th>
-            <th colspan="2" class="th">Actual Late</th>
-            <th colspan="2" class="th">Remaining Late</th>
-            <th colspan="2" class="th">Actual Early</th>
-            <th colspan="2" class="th">Remaining Early</th>
-            <th rowspan="2" class="th">Working Hour</th>
-            <th colspan="4" class="th">Leave Day</th>
-            <th colspan="2" class="th">Short Leave</th>
-            <th rowspan="2" class="th">OT Hour</th>
-            <th colspan="4" class="th">Deduction</th>
-            <th rowspan="2" class="th">Action</th>
-          </tr>
-          <tr class="bg-gray-50 text-xs">
-            <th class="th">TD</th>
-            <th class="th">TP</th>
-            <th class="th">TW</th>
-            <th class="th">TL</th>
-            <th class="th">TA</th>
-            <th class="th">Day</th>
-            <th class="th">Hour</th>
-            <th class="th">Day</th>
-            <th class="th">Hour</th>
-            <th class="th">Day</th>
-            <th class="th">Hour</th>
-            <th class="th">Day</th>
-            <th class="th">Hour</th>
-            <th class="th">CL</th>
-            <th class="th">ML</th>
-            <th class="th">SL</th>
-            <th class="th">WPL</th>
-            <th class="th">Delay</th>
-            <th class="th">Early</th>
-            <th class="th">Absent Hour</th>
-            <th class="th">WPL(Hour)</th>
-            <th class="th">Pay Cut</th>
-            <th class="th">Payable Hour</th>
-          </tr>
-        </thead>
-
-        <tbody class="text-center text-xs">
-          <tr
+      <!-- Data -->
+      <div v-else class="space-y-4">
+        <!-- Card View -->
+        <div v-if="viewMode === 'cards'" class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <article
             v-for="(log, index) in summaryRows"
-            :key="`${log?.user_id || 'u'}-${index}`"
-            class="border-b hover:bg-blue-50"
+            :key="`${log?.user_id || 'card'}-${index}`"
+            class="report-card"
+            :class="{ 'report-card--alert': log?.under_target }"
           >
-            <td class="td">{{ index + 1 }}</td>
-            <td class="td text-left">{{ log?.user }}</td>
-            <td class="td text-left">{{ log?.designation }}</td>
-            <td class="td">{{ log?.total_monthly_days }}</td>
-            <td class="td">{{ log?.total_present }}</td>
-            <td class="td">{{ log?.total_weekend }}</td>
-            <td class="td">{{ log?.total_leave }}</td>
-            <td class="td">{{ log?.total_absent }}</td>
-
-            <td class="td">{{ log?.actual_late_day }}</td>
-            <td class="td">{{ log?.actual_late_hour }}</td>
-            <td class="td">{{ log?.total_remain_late_day }}</td>
-            <td class="td">{{ log?.total_remain_late_hour }}</td>
-
-            <td class="td">{{ log?.actual_early_day }}</td>
-            <td class="td">{{ log?.actual_early_hour }}</td>
-            <td class="td">{{ log?.total_remain_early_day }}</td>
-            <td class="td">{{ log?.total_remain_early_hour }}</td>
-
-            <td class="td text-xs" :class="{ '!text-red-500': log?.under_target }">
-                <div class="font-semibold" :class="log?.under_target ? 'text-red-600' : 'text-green-600'">
-                  {{ log?.total_working_hours }}
-                </div>
-                <div class="text-gray-500">
-                  of {{ log?.total_shift_hour }}
-                </div>
-              </td>
-
-            <!-- <td class="td">
-              <div class="border-b border-black font-semibold text-green-600">
-                {{ log?.total_working_hours || 0 }}
+            <header class="report-card__header">
+              <div>
+                <p class="report-card__title">{{ log?.user }}</p>
+                <p class="report-card__subtitle">{{ log?.designation }}</p>
               </div>
-              <div class="text-gray-600">{{ log?.total_shift_hour || 0 }}</div>
-            </td> -->
+              <span
+                class="report-card__tag"
+                :class="log?.under_target ? 'report-card__tag--alert' : 'report-card__tag--ok'"
+              >
+                {{ log?.under_target ? 'Under target' : 'On track' }}
+              </span>
+            </header>
 
-            <td class="td">{{ log?.total_cl_leave }}</td>
-            <td class="td">{{ log?.total_ml_leave }}</td>
-            <td class="td">{{ log?.total_sl_leave }}</td>
-            <td class="td">{{ log?.total_wpl_leave }}</td>
+            <div class="report-card__body">
+              <div class="report-card__row">
+                <p class="report-card__body-label">Working Hour</p>
+                <p class="report-card__primary" :class="log?.under_target ? 'text-red-600' : 'text-emerald-600'">
+                  {{ log?.total_working_hours }}
+                  <span class="text-gray-500 text-xs">/ {{ log?.total_shift_hour }}</span>
+                </p>
+              </div>
 
-            <td class="td">
-              <p class="text-xs w-10 text-gray-600">
-                {{ log?.total_first_short_leave || 0 }} of <span :class="{'text-red-600 font-bold' : log?.actual_late_day >= 4}">{{ log?.actual_late_day || 0 }}</span>
-              </p>
-            </td>
+              <div class="report-card__grid">
+                <div>
+                  <p class="report-card__body-label">Attendance</p>
+                  <p class="report-card__metric">
+                    P {{ toNum(log?.total_present) }} | L {{ toNum(log?.total_leave) }} | A {{ toNum(log?.total_absent) }}
+                  </p>
+                </div>
+                <div>
+                  <p class="report-card__body-label">Weekend</p>
+                  <p class="report-card__metric">{{ toNum(log?.total_weekend) }} days</p>
+                </div>
+                <div>
+                  <p class="report-card__body-label">Actual Late</p>
+                  <p class="report-card__metric">{{ toNum(log?.actual_late_day) }}d / {{ toNum(log?.actual_late_hour) }}h</p>
+                </div>
+                <div>
+                  <p class="report-card__body-label">Actual Early</p>
+                  <p class="report-card__metric">{{ toNum(log?.actual_early_day) }}d / {{ toNum(log?.actual_early_hour) }}h</p>
+                </div>
+                <div>
+                  <p class="report-card__body-label">Short Leave</p>
+                  <p class="report-card__metric">
+                    First {{ toNum(log?.total_first_short_leave) }} | Last {{ toNum(log?.total_last_short_leave) }}
+                  </p>
+                </div>
+                <div>
+                  <p class="report-card__body-label">Leave Types</p>
+                  <p class="report-card__metric">
+                    CL {{ toNum(log?.total_cl_leave) }} | ML {{ toNum(log?.total_ml_leave) }} | SL {{ toNum(log?.total_sl_leave) }} | WPL
+                    {{ toNum(log?.total_wpl_leave) }}
+                  </p>
+                </div>
+                <div>
+                  <p class="report-card__body-label">Hours Impact</p>
+                  <p class="report-card__metric">
+                    OT {{ toNum(log?.total_overtime_hours) }}h | Payable {{ toNum(log?.payable_hour) }}h
+                  </p>
+                </div>
+                <div>
+                  <p class="report-card__body-label">Deduction</p>
+                  <p class="report-card__metric">{{ toNum(log?.total_absent) * 9 }}h + {{ toNum(log?.total_wpl_hour) }}h</p>
+                </div>
+              </div>
+            </div>
 
-            <!-- Short Leave vs Actual Early -->
-            <td class="td">
-              <p class="text-xs w-10 text-gray-600">
-                {{ log?.total_last_short_leave || 0 }} of <span :class="{'text-red-600 font-bold' : log?.actual_early_day >= 4}">
-                  {{ log?.actual_early_day || 0 }}
-                </span>
-              </p>
-            </td>
-
-            <td class="td">
-              {{ log?.total_overtime_hours ? `${log?.total_overtime_hours} H` : '' }}
-            </td>
-
-            <td class="td">{{ toNum(log?.total_absent) * 9 }}H</td>
-            <td class="td">{{ log?.total_wpl_hour }}H</td>
-
-            <td class="td">
-              <div class="flex gap-2 items-center justify-center">
+            <footer class="report-card__footer">
+              <div class="flex items-center gap-3 text-xs text-gray-500">
                 <DisplayFormattedWorkingHours :workingHours="log?.paycut?.paycut_hours" />
                 <UpdateApprovalTime
-                  class="mr-2"
+                  class="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-600"
                   :userId="log?.user_id"
                   :month="selectedMonth"
                   v-if="authStore.user?.id === 8"
                   @updated="refreshPaycutList"
                 />
               </div>
-            </td>
 
-            <td class="td">{{ log?.payable_hour }}H</td>
-
-            <td class="td ">
               <router-link
                 :to="{
                   name: 'EmployeeAttendance',
                   query: { ...route.query, employee_id: log?.user_id, date: selectedMonth }
                 }"
                 target="_blank"
-                class="inline-flex w-20 items-center gap-1 rounded-md px-1 py-1 font-medium bg-blue-50 text-blue-700 hover:bg-blue-100"
+                class="report-card__cta"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                </svg>
                 Job Card
+                <i class="far fa-arrow-up-right-from-square text-xs"></i>
               </router-link>
-            </td>
-          </tr>
-        </tbody>
+            </footer>
+          </article>
+        </div>
 
-        <tfoot>
-          <tr class="bg-gray-100 font-semibold text-sm text-center">
-            <td colspan="17" class="td">Total</td>
+        <!-- Table -->
+        <div
+          v-else
+          class="table-shell"
+          :class="[tableDensity === 'compact' ? 'table-density-compact' : 'table-density-cozy']"
+        >
+          <div class="table-scroll">
+            <table class="min-w-full table-auto border-collapse">
+              <thead class="sticky top-0 bg-white shadow-sm">
+                <tr class="bg-gray-50 text-sm">
+                  <th rowspan="2" class="th">#</th>
+                  <th rowspan="2" class="th text-left">Employee Name</th>
+                  <th rowspan="2" class="th text-left">Designation</th>
+                  <th colspan="5" class="th">Attendance Summary</th>
+                  <th colspan="2" class="th">Actual Late</th>
+                  <th colspan="2" class="th">Remaining Late</th>
+                  <th colspan="2" class="th">Actual Early</th>
+                  <th colspan="2" class="th">Remaining Early</th>
+                  <th rowspan="2" class="th">Working Hour</th>
+                  <th colspan="4" class="th">Leave Day</th>
+                  <th colspan="2" class="th">Short Leave</th>
+                  <th rowspan="2" class="th">OT Hour</th>
+                  <th colspan="4" class="th">Deduction</th>
+                  <th rowspan="2" class="th">Action</th>
+                </tr>
+                <tr class="bg-gray-50 text-xs">
+                  <th class="th">TD</th>
+                  <th class="th">TP</th>
+                  <th class="th">TW</th>
+                  <th class="th">TL</th>
+                  <th class="th">TA</th>
+                  <th class="th">Day</th>
+                  <th class="th">Hour</th>
+                  <th class="th">Day</th>
+                  <th class="th">Hour</th>
+                  <th class="th">Day</th>
+                  <th class="th">Hour</th>
+                  <th class="th">Day</th>
+                  <th class="th">Hour</th>
+                  <th class="th">CL</th>
+                  <th class="th">ML</th>
+                  <th class="th">SL</th>
+                  <th class="th">WPL</th>
+                  <th class="th">Delay</th>
+                  <th class="th">Early</th>
+                  <th class="th">Absent Hour</th>
+                  <th class="th">WPL(Hour)</th>
+                  <th class="th">Pay Cut</th>
+                  <th class="th">Payable Hour</th>
+                </tr>
+              </thead>
 
-            <td class="td">{{ totals.cl }}</td>
-            <td class="td">{{ totals.ml }}</td>
-            <td class="td">{{ totals.sl }}</td>
-            <td class="td">{{ totals.wplDays }}</td>
+              <tbody class="text-center text-xs">
+                <tr
+                  v-for="(log, index) in summaryRows"
+                  :key="`${log?.user_id || 'u'}-${index}`"
+                  class="border-b hover:bg-blue-50"
+                  :class="{ 'table-row--alert': log?.under_target }"
+                >
+                  <td class="td">{{ index + 1 }}</td>
+                  <td class="td text-left">{{ log?.user }}</td>
+                  <td class="td text-left">{{ log?.designation }}</td>
+                  <td class="td">{{ log?.total_monthly_days }}</td>
+                  <td class="td">{{ log?.total_present }}</td>
+                  <td class="td">{{ log?.total_weekend }}</td>
+                  <td class="td">{{ log?.total_leave }}</td>
+                  <td class="td">{{ log?.total_absent }}</td>
 
-            <td class="td"></td>
-            <td class="td"></td>
+                  <td class="td">{{ log?.actual_late_day }}</td>
+                  <td class="td">{{ log?.actual_late_hour }}</td>
+                  <td class="td">{{ log?.total_remain_late_day }}</td>
+                  <td class="td">{{ log?.total_remain_late_hour }}</td>
 
-            <td class="td">{{ totals.otHour }}</td>
-            <td class="td">{{ totals.absentDays }} day</td>
-            <td class="td">{{ totals.wplHour }}</td>
-            <td class="td">{{ totals.paycutHour }}</td>
-            <td class="td">{{ totals.payableHour }}</td>
-            <td class="td"></td>
-          </tr>
-        </tfoot>
-      </table>
+                  <td class="td">{{ log?.actual_early_day }}</td>
+                  <td class="td">{{ log?.actual_early_hour }}</td>
+                  <td class="td">{{ log?.total_remain_early_day }}</td>
+                  <td class="td">{{ log?.total_remain_early_hour }}</td>
+
+                  <td class="td text-xs">
+                    <p class="font-semibold" :class="log?.under_target ? 'text-red-600' : 'text-emerald-600'">
+                      {{ log?.total_working_hours }}h
+                    </p>
+                    <p class="text-[11px] text-gray-500">of {{ log?.total_shift_hour }}h</p>
+                  </td>
+
+                  <td class="td">{{ log?.total_cl_leave }}</td>
+                  <td class="td">{{ log?.total_ml_leave }}</td>
+                  <td class="td">{{ log?.total_sl_leave }}</td>
+                  <td class="td">{{ log?.total_wpl_leave }}</td>
+
+                  <td class="td">
+                    <p class="w-10 text-xs text-gray-600">
+                      {{ log?.total_first_short_leave || 0 }} of
+                      <span :class="{ 'text-red-600 font-bold': log?.actual_late_day >= 4 }">
+                        {{ log?.actual_late_day || 0 }}
+                      </span>
+                    </p>
+                  </td>
+
+                  <td class="td">
+                    <p class="w-10 text-xs text-gray-600">
+                      {{ log?.total_last_short_leave || 0 }} of
+                      <span :class="{ 'text-red-600 font-bold': log?.actual_early_day >= 4 }">
+                        {{ log?.actual_early_day || 0 }}
+                      </span>
+                    </p>
+                  </td>
+
+                  <td class="td">
+                    {{ log?.total_overtime_hours ? `${log?.total_overtime_hours} H` : '' }}
+                  </td>
+
+                  <td class="td">{{ toNum(log?.total_absent) * 9 }}H</td>
+                  <td class="td">{{ log?.total_wpl_hour }}H</td>
+
+                  <td class="td">
+                    <div class="flex items-center justify-center gap-2">
+                      <DisplayFormattedWorkingHours :workingHours="log?.paycut?.paycut_hours" />
+                      <UpdateApprovalTime
+                        class="mr-2"
+                        :userId="log?.user_id"
+                        :month="selectedMonth"
+                        v-if="authStore.user?.id === 8"
+                        @updated="refreshPaycutList"
+                      />
+                    </div>
+                  </td>
+
+                  <td class="td">{{ log?.payable_hour }}H</td>
+
+                  <td class="td">
+                    <router-link
+                      :to="{
+                        name: 'EmployeeAttendance',
+                        query: { ...route.query, employee_id: log?.user_id, date: selectedMonth }
+                      }"
+                      target="_blank"
+                      class="inline-flex w-20 items-center gap-1 rounded-md bg-blue-50 px-1 py-1 font-medium text-blue-700 hover:bg-blue-100"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-4 w-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14 21 3"></path>
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                      </svg>
+                      Job Card
+                    </router-link>
+                  </td>
+                </tr>
+              </tbody>
+
+              <tfoot>
+                <tr class="bg-gray-100 text-center text-sm font-semibold">
+                  <td colspan="17" class="td">Total</td>
+
+                  <td class="td">{{ totals.cl }}</td>
+                  <td class="td">{{ totals.ml }}</td>
+                  <td class="td">{{ totals.sl }}</td>
+                  <td class="td">{{ totals.wplDays }}</td>
+
+                  <td class="td"></td>
+                  <td class="td"></td>
+
+                  <td class="td">{{ totals.otHour }}</td>
+                  <td class="td">{{ totals.absentDays }} day</td>
+                  <td class="td">{{ totals.wplHour }}</td>
+                  <td class="td">{{ totals.paycutHour }}</td>
+                  <td class="td">{{ totals.payableHour }}</td>
+                  <td class="td"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.card-bg { max-height: 80vh; overflow: auto; }
+.glass-panel { @apply rounded-2xl border border-slate-100 bg-white/70 shadow-sm backdrop-blur; }
+.empty-state { @apply flex min-h-[120px] flex-col items-center justify-center gap-1 text-center; }
+.table-shell { @apply rounded-2xl border border-slate-100 bg-white/90 shadow-lg; }
+.table-scroll { max-height: 80vh; overflow: auto; }
 .th { @apply border px-2 py-1 text-xs font-semibold text-gray-700; }
 .td { @apply border px-2 py-1; }
+.report-hero { @apply flex flex-col gap-6 md:flex-row md:items-center md:justify-between; }
+.report-hero__actions { @apply flex flex-col items-end gap-3 text-right; }
+.hero-pills { @apply flex flex-wrap gap-3; }
+.hero-pill { @apply flex items-center gap-3 rounded-2xl border border-slate-100 bg-white/70 px-4 py-3 shadow-inner; }
+.hero-pill--success { @apply border-emerald-200 bg-emerald-50/80; }
+.hero-pill--warning { @apply border-amber-200 bg-amber-50/80; }
+.hero-pill__label { @apply text-[11px] uppercase tracking-wide text-slate-400; }
+.hero-pill__value { @apply text-base font-semibold text-slate-900; }
+.toolbar-label { @apply text-[11px] font-semibold uppercase tracking-wide text-slate-400; }
+.report-toolbar { @apply mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-100 bg-white/60 px-4 py-2; }
+.report-toolbar__group { @apply flex items-center gap-2; }
+.report-toolbar__meta { @apply text-xs font-semibold text-slate-500; }
+.segmented-control { @apply inline-flex items-center gap-1 rounded-full bg-slate-100 p-1; }
+.segmented-control--ghost { @apply bg-transparent ring-1 ring-slate-200; }
+.segmented-control__btn { @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold text-slate-500 transition; }
+.segmented-control__btn i { @apply text-[11px]; }
+.segmented-control__btn.is-active { @apply bg-white text-slate-900 shadow; }
+.table-density-compact .th { @apply px-1 py-0.5 text-[11px]; }
+.table-density-compact .td { @apply px-1 py-0.5 text-[11px]; }
+.table-row--alert { @apply bg-rose-50/40; }
+.report-card { @apply flex flex-col gap-4 rounded-2xl border border-slate-100 bg-white/90 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg; }
+.report-card--alert { @apply border-rose-100 bg-rose-50/70; }
+.report-card__header { @apply flex items-start justify-between gap-4; }
+.report-card__title { @apply text-base font-semibold text-slate-900; }
+.report-card__subtitle { @apply text-xs text-slate-500; }
+.report-card__tag { @apply rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide; }
+.report-card__tag--ok { @apply bg-emerald-50 text-emerald-700; }
+.report-card__tag--alert { @apply bg-rose-50 text-rose-700; }
+.report-card__body { @apply space-y-4; }
+.report-card__row { @apply flex items-baseline justify-between gap-3; }
+.report-card__primary { @apply text-base font-semibold; }
+.report-card__body-label { @apply text-[11px] font-semibold uppercase tracking-wide text-slate-400; }
+.report-card__metric { @apply text-sm font-medium text-slate-800; }
+.report-card__grid { @apply grid gap-3 sm:grid-cols-2; }
+.report-card__footer { @apply flex items-center justify-between border-t border-dashed border-slate-200 pt-3; }
+.report-card__cta { @apply inline-flex items-center gap-1 rounded-full bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-blue-700; }
 </style>
