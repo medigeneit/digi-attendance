@@ -238,15 +238,43 @@ export const useAttendanceStore = defineStore('attendance', () => {
   }
 
   const getMonthlyAttendanceSummaryReport = async (company_id,line_type, employee_id,  month) => {
+     if (!company_id || !month) {
+        error.value = 'Company & month are required'
+        return
+      }
+
+      isLoading.value = true
+      try {
+        const payload = { month }
+
+        const response = await apiClient.post(
+          '/attendance/monthly-snapshot/recalculate',
+          payload
+        )
+        error.value = null
+      } catch (err) {
+        error.value = err.response?.data?.message || 'Something went wrong'
+        console.error(error.value)
+      } finally {
+        isLoading.value = false
+      }
+  }
+
+  const finalizeMonthlySnapshot = async (company_id, line_type, employee_id, month, action = 'finalize') => {
     if (!company_id || !month) {
-      error.value = 'Invalid user ID or month'
+      error.value = 'Company & month are required'
       return
     }
+
     isLoading.value = true
     try {
-      const params = { company_id, line_type, employee_id,  month }
-      const response = await apiClient.get(`/attendance/monthly-summary-reports`, { params })
-      monthly_company_summary.value = response.data
+      const payload = { company_id, line_type, employee_id, month, action }
+
+      const response = await apiClient.post(
+        '/attendance/monthly-snapshot/finalize',
+        payload
+      )
+
       error.value = null
     } catch (err) {
       error.value = err.response?.data?.message || 'Something went wrong'
@@ -255,6 +283,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
       isLoading.value = false
     }
   }
+
 
   const downloadPDF = async (company_id, category, month, flag = 0) => {
     if (!company_id || !month) {
@@ -427,6 +456,8 @@ export const useAttendanceStore = defineStore('attendance', () => {
     getDateRangeAttendanceSummary,
     downloadDateRangeExcel,
     downloadDateRangePdf,
-    getDailyLateReport
+    getDailyLateReport,
+    recalculateMonthlySnapshot,
+    finalizeMonthlySnapshot,
   }
 })

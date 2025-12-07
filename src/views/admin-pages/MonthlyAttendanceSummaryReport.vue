@@ -50,6 +50,30 @@ const summaryRows = computed(() =>
   Array.isArray(monthly_company_summary.value) ? monthly_company_summary.value : []
 )
 
+// snapshot final status (same for whole month)
+const isFinal = computed(() => {
+  const first = summaryRows.value[0]
+  return !!(first && first.is_final)
+})
+
+const finalizedAtLabel = computed(() => {
+  const first = summaryRows.value[0]
+  if (!first || !first.finalized_at) return ''
+  try {
+    const dt = new Date(first.finalized_at)
+    const f = new Intl.DateTimeFormat('en', {
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+    return f.format(dt)
+  } catch {
+    return String(first.finalized_at)
+  }
+})
+
 // footer totals (safe)
 const totals = computed(() => {
   const rows = summaryRows.value
@@ -61,7 +85,8 @@ const totals = computed(() => {
     otHour: sumBy(rows, 'total_overtime_hours'),
     absentDays: sumBy(rows, 'total_absent'),
     wplHour: sumBy(rows, 'total_wpl_hour'),
-    paycutHour: sumBy(rows, 'paycut.paycut_hours'),
+    // snapshot theke approved paycut sum
+    paycutHour: sumBy(rows, 'approved_paycut'),
     payableHour: sumBy(rows, 'payable_hour'),
   }
 })
@@ -85,6 +110,9 @@ const selectedMonthLabel = computed(() => {
   const formatter = new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' })
   return formatter.format(new Date(year, month - 1))
 })
+
+// small helper for "HH:MM" style strings
+const asDuration = (v, fallback = '0:00') => (v && String(v).trim() !== '' ? v : fallback)
 
 // ---------- data actions ----------
 const fetchAttendance = async () => {
@@ -113,7 +141,9 @@ const fetchAttendance = async () => {
 // keep URL query in sync when filters or month change
 const replaceQueryIfChanged = (nextQuery) => {
   const current = route.query
-  const changed = Object.keys(nextQuery).some((k) => String(current[k] ?? '') !== String(nextQuery[k] ?? ''))
+  const changed = Object.keys(nextQuery).some(
+    (k) => String(current[k] ?? '') !== String(nextQuery[k] ?? '')
+  )
   if (changed) router.replace({ query: nextQuery })
 }
 
@@ -136,7 +166,7 @@ onMounted(() => {
   if (filters.value.company_id) fetchAttendance()
 })
 
-// exports
+// exports: excel/pdf
 const getExportExcel = async () => {
   if (!filters.value.company_id) return
   const line_type = filters.value.line_type !== 'all' ? filters.value.line_type : ''
@@ -151,6 +181,93 @@ const goBack = () => router.go(-1)
 const refreshPaycutList = async () => {
   await fetchAttendance()
 }
+
+// ---------- new: live recalc & finalize ----------
+const isBusy = ref(false)
+
+/**
+ * Live recalc snapshot for selected month + company
+ * NOTE: expects attendanceStore.recalculateMonthlySnapshot({ company_id, month })
+ */
+const recalcMonthlySnapshot = async () => {
+  if (!filters.value.company_id || !selectedMonth.value) {
+    alert('⚠️ Please select company & month first.')
+    return
+  }
+  if (!confirm(`Recalculate monthly snapshot for ${selectedMonthLabel.value}?`)) return
+
+  const line_type = filters.value.line_type !== 'all' ? filters.value.line_type : ''
+  const employeeId = filters.value.employee_id || ''
+
+  try {
+    isBusy.value = true
+
+    await attendanceStore.recalculateMonthlySnapshot(
+      filters.value.company_id,
+      line_type,
+      employeeId,
+      selectedMonth.value
+    )
+
+    await fetchAttendance()
+    alert('✅ Snapshot recalculated successfully.')
+  } catch (error) {
+    console.error('❌ Failed to recalculate snapshot:', error)
+    alert('❌ Failed to recalculate snapshot.')
+  } finally {
+    isBusy.value = false
+  }
+}
+
+
+/**
+ * Finalize / Unfinalize month
+ * NOTE: expects attendanceStore.finalizeMonthlySnapshot({ company_id, month, action })
+ */
+const toggleFinalize = async () => {
+  if (!filters.value.company_id || !selectedMonth.value) {
+    alert('⚠️ Please select company & month first.')
+    return
+  }
+
+  const action = isFinal.value ? 'unfinalize' : 'finalize'
+  const label = action === 'finalize' ? 'Finalize' : 'Unfinalize'
+
+  if (
+    !confirm(
+      `${label} monthly snapshot for ${selectedMonthLabel.value}?${
+        action === 'finalize'
+          ? '\n\nAfter finalize, data will be locked (unless unfinalized).'
+          : ''
+      }`
+    )
+  ) {
+    return
+  }
+
+  const line_type = filters.value.line_type !== 'all' ? filters.value.line_type : ''
+  const employeeId = filters.value.employee_id || ''
+
+  try {
+    isBusy.value = true
+
+    await attendanceStore.finalizeMonthlySnapshot(
+      filters.value.company_id,
+      line_type,
+      employeeId,
+      selectedMonth.value,
+      action
+    )
+
+    await fetchAttendance()
+    alert(`✅ Month ${label.toLowerCase()}d successfully.`)
+  } catch (error) {
+    console.error('❌ Failed to change final status:', error)
+    alert('❌ Failed to change final status.')
+  } finally {
+    isBusy.value = false
+  }
+}
 </script>
 
 <template>
@@ -164,10 +281,13 @@ const refreshPaycutList = async () => {
           </button>
 
           <div class="space-y-1">
-            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Monthly overview</p>
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+              Monthly overview
+            </p>
             <h1 class="title-md">Monthly Attendance Summary</h1>
             <p class="text-sm text-gray-500">
-              Keep teams aligned with a compact snapshot of utilization, leaves, and pay-impact in one view.
+              Keep teams aligned with a compact snapshot of utilization, leaves, and pay-impact in
+              one view.
             </p>
           </div>
         </div>
@@ -210,9 +330,49 @@ const refreshPaycutList = async () => {
 
           <p class="report-toolbar__meta">
             {{ summaryRows.length }} employees | {{ selectedMonthLabel }}
+            <span
+              v-if="summaryRows.length"
+              class="ml-3 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+              :class="isFinal ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'"
+            >
+              <span
+                class="inline-block h-2 w-2 rounded-full"
+                :class="isFinal ? 'bg-emerald-500' : 'bg-amber-500'"
+              ></span>
+              {{ isFinal ? 'Finalized' : 'Draft' }}
+              <span v-if="isFinal && finalizedAtLabel" class="ml-1 text-[10px] font-normal">
+                ({{ finalizedAtLabel }})
+              </span>
+            </span>
           </p>
         </div>
-        <div class="flex items-center gap-2">
+
+        <div class="flex flex-wrap items-center justify-end gap-2">
+          <!-- Recalc -->
+          <button
+            type="button"
+            class="btn-2 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold shadow-sm"
+            :disabled="!filters.company_id || !selectedMonth || isBusy || isFinal"
+            @click="recalcMonthlySnapshot"
+          >
+            <i class="fal fa-rotate text-base"></i>
+            <span class="hidden sm:inline">Recalculate</span>
+          </button>
+
+          <!-- Finalize / Unfinalize -->
+          <button
+            type="button"
+            class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold shadow-sm"
+            :class="isFinal ? 'bg-slate-200 text-slate-800' : 'bg-emerald-500 text-white'"
+            :disabled="!filters.company_id || !selectedMonth || isBusy || summaryRows.length === 0"
+            @click="toggleFinalize"
+          >
+            <i :class="isFinal ? 'fal fa-lock-open' : 'fal fa-lock'"></i>
+            <span class="hidden sm:inline">
+              {{ isFinal ? 'Unfinalize Month' : 'Finalize Month' }}
+            </span>
+          </button>
+
           <button
             type="button"
             @click="getExportExcel"
@@ -235,6 +395,7 @@ const refreshPaycutList = async () => {
         </div>
       </div>
     </div>
+
     <!-- Filters -->
     <div class="glass-panel space-y-3 relative z-50">
       <div class="flex flex-wrap items-end gap-4 p-2">
@@ -257,8 +418,6 @@ const refreshPaycutList = async () => {
         </div>
       </div>
     </div>
-
-    
 
     <!-- Loading -->
     <LoaderView v-if="attendanceStore.isLoading" />
@@ -302,9 +461,14 @@ const refreshPaycutList = async () => {
             <div class="report-card__body">
               <div class="report-card__row">
                 <p class="report-card__body-label">Working Hour</p>
-                <p class="report-card__primary" :class="log?.under_target ? 'text-red-600' : 'text-emerald-600'">
-                  {{ log?.total_working_hours }}
-                  <span class="text-gray-500 text-xs">/ {{ log?.total_shift_hour }}</span>
+                <p
+                  class="report-card__primary"
+                  :class="log?.under_target ? 'text-red-600' : 'text-emerald-600'"
+                >
+                  {{ asDuration(log?.total_working_hours) }}
+                  <span class="text-gray-500 text-xs">
+                    / {{ asDuration(log?.total_shift_hours) }}
+                  </span>
                 </p>
               </div>
 
@@ -312,7 +476,8 @@ const refreshPaycutList = async () => {
                 <div>
                   <p class="report-card__body-label">Attendance</p>
                   <p class="report-card__metric">
-                    P {{ toNum(log?.total_present) }} | L {{ toNum(log?.total_leave) }} | A {{ toNum(log?.total_absent) }}
+                    P {{ toNum(log?.total_present) }} | L {{ toNum(log?.total_leave) }} | A
+                    {{ toNum(log?.total_absent) }}
                   </p>
                 </div>
                 <div>
@@ -321,41 +486,52 @@ const refreshPaycutList = async () => {
                 </div>
                 <div>
                   <p class="report-card__body-label">Actual Late</p>
-                  <p class="report-card__metric">{{ toNum(log?.actual_late_day) }}d / {{ toNum(log?.actual_late_hour) }}h</p>
+                  <p class="report-card__metric">
+                    {{ toNum(log?.actual_late_day) }}d / {{ asDuration(log?.actual_late_hour) }}
+                  </p>
                 </div>
                 <div>
                   <p class="report-card__body-label">Actual Early</p>
-                  <p class="report-card__metric">{{ toNum(log?.actual_early_day) }}d / {{ toNum(log?.actual_early_hour) }}h</p>
+                  <p class="report-card__metric">
+                    {{ toNum(log?.actual_early_day) }}d / {{ asDuration(log?.actual_early_hour) }}
+                  </p>
                 </div>
                 <div>
                   <p class="report-card__body-label">Short Leave</p>
                   <p class="report-card__metric">
-                    First {{ toNum(log?.total_first_short_leave) }} | Last {{ toNum(log?.total_last_short_leave) }}
+                    First {{ toNum(log?.total_first_short_leave) }} | Last
+                    {{ toNum(log?.total_last_short_leave) }}
                   </p>
                 </div>
                 <div>
                   <p class="report-card__body-label">Leave Types</p>
                   <p class="report-card__metric">
-                    CL {{ toNum(log?.total_cl_leave) }} | ML {{ toNum(log?.total_ml_leave) }} | SL {{ toNum(log?.total_sl_leave) }} | WPL
-                    {{ toNum(log?.total_wpl_leave) }}
+                    CL {{ toNum(log?.total_cl_leave) }} |
+                    ML {{ toNum(log?.total_ml_leave) }} |
+                    SL {{ toNum(log?.total_sl_leave) }} |
+                    WPL {{ toNum(log?.total_wpl_leave) }}
                   </p>
                 </div>
                 <div>
                   <p class="report-card__body-label">Hours Impact</p>
                   <p class="report-card__metric">
-                    OT {{ toNum(log?.total_overtime_hours) }}h | Payable {{ toNum(log?.payable_hour) }}h
+                    OT {{ toNum(log?.total_overtime_hours) }}h |
+                    Payable {{ toNum(log?.payable_hour) }}h
                   </p>
                 </div>
                 <div>
                   <p class="report-card__body-label">Deduction</p>
-                  <p class="report-card__metric">{{ toNum(log?.total_absent) * 9 }}h + {{ toNum(log?.total_wpl_hour) }}h</p>
+                  <p class="report-card__metric">
+                    {{ toNum(log?.total_absent) * 9 }}h + {{ toNum(log?.total_wpl_hour) }}h
+                  </p>
                 </div>
               </div>
             </div>
 
             <footer class="report-card__footer">
               <div class="flex items-center gap-3 text-xs text-gray-500">
-                <DisplayFormattedWorkingHours :workingHours="log?.paycut?.paycut_hours" />
+                <!-- use snapshot approved_paycut (float) -->
+                <DisplayFormattedWorkingHours :workingHours="log?.approved_paycut" />
                 <UpdateApprovalTime
                   class="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-600"
                   :userId="log?.user_id"
@@ -462,7 +638,9 @@ const refreshPaycutList = async () => {
                     <p class="font-semibold" :class="log?.under_target ? 'text-red-600' : 'text-emerald-600'">
                       {{ log?.total_working_hours }}h
                     </p>
-                    <p class="text-[11px] text-gray-500">of {{ log?.total_shift_hour }}h</p>
+                    <p class="text-[11px] text-gray-500">
+                      of {{ log?.total_shift_hours }}h
+                    </p>
                   </td>
 
                   <td class="td">{{ log?.total_cl_leave }}</td>
@@ -497,7 +675,8 @@ const refreshPaycutList = async () => {
 
                   <td class="td">
                     <div class="flex items-center justify-center gap-2">
-                      <DisplayFormattedWorkingHours :workingHours="log?.paycut?.paycut_hours" />
+                      <!-- snapshot approved_paycut -->
+                      <DisplayFormattedWorkingHours :workingHours="log?.approved_paycut" />
                       <UpdateApprovalTime
                         class="mr-2"
                         :userId="log?.user_id"
@@ -576,12 +755,6 @@ const refreshPaycutList = async () => {
 .td { @apply border px-2 py-1; }
 .report-hero { @apply flex flex-col gap-6 md:flex-row md:items-center md:justify-between; }
 .report-hero__actions { @apply flex flex-col items-end gap-3 text-right; }
-.hero-pills { @apply flex flex-wrap gap-3; }
-.hero-pill { @apply flex items-center gap-3 rounded-2xl border border-slate-100 bg-white/70 px-4 py-3 shadow-inner; }
-.hero-pill--success { @apply border-emerald-200 bg-emerald-50/80; }
-.hero-pill--warning { @apply border-amber-200 bg-amber-50/80; }
-.hero-pill__label { @apply text-[11px] uppercase tracking-wide text-slate-400; }
-.hero-pill__value { @apply text-base font-semibold text-slate-900; }
 .toolbar-label { @apply text-[11px] font-semibold uppercase tracking-wide text-slate-400; }
 .report-toolbar { @apply mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-100 bg-white/60 px-4 py-2; }
 .report-toolbar__group { @apply flex items-center gap-2; }
