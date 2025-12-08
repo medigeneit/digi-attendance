@@ -247,10 +247,11 @@ export const useAttendanceStore = defineStore('attendance', () => {
       try {
         const payload = { month }
 
-        const response = await apiClient.post(
+        const response = await apiClient.get(
           '/attendance/monthly-summary-reports',
           payload
         )
+        monthly_company_summary.value = response?.data || response?.data?.data
         error.value = null
       } catch (err) {
         error.value = err.response?.data?.message || 'Something went wrong'
