@@ -237,29 +237,38 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   }
 
-  const getMonthlyAttendanceSummaryReport = async (company_id,line_type, employee_id,  month) => {
-     if (!company_id || !month) {
-        error.value = 'Company & month are required'
-        return
+  const getMonthlyAttendanceSummaryReport = async (company_id, line_type, employee_id, month) => {
+    if (!company_id || !month) {
+      error.value = 'Company & month are required'
+      return
+    }
+
+    isLoading.value = true
+
+    try {
+      const params = {
+        company_id,
+        month,
+        line_type: line_type || '',
+        employee_id: employee_id || '',
       }
 
-      isLoading.value = true
-      try {
-        const payload = { month }
+      const response = await apiClient.get('/attendance/monthly-summary-reports', {
+        params,
+      })
 
-        const response = await apiClient.get(
-          '/attendance/monthly-summary-reports',
-          payload
-        )
-        monthly_company_summary.value = response?.data || response?.data?.data
-        error.value = null
-      } catch (err) {
-        error.value = err.response?.data?.message || 'Something went wrong'
-        console.error(error.value)
-      } finally {
-        isLoading.value = false
-      }
+      // যদি API resource style হয় -> { data: [...] }
+      // না হলে সরাসরি array হলেও handle হবে
+      monthly_company_summary.value = response.data?.data ?? response.data
+      error.value = null
+    } catch (err) {
+      error.value = err?.response?.data?.message || 'Something went wrong'
+      console.error(error.value)
+    } finally {
+      isLoading.value = false
+    }
   }
+
 
   const recalculateMonthlySnapshot = async (company_id,line_type, employee_id,  month) => {
      if (!company_id || !month) {

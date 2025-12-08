@@ -138,6 +138,7 @@ const fetchAttendance = async () => {
   }
 }
 
+
 // keep URL query in sync when filters or month change
 const replaceQueryIfChanged = (nextQuery) => {
   const current = route.query
