@@ -622,7 +622,7 @@ function toggleSelectAllVisible(checked) {
             <th
               v-for="day in daysInMonth"
               :key="day"
-              class="border text-center p-1 min-w-[40px] md:min-w-[46px]"
+              class="border text-center p-1 min-w-[32px] md:min-w-[40px]"
               :title="`${selectedMonth}-${String(day).padStart(2,'0')}`"
             >
               <div class="font-medium leading-none">{{ day }}</div>
