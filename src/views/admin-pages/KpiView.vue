@@ -18,7 +18,7 @@
       </RouterLink>
       <RouterLink :to="{ name: 'EvaluationList' }" class="main-button">
         <i class="fal fa-tasks text-3xl"></i>
-        Evaluation List
+        Monthly Evaluation List
       </RouterLink>
       <RouterLink :to="{ name: 'YearlyEvaluationList' }" class="main-button">
         <i class="fal fa-chart-line text-3xl"></i>
