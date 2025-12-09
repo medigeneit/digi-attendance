@@ -71,6 +71,7 @@ const totalApprovedMinutes = computed(() => {
         <thead>
           <tr class="bg-gray-200 *:py-1">
             <th class="border border-gray-300 px-2 text-center">#</th>
+            <th class="border border-gray-300 px-2 text-center">Applied Date</th>
             <th class="border border-gray-300 px-2 text-center">Date</th>
             <th class="border border-gray-300 px-2 text-center">Type</th>
             <th class="border border-gray-300 px-2 text-center">Shift</th>
@@ -91,6 +92,15 @@ const totalApprovedMinutes = computed(() => {
             class="border-b border-gray-200 hover:bg-blue-200 *:py-2"
           >
             <td class="border border-gray-300 px-2 text-center">{{ index + 1 }}</td>
+             <td class="border border-gray-300 px-2 text-center">
+              {{
+                new Date(overtime.created_at).toLocaleDateString('en-GB', {
+                  day: '2-digit',
+                  month: 'long',
+                  year: 'numeric',
+                })
+              }}
+            </td>
             <td class="border border-gray-300 px-2 text-center">
               {{
                 new Date(overtime.date).toLocaleDateString('en-GB', {
@@ -100,6 +110,7 @@ const totalApprovedMinutes = computed(() => {
                 })
               }}
             </td>
+           
             <td class="border border-gray-300 px-2 text-center">
               {{ overtime.duty_type }}
             </td>

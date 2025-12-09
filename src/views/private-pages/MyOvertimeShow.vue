@@ -58,6 +58,16 @@ const onAction = async () => {
       <h2 class="title-md">Overtime Request</h2>
       <div class="grid grid-cols-2 gap-2">
         <div class="text-sm space-y-0.5">
+          <div v-if="overtime?.created_at">
+            <span class="text-gray-500 mr-1">Applied Date:</span>
+            <b>{{
+              new Date(overtime?.created_at).toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+              })
+            }}</b>
+          </div>
           <div v-if="overtime?.date">
             <span class="text-gray-500 mr-1">Date:</span>
             <b>{{
