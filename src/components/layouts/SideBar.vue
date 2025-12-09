@@ -1,6 +1,6 @@
 <script setup>
 import { useAuthStore } from '@/stores/auth'
-import { computed, ref, watch, onMounted } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const props = defineProps({
@@ -17,13 +17,9 @@ const authStore = useAuthStore()
 const currentPath = computed(() => route.path)
 const currentName = computed(() => route.name)
 
-const isAdmin = computed(() =>
-  ['admin', 'super_admin', 'developer'].includes(props.user?.role)
-)
+const isAdmin = computed(() => ['admin', 'super_admin', 'developer'].includes(props.user?.role))
 
-const isSuperAdminOrDev = computed(() =>
-  ['super_admin', 'developer'].includes(props.user?.role)
-)
+const isSuperAdminOrDev = computed(() => ['super_admin', 'developer'].includes(props.user?.role))
 
 const logout = () => {
   authStore.logout()
@@ -47,6 +43,7 @@ const reportsMenu = [
   { label: 'Date Range Attendance ', routeName: 'DateWiseAttendanceSummaryReport' },
   { label: 'Overtime ', routeName: 'OvertimeReport' },
   { label: 'Monthly Application', routeName: 'MonthWiseApplicationReport' },
+  { label: 'Todo Report', routeName: 'TodoReport' },
 ]
 const reportRouteNames = reportsMenu.map((i) => i.routeName)
 
@@ -335,10 +332,7 @@ watch(open, (val) => {
           </div>
         </RouterLink>
 
-        <nav
-          v-if="open && isSubmenuOpen('reports')"
-          class="mt-1 space-y-1"
-        >
+        <nav v-if="open && isSubmenuOpen('reports')" class="mt-1 space-y-1">
           <RouterLink
             v-for="item in reportsMenu"
             :key="item.routeName"
@@ -381,10 +375,7 @@ watch(open, (val) => {
           </div>
         </RouterLink>
 
-        <nav
-          v-if="open && isSubmenuOpen('kpi')"
-          class="mt-1 space-y-1"
-        >
+        <nav v-if="open && isSubmenuOpen('kpi')" class="mt-1 space-y-1">
           <RouterLink
             v-for="item in kpiMenu"
             :key="item.routeName"
@@ -427,10 +418,7 @@ watch(open, (val) => {
           </div>
         </RouterLink>
 
-        <nav
-          v-if="open && isSubmenuOpen('hrd')"
-          class="mt-1 space-y-1"
-        >
+        <nav v-if="open && isSubmenuOpen('hrd')" class="mt-1 space-y-1">
           <RouterLink
             v-for="item in hrdMenu"
             :key="item.routeName"
@@ -474,16 +462,15 @@ watch(open, (val) => {
             </div>
           </RouterLink>
 
-          <nav
-            v-if="open && isSubmenuOpen('emp')"
-            class="mt-1 space-y-1"
-          >
+          <nav v-if="open && isSubmenuOpen('emp')" class="mt-1 space-y-1">
             <RouterLink
               v-for="item in empManageMenu"
               :key="item.key"
               :to="item.to"
               class="flex items-center gap-2 pl-11 pr-3 py-1.5 text-sm text-gray-600 rounded hover:bg-blue-50 hover:text-blue-600"
-              :class="{ 'bg-blue-50 text-blue-600 font-medium': currentName === 'checklists.board' }"
+              :class="{
+                'bg-blue-50 text-blue-600 font-medium': currentName === 'checklists.board',
+              }"
             >
               <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
               <span>{{ item.label }}</span>
@@ -520,10 +507,7 @@ watch(open, (val) => {
             </div>
           </RouterLink>
 
-          <nav
-            v-if="open && isSubmenuOpen('settings')"
-            class="mt-1 space-y-1"
-          >
+          <nav v-if="open && isSubmenuOpen('settings')" class="mt-1 space-y-1">
             <RouterLink
               v-for="item in settingsMenu"
               :key="item.label"
@@ -566,10 +550,7 @@ watch(open, (val) => {
             </div>
           </RouterLink>
 
-          <nav
-            v-if="open && isSubmenuOpen('careers')"
-            class="mt-1 space-y-1"
-          >
+          <nav v-if="open && isSubmenuOpen('careers')" class="mt-1 space-y-1">
             <RouterLink
               v-for="item in careerMenu"
               :key="item.routeName"

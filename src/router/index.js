@@ -263,6 +263,12 @@ const router = createRouter({
           component: () => import('@/views/private-pages/todos/TodoList.vue'),
           meta: { requiresAuth: true, title: 'Todo List' },
         },
+        {
+          path: 'todos/report',
+          name: 'TodoReport',
+          component: () => import('@/views/private-pages/todos/TodoReportView.vue'),
+          meta: { requiresAuth: true, title: 'Todo Report' },
+        },
 
         {
           path: 'todos/add/:todoable_id',
