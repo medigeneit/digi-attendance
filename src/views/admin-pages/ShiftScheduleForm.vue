@@ -613,10 +613,10 @@ function toggleSelectAllVisible(checked) {
       <table class="table-auto w-full text-xs md:text-sm">
         <thead class="sticky top-0 bg-white z-10">
           <tr>
-            <th class="border p-2 w-40 sticky-col-1 text-left bg-white z-20">
+            <th class="border p-2 w-40 sticky-col-1 text-left bg-white z-50">
               Employee
             </th>
-            <th class="border p-2 w-32 md:w-40 sticky-col-2 text-center bg-white z-20">
+            <th class="border p-2 w-32 sticky-col-2 text-center bg-white z-50">
               Quick Action
             </th>
             <th
@@ -721,12 +721,6 @@ td {
 
 .sticky-col-2 {
   position: sticky;
-  left: 10rem; /* approx 160px → Employee col width */
-}
-
-/* Ensure background of sticky cells matches row */
-.sticky-col-1,
-.sticky-col-2 {
-  background-color: inherit;
+  left: 12rem; /* approx 160px → Employee col width */
 }
 </style>
