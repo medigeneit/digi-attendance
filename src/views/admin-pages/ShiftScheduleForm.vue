@@ -7,13 +7,16 @@ import { useShiftScheduleStore } from '@/stores/shiftScheduleStore'
 
 import dayjs from 'dayjs'
 import { storeToRefs } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 /* ==== Stores ==== */
 const scheduleStore   = useShiftScheduleStore()
 const companyStore    = useCompanyStore()
 const shiftStore      = useShiftStore()
 const departmentStore = useDepartmentStore()
+const router = useRouter()
+const route = useRoute()
 
 const { defaultShift }         = storeToRefs(scheduleStore)
 const { employees } = storeToRefs(companyStore)
@@ -27,6 +30,9 @@ const selectedEmployeeId  = ref('')
 const selectedShift       = ref('')        
 const scheduleMap         = ref({})       
 const selectedEmployeeIds = ref([])        
+const line_type           = ref('all')
+const routeQueryApplied    = ref(false)
+const applyingRouteQuery   = ref(false)
 
 /* ==== Colors ==== */
 const shiftColorMap = ref({
@@ -113,7 +119,6 @@ function assignWeekends() {
   if (!selectedIdsNum.value.length) return
   selectedIdsNum.value.forEach((empId) => {
     const emp = byId(empId)(employees.value)
-    // console.log('emp weekends', empId, emp?.assign_weekend?.weekends);
     const empWeekends = (emp?.assign_weekend?.weekends || []).map(d => String(d).slice(0, 3))
     if (!scheduleMap.value[k(empId)]) scheduleMap.value[k(empId)] = {}
     daysInMonth.value.forEach((day) => {
@@ -209,6 +214,70 @@ async function loadScheduleData (companyId, departmentId, month) {
   }
 }
 
+async function loadDepartmentEmployees(departmentId) {
+  if (!departmentId) {
+    employees.value = []
+    selectedEmployeeIds.value = []
+    return []
+  }
+
+  const response = await departmentStore.fetchDepartmentEmployee(
+    [Number(departmentId)],
+    line_type.value,
+  )
+
+  const list = response || []
+  employees.value = list
+  selectedEmployeeIds.value = selectedEmployeeIds.value.filter((id) =>
+    list.some((e) => Number(e?.id) === Number(id)),
+  )
+  return list
+}
+
+const filterQueryParams = computed(() => ({
+  company_id: selectedCompany.value,
+  department_id: selectedDepartment.value,
+  line_type: line_type.value,
+  employee_id: selectedEmployeeId.value,
+  month: selectedMonth.value,
+}))
+
+const sanitizeQueryParams = (params) =>
+  Object.fromEntries(
+    Object.entries(params || {}).filter(
+      ([, value]) => value !== '' && value !== null && value !== undefined,
+    ),
+  )
+
+function updateRouteQuery(filters = {}) {
+  const merged = { ...route.query, ...filters }
+  const sanitized = sanitizeQueryParams(merged)
+  const sameQuery =
+    Object.keys(sanitized).length === Object.keys(route.query).length &&
+    Object.entries(sanitized).every(
+      ([key, value]) => String(route.query[key] ?? '') === String(value ?? ''),
+    )
+
+  if (sameQuery) return
+
+  router.replace({ query: sanitized }).catch(() => {})
+}
+
+function applyFiltersFromRoute(query = route.query) {
+  applyingRouteQuery.value = true
+  selectedCompany.value = query.company_id || ''
+  selectedDepartment.value = query.department_id || ''
+  selectedEmployeeId.value = query.employee_id || ''
+  line_type.value = query.line_type || 'all'
+  selectedMonth.value = query.month || selectedMonth.value
+  applyingRouteQuery.value = false
+  routeQueryApplied.value = true
+}
+
+onMounted(() => {
+  applyFiltersFromRoute()
+})
+
 /* ==== Fetchers / Watchers ==== */
 watch(selectedCompany, async (companyId) => {
   if (!companyId) return
@@ -224,29 +293,33 @@ watch(selectedCompany, async (companyId) => {
 
 watch(selectedDepartment, async (departmentId) => {
   if (!departmentId) return
-  const response = await departmentStore.fetchDepartmentEmployee({ departmentIds: [Number(departmentId)] })
-  employees.value = response || []
-  // keep selection if those employees still visible; otherwise clear
-  selectedEmployeeIds.value = selectedEmployeeIds.value.filter(id =>
-    (employees.value || []).some(e => Number(e.id) === Number(id))
-  )
+  await loadDepartmentEmployees(departmentId)
+  if (!selectedCompany.value || !selectedMonth.value) return
   await loadScheduleData(selectedCompany.value, departmentId, selectedMonth.value)
+})
+
+watch(line_type, async () => {
+  if (!selectedDepartment.value) return
+  await loadDepartmentEmployees(selectedDepartment.value)
+  if (!selectedCompany.value || !selectedMonth.value) return
+  await loadScheduleData(selectedCompany.value, selectedDepartment.value, selectedMonth.value)
 })
 
 watch(selectedMonth, async (month) => {
   if (!month || !selectedCompany.value || !selectedDepartment.value) return
   await shiftStore.fetchShifts({ company_id: Number(selectedCompany.value) })
   assignColorsToShifts()
-  const resp = await departmentStore.fetchDepartmentEmployee({
-    departmentIds: [Number(selectedDepartment.value)]
-  })
-  employees.value = resp || []
-  // keep selection in current filter scope
-  selectedEmployeeIds.value = selectedEmployeeIds.value.filter(id =>
-    (employees.value || []).some(e => Number(e.id) === Number(id))
-  )
   await loadScheduleData(selectedCompany.value, selectedDepartment.value, month)
 })
+
+watch(
+  filterQueryParams,
+  (next) => {
+    if (!routeQueryApplied.value || applyingRouteQuery.value) return
+    updateRouteQuery(next)
+  },
+  { deep: true },
+)
 
 const filteredEmployees = computed(() => {
   if (!selectedEmployeeId.value) return employees.value || []
@@ -277,9 +350,9 @@ function toggleSelectAllVisible(checked) {
       <EmployeeFilter
         v-model:company_id="selectedCompany"
         v-model:department_id="selectedDepartment"
+        v-model:line_type="line_type"
         v-model:employee_id="selectedEmployeeId"
-        :with-type="false"
-        :initial-value="{ company_id: selectedCompany, department_id: selectedDepartment, employee_id: selectedEmployeeId }"  
+        :initial-value="{ company_id: selectedCompany, department_id: selectedDepartment, line_type, employee_id: selectedEmployeeId }"  
       />
       <select v-model="selectedShift" class="px-2 py-2 border rounded">
         <option value="">- Pick a Shift -</option>
