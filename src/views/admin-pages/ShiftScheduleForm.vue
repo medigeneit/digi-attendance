@@ -105,6 +105,22 @@ const getShiftName = (empId, day) => {
   return s?.name || ''
 }
 
+const getCellTitle = (empId, day) => {
+  const dateStr = `${selectedMonth.value}-${String(day).padStart(2, '0')}`
+  const shiftName = getShiftName(empId, day)
+
+  if (shiftName) {
+    // এখানে চাইলে বাংলা/short নামও দিতে পারেন
+    return `${dateStr} — ${shiftName}`
+  }
+
+  if (isChecked(empId)) {
+    return `${dateStr} — Click to set shift`
+  }
+
+  return `${dateStr} — Check this employee to edit`
+}
+
 /* ==== Assignment actions (ONLY for checked rows) ==== */
 function assignShift(empId, day) {
   if (!isChecked(empId)) return
@@ -649,19 +665,23 @@ function toggleSelectAllVisible(checked) {
               </button>
             </td>
 
-            <td
+           <td
               v-for="day in daysInMonth"
               :key="day"
               class="border text-center"
-              :class="isChecked(emp.id) ? 'cursor-pointer hover:bg-gray-100' : 'cursor-not-allowed opacity-60'"
+              :class="[
+                'border text-center',
+                isChecked(emp.id) ? 'cursor-pointer hover:bg-gray-100' : 'cursor-default opacity-70'
+              ]"
               @click="isChecked(emp.id) && assignShift(emp.id, day)"
-              :title="isChecked(emp.id) ? (getShiftName(emp.id, day) || 'Click to set') : 'Check this employee to edit'"
+              :title="getCellTitle(emp.id, day)"
             >
               <div
                 :style="getShiftColorStyle(emp.id, day)"
                 class="w-full h-5 md:h-6 rounded transition"
               ></div>
             </td>
+
           </tr>
 
           <tr v-if="!filteredEmployees?.length">
