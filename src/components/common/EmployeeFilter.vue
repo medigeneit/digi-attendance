@@ -235,13 +235,20 @@ function clearType() {
       <SelectDropdown
         v-model="selectedCompanyId"
         :options="companyOptions"
-        class="border-2  border-gray-300 rounded h-[32px] w-full bg-white"
+        class="border-2 border-gray-300 rounded h-[32px] w-full bg-white"
         clearable
       >
         <template #selected-option="{ option }">
-          <div class="line-clamp-1 text-sm text-gray-900" :title="option?.label">
+          <div class="line-clamp-1 text-sm text-gray-900 md:max-w-[120px]" :title="option?.label">
             <span v-if="option?.label">{{ option?.label }}</span>
             <span v-else class="text-gray-500 whitespace-nowrap">--Select Company--</span>
+          </div>
+        </template>
+        <template #option="{ option }">
+          <div>
+            <div class="line-clamp-1 text-sm text-gray-900 whitespace-nowrap" :title="option.label">
+              {{ option.label }}
+            </div>
           </div>
         </template>
       </SelectDropdown>
@@ -259,9 +266,16 @@ function clearType() {
         clearable
       >
         <template #selected-option="{ option }">
-          <div class="line-clamp-1 text-sm text-gray-900" :title="option?.label">
+          <div class="line-clamp-1 text-sm text-gray-900 md:max-w-[120px]" :title="option?.label">
             <span v-if="option?.label">{{ option?.label }}</span>
-            <span v-else class="text-gray-800 whitespace-nowrap">--All Departments--</span>
+            <span v-else class="text-gray-500 whitespace-nowrap">--Select Department--</span>
+          </div>
+        </template>
+        <template #option="{ option }">
+          <div>
+            <div class="line-clamp-1 text-sm text-gray-900 whitespace-nowrap" :title="option.label">
+              {{ option.label }}
+            </div>
           </div>
         </template>
       </SelectDropdown>
@@ -301,6 +315,13 @@ function clearType() {
               >
                 &times;
               </button>
+            </div>
+          </div>
+        </template>
+        <template #option="{ option }">
+          <div>
+            <div class="line-clamp-1 text-sm text-gray-900 whitespace-nowrap" :title="option.label">
+              {{ option.label }}
             </div>
           </div>
         </template>
