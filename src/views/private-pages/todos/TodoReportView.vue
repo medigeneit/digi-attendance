@@ -201,7 +201,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="container mx-auto px-4 py-6">
+  <div class="container print:flex-grow mx-auto print:w-full px-4 py-6 print:px-0 print:py-0">
     <TodoReportHeading
       :company-id="filters.companyId"
       :department-id="filters.departmentId"
@@ -210,7 +210,7 @@ onMounted(() => {
       :start-date="filters.startDate"
       :end-date="filters.endDate"
       :loading="todoDateStore.loading"
-      class="mb-4 print:px-0 print:py-0 print:mb-2 print:border-0 print:border-b print:border-gray-400 print:rounded-none"
+      class="mb-4 print:px-0 print:py-0 print:mb-2 print:border-0 print:border-b print:border-gray-400 print:rounded-none print:w-full"
       @change="handleFilterChange"
       @reload-click="fetchTodos"
     >
@@ -233,7 +233,7 @@ onMounted(() => {
 
     <div
       v-if="filters.companyId && filters.startDate && filters.endDate"
-      class="bg-white border rounded-md mb-2 p-4 text-sm print:border-0 print:mb-2 print:px-0"
+      class="bg-white border rounded-md mb-2 p-4 text-sm print:border-0 print:mb-2 print:px-0 print:w-full"
     >
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-y-2 gap-x-6">
         <div>
