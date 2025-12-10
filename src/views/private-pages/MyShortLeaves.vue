@@ -15,8 +15,35 @@ const goBack = () => {
   router.go(-1)
 }
 
+const statusBadgeClass = (status) => {
+  const normalized = (status || '').toLowerCase()
+  if (['approved', 'approved by hr', 'approved by incharge'].includes(normalized)) {
+    return 'border border-emerald-200 bg-emerald-50 text-emerald-700'
+  }
+  if (['rejected', 'cancelled', 'declined'].includes(normalized)) {
+    return 'border border-red-200 bg-red-50 text-red-700'
+  }
+  if (normalized === 'pending' || !normalized) {
+    return 'border border-amber-200 bg-amber-50 text-amber-800'
+  }
+  return 'border border-slate-200 bg-slate-50 text-slate-800'
+}
+
 const myShortLeaves = computed(() => {
-  return shortLeaveStore.shortLeaves
+  return shortLeaveStore.shortLeaves || []
+})
+
+const totalLeaves = computed(() => {
+  return Array.isArray(myShortLeaves.value) ? myShortLeaves.value.length : 0
+})
+
+const selectedMonthLabel = computed(() => {
+  const raw = shortLeaveStore.selectedMonth
+  if (!raw) return 'All months'
+  const [year, month] = raw.split('-')
+  if (!year || !month) return 'All months'
+  const date = new Date(Number(year), Number(month) - 1)
+  return date.toLocaleString('en-US', { month: 'long', year: 'numeric' })
 })
 
 const fetchShortLeaves = async () => {
@@ -28,6 +55,15 @@ function deleteApplication(applicationId) {
   if (confirmed) {
     shortLeaveStore.deleteShortLeave(applicationId)
   }
+}
+
+const formatDate = (date) => {
+  if (!date) return 'N/A'
+  return new Date(date).toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  })
 }
 
 const formatTime = (timeString) => {
@@ -45,99 +81,146 @@ const formatTime = (timeString) => {
 </script>
 
 <template>
-  <div class="space-y-2 px-4">
-    <div class="flex items-center justify-between gap-2">
-      <button class="btn-3" @click="goBack">
-        <i class="far fa-arrow-left"></i>
-        <span class="hidden md:flex">Back</span>
-      </button>
-
-      <h1 class="title-md md:title-lg flex-wrap text-center">Short Leaves</h1>
-      <div>
-        <RouterLink :to="{ name: 'ShortLeaveAdd' }" class="btn-2">New Short Leave</RouterLink>
+  <div class="space-y-6 px-4 py-5">
+    <div class="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm md:px-6">
+      <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div>
+          <button class="btn-3 order-2 md:order-1" @click="goBack">
+            <i class="far fa-arrow-left"></i>
+            <span class="hidden md:inline-flex">Back</span>
+          </button>
+        </div>
+        <div class="space-y-1">
+          <p class="text-2xl font-semibold text-slate-900">
+            Short Leaves Applications
+          </p>
+          <!-- <p class="text-2xl font-semibold text-slate-900">
+            {{ totalLeaves }} {{ totalLeaves === 1 ? 'application' : 'applications' }}
+          </p> -->
+          <!-- <p class="text-sm text-slate-500">
+            Showing <span class="font-medium text-slate-600">{{ selectedMonthLabel }}</span>
+          </p> -->
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <RouterLink
+            :to="{ name: 'ShortLeaveAdd' }"
+            class="btn-2 order-1 md:order-2"
+          >
+            <i class="far fa-plus mr-1"></i>
+            New Short Leave
+          </RouterLink>
+          <input
+            id="monthSelect"
+            type="month"
+            v-model="shortLeaveStore.selectedMonth"
+            @change="fetchShortLeaves"
+            class="input-1 order-3 w-40"
+          />
+        </div>
       </div>
     </div>
 
-    <div class="grid grid-cols-3 gap-2">
-      <input
-        id="monthSelect"
-        type="month"
-        v-model="shortLeaveStore.selectedMonth"
-        @change="fetchShortLeaves"
-        class="input-1"
-      />
-    </div>
-
-    <div v-if="shortLeaveStore?.loading" class="text-center py-4">
+    <div v-if="shortLeaveStore?.loading" class="text-center py-10">
       <LoaderView />
     </div>
 
     <div v-else class="space-y-4">
-      <div class="overflow-x-auto">
-        <table
-          class="min-w-full table-auto border-collapse border border-gray-200 bg-white rounded-md text-sm"
+      <div v-if="totalLeaves === 0" class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-slate-600">
+        <p class="text-lg font-semibold text-slate-800">No requests yet</p>
+        <p class="text-sm text-slate-500">Create your first short leave for {{ selectedMonthLabel }}</p>
+        <RouterLink
+          :to="{ name: 'ShortLeaveAdd' }"
+          class="mt-3 inline-flex rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm hover:bg-indigo-100"
         >
-          <thead>
-            <tr class="bg-gray-200">
-              <th class="border border-gray-300 px-2 text-left">#</th>
-              <th class="border border-gray-300 px-2 text-left">Date</th>
-              <th class="border border-gray-300 px-2 text-left">Type</th>
-              <th class="border border-gray-300 px-2 text-left">Start Time</th>
-              <th class="border border-gray-300 px-2 text-left">End Time</th>
-              <th class="border border-gray-300 px-2 text-left">Total Minutes</th>
-              <th class="border border-gray-300 px-2 text-left">Attachment</th>
-              <th class="border border-gray-300 px-2 text-left">Status</th>
-              <th class="border border-gray-300 px-2 text-left">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="(leave, index) in myShortLeaves"
-              :key="leave?.id"
-              class="border-b border-gray-200 hover:bg-blue-200"
-            >
-              <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
-              <td class="border border-gray-300 px-2">{{ leave?.date }}</td>
-              <td class="border border-gray-300 px-2">{{ leave?.type }}</td>
-              <td class="border border-gray-300 px-2">{{ formatTime(leave?.start_time) }}</td>
-              <td class="border border-gray-300 px-2">{{ formatTime(leave?.end_time) }}</td>
-              <td class="border border-gray-300 px-2">{{ leave?.total_minutes }}</td>
-              <td class="border border-gray-300 px-2 text-center">
-                <a
-                  v-if="leave.attachment"
-                  :href="leave?.attachment"
-                  target="_blank"
-                  class="text-blue-500 underline"
-                >
-                  <i class="fad fa-link"></i>
-                </a>
-              </td>
-              <td class="border border-gray-300 px-2">{{ leave?.status || 'N/A' }}</td>
-              <td class="border border-gray-300 px-2">
-                <div class="flex gap-2">
-                  <RouterLink
-                    :to="{ name: 'ShortLeaveShow', params: { id: leave?.id } }"
-                    class="btn-icon"
-                  >
-                    <i class="far fa-eye"></i>
-                  </RouterLink>
+          <i class="far fa-plus mr-2"></i>
+          Create short leave
+        </RouterLink>
+      </div>
 
-                  <button
-                    type="button"
-                    @click="deleteApplication(leave?.id)"
-                    class="btn-icon"
-                    v-if="leave.status == 'Pending' || !leave.status"
+      <div v-else class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3">
+          <p class="text-sm font-semibold text-slate-600">Showing {{ totalLeaves }} records</p>
+          <span class="text-xs text-slate-500">
+            Updated just now
+          </span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-slate-100 text-sm">
+            <thead class="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500">
+              <tr>
+                <th class="px-4 py-3 text-left">#</th>
+                <th class="px-4 py-3 text-left">Created</th>
+                <th class="px-4 py-3 text-left">Leave Date</th>
+                <th class="px-4 py-3 text-left">Type</th>
+                <th class="px-4 py-3 text-left">Time</th>
+                <th class="px-4 py-3 text-left">Minutes</th>
+                <th class="px-4 py-3 text-left">Attachment</th>
+                <th class="px-4 py-3 text-left">Status</th>
+                <th class="px-4 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr
+                v-for="(leave, index) in myShortLeaves"
+                :key="leave?.id"
+                class="hover:bg-slate-50 transition"
+              >
+                <td class="px-4 py-3 font-semibold text-slate-600">{{ index + 1 }}</td>
+                <td class="px-4 py-3 text-slate-700">{{ formatDate(leave?.created_at) }}</td>
+                <td class="px-4 py-3 text-slate-700">{{ formatDate(leave?.date) }}</td>
+                <td class="px-4 py-3 text-slate-700">{{ leave?.type || 'Short Leave' }}</td>
+                <td class="px-4 py-3 text-slate-700">
+                  {{ formatTime(leave?.start_time) }} - {{ formatTime(leave?.end_time) }}
+                </td>
+                <td class="px-4 py-3 text-slate-700">{{ leave?.total_minutes || '—' }}</td>
+                <td class="px-4 py-3">
+                  <div v-if="leave?.attachment" class="flex items-center gap-1 text-xs font-semibold text-indigo-600">
+                    <i class="far fa-paperclip"></i>
+                    Attached
+                  </div>
+                  <span v-else class="text-xs text-slate-400">None</span>
+                </td>
+                <td class="px-4 py-3">
+                  <span
+                    :class="['inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold tracking-wide', statusBadgeClass(leave?.status)]"
                   >
-                    <i class="far fa-trash text-red-600"></i>
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr v-if="myShortLeaves.length === 0">
-              <td colspan="8" class="p-2 text-center text-red-500">No short leaves found</td>
-            </tr>
-          </tbody>
-        </table>
+                    {{ leave?.status || 'Pending' }}
+                  </span>
+                </td>
+                <td class="px-4 py-3">
+                  <div class="flex items-center justify-end gap-2">
+                    <RouterLink
+                      :to="{ name: 'ShortLeaveShow', params: { id: leave?.id } }"
+                      class="inline-flex items-center rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-indigo-200 hover:text-indigo-700"
+                    >
+                      <i class="far fa-eye mr-1"></i>
+                      View
+                    </RouterLink>
+                    <button
+                      v-if="leave.status == 'Pending' || !leave.status"
+                      type="button"
+                      @click="deleteApplication(leave?.id)"
+                      class="inline-flex items-center rounded-full border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:border-red-300 hover:text-red-700"
+                    >
+                      <i class="far fa-trash mr-1"></i>
+                      Delete
+                    </button>
+                    <a
+                      v-if="leave?.attachment"
+                      :href="leave.attachment"
+                      target="_blank"
+                      rel="noreferrer"
+                      class="inline-flex items-center rounded-full border border-indigo-200 px-3 py-1.5 text-xs font-semibold text-indigo-600 transition hover:border-indigo-300 hover:text-indigo-800"
+                    >
+                      <i class="far fa-download mr-1"></i>
+                      Download
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
