@@ -689,7 +689,7 @@ const router = createRouter({
 
         {
           path: '/hrd',
-          name: 'HrdView',
+            name: 'HrdView',
           component: () => import('@/views/admin-pages/HrdView.vue'),
           meta: {
             requiresAuth: true,

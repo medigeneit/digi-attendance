@@ -178,25 +178,10 @@ const tdBase = 'px-3 py-2 align-top text-slate-700'
       <button class="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 hover:bg-slate-50" @click="goBack">
         <i class="far fa-arrow-left"></i><span class="hidden md:inline">Back</span>
       </button>
-
       <h1 class="text-xl md:text-2xl font-semibold tracking-tight text-slate-800">
         Monthly Application Log
       </h1>
-
-      <div class="flex items-center gap-2">
-        <FlexibleDatePicker
-          v-model="period"
-          :show-year="false"
-          :show-month="true"
-          :show-date="false"
-        />
-        <button
-          class="btn-2"
-          @click="fetchApplications"
-        >
-          <i class="far fa-rotate-right"></i><span class="hidden md:inline">Refresh</span>
-        </button>
-      </div>
+      <div></div>
     </div>
 
     <!-- Filters -->
@@ -209,7 +194,22 @@ const tdBase = 'px-3 py-2 align-top text-slate-700'
         :with-type="true"
         :initial-value="$route.query"
         @filter-change="handleFilterChange"
-      />
+      >
+      <div class="flex items-center gap-2">
+       <FlexibleDatePicker
+         v-model="period"
+         :show-year="false"
+         :show-month="true"
+         :show-date="false"
+       />
+       <button
+         class="btn-2"
+         @click="fetchApplications"
+       >
+         <i class="far fa-rotate-right"></i><span class="hidden md:inline">Refresh</span>
+       </button>
+     </div>
+      </EmployeeFilter>
     </div>
 
     <!-- Selected employee -->
@@ -257,7 +257,8 @@ const tdBase = 'px-3 py-2 align-top text-slate-700'
             <thead class="sticky top-0 bg-white/90 backdrop-blur border-b">
               <tr class="text-xs uppercase text-slate-600">
                 <th :class="thBase">#</th>
-                <th :class="thBase">Date</th>
+                <th :class="thBase">Created Date</th>
+                <th :class="thBase">Applied Date</th>
                 <th :class="thBase">Type</th>
                 <th :class="thBase">Shift</th>
                 <th :class="thBase">Check-In</th>
@@ -277,6 +278,7 @@ const tdBase = 'px-3 py-2 align-top text-slate-700'
                 class="border-b hover:bg-slate-50"
               >
                 <td :class="tdBase">{{ i + 1 }}</td>
+                <td :class="tdBase">{{ formatDate(overtime.created_date) }}</td>
                 <td :class="tdBase">{{ formatDate(overtime.date) }}</td>
                 <td :class="tdBase">{{ overtime.duty_type }}</td>
                 <td :class="tdBase">{{ overtime.shift }}</td>

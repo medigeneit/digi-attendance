@@ -143,13 +143,13 @@ const formatDate = (ts) => {
           :with-type="true"
           :initial-value="$route.query"
          @filter-change="handleFilterChange"
-      />
+      >
       <div class="flex gap-4 items-center flex-wrap">
        <div>
          <select
            v-model="leaveApplicationStore.selectedStatus"
            @change="fetchApplicationsByUser"
-           class="input-1 py-1"
+           class="input-1 py-0.5"
          >
            <option value="" selected>All</option>
            <option value="Pending">Pending</option>
@@ -165,6 +165,7 @@ const formatDate = (ts) => {
           :show-date="false"
         />
       </div>
+      </EmployeeFilter>
     </div>
 
     <div v-if="leaveApplicationStore.loading" class="text-center py-4">

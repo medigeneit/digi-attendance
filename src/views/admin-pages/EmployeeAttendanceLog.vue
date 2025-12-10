@@ -141,13 +141,14 @@ const handleFilterChange = () => {
         :with-type="true"
         :initial-value="$route.query"
         @filter-change="handleFilterChange"
-      />
+      >
       <FlexibleDatePicker
         v-model="period"
         :show-year="false"
         :show-month="true"
         :show-date="false"
       />
+      </EmployeeFilter>
     </div>
 
     <div v-if="selectedUser" class="flex justify-between gap-4 text-sm">

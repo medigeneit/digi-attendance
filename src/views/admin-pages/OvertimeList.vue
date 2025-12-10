@@ -126,11 +126,7 @@ const handleFilterChange = () => {
       <h1 class="title-md md:title-lg flex-wrap text-center">Monthly Overtime</h1>
       <div></div>
     </div>
-    <div
-      class="w-full flex flex-wrap gap-4 items-center md:w-auto relative"
-      :class="{ 'opacity-50': loading }"
-    >
-      
+    <div class="flex flex-wrap justify-start">
         <EmployeeFilter
           v-model:company_id="filters.company_id"
           v-model:department_id="filters.department_id"
@@ -139,16 +135,14 @@ const handleFilterChange = () => {
           :with-type="true"
           :initial-value="$route.query"
          @filter-change="handleFilterChange"
+      >
+      <FlexibleDatePicker
+        v-model="period"
+        :show-year="false"
+        :show-month="true"
+        :show-date="false"
       />
-      <div>
-        <FlexibleDatePicker
-          v-model="period"
-          :show-year="false"
-          :show-month="true"
-          :show-date="false"
-        />
-      </div>
-      <div v-if="loading" class="absolute inset-0 w-full h-full"></div>
+      </EmployeeFilter>
     </div>
 
     <LoaderView v-if="overtimeStore.isLoading || loading" />

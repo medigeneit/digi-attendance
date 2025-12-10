@@ -208,13 +208,14 @@ const formatDate = (ts) => {
           :initial-value="$route.query"
           @filter-change="handleFilterChange"
           class="min-w-[220px]"
-        />
-        <FlexibleDatePicker
-          v-model="period"
-          :show-year="false"
-          :show-month="true"
-          :show-date="false"
-        />
+        >
+          <FlexibleDatePicker
+            v-model="period"
+            :show-year="false"
+            :show-month="true"
+            :show-date="false"
+          />
+        </EmployeeFilter>
       </div>
     </div>
 

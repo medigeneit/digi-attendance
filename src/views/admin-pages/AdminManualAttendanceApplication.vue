@@ -213,7 +213,7 @@ async function submitManualAttendance() {
       <div></div>
     </div>
 
-    <div class="flex flex-wrap gap-2">
+    <div class="flex flex-wrap gap-2 py-2">
       <EmployeeFilter
         v-model:company_id="filters.company_id"
         v-model:department_id="filters.department_id"
@@ -222,7 +222,7 @@ async function submitManualAttendance() {
         :with-type="true"
         :initial-value="$route.query"
         @filter-change="handleFilterChange"
-      />
+      >
       <div>
         <FlexibleDatePicker
           v-model="period"
@@ -231,6 +231,7 @@ async function submitManualAttendance() {
           :show-date="false"
         />
       </div>
+      </EmployeeFilter>
     </div>
 
     <div v-if="manualAttendanceStore.loading" class="text-center py-4">

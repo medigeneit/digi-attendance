@@ -505,24 +505,26 @@ function toggleSelectAllVisible(checked) {
     <!-- Filters -->
     <div class="flex flex-wrap justify-start items-center gap-3 mb-2">
       <EmployeeFilter
-        v-model:company_id="selectedCompany"
-        v-model:department_id="selectedDepartment"
-        v-model:line_type="line_type"
-        v-model:employee_id="selectedEmployeeId"
-        :initial-value="{ company_id: selectedCompany, department_id: selectedDepartment, line_type, employee_id: selectedEmployeeId }"
-      />
-
-      <select v-model="selectedShift" class="px-2 py-2 border rounded-full text-sm">
-        <option value="">- Pick a Shift -</option>
-        <option v-for="s in allShifts" :key="s.id" :value="s.id">{{ s.name }}</option>
-      </select>
-
-      <FlexibleDatePicker
-        v-model="period"
-        :show-year="false"
-        :show-month="true"
-        :show-date="false"
-      />
+          v-model:company_id="selectedCompany"
+          v-model:department_id="selectedDepartment"
+          v-model:line_type="line_type"
+          v-model:employee_id="selectedEmployeeId"
+          :initial-value="{ company_id: selectedCompany, department_id: selectedDepartment, line_type, employee_id: selectedEmployeeId }"
+        >
+        <div class="flex gap-4"> 
+          <select v-model="selectedShift" class="px-3 py-0.5 border rounded-full text-sm">
+            <option value="">- Pick a Shift -</option>
+            <option v-for="s in allShifts" :key="s.id" :value="s.id">{{ s.name }}</option>
+          </select>
+    
+          <FlexibleDatePicker
+            v-model="period"
+            :show-year="false"
+            :show-month="true"
+            :show-date="false"
+          />
+        </div>
+      </EmployeeFilter>
     </div>
 
     <!-- Loading / info -->
