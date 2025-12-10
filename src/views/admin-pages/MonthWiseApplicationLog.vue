@@ -3,10 +3,11 @@ import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import DisplayFormattedWorkingHours from '@/components/overtime/DisplayFormattedWorkingHours.vue'
 import SelectedEmployeeCard from '@/components/user/SelectedEmployeeCard.vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 
 import { useLeaveApplicationStore } from '@/stores/leave-application'
 import { useUserStore } from '@/stores/user'
-import { onMounted, ref, watch, computed } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -15,7 +16,25 @@ const userStore = useUserStore()
 const leaveApplicationStore = useLeaveApplicationStore()
 
 const selectedUser = ref(null)
-const selectedMonth = ref(route.query.date || leaveApplicationStore.selectedMonth || new Date().toISOString().slice(0,7))
+const initialMonth = route.query.date || leaveApplicationStore.selectedMonth || new Date().toISOString().slice(0,7)
+const selectedMonth = ref(initialMonth)
+
+const now = new Date()
+const pad = (value) => value.toString().padStart(2, '0')
+const parseDate = (val) => {
+  if (!val) return { year: now.getFullYear(), month: now.getMonth() + 1 }
+  const [year=now.getFullYear(), month=String(now.getMonth()+1)] = val.split('-')
+  return { year: Number(year), month: Number(month) }
+}
+const period = ref({
+  year: parseDate(initialMonth).year,
+  month: parseDate(initialMonth).month,
+  day: 1,
+})
+const periodMonth = computed(() => {
+  if (!period.value?.year || !period.value?.month) return ''
+  return `${period.value.year}-${pad(period.value.month)}`
+})
 
 const filters = ref({
   company_id: route.query.company_id || '',
@@ -89,11 +108,16 @@ watch(() => filters.value.employee_id, async (val) => {
   }
 }, { immediate: true })
 
-// Watch month change
-watch(selectedMonth, (newDate) => {
-  router.replace({ query: { ...route.query, date: newDate } })
-  if (filters.value.employee_id && newDate) fetchApplications()
-}, { immediate: true })
+watch(
+  periodMonth,
+  (newDate) => {
+    if (!newDate) return
+    selectedMonth.value = newDate
+    router.replace({ query: { ...route.query, date: newDate } })
+    if (filters.value.employee_id && newDate) fetchApplications()
+  },
+  { immediate: true }
+)
 
 const goBack = () => router.go(-1)
 
@@ -160,12 +184,11 @@ const tdBase = 'px-3 py-2 align-top text-slate-700'
       </h1>
 
       <div class="flex items-center gap-2">
-        <input
-          id="monthSelect"
-          type="month"
-          v-model="selectedMonth"
-          @change="fetchApplications"
-          class="input-1 py-1 rounded-lg border-slate-300"
+        <FlexibleDatePicker
+          v-model="period"
+          :show-year="false"
+          :show-month="true"
+          :show-date="false"
         />
         <button
           class="btn-2"
@@ -288,11 +311,11 @@ const tdBase = 'px-3 py-2 align-top text-slate-700'
             <thead class="sticky top-0 bg-white/90 backdrop-blur border-b">
               <tr class="text-xs uppercase text-slate-600">
                 <th :class="thBase">#</th>
-                <th :class="thBase">Create Date</th>
+                <th :class="thBase">Created</th>
                 <th :class="thBase">Last Working</th>
                 <th :class="thBase">Resumption</th>
                 <th :class="thBase">Type</th>
-                <th :class="thBase">Reason</th>
+                <th :class="thBase" class="!w-1/3">Reason</th>
                 <th :class="thBase">Status</th>
                 <th :class="thBase">Action</th>
               </tr>
@@ -334,7 +357,7 @@ const tdBase = 'px-3 py-2 align-top text-slate-700'
             <thead class="sticky top-0 bg-white/90 backdrop-blur border-b">
               <tr class="text-xs uppercase text-slate-600">
                 <th :class="thBase">#</th>
-                <th :class="thBase">Create Date</th>
+                <th :class="thBase">Created</th>
                 <th :class="thBase">Type</th>
                 <th :class="thBase">Date</th>
                 <th :class="thBase">Check-In</th>
@@ -389,7 +412,7 @@ const tdBase = 'px-3 py-2 align-top text-slate-700'
             <thead class="sticky top-0 bg-white/90 backdrop-blur border-b">
               <tr class="text-xs uppercase text-slate-600">
                 <th :class="thBase">#</th>
-                <th :class="thBase">Create Date</th>
+                <th :class="thBase">Created</th>
                 <th :class="thBase">Current Date</th>
                 <th :class="thBase">Exchange Date</th>
                 <th :class="thBase">Shift</th>
@@ -433,7 +456,7 @@ const tdBase = 'px-3 py-2 align-top text-slate-700'
             <thead class="sticky top-0 bg-white/90 backdrop-blur border-b">
               <tr class="text-xs uppercase text-slate-600">
                 <th :class="thBase">#</th>
-                <th :class="thBase">Create Date</th>
+                <th :class="thBase">Created</th>
                 <th :class="thBase">Date</th>
                 <th :class="thBase">Type</th>
                 <th :class="thBase">Check-In</th>

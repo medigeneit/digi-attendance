@@ -206,7 +206,8 @@ function updateModel(next) {
 </script>
 
 <template>
-  <div class="flex flex-col gap-1 relative z-[9999]">
+  <div class="flex flex-col gap-1 relative ">
+    <!-- z-[9999] -->
     <!-- Top label -->
     <!-- <div class="flex items-center justify-between mb-0.5">
       <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
@@ -248,7 +249,7 @@ function updateModel(next) {
                  border-slate-200 bg-white shadow-sm disabled:opacity-50"
         >
           <i class="far fa-calendar-alt text-slate-400"></i>
-          <span>{{ selectedMonthLabel }}</span>
+          <span>{{ selectedMonthLabel }} - {{ localYear }}</span>
           <i class="far fa-chevron-down text-[10px] text-slate-400"></i>
         </button>
         <input

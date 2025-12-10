@@ -166,9 +166,19 @@ const reviewComments = computed(() => {
 
   const toArr = (v) => {
     if (!v) return []
-    if (Array.isArray(v)) return v.filter(Boolean)
-    if (typeof v === 'string' && v.trim() !== '') return [v.trim()]
-    return []
+    const raw = []
+    if (Array.isArray(v)) raw.push(...v)
+    else if (typeof v === 'string' && v.trim()) raw.push(v.trim())
+    else return []
+
+    const seen = new Set()
+    return raw.reduce((acc, item) => {
+      const value = typeof item === 'string' ? item.trim() : ''
+      if (!value || seen.has(value)) return acc
+      seen.add(value)
+      acc.push(value)
+      return acc
+    }, [])
   }
 
   orderedNonHr.forEach((ln) => {

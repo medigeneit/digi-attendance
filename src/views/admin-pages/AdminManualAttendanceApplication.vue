@@ -1,5 +1,6 @@
 <script setup>
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import SelectedEmployeeCard from '@/components/user/SelectedEmployeeCard.vue'
 import { useManualAttendanceStore } from '@/stores/manual-attendance'
@@ -12,7 +13,8 @@ const route = useRoute()
 const manualAttendanceStore = useManualAttendanceStore()
 const userStore = useUserStore()
 
-const selectedMonth = ref(route.query.date || manualAttendanceStore.selectedMonth || new Date().toISOString().slice(0, 7))
+const initialMonth = route.query.date || manualAttendanceStore.selectedMonth || new Date().toISOString().slice(0, 7)
+const selectedMonth = ref(initialMonth)
 const forms = ref([])
 const loading = ref(false)
 const error = ref(null)
@@ -24,6 +26,17 @@ const filters = ref({
   department_id: route.query.department_id || '',
   line_type: route.query.line_type || 'all',  
   employee_id: route.query.employee_id || '',
+})
+
+const pad = (value) => value.toString().padStart(2, '0')
+const period = ref({
+  year: Number(initialMonth.split('-')[0] || new Date().getFullYear()),
+  month: Number(initialMonth.split('-')[1] || new Date().getMonth() + 1),
+  day: 1,
+})
+const periodMonth = computed(() => {
+  if (!period.value?.year || !period.value?.month) return ''
+  return `${period.value.year}-${pad(period.value.month)}`
 })
 
 // ---------- Fetch ----------
@@ -113,14 +126,15 @@ function goBack() {
   router.go(-1)
 }
 
-// Keep route.date in sync if user types month
-watch(selectedMonth, () => {
+// Keep route.date in sync when period changes
+watch(periodMonth, () => {
+  selectedMonth.value = periodMonth.value
   scheduleApply()
 })
 
 // Any filter/month change → schedule apply
 watch(
-  () => ({ ...filters.value, month: selectedMonth.value }),
+  () => ({ ...filters.value, month: periodMonth.value }),
   () => scheduleApply(),
   { deep: true }
 )
@@ -193,7 +207,7 @@ async function submitManualAttendance() {
     <div class="flex items-center justify-between gap-2">
       <button class="btn-3" @click="goBack">
         <i class="far fa-arrow-left"></i>
-        <span class="hidden md:flex">Back</span>
+        <span class="hidden md:flex">Back</span> 
       </button>
       <h1 class="title-md md:title-lg flex-wrap text-center">Admin Bulk Manual Attendance Applications</h1>
       <div></div>
@@ -210,11 +224,11 @@ async function submitManualAttendance() {
         @filter-change="handleFilterChange"
       />
       <div>
-        <input
-          id="monthSelect"
-          type="month"
-          v-model="selectedMonth"
-          class="input-1"
+        <FlexibleDatePicker
+          v-model="period"
+          :show-year="false"
+          :show-month="true"
+          :show-date="false"
         />
       </div>
     </div>
@@ -273,7 +287,7 @@ async function submitManualAttendance() {
                 <input type="checkbox" v-model="form.is_check" class="h-5 w-5" @click.stop />
               </td>
               <td class="border border-gray-300 px-2">
-                <input type="date" v-model="form.date" class="w-full border border-gray-600 py-1 px-2 rounded-sm" @click.stop disabled />
+                <input type="date" v-model="form.date" class="w-full border border-gray-600 py-1 px-2 rounded-sm" @click.stop />
               </td>
               <td class="border border-gray-300 px-2">
                 <select v-model="form.type" class="w-full border border-gray-600 py-1 px-2 rounded-sm" @click.stop>

@@ -1,10 +1,11 @@
 <script setup>
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import SelectedEmployeeCard from '@/components/user/SelectedEmployeeCard.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useUserStore } from '@/stores/user'
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -13,7 +14,19 @@ const userStore = useUserStore()
 const attendanceStore = useAttendanceStore()
 
 const selectedUser = ref(null)
-const selectedMonth = ref(route.query.date || attendanceStore.selectedMonth)
+const now = new Date()
+const pad = (value) => value.toString().padStart(2, '0')
+const initialMonth = route.query.date || attendanceStore.selectedMonth || `${now.getFullYear()}-${pad(now.getMonth() + 1)}`
+const selectedMonth = ref(initialMonth)
+const period = ref({
+  year: Number(initialMonth.split('-')[0] || now.getFullYear()),
+  month: Number(initialMonth.split('-')[1] || now.getMonth() + 1),
+  day: 1,
+})
+const periodMonth = computed(() => {
+  if (!period.value?.year || !period.value?.month) return ''
+  return `${period.value.year}-${pad(period.value.month)}`
+})
 
 const filters = ref({
   company_id: route.query.company_id || '',
@@ -55,26 +68,33 @@ watch(
     if (newVal && newVal !== oldVal) {
       await fetchUser(newVal)
       await fetchAttendance()
-      router.replace({
-        query: {
-          ...route.query,
-          employee_id: newVal,
-        },
-      })
+    router.replace({
+      query: {
+        ...route.query,
+        employee_id: newVal,
+        date: periodMonth.value || undefined,
+      },
+    })
     }
   }
 )
 
 // Watch month change
-watch(selectedMonth, (newDate) => {
-  router.replace({
-    query: {
-      ...route.query,
-      date: newDate,
-    },
-  })
-  fetchAttendance()
-})
+watch(
+  periodMonth,
+  (newDate) => {
+    if (!newDate) return
+    selectedMonth.value = newDate
+    router.replace({
+      query: {
+        ...route.query,
+        date: newDate,
+      },
+    })
+    fetchAttendance()
+  },
+  { immediate: true }
+)
 
 // Go back
 const goBack = () => router.go(-1)
@@ -88,13 +108,14 @@ const formatTime = (timestamp) => {
 // Apply filters from EmployeeFilter component
 const handleFilterChange = () => {
   router.replace({
-    query: {
-      ...route.query,
-      company_id: filters.value.company_id,
-      department_id: filters.value.department_id,
-      line_type: filters.value.line_type,
-      employee_id: filters.value.employee_id,
-    },
+      query: {
+        ...route.query,
+        company_id: filters.value.company_id,
+        department_id: filters.value.department_id,
+        line_type: filters.value.line_type,
+        employee_id: filters.value.employee_id,
+        date: periodMonth.value || undefined,
+      },
   })
 }
 </script>
@@ -111,27 +132,22 @@ const handleFilterChange = () => {
       <div></div>
     </div>
 
-    <div class="flex flex-wrap gap-4">
-
-      
-        <EmployeeFilter
-         v-model:company_id="filters.company_id"
-          v-model:department_id="filters.department_id"
-          v-model:employee_id="filters.employee_id"
-          v-model:line_type="filters.line_type"
-          :with-type="true"
-          :initial-value="$route.query"
-         @filter-change="handleFilterChange"
+    <div class="flex flex-wrap gap-4 items-center">
+      <EmployeeFilter
+        v-model:company_id="filters.company_id"
+        v-model:department_id="filters.department_id"
+        v-model:employee_id="filters.employee_id"
+        v-model:line_type="filters.line_type"
+        :with-type="true"
+        :initial-value="$route.query"
+        @filter-change="handleFilterChange"
       />
-      <div>
-        <input
-          id="monthSelect"
-          type="month"
-          v-model="selectedMonth"
-          @change="fetchAttendance"
-          class="input-1"
-        />
-      </div>
+      <FlexibleDatePicker
+        v-model="period"
+        :show-year="false"
+        :show-month="true"
+        :show-date="false"
+      />
     </div>
 
     <div v-if="selectedUser" class="flex justify-between gap-4 text-sm">

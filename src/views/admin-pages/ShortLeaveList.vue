@@ -1,6 +1,7 @@
 <script setup>
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import { useShortLeaveStore } from '@/stores/short-leave'
 import { useUserStore } from '@/stores/user'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -13,7 +14,19 @@ const shortLeaveStore = useShortLeaveStore()
 const userStore = useUserStore()
 
 const selectedUser = ref(null)
-const selectedMonth = ref(route.query.date || shortLeaveStore.selectedMonth)
+const initialMonth = route.query.date || shortLeaveStore.selectedMonth || new Date().toISOString().slice(0, 7)
+const selectedMonth = ref(initialMonth)
+const now = new Date()
+const pad = (value) => value.toString().padStart(2, '0')
+const period = ref({
+  year: Number(initialMonth.split('-')[0] || now.getFullYear()),
+  month: Number(initialMonth.split('-')[1] || now.getMonth() + 1),
+  day: 1,
+})
+const periodMonth = computed(() => {
+  if (!period.value?.year || !period.value?.month) return ''
+  return `${period.value.year}-${pad(period.value.month)}`
+})
 const search = ref(route.query.search || '')
 
 const filters = ref({
@@ -80,10 +93,12 @@ watch(
   }
 )
 
-// Watch for selectedMonth change
+// Watch for selectedMonth change via period picker
 watch(
-  () => selectedMonth.value,
+  periodMonth,
   async (newDate) => {
+    if (!newDate) return
+    selectedMonth.value = newDate
     router.replace({
       query: {
         ...route.query,
@@ -125,6 +140,12 @@ const handleFilterChange = () => {
     },
   })
 }
+
+const formatDate = (ts) => {
+  if (!ts) return ''
+  const d = new Date(ts)
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+}
 </script>
 
 
@@ -140,42 +161,38 @@ const handleFilterChange = () => {
 
       <div></div>
     </div>
-    <div class="flex flex-wrap gap-4">
+    <div class="flex flex-wrap gap-4 p-3">
         <EmployeeFilter
-         v-model:company_id="filters.company_id"
-          v-model:department_id="filters.department_id"
-          v-model:employee_id="filters.employee_id"
-          v-model:line_type="filters.line_type"
-          :with-type="true"
-          :initial-value="$route.query"
-         @filter-change="handleFilterChange"
-      />
-
-      <div>
-        <input
-          id="monthSelect"
-          type="month"
-          v-model="selectedMonth"
-          @change="fetchShortLeavesByUser"
-          class="input-1"
-        />
-      </div>
-      <div>
-        <select
-          v-model="shortLeaveStore.selectedStatus"
-          @change="fetchShortLeavesByUser"
-          class="input-1"
+          v-model:company_id="filters.company_id"
+            v-model:department_id="filters.department_id"
+            v-model:employee_id="filters.employee_id"
+            v-model:line_type="filters.line_type"
+            :with-type="true"
+            :initial-value="$route.query"
+          @filter-change="handleFilterChange"
         >
-          <option value="" selected>All</option>
-          <option value="Pending">Pending</option>
-          <option value="Approved">Approved</option>
-          <option value="Rejected">Rejected</option>
-        </select>
-      </div>
+        <div>
+          <select
+            v-model="shortLeaveStore.selectedStatus"
+            @change="fetchShortLeavesByUser"
+            class="input-1 py-0.5 px-2 text-center"
+          >
+            <option value="" selected>All</option>
+            <option value="Pending">Pending</option>
+            <option value="Approved">Approved</option>
+            <option value="Rejected">Rejected</option>
+          </select>
+        </div>
+      </EmployeeFilter>
 
-      <div>
-        <button type="button" @click="fetchShortLeavesByUser" class="btn-3">
-          <i class="far fa-search text-2xl"></i>
+      <div class="flex gap-4">
+        <FlexibleDatePicker
+          v-model="period"
+          :show-year="false"
+          :show-month="true"
+          :show-date="false"
+        />
+        <button type="button" @click="fetchShortLeavesByUser" class="btn-2 py-1">
           <span class="hidden md:flex">Search</span>
         </button>
       </div>
@@ -195,6 +212,7 @@ const handleFilterChange = () => {
               <th class="border border-gray-300 px-2 text-left">#</th>
               <th class="border border-gray-300 px-2 text-left">Employee Name</th>
               <th class="border border-gray-300 px-2 text-left">Type</th>
+              <th class="border border-gray-300 px-2 text-left">Created</th>
               <th class="border border-gray-300 px-2 text-left">Date</th>
               <th class="border border-gray-300 px-2 text-left">Start Time</th>
               <th class="border border-gray-300 px-2 text-left">End Time</th>
@@ -213,7 +231,8 @@ const handleFilterChange = () => {
               <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
               <td class="border border-gray-300 px-2">{{ leave?.user?.name || 'Unknown' }}</td>
               <td class="border border-gray-300 px-2">{{ leave?.type || 'Unknown' }}</td>
-              <td class="border border-gray-300 px-2">{{ leave.date }}</td>
+              <td class="border border-gray-300 px-2">{{ formatDate(leave.created_at) }}</td>
+              <td class="border border-gray-300 px-2">{{ formatDate(leave.date) }}</td>
               <td class="border border-gray-300 px-2">{{ formatTime(leave.start_time) }}</td>
               <td class="border border-gray-300 px-2">
                 {{ leave.end_time ? formatTime(leave.end_time) : '' }}

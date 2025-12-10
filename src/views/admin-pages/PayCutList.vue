@@ -1,10 +1,11 @@
 <script setup>
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import UpdateOrCreate from '@/components/paycut/UpdateOrCreate.vue'
 import { useAuthStore } from '@/stores/auth'
 import { usePaycutStore } from '@/stores/paycut'
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
@@ -14,24 +15,54 @@ const payCutStore = usePaycutStore()
 
 // ---------- State ----------
 const selectedMonth = ref(route.query.month || new Date().toISOString().slice(0, 7))
+const pad = (value) => value.toString().padStart(2, '0')
+const period = ref({
+  year: Number(selectedMonth.value.split('-')[0] || new Date().getFullYear()),
+  month: Number(selectedMonth.value.split('-')[1] || new Date().getMonth() + 1),
+  day: 1,
+})
+const periodMonth = computed(() => {
+  if (!period.value.year || !period.value.month) return ''
+  return `${period.value.year}-${pad(period.value.month)}`
+})
 const filters = ref({
   company_id: route.query.company_id || '',
   department_id: route.query.department_id || '',
-  line_type: route.query.line_type || 'all',    
+  line_type: route.query.line_type || 'all',
   employee_id: route.query.employee_id || ''
 })
 const loading = ref(false)
+const totalPaycuts = computed(() => payCutStore.paycuts.length)
+const statusSummary = computed(() => {
+  const summary = { total: 0, pending: 0, approved: 0, rejected: 0 }
+  const list = payCutStore.paycuts || []
+  summary.total = list.length
+  list.forEach((cut) => {
+    const s = (cut.status || '').toLowerCase()
+    if (s === 'pending') summary.pending++
+    else if (s === 'approved') summary.approved++
+    else if (s === 'rejected') summary.rejected++
+  })
+  return summary
+})
+const statusChip = (status) => {
+  const key = (status || '').toLowerCase()
+  if (key === 'approved') return 'text-emerald-700 bg-emerald-50 border border-emerald-100'
+  if (key === 'rejected') return 'text-rose-700 bg-rose-50 border border-rose-100'
+  if (key === 'pending') return 'text-amber-700 bg-amber-50 border border-amber-100'
+  return 'text-slate-700 bg-slate-100 border border-slate-200'
+}
 
 // ---------- Helpers ----------
 async function fetchPaycutListData () {
   // Guard: need month + company
-  if (!selectedMonth.value || !filters.value.company_id) {
+  if (!periodMonth.value || !filters.value.company_id) {
     payCutStore.paycuts = [] // optional: clear list if not fetchable
     return
   }
 
   const query = {
-    month: selectedMonth.value,
+    month: periodMonth.value,
     company_id: String(filters.value.company_id)
   }
   if (filters.value.employee_id) query.user_id = String(filters.value.employee_id)
@@ -47,7 +78,7 @@ async function fetchPaycutListData () {
 function buildQueryFromFilters () {
   const q = {}
 
-  if (selectedMonth.value) q.month = String(selectedMonth.value)
+  if (periodMonth.value) q.month = String(periodMonth.value)
   if (filters.value.company_id) q.company_id = String(filters.value.company_id)
   if (filters.value.department_id) q.department_id = String(filters.value.department_id) // keep only when not empty
   if (filters.value.employee_id) q.employee_id = String(filters.value.employee_id)
@@ -74,7 +105,7 @@ async function runApply () {
 
   // Build key for fetch guard
   const key = JSON.stringify({
-    m: selectedMonth.value || '',
+    m: periodMonth.value || '',
     c: filters.value.company_id || '',
     d: filters.value.department_id || '',
     t: filters.value.line_type || 'all',
@@ -93,10 +124,16 @@ function scheduleApply () {
 
 // ---------- Watches ----------
 watch(
-  () => ({ ...filters.value, month: selectedMonth.value }),
+  () => ({ ...filters.value, month: periodMonth.value }),
   () => scheduleApply(),
   { deep: true }
 )
+
+watch(periodMonth, () => {
+  if (!periodMonth.value) return
+  selectedMonth.value = periodMonth.value
+  scheduleApply()
+})
 
 // Optional: if route gets changed externally, rehydrate (rare)
 watch(
@@ -104,7 +141,11 @@ watch(
   (q) => {
     // Only adopt changes if different (prevents loops)
     const nextMonth = q.month || ''
-    if (nextMonth !== selectedMonth.value) selectedMonth.value = nextMonth
+    if (nextMonth !== selectedMonth.value) {
+      selectedMonth.value = nextMonth
+      period.value.year = Number(nextMonth.split('-')[0] || period.value.year)
+      period.value.month = Number(nextMonth.split('-')[1] || period.value.month)
+    }
 
     const next = {
       company_id: q.company_id || '',
@@ -140,81 +181,120 @@ async function deletePaycut (id) {
   await payCutStore.deletePaycut(id)
   await fetchPaycutListData()
 }
+
+const formatDate = (ts) => {
+  if (!ts) return ''
+  const d = new Date(ts)
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
 </script>
 
 <template>
-  <div class="px-4 space-y-4">
-    <div class="flex items-center justify-between gap-2">
-      <button type="button" class="btn-3" @click="router.go(-1)">
-        <i class="far fa-arrow-left"></i>
-        <span class="hidden md:flex">Back</span>
-      </button>
-      <h1 class="title-md md:title-lg text-center">Monthly Paycut List</h1>
-      <div />
+  <div class="px-4 space-y-5">
+    <div class="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div>
+        <p class="text-xs uppercase tracking-widest text-slate-500">Monthly Paycut</p>
+        <h1 class="text-2xl font-semibold text-slate-900">Paycut log</h1>
+        <p class="text-sm text-slate-500">Use filters to narrow down the report.</p>
+      </div>
+      <div class="flex flex-wrap items-center gap-3">
+        <EmployeeFilter
+          v-model:company_id="filters.company_id"
+          v-model:department_id="filters.department_id"
+          v-model:employee_id="filters.employee_id"
+          v-model:line_type="filters.line_type"
+          :with-type="true"
+          :initial-value="$route.query"
+          @filter-change="handleFilterChange"
+          class="min-w-[220px]"
+        />
+        <FlexibleDatePicker
+          v-model="period"
+          :show-year="false"
+          :show-month="true"
+          :show-date="false"
+        />
+      </div>
     </div>
 
-    <div class="flex flex-wrap gap-4 items-center">
-      <EmployeeFilter
-        v-model:company_id="filters.company_id"
-        v-model:department_id="filters.department_id"
-        v-model:employee_id="filters.employee_id"
-        v-model:line_type="filters.line_type"
-        :with-type="true"
-        :initial-value="$route.query"
-        @filter-change="handleFilterChange"
-        class="w-full"
-      />
-      <div>
-        <input type="month" v-model="selectedMonth" class="input-1" />
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
+        <p class="text-[11px] uppercase tracking-wider text-slate-500">Total</p>
+        <p class="text-2xl font-semibold text-slate-900">{{ statusSummary.total }}</p>
       </div>
-      <div>
-
+      <div class="rounded-2xl border border-slate-100 bg-white px-4 py-3">
+        <p class="text-[11px] uppercase tracking-wider text-slate-500">Pending</p>
+        <p class="text-xl font-semibold text-amber-700">{{ statusSummary.pending }}</p>
+      </div>
+      <div class="rounded-2xl border border-slate-100 bg-white px-4 py-3">
+        <p class="text-[11px] uppercase tracking-wider text-slate-500">Approved</p>
+        <p class="text-xl font-semibold text-emerald-700">{{ statusSummary.approved }}</p>
+      </div>
+      <div class="rounded-2xl border border-slate-100 bg-white px-4 py-3">
+        <p class="text-[11px] uppercase tracking-wider text-slate-500">Rejected</p>
+        <p class="text-xl font-semibold text-rose-700">{{ statusSummary.rejected }}</p>
       </div>
     </div>
 
     <LoaderView v-if="loading" />
 
-    <div v-else-if="payCutStore.paycuts.length">
-      <table class="table-auto w-full border mt-4 text-sm">
-        <thead class="bg-gray-100 text-left">
-          <tr>
-            <th class="p-2">#</th>
-            <th class="p-2">Employee</th>
-            <th class="p-2">Paycut Hours</th>
-            <th class="p-2">Reason</th>
-            <th class="p-2">Note</th>
-            <th class="p-2 text-center">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(cut, index) in payCutStore.paycuts" :key="cut.id" class="border-t">
-            <td class="p-2">{{ index + 1 }}</td>
-            <td class="p-2">{{ cut.user?.name || 'N/A' }}</td>
-            <td class="p-2">{{ cut.paycut_hours }}</td>
-            <td class="p-2">{{ cut.reason || '-' }}</td>
-            <td class="p-2">{{ cut.note || '-' }}</td>
-            <td class="p-2 text-center flex gap-2">
-              <UpdateOrCreate
-                v-if="authStore.user?.id === 8"
-                :userId="cut.user_id"
-                :month="selectedMonth"
-                @updated="fetchPaycutListData"
-              />
-              <button type="button" class="text-red-500" @click="deletePaycut(cut.id)">
-                <i class="fa fa-trash"></i>
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <div v-else class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+            <tr>
+              <th class="px-4 py-3 text-left">#</th>
+              <th class="px-4 py-3 text-left">Employee</th>
+              <th class="px-4 py-3 text-left">Created</th>
+              <th class="px-4 py-3 text-left">Paycut Hours</th>
+              <th class="px-4 py-3 text-left">Reason</th>
+              <th class="px-4 py-3 text-left">Note</th>
+              <th class="px-4 py-3 text-left">Status</th>
+              <th class="px-4 py-3 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="(cut, index) in payCutStore.paycuts"
+              :key="cut.id"
+              class="border-t hover:bg-slate-50 transition-colors"
+            >
+              <td class="px-4 py-3">{{ index + 1 }}</td>
+              <td class="px-4 py-3">{{ cut.user?.name || 'N/A' }}</td>
+              <td class="px-4 py-3">{{ formatDate(cut.created_at) }}</td>
+              <td class="px-4 py-3">{{ cut.paycut_hours }}</td>
+              <td class="px-4 py-3">{{ cut.reason || '—' }}</td>
+              <td class="px-4 py-3">{{ cut.note || '—' }}</td>
+              <td class="px-4 py-3">
+                <span
+                  class="inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold tracking-wide border"
+                  :class="statusChip(cut.status)"
+                >
+                  {{ cut.status || 'Pending' }}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-right">
+                <div class="flex items-center justify-end gap-2">
+                  <UpdateOrCreate
+                    v-if="authStore.user?.id === 8"
+                    :userId="cut.user_id"
+                    :month="selectedMonth"
+                    @updated="fetchPaycutListData"
+                  />
+                  <button type="button" class="text-red-500" @click="deletePaycut(cut.id)">
+                    <i class="fa fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div v-if="!payCutStore.paycuts.length" class="px-4 py-10 text-center text-slate-500">
+        <p v-if="!filters.company_id">Please select a company to load paycut data.</p>
+        <p v-else>No paycuts found for the selected filters.</p>
+      </div>
     </div>
-
-    <p v-else-if="!filters.company_id" class="text-red-500 text-sm text-center">
-      Please select a company to load paycut data.
-    </p>
-
-    <p v-else class="text-gray-400 text-sm text-center">
-      No paycuts found for the selected filters.
-    </p>
   </div>
 </template>

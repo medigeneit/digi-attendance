@@ -1,5 +1,6 @@
 <script setup>
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import { useManualAttendanceStore } from '@/stores/manual-attendance'
 import { useUserStore } from '@/stores/user'
@@ -11,7 +12,19 @@ const route = useRoute()
 const manualAttendanceStore = useManualAttendanceStore()
 const userStore = useUserStore()
 const selectedUser = ref(null)
-const selectedMonth = ref(route.query.date || manualAttendanceStore.selectedMonth)
+const initialMonth = route.query.date || manualAttendanceStore.selectedMonth || new Date().toISOString().slice(0, 7)
+const now = new Date()
+const pad = (value) => value.toString().padStart(2, '0')
+const period = ref({
+  year: Number(initialMonth.split('-')[0] || now.getFullYear()),
+  month: Number(initialMonth.split('-')[1] || now.getMonth() + 1),
+  day: 1,
+})
+const selectedMonth = ref(initialMonth)
+const periodMonth = computed(() => {
+  if (!period.value?.year || !period.value?.month) return ''
+  return `${period.value.year}-${pad(period.value.month)}`
+})
 
 const loading = ref(false)
 
@@ -28,7 +41,7 @@ const fetchManualAttendancesByUser = async () => {
     company_id: filters.value.company_id,
     department_id: filters.value.department_id,
     line_type: filters.value.line_type,
-    selectedMonth: selectedMonth.value,
+    selectedMonth: periodMonth.value,
     selectedStatus: manualAttendanceStore.selectedStatus,
   }
 
@@ -55,7 +68,7 @@ watch(
     filters.value.department_id,
     filters.value.line_type,
     filters.value.employee_id,
-    selectedMonth.value,
+    periodMonth.value,
   ],
   async () => {
     await fetchManualAttendancesByUser()
@@ -63,7 +76,7 @@ watch(
 )
 
 // Watch month to sync with URL
-watch(selectedMonth, (date) => {
+watch(periodMonth, (date) => {
   router.replace({
     query: {
       ...route.query,
@@ -90,9 +103,10 @@ const deleteApplication = async (applicationId) => {
   }
 }
 
-// Formatters
-const formatDate = (dt) => {
-  return new Date(dt).toLocaleDateString('en-GB') // 19/06/2025
+const formatDate = (ts) => {
+  if (!ts) return ''
+  const d = new Date(ts)
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 const formatTime = (datetime) => {
@@ -136,7 +150,7 @@ const handleFilterChange = () => {
         </RouterLink>
       </div>
     </div>
-    <div class="flex flex-wrap gap-4">
+    <div class="grid md:flex gap-4 p-2">
 
         <EmployeeFilter
           v-model:company_id="filters.company_id"
@@ -146,22 +160,12 @@ const handleFilterChange = () => {
           :with-type="true"
           :initial-value="$route.query"
          @filter-change="handleFilterChange"
-      />
-
-      <div>
-        <input
-          id="monthSelect"
-          type="month"
-          v-model="selectedMonth"
-          @change="fetchManualAttendancesByUser"
-          class="input-1"
-        />
-      </div>
+      >
       <div>
         <select
           v-model="manualAttendanceStore.selectedStatus"
           @change="fetchManualAttendancesByUser"
-          class="input-1"
+          class="input-1 py-0.5"
         >
           <option value="" selected>All</option>
           <option value="Pending">Pending</option>
@@ -169,8 +173,19 @@ const handleFilterChange = () => {
           <option value="Rejected">Rejected</option>
         </select>
       </div>
+      </EmployeeFilter>
+
       <div>
-        <button @click="fetchManualAttendancesByUser" class="btn-3">
+        <FlexibleDatePicker
+          v-model="period"
+          :show-year="false"
+          :show-month="true"
+          :show-date="false"
+        />
+      </div>
+      
+      <div>
+        <button @click="fetchManualAttendancesByUser" class="btn-2 py-1">
           <i class="far fa-sync"></i>
           <span class="hidden md:flex">Refresh</span>
         </button>
@@ -191,7 +206,7 @@ const handleFilterChange = () => {
               <th class="border border-gray-300 px-2 text-left">#</th>
               <th class="border border-gray-300 px-2 text-left">Employee Name</th>
               <th class="border border-gray-300 px-2 text-left">Department</th>
-              <th class="border border-gray-300 px-2 text-left">Create</th>
+              <th class="border border-gray-300 px-2 text-left">Created</th>
               <th class="border border-gray-300 px-2 text-left">Date</th>
               <th class="border border-gray-300 px-2 text-left">Type</th>
               <th class="border border-gray-300 px-2 text-left">Check-In</th>

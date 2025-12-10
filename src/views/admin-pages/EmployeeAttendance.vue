@@ -1,6 +1,7 @@
 <script setup>
 import AttendanceTable from '@/components/AttendanceTable.vue'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import SelectedEmployeeCard from '@/components/user/SelectedEmployeeCard.vue'
 import { useAttendanceStore } from '@/stores/attendance'
@@ -12,6 +13,7 @@ const router = useRouter()
 const route = useRoute()
 const attendanceStore = useAttendanceStore()
 const userStore = useUserStore()
+const now = new Date()
 
 /* -----------------------
    Helpers
@@ -38,8 +40,31 @@ const toMonth = (val) => {
 
 const q = route.query
 const selectedMonth = ref(
-  toMonth(q.date) || toMonth(attendanceStore.selectedMonth) || toMonth(new Date()),
+  toMonth(q.date) || toMonth(attendanceStore.selectedMonth) || toMonth(now),
 )
+
+const parsePeriod = (val, fallback) => {
+  const month = toMonth(val) || toMonth(fallback)
+  if (!month) {
+    return { year: now.getFullYear(), month: now.getMonth() + 1 }
+  }
+  const [year, monthPart] = month.split('-')
+  return {
+    year: Number(year) || now.getFullYear(),
+    month: Number(monthPart) || now.getMonth() + 1,
+  }
+}
+
+const period = ref({
+  ...parsePeriod(selectedMonth.value, now),
+  day: 1,
+})
+
+const periodMonth = computed(() => {
+  if (!period.value?.year || !period.value?.month) return ''
+  const m = String(period.value.month).padStart(2, '0')
+  return `${period.value.year}-${m}`
+})
 
 const filters = ref({
   company_id: q.company_id || '',
@@ -117,11 +142,14 @@ const fetchAttendance = async () => {
 ------------------------*/
 // Keep URL in sync when month changes
 watch(
-  () => selectedMonth.value,
-  (date) => {
-    selectedMonth.value = toMonth(date)
-    syncQuery({ date: selectedMonth.value })
-    // We do NOT fetch here immediately; the employee watcher controls fetching to avoid double-calls
+  periodMonth,
+  (month) => {
+    if (!month) return
+    selectedMonth.value = month
+    syncQuery({ date: month })
+    if (filters.value.employee_id) {
+      fetchAttendance()
+    }
   },
 )
 
@@ -208,14 +236,12 @@ const fmtHours = (v) => {
       @filter-change="handleFilterChange"
       class="w-full"
     >
-    <input
-      id="monthSelect"
-      type="month"
-      v-model="selectedMonth"
-      @change="fetchAttendance"
-      class="input-1 py-0.5"
-      aria-label="Select month"
-    />
+      <FlexibleDatePicker
+        v-model="period"
+        :show-year="false"
+        :show-month="true"
+        :show-date="false"
+      />
     </EmployeeFilter>
     <div class="sticky top-14 z-40 text-gray-700 bg-gradient-to-tl">
       <div class="grid md:grid-cols-2 gap-4 text-sm mt-2">

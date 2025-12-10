@@ -1,5 +1,6 @@
 <script setup>
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import OvertimeDataList from '@/components/overtime/OvertimeDataList.vue'
 import { useNotificationStore } from '@/stores/notification'
@@ -16,7 +17,18 @@ const userStore = useUserStore()
 
 const loading = ref(false)
 const selectedUser = ref(null)
-const selectedMonth = ref(route.query.date || new Date().toISOString().slice(0, 7))
+const initialMonth = route.query.date || new Date().toISOString().slice(0, 7)
+const pad = (value) => value.toString().padStart(2, '0')
+const period = ref({
+  year: Number(initialMonth.split('-')[0] || new Date().getFullYear()),
+  month: Number(initialMonth.split('-')[1] || new Date().getMonth() + 1),
+  day: 1,
+})
+const periodMonth = computed(() => {
+  if (!period.value?.year || !period.value?.month) return ''
+  return `${period.value.year}-${pad(period.value.month)}`
+})
+const selectedMonth = ref(initialMonth)
 
 const filters = ref({
   company_id: route.query.company_id || '',
@@ -55,8 +67,9 @@ const applicationIds = computed(() => {
 
 // Fetch attendance
 const fetchOvertimeListData = async () => {
-  if (filters.value.employee_id && selectedMonth.value) {
-    await overtimeStore.fetchUserMonthlyOvertimes(filters.value.employee_id, selectedMonth.value)
+  const month = periodMonth.value
+  if (filters.value.employee_id && month) {
+    await overtimeStore.fetchUserMonthlyOvertimes(filters.value.employee_id, month)
 
     if (applicationIds.value?.length) {
       await notificationStore.fetchApprovalPermissionsByUserApplicationIds(
@@ -68,7 +81,9 @@ const fetchOvertimeListData = async () => {
 }
 
 // Watch selectedMonth change
-watch(selectedMonth, (date) => {
+watch(periodMonth, (date) => {
+  if (!date) return
+  selectedMonth.value = date
   router.replace({ query: { ...route.query, date } })
   fetchOvertimeListData()
 })
@@ -126,12 +141,11 @@ const handleFilterChange = () => {
          @filter-change="handleFilterChange"
       />
       <div>
-        <input
-          id="monthSelect"
-          type="month"
-          v-model="selectedMonth"
-          @change="fetchOvertimeListData"
-          class="input-1"
+        <FlexibleDatePicker
+          v-model="period"
+          :show-year="false"
+          :show-month="true"
+          :show-date="false"
         />
       </div>
       <div v-if="loading" class="absolute inset-0 w-full h-full"></div>

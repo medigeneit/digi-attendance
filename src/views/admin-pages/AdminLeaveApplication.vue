@@ -110,6 +110,11 @@ const closeLeaveTypeModal = () => {
   userStore.fetchUserLeaveBalances(route.query.employee_id)
 }
 
+const formatDate = (ts) => {
+  if (!ts) return ''
+  const d = new Date(ts)
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+}
 </script>
 
 <template>
@@ -199,6 +204,7 @@ const closeLeaveTypeModal = () => {
           <thead>
             <tr class="bg-gray-200">
               <th class="border border-gray-300 px-2 py-1 text-center">#</th>
+              <th class="border border-gray-300 px-2 py-1 text-center">Created</th>
               <th class="border border-gray-300 px-2 py-1 text-center">Last Working Day</th>
               <th class="border border-gray-300 px-2 py-1 text-center">Resumption Date</th>
               <th class="border border-gray-300 px-2 py-1 text-center">Leave Period</th>
@@ -216,10 +222,13 @@ const closeLeaveTypeModal = () => {
             >
               <td class="border border-gray-300 px-2 py-2">{{ index + 1 }}</td>
               <td class="border border-gray-300 px-2 py-2 text-center">
-                {{ application?.last_working_date }}
+                {{ formatDate(application?.created_at) }} 
               </td>
               <td class="border border-gray-300 px-2 py-2 text-center">
-                {{ application?.resumption_date }}
+                {{ formatDate(application?.last_working_date) }}
+              </td>
+              <td class="border border-gray-300 px-2 py-2 text-center">
+                {{ formatDate(application?.resumption_date) }}
               </td>
               <td class="border border-gray-300 px-2 py-2">{{ application?.leave_period }}</td>
               <td class="border border-gray-300 px-2 py-2">

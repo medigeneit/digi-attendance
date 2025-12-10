@@ -1,5 +1,6 @@
 <script setup>
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import { useExchangeStore } from '@/stores/exchange'
 import { useUserStore } from '@/stores/user'
@@ -13,7 +14,19 @@ const exchangeStore = useExchangeStore()
 const userStore = useUserStore()
 const type = 'offday'
 const selectedUser = ref(null)
-const selectedMonth = ref(route.query.date || exchangeStore.selectedMonth)
+const initialMonth = route.query.date || exchangeStore.selectedMonth || new Date().toISOString().slice(0, 7)
+const selectedMonth = ref(initialMonth)
+const now = new Date()
+const pad = (value) => value.toString().padStart(2, '0')
+const period = ref({
+  year: Number(initialMonth.split('-')[0] || now.getFullYear()),
+  month: Number(initialMonth.split('-')[1] || now.getMonth() + 1),
+  day: 1,
+})
+const periodMonth = computed(() => {
+  if (!period.value?.year || !period.value?.month) return ''
+  return `${period.value.year}-${pad(period.value.month)}`
+})
 const { loading } = storeToRefs(exchangeStore)
 
 const filters = ref({
@@ -60,22 +73,27 @@ watch(
     filters.value.company_id,
     filters.value.department_id,
     filters.value.employee_id,
-    selectedMonth.value
   ],
   async () => {
     await fetchOffDayExchangeByUser()
   }
 )
 
-
-watch(selectedMonth, (date) => {
-  router.replace({
-    query: {
-      ...route.query,
-      date: date,
-    },
-  })
-})
+watch(
+  periodMonth,
+  (date) => {
+    if (!date) return
+    selectedMonth.value = date
+    router.replace({
+      query: {
+        ...route.query,
+        date,
+      },
+    })
+    fetchOffDayExchangeByUser()
+  },
+  { immediate: true }
+)
 
 const goBack = () => {
   router.go(-1)
@@ -99,6 +117,12 @@ const handleFilterChange = () => {
   })
 }
 
+const formatDate = (ts) => {
+  if (!ts) return ''
+  const d = new Date(ts)
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
 </script>
 
 <template>
@@ -112,7 +136,7 @@ const handleFilterChange = () => {
       <h1 class="title-md md:title-lg flex-wrap text-center">Offday Exchanges</h1>
       <div></div>
     </div>
-    <div class="flex flex-wrap gap-4">
+    <div class="grid md:flex gap-4 p-2">
 
        <EmployeeFilter
           v-model:company_id="filters.company_id"
@@ -122,21 +146,12 @@ const handleFilterChange = () => {
           :with-type="true"
           :initial-value="$route.query"
          @filter-change="handleFilterChange"
-      />
-      <div>
-        <input
-          id="monthSelect"
-          type="month"
-          v-model="selectedMonth"
-          @change="fetchOffDayExchangeByUser"
-          class="input-1"
-        />
-      </div>
+      >
       <div>
         <select
           v-model="exchangeStore.selectedStatus"
           @change="fetchOffDayExchangeByUser"
-          class="input-1"
+          class="input-1 py-0.5"
         >
           <option value="" selected>All</option>
           <option value="Pending">Pending</option>
@@ -144,6 +159,16 @@ const handleFilterChange = () => {
           <option value="Rejected">Rejected</option>
         </select>
       </div>
+      </EmployeeFilter>
+      <div>
+        <FlexibleDatePicker
+          v-model="period"
+          :show-year="false"
+          :show-month="true"
+          :show-date="false"
+        />
+      </div>
+      
     </div>
 
     <div v-if="exchangeStore.loading" class="text-center py-4">
@@ -159,6 +184,7 @@ const handleFilterChange = () => {
             <tr class="bg-gray-200">
               <th class="border border-gray-300 px-2 text-left">#</th>
               <th class="border border-gray-300 px-2 text-left">Employee Name</th>
+              <th class="border border-gray-300 px-2 text-left">Created</th>
               <th class="border border-gray-300 px-2 text-left">Current Date</th>
               <th class="border border-gray-300 px-2 text-left">Exchange Date</th>
               <th class="border border-gray-300 px-2 text-left">Status</th>
@@ -173,8 +199,9 @@ const handleFilterChange = () => {
             >
               <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
               <td class="border border-gray-300 px-2">{{ exchange?.user?.name || 'Unknown' }}</td>
-              <td class="border border-gray-300 px-2">{{ exchange?.current_date }}</td>
-              <td class="border border-gray-300 px-2">{{ exchange?.exchange_date }}</td>
+              <td class="border border-gray-300 px-2">{{ formatDate(exchange?.created_at) }}</td>
+              <td class="border border-gray-300 px-2">{{ formatDate(exchange?.current_date) }}</td>
+              <td class="border border-gray-300 px-2">{{ formatDate(exchange?.exchange_date) }}</td>
               <td class="border border-gray-300 px-2">{{ exchange?.status || 'N/A' }}</td>
               <td class="border border-gray-300 px-2">
                 <div class="flex gap-2">

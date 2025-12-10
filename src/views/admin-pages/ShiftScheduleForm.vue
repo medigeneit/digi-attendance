@@ -8,6 +8,7 @@ import { useShiftScheduleStore } from '@/stores/shiftScheduleStore'
 import dayjs from 'dayjs'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import { useRoute, useRouter } from 'vue-router'
 
 /* ==== Stores ==== */
@@ -28,6 +29,18 @@ const selectedCompany     = ref('')
 const selectedDepartment  = ref('')
 const selectedEmployeeId  = ref('')
 const selectedShift       = ref('')
+const pad = (value) => String(value).padStart(2, '0')
+const period = ref({
+  year: Number(selectedMonth.value.split('-')[0]) || dayjs().year(),
+  month: Number(selectedMonth.value.split('-')[1]) || (dayjs().month() + 1),
+  day: 1,
+})
+
+const periodMonth = computed(() => {
+  if (!period.value.year || !period.value.month) return ''
+  return `${period.value.year}-${pad(period.value.month)}`
+})
+
 const scheduleMap         = ref({})
 const selectedEmployeeIds = ref([])
 const line_type           = ref('')
@@ -71,12 +84,13 @@ function assignColorsToShifts () {
   })
 }
 
-const daysInMonth = computed(() =>
-  Array.from({ length: dayjs(selectedMonth.value).daysInMonth() }, (_, i) => i + 1),
-)
+const daysInMonth = computed(() => {
+  if (!periodMonth.value) return []
+  return Array.from({ length: dayjs(periodMonth.value).daysInMonth() }, (_, i) => i + 1)
+})
 
 const getDayName = (day) => {
-  const date = `${selectedMonth.value}-${String(day).padStart(2, '0')}`
+  const date = `${periodMonth.value}-${String(day).padStart(2, '0')}`
   return dayjs(date).format('ddd')
 }
 
@@ -106,7 +120,7 @@ const getShiftName = (empId, day) => {
 }
 
 const getCellTitle = (empId, day) => {
-  const dateStr = `${selectedMonth.value}-${String(day).padStart(2, '0')}`
+  const dateStr = `${periodMonth.value}-${String(day).padStart(2, '0')}`
   const shiftName = getShiftName(empId, day)
 
   if (shiftName) {
@@ -178,7 +192,7 @@ async function saveSchedule () {
     for (const [dayStr, value] of Object.entries(schedule || {})) {
       const day = Number(dayStr)
       if (!day || !value) continue
-      const ymd = `${selectedMonth.value}-${String(day).padStart(2, '0')}`
+      const ymd = `${periodMonth.value}-${String(day).padStart(2, '0')}`
       let shift_id = null, status = null
       if (value === 'WEEKEND' || value === 'HOLIDAY') status = value
       else shift_id = Number(value)
@@ -319,12 +333,12 @@ async function loadDepartmentEmployees(departmentId) {
   return list
 }
 
-function hasScheduleFilters(month = selectedMonth.value) {
+function hasScheduleFilters(month = periodMonth.value || selectedMonth.value) {
   return Boolean(selectedCompany.value && selectedDepartment.value && month)
 }
 
 async function loadScheduleIfReady(monthOverride) {
-  const month = monthOverride || selectedMonth.value
+  const month = monthOverride || periodMonth.value || selectedMonth.value
   if (!hasScheduleFilters(month)) return
   await loadScheduleData({
     companyId:    selectedCompany.value,
@@ -340,7 +354,7 @@ const filterQueryParams = computed(() => ({
   department_id: selectedDepartment.value,
   line_type:     line_type.value,
   employee_id:   selectedEmployeeId.value,
-  month:         selectedMonth.value,
+  month:         periodMonth.value,
 }))
 
 const sanitizeQueryParams = (params) =>
@@ -370,7 +384,13 @@ function applyFiltersFromRoute(query = route.query) {
   selectedDepartment.value = query.department_id || ''
   selectedEmployeeId.value = query.employee_id || ''
   line_type.value          = query.line_type || 'all'
-  selectedMonth.value      = query.month || selectedMonth.value
+  const month = query.month || selectedMonth.value
+  selectedMonth.value      = month
+  if (month) {
+    const [yr, mo] = month.split('-')
+    if (yr) period.value.year = Number(yr)
+    if (mo) period.value.month = Number(mo)
+  }
   applyingRouteQuery.value = false
   routeQueryApplied.value  = true
 }
@@ -432,7 +452,9 @@ watch(line_type, async () => {
   await loadScheduleIfReady()
 })
 
-watch(selectedMonth, async (month) => {
+watch(periodMonth, async (month) => {
+  if (!month) return
+  selectedMonth.value = month
   await loadScheduleIfReady(month)
 })
 
@@ -476,7 +498,7 @@ function toggleSelectAllVisible(checked) {
       </h2>
       <div class="flex items-center gap-3 text-xs md:text-sm text-gray-500">
         <span>Month:</span>
-        <span class="font-semibold">{{ selectedMonth }}</span>
+        <span class="font-semibold">{{ periodMonth || selectedMonth }}</span>
       </div>
     </div>
 
@@ -490,15 +512,16 @@ function toggleSelectAllVisible(checked) {
         :initial-value="{ company_id: selectedCompany, department_id: selectedDepartment, line_type, employee_id: selectedEmployeeId }"
       />
 
-      <select v-model="selectedShift" class="px-2 py-2 border rounded text-sm">
+      <select v-model="selectedShift" class="px-2 py-2 border rounded-full text-sm">
         <option value="">- Pick a Shift -</option>
         <option v-for="s in allShifts" :key="s.id" :value="s.id">{{ s.name }}</option>
       </select>
 
-      <input
-        type="month"
-        v-model="selectedMonth"
-        class="h-10 px-2 border rounded text-sm"
+      <FlexibleDatePicker
+        v-model="period"
+        :show-year="false"
+        :show-month="true"
+        :show-date="false"
       />
     </div>
 

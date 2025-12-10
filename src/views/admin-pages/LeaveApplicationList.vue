@@ -1,6 +1,7 @@
 <script setup>
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
@@ -12,7 +13,19 @@ const leaveApplicationStore = useLeaveApplicationStore()
 const userStore = useUserStore()
 const { leaveApplications, loading } = storeToRefs(leaveApplicationStore)
 const selectedUser = ref(null)
-const selectedDate = ref(route.query.date || leaveApplicationStore.selectedMonth)
+const initialMonth = route.query.date || leaveApplicationStore.selectedMonth || new Date().toISOString().slice(0, 7)
+const selectedDate = ref(initialMonth)
+const now = new Date()
+const pad = (value) => value.toString().padStart(2, '0')
+const period = ref({
+  year: Number(initialMonth.split('-')[0] || now.getFullYear()),
+  month: Number(initialMonth.split('-')[1] || now.getMonth() + 1),
+  day: 1,
+})
+const periodMonth = computed(() => {
+  if (!period.value?.year || !period.value?.month) return ''
+  return `${period.value.year}-${pad(period.value.month)}`
+})
 const search = ref(route.query.search || '')
 
 const filters = ref({
@@ -57,17 +70,17 @@ watch(
     filters.value.department_id,
     filters.value.line_type,
     filters.value.employee_id,
-    selectedDate.value,
   ],
   async () => {
     await fetchApplicationsByUser()
   }
 )
 
-
 watch(
-  () => selectedDate.value,
+  periodMonth,
   (newDate) => {
+    if (!newDate) return
+    selectedDate.value = newDate
     router.replace({
       query: {
         ...route.query,
@@ -100,6 +113,12 @@ const handleFilterChange = () => {
     },
   })
 }
+
+const formatDate = (ts) => {
+  if (!ts) return ''
+  const d = new Date(ts)
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+}
 </script>
 
 
@@ -115,7 +134,7 @@ const handleFilterChange = () => {
       <h1 class="title-md md:title-lg flex-wrap text-center">Leave Applications</h1>
       <div></div>
     </div>
-    <div class="flex flex-wrap gap-2">
+    <div class="flex flex-wrap gap-2 p-3">
        <EmployeeFilter
           v-model:company_id="filters.company_id"
           v-model:department_id="filters.department_id"
@@ -125,35 +144,26 @@ const handleFilterChange = () => {
           :initial-value="$route.query"
          @filter-change="handleFilterChange"
       />
-      <!-- <div style="width: 300px">
-        <MultiselectDropdown
-          v-model="selectedUser"
-          :options="userStore.users"
-          :multiple="false"
-          label="label"
-          placeholder="Select user"
+      <div class="flex gap-4 items-center flex-wrap">
+       <div>
+         <select
+           v-model="leaveApplicationStore.selectedStatus"
+           @change="fetchApplicationsByUser"
+           class="input-1 py-1"
+         >
+           <option value="" selected>All</option>
+           <option value="Pending">Pending</option>
+           <option value="Approved">Approved</option>
+           <option value="Rejected">Rejected</option>
+         </select>
+       </div>
+
+         <FlexibleDatePicker
+          v-model="period"
+          :show-year="false"
+          :show-month="true"
+          :show-date="false"
         />
-      </div> -->
-      <div>
-        <input
-          id="monthSelect"
-          type="month"
-          v-model="selectedDate"
-          @change="fetchApplicationsByUser"
-          class="input-1"
-        />
-      </div>
-      <div>
-        <select
-          v-model="leaveApplicationStore.selectedStatus"
-          @change="fetchApplicationsByUser"
-          class="input-1"
-        >
-          <option value="" selected>All</option>
-          <option value="Pending">Pending</option>
-          <option value="Approved">Approved</option>
-          <option value="Rejected">Rejected</option>
-        </select>
       </div>
     </div>
 
@@ -170,6 +180,7 @@ const handleFilterChange = () => {
             <tr class="bg-gray-200">
               <th class="border border-gray-300 px-2 text-left">#</th>
               <th class="border border-gray-300 px-2 text-left">Employee Name</th>
+              <th class="border border-gray-300 px-2 text-left">Created</th>
               <th class="border border-gray-300 px-2 text-left">Last Working Day</th>
               <th class="border border-gray-300 px-2 text-left">Resumption Date</th>
               <th class="border border-gray-300 px-2 text-left">Leave Period</th>
@@ -189,8 +200,9 @@ const handleFilterChange = () => {
               <td class="border border-gray-300 px-2">
                 {{ application?.user?.name || 'Unknown' }}
               </td>
-              <td class="border border-gray-300 px-2">{{ application?.last_working_date }}</td>
-              <td class="border border-gray-300 px-2">{{ application?.resumption_date }}</td>
+              <td class="border border-gray-300 px-2">{{ formatDate(application?.created_at) }}</td>
+              <td class="border border-gray-300 px-2">{{ formatDate(application?.last_working_date) }}</td>
+              <td class="border border-gray-300 px-2">{{ formatDate(application?.resumption_date) }}</td>
               <td class="border border-gray-300 px-2">{{ application?.leave_period }}</td>
               <td class="border border-gray-300 px-2">
                 <div v-html="application.duration || application?.total_leave_days"></div>
