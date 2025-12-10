@@ -1,19 +1,45 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import { useShortLeaveStore } from '@/stores/short-leave'
-import { computed, onMounted } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const shortLeaveStore = useShortLeaveStore()
 
-onMounted(() => {
-  shortLeaveStore.fetchMyShortLeaves({ date: shortLeaveStore.selectedMonth })
-})
-
 const goBack = () => {
   router.go(-1)
 }
+
+const now = new Date()
+const period = ref({
+  year: now.getFullYear(),
+  month: now.getMonth() + 1,
+  day: now.getDate(),
+})
+
+const pad = (value) => value.toString().padStart(2, '0')
+
+const periodMonth = computed(() => {
+  const value = period.value || {}
+  if (!value.year || !value.month) return ''
+  return `${value.year}-${pad(value.month)}`
+})
+
+const fetchShortLeaves = async (date) => {
+  shortLeaveStore.fetchMyShortLeaves({ date })
+}
+
+watch(
+  periodMonth,
+  (value) => {
+    if (!value) return
+    shortLeaveStore.selectedMonth = value
+    fetchShortLeaves(value)
+  },
+  { immediate: true }
+)
 
 const statusBadgeClass = (status) => {
   const normalized = (status || '').toLowerCase()
@@ -38,17 +64,13 @@ const totalLeaves = computed(() => {
 })
 
 const selectedMonthLabel = computed(() => {
-  const raw = shortLeaveStore.selectedMonth
+  const raw = periodMonth.value
   if (!raw) return 'All months'
   const [year, month] = raw.split('-')
   if (!year || !month) return 'All months'
   const date = new Date(Number(year), Number(month) - 1)
   return date.toLocaleString('en-US', { month: 'long', year: 'numeric' })
 })
-
-const fetchShortLeaves = async () => {
-  shortLeaveStore.fetchMyShortLeaves({ date: shortLeaveStore.selectedMonth })
-}
 
 function deleteApplication(applicationId) {
   const confirmed = confirm('Are you sure you want to delete this application?')
@@ -109,12 +131,11 @@ const formatTime = (timeString) => {
             <i class="far fa-plus mr-1"></i>
             New Short Leave
           </RouterLink>
-          <input
-            id="monthSelect"
-            type="month"
-            v-model="shortLeaveStore.selectedMonth"
-            @change="fetchShortLeaves"
-            class="input-1 order-3 w-40"
+          <FlexibleDatePicker
+            v-model="period"
+            :show-year="false"
+            :show-month="true"
+            :show-date="false"
           />
         </div>
       </div>

@@ -1,54 +1,46 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const leaveApplicationStore = useLeaveApplicationStore()
 
-// ===== Year filter =====
-const year = ref('') // bound with v-model
-
-// Dropdown years (last 5 years, latest first)
-const years = computed(() => {
-  const current = new Date().getFullYear()
-  const span = 5 // current year + previous 4
-  return Array.from({ length: span }, (_, i) => current - i)
+const now = new Date()
+const period = ref({
+  year: now.getFullYear(),
+  month: 1,
+  day: 1,
 })
 
-// Load data on mount (with current year if you want)
-onMounted(() => {
-  // যদি default e current year data চান:
-  // year.value = String(new Date().getFullYear())
-  leaveApplicationStore.fetchMyLeaveApplications({
-    year: year.value || null
-  })
-})
+const periodYear = computed(() => period.value?.year ?? now.getFullYear())
 
-// Year change হলে API call
-watch(year, (newYear) => {
-  leaveApplicationStore.fetchMyLeaveApplications({
-    year: newYear || null
-  })
-})
+watch(
+  periodYear,
+  (year) => {
+    leaveApplicationStore.fetchMyLeaveApplications({
+      year: year ? String(year) : null,
+    })
+  },
+  { immediate: true }
+)
 
 const goBack = () => {
   router.go(-1)
 }
 
-// Always use whatever store returns
 const myLeaveApplications = computed(
   () => leaveApplicationStore.leaveApplications || []
 )
 
-// Optional: nicer date format
 const formatDate = (date) => {
   if (!date) return '—'
   return new Date(date).toLocaleDateString('en-GB', {
     day: '2-digit',
     month: 'short',
-    year: 'numeric'
+    year: 'numeric',
   })
 }
 
@@ -83,21 +75,15 @@ function deleteApplication(applicationId) {
 
       <div class="flex-1 text-center">
         <h1 class="title-md md:title-lg">My Leave Applications</h1>
-        <p class="text-xs md:text-sm text-gray-500 mt-1">
-          Track the status of your submitted leave requests.
-        </p>
       </div>
 
       <div class="flex gap-3">
-        <div>
-          <select v-model="year" class="input-1">
-            <option value="">All Years</option>
-            <option v-for="y in years" :key="y" :value="y">
-              {{ y }}
-            </option>
-          </select>
-        </div>
-
+        <FlexibleDatePicker
+          v-model="period"
+          :show-year="true"
+          :show-month="false"
+          :show-date="false"
+        />
         <RouterLink :to="{ name: 'LeaveApplicationAdd' }" class="btn-2 flex items-center gap-2">
           <i class="far fa-paper-plane"></i>
           <span>Apply for Leave</span>
@@ -115,10 +101,10 @@ function deleteApplication(applicationId) {
       <!-- Empty state -->
       <div v-if="myLeaveApplications.length === 0" class="flex justify-center">
         <div class="max-w-md w-full bg-white rounded-lg border border-dashed border-gray-300 p-6 text-center space-y-3 shadow-sm">
-          <div class="text-3xl mb-2">😴</div>
+          <div class="text-3xl mb-2">РY~п</div>
           <h2 class="font-semibold text-gray-700">No leave applications yet</h2>
           <p class="text-sm text-gray-500">
-            You haven’t submitted any leave application. Click below to apply for leave.
+            You havenѓ?Tt submitted any leave application. Click below to apply for leave.
           </p>
           <RouterLink :to="{ name: 'LeaveApplicationAdd' }" class="btn-2 inline-flex items-center gap-2 mt-2">
             <i class="far fa-paper-plane"></i>
@@ -132,8 +118,8 @@ function deleteApplication(applicationId) {
         <div class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
           <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 text-sm text-gray-600">
             <span>Total Applications: <strong>{{ myLeaveApplications.length }}</strong></span>
-            <span v-if="year" class="text-xs text-gray-400">
-              Showing for year: <strong>{{ year }}</strong>
+            <span v-if="periodYear" class="text-xs text-gray-400">
+              Showing for year: <strong>{{ periodYear }}</strong>
             </span>
           </div>
 
@@ -236,7 +222,7 @@ function deleteApplication(applicationId) {
       </div>
 
       <!-- Mobile cards -->
-      <div class="space-y-3 md:hidden" >
+      <div class="space-y-3 md:hidden">
         <div
           v-for="(application, index) in myLeaveApplications"
           :key="application?.id"
@@ -313,7 +299,6 @@ function deleteApplication(applicationId) {
           </div>
         </div>
       </div>
-      <!-- end mobile -->
     </div>
   </div>
 </template>

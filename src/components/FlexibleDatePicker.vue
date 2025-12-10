@@ -1,4 +1,3 @@
-<!-- components/FlexibleDatePicker.vue -->
 <script setup>
 import { ref, computed } from 'vue'
 
@@ -223,7 +222,7 @@ function updateModel(next) {
         v-if="showYear"
         v-model="localYear"
         :disabled="disabled"
-        class="input-1 py-1 px-3 rounded-full text-xs font-semibold uppercase tracking-wide
+        class="input-1 py-1.5 px-3 rounded-full text-xs font-semibold uppercase tracking-wide
                text-slate-500 border-slate-200 bg-slate-50 disabled:opacity-50"
       >
         <option
