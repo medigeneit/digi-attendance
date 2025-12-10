@@ -61,11 +61,11 @@ watch(payload, emitChange, { deep: true })
 </script>
 
 <template>
-  <div class="px-4 py-3 bg-gray-50">
-    <div class="flex flex-wrap items-end gap-3">
+  <div class="px-4 py-4 md:py-3 bg-white rounded-md border">
+    <div class="flex flex-wrap items-center gap-3">
       <slot name="before"></slot>
       <button
-        class="px-2 py-2 disabled:text-gray-300 border size-[32px] flex items-center justify-center rounded-full print-hide"
+        class="btn-icon print-hide"
         :class="{ 'animate-spin !bg-opacity-0': loading }"
         @click.prevent="emit('reloadClick')"
         :disabled="loading"
@@ -77,18 +77,20 @@ watch(payload, emitChange, { deep: true })
         <slot name="after"></slot>
       </span>
 
-      <div class="flex flex-wrap items-end gap-3 flex-1 print-hide">
+      <div
+        class="flex flex-col md:flex-row flex-wrap items-end md:ml-auto w-full md:w-auto gap-x-3 gap-y-4 print-hide"
+      >
         <EmployeeFilter
           v-model:company_id="state.companyId"
           v-model:department_id="state.departmentId"
           v-model:employee_id="state.employeeId"
           v-model:line_type="state.lineType"
           :with-type="true"
-          class="!grid-cols-1 sm:!grid-cols-2 lg:!grid-cols-4 xl:!grid-cols-5 flex-1"
+          class="flex-1 gap-y-4 md:flex items-center justify-between w-full md:w-auto"
         />
 
-        <div class="flex items-end gap-3">
-          <div class="relative w-[150px] sm:w-[170px]">
+        <div class="flex items-center justify-between w-full md:w-auto gap-3">
+          <div class="relative h-[32px] w-[150px] sm:w-[170px]">
             <label
               class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30"
               >Start Date</label
@@ -96,10 +98,10 @@ watch(payload, emitChange, { deep: true })
             <input
               type="date"
               v-model="state.startDate"
-              class="border-2 border-gray-300 rounded px-3 py-2 text-sm w-full bg-white"
+              class="border-2 border-gray-300 rounded px-3 h-[32px] text-sm w-full bg-white"
             />
           </div>
-          <div class="relative w-[150px] sm:w-[170px]">
+          <div class="relative h-[32px] w-[150px] sm:w-[170px]">
             <label
               class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30"
               >End Date</label
@@ -107,7 +109,7 @@ watch(payload, emitChange, { deep: true })
             <input
               type="date"
               v-model="state.endDate"
-              class="border-2 border-gray-300 rounded px-3 py-2 text-sm w-full bg-white"
+              class="border-2 border-gray-300 rounded px-3 h-[32px] text-sm w-full bg-white"
             />
           </div>
         </div>

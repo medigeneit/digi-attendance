@@ -1,13 +1,21 @@
 <script setup>
+import LoaderView from '@/components/common/LoaderView.vue'
 import TodoReportHeading from '@/components/todo/TodoReportHeading.vue'
 import { getDisplayDate, getYearMonthDayFormat } from '@/libs/datetime'
+import { useCompanyStore } from '@/stores/company'
+import { useDepartmentStore } from '@/stores/department'
 import { useTodoDateStore } from '@/stores/useTodoDateStore'
+import { storeToRefs } from 'pinia'
 import { computed, onMounted, reactive, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
 const router = useRouter()
 const todoDateStore = useTodoDateStore()
+const companyStore = useCompanyStore()
+const departmentStore = useDepartmentStore()
+const { companies } = storeToRefs(companyStore)
+const { departments } = storeToRefs(departmentStore)
 
 const today = getYearMonthDayFormat(new Date())
 
@@ -62,6 +70,52 @@ const formattedRange = computed(() => {
   return `${start} ~ ${end}`
 })
 
+const employees = computed(() => companyStore.employees || [])
+
+const lineTypeLabels = {
+  all: 'All Types',
+  executive: 'Executive',
+  support_staff: 'Support Staff',
+  doctor: 'Doctor',
+  academy_body: 'Academy Body',
+}
+
+const filterSummary = computed(() => {
+  const company =
+    filters.companyId && companies.value?.length
+      ? companies.value.find((c) => String(c.id) === String(filters.companyId))?.name
+      : null
+
+  const department =
+    filters.departmentId && departments.value?.length
+      ? departments.value.find((d) => String(d.id) === String(filters.departmentId))?.name
+      : null
+
+  let employee = null
+  if (filters.employeeId) {
+    employee =
+      employees.value?.find((e) => String(e.id) === String(filters.employeeId))?.name ||
+      groupedByUser.value.find(
+        (group) => String(group.user?.id || '') === String(filters.employeeId),
+      )?.user?.name ||
+      null
+  }
+
+  const dateLabel =
+    filters.startDate === filters.endDate && filters.startDate
+      ? getDisplayDate(filters.startDate, { weekDay: 'long' })
+      : formattedRange.value || '-'
+
+  return {
+    company: company || (filters.companyId ? `#${filters.companyId}` : 'All Companies'),
+    department:
+      department || (filters.departmentId ? `#${filters.departmentId}` : 'All Departments'),
+    employee: employee || (filters.employeeId ? `#${filters.employeeId}` : 'All Employees'),
+    lineType: lineTypeLabels[filters.lineType] || filters.lineType || 'All Types',
+    dateRange: dateLabel,
+  }
+})
+
 const statusClass = (status) => {
   if (status === 'COMPLETED') return 'bg-green-100 text-green-700 border border-green-200'
   if (status === 'WORKING') return 'bg-blue-100 text-blue-700 border border-blue-200'
@@ -109,6 +163,16 @@ function handlePrint() {
 }
 
 watch(
+  () => filters.companyId,
+  (companyId) => {
+    if (!companyId) return
+    departmentStore.fetchDepartments(companyId)
+    companyStore.fetchEmployee(companyId)
+  },
+  { immediate: true },
+)
+
+watch(
   () => ({ ...filters }),
   (next, prev) => {
     if (JSON.stringify(next) === JSON.stringify(prev)) return
@@ -131,6 +195,7 @@ watch(
 )
 
 onMounted(() => {
+  companyStore.fetchCompanies({ ignore_permission: true })
   fetchTodos()
 })
 </script>
@@ -145,58 +210,109 @@ onMounted(() => {
       :start-date="filters.startDate"
       :end-date="filters.endDate"
       :loading="todoDateStore.loading"
-      class="mb-6"
+      class="mb-4"
       @change="handleFilterChange"
       @reload-click="fetchTodos"
     >
       <template #before>
         <div>
           <h1 class="text-xl font-semibold text-gray-800">Todo Report</h1>
-          <p class="text-xs text-gray-500" v-if="formattedRange">Showing {{ formattedRange }}</p>
         </div>
       </template>
       <template #after>
-        <button
-          type="button"
-          class="border px-3 py-2 rounded text-sm text-gray-700 bg-white hover:bg-gray-100"
-          @click.prevent="handlePrint"
-        >
-          <i class="fas fa-print mr-1"></i> Print
+        <button type="button" class="btn-icon print-hide" @click.prevent="handlePrint">
+          <i class="fas fa-print"></i>
         </button>
       </template>
     </TodoReportHeading>
 
-    <div v-if="!filters.companyId || !filters.startDate || !filters.endDate" class="text-center text-gray-500 py-12">
-      Select company and date range to view the report.
+    <div
+      v-if="filters.companyId && filters.startDate && filters.endDate"
+      class="bg-white border rounded-md mb-2 p-4 text-sm print:border-0 print:mb-2"
+    >
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-y-2 gap-x-6">
+        <div>
+          <div class="text-xs text-gray-500 uppercase tracking-wide">Company</div>
+          <div class="font-medium text-gray-800">{{ filterSummary.company }}</div>
+        </div>
+        <div>
+          <div class="text-xs text-gray-500 uppercase tracking-wide">Department</div>
+          <div
+            class="font-medium"
+            :class="[
+              filterSummary.department == 'All Departments' ? 'text-gray-400' : 'text-gray-800',
+            ]"
+          >
+            {{ filterSummary.department }}
+          </div>
+        </div>
+        <div>
+          <div class="text-xs text-gray-500 uppercase tracking-wide">Line Type</div>
+          <div
+            class="font-medium"
+            :class="[filterSummary.lineType == 'All Types' ? 'text-gray-400' : 'text-gray-800']"
+          >
+            {{ filterSummary.lineType }}
+          </div>
+        </div>
+        <div>
+          <div class="text-xs text-gray-500 uppercase tracking-wide">Employee</div>
+          <div
+            class="font-medium"
+            :class="[filterSummary.employee == 'All Employees' ? 'text-gray-400' : 'text-gray-800']"
+          >
+            {{ filterSummary.employee }}
+          </div>
+        </div>
+
+        <div class="col-span-2">
+          <div class="text-xs text-gray-500 uppercase tracking-wide">Date</div>
+          <div class="font-medium text-gray-800">{{ filterSummary.dateRange }}</div>
+        </div>
+      </div>
     </div>
-    <div v-else-if="todoDateStore.loading" class="text-center text-gray-500 py-8">
-      Loading report...
+
+    <div
+      v-if="!filters.companyId || !filters.startDate || !filters.endDate"
+      class="text-center text-gray-500 py-12 border bg-gray-50 rounded-md"
+    >
+      <p class="text-red-500">Select company and date range to view the report.</p>
     </div>
-    <div v-else-if="groupedByUser.length === 0" class="text-center text-gray-500 py-12">
-      No todos found for this date.
+    <LoaderView v-else-if="todoDateStore.loading">Loading report...</LoaderView>
+    <div
+      v-else-if="groupedByUser.length === 0"
+      class="text-center text-gray-500 py-12 border bg-gray-50 rounded-md"
+    >
+      <div>
+        <i class="fas fa-tasks fa-2x text-gray-300 mb-2"></i>
+      </div>
+      <div>No todos.</div>
     </div>
     <div v-else class="overflow-x-auto bg-white border rounded-md shadow-sm">
       <table class="min-w-full text-left text-sm">
         <thead class="bg-gray-50 text-gray-600 uppercase tracking-wide text-xs">
-          <tr>
-            <th class="px-4 py-3">Name</th>
-            <th class="px-4 py-3">Date</th>
-            <th class="px-4 py-3">Todo</th>
+          <tr class="border-b">
+            <th class="px-4 py-3 border-r">Name</th>
+            <th class="px-4 py-3 border-x">Date</th>
+            <th class="px-4 py-3 border-l">Todo</th>
             <th class="px-4 py-3">Status</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-100">
+        <tbody class="divide-y divide-gray-200">
           <template
             v-for="userGroup in groupedByUser"
             :key="userGroup.user?.id || (userGroup.dates[0]?.todos[0]?.id ?? Math.random())"
           >
-            <template v-for="dateGroup in userGroup.dates" :key="`${userGroup.user?.id || 'u'}-${dateGroup.date}`">
+            <template
+              v-for="dateGroup in userGroup.dates"
+              :key="`${userGroup.user?.id || 'u'}-${dateGroup.date}`"
+            >
               <template v-for="(todo, index) in dateGroup.todos" :key="todo.id">
                 <tr class="hover:bg-gray-50">
                   <td
                     v-if="dateGroup === userGroup.dates[0] && index === 0"
                     :rowspan="userGroup.rowSpan"
-                    class="px-4 py-3 align-top font-medium text-gray-800 whitespace-nowrap"
+                    class="px-4 py-3 align-top font-medium text-gray-800 whitespace-nowrap border-r"
                   >
                     <div>{{ userGroup.user?.name || 'Unknown user' }}</div>
                     <div v-if="userGroup.user?.department?.name" class="text-xs text-gray-500">
@@ -209,7 +325,7 @@ onMounted(() => {
                   <td
                     v-if="index === 0"
                     :rowspan="dateGroup.rowSpan"
-                    class="px-4 py-3 align-top text-xs text-gray-700 whitespace-nowrap"
+                    class="px-4 py-3 align-top text-xs text-gray-700 whitespace-nowrap border-r"
                   >
                     {{ getDisplayDate(dateGroup.date) || dateGroup.date || '-' }}
                   </td>
@@ -220,7 +336,10 @@ onMounted(() => {
                     </div>
                   </td>
                   <td class="px-4 py-3">
-                    <span class="text-xs font-semibold px-2.5 py-1 rounded-full" :class="statusClass(todo.status)">
+                    <span
+                      class="text-xs font-semibold px-2.5 py-1 rounded-full"
+                      :class="statusClass(todo.status)"
+                    >
                       {{ todo.status || 'N/A' }}
                     </span>
                   </td>
