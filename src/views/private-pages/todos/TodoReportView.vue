@@ -1,4 +1,5 @@
 <script setup>
+import LoaderView from '@/components/common/LoaderView.vue'
 import TodoReportHeading from '@/components/todo/TodoReportHeading.vue'
 import { getDisplayDate, getYearMonthDayFormat } from '@/libs/datetime'
 import { useCompanyStore } from '@/stores/company'
@@ -236,16 +237,34 @@ onMounted(() => {
         </div>
         <div>
           <div class="text-xs text-gray-500 uppercase tracking-wide">Department</div>
-          <div class="font-medium text-gray-800">{{ filterSummary.department }}</div>
-        </div>
-        <div>
-          <div class="text-xs text-gray-500 uppercase tracking-wide">Employee</div>
-          <div class="font-medium text-gray-800">{{ filterSummary.employee }}</div>
+          <div
+            class="font-medium"
+            :class="[
+              filterSummary.department == 'All Departments' ? 'text-gray-400' : 'text-gray-800',
+            ]"
+          >
+            {{ filterSummary.department }}
+          </div>
         </div>
         <div>
           <div class="text-xs text-gray-500 uppercase tracking-wide">Line Type</div>
-          <div class="font-medium text-gray-800">{{ filterSummary.lineType }}</div>
+          <div
+            class="font-medium"
+            :class="[filterSummary.lineType == 'All Types' ? 'text-gray-400' : 'text-gray-800']"
+          >
+            {{ filterSummary.lineType }}
+          </div>
         </div>
+        <div>
+          <div class="text-xs text-gray-500 uppercase tracking-wide">Employee</div>
+          <div
+            class="font-medium"
+            :class="[filterSummary.employee == 'All Employees' ? 'text-gray-400' : 'text-gray-800']"
+          >
+            {{ filterSummary.employee }}
+          </div>
+        </div>
+
         <div class="col-span-2">
           <div class="text-xs text-gray-500 uppercase tracking-wide">Date</div>
           <div class="font-medium text-gray-800">{{ filterSummary.dateRange }}</div>
@@ -255,15 +274,19 @@ onMounted(() => {
 
     <div
       v-if="!filters.companyId || !filters.startDate || !filters.endDate"
-      class="text-center text-gray-500 py-12"
+      class="text-center text-gray-500 py-12 border bg-gray-50 rounded-md"
     >
-      Select company and date range to view the report.
+      <p class="text-red-500">Select company and date range to view the report.</p>
     </div>
-    <div v-else-if="todoDateStore.loading" class="text-center text-gray-500 py-8">
-      Loading report...
-    </div>
-    <div v-else-if="groupedByUser.length === 0" class="text-center text-gray-500 py-12">
-      No todos found for this date.
+    <LoaderView v-else-if="todoDateStore.loading">Loading report...</LoaderView>
+    <div
+      v-else-if="groupedByUser.length === 0"
+      class="text-center text-gray-500 py-12 border bg-gray-50 rounded-md"
+    >
+      <div>
+        <i class="fas fa-tasks fa-2x text-gray-300 mb-2"></i>
+      </div>
+      <div>No todos.</div>
     </div>
     <div v-else class="overflow-x-auto bg-white border rounded-md shadow-sm">
       <table class="min-w-full text-left text-sm">
