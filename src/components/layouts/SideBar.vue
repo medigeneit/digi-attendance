@@ -50,8 +50,8 @@ const reportRouteNames = reportsMenu.map((i) => i.routeName)
 // KPI
 const kpiMenu = [
   { label: 'Monthly KPI Forms', routeName: 'MonthlyKpiFormList' },
-  { label: 'Assignment List', routeName: 'AssignmentList' },
-  { label: 'Evaluation List', routeName: 'EvaluationList' },
+  // { label: 'Assignment List', routeName: 'AssignmentList' },
+  { label: 'Monthly Evaluation List', routeName: 'EvaluationList' },
   { label: 'Yearly Evaluation', routeName: 'YearlyEvaluationList' },
   { label: 'Monthly KPI Reports', routeName: 'MonthlyKpiReportList' },
 ]
