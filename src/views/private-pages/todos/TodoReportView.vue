@@ -210,7 +210,7 @@ onMounted(() => {
       :start-date="filters.startDate"
       :end-date="filters.endDate"
       :loading="todoDateStore.loading"
-      class="mb-4"
+      class="mb-4 print:px-0 print:py-0 print:mb-2 print:border-0 print:border-b print:border-gray-400 print:rounded-none"
       @change="handleFilterChange"
       @reload-click="fetchTodos"
     >
@@ -220,7 +220,12 @@ onMounted(() => {
         </div>
       </template>
       <template #after>
-        <button type="button" class="btn-icon print-hide" @click.prevent="handlePrint">
+        <button
+          type="button"
+          class="btn-icon print-hide disabled:opacity-35 cursor-pointer disabled:cursor-not-allowed"
+          @click.prevent="handlePrint"
+          :disabled="todoDateStore.loading"
+        >
           <i class="fas fa-print"></i>
         </button>
       </template>
@@ -228,7 +233,7 @@ onMounted(() => {
 
     <div
       v-if="filters.companyId && filters.startDate && filters.endDate"
-      class="bg-white border rounded-md mb-2 p-4 text-sm print:border-0 print:mb-2"
+      class="bg-white border rounded-md mb-2 p-4 text-sm print:border-0 print:mb-2 print:px-0"
     >
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-y-2 gap-x-6">
         <div>
@@ -288,14 +293,17 @@ onMounted(() => {
       </div>
       <div>No todos.</div>
     </div>
-    <div v-else class="overflow-x-auto bg-white border rounded-md shadow-sm">
+    <div
+      v-else
+      class="overflow-x-auto bg-white border border-t-0 rounded-md shadow-sm print:shadow-none print:rounded-none print:border-gray-400"
+    >
       <table class="min-w-full text-left text-sm">
         <thead class="bg-gray-50 text-gray-600 uppercase tracking-wide text-xs">
-          <tr class="border-b">
-            <th class="px-4 py-3 border-r">Name</th>
+          <tr class="border-y print:border-gray-400">
+            <th class="px-4 py-3 border-r print:border-l print:border-l-gray-400">Name</th>
             <th class="px-4 py-3 border-x">Date</th>
             <th class="px-4 py-3 border-l">Todo</th>
-            <th class="px-4 py-3">Status</th>
+            <th class="px-4 py-3 print:border-r print:border-gray-400">Status</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200">
@@ -308,7 +316,7 @@ onMounted(() => {
               :key="`${userGroup.user?.id || 'u'}-${dateGroup.date}`"
             >
               <template v-for="(todo, index) in dateGroup.todos" :key="todo.id">
-                <tr class="hover:bg-gray-50">
+                <tr class="hover:bg-gray-50 border">
                   <td
                     v-if="dateGroup === userGroup.dates[0] && index === 0"
                     :rowspan="userGroup.rowSpan"
