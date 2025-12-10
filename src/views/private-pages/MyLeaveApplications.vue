@@ -142,6 +142,7 @@ function deleteApplication(applicationId) {
               <thead class="bg-gray-50">
                 <tr>
                   <th class="px-3 py-2 text-left font-semibold text-gray-600">#</th>
+                  <th class="px-3 py-2 text-left font-semibold text-gray-600">Created</th>
                   <th class="px-3 py-2 text-left font-semibold text-gray-600">Last Working Date</th>
                   <th class="px-3 py-2 text-left font-semibold text-gray-600">Resumption Date</th>
                   <th class="px-3 py-2 text-left font-semibold text-gray-600">Total Days</th>
@@ -159,6 +160,9 @@ function deleteApplication(applicationId) {
                   class="border-t border-gray-100 hover:bg-blue-50 transition-colors"
                 >
                   <td class="px-3 py-2 align-top">{{ index + 1 }}</td>
+                  <td class="px-3 py-2 align-top">
+                    {{ formatDate(application?.created_at) }}
+                  </td>
                   <td class="px-3 py-2 align-top">
                     {{ formatDate(application?.last_working_date) }}
                   </td>
