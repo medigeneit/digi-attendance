@@ -27,6 +27,7 @@ const isHR = ref(false)
 /* ---------- Helpers & classification ---------- */
 const groupsAll = computed(() => store.cycle?.groups_json || [])
 
+
 const isPersonalGroup = (g) => g?.id === 'personal' || /personal/i.test(g?.label || '')
 const personalGroup = computed(() => groupsAll.value.find(isPersonalGroup) || null)
 const otherGroups   = computed(() => groupsAll.value.filter(g => !isPersonalGroup(g)))
@@ -151,7 +152,7 @@ const personalTotals = computed(() => {
 const hasTargetSummary = computed(() => !!getTargetMarks.value && typeof getTargetMarks.value === 'object')
 const targetAvg   = computed(() => getTargetMarks.value?.avg || { max: 0, incharge: 0, coordinator: 0, final: 0, percent_simple: 0, percent_weighted: 0 })
 const targetYear  = computed(() => getTargetMarks.value?.year ?? null)
-const targetForms = computed(() => getTargetMarks.value?.months_total_form ?? 0)
+const targetMonths = computed(() => getTargetMarks.value?.months_total_form ?? 0)
 
 const reviewComments = computed(() => {
   const byLane = reviewsByLane.value || {}
@@ -222,8 +223,18 @@ const makeOptions = (field) => {
   return Array.from(set)
 }
 
-const strengthOptions = computed(() => makeOptions('strengths'))
-const gapOptions = computed(() => makeOptions('gaps'))
+const uniqueHints = (items) => {
+  if (!Array.isArray(items)) return []
+  const set = new Set()
+  items.forEach((item) => {
+    const value = typeof item === 'string' ? item.trim() : ''
+    if (value) set.add(value)
+  })
+  return Array.from(set)
+}
+
+const strengthOptions = computed(() => uniqueHints(store.strengths))
+const gapOptions = computed(() => uniqueHints(store.gaps))
 const suggestionOptions = computed(() => makeOptions('suggestions'))
 
 const selectedStrengthHints = ref([])
@@ -342,6 +353,35 @@ function fmt(n){ const v = Number(n ?? 0); return isNaN(v) ? '0.00' : v.toFixed(
 function pct(got, max){
   const g = Number(got ?? 0), m = Number(max ?? 0)
   return m > 0 ? Math.round((g / m) * 100) : 0
+}
+
+
+function hasHint(field, value) {
+  const target = textRefs[field]
+  if (!target) return false
+
+  const text = (target.value || '')
+    .split('\n')
+    .map((t) => t.trim())
+    .filter(Boolean)
+
+  const v = (value || '').trim()
+  if (!v) return false
+
+  return text.includes(v)
+}
+
+function applyHint(field, value) {
+  const target = textRefs[field]
+  if (!target) return
+
+  const text = typeof value === 'string' ? value.trim() : ''
+  if (!text) return
+
+  // 🔒 ডুপ্লিকেট ব্লক
+  if (hasHint(field, text)) return
+
+  target.value = appendWithNewline(target.value, text)
 }
 </script>
 
@@ -691,7 +731,7 @@ function pct(got, max){
                   Year {{ targetYear }}
                 </span>
                 <span class="rounded-full border bg-slate-50 px-2 py-0.5 text-slate-700">
-                  {{ targetForms }} form(s)
+                  {{ targetMonths }} month(s)
                 </span>
               </div>
             </header>
@@ -702,15 +742,15 @@ function pct(got, max){
                   <div class="flex items-center justify-between">
                     <span class="text-xs font-medium text-slate-600">Incharge</span>
                     <span class="text-[11px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
-                      {{ pct(targetAvg.incharge, targetAvg.max) }}%
+                      {{ pct(targetAvg.per_scored_month?.incharge, targetAvg.per_scored_month.max) }}%
                     </span>
                   </div>
                   <div class="mt-1 text-sm font-semibold text-slate-900">
-                    {{ fmt(targetAvg.incharge) }}
-                    <span class="text-xs text-slate-500">/ {{ fmt(targetAvg.max) }}</span>
+                    {{ fmt(targetAvg.per_scored_month?.incharge) }}
+                    <span class="text-xs text-slate-500">/ {{ fmt(targetAvg.per_scored_month.max) }}</span>
                   </div>
                   <div class="mt-2 h-2 rounded bg-slate-100 overflow-hidden">
-                    <div class="h-2 bg-blue-500" :style="{ width: pct(targetAvg.incharge, targetAvg.max) + '%' }"></div>
+                    <div class="h-2 bg-blue-500" :style="{ width: pct(targetAvg.per_scored_month?.incharge, targetAvg.per_scored_month?.max) + '%' }"></div>
                   </div>
                 </div>
 
@@ -718,15 +758,15 @@ function pct(got, max){
                   <div class="flex items-center justify-between">
                     <span class="text-xs font-medium text-slate-600">Coordinator</span>
                     <span class="text-[11px] px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 border border-violet-200">
-                      {{ pct(targetAvg.coordinator, targetAvg.max) }}%
+                      {{ pct(targetAvg.per_scored_month.coordinator, targetAvg.per_scored_month.max) }}%
                     </span>
                   </div>
                   <div class="mt-1 text-sm font-semibold text-slate-900">
-                    {{ fmt(targetAvg.coordinator) }}
-                    <span class="text-xs text-slate-500">/ {{ fmt(targetAvg.max) }}</span>
+                    {{ fmt(targetAvg.per_scored_month?.coordinator) }}
+                    <span class="text-xs text-slate-500">/ {{ fmt(targetAvg.per_scored_month?.max) }}</span>
                   </div>
                   <div class="mt-2 h-2 rounded bg-slate-100 overflow-hidden">
-                    <div class="h-2 bg-violet-500" :style="{ width: pct(targetAvg.coordinator, targetAvg.max) + '%' }"></div>
+                    <div class="h-2 bg-violet-500" :style="{ width: pct(targetAvg.per_scored_month?.coordinator, targetAvg.per_scored_month?.max) + '%' }"></div>
                   </div>
                 </div>
 
@@ -734,15 +774,15 @@ function pct(got, max){
                   <div class="flex items-center justify-between">
                     <span class="text-xs font-medium text-slate-600">Final</span>
                     <span class="text-[11px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      {{ pct(targetAvg.final, targetAvg.max) }}%
+                      {{ pct(targetAvg.per_form_yearly?.final, targetAvg.per_scored_month?.max) }}%
                     </span>
                   </div>
                   <div class="mt-1 text-sm font-semibold text-slate-900">
-                    {{ fmt(targetAvg.final) }}
-                    <span class="text-xs text-slate-500">/ {{ fmt(targetAvg.max) }}</span>
+                    {{ fmt(targetAvg.per_form_yearly?.final) }}
+                    <span class="text-xs text-slate-500">/ {{ fmt(targetAvg.per_scored_month?.max) }}</span>
                   </div>
                   <div class="mt-2 h-2 rounded bg-slate-100 overflow-hidden">
-                    <div class="h-2 bg-emerald-500" :style="{ width: pct(targetAvg.final, targetAvg.max) + '%' }"></div>
+                    <div class="h-2 bg-emerald-500" :style="{ width: pct(targetAvg.per_form_yearly?.final, targetAvg.per_scored_month?.max) + '%' }"></div>
                   </div>
                 </div>
               </div>
@@ -764,24 +804,24 @@ function pct(got, max){
                     <span class="font-medium">{{ targetYear || '-' }}</span>
                   </div>
                   <div class="flex justify-between">
-                    <span class="text-slate-500">Forms counted</span>
-                    <span class="font-medium">{{ targetForms }}</span>
+                    <span class="text-slate-500">Months counted</span>
+                    <span class="font-medium">{{ targetMonths }}</span>
                   </div>
                   <div class="flex justify-between">
                     <span class="text-slate-500">Max (denominator)</span>
-                    <span class="font-medium">{{ fmt(targetAvg.max) }}</span>
+                    <span class="font-medium">{{ fmt(targetAvg.per_scored_month?.max) }}</span>
                   </div>
                   <div class="flex justify-between">
                     <span class="text-slate-500">Incharge avg</span>
-                    <span class="font-medium">{{ fmt(targetAvg.incharge) }}</span>
+                    <span class="font-medium">{{ fmt(targetAvg.per_form_yearly?.incharge) }}</span>
                   </div>
                   <div class="flex justify-between">
                     <span class="text-slate-500">Coordinator avg</span>
-                    <span class="font-medium">{{ fmt(targetAvg.coordinator) }}</span>
+                    <span class="font-medium">{{ fmt(targetAvg.per_form_yearly?.coordinator) }}</span>
                   </div>
                   <div class="flex justify-between">
                     <span class="text-slate-500">Final avg</span>
-                    <span class="font-medium">{{ fmt(targetAvg.final) }}</span>
+                    <span class="font-medium">{{ fmt(targetAvg.per_form_yearly?.final) }}</span>
                   </div>
                   <div class="flex justify-between">
                     <span class="text-slate-500">Percent (simple)</span>
@@ -909,209 +949,182 @@ function pct(got, max){
     <!-- Notes (enable if editing in either mode) -->
     <section
       v-if="canEditPersonal || canHR"
-      class="grid gap-4 rounded-2xl bg-white border shadow-sm px-4 py-4 md:grid-cols-3"
+      class="rounded-2xl bg-white border shadow-sm px-4 py-4 space-y-4"
     >
-      <!-- Strengths -->
-      <div class="space-y-3">
-        <div class="flex items-center justify-between text-xs font-semibold text-slate-500">
-          <span>Strengths (pick from history)</span>
-          <div class="flex items-center gap-2">
-            <span
-              v-if="strengthOptions.length"
-              class="text-[11px] text-indigo-600"
-            >
-              {{ strengthOptions.length }} hint(s)
-            </span>
-            <button
-              v-if="selectedStrengthHints.length"
-              type="button"
-              @click="clearSelectedHints('strengths')"
-              class="text-[11px] text-slate-400 hover:text-slate-600"
-            >
-              Clear
-            </button>
-          </div>
+      <header class="flex items-center justify-between mb-1">
+        <div>
+          <h2 class="text-sm font-semibold text-slate-800">
+            Overall Review Notes
+          </h2>
+          <p class="text-[11px] text-slate-500">
+            Use saved hints or write your own detailed comments.
+          </p>
         </div>
-        <div class="space-y-2">
+        <div class="hidden md:flex items-center gap-2 text-[11px] text-slate-500">
+          <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 border border-emerald-100">
+            <span class="text-xs">●</span> Strengths
+          </span>
+          <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 border border-amber-100">
+            <span class="text-xs">●</span> Gaps
+          </span>
+          <span class="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 border border-sky-100">
+            <span class="text-xs">●</span> Suggestions
+          </span>
+        </div>
+      </header>
+
+      <div class="grid gap-4 md:grid-cols-3">
+        <!-- Strengths -->
+        <div class="space-y-3">
+          <header class="flex items-center justify-between text-xs font-semibold text-slate-600">
+            <div class="flex items-center gap-1">
+              <span class="text-emerald-500 text-base leading-none">★</span>
+              <span>Strengths</span>
+            </div>
+            <span v-if="strengthOptions.length" class="text-[11px] text-emerald-600">
+              {{ strengthOptions.length }} saved hint(s)
+            </span>
+          </header>
+
+          <!-- Hint chips -->
           <div
             v-if="strengthOptions.length"
-            class="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 max-h-36 overflow-y-auto"
+            class="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 max-h-32 overflow-y-auto"
           >
-            <div class="flex flex-wrap gap-2">
+            <div class="flex flex-wrap gap-1.5">
               <button
                 v-for="opt in strengthOptions"
                 :key="opt"
                 type="button"
-                @click="toggleHintSelection('strengths', opt)"
-                :aria-pressed="selectedStrengthHints.includes(opt)"
-                :class="[
-                  'rounded-full border px-3 py-1 text-[11px] font-medium transition duration-150',
-                  selectedStrengthHints.includes(opt)
-                    ? 'bg-indigo-600 border-indigo-600 text-white shadow'
-                    : 'bg-white border-slate-200 text-slate-700 hover:border-indigo-300'
-                ]"
+                @click="applyHint('strengths', opt)"
+                :disabled="hasHint('strengths', opt)"
+                class="rounded-full border px-2.5 py-1 text-[11px] font-medium transition
+                      border-slate-200 bg-white text-slate-700
+                      hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-800
+                      disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {{ opt }}
               </button>
             </div>
           </div>
-          <div
-            v-else
-            class="text-[11px] text-slate-400"
-          >
-            No historical strengths yet.
-          </div>
-          <button
-            v-if="strengthOptions.length"
-            type="button"
-            @click="insertSelectedHints('strengths')"
-            class="text-[11px] font-medium text-indigo-600 hover:text-indigo-800 disabled:text-slate-400"
-            :disabled="!selectedStrengthHints.length"
-          >
-            Insert selected hints
-          </button>
-        </div>
-        <textarea
-          v-model="strengths"
-          placeholder="Key Strength(s)"
-          class="w-full rounded-xl border px-3 py-2 text-sm min-h-28 focus:outline-none focus:ring-2 focus:ring-indigo-200"
-        ></textarea>
-      </div>
+          <p v-else class="text-[11px] text-slate-400">
+            No historical strengths yet. Write your own notes below.
+          </p>
 
-      <!-- Gaps -->
-      <div class="space-y-3">
-        <div class="flex items-center justify-between text-xs font-semibold text-slate-500">
-          <span>Gaps</span>
-          <div class="flex items-center gap-2">
-            <span
-              v-if="gapOptions.length"
-              class="text-[11px] text-amber-600"
-            >
-              {{ gapOptions.length }} hint(s)
-            </span>
-            <button
-              v-if="selectedGapHints.length"
-              type="button"
-              @click="clearSelectedHints('gaps')"
-              class="text-[11px] text-slate-400 hover:text-slate-600"
-            >
-              Clear
-            </button>
+          <!-- Textarea -->
+          <div class="space-y-1">
+            <label class="text-[11px] font-medium text-slate-500">
+              Key Strength(s)
+            </label>
+            <textarea
+              v-model="strengths"
+              placeholder="e.g. Strong ownership, proactive problem solving…"
+              class="w-full rounded-xl border px-3 py-2 text-sm min-h-28
+                    focus:outline-none focus:ring-2 focus:ring-emerald-200"
+            ></textarea>
           </div>
         </div>
-        <div class="space-y-2">
+
+        <!-- Gaps -->
+        <div class="space-y-3">
+          <header class="flex items-center justify-between text-xs font-semibold text-slate-600">
+            <div class="flex items-center gap-1">
+              <span class="text-amber-500 text-base leading-none">!</span>
+              <span>Gaps</span>
+            </div>
+            <span v-if="gapOptions.length" class="text-[11px] text-amber-600">
+              {{ gapOptions.length }} saved hint(s)
+            </span>
+          </header>
+
+          <!-- Hint chips -->
           <div
             v-if="gapOptions.length"
-            class="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 max-h-36 overflow-y-auto"
+            class="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 max-h-32 overflow-y-auto"
           >
-            <div class="flex flex-wrap gap-2">
+            <div class="flex flex-wrap gap-1.5">
               <button
                 v-for="opt in gapOptions"
                 :key="opt"
                 type="button"
-                @click="toggleHintSelection('gaps', opt)"
-                :aria-pressed="selectedGapHints.includes(opt)"
-                :class="[
-                  'rounded-full border px-3 py-1 text-[11px] font-medium transition duration-150',
-                  selectedGapHints.includes(opt)
-                    ? 'bg-amber-500 border-amber-500 text-white shadow'
-                    : 'bg-white border-slate-200 text-slate-700 hover:border-amber-300'
-                ]"
+                @click="applyHint('gaps', opt)"
+                :disabled="hasHint('gaps', opt)"
+                class="rounded-full border px-2.5 py-1 text-[11px] font-medium transition
+                      border-slate-200 bg-white text-slate-700
+                      hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800
+                      disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {{ opt }}
               </button>
             </div>
           </div>
-          <div
-            v-else
-            class="text-[11px] text-slate-400"
-          >
+          <p v-else class="text-[11px] text-slate-400">
             No historical gaps yet.
-          </div>
-          <button
-            v-if="gapOptions.length"
-            type="button"
-            @click="insertSelectedHints('gaps')"
-            class="text-[11px] font-medium text-amber-600 hover:text-amber-800 disabled:text-slate-400"
-            :disabled="!selectedGapHints.length"
-          >
-            Insert selected hints
-          </button>
-        </div>
-        <textarea
-          v-model="gaps"
-          placeholder="GAP(s)"
-          class="w-full rounded-xl border px-3 py-2 text-sm min-h-28 focus:outline-none focus:ring-2 focus:ring-amber-200"
-        ></textarea>
-      </div>
+          </p>
 
-      <!-- Suggestions -->
-      <div class="space-y-3">
-        <div class="flex items-center justify-between text-xs font-semibold text-slate-500">
-          <span>Suggestions / Training</span>
-          <div class="flex items-center gap-2">
-            <span
-              v-if="suggestionOptions.length"
-              class="text-[11px] text-emerald-600"
-            >
-              {{ suggestionOptions.length }} hint(s)
-            </span>
-            <button
-              v-if="selectedSuggestionHints.length"
-              type="button"
-              @click="clearSelectedHints('suggestions')"
-              class="text-[11px] text-slate-400 hover:text-slate-600"
-            >
-              Clear
-            </button>
+          <!-- Textarea -->
+          <div class="space-y-1">
+            <label class="text-[11px] font-medium text-slate-500">GAP(s)</label>
+            <textarea
+              v-model="gaps"
+              placeholder="e.g. Needs improvement in documentation, communication…"
+              class="w-full rounded-xl border px-3 py-2 text-sm min-h-28
+                    focus:outline-none focus:ring-2 focus:ring-amber-200"
+            ></textarea>
           </div>
         </div>
-        <div class="space-y-2">
+
+        <!-- Suggestions -->
+        <div class="space-y-3">
+          <header class="flex items-center justify-between text-xs font-semibold text-slate-600">
+            <div class="flex items-center gap-1">
+              <span class="text-sky-500 text-base leading-none">✱</span>
+              <span>Suggestions / Training</span>
+            </div>
+            <span v-if="suggestionOptions.length" class="text-[11px] text-sky-600">
+              {{ suggestionOptions.length }} common suggestion(s)
+            </span>
+          </header>
+
+          <!-- Suggestion hint chips (optional but nice) -->
           <div
             v-if="suggestionOptions.length"
-            class="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 max-h-36 overflow-y-auto"
+            class="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 max-h-32 overflow-y-auto"
           >
-            <div class="flex flex-wrap gap-2">
+            <div class="flex flex-wrap gap-1.5">
               <button
                 v-for="opt in suggestionOptions"
                 :key="opt"
                 type="button"
-                @click="toggleHintSelection('suggestions', opt)"
-                :aria-pressed="selectedSuggestionHints.includes(opt)"
-                :class="[
-                  'rounded-full border px-3 py-1 text-[11px] font-medium transition duration-150',
-                  selectedSuggestionHints.includes(opt)
-                    ? 'bg-emerald-600 border-emerald-600 text-white shadow'
-                    : 'bg-white border-slate-200 text-slate-700 hover:border-emerald-300'
-                ]"
+                @click="applyHint('suggestions', opt)"
+                :disabled="hasHint('suggestions', opt)"
+                class="rounded-full border px-2.5 py-1 text-[11px] font-medium transition
+                      border-slate-200 bg-white text-slate-700
+                      hover:border-sky-300 hover:bg-sky-50 hover:text-sky-800
+                      disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {{ opt }}
               </button>
             </div>
           </div>
-          <div
-            v-else
-            class="text-[11px] text-slate-400"
-          >
-            No historical suggestions yet.
+
+          <!-- Textarea -->
+          <div class="space-y-1">
+            <label class="text-[11px] font-medium text-slate-500">
+              Suggestions / Development plan
+            </label>
+            <textarea
+              v-model="suggestions"
+              placeholder="Specific actions, training plans, timeline and expectations…"
+              class="w-full rounded-xl border px-3 py-2 text-sm min-h-28
+                    focus:outline-none focus:ring-2 focus:ring-sky-200"
+            ></textarea>
           </div>
-          <button
-            v-if="suggestionOptions.length"
-            type="button"
-            @click="insertSelectedHints('suggestions')"
-            class="text-[11px] font-medium text-emerald-600 hover:text-emerald-800 disabled:text-slate-400"
-            :disabled="!selectedSuggestionHints.length"
-          >
-            Insert selected hints
-          </button>
         </div>
-        <textarea
-          v-model="suggestions"
-          placeholder="Suggestions / Training"
-          class="w-full rounded-xl border px-3 py-2 text-sm min-h-28 focus:outline-none focus:ring-2 focus:ring-emerald-200"
-        ></textarea>
       </div>
     </section>
+
+
 
     <!-- Sticky action -->
     <div class="mt-2 flex flex-col gap-3 border-t pt-3 md:flex-row md:items-center md:justify-between">

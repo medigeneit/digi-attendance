@@ -7,6 +7,8 @@ export const useKpiStore = defineStore('kpi', {
     cycle: null, 
     loading: false,
     users:[],
+    strengths:null,
+    gaps:null,
     error:null,
   }),
 
@@ -15,7 +17,10 @@ export const useKpiStore = defineStore('kpi', {
       try {
         this.loading = true
         const { data } = await apiClient.get(`/kpi/active/${employeeId}`)
-        this.cycle = data
+        this.cycle = data?.cycle
+        this.strengths = data?.comments?.strengths
+        this.gaps = data?.comments?.gaps
+        
       } finally { this.loading = false }
     },
 
