@@ -809,7 +809,7 @@ function pct(got, max){
             </header>
 
             <div class="p-4 space-y-3">
-              <div class="max-h-64 overflow-auto border rounded-xl">
+              <div class="max-h-96 overflow-auto border rounded-xl">
               <table class="min-w-full text-xs text-left">
                 <thead class="text-[11px] text-slate-600 uppercase tracking-wide bg-slate-50">
                     <tr>
