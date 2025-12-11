@@ -170,7 +170,7 @@ const formatTime = (timeString) => {
             <thead class="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500">
               <tr>
                 <th class="px-4 py-3 text-left">#</th>
-                <th class="px-4 py-3 text-left">Created</th>
+                <th class="px-4 py-3 text-left">Created Date</th>
                 <th class="px-4 py-3 text-left">Leave Date</th>
                 <th class="px-4 py-3 text-left">Type</th>
                 <th class="px-4 py-3 text-left">Time</th>

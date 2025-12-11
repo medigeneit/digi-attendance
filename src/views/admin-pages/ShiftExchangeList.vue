@@ -187,7 +187,7 @@ const formatDate = (ts) => {
             <tr class="bg-gray-200">
               <th class="border border-gray-300 px-2 text-left">#</th>
               <th class="border border-gray-300 px-2 text-left">Employee Name</th>
-              <th class="border border-gray-300 px-2">Created</th>
+              <th class="border border-gray-300 px-2">Created Date</th>
               <th class="border border-gray-300 px-2">Exchange Date</th>
               <th class="border border-gray-300 px-2 text-left">Current Shift</th>
               <th class="border border-gray-300 px-2 text-left">Exchange Shift</th>

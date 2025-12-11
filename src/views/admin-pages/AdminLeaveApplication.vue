@@ -204,7 +204,7 @@ const formatDate = (ts) => {
           <thead>
             <tr class="bg-gray-200">
               <th class="border border-gray-300 px-2 py-1 text-center">#</th>
-              <th class="border border-gray-300 px-2 py-1 text-center">Created</th>
+              <th class="border border-gray-300 px-2 py-1 text-center">Created Date</th>
               <th class="border border-gray-300 px-2 py-1 text-center">Last Working Day</th>
               <th class="border border-gray-300 px-2 py-1 text-center">Resumption Date</th>
               <th class="border border-gray-300 px-2 py-1 text-center">Leave Period</th>

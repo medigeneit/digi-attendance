@@ -247,7 +247,7 @@ const formatDate = (ts) => {
             <tr>
               <th class="px-4 py-3 text-left">#</th>
               <th class="px-4 py-3 text-left">Employee</th>
-              <th class="px-4 py-3 text-left">Created</th>
+              <th class="px-4 py-3 text-left">Created Date</th>
               <th class="px-4 py-3 text-left">Paycut Hours</th>
               <th class="px-4 py-3 text-left">Reason</th>
               <th class="px-4 py-3 text-left">Note</th>

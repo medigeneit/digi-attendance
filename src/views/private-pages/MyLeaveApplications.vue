@@ -128,7 +128,7 @@ function deleteApplication(applicationId) {
               <thead class="bg-gray-50">
                 <tr>
                   <th class="px-3 py-2 text-left font-semibold text-gray-600">#</th>
-                  <th class="px-3 py-2 text-left font-semibold text-gray-600">Created</th>
+                  <th class="px-3 py-2 text-left font-semibold text-gray-600">Created Date</th>
                   <th class="px-3 py-2 text-left font-semibold text-gray-600">Last Working Date</th>
                   <th class="px-3 py-2 text-left font-semibold text-gray-600">Resumption Date</th>
                   <th class="px-3 py-2 text-left font-semibold text-gray-600">Total Days</th>

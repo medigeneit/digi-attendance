@@ -116,7 +116,7 @@ onMounted(() => fetchList())
           <label class="block text-sm font-medium text-gray-700">Sort By</label>
           <select v-model="sort_by" @change="fetchList({ page: 1 })"
             class="mt-1 w-full rounded-md border px-3 py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200">
-            <option value="created_at">Created</option>
+            <option value="created_at">Created Date</option>
             <option value="updated_at">Updated</option>
             <option value="start_month">Start</option>
             <option value="end_month">End</option>

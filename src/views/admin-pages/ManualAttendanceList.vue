@@ -206,7 +206,7 @@ const handleFilterChange = () => {
               <th class="border border-gray-300 px-2 text-left">#</th>
               <th class="border border-gray-300 px-2 text-left">Employee Name</th>
               <th class="border border-gray-300 px-2 text-left">Department</th>
-              <th class="border border-gray-300 px-2 text-left">Created</th>
+              <th class="border border-gray-300 px-2 text-left">Created Date</th>
               <th class="border border-gray-300 px-2 text-left">Date</th>
               <th class="border border-gray-300 px-2 text-left">Type</th>
               <th class="border border-gray-300 px-2 text-left">Check-In</th>

@@ -134,7 +134,7 @@ const goBack = () => {
             <thead class="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500">
               <tr>
                 <th class="px-4 py-3 text-left">#</th>
-                <th class="px-4 py-3 text-left">Created</th>
+                <th class="px-4 py-3 text-left">Created Date</th>
                 <th class="px-4 py-3 text-left">Holiday / Weekend</th>
                 <th class="px-4 py-3 text-left">Exchange Date</th>
                 <th class="px-4 py-3 text-left">Attachment</th>
