@@ -16,36 +16,24 @@ const lateAttendanceStore = useAttendanceStore()
 
 const { monthlyLateLogs, isLoading, selectedMonth: storeSelectedMonth } = storeToRefs(lateAttendanceStore)
 
-const pad = (value) => String(value).padStart(2, '0')
+const pad = (value) => String(value ?? '').padStart(2, '0')
 
 const parsePeriod = (value) => {
+  const current = new Date()
   if (!value) {
-    const current = new Date()
     return { year: current.getFullYear(), month: current.getMonth() + 1 }
   }
-  const [year = '0', m = '1'] = value.split('-')
+  const [year = '', month = ''] = value.split('-')
+  if (!year || !month) {
+    return { year: current.getFullYear(), month: current.getMonth() + 1 }
+  }
   return {
-    year: Number(year) || new Date().getFullYear(),
-    month: Number(m) || 1,
+    year: Number(year) || current.getFullYear(),
+    month: Number(month) || current.getMonth() + 1,
   }
 }
 
 const selectedDate = ref(route.query.date || storeSelectedMonth.value || '')
-
-const period = ref(parsePeriod(selectedDate.value))
-const pad = (value) => String(value).padStart(2, '0')
-
-const parsePeriod = (value) => {
-  if (!value) {
-    const current = new Date()
-    return { year: current.getFullYear(), month: current.getMonth() + 1 }
-  }
-  const [year = '0', m = '1'] = value.split('-')
-  return {
-    year: Number(year) || new Date().getFullYear(),
-    month: Number(m) || 1,
-  }
-}
 
 const period = ref(parsePeriod(selectedDate.value))
 
