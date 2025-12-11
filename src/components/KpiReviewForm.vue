@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useKpiStore } from '@/stores/kpi'
 import { useAuthStore } from '@/stores/auth'
@@ -13,7 +13,8 @@ const marks = ref({})
 const employee = ref({})
 const strengths = ref(''), gaps = ref(''), suggestions = ref('')
 const getTargetMarks = ref(null)
-const showTargetDetails = ref(false)
+const getPerformanceMarks = ref(null)
+const showSummaryDetails = ref(false)
 
 /**
  * lanes: [{ key,label,rank,assigned_user_id,can_current_user_review,can_view_marks,is_hr_lane? }, ...]
@@ -150,9 +151,41 @@ const personalTotals = computed(() => {
 
 /* ---------- Target summary (sidebar) ---------- */
 const hasTargetSummary = computed(() => !!getTargetMarks.value && typeof getTargetMarks.value === 'object')
-const targetAvg   = computed(() => getTargetMarks.value?.avg || { max: 0, incharge: 0, coordinator: 0, final: 0, percent_simple: 0, percent_weighted: 0 })
+
+const targetAvg   = computed(() => getTargetMarks.value?.avg || { per_scored_month: {}, per_form_yearly: {}, percent_simple: 0, percent_weighted: 0 })
 const targetYear  = computed(() => getTargetMarks.value?.year ?? null)
+const performanceAvg = computed(() => getPerformanceMarks.value?.avg || { per_scored_month: {}, per_form_yearly: {}, percent_simple: 0, percent_weighted: 0 })
+const performanceYear = computed(() => getPerformanceMarks.value?.year ?? null)
+const activeSummaryTab = ref('target')
+const summaryTabs = [
+  { key: 'target', label: 'Annual Target' },
+  { key: 'performance', label: 'Annual Performance' },
+]
 const targetMonths = computed(() => getTargetMarks.value?.months_total_form ?? 0)
+const performanceMonths = computed(() => getPerformanceMarks.value?.months_total_form ?? targetMonths.value)
+const summaryData = computed(() => (activeSummaryTab.value === 'target' ? targetAvg.value : performanceAvg.value))
+const summaryYear = computed(() => (activeSummaryTab.value === 'target' ? targetYear.value : performanceYear.value))
+const summaryMonths = computed(() => (activeSummaryTab.value === 'target' ? targetMonths.value : performanceMonths.value))
+const summaryLabel = computed(() => summaryTabs.find(tab => tab.key === activeSummaryTab.value)?.label || 'Annual Target')
+const summaryGroupMap = {
+  target: 'target',
+  performance: 'regular_activities_of_the_department',
+}
+const summaryGroup = computed(() => {
+  const key = summaryGroupMap[activeSummaryTab.value]
+  if (!key) return null
+  return otherGroups.value.find(g => g.id === key) || null
+})
+const summaryGroupLabel = computed(() => summaryGroup.value?.label || summaryLabel.value)
+const setSummaryTab = (tabKey) => {
+  if (summaryTabs.some(tab => tab.key === tabKey)) {
+    activeSummaryTab.value = tabKey
+  }
+}
+
+watch(activeSummaryTab, () => {
+  showSummaryDetails.value = false
+})
 
 const reviewComments = computed(() => {
   const byLane = reviewsByLane.value || {}
@@ -307,13 +340,12 @@ const serialMap = computed(() => {
 })
 
 /* ---------- Init ---------- */
-onMounted(async () => {
-  if (!store.cycle) await store.fetchActiveCycle(Number(route.params.employeeId))
+const employeeId = computed(() => Number(route.params.employeeId))
 
-  const resp = await store.fetchLanes(store.cycle.id, Number(route.params.employeeId))
-
+const hydrateReviewData = (resp) => {
   employee.value = resp.employee
   getTargetMarks.value = resp?.annual_target_avg_marks || null
+  getPerformanceMarks.value = resp?.annual_performance_avg_marks || null
   lanes.value = resp.lanes || []
   reviewsByLane.value = resp.reviews_by_lane || {}
   isHR.value = !!(resp?.meta?.is_hr ?? resp?.hr ?? false)
@@ -336,7 +368,14 @@ onMounted(async () => {
       })
     })
   }
-})
+}
+
+watch(employeeId, async (id, prev) => {
+  if (!id || (prev && id === prev)) return
+  await store.fetchActiveCycle(id)
+  const resp = await store.fetchLanes(store.cycle.id, id)
+  hydrateReviewData(resp)
+}, { immediate: true })
 
 /* ---------- Submit ---------- */
 async function submit() {
@@ -695,9 +734,9 @@ function applyHint(field, value) {
                         />
                       </template>
                       <template v-else>
-                        <span class="text-slate-700">
-                          {{ hrMark(it.id) }}
-                        </span>
+                        <p class="text-slate-700 text-sm">
+                          {{ hrMark(it.id) || '—' }}
+                        </p>
                       </template>
                     </td>
                   </tr>
@@ -731,115 +770,122 @@ function applyHint(field, value) {
             v-if="hasTargetSummary && canHR"
             class="border rounded-2xl bg-white shadow-sm"
           >
-            <header class="flex items-center justify-between border-b px-4 py-3 text-sm font-semibold text-slate-800">
-              <span>Annual Target</span>
-              <div class="flex items-center gap-1 text-[11px] text-slate-500">
+            <header class="flex flex-wrap items-center justify-between border-b px-4 py-3 text-sm font-semibold text-slate-800">
+              <span>Annual Summary</span>
+              <div class="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
                 <span
-                  v-if="targetYear"
                   class="rounded-full border bg-slate-50 px-2 py-0.5 text-slate-700"
                 >
-                  Year {{ targetYear }}
+                  {{ summaryLabel }}
+                </span>
+                <span
+                  v-if="summaryYear"
+                  class="rounded-full border bg-slate-50 px-2 py-0.5 text-slate-700"
+                >
+                  Year {{ summaryYear }}
                 </span>
                 <span class="rounded-full border bg-slate-50 px-2 py-0.5 text-slate-700">
-                  {{ targetMonths }} month(s)
+                  {{ summaryMonths }} month(s)
                 </span>
               </div>
             </header>
 
-            <div class="p-4 space-y-3">
-              <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div class="rounded-xl border bg-slate-50 p-3">
-                  <div class="flex items-center justify-between">
-                    <span class="text-xs font-medium text-slate-600">Incharge</span>
-                    <span class="text-[11px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
-                      {{ pct(targetAvg.per_scored_month?.incharge, targetAvg.per_scored_month.max) }}%
-                    </span>
-                  </div>
-                  <div class="mt-1 text-sm font-semibold text-slate-900">
-                    {{ fmt(targetAvg.per_scored_month?.incharge) }}
-                    <span class="text-xs text-slate-500">/ {{ fmt(targetAvg.per_scored_month.max) }}</span>
-                  </div>
-                  <div class="mt-2 h-2 rounded bg-slate-100 overflow-hidden">
-                    <div class="h-2 bg-blue-500" :style="{ width: pct(targetAvg.per_scored_month?.incharge, targetAvg.per_scored_month?.max) + '%' }"></div>
-                  </div>
-                </div>
-
-                <div class="rounded-xl border bg-slate-50 p-3">
-                  <div class="flex items-center justify-between">
-                    <span class="text-xs font-medium text-slate-600">Coordinator</span>
-                    <span class="text-[11px] px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 border border-violet-200">
-                      {{ pct(targetAvg.per_scored_month.coordinator, targetAvg.per_scored_month.max) }}%
-                    </span>
-                  </div>
-                  <div class="mt-1 text-sm font-semibold text-slate-900">
-                    {{ fmt(targetAvg.per_scored_month?.coordinator) }}
-                    <span class="text-xs text-slate-500">/ {{ fmt(targetAvg.per_scored_month?.max) }}</span>
-                  </div>
-                  <div class="mt-2 h-2 rounded bg-slate-100 overflow-hidden">
-                    <div class="h-2 bg-violet-500" :style="{ width: pct(targetAvg.per_scored_month?.coordinator, targetAvg.per_scored_month?.max) + '%' }"></div>
-                  </div>
-                </div>
-
-                <div class="rounded-xl border bg-slate-50 p-3 sm:col-span-2">
-                  <div class="flex items-center justify-between">
-                    <span class="text-xs font-medium text-slate-600">Final</span>
-                    <span class="text-[11px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      {{ pct(targetAvg.per_form_yearly?.final, targetAvg.per_scored_month?.max) }}%
-                    </span>
-                  </div>
-                  <div class="mt-1 text-sm font-semibold text-slate-900">
-                    {{ fmt(targetAvg.per_form_yearly?.final) }}
-                    <span class="text-xs text-slate-500">/ {{ fmt(targetAvg.per_scored_month?.max) }}</span>
-                  </div>
-                  <div class="mt-2 h-2 rounded bg-slate-100 overflow-hidden">
-                    <div class="h-2 bg-emerald-500" :style="{ width: pct(targetAvg.per_form_yearly?.final, targetAvg.per_scored_month?.max) + '%' }"></div>
-                  </div>
-                </div>
+            <div class="p-4 space-y-4 max-h-[360px] overflow-y-auto">
+              <div class="flex flex-wrap gap-2 border-b border-slate-100 pb-3">
+                <button
+                  v-for="tab in summaryTabs"
+                  :key="tab.key"
+                  type="button"
+                  @click="setSummaryTab(tab.key)"
+                  :class="['px-3 py-1 rounded-full text-xs font-semibold transition', activeSummaryTab === tab.key ? 'bg-slate-900 text-white shadow' : 'border border-slate-200 text-slate-700 bg-white hover:border-slate-400']"
+                >
+                  {{ tab.label }}
+                </button>
               </div>
 
-              <div class="border-t pt-2 text-xs">
-                <button
-                  class="text-xs px-3 py-1.5 rounded-md border hover:bg-slate-50"
-                  @click="showTargetDetails = !showTargetDetails"
-                >
-                  {{ showTargetDetails ? 'Hide details' : 'Show details' }}
-                </button>
+              <div class="space-y-4">
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div class="rounded-xl border bg-slate-50 p-3">
+                    <div class="flex items-center justify-between">
+                      <span class="text-xs font-medium text-slate-600">Incharge</span>
+                      <span class="text-[11px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                        {{ pct(summaryData.per_scored_month?.incharge, summaryData.per_scored_month?.max) }}%
+                      </span>
+                    </div>
+                    <div class="mt-1 text-sm font-semibold text-slate-900">
+                      {{ fmt(summaryData.per_scored_month?.incharge) }}
+                      <span class="text-xs text-slate-500">/ {{ fmt(summaryData.per_scored_month?.max) }}</span>
+                    </div>
+                    <div class="mt-2 h-2 rounded bg-slate-100 overflow-hidden">
+                      <div class="h-2 bg-blue-500" :style="{ width: pct(summaryData.per_scored_month?.incharge, summaryData.per_scored_month?.max) + '%' }"></div>
+                    </div>
+                  </div>
 
-                <div
-                  v-if="showTargetDetails"
-                  class="mt-3 rounded-xl border bg-slate-50 p-3 text-xs space-y-1"
-                >
-                  <div class="flex justify-between">
-                    <span class="text-slate-500">Year</span>
-                    <span class="font-medium">{{ targetYear || '-' }}</span>
+                  <div class="rounded-xl border bg-slate-50 p-3">
+                    <div class="flex items-center justify-between">
+                      <span class="text-xs font-medium text-slate-600">Coordinator</span>
+                      <span class="text-[11px] px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 border border-violet-200">
+                        {{ pct(summaryData.per_scored_month?.coordinator, summaryData.per_scored_month?.max) }}%
+                      </span>
+                    </div>
+                    <div class="mt-1 text-sm font-semibold text-slate-900">
+                      {{ fmt(summaryData.per_scored_month?.coordinator) }}
+                      <span class="text-xs text-slate-500">/ {{ fmt(summaryData.per_scored_month?.max) }}</span>
+                    </div>
+                    <div class="mt-2 h-2 rounded bg-slate-100 overflow-hidden">
+                      <div class="h-2 bg-violet-500" :style="{ width: pct(summaryData.per_scored_month?.coordinator, summaryData.per_scored_month?.max) + '%' }"></div>
+                    </div>
                   </div>
-                  <div class="flex justify-between">
-                    <span class="text-slate-500">Months counted</span>
-                    <span class="font-medium">{{ targetMonths }}</span>
+
+                  <div class="rounded-xl border bg-slate-50 p-3 sm:col-span-2">
+                    <div class="flex items-center justify-between">
+                      <span class="text-xs font-medium text-slate-600">Final</span>
+                      <span class="text-[11px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        {{ pct(summaryData.per_form_yearly?.final, summaryData.per_scored_month?.max) }}%
+                      </span>
+                    </div>
+                    <div class="mt-1 text-sm font-semibold text-slate-900">
+                      {{ fmt(summaryData.per_form_yearly?.final) }}
+                      <span class="text-xs text-slate-500">/ {{ fmt(summaryData.per_scored_month?.max) }}</span>
+                    </div>
+                    <div class="mt-2 h-2 rounded bg-slate-100 overflow-hidden">
+                      <div class="h-2 bg-emerald-500" :style="{ width: pct(summaryData.per_form_yearly?.final, summaryData.per_scored_month?.max) + '%' }"></div>
+                    </div>
                   </div>
-                  <div class="flex justify-between">
-                    <span class="text-slate-500">Max (denominator)</span>
-                    <span class="font-medium">{{ fmt(targetAvg.per_scored_month?.max) }}</span>
-                  </div>
-                  <div class="flex justify-between">
-                    <span class="text-slate-500">Incharge avg</span>
-                    <span class="font-medium">{{ fmt(targetAvg.per_form_yearly?.incharge) }}</span>
-                  </div>
-                  <div class="flex justify-between">
-                    <span class="text-slate-500">Coordinator avg</span>
-                    <span class="font-medium">{{ fmt(targetAvg.per_form_yearly?.coordinator) }}</span>
-                  </div>
-                  <div class="flex justify-between">
-                    <span class="text-slate-500">Final avg</span>
-                    <span class="font-medium">{{ fmt(targetAvg.per_form_yearly?.final) }}</span>
-                  </div>
-                  <div class="flex justify-between">
-                    <span class="text-slate-500">Percent (simple)</span>
-                    <span class="font-medium">{{ fmt(targetAvg.percent_simple) }}%</span>
-                  </div>
-                  <div class="flex justify-between">
-                    <span class="text-slate-500">Percent (weighted)</span>
-                    <span class="font-medium">{{ fmt(targetAvg.percent_weighted) }}%</span>
+                </div>
+
+                <div class="border-t pt-2 text-xs">
+                  <button
+                    class="text-xs px-3 py-1.5 rounded-md border hover:bg-slate-50"
+                    @click="showSummaryDetails = !showSummaryDetails"
+                  >
+                    {{ showSummaryDetails ? 'Hide details' : 'Show ' + summaryLabel + ' details' }}
+                  </button>
+
+                  <div
+                    v-if="showSummaryDetails"
+                    class="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs space-y-2"
+                  >
+                    <div class="grid grid-cols-2 gap-2">
+                      <div class="text-slate-500">Year</div>
+                      <div class="font-medium text-slate-800">{{ summaryYear || '-' }}</div>
+                    <div class="text-slate-500">Months counted</div>
+                    <div class="font-medium text-slate-800">{{ summaryMonths }}</div>
+                    <div class="text-slate-500">Group</div>
+                    <div class="font-medium text-slate-800">{{ summaryGroupLabel }}</div>
+                      <div class="text-slate-500">Max (denominator)</div>
+                      <div class="font-medium text-slate-800">{{ fmt(summaryData.per_scored_month?.max) }}</div>
+                      <div class="text-slate-500">Incharge avg</div>
+                      <div class="font-medium text-slate-800">{{ fmt(summaryData.per_form_yearly?.incharge) }}</div>
+                      <div class="text-slate-500">Coordinator avg</div>
+                      <div class="font-medium text-slate-800">{{ fmt(summaryData.per_form_yearly?.coordinator) }}</div>
+                      <div class="text-slate-500">Final avg</div>
+                      <div class="font-medium text-slate-800">{{ fmt(summaryData.per_form_yearly?.final) }}</div>
+                      <div class="text-slate-500">Percent (simple)</div>
+                      <div class="font-medium text-slate-800">{{ fmt(summaryData.percent_simple) }}%</div>
+                      <div class="text-slate-500">Percent (weighted)</div>
+                      <div class="font-medium text-slate-800">{{ fmt(summaryData.percent_weighted) }}%</div>
+                    </div>
                   </div>
                 </div>
               </div>
