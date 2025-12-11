@@ -184,6 +184,10 @@
   .modal-card {
     @apply card-bg p-4 md:p-8 w-full max-w-xl mx-4;
   }
+
+  .top-label {
+    @apply absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30;
+  }
 }
 
 input[type='number']::-webkit-outer-spin-button,

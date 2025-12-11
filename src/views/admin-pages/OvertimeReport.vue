@@ -1,9 +1,10 @@
 <script setup>
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import { useOvertimeStore } from '@/stores/overtime'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -11,7 +12,22 @@ const route = useRoute()
 const overtimeStore = useOvertimeStore()
 const { reports, loading, selectedMonth } = storeToRefs(overtimeStore)
 
-const month = ref(route.query.date || selectedMonth.value)
+const now = new Date()
+const pad = (value) => String(value || '').padStart(2, '0')
+
+const parsePeriod = (value) => {
+  if (!value) return { year: now.getFullYear(), month: now.getMonth() + 1 }
+  const [year = '', month = ''] = value.split('-')
+  if (!year || !month) return { year: now.getFullYear(), month: now.getMonth() + 1 }
+  return { year: Number(year) || now.getFullYear(), month: Number(month) || now.getMonth() + 1 }
+}
+
+const period = ref(parsePeriod(route.query.date || selectedMonth.value))
+
+const periodMonth = computed(() => {
+  if (!period.value.year || !period.value.month) return ''
+  return `${period.value.year}-${pad(period.value.month)}`
+})
 
 const filters = ref({
   company_id: route.query.company_id || '',
@@ -20,8 +36,7 @@ const filters = ref({
   employee_id: route.query.employee_id || '',
 })
 
-const handleFilterChange = async () => {
-  // You can trigger your fetch here
+const syncQuery = (extra = {}) => {
   router.replace({
     query: {
       ...route.query,
@@ -29,38 +44,63 @@ const handleFilterChange = async () => {
       department_id: filters.value?.department_id,
       line_type: filters.value?.line_type,
       employee_id: filters.value?.employee_id,
+      date: periodMonth.value,
+      ...extra,
     },
   })
+}
 
-  if (filters.value.company_id && month.value) {
-    overtimeStore.getCompanyDepartmentOvertimeReport(month.value, filters.value)
+const fetchReport = () => {
+  const month = periodMonth.value
+  if (filters.value.company_id && month) {
+    overtimeStore.getCompanyDepartmentOvertimeReport(month, filters.value)
   }
 }
 
+const handleFilterChange = () => {
+  syncQuery()
+  fetchReport()
+}
+
 const handleMonthChange = () => {
-  router.replace({ query: { ...route.query, date: month.value } })
-  if (filters.value.company_id && month.value) {
-    overtimeStore.getCompanyDepartmentOvertimeReport(month.value, filters.value)
-  }
+  syncQuery()
+  fetchReport()
 }
 
 const goBack = () => router.go(-1)
 
 const exportExcel = () => {
-  if (!month.value) return
-  overtimeStore.exportCompanyDepartmentOvertimeExcel(month.value, filters.value)
+  if (!periodMonth.value) return
+  overtimeStore.exportCompanyDepartmentOvertimeExcel(periodMonth.value, filters.value)
 }
 
 const exportPdf = () => {
-  if (!month.value) return
-  overtimeStore.exportCompanyDepartmentOvertimePdf(month.value, filters.value)
+  if (!periodMonth.value) return
+  overtimeStore.exportCompanyDepartmentOvertimePdf(periodMonth.value, filters.value)
 }
 
 onMounted(() => {
-  if (filters.value.company_id && month.value) {
-    overtimeStore.getCompanyDepartmentOvertimeReport(month.value, filters.value)
+  if (filters.value.company_id && periodMonth.value) {
+    overtimeStore.getCompanyDepartmentOvertimeReport(periodMonth.value, filters.value)
   }
 })
+
+watch(
+  periodMonth,
+  (value, oldValue) => {
+    if (!value || value === oldValue) return
+    handleMonthChange()
+  }
+)
+
+watch(
+  periodMonth,
+  (value) => {
+    if (!value) return
+    overtimeStore.selectedMonth = value
+  },
+  { immediate: true }
+)
 
 const toMinutes = (v) => {
   if (v == null || v === '') return 0
@@ -98,7 +138,7 @@ const reportTotals = computed(() => {
 </script>
 
 <template>
-  <div class="space-y-2 px-4">
+  <div class="space-y-4 px-4">
     <div class="flex items-center justify-between gap-2">
       <button class="btn-3" @click="goBack">
         <i class="far fa-arrow-left"></i>
@@ -107,41 +147,44 @@ const reportTotals = computed(() => {
 
       <h1 class="title-md md:title-lg flex-wrap text-center">Monthly Overtime Report</h1>
       <div class="flex gap-2">
-        <button @click="exportExcel" class="btn-3" title="Download Excel">
+        <button @click="exportExcel" class="btn-1" title="Download Excel">
           <i class="far fa-file-excel text-2xl text-green-500"></i>
+          Excel Download
         </button>
-        <button @click="exportPdf" class="btn-3" title="Download PDF">
+        <button @click="exportPdf" class="btn-1" title="Download PDF">
           <i class="far fa-file-pdf text-2xl text-red-500"></i>
+          PDF Download
         </button>
       </div>
     </div>
 
-    <div class="flex flex-wrap items-center gap-2">
-      
-        <EmployeeFilter
+    <div class="flex flex-wrap gap-4 p-3 bg-white rounded-md shadow-sm border border-slate-200 items-end">
+      <EmployeeFilter
           v-model:company_id="filters.company_id"
-            v-model:department_id="filters.department_id"
-            v-model:employee_id="filters.employee_id"
-            v-model:line_type="filters.line_type"
-            :with-type="true"
-            :initial-value="$route.query"
+          v-model:department_id="filters.department_id"
+          v-model:employee_id="filters.employee_id"
+          v-model:line_type="filters.line_type"
+          :with-type="true"
+          :initial-value="$route.query"
           @filter-change="handleFilterChange"
-        />
-      <div>
-        <input
-          id="user-filter"
-          v-model="month"
-          @change="handleMonthChange"
-          type="month"
-          class="input-1"
-        />
-      </div>
-      <div>
-        <button @click="overtimeStore.getCompanyDepartmentOvertimeReport(month, filters)" class="btn-3">
-          <i class="far fa-sync"></i>
-          <span>Refresh</span>
-        </button>
-      </div>
+        >
+        <div class="relative">
+          <label class="top-label">Month</label>
+          <FlexibleDatePicker
+            v-model="period"
+            :show-year="false"
+            :show-month="true"
+            :show-date="false"
+          />
+        </div>
+      </EmployeeFilter>
+      <button
+        @click="fetchReport"
+        class="btn-2"
+      >
+        <i class="far fa-sync"></i>
+        <span>Run Report</span>
+      </button>
     </div>
 
     <div v-if="loading" class="text-center py-4">
@@ -149,64 +192,70 @@ const reportTotals = computed(() => {
     </div>
 
     <!-- Table -->
-    <div v-else class="space-y-4">
-      <div class="overflow-x-auto" v-if="reports.length">
-        <table class="table-auto w-full border text-sm bg-white">
-          <thead class="bg-gray-100">
-            <tr>
-              <th class="border p-2 text-left">#</th>
-              <th class="border p-2 text-left">Employee</th>
-              <th class="border p-2 text-left">Company</th>
-              <th class="border p-2 text-left">Department</th>
-              <th class="border p-2 text-center">Overtime Entries</th>
-              <th class="border p-2 text-center">Total Request Hours</th>
-              <th class="border p-2 text-center">Total Approval Hours</th>
-              <th class="border p-2 text-center print:hidden">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(report, index) in reports" :key="index" class="hover:bg-blue-50">
-              <td class="border p-2">{{ index + 1 }}</td>
-              <td class="border p-2">{{ report.user_name || 'N/A' }}</td>
-              <td class="border p-2">{{ report.company_name || 'N/A' }}</td>
-              <td class="border p-2">{{ report.department_name || 'N/A' }}</td>
-              <td class="border p-2 text-center">{{ report.total_overtime_entries }}</td>
-              <td class="border p-2 text-center">{{ report.total_request_overtime_hours }}</td>
-              <td class="border p-2 text-center">{{ report.total_approval_overtime_hours }}</td>
-              <td class="border p-2 text-center print:hidden">
-                <div class="flex justify-center items-center gap-4">
-                  <RouterLink
-                    :to="{
-                      name: 'OvertimeList',
-                      query: { ...filters, employee_id: report.user_id, date: month },
-                    }"
-                    class="text-blue-800"
-                  >
-                    <i class="far fa-eye text-lg"></i>
-                  </RouterLink>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-          <tfoot>
-            <tr class="bg-gray-50 font-semibold">
-              <td class="border p-2 text-left" colspan="4">Totals</td>
-              <td class="border p-2 text-center">{{ reportTotals.entries }}</td>
-              <td class="border p-2 text-center">
-                {{ fmtHM(reportTotals.requestedMin) }}
-              </td>
-              <td class="border p-2 text-center">
-                {{ fmtHM(reportTotals.approvedMin) }}
-              </td>
-              <td class="border p-2 print:hidden"></td>
-            </tr>
-          </tfoot>
-
-        </table>
+      <div v-else class="space-y-4">
+        <div v-if="reports.length" class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div class="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3">
+            <div>
+              <p class="text-xs uppercase tracking-wide text-slate-500">Summary</p>
+              <h2 class="text-base font-semibold text-slate-900">Overtime across departments</h2>
+            </div>
+            <div class="flex items-center gap-3 text-sm font-bold text-slate-500">
+              <span>Entries: {{ reportTotals.entries }}</span>
+              <span>Requested: {{ fmtHM(reportTotals.requestedMin) }}</span>
+              <span>Approved: {{ fmtHM(reportTotals.approvedMin) }}</span>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm text-slate-600">
+              <thead class="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500">
+                <tr>
+                  <th class="px-4 py-3 text-left">#</th>
+                  <th class="px-4 py-3 text-left">Employee</th>
+                  <th class="px-4 py-3 text-left">Company</th>
+                  <th class="px-4 py-3 text-left">Department</th>
+                  <th class="px-4 py-3 text-center">Entries</th>
+                  <th class="px-4 py-3 text-center">Requested</th>
+                  <th class="px-4 py-3 text-center">Approved</th>
+                  <th class="px-4 py-3 text-center print:hidden">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 bg-white">
+                <tr v-for="(report, index) in reports" :key="report.user_id || index" class="hover:bg-slate-50">
+                  <td class="px-4 py-3 font-semibold text-slate-700">{{ index + 1 }}</td>
+                  <td class="px-4 py-3 text-slate-800">{{ report.user_name || 'N/A' }}</td>
+                  <td class="px-4 py-3">{{ report.company_name || 'N/A' }}</td>
+                  <td class="px-4 py-3">{{ report.department_name || 'N/A' }}</td>
+                  <td class="px-4 py-3 text-center">{{ report.total_overtime_entries }}</td>
+                  <td class="px-4 py-3 text-center">{{ report.total_request_overtime_hours }}</td>
+                  <td class="px-4 py-3 text-center">{{ report.total_approval_overtime_hours }}</td>
+                  <td class="px-4 py-3 text-center print:hidden">
+                    <RouterLink
+                      :to="{
+                        name: 'OvertimeList',
+                        query: { ...filters, employee_id: report.user_id, date: periodMonth },
+                      }"
+                      class="inline-flex items-center justify-center rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-100"
+                    >
+                      <i class="far fa-eye"></i>
+                    </RouterLink>
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot class="bg-slate-100 text-sm font-semibold">
+                <tr>
+                  <td colspan="4" class="px-4 py-3 text-left">Totals</td>
+                  <td class="px-4 py-3 text-center">{{ reportTotals.entries }}</td>
+                  <td class="px-4 py-3 text-center">{{ fmtHM(reportTotals.requestedMin) }}</td>
+                  <td class="px-4 py-3 text-center">{{ fmtHM(reportTotals.approvedMin) }}</td>
+                  <td class="px-4 py-3 text-center print:hidden"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+        <div v-else class="text-center text-red-500 text-xl italic mt-10">
+          No data available for this month.
+        </div>
       </div>
-      <div v-else class="text-center text-red-500 text-xl italic mt-10">
-        No data available for this month.
-      </div>
-    </div>
   </div>
 </template>

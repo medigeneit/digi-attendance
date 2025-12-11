@@ -1,5 +1,6 @@
 <script setup>
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useCompanyStore } from '@/stores/company'
@@ -35,6 +36,39 @@ const filters = ref({
 })
 
 filters.value.line_type = filters.value.line_type || 'all'
+
+const pad = (value) => String(value || '').padStart(2, '0')
+
+const parseDate = (value) => {
+  if (!value) {
+    const today = new Date()
+    return {
+      year: today.getFullYear(),
+      month: today.getMonth() + 1,
+      day: today.getDate(),
+    }
+  }
+  const [year = '0', month = '1', day = '1'] = value.split('-')
+  return {
+    year: Number(year) || new Date().getFullYear(),
+    month: Number(month) || 1,
+    day: Number(day) || 1,
+  }
+}
+
+const period = ref(parseDate(filters.value.date || selectedDate.value))
+
+watch(
+  period,
+  (value) => {
+    if (!value) return
+    const formatted = `${value.year}-${pad(value.month)}-${pad(value.day)}`
+    if (filters.value.date !== formatted) {
+      filters.value.date = formatted
+    }
+  },
+  { deep: true }
+)
 
 // local state
 const selectedEmployee = ref(null)
@@ -266,7 +300,7 @@ function goBack() {
       </h1>
 
       <div class="flex items-center gap-2">
-        <button type="button" @click="getExportExcel" class="btn-3 inline-flex items-center gap-2">
+        <button type="button" @click="getExportExcel" class="btn-1">
           <i class="fas fa-file-excel text-green-600"></i>
           <span class="hidden sm:inline">Export</span>
         </button>
@@ -275,30 +309,25 @@ function goBack() {
 
     <!-- Filters -->
     <div class="rounded-xl border border-zinc-200 bg-white shadow-sm">
-      <div class="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
-        <p class="text-sm text-zinc-600">
-          <i class="fas fa-filter mr-2"></i> Filters
-        </p>
-        <div class="h-1 w-32 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-400 rounded-full"></div>
-      </div>
-
       <div class="flex flex-wrap gap-3 p-4">
-        <!-- Granular v-model bindings (EmployeeFilter must emit update:company_id etc.) -->
         <EmployeeFilter
           v-model:company_id="filters.company_id"
           v-model:department_id="filters.department_id"
           v-model:employee_id="filters.employee_id"
           v-model:line_type="filters.line_type"
           :initial-value="$route.query"
-          class="w-full"
           @filter-change="handleFilterChange"
-        />
-
-        <!-- Date (filters.date is source of truth) -->
-        <div>
-          <label class="mb-1 block text-xs font-medium text-zinc-500">Date</label>
-          <input id="filter-date" v-model="filters.date" type="date" class="input-1" />
+        >
+        <div class="relative">
+          <label class="top-label">Date</label>
+          <FlexibleDatePicker
+            v-model="period"
+            :show-year="false"
+            :show-month="false"
+            :show-date="true"
+          />
         </div>
+        </EmployeeFilter>
       </div>
     </div>
 

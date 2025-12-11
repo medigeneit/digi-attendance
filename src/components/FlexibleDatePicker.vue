@@ -275,7 +275,7 @@ function updateModel(next) {
                  border-slate-200 bg-white shadow-sm disabled:opacity-50"
         >
           <i class="far fa-calendar text-slate-400"></i>
-          <span>{{ selectedDateLabel }}</span>
+          <span>{{ selectedDateLabel }} - {{ selectedMonthLabel }}</span>
           <i class="far fa-chevron-down text-[10px] text-slate-400"></i>
         </button>
         <input

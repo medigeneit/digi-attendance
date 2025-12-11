@@ -90,6 +90,12 @@ async function onConfirmTypeChange(u, nextValue) {
     saving[u.id] = false
   }
 }
+
+const formatDate = (ts) => {
+  if (!ts) return ''
+  const d = new Date(ts)
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+}
 </script>
 
 <template>
@@ -169,7 +175,7 @@ async function onConfirmTypeChange(u, nextValue) {
                 <div class="min-w-0">
                   <div class="font-medium truncate">{{ u.name || u.full_name || u.email }}</div>
                   <div class="text-[11px] text-gray-500 space-x-2 truncate">
-                    <span v-if="u.joining_date">Joining Date: {{ u.joining_date }}</span>
+                    <span v-if="u.joining_date">Joining Date: {{ formatDate(u.joining_date) }}</span>
                     <span class="hidden sm:inline">Dept: {{ u.department || '—' }}</span>
                   </div>
                 </div>

@@ -1,8 +1,9 @@
 <script setup>
 import { useLeaveApplicationStore } from '@/stores/leave-application'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 /* ------------------ router ------------------ */
@@ -166,6 +167,25 @@ const groupColspan = (g) => {
 }
 
 /* ---------------- fetcher ------------------- */
+const pad = (value) => String(value ?? '').padStart(2, '0')
+
+const parsePeriod = (value) => {
+  const fallback = new Date()
+  if (!value) return { year: fallback.getFullYear(), month: fallback.getMonth() + 1 }
+  const [year, month] = String(value).split('-')
+  if (!year || !month) return { year: fallback.getFullYear(), month: fallback.getMonth() + 1 }
+  return {
+    year: Number(year) || fallback.getFullYear(),
+    month: Number(month) || fallback.getMonth() + 1,
+  }
+}
+
+const period = ref(parsePeriod(selectedMonth.value))
+const periodMonth = computed(() => {
+  if (!period.value?.year || !period.value?.month) return ''
+  return `${period.value.year}-${pad(period.value.month)}`
+})
+
 const fetchSummary = async () => {
   loading.value = true
   error.value = null
@@ -197,13 +217,18 @@ const fetchSummary = async () => {
 }
 
 /* --------------- lifecycle ------------------ */
-onMounted(fetchSummary)
 
 /* --------------- watchers ------------------- */
-watch(selectedMonth, (m) => {
-  router.replace({ query: { ...route.query, date: m } })
-  fetchSummary()
-})
+watch(
+  periodMonth,
+  (m) => {
+    if (!m) return
+    selectedMonth.value = m
+    router.replace({ query: { ...route.query, date: m } })
+    fetchSummary()
+  },
+  { immediate: true }
+)
 watch(
   () => [filters.value.company_id, filters.value.department_id, filters.value.employee_id, filters.value.line_type],
   () => {
@@ -214,6 +239,7 @@ watch(
         department_id: filters.value.department_id || 'all',
         line_type: filters.value.line_type || 'all',
         employee_id: filters.value.employee_id || 'all',
+        date: periodMonth.value || '',
       },
     })
     fetchSummary()
@@ -275,7 +301,7 @@ const printTable = () => window.print()
     </div>
 
     <!-- Controls -->
-    <div class="flex flex-wrap items-end gap-3 rounded-lg border bg-white p-2">
+    <div class="flex flex-wrap items-end gap-3 rounded-lg border bg-white p-3">
       <EmployeeFilter
         v-model:company_id="filters.company_id"
         v-model:department_id="filters.department_id"
@@ -283,11 +309,18 @@ const printTable = () => window.print()
         v-model:line_type="filters.line_type"
         :with-type="true"
         :initial-value="$route.query"
-      />
-      <div>
-        <label class="block text-[11px] text-gray-500 mb-0.5">Month</label>
-        <input type="month" v-model="selectedMonth" class="input-1 py-1 h-8" />
+      >
+      <div class="relative">
+        <label class="top-label">Month</label>
+        <FlexibleDatePicker
+          v-model="period"
+          :show-year="false"
+          :show-month="true"
+          :show-date="false"
+          class="h-8"
+        />
       </div>
+      </EmployeeFilter>
 
       <div class="flex items-center gap-2 ml-auto">
         <div class="relative">

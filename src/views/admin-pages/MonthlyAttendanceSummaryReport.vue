@@ -1,5 +1,6 @@
 <script setup>
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import UpdateApprovalTime from '@/components/paycut/UpdateOrCreate.vue'
 import DisplayFormattedWorkingHours from '@/components/paycut/DisplayFormattedWorkingHours.vue'
@@ -37,6 +38,21 @@ const sumBy = (rows, keyPath) => {
 const selectedMonth = ref(
   (route.query.date && String(route.query.date)) || attendanceStore.selectedMonth || ''
 )
+
+const pad = (value) => String(value || '').padStart(2, '0')
+
+const parsePeriod = (value) => {
+  const fallback = { year: new Date().getFullYear(), month: new Date().getMonth() + 1 }
+  if (!value) return fallback
+  const [year = '', month = ''] = String(value).split('-')
+  if (!year || !month) return fallback
+  return {
+    year: Number(year) || fallback.year,
+    month: Number(month) || fallback.month,
+  }
+}
+
+const period = ref(parsePeriod(selectedMonth.value))
 
 const filters = ref({
   company_id: route.query.company_id || '',
@@ -161,6 +177,30 @@ const handleFilterChange = () => {
 
 watch(selectedMonth, (date) => {
   replaceQueryIfChanged({ ...route.query, date: date || '' })
+})
+
+watch(
+  period,
+  (value) => {
+    if (!value) return
+    const formatted = `${value.year}-${pad(value.month)}`
+    if (selectedMonth.value !== formatted) {
+      selectedMonth.value = formatted
+    }
+  },
+  { deep: true }
+)
+
+watch(selectedMonth, (value) => {
+  const parsed = parsePeriod(value)
+  if (
+    parsed &&
+    (!period.value ||
+      parsed.year !== period.value.year ||
+      parsed.month !== period.value.month)
+  ) {
+    period.value = parsed
+  }
 })
 
 onMounted(() => {
@@ -398,8 +438,8 @@ const toggleFinalize = async () => {
     </div>
 
     <!-- Filters -->
-    <div class="glass-panel space-y-3 relative z-50">
-      <div class="flex flex-wrap items-end gap-4 p-2">
+    <div class="glass-panel p-4 space-y-3 z-50">
+      <div class="flex flex-wrap">
         <EmployeeFilter
           v-model:company_id="filters.company_id"
           v-model:department_id="filters.department_id"
@@ -408,15 +448,18 @@ const toggleFinalize = async () => {
           :with-type="true"
           :initial-value="$route.query"
           @filter-change="handleFilterChange"
-        />
-
-        <div class="flex flex-col gap-1">
-          <label class="text-xs font-semibold text-gray-600">Month</label>
-          <div class="flex items-end gap-2">
-            <input type="month" v-model="selectedMonth" class="input-1 py-0.5" />
-            <button type="button" @click="fetchAttendance()" class="btn-2">Search</button>
-          </div>
+        >
+        <div class="relative">
+          <FlexibleDatePicker
+            v-model="period"
+            :show-year="false"
+            :show-month="true"
+            :show-date="false"
+            />
+          <label class="top-label">Month</label>
         </div>
+        </EmployeeFilter>
+        <button type="button" @click="fetchAttendance()" class="btn-2">Search</button>
       </div>
     </div>
 
@@ -425,7 +468,7 @@ const toggleFinalize = async () => {
 
     <div v-else>
       <!-- Empty / Select prompt -->
-      <div v-if="!filters.company_id" class="empty-state glass-panel">
+      <div v-if="!filters.company_id" class="empty-state">
         <p class="text-base font-semibold text-red-500">Select a company to start the report.</p>
         <p class="text-sm text-gray-500">Choose a company & filters above to preview this month.</p>
       </div>

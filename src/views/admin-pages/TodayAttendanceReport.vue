@@ -5,6 +5,7 @@ import { storeToRefs } from 'pinia'
 
 import LoaderView from '@/components/common/LoaderView.vue'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useCompanyStore } from '@/stores/company'
 const router = useRouter()
@@ -33,6 +34,24 @@ const statusOptions = [
 ]
 
 // Filter object for sync
+const pad = (val) => String(val).padStart(2, '0')
+
+const parsePeriod = (value) => {
+  const base = value || selectedDate.value
+  if (!base) {
+    const today = new Date()
+    return { year: today.getFullYear(), month: today.getMonth() + 1, day: today.getDate() }
+  }
+  const [year, month, day] = base.split('-')
+  return {
+    year: Number(year) || new Date().getFullYear(),
+    month: Number(month) || new Date().getMonth() + 1,
+    day: Number(day) || 1,
+  }
+}
+const initialPeriod = parsePeriod()
+const period = ref({ ...initialPeriod })
+
 const filters = ref({
   company_id: selectedCompanyId.value,
   department_id: selectedDepartment.value,
@@ -145,7 +164,28 @@ onMounted(async () => {
   await fetchAttendance()
 })
 
+watch(
+  period,
+  (value) => {
+    if (!value) return
+    const formatted = `${value.year}-${pad(value.month)}-${pad(value.day)}`
+    if (selectedDate.value !== formatted) {
+      selectedDate.value = formatted
+    }
+  },
+  { deep: true }
+)
+
 watch(selectedDate, (newDate) => {
+  if (!newDate) return
+  const next = parsePeriod(newDate)
+  if (
+    next.year !== period.value.year ||
+    next.month !== period.value.month ||
+    next.day !== period.value.day
+  ) {
+    period.value = next
+  }
   handleFilterChange()
 })
 
@@ -181,7 +221,7 @@ watch(status, () => {
     </div>
 
     <div class="glass-panel space-y-3 compact-panel relative z-50">
-      <div class="filter-grid">
+      <div class="flex flex-wrap gap-2">
         <EmployeeFilter
           v-model:company_id="filters.company_id"
           v-model:department_id="filters.department_id"
@@ -190,26 +230,23 @@ watch(status, () => {
           :with-type="true"
           :initial-value="$route.query"
           @filter-change="handleFilterChange"
-          class="w-full"
-        />
-        
-        <div class="flex justify-end gap-4 w-full">
-          <div class="filter-inline">
-            <select id="userSelect" v-model="status" class="input-1 py-1 min-w-40">
-              <option v-for="option in statusOptions" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </option>
-            </select>
-          </div>
-  
-          <div class="filter-inline">
-            <input type="date" v-model="selectedDate" class="input-1 py-1 min-w-40" />
-          </div>
-  
-          <div class="filter-inline self-end">
-            <button type="button" @click="fetchAttendance" class="btn-1 px-6">Search</button>
-          </div>
+        >
+        <div class="relative gap-4">
+          <select id="userSelect" v-model="status" class="input-1 py-0.5">
+            <option v-for="option in statusOptions" :key="option.value" :value="option.value">
+              {{ option.label }}
+            </option>
+          </select>
+          <label class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30">Status</label>
         </div>
+        </EmployeeFilter>
+        <FlexibleDatePicker
+          v-model="period"
+          :show-year="false"
+          :show-month="false"
+          :show-date="true"
+        />
+        <button type="button" @click="fetchAttendance" class="btn-2 py-1 px-3">Search</button>
       </div>
     </div>
 

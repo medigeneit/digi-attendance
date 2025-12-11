@@ -134,19 +134,13 @@ onMounted(() => {
 watch(() => route.query.user_type, (v) => {
   if (v !== undefined && v !== null) local.user_type = String(v)
 })
+
+
 </script>
 
 
 <template>
   <div class="flex flex-wrap items-end gap-3">
-    <!-- <div>
-      <label class="block text-xs text-gray-500 mb-1">Type</label>
-      <select v-model="local.type" class="border rounded px-2 py-1">
-        <option value="joining">Joining</option>
-        <option value="exit">Exit</option>
-      </select>
-    </div> -->
-
     <div>
       <label class="block text-xs text-gray-500 mb-1">User Type</label>
       <select v-model="local.user_type" class="border rounded px-2 py-1">
@@ -166,10 +160,11 @@ watch(() => route.query.user_type, (v) => {
       :companies="companies"
       :departments="departments"
       @filter-change="(p) => { Object.assign(local, p) }"
-    />
-
+    >
     <button class="btn-2 py-1" @click="submit">
       Apply
     </button>
+    </EmployeeFilter>
+
   </div>
 </template>
