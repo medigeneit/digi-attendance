@@ -791,7 +791,7 @@ const toggleFinalize = async () => {
 </template>
 
 <style scoped>
-.glass-panel { @apply rounded-2xl border border-slate-100 bg-white/70 shadow-sm backdrop-blur; }
+.glass-panel { @apply rounded-2xl border border-slate-100 bg-white/70 shadow-sm; }
 .empty-state { @apply flex min-h-[120px] flex-col items-center justify-center gap-1 text-center; }
 .table-shell { @apply rounded-2xl border border-slate-100 bg-white/90 shadow-lg; }
 .table-scroll { max-height: 80vh; overflow: auto; }

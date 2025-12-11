@@ -278,7 +278,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
 
       isLoading.value = true
       try {
-        const payload = { month }
+        const payload = { month, company_id, line_type }
 
         const response = await apiClient.post(
           '/attendance/monthly-snapshot/recalculate',
