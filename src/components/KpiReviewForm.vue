@@ -123,6 +123,7 @@ function cap(id, max) {
 function quickFill(id, max, t) {
   if (t === 'zero') marks.value[id] = 0
   else if (t === 'half') marks.value[id] = Number(max) / 2
+  else if (t === 'threeQuarter') marks.value[id] = Number((Number(max) * 0.75).toFixed(1))
   else if (t === 'full') marks.value[id] = Number(max)
   cap(id, max)
 }
@@ -557,19 +558,20 @@ function applyHint(field, value) {
                   {{ it.label }}
                 </div>
                 <div class="mt-1 flex gap-1 text-[11px] text-slate-500">
-                  <button
-                    class="border rounded px-1.5 py-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
-                    :disabled="!canEditPersonal"
-                    @click="canEditPersonal && quickFill(it.id, it.max, 'zero')"
-                  >
-                    0
-                  </button>
+                  
                   <button
                     class="border rounded px-1.5 py-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
                     :disabled="!canEditPersonal"
                     @click="canEditPersonal && quickFill(it.id, it.max, 'half')"
                   >
                     ½
+                  </button>
+                  <button
+                    class="border rounded px-1.5 py-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                    :disabled="!canEditPersonal"
+                    @click="canEditPersonal && quickFill(it.id, it.max, 'threeQuarter')"
+                  >
+                    ¾
                   </button>
                   <button
                     class="border rounded px-1.5 py-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
@@ -665,19 +667,20 @@ function applyHint(field, value) {
               </div>
               <div class="flex items-center gap-2 text-[11px] text-slate-500">
                 <span>Quick fill:</span>
-                <button
-                  class="rounded border px-1.5 py-0.5 hover:bg-slate-100 disabled:opacity-40"
-                  @click="quickFillGroup(grp,'zero')"
-                  :disabled="!canHR"
-                >
-                  All 0
-                </button>
+                
                 <button
                   class="rounded border px-1.5 py-0.5 hover:bg-slate-100 disabled:opacity-40"
                   @click="quickFillGroup(grp,'half')"
                   :disabled="!canHR"
                 >
                   All ½
+                </button>
+                <button
+                  class="rounded border px-1.5 py-0.5 hover:bg-slate-100 disabled:opacity-40"
+                  @click="quickFillGroup(grp,'threeQuarter')"
+                  :disabled="!canHR"
+                >
+                  All ¾
                 </button>
                 <button
                   class="rounded border px-1.5 py-0.5 hover:bg-slate-100 disabled:opacity-40"
