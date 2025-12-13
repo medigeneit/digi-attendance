@@ -14,7 +14,6 @@ const route  = useRoute()
 /* ===== store ===== */
 const kpiStore = useKpiStore()
 const { users, loading, error, usersError } = storeToRefs(kpiStore)
-// kpiStore.fetchUsers({ company_id, department_id?, employee_id?, user_id?, line_type?, finalized?, q? })
 
 /* ===== filters (no pagination) ===== */
 const filters = ref({
@@ -23,20 +22,20 @@ const filters = ref({
   employee_id:   route.query.employee_id ? Number(route.query.employee_id) : '',
   line_type:     route.query.line_type ?? '',
   user_id:       route.query.user_id ? Number(route.query.user_id) : '',
-  finalized:     route.query.finalized ?? '', // '' | '0' | '1'
+  finalized:     route.query.finalized ?? '', // kept for backend compatibility
   q:             route.query.q ?? '',
 })
 
 /* ===== local UI state ===== */
-const sortBy  = ref(route.query.sortBy || 'name') // name | grade | score | status
-const sortDir = ref(route.query.sortDir || 'asc')  // asc | desc
+const sortBy  = ref(route.query.sortBy || 'name')     // name | progress | stage
+const sortDir = ref(route.query.sortDir || 'asc')     // asc | desc
 
 /* ===== performance helpers ===== */
 let debounceTimer = null
 let fetchToken = 0
 let lastParamsKey = ''
-const refreshing = ref(false)          // show light overlay while refetching with previous data visible
-const lastSnapshot = ref([])           // keeps last successful dataset for “previous data” behavior
+const refreshing = ref(false)
+const lastSnapshot = ref([])
 
 /* ===== computed ===== */
 const hasOrg = computed(() => !!filters.value.company_id && !!filters.value.department_id)
@@ -45,44 +44,90 @@ const hasFilters = computed(() =>
 )
 const isBusy = computed(() => loading.value)
 
-/** base rows = current store users if we have org selected, otherwise last good snapshot */
+/** base rows = current store users if org selected, otherwise last snapshot */
 const baseRows = computed(() => {
   return hasOrg.value ? (Array.isArray(users.value) ? users.value : []) : lastSnapshot.value
 })
 
-/* quick stats on what's currently visible */
+/* ===== KPI progress helpers ===== */
+function getProgress(row) {
+  const p = row?.kpi?.progress
+  const total = Number(p?.total_lanes ?? 0)
+  const submitted = Number(p?.submitted_lanes ?? 0)
+  const pending = Number(p?.pending_lanes ?? Math.max(0, total - submitted))
+  const stage = String(p?.stage ?? (total ? 'not_started' : 'n/a'))
+  const percent = total > 0 ? Math.round((submitted / total) * 100) : 0
+  return { total, submitted, pending, stage, percent }
+}
+
+function stageRank(stage) {
+  // completed first
+  if (stage === 'completed') return 0
+  if (stage === 'in_progress') return 1
+  if (stage === 'not_started') return 2
+  return 3
+}
+
+function stageBadge(row) {
+  const { stage, submitted, total } = getProgress(row)
+
+  if (stage === 'completed') {
+    return { label: `Completed (${submitted}/${total})`, cls: 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200' }
+  }
+  if (stage === 'in_progress') {
+    return { label: `In progress (${submitted}/${total})`, cls: 'bg-amber-100 text-amber-700 ring-1 ring-amber-200' }
+  }
+  if (stage === 'not_started') {
+    return { label: 'Not started', cls: 'bg-slate-100 text-slate-700 ring-1 ring-slate-200' }
+  }
+  return { label: 'N/A', cls: 'bg-slate-100 text-slate-700 ring-1 ring-slate-200' }
+}
+
+function cycleLabel(row) {
+  const c = row?.kpi?.cycle
+  if (!c?.id) return '—'
+  const year = c?.year ? String(c.year) : ''
+  const slug = c?.slug ? String(c.slug) : ''
+  return [year, slug].filter(Boolean).join(' • ') || `#${c.id}`
+}
+
+/* quick stats on currently visible rows */
 const stat = computed(() => {
   let total = baseRows.value.length
-  let fin = 0, prog = 0, none = 0
+  let completed = 0, inProgress = 0, notStarted = 0, na = 0
+
   for (const r of baseRows.value) {
-    const st = r?.latest_kpi_result?.status
-    if (st === 'finalized' || st === 'approved') fin++
-    else if (st === 'in_progress' || st === 'draft') prog++
-    else none++
+    const st = getProgress(r).stage
+    if (st === 'completed') completed++
+    else if (st === 'in_progress') inProgress++
+    else if (st === 'not_started') notStarted++
+    else na++
   }
-  return { total, fin, prog, none }
+  return { total, completed, inProgress, notStarted, na }
 })
 
-/* sorted rows (client-side, stable) applied on top of baseRows */
+/* sorted rows (client-side) */
 const sortedRows = computed(() => {
   const arr = [...baseRows.value]
   const d = sortDir.value === 'desc' ? -1 : 1
   const key = sortBy.value
 
-  const getScore = (r) => Number(r?.latest_kpi_result?.final_obtained ?? -Infinity)
-  const getGrade = (r) => String(r?.latest_kpi_result?.grade ?? '')
-  const getStatusRank = (r) => {
-    const st = r?.latest_kpi_result?.status
-    if (st === 'finalized' || st === 'approved') return 0
-    if (st === 'in_progress' || st === 'draft')   return 1
-    return 2
+  const progressRatio = (r) => {
+    const { total, submitted } = getProgress(r)
+    if (total <= 0) return -Infinity
+    return submitted / total
   }
 
   arr.sort((a, b) => {
-    if (key === 'score')  return (getScore(a) > getScore(b) ? 1 : getScore(a) < getScore(b) ? -1 : 0) * d
-    if (key === 'grade')  return getGrade(a).localeCompare(getGrade(b)) * d
-    if (key === 'status') return (getStatusRank(a) - getStatusRank(b)) * d
-    // default: name
+    if (key === 'progress') {
+      const av = progressRatio(a)
+      const bv = progressRatio(b)
+      return (av > bv ? 1 : av < bv ? -1 : 0) * d
+    }
+    if (key === 'stage') {
+      return (stageRank(getProgress(a).stage) - stageRank(getProgress(b).stage)) * d
+    }
+    // default name
     const an = String(a?.name ?? '')
     const bn = String(b?.name ?? '')
     return an.localeCompare(bn) * d
@@ -107,7 +152,6 @@ function syncUrl () {
   }).catch(() => {})
 }
 
-/* debounce helper so typing in Search does not spam API */
 function debouncedSyncUrl() {
   clearTimeout(debounceTimer)
   debounceTimer = setTimeout(() => {
@@ -115,7 +159,7 @@ function debouncedSyncUrl() {
   }, 350)
 }
 
-/* Pull from URL, then load (single source of truth for fetching) */
+/* Pull from URL, then load */
 watch(() => route.fullPath, async () => {
   const q = route.query
   filters.value.company_id    = q.company_id ? Number(q.company_id) : ''
@@ -139,7 +183,7 @@ function buildParams () {
     employee_id:   filters.value.employee_id || undefined,
     user_id:       filters.value.user_id || undefined,
     line_type:     filters.value.line_type || undefined,
-    finalized:     filters.value.finalized, // '' | '0' | '1'
+    finalized:     filters.value.finalized, // keep
     q:             filters.value.q || undefined,
   }
 }
@@ -147,20 +191,16 @@ function buildParams () {
 async function load () {
   const params = buildParams()
   const key = JSON.stringify(params)
-  if (key === lastParamsKey) return // no-op if nothing changed
+  if (key === lastParamsKey) return
   lastParamsKey = key
 
   const token = ++fetchToken
-  // show overlay when we already have something to show
   refreshing.value = baseRows.value.length > 0
 
   try {
     const maybeData = await kpiStore.fetchUsers(params)
-    // accept only the latest response
     if (token !== fetchToken) return
-    // Prefer returned data if action returns it; fallback to store's users
     const data = Array.isArray(maybeData) ? maybeData : (Array.isArray(users.value) ? users.value : [])
-    // capture a fresh snapshot for “previous data” behavior
     lastSnapshot.value = [...data]
   } catch (e) {
     console.error(e)
@@ -171,7 +211,6 @@ async function load () {
 }
 
 function onEmpFilterChange() {
-  // Keep user_id in sync with employee_id for server-side narrowing
   filters.value.user_id = filters.value.employee_id || ''
   syncUrl()
 }
@@ -188,7 +227,6 @@ function resetFilters() {
   }
   sortBy.value = 'name'
   sortDir.value = 'asc'
-  // IMPORTANT: Do NOT clear lastSnapshot — we want previous data to keep showing
   syncUrl()
 }
 
@@ -199,53 +237,39 @@ function toggleSort(nextBy) {
     sortBy.value = nextBy
     sortDir.value = 'asc'
   }
-  // client-side only; no fetch needed
   syncUrl()
 }
 
 function openReview(row) {
   const employeeId = row?.id
-  if (employeeId) {
-    router.push({ name: 'KpiReview', params: { employeeId } })
-  }
+  if (employeeId) router.push({ name: 'KpiReview', params: { employeeId } })
 }
 
-/* ===== helpers ===== */
-function statusBadge(row) {
-  const st = row?.latest_kpi_result?.status
-  if (st === 'finalized' || st === 'approved')
-    return { label: 'Finalized', cls: 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200' }
-  if (st === 'in_progress' || st === 'draft')
-    return { label: 'In progress', cls: 'bg-amber-100 text-amber-700 ring-1 ring-amber-200' }
-  return { label: 'Not evaluated', cls: 'bg-slate-100 text-slate-700 ring-1 ring-slate-200' }
-}
-
-function gradeTone(grade) {
-  const g = String(grade || '').toUpperCase()
-  if (['A+', 'A'].includes(g)) return 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
-  if (['A-', 'B+', 'B'].includes(g)) return 'bg-sky-50 text-sky-700 ring-1 ring-sky-200'
-  if (['B-', 'C+', 'C'].includes(g)) return 'bg-amber-50 text-amber-700 ring-1 ring-amber-200'
-  if (!g || g === '—') return 'text-slate-400'
-  return 'bg-rose-50 text-rose-700 ring-1 ring-rose-200'
-}
-
-/* client CSV export (uses currently visible rows) */
+/* export (visible rows) */
 function exportCsv() {
   if (!sortedRows.value.length) return
-  const headers = ['#','User','Grade','Score','Status']
+  const headers = ['#','User','Cycle','Submitted','Total','Pending','Stage','Progress%']
   const lines = sortedRows.value.map((r, i) => {
-    const grade = r?.latest_kpi_result?.grade ?? ''
-    const score = r?.latest_kpi_result?.final_obtained ?? ''
-    const st    = statusBadge(r).label
-    const name  = r?.name ?? `#${r?.id}`
-    return [i+1, `"${name.replace(/"/g,'""')}"`, grade, score, st].join(',')
+    const name = r?.name ?? `#${r?.id}`
+    const cyc  = cycleLabel(r)
+    const p    = getProgress(r)
+    return [
+      i + 1,
+      `"${name.replace(/"/g,'""')}"`,
+      `"${String(cyc).replace(/"/g,'""')}"`,
+      p.submitted,
+      p.total,
+      p.pending,
+      p.stage,
+      p.percent
+    ].join(',')
   })
   const csv = [headers.join(','), ...lines].join('\n')
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = 'kpi-users.csv'
+  a.download = 'kpi-progress.csv'
   a.click()
   URL.revokeObjectURL(url)
 }
@@ -253,11 +277,10 @@ function exportCsv() {
 /* mirror employee_id -> user_id */
 watch(() => filters.value.employee_id, v => { filters.value.user_id = v || '' })
 
-/* auto-search debounce: typing triggers URL sync (and then load) */
+/* auto-sync */
 watch(() => filters.value.q, () => { if (hasOrg.value) debouncedSyncUrl() })
 watch(() => [filters.value.finalized, filters.value.line_type], () => { if (hasOrg.value) syncUrl() })
 
-/* driven by route watcher; just ensure first load if URL already had scope */
 onMounted(async () => {
   await nextTick()
   if (hasOrg.value) await load()
@@ -270,19 +293,18 @@ onMounted(async () => {
     <div class="sticky top-0 z-10 -mx-4 px-4 bg-white/80 backdrop-blur border-b">
       <div class="flex flex-col gap-3 py-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 class="text-lg md:text-xl font-semibold">User Yearly KPI Evaluations</h1>
-          <p class="text-xs text-slate-600 mt-0.5">
-            Filter by company/department, then refine by status or search.
-          </p>
+          <h1 class="text-lg md:text-xl font-semibold">User KPI Progress</h1>
+          <p class="text-xs text-slate-600 mt-0.5">Select company/department to see progress stage per user.</p>
         </div>
 
         <div class="flex items-center gap-2">
           <div class="hidden md:flex items-center gap-2 text-xs">
             <span class="px-2 py-1 rounded-full bg-slate-100 text-slate-700">Total: {{ stat.total }}</span>
-            <span class="px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">Finalized: {{ stat.fin }}</span>
-            <span class="px-2 py-1 rounded-full bg-amber-100 text-amber-700">In progress: {{ stat.prog }}</span>
-            <span class="px-2 py-1 rounded-full bg-slate-100 text-slate-700">None: {{ stat.none }}</span>
+            <span class="px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">Completed: {{ stat.completed }}</span>
+            <span class="px-2 py-1 rounded-full bg-amber-100 text-amber-700">In progress: {{ stat.inProgress }}</span>
+            <span class="px-2 py-1 rounded-full bg-slate-100 text-slate-700">Not started: {{ stat.notStarted }}</span>
           </div>
+
           <button
             class="h-9 rounded-md border border-slate-300 px-3 text-xs md:text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
             :disabled="!sortedRows.length"
@@ -297,7 +319,6 @@ onMounted(async () => {
     <!-- Filters card -->
     <div class="rounded-xl border bg-white p-4 md:p-5 shadow-sm">
       <div class="grid gap-4 md:grid-cols-12">
-        <!-- Employee scope -->
         <div class="col-span-full">
           <label class="mb-1 block text-sm font-medium text-slate-700">Employee scope</label>
           <EmployeeFilter
@@ -310,7 +331,7 @@ onMounted(async () => {
             @filter-change="onEmpFilterChange"
             class="w-full"
           />
-          <p class="mt-1 text-[11px] text-slate-500">Tip: resetting the scope keeps showing the previous results until you pick a new scope.</p>
+          <p class="mt-1 text-[11px] text-slate-500">Reset করলে আগের data দেখাবে যতক্ষণ না নতুন scope select করো।</p>
         </div>
 
         <!-- Search -->
@@ -319,14 +340,14 @@ onMounted(async () => {
           <input
             v-model.trim="filters.q"
             @keyup.enter="search"
-            :placeholder="hasOrg ? 'Search name, grade…' : 'Select company & department first'"
+            :placeholder="hasOrg ? 'Search name, type…' : 'Select company & department first'"
             class="h-9 w-full rounded-md border border-slate-300 px-3 text-sm disabled:bg-slate-100"
             :disabled="!hasOrg"
           />
         </div>
 
         <!-- Sort -->
-        <div class="md:col-span-2">
+        <div class="md:col-span-3">
           <label class="mb-1 block text-sm font-medium text-slate-700">Sort by</label>
           <select
             class="h-9 w-full rounded-md border border-slate-300 px-2 text-sm"
@@ -334,11 +355,11 @@ onMounted(async () => {
             @change="toggleSort(sortBy)"
           >
             <option value="name">Name</option>
-            <option value="grade">Grade</option>
-            <option value="score">Score</option>
-            <option value="status">Status</option>
+            <option value="progress">Progress</option>
+            <option value="stage">Stage</option>
           </select>
         </div>
+
         <div class="md:col-span-1">
           <label class="mb-1 block text-sm font-medium text-slate-700">Order</label>
           <button
@@ -349,7 +370,6 @@ onMounted(async () => {
           </button>
         </div>
 
-        <!-- Actions -->
         <div class="md:col-span-2 flex items-end justify-end gap-2">
           <button
             class="h-9 rounded-md border border-slate-300 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
@@ -370,9 +390,8 @@ onMounted(async () => {
       {{ usersError || error }}
     </div>
 
-    <!-- Table (no pagination) -->
+    <!-- Table -->
     <div v-else class="relative overflow-x-auto rounded-xl border bg-white shadow-sm">
-      <!-- light overlay while refetching but keep previous rows visible -->
       <div
         v-if="refreshing"
         class="absolute inset-0 grid place-items-center bg-white/50 backdrop-blur-[1px] z-10"
@@ -387,15 +406,17 @@ onMounted(async () => {
           <tr class="text-left text-gray-700">
             <th class="px-3 py-2 w-12">#</th>
             <th class="px-3 py-2">User</th>
-            <th class="px-3 py-2">Grade</th>
-            <th class="px-3 py-2">Score</th>
-            <th class="px-3 py-2">Status</th>
+            <th class="px-3 py-2">Cycle</th>
+            <th class="px-3 py-2 w-[340px]">Progress</th>
+            <th class="px-3 py-2">Stage</th>
             <th class="px-3 py-2 text-right w-40">Actions</th>
           </tr>
         </thead>
+
         <tbody>
           <tr v-for="(row, i) in sortedRows" :key="row.id" class="border-t hover:bg-slate-50/50">
             <td class="px-3 py-2">{{ i + 1 }}</td>
+
             <td class="px-3 py-2">
               <div class="flex items-center gap-3">
                 <div class="h-8 w-8 rounded-full bg-slate-200 grid place-items-center text-xs font-medium text-slate-700">
@@ -413,30 +434,44 @@ onMounted(async () => {
             </td>
 
             <td class="px-3 py-2">
-              <span
-                class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
-                :class="gradeTone(row?.latest_kpi_result?.grade)"
-              >
-                {{ row?.latest_kpi_result?.grade ?? '—' }}
-              </span>
+              <span class="text-xs text-slate-700">{{ cycleLabel(row) }}</span>
             </td>
 
             <td class="px-3 py-2">
-              {{ row?.latest_kpi_result?.final_obtained ?? '—' }}
+              <div class="flex items-center gap-3">
+                <div class="w-full max-w-[260px]">
+                  <div class="h-2 rounded-full bg-slate-200 overflow-hidden">
+                    <div
+                      class="h-2 rounded-full bg-slate-700"
+                      :style="{ width: (getProgress(row).percent || 0) + '%' }"
+                    />
+                  </div>
+                  <div class="mt-1 text-[11px] text-slate-600">
+                    {{ getProgress(row).submitted }} / {{ getProgress(row).total }}
+                    <span class="mx-1">•</span>
+                    Pending: {{ getProgress(row).pending }}
+                    <span class="mx-1">•</span>
+                    {{ getProgress(row).percent }}%
+                  </div>
+                </div>
+              </div>
             </td>
 
             <td class="px-3 py-2">
               <span
                 class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
-                :class="statusBadge(row).cls"
+                :class="stageBadge(row).cls"
               >
-                {{ statusBadge(row).label }}
+                {{ stageBadge(row).label }}
               </span>
             </td>
 
             <td class="px-3 py-2 text-right">
               <div class="flex items-center justify-end gap-2">
-                <button class="h-9 px-3 rounded-md border border-slate-300 text-sm hover:bg-slate-50" @click="openReview(row)">
+                <button
+                  class="h-9 px-3 rounded-md border border-slate-300 text-sm hover:bg-slate-50"
+                  @click="openReview(row)"
+                >
                   Open
                 </button>
               </div>
@@ -445,7 +480,7 @@ onMounted(async () => {
 
           <tr v-if="!sortedRows.length">
             <td colspan="6" class="px-3 py-6 text-center text-gray-600">
-              {{ hasOrg ? 'No users found for this scope.' : 'Select company & department to see users (previous results remain visible on reset).' }}
+              {{ hasOrg ? 'No users found for this scope.' : 'Select company & department to see users.' }}
             </td>
           </tr>
         </tbody>
