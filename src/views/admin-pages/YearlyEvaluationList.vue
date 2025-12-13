@@ -83,6 +83,33 @@ function stageBadge(row) {
   return { label: 'N/A', cls: 'bg-slate-100 text-slate-700 ring-1 ring-slate-200' }
 }
 
+function completedStageInfo(row) {
+  const review = row?.kpi?.latest_review ?? {}
+  const laneValue = String(review?.reviewer_lane ?? '').trim()
+  if (!laneValue) {
+    return {
+      label: 'Not completed yet',
+      detail: 'No reviewer lane has finished',
+      cls: 'border-slate-200 bg-slate-50 text-slate-500',
+    }
+  }
+
+  const stageValue = review?.stage ? String(review.stage) : ''
+  const stageLabel = stageValue
+    ? stageValue
+      .split('_')
+      .map(segment => segment ? segment[0]?.toUpperCase() + segment.slice(1) : '')
+      .filter(Boolean)
+      .join(' ')
+    : ''
+
+  return {
+    label: laneValue,
+    detail: stageLabel ? `Stage: ${stageLabel}` : 'Latest completed lane',
+    cls: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+  }
+}
+
 function cycleLabel(row) {
   const c = row?.kpi?.cycle
   if (!c?.id) return '—'
@@ -409,6 +436,7 @@ onMounted(async () => {
             <th class="px-3 py-2">Cycle</th>
             <th class="px-3 py-2 w-[340px]">Progress</th>
             <th class="px-3 py-2">Stage</th>
+            <th class="px-3 py-2">Completed Stage</th>
             <th class="px-3 py-2 text-right w-40">Actions</th>
           </tr>
         </thead>
@@ -464,6 +492,21 @@ onMounted(async () => {
               >
                 {{ stageBadge(row).label }}
               </span>
+            </td>
+
+            <td class="px-3 py-2">
+              <div class="flex flex-col gap-1">
+                <!-- <span class="text-[11px] font-semibold tracking-wide text-slate-400 uppercase">Completed lane</span> -->
+                <span
+                  class="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset"
+                  :class="completedStageInfo(row).cls"
+                >
+                  {{ completedStageInfo(row).label }}
+                </span>
+                <!-- <span class="text-[11px] text-slate-500">
+                  {{ completedStageInfo(row).detail }}
+                </span> -->
+              </div>
             </td>
 
             <td class="px-3 py-2 text-right">
