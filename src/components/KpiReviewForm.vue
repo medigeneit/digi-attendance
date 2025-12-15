@@ -561,7 +561,10 @@ function applyHint(field, value) {
           <div class="text-sm font-semibold text-slate-800">কার্যসম্পাদন বিষয়</div>
         </div>
 
-        <div v-if="employee?.active_criteria?.length === 0" class="p-4 text-sm font-bold text-slate-500">
+        <div
+          v-if="employee?.active_criteria?.length === 0"
+          class="p-4 text-sm font-bold text-slate-500"
+        >
           --
         </div>
 
@@ -711,10 +714,10 @@ function applyHint(field, value) {
     </section>
 
     <!-- OTHER GROUPS + RIGHT SIDEBAR -->
-    <section v-if="otherGroups.length" class="mt-2">
+    <section class="mt-2">
       <div class="grid gap-4 lg:grid-cols-5">
         <!-- Main (groups tables) -->
-        <div class="space-y-4 lg:col-span-3">
+        <div class="space-y-4 lg:col-span-3" v-if="otherGroups.length">
           <div
             v-for="(grp, gIdx) in otherGroups"
             :key="gIdx"
@@ -825,7 +828,10 @@ function applyHint(field, value) {
         </div>
 
         <!-- Right sidebar (Annual Target Summary + Comments) -->
-        <aside class="lg:col-span-2 space-y-4">
+        <aside
+          class="space-y-4"
+          :class="[otherGroups.length === 0 ? 'lg:col-span-full' : 'lg:col-span-2']"
+        >
           <section v-if="hasTargetSummary && canHR" class="border rounded-2xl bg-white shadow-sm">
             <header
               class="flex flex-wrap items-center justify-between border-b px-4 py-3 text-sm font-semibold text-slate-800"
@@ -1019,7 +1025,6 @@ function applyHint(field, value) {
               </div>
             </div>
           </section>
-
           <!-- Review comments -->
           <section v-if="reviewComments.length" class="border rounded-2xl bg-white shadow-sm">
             <header
