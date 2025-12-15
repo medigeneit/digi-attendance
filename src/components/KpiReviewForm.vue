@@ -1,17 +1,19 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { useKpiStore } from '@/stores/kpi'
 import { useAuthStore } from '@/stores/auth'
+import { useKpiStore } from '@/stores/kpi'
+import { computed, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 const route = useRoute()
 const store = useKpiStore()
-const auth  = useAuthStore()
+const auth = useAuthStore()
 
 /* ---------- Local state ---------- */
 const marks = ref({})
 const employee = ref({})
-const strengths = ref(''), gaps = ref(''), suggestions = ref('')
+const strengths = ref(''),
+  gaps = ref(''),
+  suggestions = ref('')
 const getTargetMarks = ref(null)
 const getPerformanceMarks = ref(null)
 const showSummaryDetails = ref(false)
@@ -28,10 +30,9 @@ const isHR = ref(false)
 /* ---------- Helpers & classification ---------- */
 const groupsAll = computed(() => store.cycle?.groups_json || [])
 
-
 const isPersonalGroup = (g) => g?.id === 'personal' || /personal/i.test(g?.label || '')
 const personalGroup = computed(() => groupsAll.value.find(isPersonalGroup) || null)
-const otherGroups   = computed(() => groupsAll.value.filter(g => !isPersonalGroup(g)))
+const otherGroups = computed(() => groupsAll.value.filter((g) => !isPersonalGroup(g)))
 
 /** Fallback label if a group name is missing */
 const safeGroupLabel = (grp, idx) => grp?.label || `Group ${idx + 1}`
@@ -42,36 +43,34 @@ const isHrLane = (ln) => isHrLaneKey(ln?.key || '') || ln?.is_hr_lane === true
 
 // 🔹 সব lane কে rank অনুযায়ী sort
 const sortedLanes = computed(() => {
-  return [...(lanes.value || [])].sort(
-    (a, b) => (a.rank ?? 999) - (b.rank ?? 999)
-  )
+  return [...(lanes.value || [])].sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999))
 })
 
 // 🔹 এই sorted list থেকে HR / non-HR ভাগ করা
-const hrLanes    = computed(() => sortedLanes.value.filter(isHrLane))
-const nonHrLanes = computed(() => sortedLanes.value.filter(l => !isHrLane(l)))
-const myNonHrLane = computed(() =>
-  nonHrLanes.value.find(ln => ln.key === myLaneKey.value) || null
+const hrLanes = computed(() => sortedLanes.value.filter(isHrLane))
+const nonHrLanes = computed(() => sortedLanes.value.filter((l) => !isHrLane(l)))
+const myNonHrLane = computed(
+  () => nonHrLanes.value.find((ln) => ln.key === myLaneKey.value) || null,
 )
 const myNonHrRank = computed(() => myNonHrLane.value?.rank ?? null)
-
 
 const currentUserId = computed(() => Number(auth?.user?.id || 0))
 const myHrLane = computed(() => {
   const uid = currentUserId.value
   if (!uid) return null
-  const assignedLane = hrLanes.value.find(ln => Number(ln.assigned_user_id) === uid)
+  const assignedLane = hrLanes.value.find((ln) => Number(ln.assigned_user_id) === uid)
   if (assignedLane) return assignedLane
-  return hrLanes.value.find(ln => ln.can_current_user_review) || null
+  return hrLanes.value.find((ln) => ln.can_current_user_review) || null
 })
 const myHrLaneKey = computed(() => myHrLane.value?.key || null)
 
 const canEditHR = computed(() => !!(myHrLane.value && myHrLane.value.can_current_user_review))
-const canHR     = computed(() => !!(isHR.value || canEditHR.value))
+const canHR = computed(() => !!(isHR.value || canEditHR.value))
 
-const canEditPersonal = computed(() =>
-  !!myLaneKey.value &&
-  nonHrLanes.value.some(l => l.key === myLaneKey.value && l.can_current_user_review)
+const canEditPersonal = computed(
+  () =>
+    !!myLaneKey.value &&
+    nonHrLanes.value.some((l) => l.key === myLaneKey.value && l.can_current_user_review),
 )
 
 const reviewerLaneKey = computed(() => {
@@ -80,7 +79,9 @@ const reviewerLaneKey = computed(() => {
 })
 
 const reviewingAsHR = computed(() =>
-  Boolean(reviewerLaneKey.value && myHrLaneKey.value && reviewerLaneKey.value === myHrLaneKey.value)
+  Boolean(
+    reviewerLaneKey.value && myHrLaneKey.value && reviewerLaneKey.value === myHrLaneKey.value,
+  ),
 )
 
 /* ---------- Existing review readers ---------- */
@@ -106,7 +107,10 @@ function hrMark(itemId) {
     const arr = reviewsByLane.value?.[ln.key] || []
     const r = arr[0]
     if (!r || r?.marks?.[itemId] == null) continue
-    if (!chosen) { chosen = r; continue }
+    if (!chosen) {
+      chosen = r
+      continue
+    }
     if (r.submitted_at && chosen.submitted_at && r.submitted_at > chosen.submitted_at) {
       chosen = r
     }
@@ -128,15 +132,16 @@ function quickFill(id, max, t) {
   cap(id, max)
 }
 function quickFillGroup(group, t) {
-  group.items.forEach(it => quickFill(it.id, it.max, t))
+  group.items.forEach((it) => quickFill(it.id, it.max, t))
 }
 
 /* ---------- Totals (personal only) ---------- */
 const personalTotals = computed(() => {
-  let max = 0, got = 0
+  let max = 0,
+    got = 0
   const grp = personalGroup.value
   if (grp) {
-    grp.items.forEach(it => {
+    grp.items.forEach((it) => {
       max += Number(it.max || 0)
       const v = Number(marks.value[it.id] || 0)
       got += Math.min(Math.max(v, 0), Number(it.max || 0))
@@ -151,11 +156,29 @@ const personalTotals = computed(() => {
 })
 
 /* ---------- Target summary (sidebar) ---------- */
-const hasTargetSummary = computed(() => !!getTargetMarks.value && typeof getTargetMarks.value === 'object')
+const hasTargetSummary = computed(
+  () => !!getTargetMarks.value && typeof getTargetMarks.value === 'object',
+)
 
-const targetAvg   = computed(() => getTargetMarks.value?.avg || { per_scored_month: {}, per_form_yearly: {}, percent_simple: 0, percent_weighted: 0 })
-const targetYear  = computed(() => getTargetMarks.value?.year ?? null)
-const performanceAvg = computed(() => getPerformanceMarks.value?.avg || { per_scored_month: {}, per_form_yearly: {}, percent_simple: 0, percent_weighted: 0 })
+const targetAvg = computed(
+  () =>
+    getTargetMarks.value?.avg || {
+      per_scored_month: {},
+      per_form_yearly: {},
+      percent_simple: 0,
+      percent_weighted: 0,
+    },
+)
+const targetYear = computed(() => getTargetMarks.value?.year ?? null)
+const performanceAvg = computed(
+  () =>
+    getPerformanceMarks.value?.avg || {
+      per_scored_month: {},
+      per_form_yearly: {},
+      percent_simple: 0,
+      percent_weighted: 0,
+    },
+)
 const performanceYear = computed(() => getPerformanceMarks.value?.year ?? null)
 const activeSummaryTab = ref('target')
 const summaryTabs = [
@@ -163,11 +186,21 @@ const summaryTabs = [
   { key: 'performance', label: 'Annual Performance' },
 ]
 const targetMonths = computed(() => getTargetMarks.value?.months_total_form ?? 0)
-const performanceMonths = computed(() => getPerformanceMarks.value?.months_total_form ?? targetMonths.value)
-const summaryData = computed(() => (activeSummaryTab.value === 'target' ? targetAvg.value : performanceAvg.value))
-const summaryYear = computed(() => (activeSummaryTab.value === 'target' ? targetYear.value : performanceYear.value))
-const summaryMonths = computed(() => (activeSummaryTab.value === 'target' ? targetMonths.value : performanceMonths.value))
-const summaryLabel = computed(() => summaryTabs.find(tab => tab.key === activeSummaryTab.value)?.label || 'Annual Target')
+const performanceMonths = computed(
+  () => getPerformanceMarks.value?.months_total_form ?? targetMonths.value,
+)
+const summaryData = computed(() =>
+  activeSummaryTab.value === 'target' ? targetAvg.value : performanceAvg.value,
+)
+const summaryYear = computed(() =>
+  activeSummaryTab.value === 'target' ? targetYear.value : performanceYear.value,
+)
+const summaryMonths = computed(() =>
+  activeSummaryTab.value === 'target' ? targetMonths.value : performanceMonths.value,
+)
+const summaryLabel = computed(
+  () => summaryTabs.find((tab) => tab.key === activeSummaryTab.value)?.label || 'Annual Target',
+)
 const summaryGroupMap = {
   target: 'target',
   performance: 'regular_activities_of_the_department',
@@ -175,11 +208,11 @@ const summaryGroupMap = {
 const summaryGroup = computed(() => {
   const key = summaryGroupMap[activeSummaryTab.value]
   if (!key) return null
-  return otherGroups.value.find(g => g.id === key) || null
+  return otherGroups.value.find((g) => g.id === key) || null
 })
 const summaryGroupLabel = computed(() => summaryGroup.value?.label || summaryLabel.value)
 const setSummaryTab = (tabKey) => {
-  if (summaryTabs.some(tab => tab.key === tabKey)) {
+  if (summaryTabs.some((tab) => tab.key === tabKey)) {
     activeSummaryTab.value = tabKey
   }
 }
@@ -190,13 +223,11 @@ watch(activeSummaryTab, () => {
 
 const reviewComments = computed(() => {
   const byLane = reviewsByLane.value || {}
-  const orderedNonHr = nonHrLanes.value || []   // rank অনুযায়ী sorted
+  const orderedNonHr = nonHrLanes.value || [] // rank অনুযায়ী sorted
   const result = []
 
   // HR মোড হলে সব দেখতে পারবে, না হলে নিজের rank পর্যন্ত
-  const viewerRank = (reviewingAsHR.value || canHR.value)
-    ? Infinity
-    : (myNonHrRank.value ?? null)
+  const viewerRank = reviewingAsHR.value || canHR.value ? Infinity : (myNonHrRank.value ?? null)
 
   const toArr = (v) => {
     if (!v) return []
@@ -228,9 +259,9 @@ const reviewComments = computed(() => {
     const reviews = byLane[laneKey] || []
     if (!Array.isArray(reviews) || !reviews.length) return
 
-    const entry       = reviews[0]
-    const strengths   = toArr(entry.strengths)
-    const gaps        = toArr(entry.gaps)
+    const entry = reviews[0]
+    const strengths = toArr(entry.strengths)
+    const gaps = toArr(entry.gaps)
     const suggestions = toArr(entry.suggestions)
 
     if (!strengths.length && !gaps.length && !suggestions.length) return
@@ -250,8 +281,6 @@ const reviewComments = computed(() => {
 
   return result
 })
-
-
 
 const makeOptions = (field) => {
   const set = new Set()
@@ -336,7 +365,10 @@ const serialMap = computed(() => {
   const map = {}
   let i = 1
   const grp = personalGroup.value
-  if (grp) grp.items.forEach(it => { map[it.id] = i++ })
+  if (grp)
+    grp.items.forEach((it) => {
+      map[it.id] = i++
+    })
   return map
 })
 
@@ -351,9 +383,13 @@ const hydrateReviewData = (resp) => {
   reviewsByLane.value = resp.reviews_by_lane || {}
   isHR.value = !!(resp?.meta?.is_hr ?? resp?.hr ?? false)
 
-  myLaneKey.value = nonHrLanes.value.find(x => x.can_current_user_review)?.key || null
+  myLaneKey.value = nonHrLanes.value.find((x) => x.can_current_user_review)?.key || null
 
-  groupsAll.value.forEach(g => g.items.forEach(it => { if (marks.value[it.id] == null) marks.value[it.id] = 0 }))
+  groupsAll.value.forEach((g) =>
+    g.items.forEach((it) => {
+      if (marks.value[it.id] == null) marks.value[it.id] = 0
+    }),
+  )
 
   if (myLaneKey.value) {
     const myExisting = laneFirstReview(myLaneKey.value)
@@ -361,8 +397,8 @@ const hydrateReviewData = (resp) => {
   }
 
   if (canHR.value) {
-    otherGroups.value.forEach(g => {
-      g.items.forEach(it => {
+    otherGroups.value.forEach((g) => {
+      g.items.forEach((it) => {
         let v = myHrLaneKey.value ? laneMark(myHrLaneKey.value, it.id) : ''
         if (v === '' || v == null) v = hrMark(it.id)
         if (v !== '' && v != null) marks.value[it.id] = Number(v)
@@ -371,12 +407,16 @@ const hydrateReviewData = (resp) => {
   }
 }
 
-watch(employeeId, async (id, prev) => {
-  if (!id || (prev && id === prev)) return
-  await store.fetchActiveCycle(id)
-  const resp = await store.fetchLanes(store.cycle.id, id)
-  hydrateReviewData(resp)
-}, { immediate: true })
+watch(
+  employeeId,
+  async (id, prev) => {
+    if (!id || (prev && id === prev)) return
+    await store.fetchActiveCycle(id)
+    const resp = await store.fetchLanes(store.cycle.id, id)
+    hydrateReviewData(resp)
+  },
+  { immediate: true },
+)
 
 /* ---------- Submit ---------- */
 async function submit() {
@@ -393,18 +433,21 @@ async function submit() {
     marks: marks.value,
     strengths: strengths.value,
     gaps: gaps.value,
-    suggestions: suggestions.value
+    suggestions: suggestions.value,
   })
   alert('Submitted')
 }
 
 /* ---------- Utils ---------- */
-function fmt(n){ const v = Number(n ?? 0); return isNaN(v) ? '0.00' : v.toFixed(2) }
-function pct(got, max){
-  const g = Number(got ?? 0), m = Number(max ?? 0)
+function fmt(n) {
+  const v = Number(n ?? 0)
+  return isNaN(v) ? '0.00' : v.toFixed(2)
+}
+function pct(got, max) {
+  const g = Number(got ?? 0),
+    m = Number(max ?? 0)
   return m > 0 ? Math.round((g / m) * 100) : 0
 }
-
 
 function hasHint(field, value) {
   const target = textRefs[field]
@@ -450,17 +493,31 @@ function applyHint(field, value) {
               {{ employee?.name || 'Employee' }}
             </div>
             <div class="flex flex-wrap gap-2 text-xs mt-0.5">
-              <span v-if="employee?.designation?.title" class="inline-flex items-center rounded-full bg-slate-50 px-2 py-0.5 text-slate-600">
-                Designation: <span class="ml-1 font-medium text-slate-800">{{ employee.designation.title }}</span>
+              <span
+                v-if="employee?.designation?.title"
+                class="inline-flex items-center rounded-full bg-slate-50 px-2 py-0.5 text-slate-600"
+              >
+                Designation:
+                <span class="ml-1 font-medium text-slate-800">{{
+                  employee.designation.title
+                }}</span>
               </span>
-              <span v-if="employee?.department?.name" class="inline-flex items-center rounded-full bg-slate-50 px-2 py-0.5 text-slate-600">
-                Department: <span class="ml-1 font-medium text-slate-800">{{ employee.department.name }}</span>
+              <span
+                v-if="employee?.department?.name"
+                class="inline-flex items-center rounded-full bg-slate-50 px-2 py-0.5 text-slate-600"
+              >
+                Department:
+                <span class="ml-1 font-medium text-slate-800">{{ employee.department.name }}</span>
               </span>
-              <span class="inline-flex items-center rounded-full bg-slate-50 px-2 py-0.5 text-slate-600">
+              <span
+                class="inline-flex items-center rounded-full bg-slate-50 px-2 py-0.5 text-slate-600"
+              >
                 Reviewing as:
                 <span v-if="reviewingAsHR" class="ml-1 inline-flex items-center gap-1">
                   <span class="font-semibold text-emerald-700">HR</span>
-                  <span class="text-[10px] rounded bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 text-emerald-700">
+                  <span
+                    class="text-[10px] rounded bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 text-emerald-700"
+                  >
                     HR mode
                   </span>
                 </span>
@@ -497,18 +554,37 @@ function applyHint(field, value) {
       </div>
     </header>
 
+    <!-- active_criteria -->
+    <div v-if="employee?.active_criteria">
+      <section class="border rounded-2xl bg-white shadow-sm overflow-hidden">
+        <div class="flex items-center justify-between border-b bg-slate-50 px-4 py-2">
+          <div class="text-sm font-semibold text-slate-800">কার্যসম্পাদন বিষয়</div>
+        </div>
+
+        <div v-if="employee?.active_criteria?.length === 0" class="p-4 text-sm font-bold text-slate-500">
+          --
+        </div>
+
+        <div
+          class="p-4 text-sm text-slate-700"
+          v-for="active_criteria in employee.active_criteria"
+          :key="active_criteria.id"
+        >
+          <div
+            class="print:block richtext print:break-inside-avoid"
+            v-html="active_criteria?.description"
+          ></div>
+        </div>
+      </section>
+    </div>
     <!-- PERSONAL GROUP -->
     <section
       v-if="store.cycle && personalGroup"
       class="border rounded-2xl bg-white shadow-sm overflow-hidden"
     >
       <div class="flex items-center justify-between border-b bg-slate-50 px-4 py-2">
-        <div class="text-sm font-semibold text-slate-800">
-          Personal Evaluation
-        </div>
-        <div class="text-xs text-slate-500">
-          Fill only your lane; others appear as read-only.
-        </div>
+        <div class="text-sm font-semibold text-slate-800">Personal Evaluation</div>
+        <div class="text-xs text-slate-500">Fill only your lane; others appear as read-only.</div>
       </div>
 
       <div class="overflow-auto">
@@ -518,11 +594,7 @@ function applyHint(field, value) {
               <th class="px-3 py-2 w-[40px] text-center font-medium">#</th>
               <th class="text-left px-3 py-2 w-[20%] font-medium">মূল্যায়নের বিষয় (Personal)</th>
               <th class="px-3 py-2 text-center font-medium">Max</th>
-              <th
-                v-for="ln in nonHrLanes"
-                :key="ln.key"
-                class="px-3 py-2 text-center font-medium"
-              >
+              <th v-for="ln in nonHrLanes" :key="ln.key" class="px-3 py-2 text-center font-medium">
                 <div class="font-medium">{{ ln.label || ln.key }}</div>
                 <div class="text-[11px] text-slate-500 flex flex-col items-center">
                   <span>{{ ln.assigned_user_name || '-' }}</span>
@@ -558,7 +630,6 @@ function applyHint(field, value) {
                   {{ it.label }}
                 </div>
                 <div class="mt-1 flex gap-1 text-[11px] text-slate-500">
-                  
                   <button
                     class="border rounded px-1.5 py-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
                     :disabled="!canEditPersonal"
@@ -587,11 +658,7 @@ function applyHint(field, value) {
                 {{ it.max }}
               </td>
 
-              <td
-                v-for="ln in nonHrLanes"
-                :key="ln.key"
-                class="px-3 py-2 text-center"
-              >
+              <td v-for="ln in nonHrLanes" :key="ln.key" class="px-3 py-2 text-center">
                 <div
                   v-if="ln.key === myLaneKey && ln.can_current_user_review"
                   class="flex items-center justify-center"
@@ -608,41 +675,33 @@ function applyHint(field, value) {
                   />
                 </div>
 
-                <div
-                  v-else-if="ln.can_view_marks"
-                  class="text-slate-700 text-sm"
-                >
+                <div v-else-if="ln.can_view_marks" class="text-slate-700 text-sm">
                   {{ laneMark(ln.key, it.id) }}
                 </div>
 
-                <div v-else class="text-slate-300 text-sm">
-                  —
-                </div>
+                <div v-else class="text-slate-300 text-sm">—</div>
               </td>
             </tr>
 
             <tr class="bg-slate-50 border-t">
               <td></td>
-              <td class="px-3 py-2 text-right font-medium text-slate-700">
-                Group Total
-              </td>
+              <td class="px-3 py-2 text-right font-medium text-slate-700">Group Total</td>
               <td class="px-3 py-2 text-center font-semibold text-slate-800">
-                {{ personalGroup.items.reduce((a,b)=>a+Number(b.max||0),0).toFixed(2) }}
+                {{ personalGroup.items.reduce((a, b) => a + Number(b.max || 0), 0).toFixed(2) }}
               </td>
-              <td
-                :colspan="nonHrLanes.length"
-                class="px-3 py-2 text-center text-sm"
-              >
+              <td :colspan="nonHrLanes.length" class="px-3 py-2 text-center text-sm">
                 <span class="font-semibold text-slate-900">
                   {{
-                    personalGroup.items.reduce((a,b)=>{
-                      const v = Number(marks[b.id]||0)
-                      return a + Math.min(Math.max(v,0), Number(b.max||0))
-                    },0).toFixed(2)
+                    personalGroup.items
+                      .reduce((a, b) => {
+                        const v = Number(marks[b.id] || 0)
+                        return a + Math.min(Math.max(v, 0), Number(b.max || 0))
+                      }, 0)
+                      .toFixed(2)
                   }}
                 </span>
                 <span class="text-slate-500">
-                  / {{ personalGroup.items.reduce((a,b)=>a+Number(b.max||0),0).toFixed(2) }}
+                  / {{ personalGroup.items.reduce((a, b) => a + Number(b.max || 0), 0).toFixed(2) }}
                 </span>
               </td>
             </tr>
@@ -667,24 +726,24 @@ function applyHint(field, value) {
               </div>
               <div class="flex items-center gap-2 text-[11px] text-slate-500">
                 <span>Quick fill:</span>
-                
+
                 <button
                   class="rounded border px-1.5 py-0.5 hover:bg-slate-100 disabled:opacity-40"
-                  @click="quickFillGroup(grp,'half')"
+                  @click="quickFillGroup(grp, 'half')"
                   :disabled="!canHR"
                 >
                   All ½
                 </button>
                 <button
                   class="rounded border px-1.5 py-0.5 hover:bg-slate-100 disabled:opacity-40"
-                  @click="quickFillGroup(grp,'threeQuarter')"
+                  @click="quickFillGroup(grp, 'threeQuarter')"
                   :disabled="!canHR"
                 >
                   All ¾
                 </button>
                 <button
                   class="rounded border px-1.5 py-0.5 hover:bg-slate-100 disabled:opacity-40"
-                  @click="quickFillGroup(grp,'full')"
+                  @click="quickFillGroup(grp, 'full')"
                   :disabled="!canHR"
                 >
                   All Full
@@ -699,9 +758,7 @@ function applyHint(field, value) {
                     <th class="px-3 py-2 w-[40px] text-center font-medium">#</th>
                     <th class="text-left px-3 py-2 w-[30%] font-medium">Item</th>
                     <th class="px-3 py-2 text-center w-[40px] font-medium">Max</th>
-                    <th class="px-3 py-2 text-center w-[80px] font-medium">
-                      HR Score
-                    </th>
+                    <th class="px-3 py-2 text-center w-[80px] font-medium">HR Score</th>
                   </tr>
                 </thead>
 
@@ -746,18 +803,18 @@ function applyHint(field, value) {
 
                   <tr class="bg-slate-50 border-t">
                     <td></td>
-                    <td class="px-3 py-2 text-right font-medium text-slate-700">
-                      Group Total
-                    </td>
+                    <td class="px-3 py-2 text-right font-medium text-slate-700">Group Total</td>
                     <td class="px-3 py-2 text-center font-semibold text-slate-800">
-                      {{ grp.items.reduce((a,b)=>a+Number(b.max||0),0).toFixed(2) }}
+                      {{ grp.items.reduce((a, b) => a + Number(b.max || 0), 0).toFixed(2) }}
                     </td>
                     <td class="px-3 py-2 text-center text-sm">
                       {{
-                        grp.items.reduce((a,b)=>{
-                          const v = Number(marks[b.id]||0)
-                          return a + Math.min(Math.max(v,0), Number(b.max||0))
-                        },0).toFixed(2)
+                        grp.items
+                          .reduce((a, b) => {
+                            const v = Number(marks[b.id] || 0)
+                            return a + Math.min(Math.max(v, 0), Number(b.max || 0))
+                          }, 0)
+                          .toFixed(2)
                       }}
                     </td>
                   </tr>
@@ -769,16 +826,13 @@ function applyHint(field, value) {
 
         <!-- Right sidebar (Annual Target Summary + Comments) -->
         <aside class="lg:col-span-2 space-y-4">
-          <section
-            v-if="hasTargetSummary && canHR"
-            class="border rounded-2xl bg-white shadow-sm"
-          >
-            <header class="flex flex-wrap items-center justify-between border-b px-4 py-3 text-sm font-semibold text-slate-800">
+          <section v-if="hasTargetSummary && canHR" class="border rounded-2xl bg-white shadow-sm">
+            <header
+              class="flex flex-wrap items-center justify-between border-b px-4 py-3 text-sm font-semibold text-slate-800"
+            >
               <span>Annual Summary</span>
               <div class="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
-                <span
-                  class="rounded-full border bg-slate-50 px-2 py-0.5 text-slate-700"
-                >
+                <span class="rounded-full border bg-slate-50 px-2 py-0.5 text-slate-700">
                   {{ summaryLabel }}
                 </span>
                 <span
@@ -800,7 +854,12 @@ function applyHint(field, value) {
                   :key="tab.key"
                   type="button"
                   @click="setSummaryTab(tab.key)"
-                  :class="['px-3 py-1 rounded-full text-xs font-semibold transition', activeSummaryTab === tab.key ? 'bg-slate-900 text-white shadow' : 'border border-slate-200 text-slate-700 bg-white hover:border-slate-400']"
+                  :class="[
+                    'px-3 py-1 rounded-full text-xs font-semibold transition',
+                    activeSummaryTab === tab.key
+                      ? 'bg-slate-900 text-white shadow'
+                      : 'border border-slate-200 text-slate-700 bg-white hover:border-slate-400',
+                  ]"
                 >
                   {{ tab.label }}
                 </button>
@@ -811,48 +870,102 @@ function applyHint(field, value) {
                   <div class="rounded-xl border bg-slate-50 p-3">
                     <div class="flex items-center justify-between">
                       <span class="text-xs font-medium text-slate-600">Incharge</span>
-                      <span class="text-[11px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
-                        {{ pct(summaryData.per_scored_month?.incharge, summaryData.per_scored_month?.max) }}%
+                      <span
+                        class="text-[11px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200"
+                      >
+                        {{
+                          pct(
+                            summaryData.per_scored_month?.incharge,
+                            summaryData.per_scored_month?.max,
+                          )
+                        }}%
                       </span>
                     </div>
                     <div class="mt-1 text-sm font-semibold text-slate-900">
                       {{ fmt(summaryData.per_scored_month?.incharge) }}
-                      <span class="text-xs text-slate-500">/ {{ fmt(summaryData.per_scored_month?.max) }}</span>
+                      <span class="text-xs text-slate-500"
+                        >/ {{ fmt(summaryData.per_scored_month?.max) }}</span
+                      >
                     </div>
                     <div class="mt-2 h-2 rounded bg-slate-100 overflow-hidden">
-                      <div class="h-2 bg-blue-500" :style="{ width: pct(summaryData.per_scored_month?.incharge, summaryData.per_scored_month?.max) + '%' }"></div>
+                      <div
+                        class="h-2 bg-blue-500"
+                        :style="{
+                          width:
+                            pct(
+                              summaryData.per_scored_month?.incharge,
+                              summaryData.per_scored_month?.max,
+                            ) + '%',
+                        }"
+                      ></div>
                     </div>
                   </div>
 
                   <div class="rounded-xl border bg-slate-50 p-3">
                     <div class="flex items-center justify-between">
                       <span class="text-xs font-medium text-slate-600">Coordinator</span>
-                      <span class="text-[11px] px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 border border-violet-200">
-                        {{ pct(summaryData.per_scored_month?.coordinator, summaryData.per_scored_month?.max) }}%
+                      <span
+                        class="text-[11px] px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 border border-violet-200"
+                      >
+                        {{
+                          pct(
+                            summaryData.per_scored_month?.coordinator,
+                            summaryData.per_scored_month?.max,
+                          )
+                        }}%
                       </span>
                     </div>
                     <div class="mt-1 text-sm font-semibold text-slate-900">
                       {{ fmt(summaryData.per_scored_month?.coordinator) }}
-                      <span class="text-xs text-slate-500">/ {{ fmt(summaryData.per_scored_month?.max) }}</span>
+                      <span class="text-xs text-slate-500"
+                        >/ {{ fmt(summaryData.per_scored_month?.max) }}</span
+                      >
                     </div>
                     <div class="mt-2 h-2 rounded bg-slate-100 overflow-hidden">
-                      <div class="h-2 bg-violet-500" :style="{ width: pct(summaryData.per_scored_month?.coordinator, summaryData.per_scored_month?.max) + '%' }"></div>
+                      <div
+                        class="h-2 bg-violet-500"
+                        :style="{
+                          width:
+                            pct(
+                              summaryData.per_scored_month?.coordinator,
+                              summaryData.per_scored_month?.max,
+                            ) + '%',
+                        }"
+                      ></div>
                     </div>
                   </div>
 
                   <div class="rounded-xl border bg-slate-50 p-3 sm:col-span-2">
                     <div class="flex items-center justify-between">
                       <span class="text-xs font-medium text-slate-600">Final</span>
-                      <span class="text-[11px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        {{ pct(summaryData.per_form_yearly?.final, summaryData.per_scored_month?.max) }}%
+                      <span
+                        class="text-[11px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200"
+                      >
+                        {{
+                          pct(
+                            summaryData.per_form_yearly?.final,
+                            summaryData.per_scored_month?.max,
+                          )
+                        }}%
                       </span>
                     </div>
                     <div class="mt-1 text-sm font-semibold text-slate-900">
                       {{ fmt(summaryData.per_form_yearly?.final) }}
-                      <span class="text-xs text-slate-500">/ {{ fmt(summaryData.per_scored_month?.max) }}</span>
+                      <span class="text-xs text-slate-500"
+                        >/ {{ fmt(summaryData.per_scored_month?.max) }}</span
+                      >
                     </div>
                     <div class="mt-2 h-2 rounded bg-slate-100 overflow-hidden">
-                      <div class="h-2 bg-emerald-500" :style="{ width: pct(summaryData.per_form_yearly?.final, summaryData.per_scored_month?.max) + '%' }"></div>
+                      <div
+                        class="h-2 bg-emerald-500"
+                        :style="{
+                          width:
+                            pct(
+                              summaryData.per_form_yearly?.final,
+                              summaryData.per_scored_month?.max,
+                            ) + '%',
+                        }"
+                      ></div>
                     </div>
                   </div>
                 </div>
@@ -872,22 +985,34 @@ function applyHint(field, value) {
                     <div class="grid grid-cols-2 gap-2">
                       <div class="text-slate-500">Year</div>
                       <div class="font-medium text-slate-800">{{ summaryYear || '-' }}</div>
-                    <div class="text-slate-500">Months counted</div>
-                    <div class="font-medium text-slate-800">{{ summaryMonths }}</div>
-                    <div class="text-slate-500">Group</div>
-                    <div class="font-medium text-slate-800">{{ summaryGroupLabel }}</div>
+                      <div class="text-slate-500">Months counted</div>
+                      <div class="font-medium text-slate-800">{{ summaryMonths }}</div>
+                      <div class="text-slate-500">Group</div>
+                      <div class="font-medium text-slate-800">{{ summaryGroupLabel }}</div>
                       <div class="text-slate-500">Max (denominator)</div>
-                      <div class="font-medium text-slate-800">{{ fmt(summaryData.per_scored_month?.max) }}</div>
+                      <div class="font-medium text-slate-800">
+                        {{ fmt(summaryData.per_scored_month?.max) }}
+                      </div>
                       <div class="text-slate-500">Incharge avg</div>
-                      <div class="font-medium text-slate-800">{{ fmt(summaryData.per_form_yearly?.incharge) }}</div>
+                      <div class="font-medium text-slate-800">
+                        {{ fmt(summaryData.per_form_yearly?.incharge) }}
+                      </div>
                       <div class="text-slate-500">Coordinator avg</div>
-                      <div class="font-medium text-slate-800">{{ fmt(summaryData.per_form_yearly?.coordinator) }}</div>
+                      <div class="font-medium text-slate-800">
+                        {{ fmt(summaryData.per_form_yearly?.coordinator) }}
+                      </div>
                       <div class="text-slate-500">Final avg</div>
-                      <div class="font-medium text-slate-800">{{ fmt(summaryData.per_form_yearly?.final) }}</div>
+                      <div class="font-medium text-slate-800">
+                        {{ fmt(summaryData.per_form_yearly?.final) }}
+                      </div>
                       <div class="text-slate-500">Percent (simple)</div>
-                      <div class="font-medium text-slate-800">{{ fmt(summaryData.percent_simple) }}%</div>
+                      <div class="font-medium text-slate-800">
+                        {{ fmt(summaryData.percent_simple) }}%
+                      </div>
                       <div class="text-slate-500">Percent (weighted)</div>
-                      <div class="font-medium text-slate-800">{{ fmt(summaryData.percent_weighted) }}%</div>
+                      <div class="font-medium text-slate-800">
+                        {{ fmt(summaryData.percent_weighted) }}%
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -896,21 +1021,18 @@ function applyHint(field, value) {
           </section>
 
           <!-- Review comments -->
-          <section
-            v-if="reviewComments.length"
-            class="border rounded-2xl bg-white shadow-sm"
-          >
-            <header class="flex items-center justify-between border-b px-4 py-3 text-sm font-semibold text-slate-800">
+          <section v-if="reviewComments.length" class="border rounded-2xl bg-white shadow-sm">
+            <header
+              class="flex items-center justify-between border-b px-4 py-3 text-sm font-semibold text-slate-800"
+            >
               <span>Review Comments</span>
-              <span class="text-[11px] text-slate-500">
-                {{ reviewComments.length }} lane(s)
-              </span>
+              <span class="text-[11px] text-slate-500"> {{ reviewComments.length }} lane(s) </span>
             </header>
 
             <div class="p-4 space-y-3">
               <div class="max-h-96 overflow-auto border rounded-xl">
-              <table class="min-w-full text-xs text-left">
-                <thead class="text-[11px] text-slate-600 uppercase tracking-wide bg-slate-50">
+                <table class="min-w-full text-xs text-left">
+                  <thead class="text-[11px] text-slate-600 uppercase tracking-wide bg-slate-50">
                     <tr>
                       <th class="px-2 py-2 w-[90px]">Lane</th>
                       <!-- <th class="px-2 py-2 w-[120px]">Reviewer</th> -->
@@ -918,89 +1040,83 @@ function applyHint(field, value) {
                       <th class="px-2 py-2">Gaps</th>
                       <th class="px-2 py-2">Suggestions</th>
                     </tr>
-                </thead>
-                <tbody>
-                  <tr
-                    v-for="item in reviewComments"
-                    :key="item.key"
-                    class="border-t hover:bg-slate-50/60 align-top"
-                  >
-                    <!-- Lane -->
-                    <td class="px-2 py-2">
-                      <div class="font-semibold text-slate-700">
-                        {{ item.label }}
-                      </div>
-                      <div
-                        v-if="item.submitted_at"
-                        class="mt-0.5 text-[11px] text-slate-400"
-                      >
-                        {{ new Date(item.submitted_at).toLocaleDateString() }}
-                      </div>
-                    </td>
+                  </thead>
+                  <tbody>
+                    <tr
+                      v-for="item in reviewComments"
+                      :key="item.key"
+                      class="border-t hover:bg-slate-50/60 align-top"
+                    >
+                      <!-- Lane -->
+                      <td class="px-2 py-2">
+                        <div class="font-semibold text-slate-700">
+                          {{ item.label }}
+                        </div>
+                        <div v-if="item.submitted_at" class="mt-0.5 text-[11px] text-slate-400">
+                          {{ new Date(item.submitted_at).toLocaleDateString() }}
+                        </div>
+                      </td>
 
-                    <!-- Reviewer -->
-                    <!-- <td class="px-2 py-2">
+                      <!-- Reviewer -->
+                      <!-- <td class="px-2 py-2">
                       <div class="font-medium text-slate-700">
                         {{ item.reviewer_name || '-' }}
                       </div>
                     </td> -->
 
-                    <!-- Strengths -->
-                    <td class="px-2 py-2">
-                      <div
-                        v-if="item.strengths && item.strengths.length"
-                        class="flex flex-wrap gap-1"
-                      >
-                        <span
-                          v-for="(s, i) in item.strengths"
-                          :key="'s-' + i"
-                          class="inline-flex items-center rounded-full bg-emerald-50 border border-emerald-100 px-2 py-0.5 text-[11px] text-emerald-700"
+                      <!-- Strengths -->
+                      <td class="px-2 py-2">
+                        <div
+                          v-if="item.strengths && item.strengths.length"
+                          class="flex flex-wrap gap-1"
                         >
-                          {{ s }}
-                        </span>
-                      </div>
-                      <span v-else class="text-slate-400">—</span>
-                    </td>
+                          <span
+                            v-for="(s, i) in item.strengths"
+                            :key="'s-' + i"
+                            class="inline-flex items-center rounded-full bg-emerald-50 border border-emerald-100 px-2 py-0.5 text-[11px] text-emerald-700"
+                          >
+                            {{ s }}
+                          </span>
+                        </div>
+                        <span v-else class="text-slate-400">—</span>
+                      </td>
 
-                    <!-- Gaps -->
-                    <td class="px-2 py-2">
-                      <div
-                        v-if="item.gaps && item.gaps.length"
-                        class="flex flex-wrap gap-1"
-                      >
-                        <span
-                          v-for="(g, i) in item.gaps"
-                          :key="'g-' + i"
-                          class="inline-flex items-center rounded-full bg-amber-50 border border-amber-100 px-2 py-0.5 text-[11px] text-amber-800"
-                        >
-                          {{ g }}
-                        </span>
-                      </div>
-                      <span v-else class="text-slate-400">—</span>
-                    </td>
+                      <!-- Gaps -->
+                      <td class="px-2 py-2">
+                        <div v-if="item.gaps && item.gaps.length" class="flex flex-wrap gap-1">
+                          <span
+                            v-for="(g, i) in item.gaps"
+                            :key="'g-' + i"
+                            class="inline-flex items-center rounded-full bg-amber-50 border border-amber-100 px-2 py-0.5 text-[11px] text-amber-800"
+                          >
+                            {{ g }}
+                          </span>
+                        </div>
+                        <span v-else class="text-slate-400">—</span>
+                      </td>
 
-                    <!-- Suggestions -->
-                    <td class="px-2 py-2">
-                      <div
-                        v-if="item.suggestions && item.suggestions.length"
-                        class="flex flex-wrap gap-1"
-                      >
-                        <span
-                          v-for="(sug, i) in item.suggestions"
-                          :key="'su-' + i"
-                          class="inline-flex items-center rounded-full bg-sky-50 border border-sky-100 px-2 py-0.5 text-[11px] text-sky-800"
+                      <!-- Suggestions -->
+                      <td class="px-2 py-2">
+                        <div
+                          v-if="item.suggestions && item.suggestions.length"
+                          class="flex flex-wrap gap-1"
                         >
-                          {{ sug }}
-                        </span>
-                      </div>
-                      <span v-else class="text-slate-400">—</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                          <span
+                            v-for="(sug, i) in item.suggestions"
+                            :key="'su-' + i"
+                            class="inline-flex items-center rounded-full bg-sky-50 border border-sky-100 px-2 py-0.5 text-[11px] text-sky-800"
+                          >
+                            {{ sug }}
+                          </span>
+                        </div>
+                        <span v-else class="text-slate-400">—</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
         </aside>
       </div>
     </section>
@@ -1012,21 +1128,25 @@ function applyHint(field, value) {
     >
       <header class="flex items-center justify-between mb-1">
         <div>
-          <h2 class="text-sm font-semibold text-slate-800">
-            Overall Review Notes
-          </h2>
+          <h2 class="text-sm font-semibold text-slate-800">Overall Review Notes</h2>
           <p class="text-[11px] text-slate-500">
             Use saved hints or write your own detailed comments.
           </p>
         </div>
         <div class="hidden md:flex items-center gap-2 text-[11px] text-slate-500">
-          <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 border border-emerald-100">
+          <span
+            class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 border border-emerald-100"
+          >
             <span class="text-xs">●</span> Strengths
           </span>
-          <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 border border-amber-100">
+          <span
+            class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 border border-amber-100"
+          >
             <span class="text-xs">●</span> Gaps
           </span>
-          <span class="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 border border-sky-100">
+          <span
+            class="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 border border-sky-100"
+          >
             <span class="text-xs">●</span> Suggestions
           </span>
         </div>
@@ -1057,10 +1177,7 @@ function applyHint(field, value) {
                 type="button"
                 @click="applyHint('strengths', opt)"
                 :disabled="hasHint('strengths', opt)"
-                class="rounded-full border px-2.5 py-1 text-[11px] font-medium transition
-                      border-slate-200 bg-white text-slate-700
-                      hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-800
-                      disabled:opacity-40 disabled:cursor-not-allowed"
+                class="rounded-full border px-2.5 py-1 text-[11px] font-medium transition border-slate-200 bg-white text-slate-700 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {{ opt }}
               </button>
@@ -1072,14 +1189,11 @@ function applyHint(field, value) {
 
           <!-- Textarea -->
           <div class="space-y-1">
-            <label class="text-[11px] font-medium text-slate-500">
-              Key Strength(s)
-            </label>
+            <label class="text-[11px] font-medium text-slate-500"> Key Strength(s) </label>
             <textarea
               v-model="strengths"
               placeholder="e.g. Strong ownership, proactive problem solving…"
-              class="w-full rounded-xl border px-3 py-2 text-sm min-h-28
-                    focus:outline-none focus:ring-2 focus:ring-emerald-200"
+              class="w-full rounded-xl border px-3 py-2 text-sm min-h-28 focus:outline-none focus:ring-2 focus:ring-emerald-200"
             ></textarea>
           </div>
         </div>
@@ -1108,18 +1222,13 @@ function applyHint(field, value) {
                 type="button"
                 @click="applyHint('gaps', opt)"
                 :disabled="hasHint('gaps', opt)"
-                class="rounded-full border px-2.5 py-1 text-[11px] font-medium transition
-                      border-slate-200 bg-white text-slate-700
-                      hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800
-                      disabled:opacity-40 disabled:cursor-not-allowed"
+                class="rounded-full border px-2.5 py-1 text-[11px] font-medium transition border-slate-200 bg-white text-slate-700 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {{ opt }}
               </button>
             </div>
           </div>
-          <p v-else class="text-[11px] text-slate-400">
-            No historical gaps yet.
-          </p>
+          <p v-else class="text-[11px] text-slate-400">No historical gaps yet.</p>
 
           <!-- Textarea -->
           <div class="space-y-1">
@@ -1127,8 +1236,7 @@ function applyHint(field, value) {
             <textarea
               v-model="gaps"
               placeholder="e.g. Needs improvement in documentation, communication…"
-              class="w-full rounded-xl border px-3 py-2 text-sm min-h-28
-                    focus:outline-none focus:ring-2 focus:ring-amber-200"
+              class="w-full rounded-xl border px-3 py-2 text-sm min-h-28 focus:outline-none focus:ring-2 focus:ring-amber-200"
             ></textarea>
           </div>
         </div>
@@ -1157,10 +1265,7 @@ function applyHint(field, value) {
                 type="button"
                 @click="applyHint('suggestions', opt)"
                 :disabled="hasHint('suggestions', opt)"
-                class="rounded-full border px-2.5 py-1 text-[11px] font-medium transition
-                      border-slate-200 bg-white text-slate-700
-                      hover:border-sky-300 hover:bg-sky-50 hover:text-sky-800
-                      disabled:opacity-40 disabled:cursor-not-allowed"
+                class="rounded-full border px-2.5 py-1 text-[11px] font-medium transition border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50 hover:text-sky-800 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {{ opt }}
               </button>
@@ -1175,18 +1280,17 @@ function applyHint(field, value) {
             <textarea
               v-model="suggestions"
               placeholder="Specific actions, training plans, timeline and expectations…"
-              class="w-full rounded-xl border px-3 py-2 text-sm min-h-28
-                    focus:outline-none focus:ring-2 focus:ring-sky-200"
+              class="w-full rounded-xl border px-3 py-2 text-sm min-h-28 focus:outline-none focus:ring-2 focus:ring-sky-200"
             ></textarea>
           </div>
         </div>
       </div>
     </section>
 
-
-
     <!-- Sticky action -->
-    <div class="mt-2 flex flex-col gap-3 border-t pt-3 md:flex-row md:items-center md:justify-between">
+    <div
+      class="mt-2 flex flex-col gap-3 border-t pt-3 md:flex-row md:items-center md:justify-between"
+    >
       <div class="text-sm text-slate-600">
         My (Personal) Total:
         <b class="text-slate-900">{{ personalTotals.got.toFixed(2) }}</b>
