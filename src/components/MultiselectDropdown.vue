@@ -232,7 +232,7 @@ const props = defineProps({
   labelHint: { type: String, default: '' },
 
   /* Chips */
-  chipLimit: { type: Number, default: 2 },
+  chipLimit: { type: Number, default: 25 },
   showCounter: { type: Boolean, default: true },
 
   /* Toolbar */

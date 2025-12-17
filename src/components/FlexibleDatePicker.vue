@@ -270,7 +270,7 @@ function updateModel(next) {
           type="button"
           @click="triggerDatePicker"
           :disabled="disabled"
-          class="input-1 flex items-center justify-between gap-2 px-3 py-2 rounded-full
+          class="input-1 flex items-center justify-between gap-2 px-5 py-2 rounded-full
                  text-xs font-semibold uppercase tracking-wide text-slate-500
                  border-slate-200 bg-white shadow-sm disabled:opacity-50"
         >

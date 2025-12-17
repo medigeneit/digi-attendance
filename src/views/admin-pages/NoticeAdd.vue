@@ -1,6 +1,7 @@
 <script setup>
 import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import TextEditor from '@/components/TextEditor.vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
 import { useNoticeStore } from '@/stores/notice'
@@ -29,7 +30,7 @@ const form = reactive({
   file: null, // File
 
   // receiver_type
-  receiver_type: 'executive', // doctor | executive | support_staff | academic_body
+  receiver_type: ['executive'], // doctor | executive | support_staff | academic_body
 })
 
 /* receiver type options */
@@ -39,6 +40,28 @@ const receiverTypeOptions = [
   { value: 'support_staff', label: 'Support Staff' },
   { value: 'academic_body', label: 'Academic Body' },
 ]
+const receiverTypeList = computed(() => {
+  const list = Array.isArray(form.receiver_type) ? form.receiver_type : (form.receiver_type ? [form.receiver_type] : [])
+  return list.filter(Boolean)
+})
+const toggleReceiverType = (value) => {
+  if (!value) return
+  if (!Array.isArray(form.receiver_type)) {
+    form.receiver_type = []
+  }
+  const idx = form.receiver_type.indexOf(value)
+  if (idx >= 0) {
+    form.receiver_type.splice(idx, 1)
+  } else {
+    form.receiver_type.push(value)
+  }
+}
+const selectAllReceiverTypes = () => {
+  form.receiver_type = receiverTypeOptions.map(opt => opt.value)
+}
+const clearReceiverTypes = () => {
+  form.receiver_type = []
+}
 
 /* ---------- selections ---------- */
 const selectedCompanies   = ref([])
@@ -56,6 +79,43 @@ const employee_ids   = computed(() => selectedEmployees.value.map(e => e.id))
 /* ---------- ui state ---------- */
 const saving = ref(false)
 const errors = reactive({})
+const pad = (value) => String(value).padStart(2, '0')
+
+const buildPeriod = (value) => {
+  if (!value) return null
+  const [year, month, day] = value.split('-')
+  if (!year || !month || !day) return null
+  return {
+    year: Number(year),
+    month: Number(month),
+    day: Number(day),
+  }
+}
+
+const fromPeriod = (period) => {
+  if (!period) return ''
+  return `${period.year}-${pad(period.month)}-${pad(period.day)}`
+}
+
+const getTodayPeriod = () => {
+  const now = new Date()
+  return {
+    year: now.getFullYear(),
+    month: now.getMonth() + 1,
+    day: now.getDate(),
+  }
+}
+
+const publishPeriod = ref(buildPeriod(form.published_at))
+const expirePeriod  = ref(buildPeriod(form.expired_at))
+const resetPeriodsForPolicy = () => {
+  publishPeriod.value = null
+  expirePeriod.value = null
+  form.published_at = ''
+  form.expired_at = ''
+}
+
+const isPolicyNotice = computed(() => form.type === 2)
 
 /* ---------- mode (All|Custom) segmented ---------- */
 const modeCompanies = computed({
@@ -109,6 +169,21 @@ watch(company_ids, async (ids) => {
   }
 })
 
+watch(
+  () => form.type,
+  (val, oldVal) => {
+    if (val === 2) {
+      resetPeriodsForPolicy()
+    } else if (oldVal === 2 && val === 1) {
+      // ensure publish period defaults to today for general type if previously cleared
+      if (!publishPeriod.value) {
+        publishPeriod.value = getTodayPeriod()
+        form.published_at = fromPeriod(publishPeriod.value)
+      }
+    }
+  }
+)
+
 /* ---------- Departments → Employees (depends on receiver_type) ---------- */
 const effectiveDepartmentIds = computed(() => {
   return form.all_departments
@@ -117,10 +192,11 @@ const effectiveDepartmentIds = computed(() => {
 })
 
 watch(
-  [effectiveDepartmentIds, () => form.receiver_type],
-  async ([ids, receiverType]) => {
+  [effectiveDepartmentIds, receiverTypeList],
+  async ([ids, receiverTypes]) => {
+    const selectedTypes = Array.isArray(receiverTypes) ? receiverTypes : []
     // receiver_type না থাকলে employees clear
-    if (!receiverType) {
+    if (!selectedTypes.length) {
       departmentStore.employees = []
       selectedEmployees.value = []
       return
@@ -129,10 +205,21 @@ watch(
     if (Array.isArray(ids) && ids.length > 0) {
       // dept / receiver_type change হলেই previous selection clear
       selectedEmployees.value = []
-      await departmentStore.fetchDepartmentEmployee(ids, receiverType)
+      let mergedEmployees = []
+      for (const type of selectedTypes) {
+        const list = await departmentStore.fetchDepartmentEmployee(ids, type)
+        if (Array.isArray(list)) {
+          list.forEach(emp => {
+            if (!mergedEmployees.some(existing => existing?.id === emp?.id)) {
+              mergedEmployees.push(emp)
+            }
+          })
+        }
+      }
+      departmentStore.employees = mergedEmployees
       // যদি "All" মোড on থাকে, নতুন লোড হওয়া সব employee select করে দেই
-      if (form.all_employees && Array.isArray(departmentStore.employees)) {
-        selectedEmployees.value = [...departmentStore.employees]
+      if (form.all_employees && Array.isArray(mergedEmployees)) {
+        selectedEmployees.value = [...mergedEmployees]
       }
     } else {
       departmentStore.employees = []
@@ -140,6 +227,62 @@ watch(
     }
   },
   { immediate: true }
+)
+
+watch(publishPeriod, (value) => {
+  if (!value) return
+  const normalized = fromPeriod(value)
+  if (form.published_at !== normalized) {
+    form.published_at = normalized
+  }
+})
+
+watch(expirePeriod, (value) => {
+  if (!value) return
+  const normalized = fromPeriod(value)
+  if (form.expired_at !== normalized) {
+    form.expired_at = normalized
+  }
+})
+
+watch(
+  () => form.published_at,
+  (value) => {
+    if (!value) {
+      publishPeriod.value = null
+      return
+    }
+    const parsed = buildPeriod(value)
+    if (!parsed) return
+    if (
+      !publishPeriod.value ||
+      publishPeriod.value.year !== parsed.year ||
+      publishPeriod.value.month !== parsed.month ||
+      publishPeriod.value.day !== parsed.day
+    ) {
+      publishPeriod.value = parsed
+    }
+  }
+)
+
+watch(
+  () => form.expired_at,
+  (value) => {
+    if (!value) {
+      expirePeriod.value = null
+      return
+    }
+    const parsed = buildPeriod(value)
+    if (!parsed) return
+    if (
+      !expirePeriod.value ||
+      expirePeriod.value.year !== parsed.year ||
+      expirePeriod.value.month !== parsed.month ||
+      expirePeriod.value.day !== parsed.day
+    ) {
+      expirePeriod.value = parsed
+    }
+  }
 )
 
 /* ---------- “All” মোডে লিস্ট বদলালে সিলেকশন sync ---------- */
@@ -197,7 +340,7 @@ const handleFile = (f) => {
     return
   }
   if (f.size > 2 * 1024 * 1024) {
-    toast.error('File size must be ≤ 2MB.')
+    toast.error('File size must be ѓ%П 2MB.')
     form.file = null
     return
   }
@@ -235,7 +378,7 @@ const validate = () => {
     errors.expired_at = 'Expired date must be on/after publish date'
   }
 
-  if (!form.receiver_type) {
+  if (!receiverTypeList.value.length) {
     errors.receiver_type = 'Receiver type is required'
   }
 
@@ -247,7 +390,7 @@ const canSave = computed(() =>
   (!!form.title?.trim()) &&
   (form.type === 2 || !!form.published_at) &&
   validDateRange.value &&
-  !!form.receiver_type
+  receiverTypeList.value.length > 0
 )
 
 /* ---------- submit ---------- */
@@ -274,11 +417,11 @@ const saveNotice = async () => {
 
     file: form.file,
 
-    receiver_type: form.receiver_type,
+    receiver_type: receiverTypeList.value,
   }
 
   console.log(payload);
-  
+
 
   try {
     saving.value = true
@@ -441,19 +584,29 @@ const totalEmployees   = computed(() => employeesList.value.length)
 
           <!-- Receiver Type -->
         <div class="md:col-span-3 rounded-2xl border bg-white/70 p-5 shadow-sm">
-          <label class="block font-medium mb-1">
-            Send To <span class="text-red-500">*</span>
-          </label>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block font-medium">
+              Send To <span class="text-red-500">*</span>
+            </label>
+            <div class="inline-flex gap-1 text-xs">
+              <button type="button" class="px-2 py-1 rounded border text-gray-600 hover:bg-gray-50" @click="selectAllReceiverTypes">
+                Select All
+              </button>
+              <button type="button" class="px-2 py-1 rounded border text-gray-600 hover:bg-gray-50" @click="clearReceiverTypes">
+                Clear
+              </button>
+            </div>
+          </div>
           <div class="flex flex-wrap gap-2">
             <button
               v-for="opt in receiverTypeOptions"
               :key="opt.value"
               type="button"
               class="px-3 py-1.5 rounded-full border text-xs"
-              :class="form.receiver_type === opt.value
+              :class="receiverTypeList.includes(opt.value)
                 ? 'bg-blue-600 text-white border-blue-600'
                 : 'bg-white text-gray-700 hover:bg-gray-50'"
-              @click="form.receiver_type = opt.value"
+              @click="toggleReceiverType(opt.value)"
             >
               {{ opt.label }}
             </button>
@@ -474,19 +627,37 @@ const totalEmployees   = computed(() => employeesList.value.length)
 
           <div class="md:col-span-3 flex justify-between gap-4">
             <!-- Publish -->
-            <div class="w-full">
+            <div class="w-full flex gap-2">
               <label class="font-medium">Publish Date <span class="text-red-500">*</span></label>
-              <input v-model="form.published_at" type="date" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500" />
-              <p v-if="errors.published_at" class="text-red-500 text-xs mt-1">{{ errors.published_at }}</p>
+              <div class="flex-1">
+                <FlexibleDatePicker
+                  v-model="publishPeriod"
+                  :show-year="false"
+                  :show-month="false"
+                  :show-date="true"
+                  :disabled="isPolicyNotice"
+                />
+                <p v-if="errors.published_at" class="text-red-500 text-xs mt-1">{{ errors.published_at }}</p>
+                <p v-else-if="isPolicyNotice" class="text-xs text-gray-500 mt-1">Policies skip publish date.</p>
+              </div>
             </div>
-
+          </div>
+          <div class="md:col-span-3 flex justify-between gap-4">
             <!-- Expire -->
-            <div class="w-full">
+            <div class="w-full flex gap-2">
               <label class="font-medium">Expire Date</label>
-              <input v-model="form.expired_at" type="date" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500" />
-              <p v-if="errors.expired_at" class="text-red-500 text-xs mt-1">{{ errors.expired_at }}</p>
+              <div class="flex-1">
+                <FlexibleDatePicker
+                  v-model="expirePeriod"
+                  :show-year="false"
+                  :show-month="false"
+                  :show-date="true"
+                  :disabled="isPolicyNotice"
+                />
+                <p v-if="errors.expired_at" class="text-red-500 text-xs mt-1">{{ errors.expired_at }}</p>
+                <p v-else-if="isPolicyNotice" class="text-xs text-gray-500 mt-1">Policies remain active until replaced.</p>
+              </div>
             </div>
-
           </div>
 
           <div class="space-y-2 md:col-span-3">
@@ -549,7 +720,7 @@ const totalEmployees   = computed(() => employeesList.value.length)
               />
             </div>
           </div>
-          
+
 
           <!-- Employees -->
           <div class="space-y-2 md:col-span-3">
