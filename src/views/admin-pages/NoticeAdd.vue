@@ -106,6 +106,9 @@ const getTodayPeriod = () => {
   }
 }
 
+const defaultPublishDate = fromPeriod(getTodayPeriod())
+form.published_at = defaultPublishDate
+
 const publishPeriod = ref(buildPeriod(form.published_at))
 const expirePeriod  = ref(buildPeriod(form.expired_at))
 const resetPeriodsForPolicy = () => {
