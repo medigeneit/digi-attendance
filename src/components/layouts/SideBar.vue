@@ -54,7 +54,8 @@ const kpiMenu = [
   { label: 'Monthly Evaluation List', routeName: 'EvaluationList' },
   { label: 'Yearly Evaluation', routeName: 'YearlyEvaluationList' },
   { label: 'Monthly KPI Reports', routeName: 'MonthlyKpiReportList' },
-  { label: 'Yearly KPI Reports', routeName: 'YearlyKpiReportList' },
+  { label: 'Department KPI Reports', routeName: 'YearlyDepartmentalKpiReportList' },
+  { label: 'Executive Kpi Reports', routeName: 'YearlyExecutiveKpiReportList' },
 ]
 const kpiRouteNames = kpiMenu.map((i) => i.routeName)
 
