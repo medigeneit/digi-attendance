@@ -84,6 +84,22 @@ export const useKpiReportStore = defineStore('kpi-report', {
         { department_id, completed }
       )
       return data
-    }
+    },
+
+    async fetchYearly(params) {
+      this.isLoading = true
+      this.error = null
+      try {
+        const { data } = await apiClient.get('/kpi/reports/yearly', { params })
+        this.meta = data?.meta ?? null
+        this.rows = Array.isArray(data?.rows) ? data.rows : []
+        return { meta: this.meta, rows: this.rows }
+      } catch (e) {
+        this.error = e?.response?.data?.message || 'Failed to load yearly report'
+        throw e
+      } finally {
+        this.isLoading = false
+      }
+    },
   },
 })
