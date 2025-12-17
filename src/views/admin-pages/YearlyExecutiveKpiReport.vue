@@ -177,23 +177,20 @@ function laneCell(row, laneKey) {
 
   const submittedAt = found.submitted_at || found.submittedAt || found.review?.submitted_at
   const completed = !!(found.completed ?? found.is_completed ?? found.review_submitted ?? submittedAt)
-  const rawPercent =
-    found.average_marks ?? found.average_percent ?? found.averagePercent ?? found.percent ?? found.review?.percent
-  const percent = Number.isFinite(Number(rawPercent)) ? Number(rawPercent) : null
-  const percentText = percent !== null ? pct(percent) : '--'
+  const rawPercent = found.average_marks ?? 0
+  // const percent = Number.isFinite(Number(rawPercent)) ? Number(rawPercent) : null
+  // const percentText = percent !== null ? pct(percent) : '--'
 
   if (completed) {
     return {
-      text: 'OK',
+      text: rawPercent,
       cls: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      percentText,
     }
   }
 
   return {
-    text: '●',
+    text: rawPercent,
     cls: 'bg-amber-50 text-amber-700 border-amber-200',
-    percentText,
   }
 }
 /* =========================
@@ -285,13 +282,15 @@ function closeReviewModal() {
  * ========================= */
 async function load() {
   try {
-    await store.fetchYearlyExecutive({
-      year: Number(year.value),
-      company_id: filters.company_id || undefined,
-      department_id: filters.department_id || undefined,
-      employee_id: filters.employee_id || undefined,
-      line_type: filters.line_type || undefined,
-    })
+    if(filters.company_id) {
+      await store.fetchYearlyExecutive({
+        year: Number(year.value),
+        company_id: filters.company_id || undefined,
+        department_id: filters.department_id || undefined,
+        employee_id: filters.employee_id || undefined,
+        line_type: filters.line_type || undefined,
+      })
+    }
   } catch (e) {
     console.error('fetchYearlyExecutive failed:', e)
   }
@@ -370,7 +369,7 @@ const modalLaneGroups = computed(() => {
 
     <!-- Controls -->
     <div class="flex flex-wrap items-end gap-3 sticky top-0 z-10 bg-white/80 backdrop-blur print:hidden p-2 -mx-2 rounded-xl border border-gray-100">
-      <div class="w-full">
+      <div class="w-full flex items-start gap-3">
         <EmployeeFilter
           v-model:company_id="filters.company_id"
           v-model:department_id="filters.department_id"
@@ -379,7 +378,24 @@ const modalLaneGroups = computed(() => {
           :initial-value="initialFilterValue"
           class="w-full"
           @filter-change="handleFilterChange"
-        />
+        /> 
+        <div class="flex items-center gap-2">
+          <select
+            v-model.number="year"
+            class="w-32 rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400/50 disabled:opacity-60"
+            :disabled="isLoading"
+            aria-label="Select year"
+          >
+            <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
+          </select>
+        </div>
+        
+      <div class="ml-auto flex gap-2">
+        <button class="btn-3 !py-1.5 !px-3" @click="doPrint">
+          <i class="far fa-print mr-1"></i> Print
+        </button>
+      </div>
+      
       </div>
 
       <div class="flex flex-wrap items-center gap-2 w-full">
@@ -399,23 +415,7 @@ const modalLaneGroups = computed(() => {
         </select>
       </div>
 
-      <div class="flex items-center gap-2">
-        <label class="text-xs font-medium text-gray-600">Year</label>
-        <select
-          v-model.number="year"
-          class="w-32 rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400/50 disabled:opacity-60"
-          :disabled="isLoading"
-          aria-label="Select year"
-        >
-          <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
-        </select>
-      </div>
 
-      <div class="ml-auto flex gap-2">
-        <button class="btn-3 !py-1.5 !px-3" @click="doPrint">
-          <i class="far fa-print mr-1"></i> Print
-        </button>
-      </div>
     </div>
 
     <!-- Loader / Error -->
@@ -507,9 +507,6 @@ const modalLaneGroups = computed(() => {
                   :class="laneCell(r, ld.key).cls"
                 >
                   {{ laneCell(r, ld.key).text }}
-                </span>
-                <span class="text-[10px] text-slate-500">
-                  {{ laneCell(r, ld.key).percentText }}
                 </span>
               </div>
             </div>
@@ -604,9 +601,6 @@ const modalLaneGroups = computed(() => {
                   >
                     {{ laneCell(r, ld.key).text }}
                   </span>
-                  <span class="text-[11px] text-slate-500">
-                    {{ laneCell(r, ld.key).percentText }}
-                  </span>
                 </div>
               </td>
 
@@ -638,244 +632,260 @@ const modalLaneGroups = computed(() => {
         </table>
       </div>
 
-    </template>
-
-    <transition name="fade-scale">
-      <div
-        v-if="reviewModalOpen && reviewModalRow"
-        class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
-        @keydown.escape.window="closeReviewModal"
-      >
+      <!-- =========================
+           Modal: Latest Review ONLY
+           ========================= -->
+      <transition name="fade-scale">
         <div
-          class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-          aria-hidden="true"
-          @click="closeReviewModal"
-        ></div>
-
-        <div
-          class="relative max-w-3xl w-full rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Review summary and comments"
+          v-if="reviewModalOpen && reviewModalRow"
+          class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
+          @keydown.escape.window="closeReviewModal"
         >
-          <div class="px-5 pt-5">
+          <!-- backdrop -->
+          <div
+            class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            aria-hidden="true"
+            @click="closeReviewModal"
+          ></div>
+
+          <!-- panel -->
+          <div
+            class="relative max-w-2xl w-full rounded-2xl border border-slate-200 bg-white p-5 shadow-xl"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Latest review details"
+          >
             <div class="flex items-start justify-between gap-4">
-              <div class="min-w-0 space-y-1">
-                <p class="text-lg font-semibold text-slate-900 truncate">
-                  {{ reviewModalRow._name }}
-                </p>
+              <div>
+                <p class="text-lg font-semibold text-slate-900">{{ reviewModalRow._name }}</p>
                 <p class="text-xs text-slate-500">
                   {{ reviewModalRow._dept || 'Department unknown' }}
-                  <span v-if="reviewModalRow._company"> ƒ?½ {{ reviewModalRow._company }}</span>
-                  <span v-if="reviewModalRow._joining"> ƒ?½ Joined {{ reviewModalRow._joining }}</span>
+                  <span v-if="reviewModalRow._company"> • {{ reviewModalRow._company }}</span>
+                  <span v-if="reviewModalRow._joining"> • Joined {{ reviewModalRow._joining }}</span>
                 </p>
                 <p class="text-xs text-slate-500">Line type: {{ reviewModalRow._type }}</p>
-                <div class="mt-2 flex flex-wrap gap-2 text-[11px] text-slate-600">
-                  <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5">
-                    Progress: <b class="text-slate-900">{{ progressText(reviewModalRow) }}</b>
-                  </span>
-                  <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5">
-                    Final: <b class="text-slate-900">{{ reviewModalRow.finalPercent == null ? 'ƒ?"' : pct(reviewModalRow.finalPercent) }}</b>
-                  </span>
-                  <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5">
-                    Reviews: <b class="text-slate-900">{{ reviewModalRow.progress?.review_count ?? 0 }}</b>
-                  </span>
-                </div>
               </div>
 
               <button
                 type="button"
-                class="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
                 @click="closeReviewModal"
               >
                 Close
               </button>
             </div>
-          </div>
 
-          <div class="max-h-[75vh] overflow-y-auto space-y-4 px-5 py-4 text-slate-700">
-            <article class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <div class="flex items-center justify-between gap-2">
-                <h3 class="text-sm font-semibold text-slate-900">Latest review</h3>
-                <span class="text-xs text-slate-500">
-                  {{ reviewModalRow.latestReviewSummary }}
-                </span>
-              </div>
-
-              <div class="mt-3 space-y-2 text-xs text-slate-700">
-                <div v-if="reviewModalRow.latestReviewStrengths">
-                  <span class="font-semibold text-slate-800">Strengths:</span>
-                  <div class="mt-1 text-slate-600">{{ reviewModalRow.latestReviewStrengths }}</div>
-                </div>
-
-                <div v-if="reviewModalRow.latestReviewGaps">
-                  <span class="font-semibold text-slate-800">Gaps:</span>
-                  <div class="mt-1 text-slate-600">{{ reviewModalRow.latestReviewGaps }}</div>
-                </div>
-
-                <div v-if="reviewModalRow.latestReviewSuggestions">
-                  <span class="font-semibold text-slate-800">Suggestions:</span>
-                  <div class="mt-1 text-slate-600">{{ reviewModalRow.latestReviewSuggestions }}</div>
-                </div>
-
-                <div
-                  v-if="!reviewModalRow.latestReviewStrengths && !reviewModalRow.latestReviewGaps && !reviewModalRow.latestReviewSuggestions"
-                  class="text-slate-500"
-                >
-                  No latest review comments
-                </div>
-              </div>
-            </article>
-
-            <article class="rounded-2xl border border-slate-200 bg-white p-4">
-              <div class="flex items-center justify-between gap-2">
-                <h3 class="text-sm font-semibold text-slate-900">Aggregated comments</h3>
-                <span class="text-xs text-slate-500">From all reviewers</span>
-              </div>
-              <div class="mt-3 grid gap-3 md:grid-cols-3 text-[11px] text-slate-600">
-                <div v-if="reviewModalRow.aggregatedStrengthsList?.length" class="space-y-1">
-                  <p class="font-semibold text-slate-800">Strengths</p>
-                  <ul class="list-disc pl-4 space-y-1">
-                    <li v-for="(text, idx) in reviewModalRow.aggregatedStrengthsList" :key="'agg-s-'+idx">{{ text }}</li>
-                  </ul>
-                </div>
-                <div v-if="reviewModalRow.aggregatedGapsList?.length" class="space-y-1">
-                  <p class="font-semibold text-slate-800">Gaps</p>
-                  <ul class="list-disc pl-4 space-y-1">
-                    <li v-for="(text, idx) in reviewModalRow.aggregatedGapsList" :key="'agg-g-'+idx">{{ text }}</li>
-                  </ul>
-                </div>
-                <div v-if="reviewModalRow.aggregatedSuggestionsList?.length" class="space-y-1">
-                  <p class="font-semibold text-slate-800">Suggestions</p>
-                  <ul class="list-disc pl-4 space-y-1">
-                    <li v-for="(text, idx) in reviewModalRow.aggregatedSuggestionsList" :key="'agg-u-'+idx">{{ text }}</li>
-                  </ul>
-                </div>
-              </div>
-              <div
-                v-if="!(reviewModalRow.aggregatedStrengthsList?.length || reviewModalRow.aggregatedGapsList?.length || reviewModalRow.aggregatedSuggestionsList?.length)"
-                class="mt-3 text-[11px] text-slate-500"
-              >
-                No aggregated comments yet.
-              </div>
-            </article>
-
-            <div class="space-y-4">
-              <div v-if="!modalLaneGroups.length" class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-                No reviews found for this employee.
-              </div>
-
-              <div
-                v-for="lane in modalLaneGroups"
-                :key="'lane-group-'+lane.key"
-                class="rounded-2xl border border-slate-200 bg-white overflow-hidden"
-              >
-                <div class="px-4 py-3 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
-                  <div class="flex items-center gap-2 min-w-0">
-                    <span class="text-sm font-semibold text-slate-900 truncate" :title="lane.label">
-                      {{ lane.label }}
-                    </span>
-                    <span class="text-[11px] text-slate-500 truncate">
-                      (key: {{ lane.key }})
-                    </span>
+            <div class="mt-4 space-y-4 text-slate-700">
+              <article class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div class="mt-3 space-y-2 text-xs text-slate-700">
+                  <div v-if="reviewModalRow.latestReviewStrengths">
+                    <span class="font-semibold text-slate-800">Strengths:</span>
+                    <div class="mt-1 text-slate-600">{{ reviewModalRow.latestReviewStrengths }}</div>
                   </div>
 
-                  <div class="flex flex-wrap gap-2 text-[11px] text-slate-600">
-                    <span class="rounded-full border border-slate-200 bg-white px-2 py-0.5">
-                      Count: <b class="text-slate-900">{{ lane.count ?? (lane.reviewers?.length ?? 0) }}</b>
-                    </span>
-                    <span class="rounded-full border border-slate-200 bg-white px-2 py-0.5">
-                      Avg: <b class="text-slate-900">{{ lane.average_marks == null ? 'ƒ?"' : pct(lane.average_marks) }}</b>
-                    </span>
-                    <span class="rounded-full border border-slate-200 bg-white px-2 py-0.5">
-                      Latest: <b class="text-slate-900">{{ formatDateTime(lane.latest_review_at) || 'ƒ?"' }}</b>
-                    </span>
+                  <div v-if="reviewModalRow.latestReviewGaps">
+                    <span class="font-semibold text-slate-800">Gaps:</span>
+                    <div class="mt-1 text-slate-600">{{ reviewModalRow.latestReviewGaps }}</div>
                   </div>
-                </div>
 
-                <div class="p-4 space-y-3">
+                  <div v-if="reviewModalRow.latestReviewSuggestions">
+                    <span class="font-semibold text-slate-800">Suggestions:</span>
+                    <div class="mt-1 text-slate-600">{{ reviewModalRow.latestReviewSuggestions }}</div>
+                  </div>
+
                   <div
-                    v-for="(rv, idx) in (lane.reviewers || [])"
-                    :key="'rv-'+lane.key+'-'+idx+'-'+(rv.id ?? 'x')"
-                    class="rounded-xl border border-slate-200 bg-white p-3"
+                    v-if="!reviewModalRow.latestReviewStrengths && !reviewModalRow.latestReviewGaps && !reviewModalRow.latestReviewSuggestions"
+                    class="text-slate-500"
                   >
-                    <div class="flex flex-wrap items-start justify-between gap-2">
-                      <div class="min-w-0">
-                        <div class="text-sm font-semibold text-slate-900 truncate">
-                          {{ rv.name || 'Reviewer' }}
-                        </div>
-                        <div class="mt-0.5 text-[11px] text-slate-500">
-                          Lane: {{ rv.lane || lane.key }}
-                          <span v-if="rv.submitted_at || rv.updated_at">
-                            ƒ?½ {{ formatDateTime(rv.submitted_at || rv.updated_at) }}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div class="flex flex-wrap gap-2">
-                        <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
-                          {{ rv.percent == null ? 'ƒ?"' : pct(rv.percent) }}
-                        </span>
-                        <span
-                          v-if="rv.obtained_total != null && rv.max_total != null"
-                          class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-700"
-                        >
-                          {{ rv.obtained_total }}/{{ rv.max_total }}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div class="mt-3 space-y-2 text-xs text-slate-700">
-                      <div v-if="rv.strengths && rv.strengths.length">
-                        <div class="font-semibold text-slate-900">Strengths</div>
-                        <ul class="mt-1 list-disc pl-5 text-slate-600 space-y-1">
-                          <li v-for="(t, si) in rv.strengths" :key="'s-'+si">{{ t }}</li>
-                        </ul>
-                      </div>
-
-                      <div v-if="rv.gaps && rv.gaps.length">
-                        <div class="font-semibold text-slate-900">Gaps</div>
-                        <ul class="mt-1 list-disc pl-5 text-slate-600 space-y-1">
-                          <li v-for="(t, gi) in rv.gaps" :key="'g-'+gi">{{ t }}</li>
-                        </ul>
-                      </div>
-
-                      <div v-if="rv.suggestions && rv.suggestions.length">
-                        <div class="font-semibold text-slate-900">Suggestions</div>
-                        <ul class="mt-1 list-disc pl-5 text-slate-600 space-y-1">
-                          <li v-for="(t, ui) in rv.suggestions" :key="'u-'+ui">{{ t }}</li>
-                        </ul>
-                      </div>
-
-                      <div
-                        v-if="(!rv.strengths || !rv.strengths.length) && (!rv.gaps || !rv.gaps.length) && (!rv.suggestions || !rv.suggestions.length)"
-                        class="text-slate-500"
-                      >
-                        No comments in this review.
-                      </div>
-                    </div>
-                  </div>
-
-                  <div v-if="!lane.reviewers || lane.reviewers.length === 0" class="text-sm text-slate-500">
-                    No reviewers found in this lane.
+                    No latest review comments
                   </div>
                 </div>
-              </div>
+              </article>
+            </div>
+          </div>
+        </div>
+      </transition>
+    </template>
+
+    <!-- =========================
+     Modal: ALL reviewer comments (lane-wise)
+     ========================= -->
+<transition name="fade-scale">
+  <div
+    v-if="reviewModalOpen && reviewModalRow"
+    class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
+    @keydown.escape.window="closeReviewModal"
+  >
+    <!-- backdrop -->
+    <div
+      class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+      aria-hidden="true"
+      @click="closeReviewModal"
+    ></div>
+
+    <!-- panel -->
+    <div
+      class="relative max-w-3xl w-full rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-label="All reviewer comments"
+    >
+      <!-- header -->
+      <div class="p-5 border-b border-slate-200 bg-white">
+        <div class="flex items-start justify-between gap-4">
+          <div class="min-w-0">
+            <p class="text-lg font-semibold text-slate-900 truncate">
+              {{ reviewModalRow._name }}
+            </p>
+            <p class="mt-0.5 text-xs text-slate-500">
+              {{ reviewModalRow._dept || 'Department unknown' }}
+              <span v-if="reviewModalRow._company"> • {{ reviewModalRow._company }}</span>
+              <span v-if="reviewModalRow._joining"> • Joined {{ reviewModalRow._joining }}</span>
+            </p>
+            <div class="mt-2 flex flex-wrap gap-2 text-[11px] text-slate-600">
+              <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5">
+                Progress: <b class="text-slate-900">{{ progressText(reviewModalRow) }}</b>
+              </span>
+              <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5">
+                Final: <b class="text-slate-900">{{ reviewModalRow.finalPercent == null ? '—' : pct(reviewModalRow.finalPercent) }}</b>
+              </span>
+              <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5">
+                Reviews: <b class="text-slate-900">{{ reviewModalRow.progress?.review_count ?? 0 }}</b>
+              </span>
             </div>
           </div>
 
-          <div class="p-4 border-t border-slate-200 bg-white flex justify-end">
-            <button
-              type="button"
-              class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
-              @click="closeReviewModal"
+          <button
+            type="button"
+            class="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            @click="closeReviewModal"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+
+      <!-- body scroll -->
+      <div class="max-h-[75vh] overflow-y-auto p-5 space-y-4">
+        <div v-if="!modalLaneGroups.length" class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+          No reviews found for this employee.
+        </div>
+
+        <!-- lane groups -->
+        <div
+          v-for="lane in modalLaneGroups"
+          :key="'lane-group-'+lane.key"
+          class="rounded-2xl border border-slate-200 bg-white overflow-hidden"
+        >
+          <!-- lane header -->
+          <div class="px-4 py-3 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="text-sm font-semibold text-slate-900 truncate" :title="lane.label">
+                {{ lane.label }}
+              </span>
+              <span class="text-[11px] text-slate-500 truncate">
+                (key: {{ lane.key }})
+              </span>
+            </div>
+
+            <div class="flex flex-wrap gap-2 text-[11px] text-slate-600">
+              <span class="rounded-full border border-slate-200 bg-white px-2 py-0.5">
+                Count: <b class="text-slate-900">{{ lane.count ?? (lane.reviewers?.length ?? 0) }}</b>
+              </span>
+              <span class="rounded-full border border-slate-200 bg-white px-2 py-0.5">
+                Avg: <b class="text-slate-900">{{ lane.average_percent == null ? '—' : pct(lane.average_percent) }}</b>
+              </span>
+              <span class="rounded-full border border-slate-200 bg-white px-2 py-0.5">
+                Latest: <b class="text-slate-900">{{ formatDateTime(lane.latest_review_at) || '—' }}</b>
+              </span>
+            </div>
+          </div>
+
+          <!-- reviewers list -->
+          <div class="p-4 space-y-3">
+            <div
+              v-for="(rv, idx) in (lane.reviewers || [])"
+              :key="'rv-'+lane.key+'-'+idx+'-'+(rv.id ?? 'x')"
+              class="rounded-xl border border-slate-200 bg-white p-3"
             >
-              Close
-            </button>
+              <div class="flex flex-wrap items-start justify-between gap-2">
+                <div class="min-w-0">
+                  <div class="text-sm font-semibold text-slate-900 truncate">
+                    {{ rv.name || 'Reviewer' }}
+                  </div>
+                  <div class="mt-0.5 text-[11px] text-slate-500">
+                    Lane: {{ rv.lane || lane.key }}
+                    <span v-if="rv.submitted_at || rv.updated_at">
+                      • {{ formatDateTime(rv.submitted_at || rv.updated_at) }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="flex flex-wrap gap-2">
+                  <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
+                    {{ rv.percent == null ? '—' : pct(rv.percent) }}
+                  </span>
+                  <span
+                    v-if="rv.obtained_total != null && rv.max_total != null"
+                    class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-700"
+                  >
+                    {{ rv.obtained_total }}/{{ rv.max_total }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- comments -->
+              <div class="mt-3 space-y-2 text-xs text-slate-700">
+                <div v-if="rv.strengths && rv.strengths.length">
+                  <div class="font-semibold text-slate-900">Strengths</div>
+                  <ul class="mt-1 list-disc pl-5 text-slate-600 space-y-1">
+                    <li v-for="(t, si) in rv.strengths" :key="'s-'+si">{{ t }}</li>
+                  </ul>
+                </div>
+
+                <div v-if="rv.gaps && rv.gaps.length">
+                  <div class="font-semibold text-slate-900">Gaps</div>
+                  <ul class="mt-1 list-disc pl-5 text-slate-600 space-y-1">
+                    <li v-for="(t, gi) in rv.gaps" :key="'g-'+gi">{{ t }}</li>
+                  </ul>
+                </div>
+
+                <div v-if="rv.suggestions && rv.suggestions.length">
+                  <div class="font-semibold text-slate-900">Suggestions</div>
+                  <ul class="mt-1 list-disc pl-5 text-slate-600 space-y-1">
+                    <li v-for="(t, ui) in rv.suggestions" :key="'u-'+ui">{{ t }}</li>
+                  </ul>
+                </div>
+
+                <div
+                  v-if="(!rv.strengths || !rv.strengths.length) && (!rv.gaps || !rv.gaps.length) && (!rv.suggestions || !rv.suggestions.length)"
+                  class="text-slate-500"
+                >
+                  No comments in this review.
+                </div>
+              </div>
+            </div>
+
+            <div v-if="!lane.reviewers || lane.reviewers.length === 0" class="text-sm text-slate-500">
+              No reviewers found in this lane.
+            </div>
           </div>
         </div>
       </div>
-    </transition>
+
+      <!-- footer -->
+      <div class="p-4 border-t border-slate-200 bg-white flex items-center justify-end gap-2">
+        <button
+          type="button"
+          class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+          @click="closeReviewModal"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</transition>
 
   </div>
 </template>
