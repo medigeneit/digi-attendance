@@ -1261,9 +1261,19 @@ const router = createRouter({
           },
         },
         {
-          path: '/kpi/yearly-kpi-reports',
-          name: 'YearlyKpiReportList',
-          component: () => import('@/views/admin-pages/KpiYearlyReport.vue'),
+          path: '/kpi/yearly-departmental-kpi-reports',
+          name: 'YearlyDepartmentalKpiReportList',
+          component: () => import('@/views/admin-pages/YearlyDepartmentalKpiReport.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['super_admin', 'developer'],
+            title: 'Yearly Kpi Report',
+          },
+        },
+        {
+          path: '/kpi/yearly-executive-kpi-reports',
+          name: 'YearlyExecutiveKpiReportList',
+          component: () => import('@/views/admin-pages/YearlyExecutiveKpiReport.vue'),
           meta: {
             requiresAuth: true,
             roles: ['super_admin', 'developer'],

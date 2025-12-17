@@ -5,6 +5,7 @@ export const useKpiReportStore = defineStore('kpi-report', {
   state: () => ({
     meta: null,
     rows: [],
+    reports: null,
     isLoading: false,
     error: null,
   }),
@@ -91,9 +92,27 @@ export const useKpiReportStore = defineStore('kpi-report', {
       this.error = null
       try {
         const { data } = await apiClient.get('/kpi/reports/yearly', { params })
+         this.meta = data?.meta ?? null
+        this.rows = Array.isArray(data?.rows) ? data.rows : []
+        this.reports = data ?? null
+        return { meta: this.meta, rows: this.rows }
+      } catch (e) {
+        this.error = e?.response?.data?.message || 'Failed to load yearly report'
+        throw e
+      } finally {
+        this.isLoading = false
+      }
+    },
+
+    async fetchYearlyExecutive(params) {
+      this.isLoading = true
+      this.error = null
+      try {
+        const { data } = await apiClient.get('/yearly-executive-kpi-summary-reports', { params })
         this.meta = data?.meta ?? null
         this.rows = Array.isArray(data?.rows) ? data.rows : []
-        return { meta: this.meta, rows: this.rows }
+        this.reports = data ?? null
+        return { meta: this.meta, rows: this.rows, reports: this.reports }
       } catch (e) {
         this.error = e?.response?.data?.message || 'Failed to load yearly report'
         throw e

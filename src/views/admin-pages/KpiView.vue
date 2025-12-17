@@ -20,15 +20,29 @@
         <i class="fal fa-tasks text-3xl"></i>
         Monthly Evaluation List
       </RouterLink>
-      <RouterLink :to="{ name: 'YearlyEvaluationList' }" class="main-button">
-        <i class="fal fa-chart-line text-3xl"></i>
-        Yearly Evaluation
-      </RouterLink>
       <RouterLink :to="{ name: 'MonthlyKpiReportList' }" class="main-button">
         <i class="fal fa-file-chart-line text-3xl"></i>
         Monthly KPI Reports
       </RouterLink>
       
+      <RouterLink :to="{ name: 'YearlyEvaluationList' }" class="main-button">
+        <i class="fal fa-chart-line text-3xl"></i>
+        Yearly Evaluation
+      </RouterLink>
+
+      <RouterLink :to="{ name: 'YearlyDepartmentalKpiReportList' }" class="main-button">
+        <i class="fal fa-chart-line text-3xl"></i>
+        Yearly Departmental KPI Reports
+      </RouterLink>
+
+      <RouterLink :to="{ name: 'YearlyDepartmentalKpiReportList' }" class="main-button">
+        <i class="fal fa-chart-line text-3xl"></i>
+        Executive  KPI Reports
+      </RouterLink>
+      <RouterLink :to="{ name: 'YearlyExecutiveKpiReportList' }" class="main-button">
+        <i class="fal fa-chart-line text-3xl"></i>
+        Staff  KPI Reports
+      </RouterLink>
     </div>
    </div>
 </template>
