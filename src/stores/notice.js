@@ -16,9 +16,10 @@ export const useNoticeStore = defineStore('notice', () => {
 
 
   const fetchFeedbacks = async (noticeId, payload = {}) => {
-    const res = await apiClient.get(`/notice/feedbacks/${noticeId}`, payload)
+    const res = await apiClient.get(`/notice/${noticeId}/feedbacks`, payload)
     feedbacks.value = res?.data?.data
     totalFeedbacks.value = res?.data?.meta?.total
+    notice.value = res?.data?.notice
   }
 
   const downloadFeedbackUserExcel = async (noticeId, queryParams = {}) => {

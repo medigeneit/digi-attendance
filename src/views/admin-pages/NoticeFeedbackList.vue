@@ -36,7 +36,7 @@ const endDate = ref('')
 const showOnlyWithComments = ref(false)
 const perPageOptions = Object.freeze([10, 20, 50, 100])
 
-const { feedbacks, totalFeedbacks } = storeToRefs(noticeStore)
+const { feedbacks,notice, totalFeedbacks } = storeToRefs(noticeStore)
 
 const noticeId = computed(() => route?.params?.id ?? props.noticeId)
 const hasSearchValue = computed(() => searchQuery.value.trim().length > 0)
@@ -153,6 +153,41 @@ const formatDate = (timestamp) => {
   })
 }
 
+const normalizeReceivers = (raw) => {
+  if (!raw) return []
+  if (Array.isArray(raw)) return raw
+  return raw.split(',').map((item) => item.trim()).filter(Boolean)
+}
+
+const resolveTypeLabel = (type) => {
+  if (Number(type) === 1) return 'General'
+  if (Number(type) === 2) return 'Policy'
+  return 'Other'
+}
+
+const noticeSummary = computed(() => {
+  if (!notice.value || !notice.value.id) return null
+  return {
+    title: notice.value.title,
+    type: notice.value.type ? resolveTypeLabel(notice.value.type) : 'Notice',
+    receivers:
+      notice.value.receiver_label && !Array.isArray(notice.value.receiver_type)
+        ? normalizeReceivers(notice.value.receiver_label)
+        : normalizeReceivers(notice.value.receiver_type),
+    companies: notice.value.companies_notice ?? [],
+    departments: notice.value.departments ?? [],
+    publishedAt: notice.value.published_at,
+    expiredAt: notice.value.expired_at,
+    feedbackCount: notice.value.user_feedback_count ?? totalFeedbacks.value,
+  }
+})
+
+watch(noticeId, (id) => {
+  if (id) {
+    noticeStore.fetchNotice(id)
+  }
+}, { immediate: true })
+
 const clearSearch = () => {
   if (!searchQuery.value) return
   searchQuery.value = ''
@@ -212,6 +247,75 @@ const exportToExcel = async () => {
 
 <template>
   <div class="space-y-6">
+
+    <section
+      v-if="noticeSummary"
+      class="mx-auto max-w-7xl rounded-3xl border border-gray-100 bg-white/90 p-6 shadow"
+    >
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-widest text-indigo-500">Current notice</p>
+          <h2 class="text-xl font-semibold text-gray-900">{{ noticeSummary.title || 'Untitled notice' }}</h2>
+          <p class="text-sm text-gray-500">Type: {{ noticeSummary.type }}</p>
+        </div>
+        <div class="text-sm text-gray-500">
+          Feedbacks: <span class="font-semibold text-gray-900">{{ noticeSummary.feedbackCount || 0 }}</span>
+        </div>
+      </div>
+
+      <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Receivers</p>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <span
+              v-for="receiver in noticeSummary.receivers"
+              :key="receiver"
+              class="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-blue-700"
+            >
+              {{ receiver }}
+            </span>
+            <span v-if="!noticeSummary.receivers.length" class="text-xs text-gray-400">All employees</span>
+          </div>
+        </div>
+
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Companies</p>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <span
+              v-for="company in noticeSummary.companies"
+              :key="company.id"
+              class="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-600"
+            >
+              {{ company.name }}
+            </span>
+            <span v-if="!noticeSummary.companies.length" class="text-xs text-gray-400">Multiple companies</span>
+          </div>
+        </div>
+
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Departments</p>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <span
+              v-for="department in noticeSummary.departments"
+              :key="department.id"
+              class="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-600"
+            >
+              {{ department.name }}
+            </span>
+            <span v-if="!noticeSummary.departments.length" class="text-xs text-gray-400">All departments</span>
+          </div>
+        </div>
+
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Publish window</p>
+          <p class="text-sm text-gray-700">
+            {{ formatDate(noticeSummary.publishedAt) }} –
+            <span class="text-gray-500">{{ formatDate(noticeSummary.expiredAt) }}</span>
+          </p>
+        </div>
+      </div>
+    </section>
+
     <!-- Filters -->
     <section class="max-w-7xl mx-auto rounded-3xl border border-gray-100 bg-white/80 p-6 shadow">
       <div class="flex flex-col gap-3 pb-4 sm:flex-row sm:items-center sm:justify-between">
