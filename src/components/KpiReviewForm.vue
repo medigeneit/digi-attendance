@@ -314,6 +314,19 @@ const selectedStrengthHints = ref([])
 const selectedGapHints = ref([])
 const selectedSuggestionHints = ref([])
 
+const reviewCommentModalOpen = ref(false)
+const reviewCommentModalItem = ref(null)
+
+function openReviewCommentModal(item) {
+  reviewCommentModalItem.value = item
+  reviewCommentModalOpen.value = true
+}
+
+function closeReviewCommentModal() {
+  reviewCommentModalOpen.value = false
+  reviewCommentModalItem.value = null
+}
+
 const hintRefs = {
   strengths: selectedStrengthHints,
   gaps: selectedGapHints,
@@ -1039,11 +1052,8 @@ function applyHint(field, value) {
                 <table class="min-w-full text-xs text-left">
                   <thead class="text-[11px] text-slate-600 uppercase tracking-wide bg-slate-50">
                     <tr>
-                      <th class="px-2 py-2 w-[90px]">Lane</th>
-                      <!-- <th class="px-2 py-2 w-[120px]">Reviewer</th> -->
-                      <th class="px-2 py-2">Strengths</th>
-                      <th class="px-2 py-2">Gaps</th>
-                      <th class="px-2 py-2">Suggestions</th>
+                      <th class="px-2 py-2 w-[140px]">Lane</th>
+                      <th class="px-2 py-2 text-right">Details</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1052,7 +1062,6 @@ function applyHint(field, value) {
                       :key="item.key"
                       class="border-t hover:bg-slate-50/60 align-top"
                     >
-                      <!-- Lane -->
                       <td class="px-2 py-2">
                         <div class="font-semibold text-slate-700">
                           {{ item.label }}
@@ -1061,60 +1070,15 @@ function applyHint(field, value) {
                           {{ new Date(item.submitted_at).toLocaleDateString() }}
                         </div>
                       </td>
-
-                      <!-- Reviewer -->
-                      <!-- <td class="px-2 py-2">
-                      <div class="font-medium text-slate-700">
-                        {{ item.reviewer_name || '-' }}
-                      </div>
-                    </td> -->
-
-                      <!-- Strengths -->
-                      <td class="px-2 py-2">
-                        <div
-                          v-if="item.strengths && item.strengths.length"
-                          class="flex flex-wrap gap-1"
+                      <td class="px-2 py-2 text-right">
+                        <button
+                          type="button"
+                          class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-800"
+                          @click="openReviewCommentModal(item)"
                         >
-                          <span
-                            v-for="(s, i) in item.strengths"
-                            :key="'s-' + i"
-                            class="inline-flex items-center rounded-full bg-emerald-50 border border-emerald-100 px-2 py-0.5 text-[11px] text-emerald-700"
-                          >
-                            {{ s }}
-                          </span>
-                        </div>
-                        <span v-else class="text-slate-400">—</span>
-                      </td>
-
-                      <!-- Gaps -->
-                      <td class="px-2 py-2">
-                        <div v-if="item.gaps && item.gaps.length" class="flex flex-wrap gap-1">
-                          <span
-                            v-for="(g, i) in item.gaps"
-                            :key="'g-' + i"
-                            class="inline-flex items-center rounded-full bg-amber-50 border border-amber-100 px-2 py-0.5 text-[11px] text-amber-800"
-                          >
-                            {{ g }}
-                          </span>
-                        </div>
-                        <span v-else class="text-slate-400">—</span>
-                      </td>
-
-                      <!-- Suggestions -->
-                      <td class="px-2 py-2">
-                        <div
-                          v-if="item.suggestions && item.suggestions.length"
-                          class="flex flex-wrap gap-1"
-                        >
-                          <span
-                            v-for="(sug, i) in item.suggestions"
-                            :key="'su-' + i"
-                            class="inline-flex items-center rounded-full bg-sky-50 border border-sky-100 px-2 py-0.5 text-[11px] text-sky-800"
-                          >
-                            {{ sug }}
-                          </span>
-                        </div>
-                        <span v-else class="text-slate-400">—</span>
+                          <span>View comments</span>
+                          <span class="text-[10px] text-slate-400">Strengths · Gaps · Suggestions</span>
+                        </button>
                       </td>
                     </tr>
                   </tbody>
@@ -1173,7 +1137,7 @@ function applyHint(field, value) {
           <!-- Hint chips -->
           <div
             v-if="strengthOptions.length"
-            class="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 max-h-32 overflow-y-auto"
+            class="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 h-40 overflow-y-auto"
           >
             <div class="flex flex-wrap gap-1.5">
               <button
@@ -1218,7 +1182,7 @@ function applyHint(field, value) {
           <!-- Hint chips -->
           <div
             v-if="gapOptions.length"
-            class="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 max-h-32 overflow-y-auto"
+            class="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 h-40 overflow-y-auto"
           >
             <div class="flex flex-wrap gap-1.5">
               <button
@@ -1261,7 +1225,7 @@ function applyHint(field, value) {
           <!-- Suggestion hint chips (optional but nice) -->
           <div
             v-if="suggestionOptions.length"
-            class="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 max-h-32 overflow-y-auto"
+            class="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 h-40 overflow-y-auto"
           >
             <div class="flex flex-wrap gap-1.5">
               <button
@@ -1310,4 +1274,88 @@ function applyHint(field, value) {
       </button>
     </div>
   </div>
+
+<transition name="fade-scale">
+  <div
+    v-if="reviewCommentModalOpen && reviewCommentModalItem"
+    class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
+    @keydown.escape.window="closeReviewCommentModal"
+  >
+    <div
+      class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+      aria-hidden="true"
+      @click="closeReviewCommentModal"
+    ></div>
+
+    <div
+      class="relative w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-5 shadow-xl"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <p class="text-lg font-semibold text-slate-900">{{ reviewCommentModalItem.label }}</p>
+          <p class="text-xs text-slate-500">
+            Lane: {{ reviewCommentModalItem.lane }} - Reviewed by {{ reviewCommentModalItem.reviewer_name || '––' }}
+          </p>
+          <p class="text-xs text-slate-400 mt-1" v-if="reviewCommentModalItem.submitted_at">
+            {{ new Date(reviewCommentModalItem.submitted_at).toLocaleString() }}
+          </p>
+        </div>
+        <button
+          type="button"
+          class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+          @click="closeReviewCommentModal"
+        >
+          Close
+        </button>
+      </div>
+
+      <div class="mt-5 space-y-4 text-sm text-slate-700">
+        <div>
+          <div class="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase">
+            <span>Strengths</span>
+          </div>
+          <div class="mt-2 min-h-[40px] space-y-1 text-[13px] text-slate-600">
+            <div v-if="reviewCommentModalItem.strengths?.length">
+                <p v-for="(text, idx) in reviewCommentModalItem.strengths" :key="'modal-strength-'+idx">
+                  - {{ text }}
+                </p>
+            </div>
+            <p v-else class="text-slate-400">No strengths entered.</p>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase">
+            <span>Gaps</span>
+          </div>
+          <div class="mt-2 min-h-[40px] space-y-1 text-[13px] text-slate-600">
+            <div v-if="reviewCommentModalItem.gaps?.length">
+                <p v-for="(text, idx) in reviewCommentModalItem.gaps" :key="'modal-gap-'+idx">
+                  - {{ text }}
+                </p>
+            </div>
+            <p v-else class="text-slate-400">No gaps recorded.</p>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase">
+            <span>Suggestions</span>
+          </div>
+          <div class="mt-2 min-h-[40px] space-y-1 text-[13px] text-slate-600">
+            <div v-if="reviewCommentModalItem.suggestions?.length">
+                <p v-for="(text, idx) in reviewCommentModalItem.suggestions" :key="'modal-sug-'+idx">
+                  - {{ text }}
+                </p>
+            </div>
+            <p v-else class="text-slate-400">No suggestions provided.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</transition>
+
 </template>
