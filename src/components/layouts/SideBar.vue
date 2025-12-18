@@ -52,8 +52,8 @@ const kpiMenu = [
   { label: 'Monthly KPI Forms', routeName: 'MonthlyKpiFormList' },
   // { label: 'Assignment List', routeName: 'AssignmentList' },
   { label: 'Monthly Evaluation List', routeName: 'EvaluationList' },
-  { label: 'Yearly Evaluation', routeName: 'YearlyEvaluationList' },
   { label: 'Monthly KPI Reports', routeName: 'MonthlyKpiReportList' },
+  { label: 'Yearly Evaluation', routeName: 'YearlyEvaluationList' },
   { label: 'Department KPI Reports', routeName: 'YearlyDepartmentalKpiReportList' },
   { label: 'Yearly KPI Reports', routeName: 'YearlyKpiReport' },
 ]
