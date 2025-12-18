@@ -107,6 +107,7 @@ async function fetchAll() {
     company_id:    filters.value.company_id,
     department_id: filters.value.department_id,
     line_type:     filters.value.line_type || undefined,
+    employee_id:   filters.value.employee_id || null,
     form_id:       filters.value.form_id || undefined,
     finalized:     filters.value.finalized === '' ? undefined : filters.value.finalized,
     per_page:      filters.value.per_page,
@@ -120,6 +121,7 @@ async function fetchAll() {
       company_id: params.company_id,
       department_id: params.department_id,
       line_type: params.line_type,
+      employee_id: params.employee_id,
       per_page: params.per_page,
       page: params.page,
     })

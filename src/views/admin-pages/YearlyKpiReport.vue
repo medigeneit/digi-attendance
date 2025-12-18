@@ -4,7 +4,7 @@ import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import { useKpiReportStore } from '@/stores/kpi-report'
 import { storeToRefs } from 'pinia'
 import { ref, reactive, computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 /* =========================
  * Store & Router
@@ -12,6 +12,7 @@ import { useRoute } from 'vue-router'
 const store = useKpiReportStore()
 const { reports, isLoading, error } = storeToRefs(store)
 const route = useRoute()
+const router = useRouter()
 
 /* =========================
  * Filters (from query)
@@ -305,6 +306,20 @@ async function downloadExcel() {
 /* =========================
  * Data load
  * ========================= */
+function updateQuery(params = {}) {
+  const next = {
+    ...route.query,
+    ...params,
+  }
+  Object.keys(next).forEach((key) => {
+    const value = next[key]
+    if (value === undefined || value === null || value === '') {
+      delete next[key]
+    }
+  })
+  router.replace({ query: next })
+}
+
 async function load() {
   try {
     if(filters.company_id) {
@@ -328,6 +343,13 @@ function handleFilterChange(payload = {}) {
   filters.line_type = payload.line_type ?? initialFilterValue.value.line_type ?? 'executive'
 
   filtersInitialized.value = true
+  updateQuery({
+    company_id: filters.company_id || undefined,
+    department_id: filters.department_id || undefined,
+    employee_id: filters.employee_id || undefined,
+    line_type: filters.line_type || undefined,
+    year: Number(year.value),
+  })
   load()
 }
 
@@ -335,6 +357,7 @@ watch(year, () => {
   const y = Number(year.value)
   if (!Number.isInteger(y) || y < 2000 || y > 2100) return
   if (!filtersInitialized.value) return
+  updateQuery({ year: y })
   load()
 })
 
