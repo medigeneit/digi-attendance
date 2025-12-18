@@ -1271,9 +1271,9 @@ const router = createRouter({
           },
         },
         {
-          path: '/kpi/yearly-executive-kpi-reports',
-          name: 'YearlyExecutiveKpiReportList',
-          component: () => import('@/views/admin-pages/YearlyExecutiveKpiReport.vue'),
+          path: '/kpi/yearly-kpi-reports',
+          name: 'YearlyKpiReport',
+          component: () => import('@/views/admin-pages/YearlyKpiReport.vue'),
           meta: {
             requiresAuth: true,
             roles: ['super_admin', 'developer'],
