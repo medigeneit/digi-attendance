@@ -277,6 +277,31 @@ function closeReviewModal() {
   reviewModalRow.value = null
 }
 
+const exportingExcel = ref(false)
+
+function buildExportParams() {
+  return {
+    year: Number(year.value),
+    company_id: filters.company_id || undefined,
+    department_id: filters.department_id || undefined,
+    employee_id: filters.employee_id || undefined,
+    line_type: filters.line_type || undefined,
+    flag: 'excel',
+  }
+}
+
+async function downloadExcel() {
+  exportingExcel.value = true
+
+  try {
+    await store.exportYearly(buildExportParams())
+  } catch (e) {
+    console.error('exportYearly failed:', e)
+  } finally {
+    exportingExcel.value = false
+  }
+}
+
 /* =========================
  * Data load
  * ========================= */
@@ -378,7 +403,7 @@ const modalLaneGroups = computed(() => {
           :initial-value="initialFilterValue"
           class="w-full"
           @filter-change="handleFilterChange"
-        /> 
+        > 
         <div class="flex items-center gap-2">
           <select
             v-model.number="year"
@@ -389,13 +414,7 @@ const modalLaneGroups = computed(() => {
             <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
           </select>
         </div>
-        
-      <div class="ml-auto flex gap-2">
-        <button class="btn-3 !py-1.5 !px-3" @click="doPrint">
-          <i class="far fa-print mr-1"></i> Print
-        </button>
-      </div>
-      
+        </EmployeeFilter>
       </div>
 
       <div class="flex flex-wrap items-center gap-2 w-full">
@@ -413,6 +432,14 @@ const modalLaneGroups = computed(() => {
             {{ opt.label }}
           </option>
         </select>
+          <button
+            class="btn-1"
+            @click="downloadExcel"
+            :disabled="exportingExcel || isLoading"
+          >
+            <i class="far fa-file-excel mr-1"></i>
+            {{ exportingExcel ? 'Preparing...' : 'Download Excel' }}
+          </button>
       </div>
 
 
@@ -718,7 +745,7 @@ const modalLaneGroups = computed(() => {
   >
     <!-- backdrop -->
     <div
-      class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+      class="absolute inset-0"
       aria-hidden="true"
       @click="closeReviewModal"
     ></div>
@@ -753,6 +780,7 @@ const modalLaneGroups = computed(() => {
                 Reviews: <b class="text-slate-900">{{ reviewModalRow.progress?.review_count ?? 0 }}</b>
               </span>
             </div>
+            <!-- {{ reviewModalRow }} -->
           </div>
 
           <button
@@ -764,6 +792,8 @@ const modalLaneGroups = computed(() => {
           </button>
         </div>
       </div>
+
+      
 
       <!-- body scroll -->
       <div class="max-h-[75vh] overflow-y-auto p-5 space-y-4">
@@ -787,13 +817,12 @@ const modalLaneGroups = computed(() => {
                 (key: {{ lane.key }})
               </span>
             </div>
-
             <div class="flex flex-wrap gap-2 text-[11px] text-slate-600">
               <span class="rounded-full border border-slate-200 bg-white px-2 py-0.5">
                 Count: <b class="text-slate-900">{{ lane.count ?? (lane.reviewers?.length ?? 0) }}</b>
               </span>
               <span class="rounded-full border border-slate-200 bg-white px-2 py-0.5">
-                Avg: <b class="text-slate-900">{{ lane.average_percent == null ? '—' : pct(lane.average_percent) }}</b>
+                Avg: <b class="text-slate-900">{{ lane.average_marks == null ? '—' : pct(lane.average_marks) }}</b>
               </span>
               <span class="rounded-full border border-slate-200 bg-white px-2 py-0.5">
                 Latest: <b class="text-slate-900">{{ formatDateTime(lane.latest_review_at) || '—' }}</b>
@@ -829,7 +858,8 @@ const modalLaneGroups = computed(() => {
                     v-if="rv.obtained_total != null && rv.max_total != null"
                     class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-700"
                   >
-                    {{ rv.obtained_total }}/{{ rv.max_total }}
+                    {{ rv.obtained_total }}
+                    <!-- {{ rv.obtained_total }}/{{ rv.max_total }} -->
                   </span>
                 </div>
               </div>

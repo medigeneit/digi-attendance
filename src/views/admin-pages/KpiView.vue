@@ -35,13 +35,9 @@
         Yearly Departmental KPI Reports
       </RouterLink>
 
-      <RouterLink :to="{ name: 'YearlyDepartmentalKpiReportList' }" class="main-button">
+      <RouterLink :to="{ name: 'YearlyKpiReport' }" class="main-button">
         <i class="fal fa-chart-line text-3xl"></i>
-        Executive  KPI Reports
-      </RouterLink>
-      <RouterLink :to="{ name: 'YearlyExecutiveKpiReportList' }" class="main-button">
-        <i class="fal fa-chart-line text-3xl"></i>
-        Staff  KPI Reports
+        Yearly  KPI Reports
       </RouterLink>
     </div>
    </div>

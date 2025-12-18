@@ -95,12 +95,42 @@ export const useKpiReportStore = defineStore('kpi-report', {
          this.meta = data?.meta ?? null
         this.rows = Array.isArray(data?.rows) ? data.rows : []
         this.reports = data ?? null
-        return { meta: this.meta, rows: this.rows }
+      return { meta: this.meta, rows: this.rows }
+    } catch (e) {
+      this.error = e?.response?.data?.message || 'Failed to load yearly report'
+      throw e
+    } finally {
+      this.isLoading = false
+    }
+  },
+
+    async exportYearly(params) {
+      try {
+        const res = await apiClient.get('/yearly-kpi-summary-reports', {
+          params,
+          responseType: 'blob',
+        })
+
+        const dispo = res.headers['content-disposition'] || ''
+        let filename = 'yearly_kpi_report.xlsx'
+        const match = /filename="?([^"]+)"?/i.exec(dispo)
+        if (match && match[1]) filename = decodeURIComponent(match[1])
+
+        const blob = new Blob(
+          [res.data],
+          { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }
+        )
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = filename
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        URL.revokeObjectURL(url)
       } catch (e) {
-        this.error = e?.response?.data?.message || 'Failed to load yearly report'
+        console.error(e)
         throw e
-      } finally {
-        this.isLoading = false
       }
     },
 
@@ -108,7 +138,7 @@ export const useKpiReportStore = defineStore('kpi-report', {
       this.isLoading = true
       this.error = null
       try {
-        const { data } = await apiClient.get('/yearly-executive-kpi-summary-reports', { params })
+        const { data } = await apiClient.get('/yearly-kpi-summary-reports', { params })
         this.meta = data?.meta ?? null
         this.rows = Array.isArray(data?.rows) ? data.rows : []
         this.reports = data ?? null
