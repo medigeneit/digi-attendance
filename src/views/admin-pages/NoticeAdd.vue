@@ -210,7 +210,7 @@ watch(
       selectedEmployees.value = []
       let mergedEmployees = []
       for (const type of selectedTypes) {
-        const list = await departmentStore.fetchDepartmentEmployee(ids, type)
+        const list = await departmentStore.fetchDepartmentActiveEmployee(ids, type)
         if (Array.isArray(list)) {
           list.forEach(emp => {
             if (!mergedEmployees.some(existing => existing?.id === emp?.id)) {
