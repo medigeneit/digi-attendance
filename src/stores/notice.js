@@ -74,7 +74,7 @@ export const useNoticeStore = defineStore('notice', () => {
     try {
       isLoading.value = true; // লোডিং শুরু
       const response = await apiClient.get('/notices');
-      notices.value = response?.data;
+      notices.value = response?.data?.data ?? response?.data ?? [];
       error.value = null;
     } catch (err) {
       error.value = err.response?.data?.message || 'Something went wrong';
