@@ -126,7 +126,7 @@ const handleFilterChange = () => {
       <h1 class="title-md md:title-lg flex-wrap text-center">Monthly Overtime</h1>
       <div></div>
     </div>
-    <div class="flex flex-wrap justify-start">
+    <div class="">
         <EmployeeFilter
           v-model:company_id="filters.company_id"
           v-model:department_id="filters.department_id"
@@ -136,12 +136,15 @@ const handleFilterChange = () => {
           :initial-value="$route.query"
          @filter-change="handleFilterChange"
       >
-      <FlexibleDatePicker
-        v-model="period"
-        :show-year="false"
-        :show-month="true"
-        :show-date="false"
-      />
+      <div class="relative">
+        <label class="top-label -top-1">Month</label>
+        <FlexibleDatePicker
+          v-model="period"
+          :show-year="false"
+          :show-month="true"
+          :show-date="false"
+        />
+      </div>
       </EmployeeFilter>
     </div>
 

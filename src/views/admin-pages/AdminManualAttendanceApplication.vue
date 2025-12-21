@@ -311,6 +311,7 @@ async function submitManualAttendance() {
           @filter-change="handleFilterChange"
         >
           <div>
+            <label for="" class="top-label -top-1">Month</label>
             <FlexibleDatePicker
               v-model="period"
               :show-year="false"

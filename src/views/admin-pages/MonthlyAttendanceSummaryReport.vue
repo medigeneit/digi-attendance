@@ -680,10 +680,10 @@ const toggleFinalize = async () => {
 
                   <td class="td text-xs">
                     <p class="font-semibold" :class="log?.under_target ? 'text-red-600' : 'text-emerald-600'">
-                      {{ log?.total_working_hours }}h
+                      {{ log?.total_working_hours }}
                     </p>
                     <p class="text-[11px] text-gray-500">
-                      of {{ log?.total_shift_hours }}h
+                      of {{ log?.total_shift_hours }}
                     </p>
                   </td>
 

@@ -223,7 +223,7 @@ function updateModel(next) {
         v-if="showYear"
         v-model="localYear"
         :disabled="disabled"
-        class="input-1 py-1.5 px-3 rounded-full text-xs font-semibold uppercase tracking-wide
+        class="input-1 py-1.5 px-3 rounded text-xs font-semibold uppercase tracking-wide
                text-slate-500 border-slate-200 bg-slate-50 disabled:opacity-50"
       >
         <option
@@ -244,7 +244,7 @@ function updateModel(next) {
           type="button"
           @click="triggerMonthPicker"
           :disabled="disabled"
-          class="input-1 flex items-center justify-between gap-2 px-3 py-2 rounded-full
+          class="input-1 flex items-center justify-between gap-2 px-3 py-2 rounded
                  text-xs font-semibold uppercase tracking-wide text-slate-500
                  border-slate-200 bg-white shadow-sm disabled:opacity-50"
         >
@@ -270,7 +270,7 @@ function updateModel(next) {
           type="button"
           @click="triggerDatePicker"
           :disabled="disabled"
-          class="input-1 flex items-center justify-between gap-2 px-5 py-2 rounded-full
+          class="input-1 flex items-center justify-between gap-2 px-5 py-2 rounded
                  text-xs font-semibold uppercase tracking-wide text-slate-500
                  border-slate-200 bg-white shadow-sm disabled:opacity-50"
         >

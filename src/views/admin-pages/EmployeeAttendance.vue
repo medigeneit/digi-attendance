@@ -236,12 +236,15 @@ const fmtHours = (v) => {
       @filter-change="handleFilterChange"
       class="w-full"
     >
+    <div class="relative">
+      <label for="" class="top-label -top-1"> Month</label>
       <FlexibleDatePicker
         v-model="period"
         :show-year="false"
         :show-month="true"
         :show-date="false"
       />
+    </div>
     </EmployeeFilter>
     <div class="sticky top-14 z-40 text-gray-700 bg-gradient-to-tl">
       <div class="grid md:grid-cols-2 gap-4 text-sm mt-2">

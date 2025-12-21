@@ -142,12 +142,15 @@ const handleFilterChange = () => {
         :initial-value="$route.query"
         @filter-change="handleFilterChange"
       >
-      <FlexibleDatePicker
-        v-model="period"
-        :show-year="false"
-        :show-month="true"
-        :show-date="false"
-      />
+      <div>
+        <label class="top-label -top-1">Select Month</label>
+        <FlexibleDatePicker
+          v-model="period"
+          :show-year="false"
+          :show-month="true"
+          :show-date="false"
+        />
+      </div>
       </EmployeeFilter>
     </div>
 

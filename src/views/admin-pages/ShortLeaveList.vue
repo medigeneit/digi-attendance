@@ -161,7 +161,7 @@ const formatDate = (ts) => {
 
       <div></div>
     </div>
-    <div class="flex flex-wrap gap-4 p-3">
+    <div class="flex flex-wrap gap-3 p-3">
         <EmployeeFilter
           v-model:company_id="filters.company_id"
             v-model:department_id="filters.department_id"
@@ -171,11 +171,12 @@ const formatDate = (ts) => {
             :initial-value="$route.query"
           @filter-change="handleFilterChange"
         >
-        <div>
+        <div class="relative">
+          <label for="" class="top-label -top-1">Status </label>
           <select
             v-model="shortLeaveStore.selectedStatus"
             @change="fetchShortLeavesByUser"
-            class="input-1 py-0.5 px-2 text-center"
+            class="input-1 py-0.5 text-center"
           >
             <option value="" selected>All</option>
             <option value="Pending">Pending</option>
@@ -185,14 +186,15 @@ const formatDate = (ts) => {
         </div>
       </EmployeeFilter>
 
-      <div class="flex gap-4">
+      <div class="flex gap-4 relative">
+        <label  class="top-label -top-1">Month </label>
         <FlexibleDatePicker
           v-model="period"
           :show-year="false"
           :show-month="true"
           :show-date="false"
         />
-        <button type="button" @click="fetchShortLeavesByUser" class="btn-2 py-1">
+        <button type="button" @click="fetchShortLeavesByUser" class="btn-2 rounded">
           <span class="hidden md:flex">Search</span>
         </button>
       </div>

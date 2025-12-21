@@ -146,6 +146,7 @@ const formatDate = (ts) => {
       >
       <div class="flex gap-4 items-center flex-wrap">
        <div>
+        <label for="" class="top-label -top-1">Status </label>
          <select
            v-model="leaveApplicationStore.selectedStatus"
            @change="fetchApplicationsByUser"
@@ -157,13 +158,15 @@ const formatDate = (ts) => {
            <option value="Rejected">Rejected</option>
          </select>
        </div>
-
-         <FlexibleDatePicker
+      <div class="relative">
+          <label  class="top-label -top-1">Month </label>
+          <FlexibleDatePicker
           v-model="period"
           :show-year="false"
           :show-month="true"
           :show-date="false"
         />
+      </div>
       </div>
       </EmployeeFilter>
     </div>

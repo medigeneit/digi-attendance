@@ -162,6 +162,7 @@ const handleFilterChange = () => {
          @filter-change="handleFilterChange"
       >
       <div>
+        <label for="" class="top-label -top-1">Status </label>
         <select
           v-model="manualAttendanceStore.selectedStatus"
           @change="fetchManualAttendancesByUser"
@@ -175,7 +176,8 @@ const handleFilterChange = () => {
       </div>
       </EmployeeFilter>
 
-      <div>
+      <div class="relative">
+        <label for="" class="top-label -top-1">Month</label>
         <FlexibleDatePicker
           v-model="period"
           :show-year="false"
@@ -185,7 +187,7 @@ const handleFilterChange = () => {
       </div>
       
       <div>
-        <button @click="fetchManualAttendancesByUser" class="btn-2 py-1">
+        <button @click="fetchManualAttendancesByUser" class="btn-2 rounded py-1">
           <i class="far fa-sync"></i>
           <span class="hidden md:flex">Refresh</span>
         </button>

@@ -148,6 +148,7 @@ const formatDate = (ts) => {
          @filter-change="handleFilterChange"
       >
       <div>
+        <label for="" class="top-label -top-1">Status </label>
         <select
           v-model="exchangeStore.selectedStatus"
           @change="fetchOffDayExchangeByUser"
@@ -160,7 +161,8 @@ const formatDate = (ts) => {
         </select>
       </div>
       </EmployeeFilter>
-      <div>
+      <div class="relative">
+        <label for="" class="top-label -top-1">Month </label>
         <FlexibleDatePicker
           v-model="period"
           :show-year="false"
