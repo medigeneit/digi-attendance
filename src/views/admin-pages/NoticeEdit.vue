@@ -581,9 +581,9 @@ const totalEmployees = computed(() => employeesList.value.length)
           <h2 class="text-lg font-semibold">Notice Information</h2>
 
           <!-- Type + Dates + Receiver Type -->
-          <div class="grid md:grid-cols-3 gap-4">
-            <div class="w-full">
-              <label for="type" class="font-medium block mb-1">Type*</label>
+          <div>
+            <label for="type" class="font-medium block mb-1">Type*</label>
+            <div class="flex gap-4">
               <div class="inline-flex rounded-lg border overflow-hidden">
                 <button
                   type="button"
@@ -602,36 +602,36 @@ const totalEmployees = computed(() => employeesList.value.length)
                   Policy
                 </button>
               </div>
-            </div>
-            <div class="flex">
-              <div class="w-full">
-                <FlexibleDatePicker
-                  v-model="publishPeriod"
-                  :show-year="false"
-                  :show-month="false"
-                  :show-date="true"
-                  :disabled="isPolicyNotice"
-                  label="Publish Date *"
-                />
-                <p v-if="isPolicyNotice" class="text-xs text-gray-500 mt-1">
-                  Policies skip publish dates and remain visible indefinitely.
-                </p>
-              </div>
-              <div class="w-full">
-                <FlexibleDatePicker
-                  v-model="expirePeriod"
-                  :show-year="false"
-                  :show-month="false"
-                  :show-date="true"
-                  :disabled="isPolicyNotice"
-                  label="Expire Date"
-                />
-                <p v-if="!validDateRange && !isPolicyNotice" class="text-xs text-red-600 mt-1">
-                  Expire date must be the same or after Publish date.
-                </p>
-                <p v-else-if="isPolicyNotice" class="text-xs text-gray-500 mt-1">
-                  Policies stay active until replaced.
-                </p>
+              <div class="flex gap-4">
+                <div class="w-full">
+                  <FlexibleDatePicker
+                    v-model="publishPeriod"
+                    :show-year="false"
+                    :show-month="false"
+                    :show-date="true"
+                    :disabled="isPolicyNotice"
+                    label="Publish Date *"
+                  />
+                  <p v-if="isPolicyNotice" class="text-xs text-gray-500 mt-1">
+                    Policies skip publish dates and remain visible indefinitely.
+                  </p>
+                </div>
+                <div class="w-full">
+                  <FlexibleDatePicker
+                    v-model="expirePeriod"
+                    :show-year="false"
+                    :show-month="false"
+                    :show-date="true"
+                    :disabled="isPolicyNotice"
+                    label="Expire Date"
+                  />
+                  <p v-if="!validDateRange && !isPolicyNotice" class="text-xs text-red-600 mt-1">
+                    Expire date must be the same or after Publish date.
+                  </p>
+                  <p v-else-if="isPolicyNotice" class="text-xs text-gray-500 mt-1">
+                    Policies stay active until replaced.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -680,7 +680,8 @@ const totalEmployees = computed(() => employeesList.value.length)
 
           <!-- Companies -->
           <div class="space-y-3">
-            <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <label class="font-medium">Companies</label>
               <div class="inline-flex rounded-lg border overflow-hidden">
                 <button
                   type="button"
@@ -711,9 +712,9 @@ const totalEmployees = computed(() => employeesList.value.length)
           </div>
 
           <!-- Departments & Employees -->
-          <div class="grid md:grid-cols-2 gap-6">
+          <div class="grid  gap-6">
             <div class="space-y-3">
-              <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
                 <label class="font-medium">Departments</label>
                 <div class="inline-flex rounded-lg border overflow-hidden">
                   <button
@@ -743,12 +744,10 @@ const totalEmployees = computed(() => employeesList.value.length)
             </div>
 
             <div class="space-y-3">
-              <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
                 <label class="font-medium">Employees</label>
                 <div class="inline-flex items-center gap-3">
-                  <span class="text-xs text-gray-500">
-                    Selected {{ selectedEmployees.length }} / {{ totalEmployees }}
-                  </span>
+                  
                   <div class="inline-flex rounded-lg border overflow-hidden">
                     <button
                       type="button"
@@ -763,6 +762,10 @@ const totalEmployees = computed(() => employeesList.value.length)
                       @click="modeEmployees = 'custom'"
                     >Custom</button>
                   </div>
+
+                  <span class="text-xs text-gray-500">
+                    Selected {{ selectedEmployees.length }} / {{ totalEmployees }}
+                  </span>
                 </div>
               </div>
               <MultiselectDropdown

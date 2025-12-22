@@ -604,28 +604,26 @@ const totalEmployees = computed(() => employeesList.value.length)
         <div class="grid md:grid-cols-3 gap-6">
           <div class="md:col-span-3 flex justify-between gap-4">
             <div class="w-full flex gap-2">
-              <label class="font-medium text-slate-700">Publish Date <span class="text-red-500">*</span></label>
-              <div class="flex-1">
+              <div>
                 <FlexibleDatePicker
                   v-model="publishPeriod"
                   :show-year="false"
                   :show-month="false"
                   :show-date="true"
                   :disabled="isPolicyNotice"
+                  label="Publish Date *"
                 />
                 <p v-if="errors.published_at" class="text-red-500 text-xs mt-1">{{ errors.published_at }}</p>
                 <p v-else-if="isPolicyNotice" class="text-xs text-gray-500 mt-1">Policies skip publish date.</p>
               </div>
-            </div>
-            <div class="w-full flex gap-2">
-              <label class="font-medium text-slate-700">Expire Date</label>
-              <div class="flex-1">
+              <div>
                 <FlexibleDatePicker
                   v-model="expirePeriod"
                   :show-year="false"
                   :show-month="false"
                   :show-date="true"
                   :disabled="isPolicyNotice"
+                  label="Expire Date *"
                 />
                 <p v-if="errors.expired_at" class="text-red-500 text-xs mt-1">{{ errors.expired_at }}</p>
                 <p v-else-if="isPolicyNotice" class="text-xs text-gray-500 mt-1">Policies remain active until replaced.</p>
@@ -635,7 +633,8 @@ const totalEmployees = computed(() => employeesList.value.length)
 
           <div class="space-y-2 md:col-span-3">
             <div class="space-y-2">
-              <div class="flex items-center">
+              <div class="flex items-center gap-2">
+                <label> Companies </label>
                 <div class="inline-flex rounded-lg border border-slate-200 overflow-hidden">
                   <button
                     type="button"
@@ -664,7 +663,8 @@ const totalEmployees = computed(() => employeesList.value.length)
             </div>
 
             <div class="space-y-2">
-              <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                 <label> Departments </label>
                 <div class="inline-flex rounded-lg border border-slate-200 overflow-hidden">
                   <button
                     type="button"
@@ -694,7 +694,8 @@ const totalEmployees = computed(() => employeesList.value.length)
           </div>
 
           <div class="space-y-2 md:col-span-3">
-            <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <label> Employees </label>
               <div class="inline-flex items-center gap-3">
                 <div class="inline-flex rounded-lg border border-slate-200 overflow-hidden">
                   <button
