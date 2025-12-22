@@ -416,7 +416,7 @@ const modalLaneGroups = computed(() => {
     </div>
 
     <!-- Controls -->
-    <div class="flex flex-wrap items-end gap-3 sticky top-16 z-10 bg-white/80 backdrop-blur print:hidden p-2 -mx-2 rounded-xl border border-gray-100">
+    <div class="flex flex-wrap items-end gap-3 sticky top-14 z-10 bg-white/80 backdrop-blur print:hidden p-4 -mx-2  rounded-xl border border-gray-100">
       <div class="w-full flex items-start gap-3">
         <EmployeeFilter
           v-model:company_id="filters.company_id"
