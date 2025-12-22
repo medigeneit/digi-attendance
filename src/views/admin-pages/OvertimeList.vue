@@ -126,7 +126,9 @@ const handleFilterChange = () => {
       <h1 class="title-md md:title-lg flex-wrap text-center">Monthly Overtime</h1>
       <div></div>
     </div>
-    <div class="">
+    <div class="flex flex-wrap gap-2 p-3 rounded-2xl border border-white/20
+         bg-white/60 backdrop-blur-md shadow-sm
+         supports-[backdrop-filter]:bg-white/50 sticky top-14">
         <EmployeeFilter
           v-model:company_id="filters.company_id"
           v-model:department_id="filters.department_id"

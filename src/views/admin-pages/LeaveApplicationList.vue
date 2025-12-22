@@ -134,7 +134,9 @@ const formatDate = (ts) => {
       <h1 class="title-md md:title-lg flex-wrap text-center">Leave Applications</h1>
       <div></div>
     </div>
-    <div class="flex flex-wrap gap-2 p-3">
+    <div class="flex flex-wrap gap-2 p-3 rounded-2xl border border-white/20
+         bg-white/60 backdrop-blur-md shadow-sm
+         supports-[backdrop-filter]:bg-white/50 sticky top-14">
        <EmployeeFilter
           v-model:company_id="filters.company_id"
           v-model:department_id="filters.department_id"
@@ -176,12 +178,12 @@ const formatDate = (ts) => {
     </div>
 
     <div v-else class="space-y-4">
-      <div class="overflow-x-auto">
+      <div class="">
         <table
           class="min-w-full table-auto border-collapse border border-gray-200 bg-white rounded-md text-sm"
         >
           <thead>
-            <tr class="bg-gray-200">
+            <tr class="bg-gray-200 sticky top-28 p-2">
               <th class="border border-gray-300 px-2 text-left">#</th>
               <th class="border border-gray-300 px-2 text-left">Employee Name</th>
               <th class="border border-gray-300 px-2 text-left">Created Date</th>

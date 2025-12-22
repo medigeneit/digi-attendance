@@ -198,7 +198,9 @@ const formatDate = (ts) => {
         <h1 class="text-2xl font-semibold text-slate-900">Paycut log</h1>
         <p class="text-sm text-slate-500">Use filters to narrow down the report.</p>
       </div>
-      <div class="flex flex-wrap items-center gap-3">
+      <div class="flex flex-wrap gap-2 p-3 rounded-2xl border border-white/20
+         bg-white/60 backdrop-blur-md shadow-sm
+         supports-[backdrop-filter]:bg-white/50 sticky top-14">
         <EmployeeFilter
           v-model:company_id="filters.company_id"
           v-model:department_id="filters.department_id"

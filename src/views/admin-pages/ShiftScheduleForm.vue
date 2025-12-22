@@ -538,7 +538,9 @@ function toggleSelectAllVisible(checked) {
     </div>
 
     <!-- Filters -->
-    <div class="flex flex-wrap justify-start items-center gap-3 mb-2">
+    <div class="flex flex-wrap gap-2 p-3 rounded border border-white/20
+         bg-white/60 backdrop-blur-md shadow-sm
+         supports-[backdrop-filter]:bg-white/50 sticky top-14">
       <EmployeeFilter
         v-model:company_id="selectedCompany"
         v-model:department_id="selectedDepartment"
@@ -560,15 +562,13 @@ function toggleSelectAllVisible(checked) {
         </div>
       </EmployeeFilter>
 
-      <div class="relative">
-        <label class="top-label">Month</label>
-        <FlexibleDatePicker
-          v-model="period"
-          :show-year="false"
-          :show-month="true"
-          :show-date="false"
-        />
-      </div>
+      <FlexibleDatePicker
+        v-model="period"
+        :show-year="false"
+        :show-month="true"
+        :show-date="false"
+        label="Month"
+      />
     </div>
 
     <!-- Required filters status -->

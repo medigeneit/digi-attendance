@@ -132,7 +132,7 @@ const handleFilterChange = () => {
       <div></div>
     </div>
 
-    <div class="flex flex-wrap gap-4 items-center">
+    <div class="flex flex-wrap gap-4 items-center bg-white p-4 rounded sticky top-14 z-40">
       <EmployeeFilter
         v-model:company_id="filters.company_id"
         v-model:department_id="filters.department_id"
@@ -141,6 +141,7 @@ const handleFilterChange = () => {
         :with-type="true"
         :initial-value="$route.query"
         @filter-change="handleFilterChange"
+        class="w-full"
       >
       <div>
         <label class="top-label -top-1">Select Month</label>

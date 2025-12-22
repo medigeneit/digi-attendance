@@ -294,7 +294,7 @@ const hasNotices = computed(() => total.value > 0)
     </div>
 
     <!-- Sticky Filters -->
-    <div class="sticky top-0 z-10 rounded-2xl border border-slate-200 bg-white/90 backdrop-blur p-3 print:hidden">
+    <div class="sticky top-14 z-10 rounded-2xl border border-slate-200 bg-white/90 backdrop-blur p-3 print:hidden">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <!-- Search -->
         <div class="flex-1">
@@ -471,10 +471,10 @@ const hasNotices = computed(() => total.value > 0)
         </div>
 
         <!-- Desktop Table -->
-        <div class="hidden md:block overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="hidden md:block rounded-2xl border border-slate-200 bg-white shadow-sm">
           <table class="min-w-full table-auto divide-y divide-slate-200 text-sm">
-            <thead class="bg-slate-50">
-              <tr class="text-left text-xs uppercase tracking-widest text-slate-500">
+            <thead>
+              <tr class="text-left text-xs uppercase tracking-widest text-slate-500 sticky top-44 z-50 bg-slate-50">
                 <th class="px-4 py-3 font-medium">#</th>
                 <th class="px-4 py-3 font-medium">Title</th>
                 <!-- <th class="px-4 py-3 font-medium w-36">Company</th> -->

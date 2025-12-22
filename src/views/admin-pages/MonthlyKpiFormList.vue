@@ -136,7 +136,9 @@ onMounted(() => fetchList())
     </div>
 
     <!-- Filters -->
-    <div class="rounded-xl border bg-white p-4 shadow-sm">
+    <div class="flex flex-wrap gap-2 p-3 rounded border border-white/20
+         bg-white/60 backdrop-blur-md shadow-sm
+         supports-[backdrop-filter]:bg-white/50 sticky top-14">
       <div class="flex flex-wrap justify-start items-center gap-4">
         <div class="md:col-span-3 relative">
           <label class="top-label top-0">Type</label>
