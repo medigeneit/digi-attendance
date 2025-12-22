@@ -362,8 +362,8 @@ onMounted(async () => {
         </div>
 
         <!-- Search -->
-        <div class="md:col-span-4">
-          <label class="mb-1 block text-sm font-medium text-slate-700">Search</label>
+        <div class="md:col-span-4 relative">
+          <label class="top-label">Search</label>
           <input
             v-model.trim="filters.q"
             @keyup.enter="search"
@@ -374,8 +374,8 @@ onMounted(async () => {
         </div>
 
         <!-- Sort -->
-        <div class="md:col-span-3">
-          <label class="mb-1 block text-sm font-medium text-slate-700">Sort by</label>
+        <div class="md:col-span-3 relative">
+          <label class="top-label">Sort by</label>
           <select
             class="h-9 w-full rounded-md border border-slate-300 px-2 text-sm"
             v-model="sortBy"
@@ -387,8 +387,8 @@ onMounted(async () => {
           </select>
         </div>
 
-        <div class="md:col-span-1">
-          <label class="mb-1 block text-sm font-medium text-slate-700">Order</label>
+        <div class="md:col-span-1 relative">
+          <label class="top-label">Order</label>
           <button
             class="h-9 w-full rounded-md border border-slate-300 text-sm hover:bg-slate-50"
             @click="toggleSort(sortBy)"

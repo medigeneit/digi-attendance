@@ -207,8 +207,7 @@ function updateModel(next) {
 
 <template>
   <div class="flex flex-col gap-1 relative ">
-    <!-- z-[9999] -->
-    <!-- Top label -->
+     <label for="" class="top-label -top-1 text-[11px] font-semibold tracking-wide"> {{ label }} </label>
     <!-- <div class="flex items-center justify-between mb-0.5">
       <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
         {{ label }}

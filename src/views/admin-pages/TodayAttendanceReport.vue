@@ -232,6 +232,7 @@ watch(status, () => {
           @filter-change="handleFilterChange"
         >
         <div class="relative gap-4">
+
           <select id="userSelect" v-model="status" class="input-1 py-0.5">
             <option v-for="option in statusOptions" :key="option.value" :value="option.value">
               {{ option.label }}
@@ -245,8 +246,9 @@ watch(status, () => {
           :show-year="false"
           :show-month="false"
           :show-date="true"
+          label="Month"
         />
-        <button type="button" @click="fetchAttendance" class="btn-2 py-1 px-3">Search</button>
+        <button type="button" @click="fetchAttendance" class="btn-2 rounded py-0.5 px-3">Search</button>
       </div>
     </div>
 

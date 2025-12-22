@@ -439,7 +439,7 @@ const toggleFinalize = async () => {
 
     <!-- Filters -->
     <div class="glass-panel p-4 space-y-3 z-50">
-      <div class="flex flex-wrap">
+      <div class="flex  items-center justify-start gap-4">
         <EmployeeFilter
           v-model:company_id="filters.company_id"
           v-model:department_id="filters.department_id"
@@ -448,18 +448,19 @@ const toggleFinalize = async () => {
           :with-type="true"
           :initial-value="$route.query"
           @filter-change="handleFilterChange"
+          class="w-full"
         >
-        <div class="relative">
+        <div class="flex gap-2">
           <FlexibleDatePicker
             v-model="period"
             :show-year="false"
             :show-month="true"
             :show-date="false"
+            label="Month"
             />
-          <label class="top-label">Month</label>
+            <button type="button" @click="fetchAttendance()" class="btn-2 rounded">Search</button>
         </div>
         </EmployeeFilter>
-        <button type="button" @click="fetchAttendance()" class="btn-2">Search</button>
       </div>
     </div>
 

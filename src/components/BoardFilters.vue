@@ -161,7 +161,7 @@ watch(() => route.query.user_type, (v) => {
       :departments="departments"
       @filter-change="(p) => { Object.assign(local, p) }"
     >
-    <button class="btn-2 py-1" @click="submit">
+    <button class="btn-2 rounded py-1" @click="submit">
       Apply
     </button>
     </EmployeeFilter>

@@ -2,8 +2,9 @@
 import LoaderView from '@/components/common/LoaderView.vue'
 import { useMonthlyKpiFormsStore } from '@/stores/monthly-kpi-forms'
 import { storeToRefs } from 'pinia'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -18,6 +19,53 @@ const sort_by = ref(route.query.sort_by ?? 'created_at')
 const sort_dir = ref(route.query.sort_dir ?? 'desc')
 const per_page = ref(Number(route.query.per_page ?? 15))
 const page = ref(Number(route.query.page ?? 1))
+
+const pad = (value) => String(value ?? '').padStart(2, '0')
+
+const parsePeriod = (value) => {
+  const current = new Date()
+  if (!value) {
+    return { year: current.getFullYear(), month: current.getMonth() + 1, day: 1 }
+  }
+  const [year = '', monthValue = ''] = String(value).split('-')
+  return {
+    year: Number(year) || current.getFullYear(),
+    month: Number(monthValue) || current.getMonth() + 1,
+    day: 1,
+  }
+}
+
+const formatMonth = (value) => `${value.year}-${pad(value.month)}`
+
+const monthPeriod = computed({
+  get() {
+    return parsePeriod(month.value)
+  },
+  set(value) {
+    if (!value) return
+    month.value = formatMonth(value)
+  },
+})
+
+const fromPeriod = computed({
+  get() {
+    return parsePeriod(date_from.value)
+  },
+  set(value) {
+    if (!value) return
+    date_from.value = formatMonth(value)
+  },
+})
+
+const toPeriod = computed({
+  get() {
+    return parsePeriod(date_to.value)
+  },
+  set(value) {
+    if (!value) return
+    date_to.value = formatMonth(value)
+  },
+})
 
 function syncUrl() {
   router.replace({
@@ -63,6 +111,10 @@ function periodText(row) {
   return row.end_month ? `${row.start_month} → ${row.end_month}` : row.start_month
 }
 
+watch([month, date_from, date_to], () => {
+  fetchList({ page: 1 })
+})
+
 onMounted(() => fetchList())
 </script>
 
@@ -85,11 +137,11 @@ onMounted(() => fetchList())
 
     <!-- Filters -->
     <div class="rounded-xl border bg-white p-4 shadow-sm">
-      <div class="grid items-end gap-3 md:grid-cols-12">
-        <div class="md:col-span-3">
-          <label class="block text-sm font-medium text-gray-700">Type</label>
+      <div class="flex flex-wrap justify-start items-center gap-4">
+        <div class="md:col-span-3 relative">
+          <label class="top-label top-0">Type</label>
           <select v-model="type" @change="fetchList({ page: 1 })"
-            class="mt-1 w-full rounded-md border px-3 py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200">
+            class="mt-1 w-full rounded-md border px-3 py-1 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200">
             <option value="">All</option>
             <option value="admin">Admin</option>
             <option value="exchange">Exchange</option>
@@ -97,23 +149,35 @@ onMounted(() => fetchList())
           </select>
         </div>
         <div class="md:col-span-3">
-          <label class="block text-sm font-medium text-gray-700">Covers Month</label>
-          <input type="month" v-model="month" @change="fetchList({ page: 1 })"
-            class="mt-1 w-full rounded-md border px-3 py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" />
+          <FlexibleDatePicker
+            v-model="monthPeriod"
+            :show-year="false"
+            :show-month="true"
+            :show-date="false"
+            label="Covers Month"
+          />
         </div>
         <div class="md:col-span-3">
-          <label class="block text-sm font-medium text-gray-700">From (period)</label>
-          <input type="month" v-model="date_from" @change="fetchList({ page: 1 })"
-            class="mt-1 w-full rounded-md border px-3 py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" />
+          <FlexibleDatePicker
+            v-model="fromPeriod"
+            :show-year="false"
+            :show-month="true"
+            :show-date="false"
+            label="From (period)"
+          />
         </div>
         <div class="md:col-span-3">
-          <label class="block text-sm font-medium text-gray-700">To (period)</label>
-          <input type="month" v-model="date_to" @change="fetchList({ page: 1 })"
-            class="mt-1 w-full rounded-md border px-3 py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" />
+          <FlexibleDatePicker
+            v-model="toPeriod"
+            :show-year="false"
+            :show-month="true"
+            :show-date="false"
+            label="To (period)"
+          />
         </div>
 
-        <div class="md:col-span-2">
-          <label class="block text-sm font-medium text-gray-700">Sort By</label>
+        <div class="relative">
+          <label class="top-label top-0">Sort By</label>
           <select v-model="sort_by" @change="fetchList({ page: 1 })"
             class="mt-1 w-full rounded-md border px-3 py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200">
             <option value="created_at">Created Date</option>
@@ -125,16 +189,16 @@ onMounted(() => fetchList())
             <option value="monthly_target_marks">Target</option>
           </select>
         </div>
-        <div class="md:col-span-2">
-          <label class="block text-sm font-medium text-gray-700">Direction</label>
+        <div class="relative">
+          <label class="top-label top-0">Direction</label>
           <select v-model="sort_dir" @change="fetchList({ page: 1 })"
             class="mt-1 w-full rounded-md border px-3 py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200">
             <option value="desc">Desc</option>
             <option value="asc">Asc</option>
           </select>
         </div>
-        <div class="md:col-span-2">
-          <label class="block text-sm font-medium text-gray-700">Per Page</label>
+        <div class="relative">
+          <label class="top-label top-0">Per Page</label>
           <select v-model.number="per_page" @change="fetchList({ page: 1 })"
             class="mt-1 w-full rounded-md border px-3 py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200">
             <option :value="10">10</option>

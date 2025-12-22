@@ -427,7 +427,8 @@ const modalLaneGroups = computed(() => {
           class="w-full"
           @filter-change="handleFilterChange"
         > 
-        <div class="flex items-center gap-2">
+        <div class="flex gap-2">
+          <label for="" class="top-label -top-1">Year</label>
           <select
             v-model.number="year"
             class="w-32 rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400/50 disabled:opacity-60"
@@ -456,11 +457,11 @@ const modalLaneGroups = computed(() => {
           </option>
         </select>
           <button
-            class="btn-1"
+            class="btn-1 rounded"
             @click="downloadExcel"
             :disabled="exportingExcel || isLoading"
           >
-            <i class="far fa-file-excel mr-1"></i>
+            <i class="far fa-file-excel mr-1 text-lg text-green-600"></i>
             {{ exportingExcel ? 'Preparing...' : 'Download Excel' }}
           </button>
       </div>

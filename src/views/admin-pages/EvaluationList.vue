@@ -9,6 +9,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import CreateEvaluationModal from '@/components/CreateEvaluationModal.vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 
 const toast = useToast()
 const router = useRouter()
@@ -43,6 +44,23 @@ function monthBounds(yyyyMm) {
 }
 const DEFAULT_MONTH = route.query.month || toYYYYMM()
 
+const pad = (value) => String(value ?? '').padStart(2, '0')
+
+const parsePeriod = (value) => {
+  const current = new Date()
+  if (!value) {
+    return { year: current.getFullYear(), month: current.getMonth() + 1, day: 1 }
+  }
+  const [year = '', monthValue = ''] = String(value).split('-')
+  return {
+    year: Number(year) || current.getFullYear(),
+    month: Number(monthValue) || current.getMonth() + 1,
+    day: 1,
+  }
+}
+
+const formatMonth = (value) => `${value.year}-${pad(value.month)}`
+
 // ===== filters =====
 const filters = ref({
   company_id:    route.query.company_id ? Number(route.query.company_id) : '',
@@ -60,6 +78,36 @@ const filters = ref({
   month:        route.query.month || DEFAULT_MONTH,   // YYYY-MM
   start_month:  route.query.start_month || DEFAULT_MONTH,
   end_month:    route.query.end_month   || DEFAULT_MONTH,
+})
+
+const monthPeriod = computed({
+  get() {
+    return parsePeriod(filters.value.month)
+  },
+  set(value) {
+    if (!value) return
+    filters.value.month = formatMonth(value)
+  },
+})
+
+const startMonthPeriod = computed({
+  get() {
+    return parsePeriod(filters.value.start_month)
+  },
+  set(value) {
+    if (!value) return
+    filters.value.start_month = formatMonth(value)
+  },
+})
+
+const endMonthPeriod = computed({
+  get() {
+    return parsePeriod(filters.value.end_month)
+  },
+  set(value) {
+    if (!value) return
+    filters.value.end_month = formatMonth(value)
+  },
 })
 
 const periodParams = computed(() => {
@@ -354,24 +402,33 @@ watch(
 
         <!-- inputs -->
         <div class="mt-3">
-          <div v-if="filters.period === 'month'" class="relative inline-flex items-center">
-            <input type="month" v-model="filters.month"
-                  class="h-9 w-[200px] rounded-md border border-slate-300 pl-9 pr-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" />
-            <svg class="pointer-events-none absolute left-2 h-4 w-4 text-slate-500" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10h5v5H7z"/><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v2H3V6a2 2 0 0 1 2-2h2V2zM3 10h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V10z"/></svg>
+          <div v-if="filters.period === 'month'" class="inline-flex items-center">
+            <FlexibleDatePicker
+              v-model="monthPeriod"
+              :show-year="false"
+              :show-month="true"
+              :show-date="false"
+              class="h-9"
+              label="Month"
+            />
           </div>
           <div v-else class="flex flex-wrap items-end gap-3">
-            <div class="relative">
-              <label class="block text-[11px] text-slate-600">Start</label>
-              <input type="month" v-model="filters.start_month"
-                    class="mt-1 h-9 w-[200px] rounded-md border border-slate-300 pl-9 pr-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" />
-              <svg class="pointer-events-none absolute left-2 top-[34px] h-4 w-4 text-slate-500" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10h5v5H7z"/><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v2H3V6a2 2 0 0 1 2-2h2V2zM3 10h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V10z"/></svg>
-            </div>
-            <div class="relative">
-              <label class="block text-[11px] text-slate-600">End</label>
-              <input type="month" v-model="filters.end_month"
-                    class="mt-1 h-9 w-[200px] rounded-md border border-slate-300 pl-9 pr-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" />
-              <svg class="pointer-events-none absolute left-2 top-[34px] h-4 w-4 text-slate-500" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10h5v5H7z"/><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v2H3V6a2 2 0 0 1 2-2h2V2zM3 10h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V10z"/></svg>
-            </div>
+            <FlexibleDatePicker
+              v-model="startMonthPeriod"
+              :show-year="false"
+              :show-month="true"
+              :show-date="false"
+              class="h-9"
+              label="Start"
+            />
+            <FlexibleDatePicker
+              v-model="endMonthPeriod"
+              :show-year="false"
+              :show-month="true"
+              :show-date="false"
+              class="h-9"
+              label="End"
+            />
           </div>
         </div>
       </div>
