@@ -416,7 +416,7 @@ const modalLaneGroups = computed(() => {
     </div>
 
     <!-- Controls -->
-    <div class="flex flex-wrap items-end gap-3 sticky top-0 z-10 bg-white/80 backdrop-blur print:hidden p-2 -mx-2 rounded-xl border border-gray-100">
+    <div class="flex flex-wrap items-end gap-3 sticky top-16 z-10 bg-white/80 backdrop-blur print:hidden p-2 -mx-2 rounded-xl border border-gray-100">
       <div class="w-full flex items-start gap-3">
         <EmployeeFilter
           v-model:company_id="filters.company_id"
@@ -578,9 +578,9 @@ const modalLaneGroups = computed(() => {
       </div>
 
       <!-- ===== Desktop Table ===== -->
-      <div class="hidden md:block overflow-x-auto rounded-2xl border bg-white shadow-sm">
+      <div class="hidden md:block rounded-2xl border bg-white shadow-sm">
         <table class="w-full text-sm">
-          <thead class="sticky top-0 z-[5] bg-gray-100/95 backdrop-blur">
+          <thead class="sticky top-40 z-[5] bg-gray-100/95 backdrop-blur">
             <tr>
               <th class="sticky left-0 z-[6] border-b border-r bg-gray-100/95 px-3 py-2 text-center"
                   style="min-width:3rem;width:3rem">
