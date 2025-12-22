@@ -603,38 +603,36 @@ const totalEmployees = computed(() => employeesList.value.length)
                 </button>
               </div>
             </div>
-
-            <div class="w-full">
-              <label class="font-medium block mb-1">
-                Publish Date <span class="text-red-500" v-if="!isPolicyNotice">*</span>
-              </label>
-              <FlexibleDatePicker
-                v-model="publishPeriod"
-                :show-year="false"
-                :show-month="false"
-                :show-date="true"
-                :disabled="isPolicyNotice"
-              />
-              <p v-if="isPolicyNotice" class="text-xs text-gray-500 mt-1">
-                Policies skip publish dates and remain visible indefinitely.
-              </p>
-            </div>
-
-            <div class="w-full">
-              <label class="font-medium block mb-1">Expire Date</label>
-              <FlexibleDatePicker
-                v-model="expirePeriod"
-                :show-year="false"
-                :show-month="false"
-                :show-date="true"
-                :disabled="isPolicyNotice"
-              />
-              <p v-if="!validDateRange && !isPolicyNotice" class="text-xs text-red-600 mt-1">
-                Expire date must be the same or after Publish date.
-              </p>
-              <p v-else-if="isPolicyNotice" class="text-xs text-gray-500 mt-1">
-                Policies stay active until replaced.
-              </p>
+            <div class="flex">
+              <div class="w-full">
+                <FlexibleDatePicker
+                  v-model="publishPeriod"
+                  :show-year="false"
+                  :show-month="false"
+                  :show-date="true"
+                  :disabled="isPolicyNotice"
+                  label="Publish Date *"
+                />
+                <p v-if="isPolicyNotice" class="text-xs text-gray-500 mt-1">
+                  Policies skip publish dates and remain visible indefinitely.
+                </p>
+              </div>
+              <div class="w-full">
+                <FlexibleDatePicker
+                  v-model="expirePeriod"
+                  :show-year="false"
+                  :show-month="false"
+                  :show-date="true"
+                  :disabled="isPolicyNotice"
+                  label="Expire Date"
+                />
+                <p v-if="!validDateRange && !isPolicyNotice" class="text-xs text-red-600 mt-1">
+                  Expire date must be the same or after Publish date.
+                </p>
+                <p v-else-if="isPolicyNotice" class="text-xs text-gray-500 mt-1">
+                  Policies stay active until replaced.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -683,7 +681,6 @@ const totalEmployees = computed(() => employeesList.value.length)
           <!-- Companies -->
           <div class="space-y-3">
             <div class="flex items-center justify-between">
-              <label class="font-medium">Companies</label>
               <div class="inline-flex rounded-lg border overflow-hidden">
                 <button
                   type="button"
@@ -708,6 +705,7 @@ const totalEmployees = computed(() => employeesList.value.length)
                 placeholder="Select companies"
                 track-by="id"
                 label="name"
+                top-label="Companies"
               />
             </div>
           </div>
@@ -740,6 +738,7 @@ const totalEmployees = computed(() => employeesList.value.length)
                 placeholder="Select departments"
                 track-by="id"
                 label="name"
+                top-label="Departments"
               />
             </div>
 
@@ -774,6 +773,7 @@ const totalEmployees = computed(() => employeesList.value.length)
                 placeholder="Select employee"
                 track-by="id"
                 label="name"
+                top-label="Employees"
               />
             </div>
           </div>
