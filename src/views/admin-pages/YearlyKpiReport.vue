@@ -279,6 +279,7 @@ function closeReviewModal() {
 }
 
 const exportingExcel = ref(false)
+const exportingCommentExcel = ref(false)
 
 function buildExportParams() {
   return {
@@ -291,6 +292,17 @@ function buildExportParams() {
   }
 }
 
+function buildCommentExportParams() {
+  return {
+    year: Number(year.value),
+    company_id: filters.company_id || undefined,
+    department_id: filters.department_id || undefined,
+    employee_id: filters.employee_id || undefined,
+    line_type: filters.line_type || undefined,
+    flag: 'comment_excel',
+  }
+}
+
 async function downloadExcel() {
   exportingExcel.value = true
 
@@ -300,6 +312,18 @@ async function downloadExcel() {
     console.error('exportYearly failed:', e)
   } finally {
     exportingExcel.value = false
+  }
+}
+
+async function downloadCommentExcel() {
+  exportingCommentExcel.value = true
+
+  try {
+    await store.exportYearly(buildCommentExportParams())
+  } catch (e) {
+    console.error('exportYearly comment_excel failed:', e)
+  } finally {
+    exportingCommentExcel.value = false
   }
 }
 
@@ -456,14 +480,22 @@ const modalLaneGroups = computed(() => {
             {{ opt.label }}
           </option>
         </select>
-          <button
-            class="btn-1 rounded"
-            @click="downloadExcel"
-            :disabled="exportingExcel || isLoading"
-          >
-            <i class="far fa-file-excel mr-1 text-lg text-green-600"></i>
-            {{ exportingExcel ? 'Preparing...' : 'Download Excel' }}
-          </button>
+        <button
+          class="btn-1 rounded"
+          @click="downloadExcel"
+          :disabled="exportingExcel || isLoading"
+        >
+          <i class="far fa-file-excel mr-1 text-lg text-green-600"></i>
+          {{ exportingExcel ? 'Preparing...' : 'Download Excel' }}
+        </button>
+        <button
+          class="btn-1 rounded"
+          @click="downloadCommentExcel"
+          :disabled="exportingCommentExcel || isLoading"
+        >
+          <i class="far fa-file-excel mr-1 text-lg text-green-600"></i>
+          {{ exportingCommentExcel ? 'Preparing...' : 'Download Comments Excel' }}
+        </button>
       </div>
 
 
