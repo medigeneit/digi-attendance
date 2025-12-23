@@ -540,7 +540,7 @@ function toggleSelectAllVisible(checked) {
     <!-- Filters -->
     <div class="flex flex-wrap gap-2 p-3 rounded border border-white/20
          bg-white/60 backdrop-blur-md shadow-sm
-         supports-[backdrop-filter]:bg-white/50 sticky top-14">
+         supports-[backdrop-filter]:bg-white/50 sticky top-14 z-20">
       <EmployeeFilter
         v-model:company_id="selectedCompany"
         v-model:department_id="selectedDepartment"
@@ -636,7 +636,7 @@ function toggleSelectAllVisible(checked) {
 
     <!-- Clickable Legend -->
     <div
-      class="flex flex-wrap gap-2 md:gap-3 mb-4 p-2 md:p-3 bg-white/70 backdrop-blur rounded sticky top-16 z-20 border"
+      class="flex flex-wrap gap-2 md:gap-3 mb-4 p-2 md:p-3 bg-white/70 backdrop-blur rounded sticky top-16  border"
     >
       <div
         v-for="shift in allShifts"
