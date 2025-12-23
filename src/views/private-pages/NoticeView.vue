@@ -19,13 +19,6 @@ const policyCount = computed(() => policies.value.filter((p) => p.user_feedback 
 </script>
 <template>
   <section class="relative overflow-hidden px-4 py-6 md:px-6">
-    <div
-      class="pointer-events-none absolute -top-24 -right-20 h-64 w-64 rounded-full bg-gradient-to-br from-amber-200 via-rose-200 to-transparent blur-3xl"
-    ></div>
-    <div
-      class="pointer-events-none absolute -bottom-28 -left-16 h-72 w-72 rounded-full bg-gradient-to-tr from-sky-200 via-emerald-200 to-transparent blur-3xl"
-    ></div>
-
     <div class="relative mx-auto max-w-5xl">
       <div class="mb-6 flex flex-col gap-2 md:mb-8">
         <p class="text-xs uppercase tracking-[0.3em] text-slate-500 font-semibold">

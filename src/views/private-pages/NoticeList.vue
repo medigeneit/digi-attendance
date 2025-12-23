@@ -18,13 +18,6 @@ const unreadCount = computed(() => notices.value.filter((n) => !n.user_feedback)
 
 <template>
   <section class="relative overflow-hidden px-4 py-6 md:px-6">
-    <div
-      class="pointer-events-none absolute -top-20 -right-16 h-64 w-64 rounded-full bg-gradient-to-br from-amber-200 via-rose-200 to-transparent blur-3xl"
-    ></div>
-    <div
-      class="pointer-events-none absolute -bottom-24 -left-20 h-72 w-72 rounded-full bg-gradient-to-tr from-sky-200 via-emerald-200 to-transparent blur-3xl"
-    ></div>
-
     <div class="relative mx-auto max-w-5xl">
       <div class="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
