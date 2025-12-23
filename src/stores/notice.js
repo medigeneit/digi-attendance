@@ -16,9 +16,10 @@ export const useNoticeStore = defineStore('notice', () => {
 
 
   const fetchFeedbacks = async (noticeId, payload = {}) => {
-    const res = await apiClient.get(`/notice/feedbacks/${noticeId}`, payload)
+    const res = await apiClient.get(`/notice/${noticeId}/feedbacks`, payload)
     feedbacks.value = res?.data?.data
     totalFeedbacks.value = res?.data?.meta?.total
+    notice.value = res?.data?.notice
   }
 
   const downloadFeedbackUserExcel = async (noticeId, queryParams = {}) => {
@@ -74,7 +75,7 @@ export const useNoticeStore = defineStore('notice', () => {
     try {
       isLoading.value = true; // লোডিং শুরু
       const response = await apiClient.get('/notices');
-      notices.value = response?.data;
+      notices.value = response?.data?.data ?? response?.data ?? [];
       error.value = null;
     } catch (err) {
       error.value = err.response?.data?.message || 'Something went wrong';

@@ -18,30 +18,94 @@ const noticeCount = computed(() => notices.value.filter((n) => n.user_feedback =
 const policyCount = computed(() => policies.value.filter((p) => p.user_feedback === null).length)
 </script>
 <template>
-  <div class="grid gap-4 md:grid-cols-3 px-4">
-    <RouterLink :to="{ name: 'MyNoticeList' }" class="main-button relative">
-      <i class="far fa-exclamation text-3xl"></i>
-      General Notice
-      <div v-if="noticeCount > 0" class="absolute top-2 right-2">
-        <span class="relative flex h-4 w-4">
-          <span
-            class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"
-          ></span>
-          <span class="relative inline-flex rounded-full h-4 w-4 bg-green-500"></span>
-        </span>
+  <section class="relative overflow-hidden px-4 py-6 md:px-6">
+    <div class="relative mx-auto max-w-5xl">
+      <div class="mb-6 flex flex-col gap-2 md:mb-8">
+        <p class="text-xs uppercase tracking-[0.3em] text-slate-500 font-semibold">
+          Notice Center
+        </p>
+        <h1 class="text-2xl md:text-3xl font-serif font-semibold text-slate-900">
+          Stay updated with company announcements
+        </h1>
+        <p class="text-sm md:text-base text-slate-600 max-w-2xl">
+          Review general notices and office policies. Unread items are highlighted so you can act
+          fast.
+        </p>
       </div>
-    </RouterLink>
-    <RouterLink :to="{ name: 'PolicyList' }" class="main-button relative">
-      <i class="far fa-file-chart-line text-3xl"></i>
-      Office Policy
-      <div v-if="policyCount > 0" class="absolute top-2 right-2">
-        <span class="relative flex h-3 w-3">
-          <span
-            class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"
-          ></span>
-          <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-        </span>
+
+      <div class="grid gap-4 md:grid-cols-2">
+        <RouterLink
+          :to="{ name: 'MyNoticeList' }"
+          class="group relative overflow-hidden rounded-2xl bg-white/80 p-5 shadow-lg ring-1 ring-slate-200 transition duration-300 hover:-translate-y-1 hover:shadow-xl"
+        >
+          <div class="flex items-start justify-between">
+            <div class="flex items-center gap-3">
+              <div
+                class="h-11 w-11 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center"
+              >
+                <i class="far fa-exclamation text-xl"></i>
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold text-slate-900">General Notice</h3>
+                <p class="text-sm text-slate-500">Updates, events, and announcements</p>
+              </div>
+            </div>
+            <span class="text-xs font-semibold text-slate-500">Open</span>
+          </div>
+          <div class="mt-4 flex items-center gap-3">
+            <div
+              class="rounded-full bg-slate-900/90 px-3 py-1 text-xs font-semibold text-white"
+            >
+              {{ noticeCount }} Unread
+            </div>
+            <div v-if="noticeCount > 0" class="flex items-center gap-2 text-emerald-600 text-xs">
+              <span class="relative flex h-2 w-2">
+                <span
+                  class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"
+                ></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              New updates available
+            </div>
+          </div>
+        </RouterLink>
+
+        <RouterLink
+          :to="{ name: 'PolicyList' }"
+          class="group relative overflow-hidden rounded-2xl bg-white/80 p-5 shadow-lg ring-1 ring-slate-200 transition duration-300 hover:-translate-y-1 hover:shadow-xl"
+        >
+          <div class="flex items-start justify-between">
+            <div class="flex items-center gap-3">
+              <div
+                class="h-11 w-11 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center"
+              >
+                <i class="far fa-file-chart-line text-xl"></i>
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold text-slate-900">Office Policy</h3>
+                <p class="text-sm text-slate-500">Guidelines and compliance notes</p>
+              </div>
+            </div>
+            <span class="text-xs font-semibold text-slate-500">Open</span>
+          </div>
+          <div class="mt-4 flex items-center gap-3">
+            <div
+              class="rounded-full bg-slate-900/90 px-3 py-1 text-xs font-semibold text-white"
+            >
+              {{ policyCount }} Unread
+            </div>
+            <div v-if="policyCount > 0" class="flex items-center gap-2 text-rose-600 text-xs">
+              <span class="relative flex h-2 w-2">
+                <span
+                  class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"
+                ></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+              </span>
+              New policies available
+            </div>
+          </div>
+        </RouterLink>
       </div>
-    </RouterLink>
-  </div>
+    </div>
+  </section>
 </template>

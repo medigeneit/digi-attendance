@@ -233,24 +233,20 @@ const initialFilter = computed(() => ({
       <!-- Date Range -->
       <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div class="flex flex-wrap gap-4">
-          <div class="relative">
-            <label class="top-label">Start Date</label>
-            <FlexibleDatePicker
-              v-model="startPeriod"
-              :show-year="false"
-              :show-month="false"
-              :show-date="true"
-            />
-          </div>
-          <div class="relative">
-            <label class="top-label">End Date</label>
-            <FlexibleDatePicker
-              v-model="endPeriod"
-              :show-year="false"
-              :show-month="false"
-              :show-date="true"
-            />
-          </div>
+          <FlexibleDatePicker
+            v-model="startPeriod"
+            :show-year="false"
+            :show-month="false"
+            :show-date="true"
+            label="Start Date"
+          />
+          <FlexibleDatePicker
+            v-model="endPeriod"
+            :show-year="false"
+            :show-month="false"
+            :show-date="true"
+            label="End Date"
+          />
         </div>
         <div class="flex gap-4">
           <button

@@ -29,6 +29,7 @@
     </div>
 
     <div class="relative" :style="dropdownStyle">
+      <label class="top-label -top-1">{{ topLabel }}</label>
       <Multiselect
         v-model="selectedValue"
         :options="options"
@@ -59,13 +60,13 @@
         ]"
       >
         <!-- Caret -->
-        <template #caret>
+        <!-- <template #caret>
           <svg class="h-4 w-4 text-gray-500 mr-2 transition-transform"
                :class="{ 'rotate-180': isOpenHint }"
                viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path fill-rule="evenodd" d="M10 12a1 1 0 0 1-.7-.29l-4-4a1 1 0 1 1 1.4-1.42L10 9.59l3.3-3.3a1 1 0 1 1 1.4 1.42l-4 4A1 1 0 0 1 10 12z" clip-rule="evenodd"/>
           </svg>
-        </template>
+        </template> -->
 
         <!-- Custom SEARCH with magnifier + clear (×) -->
         <template #search="{ search, attributes, events }">
@@ -75,7 +76,7 @@
                 <path fill-rule="evenodd" d="M13.293 14.707a8 8 0 1 1 1.414-1.414l3.5 3.5a1 1 0 0 1-1.414 1.414l-3.5-3.5zM8 14a6 6 0 1 0 0-12 6 6 0 0 0 0 12z" clip-rule="evenodd"/>
               </svg>
               <input
-                class="w-full pl-8 pr-8 py-2 rounded-md border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                class="w-full pl-8 pr-8 py-1 rounded border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 v-bind="attributes"
                 v-on="events"
                 :placeholder="searchPlaceholder || 'Search...'"
@@ -135,9 +136,9 @@
               </span>
               <span
                 v-if="isSelectedOption(option)"
-                class="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-600"
+                class="inline-flex items-center gap-1 rounded bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-600"
               >
-                <span class="h-1.5 w-1.5 rounded-full bg-current"></span>
+                <span class="h-1.5 w-1.5 rounded bg-current"></span>
                 Selected
               </span>
             </div>
@@ -180,10 +181,10 @@
 
         <!-- Empty / No result -->
         <template #noOptions>
-          <div class="px-3 py-2 text-sm text-gray-500">{{ noOptionsText }}</div>
+          <div class="px-3 py-1 text-sm text-gray-500">{{ noOptionsText }}</div>
         </template>
         <template #noResult>
-          <div class="px-3 py-2 text-sm text-gray-500">{{ noResultText }}</div>
+          <div class="px-3 py-1 text-sm text-gray-500">{{ noResultText }}</div>
         </template>
       </Multiselect>
 
@@ -215,6 +216,7 @@ const props = defineProps({
   maxHeight: { type: Number, default: 240 },
 
   /* Data keys & labels */
+  topLabel: { type: String, default: 'name' },
   label: { type: String, default: 'name' },
   labelPrefix: { type: String, default: '' },
   trackBy: { type: String, default: 'id' },
@@ -232,7 +234,7 @@ const props = defineProps({
   labelHint: { type: String, default: '' },
 
   /* Chips */
-  chipLimit: { type: Number, default: 2 },
+  chipLimit: { type: Number, default: 25 },
   showCounter: { type: Boolean, default: true },
 
   /* Toolbar */
@@ -365,13 +367,13 @@ const dropdownStyle = computed(() => ({
 <style>
 @import 'vue-multiselect/dist/vue-multiselect.css';
 
-.smart-multi.multiselect { @apply w-full bg-white border rounded-xl px-2; }
-.smart-multi .multiselect__tags { @apply min-h-[2.5rem] py-1.5 px-2 border-0 bg-transparent flex items-center gap-2; }
+.smart-multi.multiselect { @apply w-full bg-white border rounded px-2 !py-0.5; }
+.smart-multi .multiselect__tags { @apply min-h-[2.5rem] border-0 bg-transparent flex items-center gap-2; }
 .smart-multi .multiselect__input,
 .smart-multi .multiselect__single { @apply bg-transparent focus:outline-none; }
 .smart-multi .multiselect__select { @apply hidden; }
-.smart-multi .multiselect__content-wrapper { @apply border border-gray-200 rounded-lg shadow-lg mt-1 overflow-y-auto bg-white; max-height: var(--multi-max-height, 240px); }
-.smart-multi .multiselect__option { @apply px-3 py-2 text-sm cursor-pointer; }
+.smart-multi .multiselect__content-wrapper { @apply border border-gray-200 rounded shadow-lg mt-1 overflow-y-auto bg-white; max-height: var(--multi-max-height, 240px); }
+.smart-multi .multiselect__option { @apply px-3 py-1 text-sm cursor-pointer; }
 .smart-multi .multiselect__option--highlight { @apply bg-indigo-50 text-indigo-700; }
 .smart-multi .multiselect__option--selected { @apply bg-gray-100 text-gray-700; }
 .smart-multi .multiselect__spinner { @apply absolute right-9 top-2; }
@@ -381,7 +383,7 @@ const dropdownStyle = computed(() => ({
 .smart-multi .multiselect__content-wrapper:hover::-webkit-scrollbar-thumb { background-color: rgba(79, 70, 229, 0.35); }
 
 /* Chips */
-.chip { @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 text-xs; }
+.chip { @apply inline-flex items-center gap-1 px-2 py-0.5 rounded bg-gray-100 text-gray-700 text-xs; }
 .chip-x { @apply hover:text-red-600 focus:outline-none; }
 
 /* Toolbar buttons */

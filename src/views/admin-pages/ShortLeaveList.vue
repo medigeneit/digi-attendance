@@ -161,7 +161,9 @@ const formatDate = (ts) => {
 
       <div></div>
     </div>
-    <div class="flex flex-wrap gap-4 p-3">
+    <div class="flex flex-wrap gap-2 p-3 rounded-2xl border border-white/20
+         bg-white/60 backdrop-blur-md shadow-sm
+         supports-[backdrop-filter]:bg-white/50 sticky top-14">
         <EmployeeFilter
           v-model:company_id="filters.company_id"
             v-model:department_id="filters.department_id"
@@ -171,11 +173,12 @@ const formatDate = (ts) => {
             :initial-value="$route.query"
           @filter-change="handleFilterChange"
         >
-        <div>
+        <div class="relative">
+          <label for="" class="top-label -top-1">Status </label>
           <select
             v-model="shortLeaveStore.selectedStatus"
             @change="fetchShortLeavesByUser"
-            class="input-1 py-0.5 px-2 text-center"
+            class="input-1 py-0.5 text-center"
           >
             <option value="" selected>All</option>
             <option value="Pending">Pending</option>
@@ -185,14 +188,15 @@ const formatDate = (ts) => {
         </div>
       </EmployeeFilter>
 
-      <div class="flex gap-4">
+      <div class="flex gap-4 relative">
+        <label  class="top-label -top-1">Month </label>
         <FlexibleDatePicker
           v-model="period"
           :show-year="false"
           :show-month="true"
           :show-date="false"
         />
-        <button type="button" @click="fetchShortLeavesByUser" class="btn-2 py-1">
+        <button type="button" @click="fetchShortLeavesByUser" class="btn-2 rounded">
           <span class="hidden md:flex">Search</span>
         </button>
       </div>
@@ -203,72 +207,70 @@ const formatDate = (ts) => {
     </div>
 
     <div v-else class="space-y-4">
-      <div class="overflow-x-auto">
-        <table
-          class="min-w-full table-auto border-collapse border border-gray-200 bg-white rounded-md text-sm"
-        >
-          <thead>
-            <tr class="bg-gray-200">
-              <th class="border border-gray-300 px-2 text-left">#</th>
-              <th class="border border-gray-300 px-2 text-left">Employee Name</th>
-              <th class="border border-gray-300 px-2 text-left">Type</th>
-              <th class="border border-gray-300 px-2 text-left">Created Date</th>
-              <th class="border border-gray-300 px-2 text-left">Date</th>
-              <th class="border border-gray-300 px-2 text-left">Start Time</th>
-              <th class="border border-gray-300 px-2 text-left">End Time</th>
-              <th class="border border-gray-300 px-2 text-left">Total Minutes</th>
-              <th class="border border-gray-300 px-2 text-left">Attachment</th>
-              <th class="border border-gray-300 px-2 text-left">Status</th>
-              <th class="border border-gray-300 px-2 text-left">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="(leave, index) in shortLeaveStore?.shortLeaves"
-              :key="leave?.id"
-              class="border-b border-gray-200 hover:bg-blue-200"
-            >
-              <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
-              <td class="border border-gray-300 px-2">{{ leave?.user?.name || 'Unknown' }}</td>
-              <td class="border border-gray-300 px-2">{{ leave?.type || 'Unknown' }}</td>
-              <td class="border border-gray-300 px-2">{{ formatDate(leave.created_at) }}</td>
-              <td class="border border-gray-300 px-2">{{ formatDate(leave.date) }}</td>
-              <td class="border border-gray-300 px-2">{{ formatTime(leave.start_time) }}</td>
-              <td class="border border-gray-300 px-2">
-                {{ leave.end_time ? formatTime(leave.end_time) : '' }}
-              </td>
-              <td class="border border-gray-300 px-2">{{ leave.total_minutes }}</td>
-              <td class="border border-gray-300 px-2 text-center">
-                <a
-                  v-if="leave.attachment"
-                  :href="leave?.attachment"
-                  target="_blank"
-                  class="text-blue-500 underline"
+      <table
+        class="min-w-full table-auto border-collapse border border-gray-200 bg-white rounded-md text-sm"
+      >
+        <thead>
+          <tr class="bg-gray-200 sticky top-28">
+            <th class="border border-gray-300 px-2 text-left">#</th>
+            <th class="border border-gray-300 px-2 text-left">Employee Name</th>
+            <th class="border border-gray-300 px-2 text-left">Type</th>
+            <th class="border border-gray-300 px-2 text-left">Created Date</th>
+            <th class="border border-gray-300 px-2 text-left">Date</th>
+            <th class="border border-gray-300 px-2 text-left">Start Time</th>
+            <th class="border border-gray-300 px-2 text-left">End Time</th>
+            <th class="border border-gray-300 px-2 text-left">Total Minutes</th>
+            <th class="border border-gray-300 px-2 text-left">Attachment</th>
+            <th class="border border-gray-300 px-2 text-left">Status</th>
+            <th class="border border-gray-300 px-2 text-left">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="(leave, index) in shortLeaveStore?.shortLeaves"
+            :key="leave?.id"
+            class="border-b border-gray-200 hover:bg-blue-200"
+          >
+            <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
+            <td class="border border-gray-300 px-2">{{ leave?.user?.name || 'Unknown' }}</td>
+            <td class="border border-gray-300 px-2">{{ leave?.type || 'Unknown' }}</td>
+            <td class="border border-gray-300 px-2">{{ formatDate(leave.created_at) }}</td>
+            <td class="border border-gray-300 px-2">{{ formatDate(leave.date) }}</td>
+            <td class="border border-gray-300 px-2">{{ formatTime(leave.start_time) }}</td>
+            <td class="border border-gray-300 px-2">
+              {{ leave.end_time ? formatTime(leave.end_time) : '' }}
+            </td>
+            <td class="border border-gray-300 px-2">{{ leave.total_minutes }}</td>
+            <td class="border border-gray-300 px-2 text-center">
+              <a
+                v-if="leave.attachment"
+                :href="leave?.attachment"
+                target="_blank"
+                class="text-blue-500 underline"
+              >
+                <i class="fad fa-link"></i>
+              </a>
+            </td>
+            <td class="border border-gray-300 px-2">{{ leave.status || 'N/A' }}</td>
+            <td class="border border-gray-300 px-2">
+              <div class="flex gap-2">
+                <RouterLink
+                  :to="{ name: 'ShortLeaveShow', params: { id: leave?.id } }"
+                  class="btn-icon"
                 >
-                  <i class="fad fa-link"></i>
-                </a>
-              </td>
-              <td class="border border-gray-300 px-2">{{ leave.status || 'N/A' }}</td>
-              <td class="border border-gray-300 px-2">
-                <div class="flex gap-2">
-                  <RouterLink
-                    :to="{ name: 'ShortLeaveShow', params: { id: leave?.id } }"
-                    class="btn-icon"
-                  >
-                    <i class="far fa-eye"></i>
-                  </RouterLink>
-                  <button @click="deleteApplication(leave?.id)" class="btn-icon text-red-500">
-                    <i class="far fa-trash"></i>
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr v-if="shortLeaveStore?.shortLeaves?.length === 0">
-              <td colspan="8" class="p-2 text-center text-red-500">No short leaves found</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+                  <i class="far fa-eye"></i>
+                </RouterLink>
+                <button @click="deleteApplication(leave?.id)" class="btn-icon text-red-500">
+                  <i class="far fa-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr v-if="shortLeaveStore?.shortLeaves?.length === 0">
+            <td colspan="8" class="p-2 text-center text-red-500">No short leaves found</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </template>

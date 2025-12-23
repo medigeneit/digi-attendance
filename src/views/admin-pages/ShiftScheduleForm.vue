@@ -20,7 +20,7 @@ const router          = useRouter()
 const route           = useRoute()
 
 const { defaultShift } = storeToRefs(scheduleStore)
-const { employees }    = storeToRefs(companyStore)   // global employees (পুরনো ব্যবহার থাকলে)
+const { employees }    = storeToRefs(companyStore) // global employees (পুরনো ব্যবহার থাকলে)
 const { shifts }       = storeToRefs(shiftStore)
 
 /* ==== Local state ==== */
@@ -29,6 +29,8 @@ const selectedCompany     = ref('')
 const selectedDepartment  = ref('')
 const selectedEmployeeId  = ref('')
 const selectedShift       = ref('')
+const line_type           = ref('all')
+
 const pad = (value) => String(value).padStart(2, '0')
 const period = ref({
   year: Number(selectedMonth.value.split('-')[0]) || dayjs().year(),
@@ -43,7 +45,6 @@ const periodMonth = computed(() => {
 
 const scheduleMap         = ref({})
 const selectedEmployeeIds = ref([])
-const line_type           = ref('')
 
 const routeQueryApplied   = ref(false)
 const applyingRouteQuery  = ref(false)
@@ -64,6 +65,30 @@ const colorPool = [
   '#FF5733', '#33C1FF', '#33FF57', '#FF33D4', '#FFD633', '#7D33FF',
   '#FF8C33', '#33FFF0', '#B833FF', '#3375FF', '#FF3333', '#33FFAA',
 ]
+
+/* ==== Required Filters (UX Gate) ==== */
+const isFiltersReady = computed(() =>
+  Boolean(
+    selectedCompany.value &&
+    selectedDepartment.value &&
+    line_type.value &&
+    line_type.value !== 'all',
+  ),
+)
+
+const missingFilters = computed(() => ({
+  company: !selectedCompany.value,
+  department: !selectedDepartment.value,
+  line_type: !line_type.value || line_type.value === 'all',
+}))
+
+const requiredText = computed(() => {
+  const missing = []
+  if (missingFilters.value.company) missing.push('Company')
+  if (missingFilters.value.department) missing.push('Department')
+  if (missingFilters.value.line_type) missing.push('Line Type')
+  return missing.length ? `Required: ${missing.join(', ')}` : 'All required filters selected.'
+})
 
 /* ==== Helpers ==== */
 const byId = (id) => (arr) => (arr || []).find((i) => Number(i?.id) === Number(id))
@@ -123,15 +148,8 @@ const getCellTitle = (empId, day) => {
   const dateStr = `${periodMonth.value}-${String(day).padStart(2, '0')}`
   const shiftName = getShiftName(empId, day)
 
-  if (shiftName) {
-    // এখানে চাইলে বাংলা/short নামও দিতে পারেন
-    return `${dateStr} — ${shiftName}`
-  }
-
-  if (isChecked(empId)) {
-    return `${dateStr} — Click to set shift`
-  }
-
+  if (shiftName) return `${dateStr} — ${shiftName}`
+  if (isChecked(empId)) return `${dateStr} — Click to set shift`
   return `${dateStr} — Check this employee to edit`
 }
 
@@ -181,10 +199,16 @@ function clearAssignmentsForSelected() {
 
 /* ==== Save (ONLY checked rows) ==== */
 async function saveSchedule () {
+  if (!isFiltersReady.value) {
+    alert('Please select Company, Department and Line Type first.')
+    return
+  }
+
   if (!selectedIdsNum.value.length) {
     alert('Select at least one employee.')
     return
   }
+
   const payload = []
   for (const [empKey, schedule] of Object.entries(scheduleMap.value || {})) {
     const empId = Number(empKey)
@@ -215,23 +239,17 @@ async function saveSchedule () {
 }
 
 /* ==== Data loading ==== */
-
 function buildScheduleKey ({ companyId, departmentId, lineType, month }) {
-  return [
-    companyId || '',
-    departmentId || '',
-    lineType || 'all',
-    month || '',
-  ].join('-')
+  return [companyId || '', departmentId || '', lineType || 'all', month || ''].join('-')
 }
 
 /**
  * Optimized schedule loader:
+ * - Required filter না থাকলে call হবে না
  * - Same filter হলে আবার call হবে না
- * - কনকারেন্ট রিকোয়েস্টের মধ্যে শুধু সর্বশেষটার রেজাল্টই আপডেট হবে
+ * - stale response apply হবে না
  */
 async function loadScheduleData ({ companyId, departmentId, lineType, month }) {
-  // Required filter না থাকলে কিছুই করবো না
   if (!companyId || !departmentId || !month || lineType === 'all') {
     scheduleMap.value = {}
     return
@@ -246,7 +264,6 @@ async function loadScheduleData ({ companyId, departmentId, lineType, month }) {
 
   const key = buildScheduleKey(normalized)
 
-  // Same key → API call skip
   if (lastScheduleKey.value === key) return
 
   lastScheduleKey.value = key
@@ -271,7 +288,6 @@ async function loadScheduleData ({ companyId, departmentId, lineType, month }) {
       const fallback = await scheduleStore.fetchDefaultSchedules({ params })
       const fbArr = Array.isArray(fallback) ? fallback : (fallback || [])
       if (fbArr.length) {
-        console.warn('[Fallback Schedule Loaded]', fbArr)
         defaultShift.value = true
         data = fbArr
         alert('No saved schedule found. Default schedule loaded.')
@@ -288,8 +304,6 @@ async function loadScheduleData ({ companyId, departmentId, lineType, month }) {
       mapped[k(empId)][day] = item.shift_id ?? item.status
     })
 
-    // যদি এর মধ্যে আরেকটা নতুন filter key সেট হয়ে থাকে,
-    // এই রেজাল্ট আর apply করবো না (stale response)
     if (lastScheduleKey.value === key) {
       scheduleMap.value = mapped
     }
@@ -304,7 +318,8 @@ async function loadScheduleData ({ companyId, departmentId, lineType, month }) {
 }
 
 async function loadDepartmentEmployees(departmentId) {
-  if (!departmentId) {
+  // Required filters ready না হলে employees দেখাবো না
+  if (!isFiltersReady.value || !departmentId) {
     departmentEmployees.value = []
     employees.value = []
     selectedEmployeeIds.value = []
@@ -325,7 +340,6 @@ async function loadDepartmentEmployees(departmentId) {
   departmentEmployees.value = list
   employees.value = list
 
-  // previous selectedIds থেকে শুধু valid থাকুক
   selectedEmployeeIds.value = selectedEmployeeIds.value.filter((id) =>
     list.some((e) => Number(e?.id) === Number(id)),
   )
@@ -334,12 +348,20 @@ async function loadDepartmentEmployees(departmentId) {
 }
 
 function hasScheduleFilters(month = periodMonth.value || selectedMonth.value) {
-  return Boolean(selectedCompany.value && selectedDepartment.value && month)
+  return Boolean(isFiltersReady.value && month)
 }
 
 async function loadScheduleIfReady(monthOverride) {
   const month = monthOverride || periodMonth.value || selectedMonth.value
-  if (!hasScheduleFilters(month)) return
+
+  if (!hasScheduleFilters(month)) {
+    scheduleMap.value = {}
+    lastScheduleKey.value = null
+    isLoadingSchedule.value = false
+    defaultShift.value = false
+    return
+  }
+
   await loadScheduleData({
     companyId:    selectedCompany.value,
     departmentId: selectedDepartment.value,
@@ -374,16 +396,17 @@ function updateRouteQuery(filters = {}) {
     )
 
   if (sameQuery) return
-
   router.replace({ query: sanitized }).catch(() => {})
 }
 
 function applyFiltersFromRoute(query = route.query) {
   applyingRouteQuery.value = true
+
   selectedCompany.value    = query.company_id || ''
   selectedDepartment.value = query.department_id || ''
   selectedEmployeeId.value = query.employee_id || ''
   line_type.value          = query.line_type || 'all'
+
   const month = query.month || selectedMonth.value
   selectedMonth.value      = month
   if (month) {
@@ -391,6 +414,7 @@ function applyFiltersFromRoute(query = route.query) {
     if (yr) period.value.year = Number(yr)
     if (mo) period.value.month = Number(mo)
   }
+
   applyingRouteQuery.value = false
   routeQueryApplied.value  = true
 }
@@ -414,7 +438,6 @@ onMounted(async () => {
 })
 
 /* ==== Watchers ==== */
-
 watch(selectedCompany, async (companyId) => {
   if (!companyId) return
 
@@ -427,6 +450,7 @@ watch(selectedCompany, async (companyId) => {
   scheduleMap.value         = {}
   line_type.value           = 'all'
   lastScheduleKey.value     = null
+  defaultShift.value        = false
 
   await Promise.all([
     departmentStore.fetchDepartments({ company_id: Number(companyId) }),
@@ -436,7 +460,15 @@ watch(selectedCompany, async (companyId) => {
 })
 
 watch(selectedDepartment, async (departmentId) => {
-  if (!departmentId) return
+  if (!departmentId) {
+    departmentEmployees.value = []
+    employees.value = []
+    selectedEmployeeIds.value = []
+    scheduleMap.value = {}
+    lastScheduleKey.value = null
+    defaultShift.value = false
+    return
+  }
 
   if (!applyingRouteQuery.value) {
     selectedEmployeeId.value = ''
@@ -469,6 +501,8 @@ watch(
 
 /* ==== filteredEmployees ==== */
 const filteredEmployees = computed(() => {
+  if (!isFiltersReady.value) return []
+
   const baseList = departmentEmployees.value.length
     ? departmentEmployees.value
     : (employees.value || [])
@@ -481,6 +515,7 @@ const filteredEmployees = computed(() => {
 
 /* Select-all for visible employees */
 function toggleSelectAllVisible(checked) {
+  if (!isFiltersReady.value) return
   if (checked) {
     selectedEmployeeIds.value = filteredEmployees.value.map(e => Number(e.id))
   } else {
@@ -503,28 +538,78 @@ function toggleSelectAllVisible(checked) {
     </div>
 
     <!-- Filters -->
-    <div class="flex flex-wrap justify-start items-center gap-3 mb-2">
+    <div class="flex flex-wrap gap-2 p-3 rounded border border-white/20
+         bg-white/60 backdrop-blur-md shadow-sm
+         supports-[backdrop-filter]:bg-white/50 sticky top-14 z-20">
       <EmployeeFilter
-          v-model:company_id="selectedCompany"
-          v-model:department_id="selectedDepartment"
-          v-model:line_type="line_type"
-          v-model:employee_id="selectedEmployeeId"
-          :initial-value="{ company_id: selectedCompany, department_id: selectedDepartment, line_type, employee_id: selectedEmployeeId }"
-        >
-        <div class="flex gap-4"> 
-          <select v-model="selectedShift" class="px-3 py-0.5 border rounded-full text-sm">
+        v-model:company_id="selectedCompany"
+        v-model:department_id="selectedDepartment"
+        v-model:line_type="line_type"
+        v-model:employee_id="selectedEmployeeId"
+        :initial-value="{
+          company_id: selectedCompany,
+          department_id: selectedDepartment,
+          line_type,
+          employee_id: selectedEmployeeId
+        }"
+      >
+        <div class="flex gap-4">
+          <label class="top-label">Shift</label>
+          <select v-model="selectedShift" class="px-3 py-1 border rounded text-sm">
             <option value="">- Pick a Shift -</option>
             <option v-for="s in allShifts" :key="s.id" :value="s.id">{{ s.name }}</option>
           </select>
-    
-          <FlexibleDatePicker
-            v-model="period"
-            :show-year="false"
-            :show-month="true"
-            :show-date="false"
-          />
         </div>
       </EmployeeFilter>
+
+      <FlexibleDatePicker
+        v-model="period"
+        :show-year="false"
+        :show-month="true"
+        :show-date="false"
+        label="Month"
+      />
+    </div>
+
+    <!-- Required filters status -->
+    <div class="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-white px-3 py-2">
+      <div class="flex flex-wrap items-center gap-2 text-xs md:text-sm">
+        <span
+          class="inline-flex items-center gap-2 rounded-full px-3 py-1 font-semibold border"
+          :class="isFiltersReady ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-amber-50 text-amber-800 border-amber-200'"
+        >
+          <span
+            class="h-2 w-2 rounded-full"
+            :class="isFiltersReady ? 'bg-emerald-500' : 'bg-amber-500'"
+          ></span>
+          {{ requiredText }}
+        </span>
+
+        <span
+          class="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-slate-700"
+          :class="missingFilters.company ? 'bg-white border-slate-200' : 'bg-emerald-50 border-emerald-200'"
+        >
+          <span class="text-xs">{{ missingFilters.company ? '○' : '✓' }}</span> Company
+        </span>
+
+        <span
+          class="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-slate-700"
+          :class="missingFilters.department ? 'bg-white border-slate-200' : 'bg-emerald-50 border-emerald-200'"
+        >
+          <span class="text-xs">{{ missingFilters.department ? '○' : '✓' }}</span> Department
+        </span>
+
+        <span
+          class="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-slate-700"
+          :class="missingFilters.line_type ? 'bg-white border-slate-200' : 'bg-emerald-50 border-emerald-200'"
+        >
+          <span class="text-xs">{{ missingFilters.line_type ? '○' : '✓' }}</span> Line Type
+        </span>
+      </div>
+
+      <div class="text-[11px] md:text-xs text-slate-500">
+        Employees & schedule will load automatically after selecting all required filters.
+      </div>
     </div>
 
     <!-- Loading / info -->
@@ -551,7 +636,7 @@ function toggleSelectAllVisible(checked) {
 
     <!-- Clickable Legend -->
     <div
-      class="flex flex-wrap gap-2 md:gap-3 mb-4 p-2 md:p-3 bg-white/70 backdrop-blur rounded sticky top-16 z-20 border"
+      class="flex flex-wrap gap-2 md:gap-3 mb-4 p-2 md:p-3 bg-white/70 backdrop-blur rounded sticky top-16  border"
     >
       <div
         v-for="shift in allShifts"
@@ -591,7 +676,7 @@ function toggleSelectAllVisible(checked) {
       <button
         @click="assignAllDatesToSelectedEmployees"
         class="btn-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs md:text-sm"
-        :disabled="!selectedIdsNum.length || !selectedShift"
+        :disabled="!isFiltersReady || !selectedIdsNum.length || !selectedShift"
         title="Set selected shift to all days for checked employees"
       >
         Set Shift → Checked (All Dates)
@@ -600,7 +685,7 @@ function toggleSelectAllVisible(checked) {
       <button
         @click="assignWeekends"
         class="btn-4 bg-red-700 hover:bg-red-800 text-white text-xs md:text-sm"
-        :disabled="!selectedIdsNum.length"
+        :disabled="!isFiltersReady || !selectedIdsNum.length"
         title="Mark employee-specific weekends for checked employees"
       >
         Set Weekends → Checked
@@ -609,7 +694,7 @@ function toggleSelectAllVisible(checked) {
       <button
         @click="clearAssignmentsForSelected"
         class="btn-4 bg-gray-700 hover:bg-gray-800 text-white text-xs md:text-sm"
-        :disabled="!selectedIdsNum.length"
+        :disabled="!isFiltersReady || !selectedIdsNum.length"
       >
         Clear (Checked)
       </button>
@@ -617,6 +702,7 @@ function toggleSelectAllVisible(checked) {
       <label class="btn-3 ml-auto flex items-center gap-2 text-xs md:text-sm">
         <input
           type="checkbox"
+          :disabled="!isFiltersReady"
           :checked="selectedIdsNum.length && selectedIdsNum.length === filteredEmployees.length"
           @change="toggleSelectAllVisible($event.target.checked)"
         />
@@ -626,7 +712,7 @@ function toggleSelectAllVisible(checked) {
       <button
         @click="saveSchedule"
         class="btn-2 text-xs md:text-sm"
-        :disabled="!selectedIdsNum.length"
+        :disabled="!isFiltersReady || !selectedIdsNum.length"
         title="Saves only checked employees"
       >
         Save (Checked only)
@@ -690,14 +776,11 @@ function toggleSelectAllVisible(checked) {
               </button>
             </td>
 
-           <td
+            <td
               v-for="day in daysInMonth"
               :key="day"
               class="border text-center"
-              :class="[
-                'border text-center',
-                isChecked(emp.id) ? 'cursor-pointer hover:bg-gray-100' : 'cursor-default opacity-70'
-              ]"
+              :class="isChecked(emp.id) ? 'cursor-pointer hover:bg-gray-100' : 'cursor-default opacity-70'"
               @click="isChecked(emp.id) && assignShift(emp.id, day)"
               :title="getCellTitle(emp.id, day)"
             >
@@ -706,14 +789,57 @@ function toggleSelectAllVisible(checked) {
                 class="w-full h-5 md:h-6 rounded transition"
               ></div>
             </td>
-
           </tr>
 
+          <!-- Empty State -->
           <tr v-if="!filteredEmployees?.length">
-            <td colspan="999" class="text-center text-gray-500 p-6">
-              No employees found for current filter.
+            <td colspan="999" class="p-8">
+              <div class="mx-auto max-w-xl text-center">
+                <div class="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-slate-100 text-slate-500">
+                  <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M10 6a2 2 0 104 0 2 2 0 00-4 0zM4 20a6 6 0 0112 0M16 11h6m-3-3v6" />
+                  </svg>
+                </div>
+
+                <p class="mt-1 text-sm text-slate-600">
+                  <template v-if="!isFiltersReady">
+                    Select <b>Company</b>, <b>Department</b>, and <b>Line Type</b> to load employees.
+                  </template>
+                  <template v-else>
+                    No employees found for the selected filters. Try changing filters/search.
+                  </template>
+                </p>
+
+                <div class="mt-4 flex flex-wrap justify-center gap-2">
+                  <span
+                    v-if="missingFilters.company"
+                    class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
+                  >
+                    <span class="h-2 w-2 rounded-full bg-amber-400"></span>
+                    Select company
+                  </span>
+
+                  <span
+                    v-if="missingFilters.department"
+                    class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
+                  >
+                    <span class="h-2 w-2 rounded-full bg-amber-400"></span>
+                    Select department
+                  </span>
+
+                  <span
+                    v-if="missingFilters.line_type"
+                    class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
+                  >
+                    <span class="h-2 w-2 rounded-full bg-amber-400"></span>
+                    Select line type
+                  </span>
+                </div>
+              </div>
             </td>
           </tr>
+
         </tbody>
       </table>
     </div>
@@ -723,7 +849,7 @@ function toggleSelectAllVisible(checked) {
       <button
         @click="saveSchedule"
         class="btn-2 text-xs md:text-sm"
-        :disabled="!selectedIdsNum.length"
+        :disabled="!isFiltersReady || !selectedIdsNum.length"
         title="Saves only checked employees"
       >
         Save (Checked only)

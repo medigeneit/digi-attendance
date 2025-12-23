@@ -114,8 +114,8 @@ function setPage(p) {
     <!-- Filters -->
     <div class="rounded-xl border bg-white p-4 shadow-sm">
       <div class="grid gap-3 md:grid-cols-12 items-end">
-        <div class="md:col-span-4">
-          <label class="block text-sm font-medium text-gray-700">Search</label>
+        <div class="md:col-span-4 relative">
+          <label class="top-label top-0">Search</label>
           <input
             v-model="q"
             @input="debouncedFetch"
@@ -124,8 +124,8 @@ function setPage(p) {
             class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
           />
         </div>
-        <div class="md:col-span-2">
-          <label class="block text-sm font-medium text-gray-700">Status</label>
+        <div class="md:col-span-2 relative">
+          <label class="top-label top-0">Status</label>
           <select
             v-model="is_active"
             @change="fetchList({ page: 1 })"
@@ -136,8 +136,8 @@ function setPage(p) {
             <option value="0">Inactive</option>
           </select>
         </div>
-        <div class="md:col-span-2">
-          <label class="block text-sm font-medium text-gray-700">Per Page</label>
+        <div class="md:col-span-2 relative">
+          <label class="top-label top-0">Per Page</label>
           <select
             v-model.number="per_page"
             @change="fetchList({ page: 1 })"
@@ -149,8 +149,8 @@ function setPage(p) {
             <option :value="50">50</option>
           </select>
         </div>
-        <div class="md:col-span-2">
-          <label class="block text-sm font-medium text-gray-700">Sort By</label>
+        <div class="md:col-span-2 relative">
+          <label class="top-label top-0">Sort By</label>
           <select
             v-model="sort_by"
             @change="fetchList({ page: 1 })"
@@ -160,8 +160,8 @@ function setPage(p) {
             <option value="updated_at">Updated</option>
           </select>
         </div>
-        <div class="md:col-span-2">
-          <label class="block text-sm font-medium text-gray-700">Direction</label>
+        <div class="md:col-span-2 relative">
+          <label class="top-label top-0">Direction</label>
           <select
             v-model="sort_dir"
             @change="fetchList({ page: 1 })"

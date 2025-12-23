@@ -3,10 +3,12 @@ import HeaderPrivate from '@/components/layouts/HeaderPrivate.vue'
 import SideBar from '@/components/layouts/SideBar.vue'
 import { getUserInitials } from '@/libs/user.js'
 import { useAuthStore } from '@/stores/auth'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { RouterView } from 'vue-router'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { RouterView, useRoute, useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
+const router = useRouter()
+const route = useRoute()
 const sidebarVisible = ref(JSON.parse(localStorage.getItem('sidebarVisible')) ?? true)
 
 const toggleSidebar = () => {
@@ -25,6 +27,16 @@ onMounted(async () => {
   }
   user.value = authStore.user
 })
+
+watch(
+  () => authStore.isAdminMood,
+  (isAdminMood, wasAdminMood) => {
+    if (isAdminMood === wasAdminMood) return
+    if (route.name !== 'Dashboard') {
+      router.push({ name: 'Dashboard' })
+    }
+  }
+)
 
 onUnmounted(() => {
   user.value = null

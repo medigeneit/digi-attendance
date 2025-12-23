@@ -196,14 +196,17 @@ const tdBase = 'px-3 py-2 align-top text-slate-700'
         @filter-change="handleFilterChange"
       >
       <div class="flex items-center gap-2">
-       <FlexibleDatePicker
-         v-model="period"
-         :show-year="false"
-         :show-month="true"
-         :show-date="false"
-       />
+        <div>
+          <label class="top-label -top-1">Select Month</label>
+          <FlexibleDatePicker
+            v-model="period"
+            :show-year="false"
+            :show-month="true"
+            :show-date="false"
+          />
+        </div>
        <button
-         class="btn-2"
+         class="btn-2 rounded"
          @click="fetchApplications"
        >
          <i class="far fa-rotate-right"></i><span class="hidden md:inline">Refresh</span>

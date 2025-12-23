@@ -303,23 +303,21 @@ const printTable = () => window.print()
     <!-- Controls -->
     <div class="flex flex-wrap items-end gap-3 rounded-lg border bg-white p-3">
       <EmployeeFilter
-        v-model:company_id="filters.company_id"
-        v-model:department_id="filters.department_id"
-        v-model:employee_id="filters.employee_id"
-        v-model:line_type="filters.line_type"
-        :with-type="true"
-        :initial-value="$route.query"
-      >
-      <div class="relative">
-        <label class="top-label">Month</label>
+          v-model:company_id="filters.company_id"
+          v-model:department_id="filters.department_id"
+          v-model:employee_id="filters.employee_id"
+          v-model:line_type="filters.line_type"
+          :with-type="true"
+          :initial-value="$route.query"
+        >
         <FlexibleDatePicker
           v-model="period"
           :show-year="false"
           :show-month="true"
           :show-date="false"
           class="h-8"
+          label="Month"
         />
-      </div>
       </EmployeeFilter>
 
       <div class="flex items-center gap-2 ml-auto">

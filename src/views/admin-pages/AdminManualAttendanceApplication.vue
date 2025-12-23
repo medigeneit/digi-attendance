@@ -280,7 +280,9 @@ async function submitManualAttendance() {
     </div>
 
     <!-- Filters + Period -->
-    <section class="rounded-2xl border border-slate-200 bg-white/80 shadow-sm px-3 py-3 md:px-4 md:py-3">
+    <section class="p-3 rounded-2xl border border-white/20
+         bg-white/60 backdrop-blur-md shadow-sm
+         supports-[backdrop-filter]:bg-white/50 sticky top-14 z-50">
       <div class="flex items-center justify-between gap-2 mb-3">
         <div class="flex flex-col">
           <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -311,6 +313,7 @@ async function submitManualAttendance() {
           @filter-change="handleFilterChange"
         >
           <div>
+            <label for="" class="top-label -top-1">Month</label>
             <FlexibleDatePicker
               v-model="period"
               :show-year="false"
@@ -416,157 +419,155 @@ async function submitManualAttendance() {
           </transition>
         </div>
 
-        <div class="overflow-x-auto px-3 pb-4">
-          <div class="min-h-[220px]">
-            <table
-              v-if="forms.length"
-              class="min-w-full table-fixed border-separate border-spacing-0 text-sm"
-            >
-              <thead>
-                <tr class="bg-slate-50 text-slate-700">
-                  <th
-                    class="sticky top-0 z-10 w-[80px] border-b border-slate-200 px-2 py-2 text-center text-xs font-medium"
-                  >
-                    <div class="inline-flex items-center gap-2">
-                      <input
-                        id="allCheck"
-                        type="checkbox"
-                        @change="toggleSelectAll"
-                        class="h-4 w-4 cursor-pointer accent-indigo-600"
-                      />
-                      <label
-                        for="allCheck"
-                        class="cursor-pointer text-[11px] font-medium text-slate-700"
-                      >
-                        Select all
-                      </label>
-                    </div>
-                  </th>
-                  <th class="sticky top-0 z-10 border-b border-slate-200 px-2 py-2 text-left text-xs font-medium">
-                    Date
-                  </th>
-                  <th class="sticky top-0 z-10 border-b border-slate-200 px-2 py-2 text-left text-xs font-medium">
-                    Type
-                  </th>
-                  <th class="sticky top-0 z-10 border-b border-slate-200 px-2 py-2 text-left text-xs font-medium">
-                    Check-In
-                  </th>
-                  <th class="sticky top-0 z-10 border-b border-slate-200 px-2 py-2 text-left text-xs font-medium">
-                    Check-Out
-                  </th>
-                  <th class="sticky top-0 z-10 border-b border-slate-200 px-2 py-2 text-left text-xs font-medium">
-                    Description
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                <tr
-                  v-for="(form, index) in forms"
-                  :key="index"
-                  @click="toggleRowSelection(form)"
-                  :class="[
-                    'border-b border-slate-100 transition-colors',
-                    form.is_check
-                      ? 'bg-amber-50 hover:bg-amber-100'
-                      : 'bg-white hover:bg-slate-50',
-                  ]"
+        <div class="min-h-[220px]">
+          <table
+            v-if="forms.length"
+            class="min-w-full table-fixed border-separate border-spacing-0 text-sm"
+          >
+            <thead>
+              <tr class="bg-slate-50 text-slate-700 sticky top-40 z-50">
+                <th
+                  class="sticky top-0 z-10 w-[80px] border-b border-slate-200 px-2 py-2 text-center text-xs font-medium"
                 >
-                  <td class="px-2 py-2 text-center">
+                  <div class="inline-flex items-center gap-2">
                     <input
+                      id="allCheck"
                       type="checkbox"
-                      v-model="form.is_check"
+                      @change="toggleSelectAll"
                       class="h-4 w-4 cursor-pointer accent-indigo-600"
-                      @click.stop
                     />
-                  </td>
-
-                  <td class="px-2 py-2">
-                    <input
-                      type="date"
-                      v-model="form.date"
-                      class="w-full rounded-md border px-2 py-1 text-sm
-                             focus:outline-none focus:ring-2 focus:ring-indigo-200
-                             disabled:bg-slate-100 disabled:text-slate-400"
-                      @click.stop
-                      :disabled="!form.is_check"
-                    />
-                  </td>
-
-                  <td class="px-2 py-2">
-                    <select
-                      v-model="form.type"
-                      class="w-full rounded-md border px-2 py-1 text-sm bg-white
-                             focus:outline-none focus:ring-2 focus:ring-indigo-200
-                             disabled:bg-slate-100 disabled:text-slate-400"
-                      @click.stop
-                      :disabled="!form.is_check"
+                    <label
+                      for="allCheck"
+                      class="cursor-pointer text-[11px] font-medium text-slate-700"
                     >
-                      <option value="">Select Type</option>
-                      <option value="Home Office">Home Office</option>
-                      <option value="Remote Work">Remote Work</option>
-                      <option value="Forget Punch">Forget Punch</option>
-                    </select>
-                  </td>
+                      Select all
+                    </label>
+                  </div>
+                </th>
+                <th class="sticky top-0 z-10 border-b border-slate-200 px-2 py-2 text-left text-xs font-medium">
+                  Date
+                </th>
+                <th class="sticky top-0 z-10 border-b border-slate-200 px-2 py-2 text-left text-xs font-medium">
+                  Type
+                </th>
+                <th class="sticky top-0 z-10 border-b border-slate-200 px-2 py-2 text-left text-xs font-medium">
+                  Check-In
+                </th>
+                <th class="sticky top-0 z-10 border-b border-slate-200 px-2 py-2 text-left text-xs font-medium">
+                  Check-Out
+                </th>
+                <th class="sticky top-0 z-10 border-b border-slate-200 px-2 py-2 text-left text-xs font-medium">
+                  Description
+                </th>
+              </tr>
+            </thead>
 
-                  <td class="px-2 py-2">
-                    <input
-                      type="time"
-                      v-model="form.check_in"
-                      class="w-full rounded-md border px-2 py-1 text-sm
-                             focus:outline-none focus:ring-2 focus:ring-indigo-200
-                             disabled:bg-slate-100 disabled:text-slate-400"
-                      @click.stop
-                      :disabled="!form.is_check"
-                    />
-                  </td>
-
-                  <td class="px-2 py-2">
-                    <input
-                      type="time"
-                      v-model="form.check_out"
-                      class="w-full rounded-md border px-2 py-1 text-sm
-                             focus:outline-none focus:ring-2 focus:ring-indigo-200
-                             disabled:bg-slate-100 disabled:text-slate-400"
-                      @click.stop
-                      :disabled="!form.is_check"
-                    />
-                  </td>
-
-                  <td class="px-2 py-2">
-                    <textarea
-                      v-model="form.description"
-                      @keyup.stop
-                      @click.stop
-                      :disabled="!form.is_check"
-                      class="w-full rounded-md border px-2 py-1 text-sm resize-none
-                             focus:outline-none focus:ring-2 focus:ring-indigo-200
-                             disabled:bg-slate-100 disabled:text-slate-400"
-                      rows="2"
-                    ></textarea>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-
-            <!-- Empty state -->
-            <div
-              v-else
-              class="flex min-h-[180px] flex-col items-center justify-center gap-2 text-center"
-            >
-              <div
-                class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400"
+            <tbody>
+              <tr
+                v-for="(form, index) in forms"
+                :key="index"
+                @click="toggleRowSelection(form)"
+                :class="[
+                  'border-b border-slate-100 transition-colors',
+                  form.is_check
+                    ? 'bg-amber-50 hover:bg-amber-100'
+                    : 'bg-white hover:bg-slate-50',
+                ]"
               >
-                <i class="far fa-calendar-times"></i>
-              </div>
-              <p class="text-sm font-medium text-slate-700">
-                No manual attendance rows available
-              </p>
-              <p class="text-xs text-slate-500 max-w-sm">
-                Please select a company, department, employee and month. 
-                Existing attendance dates for the month will appear here.
-              </p>
+                <td class="px-2 py-2 text-center">
+                  <input
+                    type="checkbox"
+                    v-model="form.is_check"
+                    class="h-4 w-4 cursor-pointer accent-indigo-600"
+                    @click.stop
+                  />
+                </td>
+
+                <td class="px-2 py-2">
+                  <input
+                    type="date"
+                    v-model="form.date"
+                    class="w-full rounded-md border px-2 py-1 text-sm
+                           focus:outline-none focus:ring-2 focus:ring-indigo-200
+                           disabled:bg-slate-100 disabled:text-slate-400"
+                    @click.stop
+                    :disabled="!form.is_check"
+                  />
+                </td>
+
+                <td class="px-2 py-2">
+                  <select
+                    v-model="form.type"
+                    class="w-full rounded-md border px-2 py-1 text-sm bg-white
+                           focus:outline-none focus:ring-2 focus:ring-indigo-200
+                           disabled:bg-slate-100 disabled:text-slate-400"
+                    @click.stop
+                    :disabled="!form.is_check"
+                  >
+                    <option value="">Select Type</option>
+                    <option value="Home Office">Home Office</option>
+                    <option value="Remote Work">Remote Work</option>
+                    <option value="Forget Punch">Forget Punch</option>
+                  </select>
+                </td>
+
+                <td class="px-2 py-2">
+                  <input
+                    type="time"
+                    v-model="form.check_in"
+                    class="w-full rounded-md border px-2 py-1 text-sm
+                           focus:outline-none focus:ring-2 focus:ring-indigo-200
+                           disabled:bg-slate-100 disabled:text-slate-400"
+                    @click.stop
+                    :disabled="!form.is_check"
+                  />
+                </td>
+
+                <td class="px-2 py-2">
+                  <input
+                    type="time"
+                    v-model="form.check_out"
+                    class="w-full rounded-md border px-2 py-1 text-sm
+                           focus:outline-none focus:ring-2 focus:ring-indigo-200
+                           disabled:bg-slate-100 disabled:text-slate-400"
+                    @click.stop
+                    :disabled="!form.is_check"
+                  />
+                </td>
+
+                <td class="px-2 py-2">
+                  <textarea
+                    v-model="form.description"
+                    @keyup.stop
+                    @click.stop
+                    :disabled="!form.is_check"
+                    class="w-full rounded-md border px-2 py-1 text-sm resize-none
+                           focus:outline-none focus:ring-2 focus:ring-indigo-200
+                           disabled:bg-slate-100 disabled:text-slate-400"
+                    rows="2"
+                  ></textarea>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Empty state -->
+          <div
+            v-else
+            class="flex min-h-[180px] flex-col items-center justify-center gap-2 text-center"
+          >
+            <div
+              class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400"
+            >
+              <i class="far fa-calendar-times"></i>
             </div>
+            <p class="text-sm font-medium text-slate-700">
+              No manual attendance rows available
+            </p>
+            <p class="text-xs text-slate-500 max-w-sm">
+              Please select a company, department, employee and month. 
+              Existing attendance dates for the month will appear here.
+            </p>
           </div>
         </div>
 

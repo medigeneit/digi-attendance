@@ -37,6 +37,13 @@ const selectedDate = ref(route.query.date || storeSelectedMonth.value || '')
 
 const period = ref(parsePeriod(selectedDate.value))
 
+const filters = ref({
+  company_id: '',
+  department_id: 'all',
+  line_type: 'all',
+  employee_id: '',
+})
+
 const applySelectedDate = () => {
   if (!selectedDate.value) return
   router.replace({
@@ -116,13 +123,6 @@ const statusClass = (status) => {
   return 'text-red-500'
 }
 
-const filters = ref({
-  company_id:  '',
-  department_id: 'all',
-  line_type:  'all',
-  employee_id: '',
-})
-
 const handleFilterChange = async() => {
   // You can trigger your fetch here
   router.replace({
@@ -178,16 +178,13 @@ const initialFilter = computed(() => ({
           :initial-value="$route.query"
          @filter-change="handleFilterChange"
       >
-        <div>
-          <label class="top-label">Month</label>
-          <FlexibleDatePicker
-            v-model="period"
-            :show-year="true"
-            :show-month="true"
-            :show-date="false"
-          />
-
-        </div>
+      <FlexibleDatePicker
+        v-model="period"
+        :show-year="false"
+        :show-month="true"
+        :show-date="false"
+        label="Month"
+      />
       </EmployeeFilter>
     </div>
 

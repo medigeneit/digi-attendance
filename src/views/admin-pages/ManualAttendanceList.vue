@@ -150,42 +150,43 @@ const handleFilterChange = () => {
         </RouterLink>
       </div>
     </div>
-    <div class="grid md:flex gap-4 p-2">
-
+    <div class="flex flex-wrap gap-2 p-3 rounded-2xl border border-white/20
+         bg-white/60 backdrop-blur-md shadow-sm
+         supports-[backdrop-filter]:bg-white/50 sticky top-14">
         <EmployeeFilter
-          v-model:company_id="filters.company_id"
-          v-model:department_id="filters.department_id"
-          v-model:employee_id="filters.employee_id"
-          v-model:line_type="filters.line_type"
-          :with-type="true"
-          :initial-value="$route.query"
-         @filter-change="handleFilterChange"
-      >
-      <div>
-        <select
-          v-model="manualAttendanceStore.selectedStatus"
-          @change="fetchManualAttendancesByUser"
-          class="input-1 py-0.5"
+            v-model:company_id="filters.company_id"
+            v-model:department_id="filters.department_id"
+            v-model:employee_id="filters.employee_id"
+            v-model:line_type="filters.line_type"
+            :with-type="true"
+            :initial-value="$route.query"
+          @filter-change="handleFilterChange"
         >
-          <option value="" selected>All</option>
-          <option value="Pending">Pending</option>
-          <option value="Approved">Approved</option>
-          <option value="Rejected">Rejected</option>
-        </select>
-      </div>
+        <div>
+          <label for="" class="top-label -top-1">Status </label>
+          <select
+            v-model="manualAttendanceStore.selectedStatus"
+            @change="fetchManualAttendancesByUser"
+            class="input-1 py-0.5"
+          >
+            <option value="" selected>All</option>
+            <option value="Pending">Pending</option>
+            <option value="Approved">Approved</option>
+            <option value="Rejected">Rejected</option>
+          </select>
+        </div>
       </EmployeeFilter>
 
-      <div>
-        <FlexibleDatePicker
-          v-model="period"
-          :show-year="false"
-          :show-month="true"
-          :show-date="false"
-        />
-      </div>
+      <FlexibleDatePicker
+        v-model="period"
+        :show-year="false"
+        :show-month="true"
+        :show-date="false"
+        label="Month"
+      />
       
       <div>
-        <button @click="fetchManualAttendancesByUser" class="btn-2 py-1">
+        <button @click="fetchManualAttendancesByUser" class="btn-2 rounded py-1">
           <i class="far fa-sync"></i>
           <span class="hidden md:flex">Refresh</span>
         </button>
@@ -196,82 +197,80 @@ const handleFilterChange = () => {
       <LoaderView />
     </div>
 
-    <div v-else class="space-y-4">
-      <div class="overflow-x-auto">
-        <table
-          class="min-w-full table-auto border-collapse border border-gray-200 bg-white rounded-md text-sm"
-        >
-          <thead>
-            <tr class="bg-gray-200">
-              <th class="border border-gray-300 px-2 text-left">#</th>
-              <th class="border border-gray-300 px-2 text-left">Employee Name</th>
-              <th class="border border-gray-300 px-2 text-left">Department</th>
-              <th class="border border-gray-300 px-2 text-left">Created Date</th>
-              <th class="border border-gray-300 px-2 text-left">Date</th>
-              <th class="border border-gray-300 px-2 text-left">Type</th>
-              <th class="border border-gray-300 px-2 text-left">Check-In</th>
-              <th class="border border-gray-300 px-2 text-left">Check-Out</th>
-              <th class="border border-gray-300 px-2 text-left">Status</th>
-              <th class="border border-gray-300 px-2 text-left">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="(attendance, index) in filteredManualAttendances"
-              :key="attendance?.id"
-              class="border-b border-gray-200 hover:bg-blue-200"
-            >
-              <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
-              <td class="border border-gray-300 px-2">{{ attendance?.user?.name }}</td>
-              <td class="border border-gray-300 px-2">{{ attendance?.user?.department?.name }}</td>
-              <td class="border border-gray-300 px-2">
-                {{ formatDate(attendance.created_at) }}
-              </td>
-              <td class="border border-gray-300 px-2">
-                {{ formatDate(attendance.check_in || attendance.check_out) }}
-              </td>
-              <td class="border border-gray-300 px-2">{{ attendance.type }}</td>
-              <td class="border border-gray-300 px-2">
-                {{ formatTime(attendance.check_in) || 'N/A' }}
-              </td>
-              <td class="border border-gray-300 px-2">
-                {{ formatTime(attendance.check_out) || 'N/A' }}
-              </td>
-              <td class="border border-gray-300 px-2">
-                <span
-                  :class="{
-                    'bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-xs':
-                      attendance.status === 'Pending',
-                    'bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs':
-                      attendance.status === 'Approved',
-                    'bg-red-100 text-red-800 px-2 py-0.5 rounded text-xs':
-                      attendance.status === 'Rejected',
-                  }"
+    <div v-else class="mt-2">
+      <table
+        class="min-w-full table-auto border-collapse border border-gray-200 bg-white rounded-md text-sm"
+      >
+        <thead>
+          <tr class="bg-gray-200 sticky top-28">
+            <th class="border border-gray-300 px-2 text-left">#</th>
+            <th class="border border-gray-300 px-2 text-left">Employee Name</th>
+            <th class="border border-gray-300 px-2 text-left">Department</th>
+            <th class="border border-gray-300 px-2 text-left">Created Date</th>
+            <th class="border border-gray-300 px-2 text-left">Date</th>
+            <th class="border border-gray-300 px-2 text-left">Type</th>
+            <th class="border border-gray-300 px-2 text-left">Check-In</th>
+            <th class="border border-gray-300 px-2 text-left">Check-Out</th>
+            <th class="border border-gray-300 px-2 text-left">Status</th>
+            <th class="border border-gray-300 px-2 text-left">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="(attendance, index) in filteredManualAttendances"
+            :key="attendance?.id"
+            class="border-b border-gray-200 hover:bg-blue-200"
+          >
+            <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
+            <td class="border border-gray-300 px-2">{{ attendance?.user?.name }}</td>
+            <td class="border border-gray-300 px-2">{{ attendance?.user?.department?.name }}</td>
+            <td class="border border-gray-300 px-2">
+              {{ formatDate(attendance.created_at) }}
+            </td>
+            <td class="border border-gray-300 px-2">
+              {{ formatDate(attendance.check_in || attendance.check_out) }}
+            </td>
+            <td class="border border-gray-300 px-2">{{ attendance.type }}</td>
+            <td class="border border-gray-300 px-2">
+              {{ formatTime(attendance.check_in) || 'N/A' }}
+            </td>
+            <td class="border border-gray-300 px-2">
+              {{ formatTime(attendance.check_out) || 'N/A' }}
+            </td>
+            <td class="border border-gray-300 px-2">
+              <span
+                :class="{
+                  'bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-xs':
+                    attendance.status === 'Pending',
+                  'bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs':
+                    attendance.status === 'Approved',
+                  'bg-red-100 text-red-800 px-2 py-0.5 rounded text-xs':
+                    attendance.status === 'Rejected',
+                }"
+              >
+                {{ attendance.status }}
+              </span>
+            </td>
+            <td class="border border-gray-300 px-2">
+              <div class="flex gap-2">
+                <RouterLink
+                  :to="{ name: 'ManualAttendanceShow', params: { id: attendance?.id } }"
+                  class="btn-icon"
                 >
-                  {{ attendance.status }}
-                </span>
-              </td>
-              <td class="border border-gray-300 px-2">
-                <div class="flex gap-2">
-                  <RouterLink
-                    :to="{ name: 'ManualAttendanceShow', params: { id: attendance?.id } }"
-                    class="btn-icon"
-                  >
-                    <i class="far fa-eye"></i>
-                  </RouterLink>
+                  <i class="far fa-eye"></i>
+                </RouterLink>
 
-                  <button @click="deleteApplication(attendance?.id)" class="btn-icon text-red-500">
-                    <i class="far fa-trash"></i>
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr v-if="filteredManualAttendances.length === 0">
-              <td colspan="7" class="p-2 text-center text-red-500">No manual attendances found</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+                <button @click="deleteApplication(attendance?.id)" class="btn-icon text-red-500">
+                  <i class="far fa-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr v-if="filteredManualAttendances.length === 0">
+            <td colspan="7" class="p-2 text-center text-red-500">No manual attendances found</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </template>

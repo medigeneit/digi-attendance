@@ -1260,6 +1260,26 @@ const router = createRouter({
             title: 'Monthly Kpi Report',
           },
         },
+        {
+          path: '/kpi/yearly-departmental-kpi-reports',
+          name: 'YearlyDepartmentalKpiReportList',
+          component: () => import('@/views/admin-pages/YearlyDepartmentalKpiReport.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['super_admin', 'developer'],
+            title: 'Yearly Kpi Report',
+          },
+        },
+        {
+          path: '/kpi/yearly-kpi-reports',
+          name: 'YearlyKpiReport',
+          component: () => import('@/views/admin-pages/YearlyKpiReport.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['super_admin', 'developer'],
+            title: 'Yearly Kpi Report',
+          },
+        },
 
          {
           path: '/employee-management',

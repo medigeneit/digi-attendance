@@ -129,7 +129,9 @@ const formatDate = (ts) => {
       <div></div>
     </div>
 
-    <div class="flex flex-wrap gap-2 py-4">
+    <div class="flex flex-wrap gap-2 p-3 rounded-2xl border border-white/20
+         bg-white/60 backdrop-blur-md shadow-sm
+         supports-[backdrop-filter]:bg-white/50 sticky top-14">
       <EmployeeFilter
          v-model:company_id="filters.company_id"
           v-model:department_id="filters.department_id"
@@ -138,6 +140,7 @@ const formatDate = (ts) => {
           :with-type="true"
           :initial-value="$route.query"
         @filter-change="handleFilterChange"
+        class="w-full"
       />
       <!-- <div>
         <select v-model="selectedYear" @change="fetchApplicationsByUser" class="input-1">

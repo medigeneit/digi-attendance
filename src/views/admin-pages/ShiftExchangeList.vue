@@ -139,7 +139,9 @@ const formatDate = (ts) => {
       <h1 class="title-md md:title-lg flex-wrap text-center">Shift Exchanges</h1>
       <div></div>
     </div>
-    <div class="grid md:flex gap-4 p-2">
+    <div class="flex flex-wrap gap-2 p-3 rounded-2xl border border-white/20
+         bg-white/60 backdrop-blur-md shadow-sm
+         supports-[backdrop-filter]:bg-white/50 sticky top-14">
        
         <EmployeeFilter
           v-model:company_id="filters.company_id"
@@ -149,8 +151,10 @@ const formatDate = (ts) => {
             :with-type="true"
             :initial-value="$route.query"
           @filter-change="handleFilterChange"
+          class=""
         >
         <div>
+          <label for="" class="top-label -top-1">Status </label>
           <select
             v-model="exchangeStore.selectedStatus"
             @change="fetchOffDayExchangeByUser"
@@ -163,14 +167,13 @@ const formatDate = (ts) => {
           </select>
         </div>
       </EmployeeFilter>
-      <div>
-        <FlexibleDatePicker
-          v-model="period"
-          :show-year="false"
-          :show-month="true"
-          :show-date="false"
-        />
-      </div>
+      <FlexibleDatePicker
+        v-model="period"
+        :show-year="false"
+        :show-month="true"
+        :show-date="false"
+        label="Month"
+      />
       
     </div>
 
@@ -179,66 +182,64 @@ const formatDate = (ts) => {
     </div>
 
     <div v-else class="space-y-4">
-      <div class="overflow-x-auto">
-        <table
-          class="min-w-full table-auto border-collapse border border-gray-200 bg-white rounded-md text-sm"
-        >
-          <thead>
-            <tr class="bg-gray-200">
-              <th class="border border-gray-300 px-2 text-left">#</th>
-              <th class="border border-gray-300 px-2 text-left">Employee Name</th>
-              <th class="border border-gray-300 px-2">Created Date</th>
-              <th class="border border-gray-300 px-2">Exchange Date</th>
-              <th class="border border-gray-300 px-2 text-left">Current Shift</th>
-              <th class="border border-gray-300 px-2 text-left">Exchange Shift</th>
-              <th class="border border-gray-300 px-2 text-left">Attachment</th>
-              <th class="border border-gray-300 px-2 text-left">Status</th>
-              <th class="border border-gray-300 px-2 text-left">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="(exchange, index) in exchangeStore?.all_exchanges"
-              :key="exchange?.id"
-              class="border-b border-gray-200 hover:bg-blue-200"
-            >
-              <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
-              <td class="border border-gray-300 px-2">{{ exchange?.user?.name || 'Unknown' }}</td>
-              <td class="border border-gray-300 px-2 text-center">{{ formatDate(exchange?.created_at) }}</td>
-              <td class="border border-gray-300 px-2 text-center">{{ formatDate(exchange?.exchange_date) }}</td>
-              <td class="border border-gray-300 px-2">{{ exchange?.user?.current_shift?.shift?.name }}</td>
-              <td class="border border-gray-300 px-2">{{ exchange?.shift?.name }}</td>
-              <td class="border border-gray-300 px-2 text-center">
-                <a
-                  v-if="exchange.attachment"
-                  :href="exchange?.attachment"
-                  target="_blank"
-                  class="text-blue-500 underline"
+      <table
+        class="min-w-full table-auto border-collapse border border-gray-200 bg-white rounded-md text-sm"
+      >
+        <thead>
+          <tr class="bg-gray-200 sticky top-28">
+            <th class="border border-gray-300 px-2 text-left">#</th>
+            <th class="border border-gray-300 px-2 text-left">Employee Name</th>
+            <th class="border border-gray-300 px-2">Created Date</th>
+            <th class="border border-gray-300 px-2">Exchange Date</th>
+            <th class="border border-gray-300 px-2 text-left">Current Shift</th>
+            <th class="border border-gray-300 px-2 text-left">Exchange Shift</th>
+            <th class="border border-gray-300 px-2 text-left">Attachment</th>
+            <th class="border border-gray-300 px-2 text-left">Status</th>
+            <th class="border border-gray-300 px-2 text-left">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="(exchange, index) in exchangeStore?.all_exchanges"
+            :key="exchange?.id"
+            class="border-b border-gray-200 hover:bg-blue-200"
+          >
+            <td class="border border-gray-300 px-2">{{ index + 1 }}</td>
+            <td class="border border-gray-300 px-2">{{ exchange?.user?.name || 'Unknown' }}</td>
+            <td class="border border-gray-300 px-2 text-center">{{ formatDate(exchange?.created_at) }}</td>
+            <td class="border border-gray-300 px-2 text-center">{{ formatDate(exchange?.exchange_date) }}</td>
+            <td class="border border-gray-300 px-2">{{ exchange?.user?.current_shift?.shift?.name }}</td>
+            <td class="border border-gray-300 px-2">{{ exchange?.shift?.name }}</td>
+            <td class="border border-gray-300 px-2 text-center">
+              <a
+                v-if="exchange.attachment"
+                :href="exchange?.attachment"
+                target="_blank"
+                class="text-blue-500 underline"
+              >
+                <i class="fad fa-link"></i>
+              </a>
+            </td>
+            <td class="border border-gray-300 px-2">{{ exchange?.status || 'N/A' }}</td>
+            <td class="border border-gray-300 px-2">
+              <div class="flex gap-2">
+                <RouterLink
+                  :to="{ name: 'ExchangeShiftShow', params: { id: exchange?.id } }"
+                  class="btn-icon"
                 >
-                  <i class="fad fa-link"></i>
-                </a>
-              </td>
-              <td class="border border-gray-300 px-2">{{ exchange?.status || 'N/A' }}</td>
-              <td class="border border-gray-300 px-2">
-                <div class="flex gap-2">
-                  <RouterLink
-                    :to="{ name: 'ExchangeShiftShow', params: { id: exchange?.id } }"
-                    class="btn-icon"
-                  >
-                    <i class="far fa-eye"></i>
-                  </RouterLink>
-                  <button @click="deleteApplication(exchange?.id)" class="btn-icon text-red-500">
-                    <i class="far fa-trash"></i>
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr v-if="exchangeStore?.all_exchanges?.length === 0">
-              <td colspan="6" class="p-2 text-center text-red-500">No shift exchanges found</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+                  <i class="far fa-eye"></i>
+                </RouterLink>
+                <button @click="deleteApplication(exchange?.id)" class="btn-icon text-red-500">
+                  <i class="far fa-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr v-if="exchangeStore?.all_exchanges?.length === 0">
+            <td colspan="6" class="p-2 text-center text-red-500">No shift exchanges found</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </template>

@@ -2,6 +2,7 @@
 import LoaderView from '@/components/common/LoaderView.vue'
 import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import TextEditor from '@/components/TextEditor.vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 
 import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
@@ -43,7 +44,7 @@ const form = reactive({
   file_url: null,
 
   // 🔹 NEW: receiver_type
-  receiver_type: '', // doctor | executive | support_staff | academic_body
+  receiver_type: [], // doctor | executive | support_staff | academic_body
 })
 
 /* 🔹 receiver type options */
@@ -53,6 +54,66 @@ const receiverTypeOptions = [
   { value: 'support_staff', label: 'Support Staff' },
   { value: 'academic_body', label: 'Academic Body' },
 ]
+const receiverTypeList = computed(() => {
+  const list = Array.isArray(form.receiver_type)
+    ? form.receiver_type
+    : (form.receiver_type ? [form.receiver_type] : [])
+  return list.filter(Boolean)
+})
+const toggleReceiverType = (value) => {
+  if (!value) return
+  if (!Array.isArray(form.receiver_type)) {
+    form.receiver_type = []
+  }
+  const idx = form.receiver_type.indexOf(value)
+  if (idx >= 0) {
+    form.receiver_type.splice(idx, 1)
+  } else {
+    form.receiver_type.push(value)
+  }
+}
+const selectAllReceiverTypes = () => {
+  form.receiver_type = receiverTypeOptions.map(opt => opt.value)
+}
+const clearReceiverTypes = () => {
+  form.receiver_type = []
+}
+
+const buildPeriod = (value) => {
+  if (!value) return null
+  const [year, month, day] = value.split('-')
+  if (!year || !month || !day) return null
+  return {
+    year: Number(year),
+    month: Number(month),
+    day: Number(day),
+  }
+}
+
+const publishPeriod = ref(buildPeriod(form.published_at))
+const expirePeriod  = ref(buildPeriod(form.expired_at))
+const resetPeriodsForPolicy = () => {
+  publishPeriod.value = null
+  expirePeriod.value = null
+  form.published_at = ''
+  form.expired_at = ''
+}
+const isPolicyNotice = computed(() => form.type === 2)
+
+const pad = (value) => String(value).padStart(2, '0')
+
+const fromPeriod = (period) => {
+  if (!period) return ''
+  return `${period.year}-${pad(period.month)}-${pad(period.day)}`
+}
+const getTodayPeriod = () => {
+  const now = new Date()
+  return {
+    year: now.getFullYear(),
+    month: now.getMonth() + 1,
+    day: now.getDate(),
+  }
+}
 
 // Multi-select states
 const selectedCompanies = ref([])
@@ -103,8 +164,9 @@ const validDateRange = computed(() => {
 })
 
 const canSave = computed(() =>
-  !!form.title &&
-  !!form.receiver_type &&
+  !!form.title?.trim() &&
+  (form.type === 2 || !!form.published_at) &&
+  receiverTypeList.value.length > 0 &&
   !isUploading.value &&
   validDateRange.value
 )
@@ -157,12 +219,13 @@ const effectiveDepartmentIds = computed(() => {
 })
 
 watch(
-  [effectiveDepartmentIds, () => form.receiver_type],
-  async ([ids, receiverType]) => {
+  [effectiveDepartmentIds, receiverTypeList],
+  async ([ids, receiverTypes]) => {
     if (initializing.value) return
+    const selectedTypes = Array.isArray(receiverTypes) ? receiverTypes : []
 
-    // receiver_type নাই থাকলে employees clear
-    if (!receiverType) {
+    // if no receiver type, clear employees list
+    if (!selectedTypes.length) {
       departmentStore.employees = []
       selectedEmployees.value = []
       form.all_employees = false
@@ -170,10 +233,21 @@ watch(
     }
 
     if (Array.isArray(ids) && ids.length > 0) {
-      await departmentStore.fetchDepartmentEmployee(ids, receiverType)
-      // যদি all_employees true থাকে, নতুন লিস্ট অনুযায়ী সব select করি
-      if (form.all_employees && Array.isArray(employeesList.value)) {
-        selectedEmployees.value = [...employeesList.value]
+      selectedEmployees.value = []
+      let mergedEmployees = []
+      for (const type of selectedTypes) {
+        const list = await departmentStore.fetchDepartmentActiveEmployee(ids, type)
+        if (Array.isArray(list)) {
+          list.forEach(emp => {
+            if (!mergedEmployees.some(existing => existing?.id === emp?.id)) {
+              mergedEmployees.push(emp)
+            }
+          })
+        }
+      }
+      departmentStore.employees = mergedEmployees
+      if (form.all_employees && Array.isArray(mergedEmployees)) {
+        selectedEmployees.value = [...mergedEmployees]
       }
     } else {
       departmentStore.employees = []
@@ -182,6 +256,83 @@ watch(
     }
   },
   { immediate: true }
+)
+
+watch(publishPeriod, (value) => {
+  if (!value) {
+    form.published_at = ''
+    return
+  }
+  const normalized = fromPeriod(value)
+  if (form.published_at !== normalized) {
+    form.published_at = normalized
+  }
+})
+
+watch(expirePeriod, (value) => {
+  if (!value) {
+    form.expired_at = ''
+    return
+  }
+  const normalized = fromPeriod(value)
+  if (form.expired_at !== normalized) {
+    form.expired_at = normalized
+  }
+})
+
+watch(
+  () => form.published_at,
+  (value) => {
+    if (!value) {
+      publishPeriod.value = null
+      return
+    }
+    const parsed = buildPeriod(value)
+    if (!parsed) return
+    if (
+      !publishPeriod.value ||
+      publishPeriod.value.year !== parsed.year ||
+      publishPeriod.value.month !== parsed.month ||
+      publishPeriod.value.day !== parsed.day
+    ) {
+      publishPeriod.value = parsed
+    }
+  }
+)
+
+watch(
+  () => form.expired_at,
+  (value) => {
+    if (!value) {
+      expirePeriod.value = null
+      return
+    }
+    const parsed = buildPeriod(value)
+    if (!parsed) return
+    if (
+      !expirePeriod.value ||
+      expirePeriod.value.year !== parsed.year ||
+      expirePeriod.value.month !== parsed.month ||
+      expirePeriod.value.day !== parsed.day
+    ) {
+      expirePeriod.value = parsed
+    }
+  }
+)
+
+watch(
+  () => form.type,
+  (val, oldVal) => {
+    if (val === 2) {
+      resetPeriodsForPolicy()
+    } else if (oldVal === 2 && val === 1) {
+      if (!publishPeriod.value) {
+        const today = getTodayPeriod()
+        publishPeriod.value = today
+        form.published_at = fromPeriod(today)
+      }
+    }
+  }
 )
 
 // Keep “Select All Employees” in sync with list size
@@ -204,7 +355,9 @@ const loadNotice = async () => {
     form.expired_at   = justDate(n.expired_at)
     form.description  = n.description ?? ''
     form.file_url     = n.file_url || n.file || null
-    form.receiver_type = n.receiver_type || ''
+    form.receiver_type = Array.isArray(n.receiver_type)
+      ? n.receiver_type.filter(Boolean)
+      : (n.receiver_type ? [n.receiver_type] : [])
 
     // ---------- STEP 1: Companies ----------
     const hasCompanies = (n.companies_notice?.length ?? 0) > 0
@@ -312,7 +465,7 @@ const cancelUpload = () => {
 
 /* ---------- Update (JSON only) ---------- */
 const updateNotice = async () => {
-  if (!form.receiver_type) {
+  if (!receiverTypeList.value.length) {
     toast.error('Receiver type is required.')
     return
   }
@@ -339,7 +492,7 @@ const updateNotice = async () => {
       department_ids: department_ids.value,
       employee_ids: employee_ids.value,
 
-      receiver_type: form.receiver_type,
+      receiver_type: receiverTypeList.value,
     }
 
     await noticeStore.updateNotice(id, payload)
@@ -428,9 +581,9 @@ const totalEmployees = computed(() => employeesList.value.length)
           <h2 class="text-lg font-semibold">Notice Information</h2>
 
           <!-- Type + Dates + Receiver Type -->
-          <div class="grid md:grid-cols-3 gap-4">
-            <div class="w-full">
-              <label for="type" class="font-medium block mb-1">Type*</label>
+          <div>
+            <label for="type" class="font-medium block mb-1">Type*</label>
+            <div class="flex gap-4">
               <div class="inline-flex rounded-lg border overflow-hidden">
                 <button
                   type="button"
@@ -449,49 +602,85 @@ const totalEmployees = computed(() => employeesList.value.length)
                   Policy
                 </button>
               </div>
-            </div>
-
-            <div class="w-full">
-              <label class="font-medium block mb-1">Publish Date</label>
-              <input v-model="form.published_at" type="date" class="w-full p-2 border rounded" />
-            </div>
-
-            <div class="w-full">
-              <label class="font-medium block mb-1">Expire Date</label>
-              <input v-model="form.expired_at" type="date" class="w-full p-2 border rounded" />
-              <p v-if="!validDateRange" class="text-xs text-red-600 mt-1">
-                Expire date must be the same or after Publish date.
-              </p>
+              <div class="flex gap-4">
+                <div class="w-full">
+                  <FlexibleDatePicker
+                    v-model="publishPeriod"
+                    :show-year="false"
+                    :show-month="false"
+                    :show-date="true"
+                    :disabled="isPolicyNotice"
+                    label="Publish Date *"
+                  />
+                  <p v-if="isPolicyNotice" class="text-xs text-gray-500 mt-1">
+                    Policies skip publish dates and remain visible indefinitely.
+                  </p>
+                </div>
+                <div class="w-full">
+                  <FlexibleDatePicker
+                    v-model="expirePeriod"
+                    :show-year="false"
+                    :show-month="false"
+                    :show-date="true"
+                    :disabled="isPolicyNotice"
+                    label="Expire Date"
+                  />
+                  <p v-if="!validDateRange && !isPolicyNotice" class="text-xs text-red-600 mt-1">
+                    Expire date must be the same or after Publish date.
+                  </p>
+                  <p v-else-if="isPolicyNotice" class="text-xs text-gray-500 mt-1">
+                    Policies stay active until replaced.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
           <!-- Receiver Type -->
           <div class="space-y-2">
-            <label class="font-medium block mb-1">
-              Send To <span class="text-red-500">*</span>
-            </label>
+            <div class="flex items-center justify-between">
+              <label class="font-medium block mb-1">
+                Send To <span class="text-red-500">*</span>
+              </label>
+              <div class="inline-flex gap-1 text-xs">
+                <button
+                  type="button"
+                  class="px-2 py-1 rounded border text-gray-600 hover:bg-gray-50"
+                  @click="selectAllReceiverTypes"
+                >
+                  Select All
+                </button>
+                <button
+                  type="button"
+                  class="px-2 py-1 rounded border text-gray-600 hover:bg-gray-50"
+                  @click="clearReceiverTypes"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
             <div class="flex flex-wrap gap-2">
               <button
                 v-for="opt in receiverTypeOptions"
                 :key="opt.value"
                 type="button"
                 class="px-3 py-1.5 rounded-full border text-xs"
-                :class="form.receiver_type === opt.value
+                :class="receiverTypeList.includes(opt.value)
                   ? 'bg-blue-600 text-white border-blue-600'
                   : 'bg-white text-gray-700 hover:bg-gray-50'"
-                @click="form.receiver_type = opt.value"
+                @click="toggleReceiverType(opt.value)"
               >
                 {{ opt.label }}
               </button>
             </div>
-            <p v-if="!form.receiver_type" class="text-xs text-red-500 mt-1">
+            <p v-if="!receiverTypeList.length" class="text-xs text-red-500 mt-1">
               Receiver type is required.
             </p>
           </div>
 
           <!-- Companies -->
           <div class="space-y-3">
-            <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
               <label class="font-medium">Companies</label>
               <div class="inline-flex rounded-lg border overflow-hidden">
                 <button
@@ -517,14 +706,15 @@ const totalEmployees = computed(() => employeesList.value.length)
                 placeholder="Select companies"
                 track-by="id"
                 label="name"
+                top-label="Companies"
               />
             </div>
           </div>
 
           <!-- Departments & Employees -->
-          <div class="grid md:grid-cols-2 gap-6">
+          <div class="grid  gap-6">
             <div class="space-y-3">
-              <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
                 <label class="font-medium">Departments</label>
                 <div class="inline-flex rounded-lg border overflow-hidden">
                   <button
@@ -549,16 +739,15 @@ const totalEmployees = computed(() => employeesList.value.length)
                 placeholder="Select departments"
                 track-by="id"
                 label="name"
+                top-label="Departments"
               />
             </div>
 
             <div class="space-y-3">
-              <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
                 <label class="font-medium">Employees</label>
                 <div class="inline-flex items-center gap-3">
-                  <span class="text-xs text-gray-500">
-                    Selected {{ selectedEmployees.length }} / {{ totalEmployees }}
-                  </span>
+                  
                   <div class="inline-flex rounded-lg border overflow-hidden">
                     <button
                       type="button"
@@ -573,6 +762,10 @@ const totalEmployees = computed(() => employeesList.value.length)
                       @click="modeEmployees = 'custom'"
                     >Custom</button>
                   </div>
+
+                  <span class="text-xs text-gray-500">
+                    Selected {{ selectedEmployees.length }} / {{ totalEmployees }}
+                  </span>
                 </div>
               </div>
               <MultiselectDropdown
@@ -583,6 +776,7 @@ const totalEmployees = computed(() => employeesList.value.length)
                 placeholder="Select employee"
                 track-by="id"
                 label="name"
+                top-label="Employees"
               />
             </div>
           </div>

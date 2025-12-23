@@ -278,41 +278,43 @@ watch([tab, selectedCycleId], () => {
 </script>
 
 <template>
-  <div class="max-w-6xl mx-auto p-4 space-y-5">
+  <div class="max-w-6xl mx-auto px-4 py-6 space-y-6">
     <!-- Header -->
-    <header class="sticky top-0 z-20 bg-white rounded-md backdrop-blur border-b -mx-4 px-4">
-      <div class="flex flex-col gap-3 py-3">
+    <header class="sticky top-0 z-20 -mx-4 px-4 pt-3 pb-4 bg-white/90 backdrop-blur border-b shadow-sm">
+      <div class="flex flex-col gap-3">
         <div class="flex items-center justify-between gap-3">
           <div>
-            <h1 class="text-lg md:text-xl font-semibold">KPI — Lane Overrides</h1>
+            <h1 class="text-lg md:text-xl font-semibold text-slate-900">KPI Lane Overrides</h1>
             <div class="text-xs text-slate-600 flex items-center gap-3">
-              <span>Assigned: <b>{{ assignedCount }}</b>/<b>{{ totalLanes }}</b></span>
-              <span v-if="dirty" class="inline-flex items-center text-amber-700">• Unsaved changes</span>
+              <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5">
+                Assigned: <b>{{ assignedCount }}</b>/<b>{{ totalLanes }}</b>
+              </span>
+              <span v-if="dirty" class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-amber-700">Unsaved changes</span>
             </div>
           </div>
 
           <div class="flex items-center gap-2">
             <select v-model="selectedCycleId" @change="loadCycle"
-                    class="border rounded-lg px-3 py-2 bg-white">
+                    class="border border-slate-200 rounded-lg px-3 py-2 bg-white text-sm shadow-sm">
               <option v-for="c in s.cycles" :value="c.id" :key="c.id">
                 {{ c.title }} ({{ c.year }})
               </option>
             </select>
-            <button @click="loadCycle" class="px-3 py-2 border rounded-lg hover:bg-slate-50">Reload</button>
+            <button @click="loadCycle" class="px-3 py-2 border border-slate-200 rounded-lg text-sm hover:bg-slate-50">Reload</button>
           </div>
         </div>
 
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <div class="inline-flex rounded-xl border overflow-hidden">
+          <div class="inline-flex rounded-full border border-slate-200 overflow-hidden bg-white shadow-sm">
             <button @click="tab='department'" :class="['px-4 py-2 text-sm transition', tab==='department' ? 'bg-slate-900 text-white' : 'bg-white hover:bg-slate-50']">Department</button>
-            <button @click="tab='employee'"   :class="['px-4 py-2 text-sm transition border-l', tab==='employee'   ? 'bg-slate-900 text-white' : 'bg-white hover:bg-slate-50']">Employee</button>
+            <button @click="tab='employee'"   :class="['px-4 py-2 text-sm transition border-l border-slate-200', tab==='employee'   ? 'bg-slate-900 text-white' : 'bg-white hover:bg-slate-50']">Employee</button>
           </div>
 
           <div class="flex items-center gap-2">
-            <button @click="applyToAllEmpty" class="px-3 py-1.5 border rounded-lg hover:bg-slate-50">Apply to all empty lanes</button>
+            <button @click="applyToAllEmpty" class="px-3 py-1.5 border border-slate-200 rounded-lg text-sm hover:bg-slate-50">Apply to all empty lanes</button>
             <button @click="save"
                     :disabled="!canSave"
-                    class="px-4 py-2 rounded-xl text-white transition"
+                    class="px-4 py-2 rounded-xl text-white text-sm font-medium transition shadow-sm"
                     :class="canSave ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-slate-400 cursor-not-allowed'">
               Save (Ctrl/Cmd+S)
             </button>
@@ -322,25 +324,25 @@ watch([tab, selectedCycleId], () => {
     </header>
 
     <!-- Target pickers -->
-    <div class="grid md:grid-cols-2 gap-4">
+    <div class="w-full gap-4">
       <!-- Department picker -->
-      <div v-if="tab==='department'" class="rounded-2xl border bg-white p-4 relative">
-        <div class="flex items-center justify-between mb-2">
-          <div class="text-sm font-medium">Target Department</div>
+      <div v-if="tab==='department'" class="rounded-2xl border border-slate-200 bg-white p-4 relative shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-sm font-semibold text-slate-800">Target Department</div>
           <span class="text-xs text-slate-500">{{ targetSummary }}</span>
         </div>
 
         <div class="flex items-center gap-2">
           <button
-            class="px-3 py-2 rounded-lg border hover:bg-slate-50"
+            class="px-3 py-2 rounded-lg border border-slate-200 text-sm hover:bg-slate-50"
             @click="openDeptPopover"
           >
             {{ selectedDept ? 'Change department' : 'Choose department' }}
           </button>
 
           <div v-if="selectedDept" class="inline-flex items-center gap-2 bg-slate-100 text-slate-800 px-3 py-1.5 rounded-full">
-            <span class="text-sm">{{ selectedDept.name }}</span>
-            <button @click="clearDept" class="text-xs hover:text-red-600" title="Clear">✕</button>
+            <span class="text-sm font-medium">{{ selectedDept.name }}</span>
+            <button @click="clearDept" class="text-xs rounded-full px-2 py-0.5 border border-slate-200 hover:bg-white" title="Clear">Clear</button>
           </div>
         </div>
 
@@ -348,17 +350,17 @@ watch([tab, selectedCycleId], () => {
         <transition enter-active-class="transition ease-out duration-150" enter-from-class="opacity-0 translate-y-1" enter-to-class="opacity-100 translate-y-0"
                     leave-active-class="transition ease-in duration-100" leave-from-class="opacity-100 translate-y-0" leave-to-class="opacity-0 translate-y-1">
           <div v-if="showDeptPopover" ref="deptPopoverRef"
-               class="absolute z-30 mt-2 w-full md:w-[28rem] max-h-[22rem] overflow-hidden rounded-xl border bg-white shadow-lg">
-            <div class="p-3 border-b">
+               class="absolute z-30 mt-2 w-full md:w-[28rem] max-h-[22rem] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+            <div class="p-3 border-b border-slate-200">
               <input id="dept-search-input" v-model="searchDept" @input="doLookupDepartments" @keydown="onDeptKeydown"
-                     placeholder="Search department…" class="w-full border rounded-lg px-3 py-2" />
+                     placeholder="Search department" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" />
             </div>
             <div class="max-h-[18rem] overflow-auto">
               <template v-if="deptList.length">
                 <button
                   v-for="(d, i) in deptList" :key="d.id"
                   @click="pickDept(d)"
-                  class="flex w-full items-center justify-between px-3 py-2 border-b last:border-b-0 text-left"
+                  class="flex w-full items-center justify-between px-3 py-2 border-b border-slate-100 last:border-b-0 text-left"
                   :class="i === deptActiveIdx ? 'bg-slate-50' : 'hover:bg-slate-50'"
                 >
                   <span class="truncate">{{ d.name }}</span>
@@ -372,26 +374,26 @@ watch([tab, selectedCycleId], () => {
       </div>
 
       <!-- Employee picker -->
-      <div v-else class="rounded-2xl border p-4 bg-white relative">
-        <div class="flex items-center justify-between mb-2">
-          <div class="text-sm font-medium">Target Employee</div>
+      <div v-else class="rounded-2xl border border-slate-200 p-4 bg-white relative shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-sm font-semibold text-slate-800">Target Employee</div>
           <span class="text-xs text-slate-500">{{ targetSummary }}</span>
         </div>
 
         <div class="flex items-center gap-2">
           <button
-            class="px-3 py-2 rounded-lg border hover:bg-slate-50"
+            class="px-3 py-2 rounded-lg border border-slate-200 text-sm hover:bg-slate-50"
             @click="openUserPopover"
           >
             {{ selectedEmp ? 'Change employee' : 'Choose employee' }}
           </button>
 
           <div v-if="selectedEmp" class="inline-flex items-center gap-2 bg-slate-100 text-slate-800 px-3 py-1.5 rounded-full">
-            <span class="text-sm">
+            <span class="text-sm font-medium">
               {{ selectedEmp.name }}
-              <span class="text-xs text-slate-500"> — {{ selectedEmp.department_name || 'N/A' }}</span>
+              <span class="text-xs text-slate-500"> - {{ selectedEmp.department_name || 'N/A' }}</span>
             </span>
-            <button @click="clearUser" class="text-xs hover:text-red-600" title="Clear">✕</button>
+            <button @click="clearUser" class="text-xs rounded-full px-2 py-0.5 border border-slate-200 hover:bg-white" title="Clear">Clear</button>
           </div>
         </div>
 
@@ -399,17 +401,17 @@ watch([tab, selectedCycleId], () => {
         <transition enter-active-class="transition ease-out duration-150" enter-from-class="opacity-0 translate-y-1" enter-to-class="opacity-100 translate-y-0"
                     leave-active-class="transition ease-in duration-100" leave-from-class="opacity-100 translate-y-0" leave-to-class="opacity-0 translate-y-1">
           <div v-if="showUserPopover" ref="userPopoverRef"
-               class="absolute z-30 mt-2 w-full md:w-[32rem] max-h-[22rem] overflow-hidden rounded-xl border bg-white shadow-lg">
-            <div class="p-3 border-b">
+               class="absolute z-30 mt-2 w-full md:w-[32rem] max-h-[22rem] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+            <div class="p-3 border-b border-slate-200">
               <input id="user-search-input" v-model="searchUser" @input="doLookupUsers" @keydown="onUserKeydown"
-                     placeholder="Search employee…" class="w-full border rounded-lg px-3 py-2" />
+                     placeholder="Search employee" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" />
             </div>
             <div class="max-h-[18rem] overflow-auto">
               <template v-if="userList.length">
                 <button
                   v-for="(u, i) in userList" :key="u.id"
                   @click="pickUser(u)"
-                  class="flex w-full items-center justify-between px-3 py-2 border-b last:border-b-0 text-left"
+                  class="flex w-full items-center justify-between px-3 py-2 border-b border-slate-100 last:border-b-0 text-left"
                   :class="i === userActiveIdx ? 'bg-slate-50' : 'hover:bg-slate-50'"
                 >
                   <span class="truncate">{{ u.name }}</span>
@@ -424,18 +426,18 @@ watch([tab, selectedCycleId], () => {
     </div>
 
     <!-- Lanes table -->
-    <div class="rounded-2xl border bg-white overflow-auto">
+    <div class="rounded-2xl border border-slate-200 bg-white overflow-auto shadow-sm">
       <table class="w-full text-sm">
-        <thead class="bg-slate-50">
+        <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
           <tr>
             <th class="text-left px-3 py-2 w-[30%]">Lane</th>
             <th class="text-left px-3 py-2">Assignee</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="row in laneRows" :key="row.lane_key" class="border-t hover:bg-slate-50/50">
+          <tr v-for="row in laneRows" :key="row.lane_key" class="border-t border-slate-100 hover:bg-slate-50/60">
             <td class="px-3 py-3">
-              <div class="font-medium">{{ row.label }}</div>
+              <div class="font-medium text-slate-800">{{ row.label }}</div>
               <div class="text-[11px] text-slate-500">{{ row.lane_key }}</div>
             </td>
             <td class="px-3 py-3">
@@ -444,7 +446,7 @@ watch([tab, selectedCycleId], () => {
                 :display="{ name: row.assignee_name, dept: row.assignee_dept }"
                 :lane-key="row.lane_key"
                 :fetcher="(p) => s.lookupUsers(p)"
-                placeholder="Search user for this lane…"
+                placeholder="Search user for this lane"
                 @update:modelValue="(v)=>updateRow(row, v, {name: row.assignee_name, dept: row.assignee_dept})"
                 @update:display="(d)=>updateRow(row, row.assigned_user_id, d)"
                 @cleared="()=>clearRow(row)"

@@ -167,24 +167,25 @@ const reportTotals = computed(() => {
           :with-type="true"
           :initial-value="$route.query"
           @filter-change="handleFilterChange"
+          class="w-full"
         >
-        <div class="relative">
-          <label class="top-label">Month</label>
+        <div class="flex gap-2">
           <FlexibleDatePicker
             v-model="period"
             :show-year="false"
             :show-month="true"
             :show-date="false"
+            label="Month"
           />
+          <button
+            @click="fetchReport"
+            class="btn-2 rounded"
+          >
+            <i class="far fa-sync"></i>
+            <span>Run Report</span>
+          </button>
         </div>
       </EmployeeFilter>
-      <button
-        @click="fetchReport"
-        class="btn-2"
-      >
-        <i class="far fa-sync"></i>
-        <span>Run Report</span>
-      </button>
     </div>
 
     <div v-if="loading" class="text-center py-4">
