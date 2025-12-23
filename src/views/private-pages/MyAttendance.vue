@@ -82,6 +82,7 @@ const goBack = () => router.go(-1)
       </div>
     </div>
 
+
     <div class="grid md:grid-cols-2 gap-4 text-sm">
       <div class="card-bg p-4 gap-1">
         <h2 class="title-md">User Info</h2>

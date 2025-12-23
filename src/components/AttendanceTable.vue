@@ -1,7 +1,7 @@
 <template>
   <table class="min-w-full table-auto border-collapse border border-gray-300 bg-white">
     <thead>
-      <tr class="bg-gray-200 text-xs sticky top-28 z-50">
+      <tr class="bg-gray-200 text-xs sticky top-14 z-50"  :class="{'top-28': authStore.isAdminMood}">
         <th class="border p-1">Date</th>
         <th class="border p-1">Day</th>
         <th class="border p-1">Shift</th>
@@ -302,6 +302,9 @@
 <script setup>
 import { dateIsToday } from '@/libs/datetime'
 import StatusBadge from './common/StatusBadge.vue'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
 
 defineProps({
   logs: {
