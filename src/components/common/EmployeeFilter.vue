@@ -157,6 +157,7 @@ function formatEmployee(e) {
     ...e,
     id: String(e.id),
     label: e.name || e.label || `${e.first_name ?? ''} ${e.last_name ?? ''}`.trim(),
+    bn_name: e.bn_name,
   }
 }
 

@@ -46,6 +46,7 @@ const EMPLOYMENT_TYPES = Object.freeze([
 /* -------------------------------- FORM ----------------------------------- */
 const form = reactive({
   name: '',
+  bn_name: '',
   phone: '',
   email: '',
   password: '',
@@ -147,6 +148,7 @@ async function loadUser() {
 
   // Core fields
   form.name = user.name || ''
+  form.bn_name = user.bn_name || ''
   form.phone = user.phone || ''
   form.email = user.email || ''
   form.address = user.address || ''
@@ -272,6 +274,17 @@ function clearWeekend() {
                 required
               />
               <p v-if="errors.name" class="text-red-600 text-sm mt-1">{{ errors.name }}</p>
+            </div>
+
+            <div>
+              <label for="bnName">Bangla Name</label>
+              <input
+                id="bnName"
+                v-model.trim="form.bn_name"
+                type="text"
+                class="w-full p-2 border rounded"
+                autocomplete="name"
+              />
             </div>
 
             <div>

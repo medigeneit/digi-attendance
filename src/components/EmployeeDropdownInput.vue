@@ -30,13 +30,32 @@ const selectedEmployeeId = computed({
   get: () => props.modelValue,
   set: (val) => emit('update:modelValue', val),
 })
+
+const searchByEmployee = (options, term) => {
+  const needle = String(term || '').toLowerCase()
+
+  return (options || []).filter((opt) => {
+    if (opt == null) return false
+    if (typeof opt === 'string' || typeof opt === 'number') {
+      return String(opt).toLowerCase().includes(needle)
+    }
+
+    const name = String(opt.name || '').toLowerCase()
+    const bnName = String(opt.bn_name || '').toLowerCase()
+    const label = String(opt.label || '').toLowerCase()
+
+    return name.includes(needle) || bnName.includes(needle) || label.includes(needle)
+  })
+}
 </script>
 
 <template>
+  
   <SelectDropdown
     v-model="selectedEmployeeId"
     :options="employees"
     :containment="containment"
+    :searchBy="searchByEmployee"
     clearable
   >
     <template #option="{ option }">
