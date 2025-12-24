@@ -65,10 +65,16 @@ function removeFile(index) {
 async function submit() {
   state.value = 'submitting'
 
+  console.log({ form: form.value })
+
   const payload = new FormData()
   for (const key in form.value) {
     if (key === 'attachments') {
       form.value.attachments.forEach((file) => payload.append('attachments[]', file))
+    } else if (key == 'website_tags') {
+      if (Array.isArray(form.value[key])) {
+        form.value[key].forEach((tag) => payload.append('website_tags[]', tag))
+      }
     } else {
       payload.append(key, form.value[key])
     }
