@@ -416,6 +416,7 @@ function resetFilters() {
                     </div>
                     <div class="min-w-0">
                       <div class="font-medium  truncate max-w-[220px]">{{ user?.name }}</div>
+                      <div class="text-[11px] text-zinc-500">{{ user?.bn_name }}</div>
                       <div class="text-[11px] text-zinc-500">{{ user?.designation?.title || '—' }}</div>
                       <div class="text-[11px] text-zinc-500">ID: {{ user?.employee_id }}</div>
                     </div>
