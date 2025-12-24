@@ -23,7 +23,7 @@ const avatarUrl = computed(() => user.value?.photo || user.value?.avatar_url || 
 
 // Badges
 const deptName = computed(() => user.value?.department?.name || '')
-const desig    = computed(() => user.value?.designation?.title || user.value?.post || '')
+const designation    = computed(() => user.value?.designation?.title || user.value?.post || '')
 
 // Actions
 const openClearance = () => { clearanceOpen.value = true }
@@ -66,9 +66,9 @@ const togglePassword = () => { changePasswordModal.value = !changePasswordModal.
                   <i class="far fa-building"></i>
                   {{ deptName }}
                 </span>
-                <span v-if="desig" class="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium text-emerald-700 bg-emerald-50 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-200 dark:border-emerald-800">
+                <span v-if="designation" class="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium text-emerald-700 bg-emerald-50 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-200 dark:border-emerald-800">
                   <i class="far fa-user-tie"></i>
-                  {{ desig }}
+                  {{ designation }}
                 </span>
               </div>
             </div>
@@ -123,27 +123,31 @@ const togglePassword = () => { changePasswordModal.value = !changePasswordModal.
           <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
             <div>
               <dt class="text-slate-500">Name</dt>
-              <dd class="mt-1 font-medium text-slate-900 dark:text-slate-100">{{ user?.name || 'N/A' }}</dd>
+              <dd class="mt-1 font-medium text-slate-900 dark:text-slate-100">{{ user?.name || '-' }}</dd>
+            </div>
+            <div>
+              <dt class="text-slate-500">Bangla Name</dt>
+              <dd class="mt-1 font-medium text-slate-900 dark:text-slate-100">{{ user?.bn_name || '-' }}</dd>
             </div>
             <div>
               <dt class="text-slate-500">Phone</dt>
-              <dd class="mt-1 font-medium text-slate-900 dark:text-slate-100">{{ user?.phone || 'N/A' }}</dd>
+              <dd class="mt-1 font-medium text-slate-900 dark:text-slate-100">{{ user?.phone || '-' }}</dd>
             </div>
             <div>
               <dt class="text-slate-500">Email</dt>
-              <dd class="mt-1 font-medium text-slate-900 dark:text-slate-100">{{ user?.email || 'N/A' }}</dd>
+              <dd class="mt-1 font-medium text-slate-900 dark:text-slate-100">{{ user?.email || '-' }}</dd>
             </div>
             <div>
               <dt class="text-slate-500">Blood Group</dt>
-              <dd class="mt-1 font-medium text-slate-900 dark:text-slate-100">{{ user?.blood || 'N/A' }}</dd>
+              <dd class="mt-1 font-medium text-slate-900 dark:text-slate-100">{{ user?.blood || '-' }}</dd>
             </div>
             <div class="sm:col-span-2">
               <dt class="text-slate-500">Address</dt>
-              <dd class="mt-1 font-medium text-slate-900 dark:text-slate-100">{{ user?.address || 'N/A' }}</dd>
+              <dd class="mt-1 font-medium text-slate-900 dark:text-slate-100">{{ user?.address || '-' }}</dd>
             </div>
             <div>
               <dt class="text-slate-500">Employee ID</dt>
-              <dd class="mt-1 font-medium text-slate-900 dark:text-slate-100">{{ user?.employee_id || 'N/A' }}</dd>
+              <dd class="mt-1 font-medium text-slate-900 dark:text-slate-100">{{ user?.employee_id || '-' }}</dd>
             </div>
           </dl>
         </div>
@@ -158,15 +162,15 @@ const togglePassword = () => { changePasswordModal.value = !changePasswordModal.
           <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
             <div>
               <dt class="text-slate-500">Company</dt>
-              <dd class="mt-1 font-medium text-slate-900 dark:text-slate-100">{{ user?.company?.name || 'N/A' }}</dd>
+              <dd class="mt-1 font-medium text-slate-900 dark:text-slate-100">{{ user?.company?.name || '-' }}</dd>
             </div>
             <div>
               <dt class="text-slate-500">Department</dt>
-              <dd class="mt-1 font-medium text-slate-900 dark:text-slate-100">{{ deptName || 'N/A' }}</dd>
+              <dd class="mt-1 font-medium text-slate-900 dark:text-slate-100">{{ deptName || '-' }}</dd>
             </div>
             <div>
               <dt class="text-slate-500">Designation</dt>
-              <dd class="mt-1 font-medium text-slate-900 dark:text-slate-100">{{ desig || 'N/A' }}</dd>
+              <dd class="mt-1 font-medium text-slate-900 dark:text-slate-100">{{ designation || '-' }}</dd>
             </div>
             <div>
               <dt class="text-slate-500">Joining Date</dt>
