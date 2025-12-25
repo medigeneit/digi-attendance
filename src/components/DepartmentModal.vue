@@ -150,7 +150,7 @@ onMounted(async () => {
 
   await fetchCompanies()
 
-  if (props.department.company_id) {
+  if (props?.department?.company_id) {
     await fetchEmployee(props.department.company_id)
   }
 
