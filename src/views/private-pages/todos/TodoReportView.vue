@@ -301,10 +301,10 @@ onMounted(() => {
     >
       <table class="min-w-full text-left text-sm border-separate border-spacing-0">
         <thead class="bg-gray-50 text-gray-600 uppercase tracking-wide text-xs">
-          <tr class="border-y print:border-gray-400 sticky top-[58px]">
+          <tr class="border-y print:border-gray-400 sticky md:top-[58px] z-30">
             <th class="px-4 py-3 border w-[10px] bg-white bg-opacity-70 backdrop-blur-sm">sl</th>
             <th
-              class="px-4 py-3 border w-[300px] print:border-l print:border-l-gray-400 bg-white bg-opacity-70 backdrop-blur-sm"
+              class="px-4 py-3 border md:w-[300px] print:w-auto print:border-l print:border-l-gray-400 bg-white bg-opacity-70 backdrop-blur-sm"
             >
               Name
             </th>
@@ -332,35 +332,41 @@ onMounted(() => {
               :key="`${userGroup.user?.id || 'u'}-${dateGroup.date}`"
             >
               <template v-for="(todo, index) in dateGroup.todos" :key="todo.id">
-                <tr class="hover:bg-gray-50 border">
+                <tr class="border odd:bg-white even:bg-gray-50 hover:bg-gray-100">
                   <td
                     v-if="dateGroup === userGroup.dates[0] && index === 0"
                     :rowspan="userGroup.rowSpan"
-                    class="px-4 py-3 align-top font-bold text-xl text-gray-800 whitespace-nowrap border-l border-t"
+                    class="px-4 py-3 align-top font-bold text-xl text-gray-800 whitespace-nowrap border-l border-t bg-white"
                   >
-                    {{ userIndex + 1 }}
+                    <div class="sticky top-[116px] bg-white">
+                      {{ userIndex + 1 }}
+                    </div>
                   </td>
 
                   <td
                     v-if="dateGroup === userGroup.dates[0] && index === 0"
                     :rowspan="userGroup.rowSpan"
-                    class="px-4 py-3 align-top font-medium text-gray-800 whitespace-nowrap border-l border-t"
+                    class="px-4 py-3 align-top font-medium text-gray-800 whitespace-nowrap border-l border-t bg-white"
                   >
-                    <div>{{ userGroup.user?.name || 'Unknown user' }}</div>
-                    <div v-if="userGroup.user?.department?.name" class="text-xs text-gray-500">
-                      {{ userGroup.user?.department?.name }}
-                    </div>
-                    <div v-if="userGroup.user?.company?.name" class="text-[11px] text-gray-400">
-                      {{ userGroup.user?.company?.name }}
+                    <div class="sticky top-[116px] bg-white">
+                      <div>{{ userGroup.user?.name || 'Unknown user' }}</div>
+                      <div v-if="userGroup.user?.department?.name" class="text-xs text-gray-500">
+                        {{ userGroup.user?.department?.name }}
+                      </div>
+                      <div v-if="userGroup.user?.company?.name" class="text-[11px] text-gray-400">
+                        {{ userGroup.user?.company?.name }}
+                      </div>
                     </div>
                   </td>
 
                   <td
                     v-if="index === 0 && !isOnlyOneDate"
                     :rowspan="dateGroup.rowSpan"
-                    class="px-4 py-3 align-top text-xs text-gray-700 whitespace-nowrap border-l border-t"
+                    class="px-4 py-3 align-top text-xs text-gray-700 whitespace-nowrap border-l border-t bg-white"
                   >
-                    {{ getDisplayDate(dateGroup.date) || dateGroup.date || '-' }}
+                    <div class="sticky top-[116px] bg-white">
+                      {{ getDisplayDate(dateGroup.date) || dateGroup.date || '-' }}
+                    </div>
                   </td>
 
                   <td class="px-4 py-3 text-gray-800 border-l border-t">
