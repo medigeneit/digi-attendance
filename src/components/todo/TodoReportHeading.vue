@@ -1,6 +1,6 @@
 <script setup>
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
-import { computed, reactive, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 
 const props = defineProps({
   loading: { type: Boolean, default: false },
@@ -12,6 +12,7 @@ const props = defineProps({
   endDate: { type: String, default: '' },
 })
 
+const employeeFilterRef = ref(null)
 const emit = defineEmits(['reloadClick', 'change'])
 
 const state = reactive({
@@ -58,6 +59,10 @@ watch(
 )
 
 watch(payload, emitChange, { deep: true })
+
+defineExpose({
+  employees: computed(() => employeeFilterRef.value?.employees || []),
+})
 </script>
 
 <template>
@@ -81,6 +86,7 @@ watch(payload, emitChange, { deep: true })
         class="flex flex-col md:flex-row flex-wrap items-end md:ml-auto w-full md:w-auto gap-x-3 gap-y-4 print-hide"
       >
         <EmployeeFilter
+          ref="employeeFilterRef"
           v-model:company_id="state.companyId"
           v-model:department_id="state.departmentId"
           v-model:employee_id="state.employeeId"

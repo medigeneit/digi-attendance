@@ -227,6 +227,10 @@ function clearType() {
   // employee sticky থাকবে, তাই employee_id untouched
   applyFilter()
 }
+
+defineExpose({
+  employees: filterEmployees,
+})
 </script>
 
 <template>
