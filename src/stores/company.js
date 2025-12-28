@@ -85,11 +85,11 @@ export const useCompanyStore = defineStore('company', () => {
     }
   };
 
-  const fetchEmployee = async (id) => {
+  const fetchEmployee = async (id, params) => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await apiClient.get(`/companies/${id}/employees`);
+      const response = await apiClient.get(`/companies/${id}/employees`, {params});
       employees.value = response.data;
       return response.data;
     } catch (err) {

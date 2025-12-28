@@ -148,7 +148,7 @@ watch(selectedEmployeeId, () => {
 async function loadCompanyDeps(companyId) {
   await Promise.all([
     departmentStore.fetchDepartments(companyId),
-    companyStore.fetchEmployee(companyId),
+    companyStore.fetchEmployee(companyId, { with: 'department,company' }),
   ])
 }
 
@@ -227,6 +227,10 @@ function clearType() {
   // employee sticky থাকবে, তাই employee_id untouched
   applyFilter()
 }
+
+defineExpose({
+  employees: filterEmployees,
+})
 </script>
 
 <template>
