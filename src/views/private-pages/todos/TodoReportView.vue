@@ -7,7 +7,7 @@ import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
 import { useTodoDateStore } from '@/stores/useTodoDateStore'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
@@ -127,6 +127,48 @@ const filterSummary = computed(() => {
   }
 })
 
+const showAssignmentSummary = ref(false)
+const assignmentSummaryRef = ref(null)
+
+const handleAssignmentOutsideClick = (event) => {
+  if (!showAssignmentSummary.value) return
+  if (!assignmentSummaryRef.value) return
+  if (!assignmentSummaryRef.value.contains(event.target)) {
+    showAssignmentSummary.value = false
+  }
+}
+
+const todoAssignmentSummary = computed(() => {
+  if (!groupedByUser.value?.length) return { withTodos: [], withoutTodos: [] }
+
+  return groupedByUser.value.reduce(
+    (acc, group, index) => {
+      const totalTodos = group.dates.reduce(
+        (sum, dateGroup) => sum + dateGroup.todos.filter((todo) => !todo.isPlaceholder).length,
+        0,
+      )
+
+      const entry = {
+        id:
+          group.user?.id ??
+          group.user?.user_id ??
+          group.user?.uid ??
+          group.user?.email ??
+          `${group.user?.name || 'unknown'}-${index}`,
+        name: group.user?.name || 'Unknown user',
+      }
+
+      if (totalTodos > 0) {
+        acc.withTodos.push(entry)
+      } else {
+        acc.withoutTodos.push(entry)
+      }
+      return acc
+    },
+    { withTodos: [], withoutTodos: [] },
+  )
+})
+
 const statusClass = (status) => {
   if (status === 'COMPLETED') return 'bg-green-100 text-green-700 border border-green-200'
   if (status === 'WORKING') return 'bg-blue-100 text-blue-700 border border-blue-200'
@@ -211,6 +253,14 @@ onMounted(() => {
   companyStore.fetchCompanies({ ignore_permission: true })
   fetchTodos()
 })
+
+onMounted(() => {
+  document.addEventListener('click', handleAssignmentOutsideClick, true)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleAssignmentOutsideClick, true)
+})
 </script>
 
 <template>
@@ -251,9 +301,9 @@ onMounted(() => {
 
     <div
       v-if="filters.companyId && filters.startDate && filters.endDate"
-      class="bg-white border rounded-md mb-2 p-4 text-sm print:border-0 print:mb-2 print:px-0 print:w-full"
+      class="bg-white border rounded-md mb-2 p-4 text-sm print:border-0 print:mb-2 print:px-0 print:w-full relative overflow-visible z-50"
     >
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-y-2 gap-x-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-y-2 gap-x-6">
         <div>
           <div class="text-xs text-gray-500 uppercase tracking-wide">Company</div>
           <div class="font-medium text-gray-800">{{ filterSummary.company }}</div>
@@ -291,6 +341,87 @@ onMounted(() => {
         <div class="col-span-2">
           <div class="text-xs text-gray-500 uppercase tracking-wide">Date</div>
           <div class="font-medium text-gray-800">{{ filterSummary.dateRange }}</div>
+        </div>
+
+        <div ref="assignmentSummaryRef" class="print-hide relative">
+          <button
+            type="button"
+            class="px-3 bg-white text-gray-700 hover:bg-gray-50 w-full text-bg border text-left"
+            @click="showAssignmentSummary = !showAssignmentSummary"
+          >
+            <div>Todo given</div>
+            <div class="inline-flex items-center gap-5">
+              <div class="text-gray-500">
+                {{ todoAssignmentSummary.withTodos.length }} /
+                {{ todoAssignmentSummary.withoutTodos.length }}
+              </div>
+              <i
+                class="fas"
+                :class="[showAssignmentSummary ? 'fa-chevron-up' : 'fa-chevron-down']"
+              ></i>
+            </div>
+          </button>
+
+          <div
+            v-if="showAssignmentSummary"
+            class="mt-2 w-[280px] sm:w-[320px] lg:w-[280px] xl:w-[320px] bg-white border border-gray-200 rounded-md p-3 shadow-lg text-left absolute right-0"
+          >
+            <div class="flex items-center justify-between mb-2">
+              <div class="text-xs text-gray-500 uppercase tracking-wide">Todo Status</div>
+              <div class="text-[11px] text-gray-500">
+                {{ todoAssignmentSummary.withTodos.length }} given /
+                {{ todoAssignmentSummary.withoutTodos.length }} not
+              </div>
+            </div>
+
+            <div class="space-y-3 max-h-56 overflow-auto pr-1 z-50">
+              <div>
+                <div class="text-[11px] text-gray-500 uppercase tracking-wide mb-1">
+                  Given todos
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <span
+                    v-if="!todoAssignmentSummary.withTodos.length"
+                    class="text-xs text-gray-400"
+                  >
+                    No todos assigned
+                  </span>
+                  <span
+                    v-for="user in todoAssignmentSummary.withTodos"
+                    :key="`with-${user.id}`"
+                    class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-50 text-green-700 border border-green-100 text-xs max-w-full"
+                    :title="user.name"
+                  >
+                    <i class="fas fa-check-circle"></i>
+                    <span class="block max-w-[160px] truncate">{{ user.name }}</span>
+                  </span>
+                </div>
+              </div>
+
+              <div class="pt-2 border-t border-dashed border-gray-200">
+                <div class="text-[11px] text-gray-500 uppercase tracking-wide mb-1">
+                  Not given todos
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <span
+                    v-if="!todoAssignmentSummary.withoutTodos.length"
+                    class="text-xs text-gray-400"
+                  >
+                    Everyone has todos
+                  </span>
+                  <span
+                    v-for="user in todoAssignmentSummary.withoutTodos"
+                    :key="`without-${user.id}`"
+                    class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-red-50 text-red-700 border border-red-100 text-xs max-w-full"
+                    :title="user.name"
+                  >
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span class="block max-w-[160px] truncate">{{ user.name }}</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
