@@ -129,6 +129,13 @@ const filterSummary = computed(() => {
 
 const showAssignmentSummary = ref(false)
 const assignmentSummaryRef = ref(null)
+const selectedEmployeesCount = computed(() => groupedByUser.value?.length || 0)
+const givenTodosCount = computed(() =>
+  Math.max(
+    0,
+    selectedEmployeesCount.value - (todoAssignmentSummary.value?.withoutTodos?.length || 0),
+  ),
+)
 
 const handleAssignmentOutsideClick = (event) => {
   if (!showAssignmentSummary.value) return
@@ -274,7 +281,7 @@ onBeforeUnmount(() => {
       :start-date="filters.startDate"
       :end-date="filters.endDate"
       :loading="todoDateStore.loading"
-      class="mb-4 print:px-0 print:py-0 print:mb-2 print:border-0 print:border-b print:border-gray-400 print:rounded-none print:w-full"
+      class="mb-4 print:px-0 print:py-0 print:mb-2 print:border-0 print:border-b print:border-gray-400 print:rounded-none print:w-full sticky top-[58px] z-50"
       @change="handleFilterChange"
       @reload-click="fetchTodos"
     >
@@ -301,7 +308,7 @@ onBeforeUnmount(() => {
 
     <div
       v-if="filters.companyId && filters.startDate && filters.endDate"
-      class="bg-white border rounded-md mb-2 p-4 text-sm print:border-0 print:mb-2 print:px-0 print:w-full relative overflow-visible z-50"
+      class="bg-white border rounded-md mb-2 p-4 text-sm print:border-0 print:mb-2 print:px-0 print:w-full relative overflow-visible z-40"
     >
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-y-2 gap-x-6">
         <div>
@@ -346,15 +353,12 @@ onBeforeUnmount(() => {
         <div ref="assignmentSummaryRef" class="print-hide relative">
           <button
             type="button"
-            class="px-3 bg-white text-gray-700 hover:bg-gray-50 w-full text-bg border text-left"
+            class="px-3 bg-white text-gray-700 hover:bg-gray-50 w-full text-bg text-right"
             @click="showAssignmentSummary = !showAssignmentSummary"
           >
-            <div>Todo given</div>
-            <div class="inline-flex items-center gap-5">
-              <div class="text-gray-500">
-                {{ todoAssignmentSummary.withTodos.length }} /
-                {{ todoAssignmentSummary.withoutTodos.length }}
-              </div>
+            <div class="uppercase">Todo given</div>
+            <div class="inline-flex items-center gap-5 font-bold">
+              <div class="text-gray-700">{{ givenTodosCount }} / {{ selectedEmployeesCount }}</div>
               <i
                 class="fas"
                 :class="[showAssignmentSummary ? 'fa-chevron-up' : 'fa-chevron-down']"
@@ -369,35 +373,11 @@ onBeforeUnmount(() => {
             <div class="flex items-center justify-between mb-2">
               <div class="text-xs text-gray-500 uppercase tracking-wide">Todo Status</div>
               <div class="text-[11px] text-gray-500">
-                {{ todoAssignmentSummary.withTodos.length }} given /
-                {{ todoAssignmentSummary.withoutTodos.length }} not
+                {{ givenTodosCount }} given / {{ selectedEmployeesCount }} selected
               </div>
             </div>
 
             <div class="space-y-3 max-h-56 overflow-auto pr-1 z-50">
-              <div>
-                <div class="text-[11px] text-gray-500 uppercase tracking-wide mb-1">
-                  Given todos
-                </div>
-                <div class="flex flex-wrap gap-2">
-                  <span
-                    v-if="!todoAssignmentSummary.withTodos.length"
-                    class="text-xs text-gray-400"
-                  >
-                    No todos assigned
-                  </span>
-                  <span
-                    v-for="user in todoAssignmentSummary.withTodos"
-                    :key="`with-${user.id}`"
-                    class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-50 text-green-700 border border-green-100 text-xs max-w-full"
-                    :title="user.name"
-                  >
-                    <i class="fas fa-check-circle"></i>
-                    <span class="block max-w-[160px] truncate">{{ user.name }}</span>
-                  </span>
-                </div>
-              </div>
-
               <div class="pt-2 border-t border-dashed border-gray-200">
                 <div class="text-[11px] text-gray-500 uppercase tracking-wide mb-1">
                   Not given todos
@@ -416,6 +396,29 @@ onBeforeUnmount(() => {
                     :title="user.name"
                   >
                     <i class="fas fa-exclamation-circle"></i>
+                    <span class="block max-w-[160px] truncate">{{ user.name }}</span>
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <div class="text-[11px] text-gray-500 uppercase tracking-wide mb-1">
+                  Given todos
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <span
+                    v-if="!todoAssignmentSummary.withTodos.length"
+                    class="text-xs text-gray-400"
+                  >
+                    No todos assigned
+                  </span>
+                  <span
+                    v-for="user in todoAssignmentSummary.withTodos"
+                    :key="`with-${user.id}`"
+                    class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-50 text-green-700 border border-green-100 text-xs max-w-full"
+                    :title="user.name"
+                  >
+                    <i class="fas fa-check-circle"></i>
                     <span class="block max-w-[160px] truncate">{{ user.name }}</span>
                   </span>
                 </div>
@@ -452,7 +455,7 @@ onBeforeUnmount(() => {
     >
       <table class="min-w-full text-left text-sm border-separate border-spacing-0">
         <thead class="bg-gray-50 text-gray-600 uppercase tracking-wide text-xs">
-          <tr class="border-y print:border-gray-400 sticky md:top-[58px] z-30 rounded-t-md">
+          <tr class="border-y print:border-gray-400 sticky md:top-[123px] z-30 rounded-t-md">
             <th
               class="px-4 py-3 border w-[10px] bg-white bg-opacity-70 backdrop-blur-sm rounded-tl-md print:rounded-tl-none text-center"
             >
@@ -499,7 +502,7 @@ onBeforeUnmount(() => {
                     :rowspan="userGroup.rowSpan || 1"
                     class="px-4 py-3 align-top font-bold text-xl text-gray-800 whitespace-nowrap border-l border-t bg-white"
                   >
-                    <div class="sticky top-[116px] bg-white text-center">
+                    <div class="sticky top-[170px] bg-white text-center">
                       {{ userIndex + 1 }}
                     </div>
                   </td>
@@ -509,7 +512,7 @@ onBeforeUnmount(() => {
                     :rowspan="userGroup.rowSpan || 1"
                     class="px-4 py-3 align-top font-medium text-gray-800 whitespace-nowrap border-l border-t bg-white"
                   >
-                    <div class="sticky top-[116px] bg-white flex">
+                    <div class="sticky top-[170px] bg-white flex">
                       <UserAvatar
                         size="medium"
                         :user="userGroup.user"
@@ -546,7 +549,7 @@ onBeforeUnmount(() => {
                       :rowspan="dateGroup.rowSpan || 1"
                       class="px-4 py-3 align-top text-xs text-gray-700 whitespace-nowrap border-l border-t bg-white"
                     >
-                      <div class="sticky top-[116px] bg-white">
+                      <div class="sticky top-[170px] bg-white">
                         {{ getDisplayDate(dateGroup.date) || dateGroup.date || '-' }}
                       </div>
                     </td>
