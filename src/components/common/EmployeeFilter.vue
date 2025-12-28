@@ -148,7 +148,7 @@ watch(selectedEmployeeId, () => {
 async function loadCompanyDeps(companyId) {
   await Promise.all([
     departmentStore.fetchDepartments(companyId),
-    companyStore.fetchEmployee(companyId),
+    companyStore.fetchEmployee(companyId, { with: 'department,company' }),
   ])
 }
 

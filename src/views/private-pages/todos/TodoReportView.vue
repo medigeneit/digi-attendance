@@ -1,6 +1,7 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
 import TodoReportHeading from '@/components/todo/TodoReportHeading.vue'
+import UserAvatar from '@/components/UserAvatar.vue'
 import { getDisplayDate, getYearMonthDayFormat } from '@/libs/datetime'
 import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
@@ -49,52 +50,28 @@ const groupedByUser = computed(() => {
         byDate[dateKey].todos.push(todo)
       })
 
-      const dates = Object.values(byDate)
+      let dates = Object.values(byDate)
         .map((d) => ({ ...d, rowSpan: d.todos.length }))
         .sort((a, b) => new Date(a.date) - new Date(b.date))
+
+      if (!dates.length) {
+        dates = [
+          {
+            date: null,
+            rowSpan: 1,
+            todos: [{ id: `empty-${employee.id}`, isPlaceholder: true, title: '' }],
+          },
+        ]
+      }
 
       const rowSpan = dates.reduce((sum, d) => sum + d.rowSpan, 0)
 
       return {
         user: employee,
         dates,
-        rowSpan,
+        rowSpan: Math.max(1, rowSpan),
       }
     })
-  // .filter((group) => group.rowSpan > 0)
-
-  // const byUser = {}
-
-  // todoDateStore.todo_dates.forEach((todo) => {
-  //   const userId = todo.user?.id || `unknown-${todo.id}`
-  //   const dateKey = todo.date || 'unknown-date'
-
-  //   if (!byUser[userId]) {
-  //     byUser[userId] = { user: todo.user, dates: {} }
-  //   }
-
-  //   if (!byUser[userId].dates[dateKey]) {
-  //     byUser[userId].dates[dateKey] = { date: dateKey, todos: [] }
-  //   }
-
-  //   byUser[userId].dates[dateKey].todos.push(todo)
-  // })
-
-  // return Object.values(byUser)
-  //   .map((group) => {
-  //     const dates = Object.values(group.dates)
-  //       .map((d) => ({ ...d, rowSpan: d.todos.length }))
-  //       .sort((a, b) => new Date(a.date) - new Date(b.date))
-
-  //     const rowSpan = dates.reduce((sum, d) => sum + d.rowSpan, 0)
-
-  //     return {
-  //       user: group.user,
-  //       dates,
-  //       rowSpan,
-  //     }
-  //   })
-  // .sort((a, b) => (a.user?.name || '').localeCompare(b.user?.name || ''))
 })
 
 const formattedRange = computed(() => {
@@ -344,22 +321,26 @@ onMounted(() => {
     >
       <table class="min-w-full text-left text-sm border-separate border-spacing-0">
         <thead class="bg-gray-50 text-gray-600 uppercase tracking-wide text-xs">
-          <tr class="border-y print:border-gray-400 sticky md:top-[58px] z-30">
-            <th class="px-4 py-3 border w-[10px] bg-white bg-opacity-70 backdrop-blur-sm">sl</th>
+          <tr class="border-y print:border-gray-400 sticky md:top-[58px] z-30 rounded-t-md">
             <th
-              class="px-4 py-3 border md:w-[300px] print:w-auto print:border-l print:border-l-gray-400 bg-white bg-opacity-70 backdrop-blur-sm"
+              class="px-4 py-3 border w-[10px] bg-white bg-opacity-70 backdrop-blur-sm rounded-tl-md print:rounded-tl-none text-center"
+            >
+              sl
+            </th>
+            <th
+              class="px-4 py-3 border md:w-[100px] print:w-auto print:border-l print:border-l-gray-400 bg-white bg-opacity-70 backdrop-blur-sm text-center"
             >
               Employee Name
             </th>
             <th
               v-if="!isOnlyOneDate"
-              class="px-4 py-3 border bg-white bg-opacity-70 backdrop-blur-sm"
+              class="px-4 py-3 border bg-white bg-opacity-70 backdrop-blur-sm text-center"
             >
               Date
             </th>
-            <th class="px-4 py-3 border bg-white">Todo</th>
+            <th class="px-4 py-3 border bg-white text-center">Todo</th>
             <th
-              class="px-4 py-3 border print:border-r print:border-gray-400 bg-white bg-opacity-70 backdrop-blur-sm text-center"
+              class="px-4 py-3 border print:border-r print:border-gray-400 bg-white bg-opacity-70 backdrop-blur-sm text-center rounded-tr-md print:rounded-tr-none"
             >
               Status
             </th>
@@ -371,40 +352,57 @@ onMounted(() => {
             :key="userGroup.user?.id || (userGroup.dates[0]?.todos[0]?.id ?? Math.random())"
           >
             <template
-              v-for="dateGroup in userGroup.dates?.length == 0
-                ? [{ todos: [{ id: 0, title: '' }], date: null, rowSpan: 0 }]
-                : userGroup.dates"
+              v-for="(dateGroup, dateIndex) in userGroup.dates"
               :key="`${userGroup.user?.id || 'u'}-${dateGroup.date}`"
             >
-              <template v-for="(todo, index) in dateGroup.todos" :key="todo.id">
+              <template
+                v-for="(todo, todoIndex) in dateGroup.todos"
+                :key="
+                  todo.id ||
+                  `${userGroup.user?.id || 'u'}-${dateGroup.date || 'empty'}-${todoIndex}`
+                "
+              >
                 <tr class="border odd:bg-white even:bg-gray-50 hover:bg-gray-100">
                   <td
-                    v-if="index === 0"
+                    v-if="dateIndex === 0 && todoIndex === 0"
                     :rowspan="userGroup.rowSpan || 1"
                     class="px-4 py-3 align-top font-bold text-xl text-gray-800 whitespace-nowrap border-l border-t bg-white"
                   >
-                    <div class="sticky top-[116px] bg-white">
+                    <div class="sticky top-[116px] bg-white text-center">
                       {{ userIndex + 1 }}
                     </div>
                   </td>
 
                   <td
-                    v-if="index === 0"
+                    v-if="dateIndex === 0 && todoIndex === 0"
                     :rowspan="userGroup.rowSpan || 1"
                     class="px-4 py-3 align-top font-medium text-gray-800 whitespace-nowrap border-l border-t bg-white"
                   >
-                    <div class="sticky top-[116px] bg-white">
-                      <div>{{ userGroup.user?.name || 'Unknown user' }}</div>
-                      <div v-if="userGroup.user?.department?.name" class="text-xs text-gray-500">
-                        {{ userGroup.user?.department?.name }}
-                      </div>
-                      <div v-if="userGroup.user?.company?.name" class="text-[11px] text-gray-400">
-                        {{ userGroup.user?.company?.name }}
+                    <div class="sticky top-[116px] bg-white flex">
+                      <UserAvatar
+                        size="medium"
+                        :user="userGroup.user"
+                        class="inline-block mr-2 align-middle"
+                      />
+                      <div>
+                        <div>{{ userGroup.user?.name || 'Unknown user' }}</div>
+                        <div v-if="userGroup.user?.department?.name" class="text-xs text-gray-500">
+                          {{ userGroup.user?.department?.name }}
+                        </div>
+                        <!-- <div
+                          v-if="userGroup.user?.department?.company?.name"
+                          class="text-[11px] text-gray-400"
+                        >
+                          {{ userGroup.user?.department?.company?.name }}
+                        </div> -->
                       </div>
                     </div>
                   </td>
-                  <template v-if="todo.id === 0">
-                    <td class="border px-4 py-3 text-center" colspan="5">
+                  <template v-if="todo.isPlaceholder">
+                    <td
+                      class="border-l border-t border-r bg-white px-4 py-3 text-center"
+                      :colspan="isOnlyOneDate ? 2 : 3"
+                    >
                       <div class="text-red-400">
                         <i class="fas fa-tasks text-red-200 mb-2 mr-1"></i>
                         <span>No todos found for this user. </span>
@@ -413,8 +411,8 @@ onMounted(() => {
                   </template>
                   <template v-else>
                     <td
-                      v-if="index === 0 && !isOnlyOneDate"
-                      :rowspan="dateGroup.rowSpan"
+                      v-if="todoIndex === 0 && !isOnlyOneDate"
+                      :rowspan="dateGroup.rowSpan || 1"
                       class="px-4 py-3 align-top text-xs text-gray-700 whitespace-nowrap border-l border-t bg-white"
                     >
                       <div class="sticky top-[116px] bg-white">
@@ -424,7 +422,8 @@ onMounted(() => {
 
                     <td class="px-4 py-3 text-gray-800 border-l border-t">
                       <div class="font-medium">
-                        <span class="text-gray-400 mr-2">{{ index + 1 }}.</span> {{ todo.title }}
+                        <span class="text-gray-400 mr-2">{{ todoIndex + 1 }}.</span>
+                        {{ todo.title }}
                       </div>
                       <div class="text-xs text-gray-500">
                         {{ todo.todoable?.title || todo.todoable_type?.split('\\').pop() || '' }}
