@@ -162,6 +162,8 @@ function handlePrint() {
   window.print()
 }
 
+const isOnlyOneDate = computed(() => filters.startDate === filters.endDate)
+
 watch(
   () => filters.companyId,
   (companyId) => {
@@ -295,20 +297,34 @@ onMounted(() => {
     </div>
     <div
       v-else
-      class="overflow-x-auto bg-white border border-t-0 rounded-md shadow-sm print:shadow-none print:rounded-none print:border-gray-400"
+      class="overflow-x-auto md:overflow-clip bg-white border border-t-0 rounded-md shadow-sm print:shadow-none print:rounded-none print:border-gray-400"
     >
-      <table class="min-w-full text-left text-sm">
+      <table class="min-w-full text-left text-sm border-separate border-spacing-0">
         <thead class="bg-gray-50 text-gray-600 uppercase tracking-wide text-xs">
-          <tr class="border-y print:border-gray-400">
-            <th class="px-4 py-3 border-r print:border-l print:border-l-gray-400">Name</th>
-            <th class="px-4 py-3 border-x">Date</th>
-            <th class="px-4 py-3 border-l">Todo</th>
-            <th class="px-4 py-3 print:border-r print:border-gray-400">Status</th>
+          <tr class="border-y print:border-gray-400 sticky top-[58px]">
+            <th class="px-4 py-3 border w-[10px] bg-white bg-opacity-70 backdrop-blur-sm">sl</th>
+            <th
+              class="px-4 py-3 border w-[300px] print:border-l print:border-l-gray-400 bg-white bg-opacity-70 backdrop-blur-sm"
+            >
+              Name
+            </th>
+            <th
+              v-if="!isOnlyOneDate"
+              class="px-4 py-3 border bg-white bg-opacity-70 backdrop-blur-sm"
+            >
+              Date
+            </th>
+            <th class="px-4 py-3 border bg-white">Todo</th>
+            <th
+              class="px-4 py-3 border print:border-r print:border-gray-400 bg-white bg-opacity-70 backdrop-blur-sm text-center"
+            >
+              Status
+            </th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200">
           <template
-            v-for="userGroup in groupedByUser"
+            v-for="(userGroup, userIndex) in groupedByUser"
             :key="userGroup.user?.id || (userGroup.dates[0]?.todos[0]?.id ?? Math.random())"
           >
             <template
@@ -320,7 +336,15 @@ onMounted(() => {
                   <td
                     v-if="dateGroup === userGroup.dates[0] && index === 0"
                     :rowspan="userGroup.rowSpan"
-                    class="px-4 py-3 align-top font-medium text-gray-800 whitespace-nowrap border-r"
+                    class="px-4 py-3 align-top font-bold text-xl text-gray-800 whitespace-nowrap border-l border-t"
+                  >
+                    {{ userIndex + 1 }}
+                  </td>
+
+                  <td
+                    v-if="dateGroup === userGroup.dates[0] && index === 0"
+                    :rowspan="userGroup.rowSpan"
+                    class="px-4 py-3 align-top font-medium text-gray-800 whitespace-nowrap border-l border-t"
                   >
                     <div>{{ userGroup.user?.name || 'Unknown user' }}</div>
                     <div v-if="userGroup.user?.department?.name" class="text-xs text-gray-500">
@@ -330,20 +354,25 @@ onMounted(() => {
                       {{ userGroup.user?.company?.name }}
                     </div>
                   </td>
+
                   <td
-                    v-if="index === 0"
+                    v-if="index === 0 && !isOnlyOneDate"
                     :rowspan="dateGroup.rowSpan"
-                    class="px-4 py-3 align-top text-xs text-gray-700 whitespace-nowrap border-r"
+                    class="px-4 py-3 align-top text-xs text-gray-700 whitespace-nowrap border-l border-t"
                   >
                     {{ getDisplayDate(dateGroup.date) || dateGroup.date || '-' }}
                   </td>
-                  <td class="px-4 py-3 text-gray-800">
-                    <div class="font-medium">{{ todo.title }}</div>
+
+                  <td class="px-4 py-3 text-gray-800 border-l border-t">
+                    <div class="font-medium">
+                      <span class="text-gray-400 mr-2">{{ index + 1 }}.</span> {{ todo.title }}
+                    </div>
                     <div class="text-xs text-gray-500">
                       {{ todo.todoable?.title || todo.todoable_type?.split('\\').pop() || '' }}
                     </div>
                   </td>
-                  <td class="px-4 py-3">
+
+                  <td class="px-4 py-3 border-l border-t border-r text-center">
                     <span
                       class="text-xs font-semibold px-2.5 py-1 rounded-full"
                       :class="statusClass(todo.status)"
