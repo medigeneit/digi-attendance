@@ -311,10 +311,11 @@ const fmtHours = (v) => {
               </div>
               <div class="flex items-center justify-between rounded-lg border border-zinc-100 bg-zinc-50 px-3 py-2">
                 <span class="flex items-center gap-2 text-[12px] text-zinc-600">
-                  <i class="far fa-hourglass-half text-[12px]"></i> Working Hours
+                  <i class="far fa-hourglass-half text-[12px]"></i> Working/Shift
                 </span>
                 <strong class="text-sm text-zinc-900">
-                  {{ (attendanceStore?.summary?.total_working_hours ?? '').toString().trim() || '—' }}
+                  {{ (attendanceStore?.summary?.total_working_hours ?? '').toString().trim() || '—' }} /
+                  {{ (attendanceStore?.summary?.total_shift_hours ?? '').toString().trim() || '—' }}
                 </strong>
               </div>
 

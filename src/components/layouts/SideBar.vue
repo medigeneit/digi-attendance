@@ -44,6 +44,7 @@ const reportsMenu = [
   { label: 'Overtime ', routeName: 'OvertimeReport' },
   { label: 'Monthly Application', routeName: 'MonthWiseApplicationReport' },
   { label: 'Todo Report', routeName: 'TodoReport' },
+  { label: 'Yearly Attendance Summary', routeName: 'YearlyAttendanceSummary' },
 ]
 const reportRouteNames = reportsMenu.map((i) => i.routeName)
 

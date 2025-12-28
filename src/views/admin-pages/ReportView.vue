@@ -54,6 +54,14 @@ const hasAccessTo = (routeName) => {
       <i class="far fa-file-contract text-3xl"></i>
       Monthly Application Report
     </RouterLink>
+    <RouterLink
+      v-if="hasAccessTo('YearlyAttendanceSummary')"
+      :to="{ name: 'YearlyAttendanceSummary' }"
+      class="main-button"
+    >
+      <i class="far fa-file-contract text-3xl"></i>
+      Yearly Attendance Summary
+    </RouterLink>
 
   </div>
 </template>
