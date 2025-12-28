@@ -136,6 +136,10 @@ const givenTodosCount = computed(() =>
     selectedEmployeesCount.value - (todoAssignmentSummary.value?.withoutTodos?.length || 0),
   ),
 )
+const showWithoutTodos = ref(true)
+const showTableWithoutTodos = ref(false)
+const hideNoTodoRows = ref(false)
+const tableNoTodosRef = ref(null)
 
 const handleAssignmentOutsideClick = (event) => {
   if (!showAssignmentSummary.value) return
@@ -175,6 +179,38 @@ const todoAssignmentSummary = computed(() => {
     { withTodos: [], withoutTodos: [] },
   )
 })
+
+const visibleGroupedByUser = computed(() => {
+  if (!hideNoTodoRows.value) return groupedByUser.value
+
+  const withoutSet = new Set(
+    (todoAssignmentSummary.value.withoutTodos || []).map((u) => String(u.id ?? u.name ?? '')),
+  )
+
+  return groupedByUser.value.filter((group) => {
+    const id =
+      group.user?.id ??
+      group.user?.user_id ??
+      group.user?.uid ??
+      group.user?.email ??
+      group.user?.name ??
+      ''
+    return !withoutSet.has(String(id))
+  })
+})
+
+function toggleHideNoTodos() {
+  hideNoTodoRows.value = !hideNoTodoRows.value
+  showTableWithoutTodos.value = hideNoTodoRows.value
+}
+
+const handleTableNoTodoOutsideClick = (event) => {
+  if (!showTableWithoutTodos.value) return
+  if (!tableNoTodosRef.value) return
+  if (!tableNoTodosRef.value.contains(event.target)) {
+    showTableWithoutTodos.value = false
+  }
+}
 
 const statusClass = (status) => {
   if (status === 'COMPLETED') return 'bg-green-100 text-green-700 border border-green-200'
@@ -268,10 +304,18 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleAssignmentOutsideClick, true)
 })
+
+onMounted(() => {
+  document.addEventListener('click', handleTableNoTodoOutsideClick, true)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleTableNoTodoOutsideClick, true)
+})
 </script>
 
 <template>
-  <div class="container print:flex-grow mx-auto print:w-full px-4 py-6 print:px-0 print:py-0">
+  <div class="container print:flex-grow mx-auto print:w-full print:px-0 print:py-0">
     <TodoReportHeading
       ref="headingRef"
       :company-id="filters.companyId"
@@ -379,31 +423,54 @@ onBeforeUnmount(() => {
 
             <div class="space-y-3 max-h-56 overflow-auto pr-1 z-50">
               <div class="pt-2 border-t border-dashed border-gray-200">
-                <div class="text-[11px] text-gray-500 uppercase tracking-wide mb-1">
-                  Not given todos
-                </div>
-                <div class="flex flex-wrap gap-2">
-                  <span
-                    v-if="!todoAssignmentSummary.withoutTodos.length"
-                    class="text-xs text-gray-400"
+                <div
+                  class="text-[11px] text-gray-500 uppercase tracking-wide mb-1 flex items-center justify-between"
+                >
+                  <div class="flex items-center gap-2">
+                    <span>Not given todos</span>
+                    <span
+                      v-if="todoAssignmentSummary.withoutTodos?.length"
+                      class="bg-red-500 rounded-md px-1.5 text-white text-center"
+                      >{{ todoAssignmentSummary.withoutTodos?.length }}</span
+                    >
+                  </div>
+                  <button
+                    type="button"
+                    class="text-[10px] px-2 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-50"
+                    @click="showWithoutTodos = !showWithoutTodos"
                   >
-                    Everyone has todos
-                  </span>
-                  <span
-                    v-for="user in todoAssignmentSummary.withoutTodos"
-                    :key="`without-${user.id}`"
-                    class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-red-50 text-red-700 border border-red-100 text-xs max-w-full"
-                    :title="user.name"
-                  >
-                    <i class="fas fa-exclamation-circle"></i>
-                    <span class="block max-w-[160px] truncate">{{ user.name }}</span>
-                  </span>
+                    {{ showWithoutTodos ? 'Hide' : 'Show' }}
+                  </button>
                 </div>
+                <template v-if="showWithoutTodos">
+                  <div class="flex flex-wrap gap-2">
+                    <span
+                      v-if="!todoAssignmentSummary.withoutTodos.length"
+                      class="text-xs text-gray-400"
+                    >
+                      Everyone has todos
+                    </span>
+                    <span
+                      v-for="user in todoAssignmentSummary.withoutTodos"
+                      :key="`without-${user.id}`"
+                      class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-red-50 text-red-700 border border-red-100 text-xs max-w-full"
+                      :title="user.name"
+                    >
+                      <i class="fas fa-exclamation-circle"></i>
+                      <span class="block max-w-[160px] truncate">{{ user.name }}</span>
+                    </span>
+                  </div>
+                </template>
               </div>
 
               <div>
                 <div class="text-[11px] text-gray-500 uppercase tracking-wide mb-1">
                   Given todos
+                  <span
+                    v-if="todoAssignmentSummary.withTodos?.length"
+                    class="bg-green-500 rounded-md px-1.5 text-white text-center"
+                    >{{ todoAssignmentSummary.withTodos?.length }}</span
+                  >
                 </div>
                 <div class="flex flex-wrap gap-2">
                   <span
@@ -441,15 +508,6 @@ onBeforeUnmount(() => {
     </div>
     <LoaderView v-else-if="todoDateStore.loading">Loading report...</LoaderView>
     <div
-      v-else-if="groupedByUser.length === 0"
-      class="text-center text-gray-500 py-12 border bg-gray-50 rounded-md"
-    >
-      <div>
-        <i class="fas fa-tasks fa-2x text-gray-300 mb-2"></i>
-      </div>
-      <div>No todos.</div>
-    </div>
-    <div
       v-else
       class="overflow-x-auto md:overflow-clip bg-white border border-t-0 rounded-md shadow-sm print:shadow-none print:rounded-none print:border-gray-400"
     >
@@ -462,9 +520,23 @@ onBeforeUnmount(() => {
               sl
             </th>
             <th
-              class="px-4 py-3 border md:w-[100px] print:w-auto print:border-l print:border-l-gray-400 bg-white bg-opacity-70 backdrop-blur-sm text-center"
+              class="px-4 py-3 border md:w-[100px] print:w-auto print:border-l print:border-l-gray-400 bg-white bg-opacity-70 backdrop-blur-sm text-center whitespace-nowrap"
             >
-              Employee Name
+              <div class="flex items-center justify-between gap-2">
+                <span>Employee Name</span>
+                <div class="relative hidden md:block print:hidden" ref="tableNoTodosRef">
+                  <button
+                    type="button"
+                    class="text-[11px] px-2 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-50"
+                    @click.stop="toggleHideNoTodos()"
+                  >
+                    No Todos ({{ todoAssignmentSummary.withoutTodos.length }})
+                    <span class="ml-1 text-[10px] text-gray-500">
+                      {{ hideNoTodoRows ? 'Hidden' : 'Showing' }}
+                    </span>
+                  </button>
+                </div>
+              </div>
             </th>
             <th
               v-if="!isOnlyOneDate"
@@ -481,8 +553,19 @@ onBeforeUnmount(() => {
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200">
+          <tr v-if="visibleGroupedByUser.length === 0">
+            <td
+              :colspan="isOnlyOneDate ? 4 : 5"
+              class="px-4 py-6 text-center text-gray-500"
+            >
+              <div>
+                <i class="fas fa-tasks fa-2x text-gray-300 mb-2"></i>
+              </div>
+              <div>No todos.</div>
+            </td>
+          </tr>
           <template
-            v-for="(userGroup, userIndex) in groupedByUser"
+            v-for="(userGroup, userIndex) in visibleGroupedByUser"
             :key="userGroup.user?.id || (userGroup.dates[0]?.todos[0]?.id ?? Math.random())"
           >
             <template
@@ -502,7 +585,7 @@ onBeforeUnmount(() => {
                     :rowspan="userGroup.rowSpan || 1"
                     class="px-4 py-3 align-top font-bold text-xl text-gray-800 whitespace-nowrap border-l border-t bg-white"
                   >
-                    <div class="sticky top-[170px] bg-white text-center">
+                    <div class="sticky top-[180px] bg-white text-center">
                       {{ userIndex + 1 }}
                     </div>
                   </td>
@@ -512,7 +595,7 @@ onBeforeUnmount(() => {
                     :rowspan="userGroup.rowSpan || 1"
                     class="px-4 py-3 align-top font-medium text-gray-800 whitespace-nowrap border-l border-t bg-white"
                   >
-                    <div class="sticky top-[170px] bg-white flex">
+                    <div class="sticky top-[180px] bg-white flex">
                       <UserAvatar
                         size="medium"
                         :user="userGroup.user"
@@ -549,7 +632,7 @@ onBeforeUnmount(() => {
                       :rowspan="dateGroup.rowSpan || 1"
                       class="px-4 py-3 align-top text-xs text-gray-700 whitespace-nowrap border-l border-t bg-white"
                     >
-                      <div class="sticky top-[170px] bg-white">
+                      <div class="sticky top-[180px] bg-white">
                         {{ getDisplayDate(dateGroup.date) || dateGroup.date || '-' }}
                       </div>
                     </td>
