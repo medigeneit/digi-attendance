@@ -508,15 +508,6 @@ onBeforeUnmount(() => {
     </div>
     <LoaderView v-else-if="todoDateStore.loading">Loading report...</LoaderView>
     <div
-      v-else-if="groupedByUser.length === 0"
-      class="text-center text-gray-500 py-12 border bg-gray-50 rounded-md"
-    >
-      <div>
-        <i class="fas fa-tasks fa-2x text-gray-300 mb-2"></i>
-      </div>
-      <div>No todos.</div>
-    </div>
-    <div
       v-else
       class="overflow-x-auto md:overflow-clip bg-white border border-t-0 rounded-md shadow-sm print:shadow-none print:rounded-none print:border-gray-400"
     >
@@ -562,6 +553,17 @@ onBeforeUnmount(() => {
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200">
+          <tr v-if="visibleGroupedByUser.length === 0">
+            <td
+              :colspan="isOnlyOneDate ? 4 : 5"
+              class="px-4 py-6 text-center text-gray-500"
+            >
+              <div>
+                <i class="fas fa-tasks fa-2x text-gray-300 mb-2"></i>
+              </div>
+              <div>No todos.</div>
+            </td>
+          </tr>
           <template
             v-for="(userGroup, userIndex) in visibleGroupedByUser"
             :key="userGroup.user?.id || (userGroup.dates[0]?.todos[0]?.id ?? Math.random())"
