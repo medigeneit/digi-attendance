@@ -270,7 +270,13 @@ export const useAttendanceStore = defineStore('attendance', () => {
   }
 
 
-  const recalculateMonthlySnapshot = async (company_id,line_type, employee_id,  month) => {
+  const recalculateMonthlySnapshot = async (
+    company_id,
+    department_id,
+    line_type,
+    employee_id,
+    month,
+  ) => {
      if (!company_id || !month) {
         error.value = 'Company & month are required'
         return
@@ -278,7 +284,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
 
       isLoading.value = true
       try {
-        const payload = { month, company_id, line_type }
+      const payload = { month, company_id, department_id, line_type, employee_id }
 
         const response = await apiClient.post(
           '/attendance/monthly-snapshot/recalculate',

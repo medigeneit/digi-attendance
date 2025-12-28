@@ -642,6 +642,16 @@ const router = createRouter({
             title: 'Attendance Summary Report',
           },
         },
+        {
+          path: '/attendance/yearly-summary',
+          name: 'YearlyAttendanceSummary',
+          component: () => import('@/views/admin-pages/YearlyAttendanceSummary.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['super_admin', 'developer'],
+            title: 'Yearly Attendance Summary',
+          },
+        },
 
         {
           path: '/reports/date-wise-attendance-summary-report',
