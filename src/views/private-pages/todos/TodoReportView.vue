@@ -381,6 +381,11 @@ onBeforeUnmount(() => {
               <div class="pt-2 border-t border-dashed border-gray-200">
                 <div class="text-[11px] text-gray-500 uppercase tracking-wide mb-1">
                   Not given todos
+                  <span
+                    v-if="todoAssignmentSummary.withoutTodos?.length"
+                    class="bg-red-500 rounded-md px-1.5 text-white text-center"
+                    >{{ todoAssignmentSummary.withoutTodos?.length }}</span
+                  >
                 </div>
                 <div class="flex flex-wrap gap-2">
                   <span
@@ -404,6 +409,11 @@ onBeforeUnmount(() => {
               <div>
                 <div class="text-[11px] text-gray-500 uppercase tracking-wide mb-1">
                   Given todos
+                  <span
+                    v-if="todoAssignmentSummary.withTodos?.length"
+                    class="bg-green-500 rounded-md px-1.5 text-white text-center"
+                    >{{ todoAssignmentSummary.withTodos?.length }}</span
+                  >
                 </div>
                 <div class="flex flex-wrap gap-2">
                   <span
