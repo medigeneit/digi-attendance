@@ -1348,7 +1348,7 @@ const router = createRouter({
         {
           path: '/kpi-reviews/:employeeId',
           name: 'KpiReview',
-          component: () => import('@/components/KpiReviewForm.vue'),
+          component: () => import('@/views/admin-pages/KpiReviewPage.vue'),
            meta: {
             requiresAuth: true,
             roles: ['admin', 'super_admin', 'developer'],

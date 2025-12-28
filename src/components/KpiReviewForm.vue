@@ -3,6 +3,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useKpiStore } from '@/stores/kpi'
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import KpiGroupTable from '@/components/kpi/KpiGroupTable.vue'
 
 const route = useRoute()
 const store = useKpiStore()
@@ -24,15 +25,26 @@ const showSummaryDetails = ref(false)
  */
 const lanes = ref([])
 const reviewsByLane = ref({})
-const myLaneKey = ref(null)
 const isHR = ref(false)
 
-/* ---------- Helpers & classification ---------- */
+/* ---------- Mode & groups (cycle-driven) ---------- */
 const groupsAll = computed(() => store.cycle?.groups_json || [])
 
-const isPersonalGroup = (g) => g?.id === 'personal' || /personal/i.test(g?.label || '')
+const mode = computed(() => {
+  const cycle = store.cycle || {}
+  const groups = Array.isArray(cycle?.groups_json) ? cycle.groups_json : []
+  const isStaff =
+    cycle?.slug === 'support_staff' && groups.length === 1 && groups[0]?.id === 'personal'
+  return isStaff ? 'staff' : 'executive'
+})
+
+const staffMode = computed(() => mode.value === 'staff')
+
+const isPersonalGroup = (g) => g?.id === 'personal'
 const personalGroup = computed(() => groupsAll.value.find(isPersonalGroup) || null)
-const otherGroups = computed(() => groupsAll.value.filter((g) => !isPersonalGroup(g)))
+const otherGroups = computed(() =>
+  staffMode.value ? [] : groupsAll.value.filter((g) => !isPersonalGroup(g)),
+)
 
 /** Fallback label if a group name is missing */
 const safeGroupLabel = (grp, idx) => grp?.label || `Group ${idx + 1}`
@@ -49,10 +61,14 @@ const sortedLanes = computed(() => {
 // 🔹 এই sorted list থেকে HR / non-HR ভাগ করা
 const hrLanes = computed(() => sortedLanes.value.filter(isHrLane))
 const nonHrLanes = computed(() => sortedLanes.value.filter((l) => !isHrLane(l)))
-const myNonHrLane = computed(
-  () => nonHrLanes.value.find((ln) => ln.key === myLaneKey.value) || null,
+const personalLanes = computed(() => (staffMode.value ? sortedLanes.value : nonHrLanes.value))
+const myEditablePersonalLaneKey = computed(
+  () => personalLanes.value.find((ln) => ln.can_current_user_review)?.key || null,
 )
-const myNonHrRank = computed(() => myNonHrLane.value?.rank ?? null)
+const myPersonalLane = computed(
+  () => personalLanes.value.find((ln) => ln.key === myEditablePersonalLaneKey.value) || null,
+)
+const myPersonalLaneRank = computed(() => myPersonalLane.value?.rank ?? null)
 
 const currentUserId = computed(() => Number(auth?.user?.id || 0))
 const myHrLane = computed(() => {
@@ -67,15 +83,12 @@ const myHrLaneKey = computed(() => myHrLane.value?.key || null)
 const canEditHR = computed(() => !!(myHrLane.value && myHrLane.value.can_current_user_review))
 const canHR = computed(() => !!(isHR.value || canEditHR.value))
 
-const canEditPersonal = computed(
-  () =>
-    !!myLaneKey.value &&
-    nonHrLanes.value.some((l) => l.key === myLaneKey.value && l.can_current_user_review),
-)
+const canEditPersonal = computed(() => !!myEditablePersonalLaneKey.value)
 
 const reviewerLaneKey = computed(() => {
+  if (staffMode.value) return myEditablePersonalLaneKey.value
   if (canHR.value && myHrLaneKey.value) return myHrLaneKey.value
-  return myLaneKey.value
+  return myEditablePersonalLaneKey.value
 })
 
 const reviewingAsHR = computed(() =>
@@ -85,40 +98,51 @@ const reviewingAsHR = computed(() =>
 )
 
 /* ---------- Existing review readers ---------- */
-function laneFirstReview(laneKey) {
-  const arr = reviewsByLane.value?.[laneKey] || []
-  return arr[0] || null
+function laneLatestReview(laneKey) {
+  const raw = reviewsByLane.value?.[laneKey]
+  if (!raw) return null
+  const list = Array.isArray(raw) ? raw : [raw]
+  return list.reduce((latest, entry) => {
+    if (!entry) return latest
+    if (!latest) return entry
+    const a = new Date(entry.submitted_at || 0).getTime()
+    const b = new Date(latest.submitted_at || 0).getTime()
+    return a > b ? entry : latest
+  }, null)
 }
 
 function laneMark(laneKey, itemId) {
-  const r = laneFirstReview(laneKey)
+  const r = laneLatestReview(laneKey)
   return r?.marks?.[itemId] ?? ''
 }
 
 /** HR mark: prefer my assigned HR lane; fallback to latest among hr* lanes */
 function hrMark(itemId) {
   if (myHrLaneKey.value) {
-    const r = laneFirstReview(myHrLaneKey.value)
+    const r = laneLatestReview(myHrLaneKey.value)
     const v = r?.marks?.[itemId]
     if (v != null) return v
   }
   let chosen = null
   for (const ln of hrLanes.value) {
-    const arr = reviewsByLane.value?.[ln.key] || []
-    const r = arr[0]
+    const r = laneLatestReview(ln.key)
     if (!r || r?.marks?.[itemId] == null) continue
     if (!chosen) {
       chosen = r
       continue
     }
-    if (r.submitted_at && chosen.submitted_at && r.submitted_at > chosen.submitted_at) {
-      chosen = r
-    }
+    const a = new Date(r.submitted_at || 0).getTime()
+    const b = new Date(chosen.submitted_at || 0).getTime()
+    if (a > b) chosen = r
   }
   return chosen?.marks?.[itemId] ?? ''
 }
 
 /* ---------- Marks safety ---------- */
+function setMark(id, value) {
+  marks.value[id] = value === '' ? '' : Number(value)
+}
+
 function cap(id, max) {
   const v = Number(marks.value[id] ?? 0)
   if (v < 0) marks.value[id] = 0
@@ -126,6 +150,7 @@ function cap(id, max) {
 }
 function quickFill(id, max, t) {
   if (t === 'zero') marks.value[id] = 0
+  else if (t === 'quarter') marks.value[id] = Number(max) / 4
   else if (t === 'half') marks.value[id] = Number(max) / 2
   else if (t === 'threeQuarter') marks.value[id] = Number((Number(max) * 0.75).toFixed(1))
   else if (t === 'full') marks.value[id] = Number(max)
@@ -192,6 +217,13 @@ const performanceMonths = computed(
 const summaryData = computed(() =>
   activeSummaryTab.value === 'target' ? targetAvg.value : performanceAvg.value,
 )
+const summaryFinal = computed(() => Number(summaryData.value?.per_form_yearly?.final || 0))
+const summaryMax = computed(() => Number(summaryData.value?.per_scored_month?.max || 0))
+const summaryPercent = computed(() => {
+  if (!summaryMax.value) return 0
+  return Math.round((summaryFinal.value / summaryMax.value) * 100)
+})
+const canAutoFillFromSummary = computed(() => canHR.value && !staffMode.value)
 const summaryYear = computed(() =>
   activeSummaryTab.value === 'target' ? targetYear.value : performanceYear.value,
 )
@@ -221,13 +253,74 @@ watch(activeSummaryTab, () => {
   showSummaryDetails.value = false
 })
 
+const normalizeLabel = (value) => String(value || '').toLowerCase()
+
+const matchGroupForTab = (group, tabKey) => {
+  if (!group) return false
+  if (tabKey === 'target') {
+    if (group.id === 'monthly_target') return true
+    return normalizeLabel(group.label).includes('monthly target')
+  }
+  if (tabKey === 'performance') {
+    if (group.id === 'execution') return true
+    const label = normalizeLabel(group.label)
+    return label.includes('execution') || String(group.label || '').includes('কার্যসম্পাদন')
+  }
+  return false
+}
+
+const mappedGroupForTab = (tabKey) => {
+  return otherGroups.value.find((g) => matchGroupForTab(g, tabKey)) || null
+}
+
+const applySummaryToMappedGroup = (tabKey, { overwrite } = { overwrite: false }) => {
+  if (!canAutoFillFromSummary.value) return
+  const group = mappedGroupForTab(tabKey)
+  if (!group || !Array.isArray(group.items) || group.items.length === 0) return
+
+  const items = group.items
+  const allEmpty = items.every((it) => Number(marks.value[it.id] || 0) === 0)
+  if (!overwrite && !allEmpty) return
+
+  const finalScore = summaryFinal.value
+  const groupMax = items.reduce((acc, item) => acc + Number(item.max || 0), 0)
+
+  if (!groupMax) return
+
+  if (items.length === 1) {
+    const item = items[0]
+    marks.value[item.id] = Math.min(finalScore, Number(item.max || 0))
+    cap(item.id, item.max)
+    return
+  }
+
+  items.forEach((item) => {
+    const portion = (Number(item.max || 0) / groupMax) * finalScore
+    const rounded = Number(portion.toFixed(1))
+    marks.value[item.id] = rounded
+    cap(item.id, item.max)
+  })
+}
+
+const autoFillLabel = computed(() => {
+  const label = activeSummaryTab.value === 'target' ? 'Annual Target' : 'Annual Performance'
+  return `Auto: ${label} (${summaryPercent.value}%)`
+})
+
+watch(
+  activeSummaryTab,
+  (tabKey) => {
+    applySummaryToMappedGroup(tabKey, { overwrite: false })
+  },
+  { immediate: true },
+)
+
 const reviewComments = computed(() => {
-  const byLane = reviewsByLane.value || {}
-  const orderedNonHr = nonHrLanes.value || [] // rank অনুযায়ী sorted
+  const orderedLanes = staffMode.value ? sortedLanes.value : nonHrLanes.value // rank অনুযায়ী sorted
   const result = []
 
   // HR মোড হলে সব দেখতে পারবে, না হলে নিজের rank পর্যন্ত
-  const viewerRank = reviewingAsHR.value || canHR.value ? Infinity : (myNonHrRank.value ?? null)
+  const viewerRank = reviewingAsHR.value || canHR.value ? Infinity : (myPersonalLaneRank.value ?? null)
 
   const toArr = (v) => {
     if (!v) return []
@@ -246,7 +339,7 @@ const reviewComments = computed(() => {
     }, [])
   }
 
-  orderedNonHr.forEach((ln) => {
+  orderedLanes.forEach((ln) => {
     const laneKey = ln.key
     if (!laneKey) return
 
@@ -256,10 +349,9 @@ const reviewComments = computed(() => {
       if (laneRank > viewerRank) return
     }
 
-    const reviews = byLane[laneKey] || []
-    if (!Array.isArray(reviews) || !reviews.length) return
+    const entry = laneLatestReview(laneKey)
+    if (!entry) return
 
-    const entry = reviews[0]
     const strengths = toArr(entry.strengths)
     const gaps = toArr(entry.gaps)
     const suggestions = toArr(entry.suggestions)
@@ -396,20 +488,19 @@ const hydrateReviewData = (resp) => {
   reviewsByLane.value = resp.reviews_by_lane || {}
   isHR.value = !!(resp?.meta?.is_hr ?? resp?.hr ?? false)
 
-  myLaneKey.value = nonHrLanes.value.find((x) => x.can_current_user_review)?.key || null
-
+  marks.value = {}
   groupsAll.value.forEach((g) =>
     g.items.forEach((it) => {
-      if (marks.value[it.id] == null) marks.value[it.id] = 0
+      marks.value[it.id] = 0
     }),
   )
 
-  if (myLaneKey.value) {
-    const myExisting = laneFirstReview(myLaneKey.value)
+  if (myEditablePersonalLaneKey.value) {
+    const myExisting = laneLatestReview(myEditablePersonalLaneKey.value)
     if (myExisting?.marks) Object.assign(marks.value, myExisting.marks)
   }
 
-  if (canHR.value) {
+  if (canHR.value && otherGroups.value.length) {
     otherGroups.value.forEach((g) => {
       g.items.forEach((it) => {
         let v = myHrLaneKey.value ? laneMark(myHrLaneKey.value, it.id) : ''
@@ -425,6 +516,8 @@ watch(
   async (id, prev) => {
     if (!id || (prev && id === prev)) return
     await store.fetchActiveCycle(id)
+    // NOTE: consider a single endpoint returning cycle + lanes + reviews + optional annual summary for HR.
+    // NOTE: consider returning latest review per lane (not full arrays) to reduce payload size.
     const resp = await store.fetchLanes(store.cycle.id, id)
     hydrateReviewData(resp)
   },
@@ -438,7 +531,6 @@ async function submit() {
     alert('Unable to determine reviewer lane.')
     return
   }
-  const isHrMode = reviewerLane === myHrLaneKey.value
   await store.submitReview({
     cycle_id: store.cycle.id,
     employee_id: Number(route.params.employeeId),
@@ -594,258 +686,58 @@ function applyHint(field, value) {
       </section>
     </div>
     <!-- PERSONAL GROUP -->
-    <section
+    <KpiGroupTable
       v-if="store.cycle && personalGroup"
-      class="border rounded-2xl bg-white shadow-sm overflow-hidden"
-    >
-      <div class="flex items-center justify-between border-b bg-slate-50 px-4 py-2">
-        <div class="text-sm font-semibold text-slate-800">Personal Evaluation</div>
-        <div class="text-xs text-slate-500">Fill only your lane; others appear as read-only.</div>
-      </div>
-
-      <div class="overflow-auto">
-        <table class="min-w-[980px] w-full text-sm">
-          <thead class="bg-slate-50 sticky top-0 z-10">
-            <tr class="text-slate-700">
-              <th class="px-3 py-2 w-[40px] text-center font-medium">#</th>
-              <th class="text-left px-3 py-2 w-[20%] font-medium">মূল্যায়নের বিষয় (Personal)</th>
-              <th class="px-3 py-2 text-center font-medium">Max</th>
-              <th v-for="ln in nonHrLanes" :key="ln.key" class="px-3 py-2 text-center font-medium">
-                <div class="font-medium">{{ ln.label || ln.key }}</div>
-                <div class="text-[11px] text-slate-500 flex flex-col items-center">
-                  <span>{{ ln.assigned_user_name || '-' }}</span>
-                  <span
-                    v-if="ln.key === myLaneKey && ln.can_current_user_review"
-                    class="mt-0.5 inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700 border border-blue-200"
-                  >
-                    You can edit
-                  </span>
-                </div>
-              </th>
-            </tr>
-          </thead>
-
-          <tbody>
-            <tr class="bg-slate-100/80 border-t">
-              <td :colspan="3 + nonHrLanes.length" class="px-3 py-2 font-medium text-slate-800">
-                {{ personalGroup.label || 'Personal' }}
-              </td>
-            </tr>
-
-            <tr
-              v-for="it in personalGroup.items"
-              :key="it.id"
-              class="border-t hover:bg-slate-50/60"
-            >
-              <td class="px-3 py-2 text-center text-slate-500">
-                {{ serialMap[it.id] }}
-              </td>
-
-              <td class="px-3 py-2 align-top">
-                <div class="font-medium text-slate-800">
-                  {{ it.label }}
-                </div>
-                <div class="mt-1 flex gap-1 text-[11px] text-slate-500">
-                  <button
-                    class="border rounded px-1.5 py-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
-                    :disabled="!canEditPersonal"
-                    @click="canEditPersonal && quickFill(it.id, it.max, 'half')"
-                  >
-                    ½
-                  </button>
-                  <button
-                    class="border rounded px-1.5 py-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
-                    :disabled="!canEditPersonal"
-                    @click="canEditPersonal && quickFill(it.id, it.max, 'threeQuarter')"
-                  >
-                    ¾
-                  </button>
-                  <button
-                    class="border rounded px-1.5 py-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
-                    :disabled="!canEditPersonal"
-                    @click="canEditPersonal && quickFill(it.id, it.max, 'full')"
-                  >
-                    Full
-                  </button>
-                </div>
-              </td>
-
-              <td class="px-3 py-2 text-center text-slate-700">
-                {{ it.max }}
-              </td>
-
-              <td v-for="ln in nonHrLanes" :key="ln.key" class="px-3 py-2 text-center">
-                <div
-                  v-if="ln.key === myLaneKey && ln.can_current_user_review"
-                  class="flex items-center justify-center"
-                >
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    :max="it.max"
-                    v-model.number="marks[it.id]"
-                    @change="cap(it.id, it.max)"
-                    inputmode="decimal"
-                    class="w-24 text-right rounded-lg border px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                  />
-                </div>
-
-                <div v-else-if="ln.can_view_marks" class="text-slate-700 text-sm">
-                  {{ laneMark(ln.key, it.id) }}
-                </div>
-
-                <div v-else class="text-slate-300 text-sm">—</div>
-              </td>
-            </tr>
-
-            <tr class="bg-slate-50 border-t">
-              <td></td>
-              <td class="px-3 py-2 text-right font-medium text-slate-700">Group Total</td>
-              <td class="px-3 py-2 text-center font-semibold text-slate-800">
-                {{ personalGroup.items.reduce((a, b) => a + Number(b.max || 0), 0).toFixed(2) }}
-              </td>
-              <td :colspan="nonHrLanes.length" class="px-3 py-2 text-center text-sm">
-                <span class="font-semibold text-slate-900">
-                  {{
-                    personalGroup.items
-                      .reduce((a, b) => {
-                        const v = Number(marks[b.id] || 0)
-                        return a + Math.min(Math.max(v, 0), Number(b.max || 0))
-                      }, 0)
-                      .toFixed(2)
-                  }}
-                </span>
-                <span class="text-slate-500">
-                  / {{ personalGroup.items.reduce((a, b) => a + Number(b.max || 0), 0).toFixed(2) }}
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
+      :group="personalGroup"
+      :is-personal="true"
+      :lanes="personalLanes"
+      :editable-lane-key="myEditablePersonalLaneKey"
+      :can-edit="canEditPersonal"
+      :marks="marks"
+      :header-label="'Personal Evaluation'"
+      :item-label="personalGroup?.label || 'Personal'"
+      :helper-text="staffMode ? 'All reviewer lanes score the Personal table.' : 'Fill only your lane; others appear as read-only.'"
+      :serial-map="serialMap"
+      :get-lane-mark="laneMark"
+      :on-mark-change="setMark"
+      :on-cap="cap"
+      :on-quick-fill-item="quickFill"
+    />
 
     <!-- OTHER GROUPS + RIGHT SIDEBAR -->
     <section class="mt-2">
       <div class="grid gap-4 lg:grid-cols-5">
         <!-- Main (groups tables) -->
         <div class="space-y-4 lg:col-span-3" v-if="otherGroups.length">
-          <div
+          <KpiGroupTable
             v-for="(grp, gIdx) in otherGroups"
             :key="gIdx"
-            class="overflow-hidden border rounded-2xl bg-white shadow-sm"
-          >
-            <div class="flex items-center justify-between border-b bg-slate-50 px-4 py-2.5">
-              <div class="text-sm font-semibold text-slate-800">
-                Group {{ gIdx + 1 }} — {{ safeGroupLabel(grp, gIdx) }}
-              </div>
-              <div class="flex items-center gap-2 text-[11px] text-slate-500">
-                <span>Quick fill:</span>
-
-                <button
-                  class="rounded border px-1.5 py-0.5 hover:bg-slate-100 disabled:opacity-40"
-                  @click="quickFillGroup(grp, 'half')"
-                  :disabled="!canHR"
-                >
-                  All ½
-                </button>
-                <button
-                  class="rounded border px-1.5 py-0.5 hover:bg-slate-100 disabled:opacity-40"
-                  @click="quickFillGroup(grp, 'threeQuarter')"
-                  :disabled="!canHR"
-                >
-                  All ¾
-                </button>
-                <button
-                  class="rounded border px-1.5 py-0.5 hover:bg-slate-100 disabled:opacity-40"
-                  @click="quickFillGroup(grp, 'full')"
-                  :disabled="!canHR"
-                >
-                  All Full
-                </button>
-              </div>
-            </div>
-
-            <div class="overflow-auto">
-              <table class="w-full text-sm">
-                <thead class="sticky top-0 bg-white z-10">
-                  <tr class="bg-slate-100 text-slate-700">
-                    <th class="px-3 py-2 w-[40px] text-center font-medium">#</th>
-                    <th class="text-left px-3 py-2 w-[30%] font-medium">Item</th>
-                    <th class="px-3 py-2 text-center w-[40px] font-medium">Max</th>
-                    <th class="px-3 py-2 text-center w-[80px] font-medium">HR Score</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  <tr
-                    v-for="(it, ii) in grp.items"
-                    :key="it.id"
-                    class="border-t hover:bg-slate-50/60"
-                  >
-                    <td class="px-3 py-2 text-center text-slate-500">
-                      {{ ii + 1 }}
-                    </td>
-
-                    <td class="px-3 py-2">
-                      <div class="font-medium text-slate-800">{{ it.label }}</div>
-                    </td>
-
-                    <td class="px-3 py-2 text-center text-slate-700">
-                      {{ it.max }}
-                    </td>
-
-                    <td class="px-3 py-2 text-center">
-                      <template v-if="canHR">
-                        <input
-                          type="number"
-                          step="0.1"
-                          min="0"
-                          :max="it.max"
-                          v-model.number="marks[it.id]"
-                          @change="cap(it.id, it.max)"
-                          inputmode="decimal"
-                          class="w-24 text-right rounded-lg border px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                        />
-                      </template>
-                      <template v-else>
-                        <p class="text-slate-700 text-sm">
-                          {{ hrMark(it.id) || '—' }}
-                        </p>
-                      </template>
-                    </td>
-                  </tr>
-
-                  <tr class="bg-slate-50 border-t">
-                    <td></td>
-                    <td class="px-3 py-2 text-right font-medium text-slate-700">Group Total</td>
-                    <td class="px-3 py-2 text-center font-semibold text-slate-800">
-                      {{ grp.items.reduce((a, b) => a + Number(b.max || 0), 0).toFixed(2) }}
-                    </td>
-                    <td class="px-3 py-2 text-center text-sm">
-                      {{
-                        grp.items
-                          .reduce((a, b) => {
-                            const v = Number(marks[b.id] || 0)
-                            return a + Math.min(Math.max(v, 0), Number(b.max || 0))
-                          }, 0)
-                          .toFixed(2)
-                      }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+            :group="grp"
+            :is-personal="false"
+            :can-edit="canHR"
+            :marks="marks"
+            :header-label="`Group ${gIdx + 1} - ${safeGroupLabel(grp, gIdx)}`"
+            :item-label="'Item'"
+            :show-quick-fill-group="true"
+            :auto-fill-visible="canAutoFillFromSummary && matchGroupForTab(grp, activeSummaryTab)"
+            :auto-fill-label="autoFillLabel"
+            :on-auto-fill="() => applySummaryToMappedGroup(activeSummaryTab, { overwrite: true })"
+            :get-hr-mark="hrMark"
+            :on-mark-change="setMark"
+            :on-cap="cap"
+            :on-quick-fill-group="quickFillGroup"
+          />
         </div>
 
         <!-- Right sidebar (Annual Target Summary + Comments) -->
         <aside
-          class="space-y-4"
+          class="space-y-4 sticky top-10 z-50"
           :class="[otherGroups.length === 0 ? 'lg:col-span-full' : 'lg:col-span-2']"
         >
-          <section v-if="hasTargetSummary && canHR" class="border rounded-2xl bg-white shadow-sm">
+          <section
+            v-if="!staffMode && hasTargetSummary && canHR"
+            class="sticky top-6 border rounded-2xl bg-white shadow-sm"
+          >
             <header
               class="flex flex-wrap items-center justify-between border-b px-4 py-3 text-sm font-semibold text-slate-800"
             >
