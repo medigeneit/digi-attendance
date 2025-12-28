@@ -228,7 +228,7 @@ const isBusy = ref(false)
 
 /**
  * Live recalc snapshot for selected month + company
- * NOTE: expects attendanceStore.recalculateMonthlySnapshot({ company_id, month })
+ * NOTE: expects attendanceStore.recalculateMonthlySnapshot({ company_id, month, department_id })
  */
 const recalcMonthlySnapshot = async () => {
   if (!filters.value.company_id || !selectedMonth.value) {
@@ -239,15 +239,19 @@ const recalcMonthlySnapshot = async () => {
 
   const line_type = filters.value.line_type !== 'all' ? filters.value.line_type : ''
   const employeeId = filters.value.employee_id || ''
+  const departmentId = filters.value.department_id || ''
+
+  console.log({departmentId})
 
   try {
     isBusy.value = true
 
     await attendanceStore.recalculateMonthlySnapshot(
       filters.value.company_id,
+      departmentId,
       line_type,
       employeeId,
-      selectedMonth.value
+      selectedMonth.value,
     )
 
     await fetchAttendance()
