@@ -1,7 +1,7 @@
 <template>
   <table class="min-w-full table-auto border-collapse border border-gray-300 bg-white">
     <thead>
-      <tr class="bg-gray-200 text-xs sticky top-14 z-50"  :class="{'top-28': authStore.isAdminMood}">
+      <tr class="bg-gray-200 text-xs sticky top-14 z-20"  :class="{'top-28': authStore.isAdminMood}">
         <th class="border p-1">Date</th>
         <th class="border p-1">Day</th>
         <th class="border p-1">Shift</th>

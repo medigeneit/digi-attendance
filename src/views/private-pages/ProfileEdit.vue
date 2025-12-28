@@ -10,6 +10,7 @@ import { useToast } from 'vue-toastification'
 
 const form = reactive({
   name: '',
+  bn_name: '',
   phone: '',
   email: '',
   nid: '',
@@ -64,6 +65,7 @@ const handleFileSelected = (file) => {
 
 const loadUser = () => {
   form.name = user.value?.name || ''
+  form.bn_name = user.value?.bn_name || ''
   form.phone = user.value?.phone || ''
   form.email = user.value?.email || ''
   form.address = user.value?.address || ''
@@ -153,6 +155,11 @@ const uploadPhoto = async () => {
               <div>
                 <label>Name</label>
                 <input v-model="form.name" type="text" class="w-full p-2 border rounded" required />
+              </div>
+
+              <div>
+                <label>Bangla Name</label>
+                <input v-model="form.bn_name" type="text" class="w-full p-2 border rounded" />
               </div>
 
               <div>

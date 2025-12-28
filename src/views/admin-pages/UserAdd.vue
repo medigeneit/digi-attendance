@@ -25,6 +25,7 @@ const modalOpen = ref(false)
 
 const form = reactive({
   name: '',
+  bn_name: '',
   phone: '',
   email: '',
   password: '',
@@ -81,6 +82,7 @@ const saveUser = async () => {
   try {
     const dataToSend = {
       name: form.name,
+      bn_name: form.bn_name,
       phone: form.phone,
       email: form.email,
       password: form.password,
@@ -141,6 +143,11 @@ const computedDesignations = computed(() => {
               <div>
                 <label>Name</label>
                 <input v-model="form.name" type="text" class="w-full p-2 border rounded" required />
+              </div>
+
+              <div>
+                <label>Bangla Name</label>
+                <input v-model="form.bn_name" type="text" class="w-full p-2 border rounded" />
               </div>
 
               <div>
