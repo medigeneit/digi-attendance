@@ -645,7 +645,7 @@ const router = createRouter({
         {
           path: '/reports/yearly-delay-early-attendance-summary',
           name: 'YearlyDealyEarlyAttendanceSummary',
-          component: () => import('@/views/admin-pages/YearlyDealyEarlyAttendanceSummary.vue'),
+          component: () => import('@/views/admin-pages/YearlyDelayEarlyAttendanceSummary.vue'),
           meta: {
             requiresAuth: true,
             roles: ['admin', 'super_admin', 'developer'],
