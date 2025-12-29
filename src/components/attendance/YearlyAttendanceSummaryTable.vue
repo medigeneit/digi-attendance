@@ -9,7 +9,7 @@ const props = defineProps({
   sortBy: { type: String, default: 'attendance_score_avg' },
   sortDir: { type: String, default: 'desc' },
   page: { type: Number, default: 1 },
-  perPage: { type: Number, default: 10 },
+  perPage: { type: Number, default: 25 },
 })
 
 const emit = defineEmits(['update:page', 'update:perPage', 'sort-change', 'row-click'])
@@ -40,6 +40,15 @@ const presentBadgeClass = (value) => {
   if (pct >= 95) return 'bg-emerald-50 text-emerald-700'
   if (pct >= 80) return 'bg-amber-50 text-amber-700'
   return 'bg-rose-50 text-rose-700'
+}
+
+const gradingLabel = (value) => {
+  const pct = Math.ceil(Number(value || 0))
+  if (pct > 94) return '5'
+  if (pct > 84) return '4'
+  if (pct > 79) return '3.5'
+  if (pct >= 70) return '3'
+  return '0'
 }
 
 const formatPercent = (value) => {
@@ -93,13 +102,14 @@ const departmentLabel = (row) => {
             <th class="th cursor-pointer text-center" @click="toggleSort('yearly_present_pct')">
               Present % <span class="ml-1 text-[11px]">{{ sortIndicator('yearly_present_pct') }}</span>
             </th>
-            <th class="th cursor-pointer text-center" @click="toggleSort('attendance_score_avg')">
+            <!-- <th class="th cursor-pointer text-center" @click="toggleSort('attendance_score_avg')">
               Score Avg <span class="ml-1 text-[11px]">{{ sortIndicator('attendance_score_avg') }}</span>
             </th>
-            <th class="th text-center">Score Months</th>
+            <th class="th text-center">Score Months</th> -->
             <th class="th cursor-pointer text-center" @click="toggleSort('total_months')">
               Total Months <span class="ml-1 text-[11px]">{{ sortIndicator('total_months') }}</span>
             </th>
+            <th class="th text-center">Grading</th>
           </tr>
         </thead>
         <tbody class="text-sm">
@@ -121,7 +131,7 @@ const departmentLabel = (row) => {
                 {{ formatPercent(row?.yearly_present_pct) }}
               </span>
             </td>
-            <td class="td">
+            <!-- <td class="td">
               <div class="flex flex-col items-center gap-1">
                 <div class="h-2 w-24 rounded-full bg-slate-100">
                   <div
@@ -134,8 +144,9 @@ const departmentLabel = (row) => {
                 </span>
               </div>
             </td>
-            <td class="td text-center">{{ row?.score_months ?? '—' }}</td>
+            <td class="td text-center">{{ row?.score_months ?? '—' }}</td> -->
             <td class="td text-center">{{ row?.total_months ?? '—' }}</td>
+            <td class="td text-center">{{ row?.yearly_present_score_avg }}</td>
           </tr>
         </tbody>
       </table>

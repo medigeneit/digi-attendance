@@ -40,13 +40,13 @@ const filters = ref({
   user_id: route.query.user_id || '',
   search: route.query.search || '',
   page: route.query.page ? Number(route.query.page) : 1,
-  per_page: route.query.per_page ? Number(route.query.per_page) : 10,
+  per_page: route.query.per_page ? Number(route.query.per_page) : 25,
   sort_by: route.query.sort_by || 'attendance_score_avg',
   sort_dir: route.query.sort_dir || 'desc',
 })
 
 const rows = ref([])
-const meta = ref({ total: 0, current_page: 1, last_page: 1, per_page: 10 })
+const meta = ref({ total: 0, current_page: 1, last_page: 1, per_page: 25 })
 const isLoading = ref(false)
 
 const showCompanySelect = computed(() => (companies.value || []).length > 1)
@@ -197,7 +197,7 @@ const resetFilters = async () => {
     user_id: '',
     search: '',
     page: 1,
-    per_page: 10,
+    per_page: 25,
     sort_by: 'attendance_score_avg',
     sort_dir: 'desc',
   }
