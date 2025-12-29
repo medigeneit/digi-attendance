@@ -133,6 +133,7 @@ const asDuration = (v, fallback = '0:00') => (v && String(v).trim() !== '' ? v :
 // ---------- data actions ----------
 const fetchAttendance = async () => {
   const companyId = filters.value.company_id
+  const departmentId = filters.value.department_id
   const employeeId = filters.value.employee_id || ''
   const line_type = filters.value.line_type !== 'all' ? filters.value.line_type : ''
 
@@ -144,6 +145,7 @@ const fetchAttendance = async () => {
   try {
     await attendanceStore.getMonthlyAttendanceSummaryReport(
       companyId,
+      departmentId,
       line_type,
       employeeId,
       selectedMonth.value
