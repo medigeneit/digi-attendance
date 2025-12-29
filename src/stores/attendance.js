@@ -237,7 +237,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   }
 
-  const getMonthlyAttendanceSummaryReport = async (company_id, line_type, employee_id, month) => {
+  const getMonthlyAttendanceSummaryReport = async (company_id, department_id, line_type, employee_id, month) => {
     if (!company_id || !month) {
       error.value = 'Company & month are required'
       return
@@ -248,6 +248,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     try {
       const params = {
         company_id,
+        department_id,
         month,
         line_type: line_type || '',
         employee_id: employee_id || '',
