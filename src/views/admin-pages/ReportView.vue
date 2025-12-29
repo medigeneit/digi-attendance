@@ -32,6 +32,10 @@ const hasAccessTo = (routeName) => {
       <i class="fas fa-calendar-day text-3xl"></i>
       Monthly Attendance Summary
     </RouterLink>
+    <RouterLink :to="{ name: 'YearlyDealyEarlyAttendanceSummary' }" class="main-button">
+      <i class="fas fa-calendar-week text-3xl"></i>
+      Yearly Delay Early Summary
+    </RouterLink>
     <RouterLink v-if="hasAccessTo('YearlyAttendanceSummary')" :to="{ name: 'YearlyAttendanceSummary' }" class="main-button">
       <i class="fas fa-calendar-star text-3xl"></i>
       Yearly Attendance Summary
