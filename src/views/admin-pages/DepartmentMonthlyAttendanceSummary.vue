@@ -6,7 +6,10 @@ import { useToast } from 'vue-toastification'
 
 import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
-import { fetchDepartmentMonthlyAttendance } from '@/services/department-monthly-attendance'
+import {
+  exportDepartmentMonthlyAttendance,
+  fetchDepartmentMonthlyAttendance,
+} from '@/services/department-monthly-attendance'
 import LoaderView from '@/components/common/LoaderView.vue'
 import SelectDropdown from '@/components/SelectDropdown.vue'
 import EmployeeDropdownInput from '@/components/EmployeeDropdownInput.vue'
@@ -177,6 +180,36 @@ const handleFilterChange = async () => {
   await fetchReport()
 }
 
+const downloadExcel = async () => {
+  if (!filters.value.company_id) {
+    toast.info('Select a company first.')
+    return
+  }
+
+  try {
+    const params = {
+      company_id: filters.value.company_id,
+      department_id: filters.value.department_id || undefined,
+      line_type: filters.value.line_type || undefined,
+      employee_id: filters.value.employee_id || undefined,
+      year: filters.value.year,
+    }
+    const response = await exportDepartmentMonthlyAttendance(params)
+    const blob = new Blob([response.data])
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    const filename = `department_monthly_attendance_${filters.value.company_id}_${filters.value.year}.xlsx`
+    link.setAttribute('download', filename)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  } catch (error) {
+    toast.error(error?.response?.data?.message || 'Failed to export excel')
+  }
+}
+
 onMounted(async () => {
   await companyStore.fetchCompanies()
 
@@ -223,7 +256,7 @@ watch(
     </header>
 
     <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div class="grid gap-3 items-end lg:grid-cols-[120px_1.2fr_1.2fr_1fr_1.2fr_140px]">
+      <div class="grid gap-3 items-end lg:grid-cols-[120px_1.2fr_1.2fr_1fr_1.2fr_140px_160px]">
         <div class="min-w-0">
           <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Year</label>
           <select v-model="filters.year" class="input mt-1 w-full">
@@ -308,8 +341,14 @@ watch(
         </div>
 
         <div class="min-w-0">
-          <button class="btn-3 w-full" :disabled="isLoading" @click="handleFilterChange">
+          <button class="btn-2 w-full" :disabled="isLoading" @click="handleFilterChange">
             {{ isLoading ? 'Loading...' : 'Apply' }}
+          </button>
+        </div>
+
+        <div class="min-w-0">
+          <button class="btn-1 w-full" :disabled="isLoading" @click="downloadExcel">
+            Download Excel
           </button>
         </div>
       </div>
