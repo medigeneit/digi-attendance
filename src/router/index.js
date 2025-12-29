@@ -643,6 +643,16 @@ const router = createRouter({
           },
         },
         {
+          path: '/reports/department-monthly-attendance-summary',
+          name: 'DepartmentMonthlyAttendanceSummary',
+          component: () => import('@/views/admin-pages/DepartmentMonthlyAttendanceSummary.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Department Monthly Attendance Summary',
+          },
+        },
+        {
           path: '/attendance/yearly-summary',
           name: 'YearlyAttendanceSummary',
           component: () => import('@/views/admin-pages/YearlyAttendanceSummary.vue'),
