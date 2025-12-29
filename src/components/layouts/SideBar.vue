@@ -40,7 +40,7 @@ const reportsMenu = [
   { label: 'Daily Late ', routeName: 'DailyLateAttendanceReport' },
   { label: 'Monthly Late ', routeName: 'LateAttendanceReport' },
   { label: 'Monthly  Summary', routeName: 'AttendanceSummaryReport' },
-  { label: 'Dept Monthly Summary', routeName: 'DepartmentMonthlyAttendanceSummary' },
+  { label: 'Yearly Delay Early Summary', routeName: 'YearlyDealyEarlyAttendanceSummary' },
   { label: 'Date Range Attendance ', routeName: 'DateWiseAttendanceSummaryReport' },
   { label: 'Overtime ', routeName: 'OvertimeReport' },
   { label: 'Monthly Application', routeName: 'MonthWiseApplicationReport' },

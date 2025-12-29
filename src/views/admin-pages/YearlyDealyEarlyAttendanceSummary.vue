@@ -7,9 +7,9 @@ import { useToast } from 'vue-toastification'
 import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
 import {
-  exportDepartmentMonthlyAttendance,
-  fetchDepartmentMonthlyAttendance,
-} from '@/services/department-monthly-attendance'
+  exportYearlyDealyEarlyAttendanceSummary,
+  fetchYearlyDealyEarlyAttendanceSummary,
+} from '@/services/yearly-delay-early-attendance'
 import LoaderView from '@/components/common/LoaderView.vue'
 import SelectDropdown from '@/components/SelectDropdown.vue'
 import EmployeeDropdownInput from '@/components/EmployeeDropdownInput.vue'
@@ -166,7 +166,7 @@ const fetchReport = async () => {
       employee_id: filters.value.employee_id || undefined,
       year: filters.value.year,
     }
-    const res = await fetchDepartmentMonthlyAttendance(params)
+    const res = await fetchYearlyDealyEarlyAttendanceSummary(params)
     rows.value = res?.data?.data ?? res?.data ?? []
     syncQuery()
   } catch (error) {
@@ -194,12 +194,12 @@ const downloadExcel = async () => {
       employee_id: filters.value.employee_id || undefined,
       year: filters.value.year,
     }
-    const response = await exportDepartmentMonthlyAttendance(params)
+    const response = await exportYearlyDealyEarlyAttendanceSummary(params)
     const blob = new Blob([response.data])
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    const filename = `department_monthly_attendance_${filters.value.company_id}_${filters.value.year}.xlsx`
+    const filename = `yearly_delay_early_attendance_${filters.value.company_id}_${filters.value.year}.xlsx`
     link.setAttribute('download', filename)
     document.body.appendChild(link)
     link.click()
@@ -249,9 +249,9 @@ watch(
 <template>
   <section class="space-y-4 px-4">
     <header class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <h1 class="text-lg font-semibold text-slate-900">Department Monthly Attendance Summary</h1>
+      <h1 class="text-lg font-semibold text-slate-900">Yearly Delay Early Attendance Summary</h1>
       <p class="text-sm text-slate-500">
-        Month-wise score, late, and early counts based on yearly attendance summary.
+        Month-wise late, early, and total with yearly score average.
       </p>
     </header>
 
@@ -399,9 +399,9 @@ watch(
                 <div>
                   {{ row.user_name || '-' }}
                 </div>
-                <div class="text-xs">
+                <!-- <div class="text-xs">
                   <b>{{ row.department_name || '-' }}</b>
-                </div>
+                </div> -->
               </td>
               <template v-for="month in months" :key="month.key">
                 <td class="td text-center">{{ monthCell(row, month.key).late }}</td>
@@ -427,9 +427,9 @@ watch(
   overflow: auto;
 }
 .th {
-  @apply border-2 border-slate-300 px-3 py-2 font-semibold text-gray-700;
+  @apply border-2 border-slate-300 px-2 font-semibold text-gray-700;
 }
 .td {
-  @apply border-2 border-slate-300 px-3 py-2 text-xs;
+  @apply border-2 border-slate-300 px-2 text-xs;
 }
 </style>

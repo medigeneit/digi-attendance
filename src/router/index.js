@@ -643,13 +643,13 @@ const router = createRouter({
           },
         },
         {
-          path: '/reports/department-monthly-attendance-summary',
-          name: 'DepartmentMonthlyAttendanceSummary',
-          component: () => import('@/views/admin-pages/DepartmentMonthlyAttendanceSummary.vue'),
+          path: '/reports/yearly-delay-early-attendance-summary',
+          name: 'YearlyDealyEarlyAttendanceSummary',
+          component: () => import('@/views/admin-pages/YearlyDealyEarlyAttendanceSummary.vue'),
           meta: {
             requiresAuth: true,
             roles: ['admin', 'super_admin', 'developer'],
-            title: 'Department Monthly Attendance Summary',
+            title: 'Yearly Delay Early Attendance Summary',
           },
         },
         {
