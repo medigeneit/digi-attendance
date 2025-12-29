@@ -199,7 +199,8 @@ const downloadExcel = async () => {
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    const filename = `yearly_delay_early_attendance_${filters.value.company_id}_${filters.value.year}.xlsx`
+    const dept = filters.value.department_id || 'all'
+    const filename = `yearly_delay_early_attendance_${filters.value.company_id}_${filters.value.year}_${dept}.xlsx`
     link.setAttribute('download', filename)
     document.body.appendChild(link)
     link.click()
