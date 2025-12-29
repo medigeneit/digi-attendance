@@ -32,6 +32,10 @@ const filters = reactive({
 
 const groupedByUser = computed(() => {
   return [...(headingRef.value?.employees || [])]
+    .filter((emp) => {
+      if (!filters.employeeId) return true
+      return String(emp.id) === String(filters.employeeId)
+    })
     .sort((a, b) => (a.user?.name || '').localeCompare(b.user?.name || ''))
     .map((employee) => {
       const userTodos = todoDateStore.todo_dates.filter(
@@ -554,10 +558,7 @@ onBeforeUnmount(() => {
         </thead>
         <tbody class="divide-y divide-gray-200">
           <tr v-if="visibleGroupedByUser.length === 0">
-            <td
-              :colspan="isOnlyOneDate ? 4 : 5"
-              class="px-4 py-6 text-center text-gray-500"
-            >
+            <td :colspan="isOnlyOneDate ? 4 : 5" class="px-4 py-6 text-center text-gray-500">
               <div>
                 <i class="fas fa-tasks fa-2x text-gray-300 mb-2"></i>
               </div>
