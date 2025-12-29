@@ -528,7 +528,11 @@ onBeforeUnmount(() => {
             >
               <div class="flex items-center justify-between gap-2">
                 <span>Employee Name</span>
-                <div class="relative hidden md:block print:hidden" ref="tableNoTodosRef">
+                <div
+                  class="relative hidden md:block print:hidden"
+                  ref="tableNoTodosRef"
+                  v-if="!filters.employeeId"
+                >
                   <button
                     type="button"
                     class="text-[11px] px-2 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-50"
