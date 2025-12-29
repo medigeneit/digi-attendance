@@ -3,6 +3,7 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import TodoReportHeading from '@/components/todo/TodoReportHeading.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import { getDisplayDate, getYearMonthDayFormat } from '@/libs/datetime'
+import { useAttendanceStore } from '@/stores/attendance'
 import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
 import { useTodoDateStore } from '@/stores/useTodoDateStore'
@@ -247,6 +248,8 @@ async function fetchTodos() {
     'start-date': filters.startDate,
     'end-date': filters.endDate,
   })
+
+  fetchDateRangeAttendance()
 }
 
 function handleFilterChange(payload) {
@@ -316,6 +319,70 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleTableNoTodoOutsideClick, true)
 })
+
+const attendanceStore = useAttendanceStore()
+const dateRangeAttendance = ref([])
+const loadingAttendance = ref(false)
+const isStartEndDateSame = computed(() => filters.startDate === filters.endDate)
+
+const fetchDateRangeAttendance = async () => {
+  if (!filters.companyId || !filters.startDate || !filters.endDate || !isStartEndDateSame.value)
+    return
+
+  loadingAttendance.value = true
+  try {
+    const res = await attendanceStore.getDateRangeAttendanceSummary(
+      filters.startDate,
+      filters.endDate,
+      filters.companyId,
+      filters.lineType,
+      filters.employeeId,
+      true,
+    )
+    if (res) {
+      dateRangeAttendance.value = res
+    }
+  } finally {
+    loadingAttendance.value = false
+  }
+}
+
+function getAttendanceByDate(userId, date) {
+  const foundAttendance =
+    dateRangeAttendance.value?.find(
+      (attendance) => String(attendance.employee_id) === String(userId),
+    ) || null
+  if (foundAttendance) {
+    if (!date && isStartEndDateSame.value) {
+      return foundAttendance?.attendance[filters.startDate] || null
+    }
+    return foundAttendance?.attendance[date] || null
+  }
+  return null
+}
+
+function getAttendanceDetails(userId, date) {
+  const attendance = getAttendanceByDate(userId, date)
+  if (!attendance) {
+    return {
+      hasData: false,
+      in: '-',
+      out: '-',
+      late: '-',
+      early: '-',
+      comment: '-',
+    }
+  }
+
+  return {
+    hasData: true,
+    in: attendance.in || '-',
+    out: attendance.out || '-',
+    late: attendance.late || '-',
+    early: attendance.early || '-',
+    comment: attendance.comment || '-',
+  }
+}
 </script>
 
 <template>
@@ -622,13 +689,100 @@ onBeforeUnmount(() => {
                   </td>
                   <template v-if="todo.isPlaceholder">
                     <td
-                      class="border-l border-t border-r bg-white px-4 py-3 text-center"
+                      class="border-l border-t border-r bg-white px-3 py-3 text-center"
                       :colspan="isOnlyOneDate ? 2 : 3"
                     >
-                      <div class="text-red-400">
-                        <i class="fas fa-tasks text-red-200 mb-2 mr-1"></i>
-                        <span>No todos found for this user. </span>
+                      <div
+                        class="flex items-center justify-center gap-2 text-red-600 text-sm font-medium"
+                      >
+                        <i class="far fa-clipboard-list text-red-400"></i>
+                        <span>No todos assigned.</span>
                       </div>
+                      <template v-if="isStartEndDateSame">
+                        <div v-if="loadingAttendance" class="text-[11px] text-gray-500 mt-2">
+                          Loading attendance…
+                        </div>
+                        <template
+                          v-else
+                          v-for="attendance in [
+                            getAttendanceDetails(userGroup?.user?.id, dateGroup?.date),
+                          ]"
+                          :key="attendance.comment"
+                        >
+                          <div
+                            class="md:w-[360px] lg:w-[500px] mt-3 text-[11px] text-red-600 bg-gray-50 border border-dashed border-red-200 rounded-lg p-2.5 text-left inline-block min-w-[220px] align-top"
+                          >
+                            <div
+                              class="flex items-center gap-1.5 text-gray-700 font-semibold text-xs"
+                            >
+                              <i class="far fa-user-clock text-indigo-500 text-sm"></i>
+                              <span>Attendance</span>
+                            </div>
+                            <div
+                              v-if="attendance.hasData"
+                              class="mt-2 grid grid-cols-2 md:grid-cols-5 gap-1.5"
+                            >
+                              <div
+                                class="gap-1 flex items-center justify-between rounded-full bg-indigo-50 border border-indigo-100 px-2 py-1.5"
+                              >
+                                <span class="text-[10px] uppercase text-gray-500 tracking-wide"
+                                  >In</span
+                                >
+                                <span
+                                  class="font-semibold text-indigo-700 text-xs whitespace-nowrap"
+                                  >{{ attendance.in }}</span
+                                >
+                              </div>
+                              <div
+                                class="gap-1 flex items-center justify-between rounded-full bg-sky-50 border border-sky-100 px-2 py-1.5"
+                              >
+                                <span class="text-[10px] uppercase text-gray-500 tracking-wide"
+                                  >Out</span
+                                >
+                                <span
+                                  class="font-semibold text-sky-700 text-xs whitespace-nowrap"
+                                  >{{ attendance.out }}</span
+                                >
+                              </div>
+                              <div
+                                class="gap-1 flex items-center justify-between rounded-full bg-amber-50 border border-amber-100 px-2 py-1.5"
+                              >
+                                <span class="text-[10px] uppercase text-gray-500 tracking-wide"
+                                  >Late</span
+                                >
+                                <span
+                                  class="font-semibold text-amber-700 text-xs whitespace-nowrap"
+                                >
+                                  {{ attendance.late }}
+                                </span>
+                              </div>
+                              <div
+                                class="gap-1 flex items-center justify-between rounded-full bg-emerald-50 border border-emerald-100 px-2 py-1.5"
+                              >
+                                <span class="text-[10px] uppercase text-gray-500 tracking-wide"
+                                  >Early</span
+                                >
+                                <span
+                                  class="font-semibold text-emerald-700 text-xs whitespace-nowrap"
+                                >
+                                  {{ attendance.early }}
+                                </span>
+                              </div>
+                              <div
+                                class="text-center flex items-center justify-center rounded-full bg-slate-50 border border-slate-200 px-2 py-1.5 md:col-span-1 col-span-2"
+                              >
+                                <span
+                                  class="font-semibold text-slate-800 text-xs text-right whitespace-nowrap"
+                                  >{{ attendance.comment }}</span
+                                >
+                              </div>
+                            </div>
+                            <div v-else class="mt-1 text-gray-500">
+                              Attendance data unavailable.
+                            </div>
+                          </div>
+                        </template>
+                      </template>
                     </td>
                   </template>
                   <template v-else>

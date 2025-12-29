@@ -58,6 +58,16 @@ watch(
   },
 )
 
+function updateDateCountByDay(countBy) {
+  const startDate = new Date(state.startDate)
+  startDate.setDate(startDate.getDate() + countBy)
+  state.startDate = startDate.toISOString().split('T')[0]
+
+  const endDate = new Date(state.endDate)
+  endDate.setDate(endDate.getDate() + countBy)
+  state.endDate = endDate.toISOString().split('T')[0]
+}
+
 watch(payload, emitChange, { deep: true })
 
 defineExpose({
@@ -96,6 +106,9 @@ defineExpose({
         />
 
         <div class="flex items-center justify-between w-full md:w-auto gap-3">
+          <button class="btn-3 px-3 rounded size-7" @click.prevent="() => updateDateCountByDay(-1)">
+            <span class="fas fa-arrow-left"></span>
+          </button>
           <div class="relative h-[32px] w-[150px] sm:w-[170px]">
             <label
               class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30"
@@ -118,6 +131,10 @@ defineExpose({
               class="border-2 border-gray-300 rounded px-3 h-[32px] text-sm w-full bg-white"
             />
           </div>
+
+          <button class="btn-3 px-3 rounded size-7" @click.prevent="() => updateDateCountByDay(1)">
+            <span class="fas fa-arrow-right"></span>
+          </button>
         </div>
       </div>
     </div>

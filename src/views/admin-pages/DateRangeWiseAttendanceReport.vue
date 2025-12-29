@@ -1,7 +1,7 @@
 <script setup>
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
-import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useCompanyStore } from '@/stores/company'
 import { eachDayOfInterval, format } from 'date-fns'
@@ -42,13 +42,6 @@ const selectedDateRange = ref({
 const startPeriod = ref(buildPeriod(selectedDateRange.value.start))
 const endPeriod = ref(buildPeriod(selectedDateRange.value.end))
 
-const normalizeDate = (value) => {
-  if (!value) return ''
-  const [year, month, day] = value.split('-')
-  if (!year || !month || !day) return ''
-  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
-}
-
 const dateRangeAttendance = ref([])
 
 const filters = ref({
@@ -74,7 +67,12 @@ const formatDate = (date) => {
 }
 
 const fetchDateRangeAttendance = async () => {
-  if (!filters.value.company_id || !selectedDateRange.value.start || !selectedDateRange.value.end) return
+  console.log({
+    dateRange: selectedDateRange.value,
+    filters: filters.value,
+  })
+  if (!filters.value.company_id || !selectedDateRange.value.start || !selectedDateRange.value.end)
+    return
 
   const res = await attendanceStore.getDateRangeAttendanceSummary(
     selectedDateRange.value.start,
@@ -83,6 +81,8 @@ const fetchDateRangeAttendance = async () => {
     filters.value.line_type,
     filters.value.employee_id,
   )
+
+  console.log('Date Range Attendance:', res)
 
   if (res) {
     dateRangeAttendance.value = res
@@ -111,12 +111,15 @@ onMounted(async () => {
   }
 })
 
-watch(() => filters.value.company_id, async (newVal) => {
-  if (newVal) {
-    await companyStore.fetchEmployee(newVal)
-    employees.value = companyStore.employees
-  }
-})
+watch(
+  () => filters.value.company_id,
+  async (newVal) => {
+    if (newVal) {
+      await companyStore.fetchEmployee(newVal)
+      employees.value = companyStore.employees
+    }
+  },
+)
 
 watch(
   () => [
@@ -129,30 +132,24 @@ watch(
   async () => {
     await fetchDateRangeAttendance()
   },
-  { deep: true }
+  { deep: true },
 )
 
-watch(
-  startPeriod,
-  (value) => {
-    if (!value) return
-    const normalized = fromPeriod(value)
-    if (selectedDateRange.value.start !== normalized) {
-      selectedDateRange.value.start = normalized
-    }
+watch(startPeriod, (value) => {
+  if (!value) return
+  const normalized = fromPeriod(value)
+  if (selectedDateRange.value.start !== normalized) {
+    selectedDateRange.value.start = normalized
   }
-)
+})
 
-watch(
-  endPeriod,
-  (value) => {
-    if (!value) return
-    const normalized = fromPeriod(value)
-    if (selectedDateRange.value.end !== normalized) {
-      selectedDateRange.value.end = normalized
-    }
+watch(endPeriod, (value) => {
+  if (!value) return
+  const normalized = fromPeriod(value)
+  if (selectedDateRange.value.end !== normalized) {
+    selectedDateRange.value.end = normalized
   }
-)
+})
 
 watch(
   () => selectedDateRange.value.start,
@@ -168,7 +165,7 @@ watch(
         startPeriod.value = parsed
       }
     }
-  }
+  },
 )
 
 watch(
@@ -185,7 +182,7 @@ watch(
         endPeriod.value = parsed
       }
     }
-  }
+  },
 )
 
 const handleFilterChange = () => {
@@ -202,14 +199,6 @@ const handleFilterChange = () => {
   })
   fetchDateRangeAttendance()
 }
-
-const initialFilter = computed(() => ({
-  company_id: route.query.company_id || '',
-  department_id: route.query.department_id || 'all',
-  type: route.query.type || 'all',
-  employee_id: route.query.employee_id || '',
-  line_type: '',
-}))
 </script>
 <template>
   <div class="px-4 space-y-4">
@@ -221,9 +210,7 @@ const initialFilter = computed(() => ({
       </button>
 
       <!-- Page Title -->
-      <h1 class="text-xl md:text-2xl font-semibold text-center">
-        📅 Date Range Attendance Report 
-      </h1>
+      <h1 class="text-xl md:text-2xl font-semibold text-center">📅 Date Range Attendance Report</h1>
 
       <div></div>
     </div>
@@ -278,7 +265,6 @@ const initialFilter = computed(() => ({
           :initial-value="$route.query"
           @filter-change="handleFilterChange"
         />
-        
       </div>
     </div>
 
@@ -286,7 +272,9 @@ const initialFilter = computed(() => ({
 
     <div v-else class="space-y-4">
       <div class="rounded-2xl border border-slate-200 bg-white shadow-lg">
-        <div class="flex items-center justify-between gap-2 border-b border-slate-100 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
+        <div
+          class="flex items-center justify-between gap-2 border-b border-slate-100 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700"
+        >
           <div>
             <p class="uppercase tracking-wider text-[11px] text-slate-500">Attendance grid</p>
             <h2 class="text-base font-semibold text-slate-900">Detailed daily log</h2>
@@ -326,8 +314,12 @@ const initialFilter = computed(() => ({
                 <template v-for="date in dateList" :key="`row-${emp.employee_name}-${date}`">
                   <td class="px-2 py-2 text-center">{{ emp.attendance?.[date]?.in || '-' }}</td>
                   <td class="px-2 py-2 text-center">{{ emp.attendance?.[date]?.out || '-' }}</td>
-                  <td class="px-2 py-2 text-center text-amber-600 font-semibold">{{ emp.attendance?.[date]?.late || '-' }}</td>
-                  <td class="px-2 py-2 text-center text-emerald-600 font-semibold">{{ emp.attendance?.[date]?.early || '-' }}</td>
+                  <td class="px-2 py-2 text-center text-amber-600 font-semibold">
+                    {{ emp.attendance?.[date]?.late || '-' }}
+                  </td>
+                  <td class="px-2 py-2 text-center text-emerald-600 font-semibold">
+                    {{ emp.attendance?.[date]?.early || '-' }}
+                  </td>
                   <td class="px-2 py-2 text-center text-xs text-slate-500">
                     {{ emp.attendance?.[date]?.comment || '—' }}
                   </td>

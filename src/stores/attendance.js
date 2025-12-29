@@ -15,7 +15,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
   const error = ref(null)
   const isLoading = ref(false)
 
-  const getUserDailyLogsByDate = async (userId, date) => {
+  const getUserDailyLogsByDate = async (_userId, date) => {
     const formattedDate = formatDateToDayMonthYear(date)
 
     return monthlyLogs.value.find((log) => log.date === formattedDate)
@@ -47,7 +47,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   }
 
-  const getDateRangeAttendanceSummary = async (startDate, endDate, companyId, line_type, userId) => {
+  const getDateRangeAttendanceSummary = async (startDate, endDate, companyId, line_type, userId, ignorePermission = false) => {
     if (!companyId || !startDate || !endDate) {
       error.value = 'Company, Start Date, and End Date are required'
       return
@@ -63,6 +63,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
           start_date: startDate,
           end_date: endDate,
           employee_id: userId || undefined,
+          ignore_permission: ignorePermission ? 'true' : 'false',
         },
       })
 
@@ -287,10 +288,6 @@ export const useAttendanceStore = defineStore('attendance', () => {
       try {
       const payload = { month, company_id, department_id, line_type, employee_id }
 
-        const response = await apiClient.post(
-          '/attendance/monthly-snapshot/recalculate',
-          payload
-        )
         error.value = null
       } catch (err) {
         error.value = err.response?.data?.message || 'Something went wrong'
@@ -310,10 +307,6 @@ export const useAttendanceStore = defineStore('attendance', () => {
     try {
       const payload = { company_id, line_type, employee_id, month, action }
 
-      const response = await apiClient.post(
-        '/attendance/monthly-snapshot/finalize',
-        payload
-      )
 
       error.value = null
     } catch (err) {
@@ -325,7 +318,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
   }
 
 
-  const downloadPDF = async (company_id, category, month, flag = 0) => {
+  const downloadPDF = async (company_id, category, month, _flag = 0) => {
     if (!company_id || !month) {
       error.value = 'Invalid user ID or month'
       return
