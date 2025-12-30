@@ -70,11 +70,7 @@ const hasAccessTo = (routeName) => {
       <i class="far fa-file-contract text-3xl"></i>
       Yearly Attendance Summary
     </RouterLink>
-    <RouterLink
-      v-if="hasAccessTo('YearlyAttendanceSummary')"
-      :to="{ name: 'TodoReport' }"
-      class="main-button"
-    >
+    <RouterLink :to="{ name: 'TodoReport' }" class="main-button">
       <i class="fas fa-tasks text-3xl"></i>
       Todo Report
     </RouterLink>

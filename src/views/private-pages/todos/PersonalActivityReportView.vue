@@ -10,10 +10,21 @@ import {
   getYearMonthDayFormat,
   getYearMonthFormat,
 } from '@/libs/datetime'
+import { useAuthStore } from '@/stores/auth'
 import { useTodoDateStore } from '@/stores/useTodoDateStore'
+import { storeToRefs } from 'pinia'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
+const props = defineProps({
+  selfOnly: { type: Boolean, default: false },
+})
 
 const todoDateStore = useTodoDateStore()
+const authStore = useAuthStore()
+const { user } = storeToRefs(authStore)
+const route = useRoute()
+const router = useRouter()
 
 const filterState = reactive({
   companyId: '',
@@ -50,13 +61,23 @@ const rangeLabel = computed(() =>
     : '',
 )
 
-const reportReady = computed(() => !!filterState.companyId && !!startDate.value && !!endDate.value)
+const effectiveCompanyId = computed(() => {
+  if (props.selfOnly) return user.value?.company_id || ''
+  return filterState.companyId
+})
+
+const reportReady = computed(() => {
+  if (!startDate.value || !endDate.value) return false
+  if (props.selfOnly) return !!selfEmployeeId.value && !!effectiveCompanyId.value
+  return !!effectiveCompanyId.value
+})
 const todoDates = computed(() => todoDateStore.todo_dates || [])
+const selfEmployeeId = computed(() => (user.value?.id ? String(user.value.id) : ''))
 
 function handleFilterChange(payload) {
   filterState.companyId = payload.company_id || ''
   filterState.departmentId = payload.department_id || ''
-  filterState.employeeId = payload.employee_id || ''
+  filterState.employeeId = props.selfOnly ? selfEmployeeId.value : payload.employee_id || ''
   filterState.lineType = payload.line_type || 'all'
 }
 
@@ -78,7 +99,27 @@ function getTodoKey(todo) {
   )
 }
 
-const employees = computed(() => employeeFilterRef.value?.employees || [])
+const employees = computed(() => {
+  if (props.selfOnly && user.value) {
+    return [user.value]
+  }
+
+  const filterEmployees = employeeFilterRef.value?.employees || []
+  if (filterEmployees.length) return filterEmployees
+
+  // Fallback: derive unique users from todo data if filter list is empty
+  const mapped = []
+  const seen = new Set()
+  todoDates.value.forEach((todo) => {
+    const u = todo.user
+    if (!u || !u.id) return
+    const key = String(u.id)
+    if (seen.has(key)) return
+    seen.add(key)
+    mapped.push(u)
+  })
+  return mapped
+})
 const visibleEmployees = computed(() => {
   if (filterState.employeeId) {
     return employees.value.filter((emp) => String(emp.id) === String(filterState.employeeId))
@@ -138,17 +179,51 @@ const aggregateTotals = computed(() =>
   ),
 )
 
+function syncQuery() {
+  router.replace({
+    query: {
+      ...route.query,
+      month: selectedMonth.value || undefined,
+      ...(props.selfOnly
+        ? {}
+        : {
+            company_id: filterState.companyId || undefined,
+            department_id: filterState.departmentId || undefined,
+            employee_id: filterState.employeeId || undefined,
+            line_type: filterState.lineType || undefined,
+          }),
+    },
+  })
+}
+
 async function fetchTodos() {
   if (!reportReady.value) return
 
   await todoDateStore.fetchTodoDates({
-    'company-id': filterState.companyId,
-    'department-id': filterState.departmentId,
-    'employee-id': filterState.employeeId,
-    'line-type': filterState.lineType,
+    'company-id': effectiveCompanyId.value || undefined,
+    'department-id': props.selfOnly ? undefined : filterState.departmentId,
+    'employee-id': props.selfOnly ? selfEmployeeId.value : filterState.employeeId,
+    'line-type': props.selfOnly ? undefined : filterState.lineType,
     'start-date': startDate.value,
     'end-date': endDate.value,
   })
+}
+
+function applySelfEmployee() {
+  if (props.selfOnly && selfEmployeeId.value) {
+    filterState.employeeId = selfEmployeeId.value
+  }
+}
+
+function initFromRoute() {
+  const q = route.query || {}
+  selectedMonth.value =
+    typeof q.month === 'string' && q.month ? q.month : selectedMonth.value || getYearMonthFormat(new Date())
+  filterState.companyId = props.selfOnly ? '' : q.company_id || ''
+  filterState.departmentId = props.selfOnly ? '' : q.department_id || ''
+  filterState.employeeId = props.selfOnly ? selfEmployeeId.value : q.employee_id || ''
+  filterState.lineType = props.selfOnly ? 'all' : q.line_type || 'all'
+  applySelfEmployee()
 }
 
 watch(
@@ -159,14 +234,32 @@ watch(
     filterState.lineType,
     startDate.value,
     endDate.value,
+    selectedMonth.value,
   ],
   () => {
+    applySelfEmployee()
+    syncQuery()
     fetchTodos()
   },
 )
 
+watch(
+  () => route.query,
+  () => {
+    initFromRoute()
+  },
+)
+
+watch(selfEmployeeId, () => {
+  applySelfEmployee()
+  syncQuery()
+  fetchTodos()
+})
+
 onMounted(() => {
-  selectedMonth.value = getYearMonthFormat(new Date())
+  selectedMonth.value = selectedMonth.value || getYearMonthFormat(new Date())
+  initFromRoute()
+  fetchTodos()
 })
 
 function handlePrint() {
@@ -200,28 +293,51 @@ function handlePrint() {
     </div>
 
     <div class="bg-white border rounded-md p-4 mb-4 print:border-0 print:rounded-none print:p-0">
-      <EmployeeFilter
-        ref="employeeFilterRef"
-        v-model:company_id="filterState.companyId"
-        v-model:department_id="filterState.departmentId"
-        v-model:employee_id="filterState.employeeId"
-        v-model:line_type="filterState.lineType"
-        @filter-change="handleFilterChange"
-      >
-        <div class="relative h-[32px]">
-          <label
-            for="month"
-            class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30"
-            >Month</label
-          >
-          <input
-            id="month"
-            type="month"
-            v-model="selectedMonth"
-            class="border-2 border-gray-300 rounded px-3 h-[32px] text-sm w-full bg-white"
-          />
+      <template v-if="props.selfOnly">
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="relative h-[32px] w-[170px]">
+            <label
+              for="month"
+              class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30"
+              >Month</label
+            >
+            <input
+              id="month"
+              type="month"
+              v-model="selectedMonth"
+              class="border-2 border-gray-300 rounded px-3 h-[32px] text-sm w-full bg-white"
+            />
+          </div>
+          <div class="text-xs text-blue-600 flex items-center gap-2">
+            <i class="fas fa-user-lock"></i>
+            Showing only my todos (Employee ID: {{ selfEmployeeId || 'loading...' }})
+          </div>
         </div>
-      </EmployeeFilter>
+      </template>
+      <template v-else>
+        <EmployeeFilter
+          ref="employeeFilterRef"
+          v-model:company_id="filterState.companyId"
+          v-model:department_id="filterState.departmentId"
+          v-model:employee_id="filterState.employeeId"
+          v-model:line_type="filterState.lineType"
+          @filter-change="handleFilterChange"
+        >
+          <div class="relative h-[32px]">
+            <label
+              for="month"
+              class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30"
+              >Month</label
+            >
+            <input
+              id="month"
+              type="month"
+              v-model="selectedMonth"
+              class="border-2 border-gray-300 rounded px-3 h-[32px] text-sm w-full bg-white"
+            />
+          </div>
+        </EmployeeFilter>
+      </template>
     </div>
 
     <div
