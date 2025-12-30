@@ -78,5 +78,9 @@ const hasAccessTo = (routeName) => {
       <i class="fas fa-tasks text-3xl"></i>
       Todo Report
     </RouterLink>
+    <RouterLink :to="{ name: 'PersonalActivityReport' }" class="main-button">
+      <i class="fas fa-user-clock text-3xl"></i>
+      Personal Activity Report
+    </RouterLink>
   </div>
 </template>
