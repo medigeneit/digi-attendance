@@ -8,7 +8,7 @@ const { user } = storeToRefs(authStore)
 const router = useRouter()
 
 const hasAccessTo = (routeName) => {
-  const route = router.getRoutes().find(r => r.name === routeName)
+  const route = router.getRoutes().find((r) => r.name === routeName)
   const allowedRoles = route?.meta?.roles
   if (!allowedRoles) return true
   return allowedRoles.includes(user.value?.role || [])
@@ -36,7 +36,11 @@ const hasAccessTo = (routeName) => {
       <i class="fas fa-calendar-week text-3xl"></i>
       Yearly Delay Early Summary
     </RouterLink>
-    <RouterLink v-if="hasAccessTo('YearlyAttendanceSummary')" :to="{ name: 'YearlyAttendanceSummary' }" class="main-button">
+    <RouterLink
+      v-if="hasAccessTo('YearlyAttendanceSummary')"
+      :to="{ name: 'YearlyAttendanceSummary' }"
+      class="main-button"
+    >
       <i class="fas fa-calendar-star text-3xl"></i>
       Yearly Attendance Summary
     </RouterLink>
@@ -66,6 +70,13 @@ const hasAccessTo = (routeName) => {
       <i class="far fa-file-contract text-3xl"></i>
       Yearly Attendance Summary
     </RouterLink>
-
+    <RouterLink
+      v-if="hasAccessTo('YearlyAttendanceSummary')"
+      :to="{ name: 'TodoReport' }"
+      class="main-button"
+    >
+      <i class="fas fa-tasks text-3xl"></i>
+      Todo Report
+    </RouterLink>
   </div>
 </template>

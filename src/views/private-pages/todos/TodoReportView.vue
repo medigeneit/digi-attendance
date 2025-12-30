@@ -3,6 +3,7 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import TodoReportHeading from '@/components/todo/TodoReportHeading.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import { getDisplayDate, getYearMonthDayFormat } from '@/libs/datetime'
+import { useAttendanceStore } from '@/stores/attendance'
 import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
 import { useTodoDateStore } from '@/stores/useTodoDateStore'
@@ -30,35 +31,61 @@ const filters = reactive({
   endDate: route.query?.end_date || today,
 })
 
+const selectedDateRange = computed(() => {
+  if (!filters.startDate || !filters.endDate) return []
+
+  const start = new Date(filters.startDate)
+  const end = new Date(filters.endDate)
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return []
+
+  const step = start <= end ? 1 : -1
+  const cursor = new Date(start)
+  const dates = []
+
+  // build an inclusive list of YYYY-MM-DD strings between start and end
+  while (true) {
+    dates.push(getYearMonthDayFormat(cursor))
+    if (cursor.getTime() === end.getTime()) break
+    cursor.setDate(cursor.getDate() + step)
+  }
+
+  return dates
+})
+
 const groupedByUser = computed(() => {
-  return [...(headingRef.value?.employees || [])]
+  const employeesList = [...(headingRef.value?.employees || [])]
+
+  return employeesList
     .filter((emp) => {
       if (!filters.employeeId) return true
       return String(emp.id) === String(filters.employeeId)
     })
     .sort((a, b) => (a.user?.name || '').localeCompare(b.user?.name || ''))
     .map((employee) => {
-      const userTodos = todoDateStore.todo_dates.filter(
-        (todo) => String(todo.user?.id) === String(employee.id),
-      )
-
-      const byDate = {}
-
-      userTodos.forEach((todo) => {
-        const dateKey = todo.date || 'unknown-date'
-
-        if (!byDate[dateKey]) {
-          byDate[dateKey] = { date: dateKey, todos: [] }
-        }
-
-        byDate[dateKey].todos.push(todo)
+      const userTodos = todoDateStore.todo_dates.filter((todo) => {
+        return String(todo.user?.id) === String(employee.id)
       })
 
-      let dates = Object.values(byDate)
-        .map((d) => ({ ...d, rowSpan: d.todos.length }))
-        .sort((a, b) => new Date(a.date) - new Date(b.date))
+      let dates = selectedDateRange.value.map((date) => {
+        const todosForDate = userTodos.filter((todo) => todo.date === date)
+
+        if (!todosForDate.length) {
+          return {
+            date,
+            rowSpan: 1,
+            todos: [{ id: `empty-${employee.id}-${date}`, isPlaceholder: true, title: '', date }],
+          }
+        }
+
+        return {
+          date,
+          rowSpan: todosForDate.length,
+          todos: todosForDate,
+        }
+      })
 
       if (!dates.length) {
+        // fall back to a single placeholder row when no date range is selected
         dates = [
           {
             date: null,
@@ -247,6 +274,8 @@ async function fetchTodos() {
     'start-date': filters.startDate,
     'end-date': filters.endDate,
   })
+
+  fetchDateRangeAttendance()
 }
 
 function handleFilterChange(payload) {
@@ -316,6 +345,81 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleTableNoTodoOutsideClick, true)
 })
+
+const attendanceStore = useAttendanceStore()
+const dateRangeAttendance = ref([])
+const loadingAttendance = ref(false)
+const isStartEndDateSame = computed(() => filters.startDate === filters.endDate)
+
+const fetchDateRangeAttendance = async () => {
+  if (!filters.companyId || !filters.startDate || !filters.endDate) return
+
+  loadingAttendance.value = true
+  try {
+    const res = await attendanceStore.getDateRangeAttendanceSummary(
+      filters.startDate,
+      filters.endDate,
+      filters.companyId,
+      filters.lineType,
+      filters.employeeId,
+      true,
+    )
+    if (res) {
+      dateRangeAttendance.value = res
+    }
+  } finally {
+    loadingAttendance.value = false
+  }
+}
+
+function getAttendanceByDate(userId, date) {
+  const foundAttendance =
+    dateRangeAttendance.value?.find(
+      (attendance) => String(attendance.employee_id) === String(userId),
+    ) || null
+  if (foundAttendance) {
+    if (!date && isStartEndDateSame.value) {
+      return foundAttendance?.attendance[filters.startDate] || null
+    }
+    return foundAttendance?.attendance[date] || null
+  }
+  return null
+}
+
+function getAttendanceDetails(userId, date) {
+  const attendance = getAttendanceByDate(userId, date)
+  if (!attendance) {
+    return {
+      hasData: false,
+      in: '-',
+      out: '-',
+      late: '-',
+      early: '-',
+      comment: '-',
+    }
+  }
+
+  return {
+    hasData: true,
+    in: attendance.in || '-',
+    out: attendance.out || '-',
+    late: attendance.late || '-',
+    early: attendance.early || '-',
+    comment: attendance.comment || '-',
+  }
+}
+
+const userBoundaryClass = 'border-b-2 border-b-blue-200'
+
+function isLastRowInUserGroup(userGroup, dateGroup, dateIndex, todoIndex) {
+  const isLastDate = dateIndex === userGroup.dates.length - 1
+  const isLastTodoInDate = todoIndex === dateGroup.todos.length - 1
+  return isLastDate && isLastTodoInDate
+}
+
+function lastRowBorderClass(userGroup, dateGroup, dateIndex, todoIndex) {
+  return isLastRowInUserGroup(userGroup, dateGroup, dateIndex, todoIndex) ? userBoundaryClass : ''
+}
 </script>
 
 <template>
@@ -506,9 +610,15 @@ onBeforeUnmount(() => {
 
     <div
       v-if="!filters.companyId || !filters.startDate || !filters.endDate"
-      class="text-center text-gray-500 py-12 border bg-gray-50 rounded-md"
+      class="text-center text-gray-500 py-12 border bg-gray-50 rounded-md min-h-[70vh] flex flex-col items-center justify-center space-y-4"
     >
-      <p class="text-red-500">Select company and date range to view the report.</p>
+      <i class="fad fa-tasks text-4xl"></i>
+      <div class="empty-state glass-panel">
+        <p class="text-base font-semibold text-rose-500">
+          Select company and date range to view the report.
+        </p>
+        <p class="text-sm text-gray-500">Use the filter set above to load records.</p>
+      </div>
     </div>
     <LoaderView v-else-if="todoDateStore.loading">Loading report...</LoaderView>
     <div
@@ -588,7 +698,8 @@ onBeforeUnmount(() => {
                   <td
                     v-if="dateIndex === 0 && todoIndex === 0"
                     :rowspan="userGroup.rowSpan || 1"
-                    class="px-4 py-3 align-top font-bold text-xl text-gray-800 whitespace-nowrap border-l border-t bg-white"
+                    class="px-4 py-3 align-top font-bold text-xl text-gray-800 whitespace-nowrap border-l border-t border-b bg-white"
+                    :class="userBoundaryClass"
                   >
                     <div class="sticky top-[180px] bg-white text-center">
                       {{ userIndex + 1 }}
@@ -598,7 +709,8 @@ onBeforeUnmount(() => {
                   <td
                     v-if="dateIndex === 0 && todoIndex === 0"
                     :rowspan="userGroup.rowSpan || 1"
-                    class="px-4 py-3 align-top font-medium text-gray-800 whitespace-nowrap border-l border-t bg-white"
+                    class="px-4 py-3 align-top font-medium text-gray-800 whitespace-nowrap border-l border-t border-b bg-white"
+                    :class="userBoundaryClass"
                   >
                     <div class="sticky top-[180px] bg-white flex">
                       <UserAvatar
@@ -622,13 +734,104 @@ onBeforeUnmount(() => {
                   </td>
                   <template v-if="todo.isPlaceholder">
                     <td
-                      class="border-l border-t border-r bg-white px-4 py-3 text-center"
-                      :colspan="isOnlyOneDate ? 2 : 3"
+                      v-if="todoIndex === 0 && !isOnlyOneDate"
+                      :rowspan="dateGroup.rowSpan || 1"
+                      class="px-4 py-3 align-top text-xs text-gray-700 whitespace-nowrap border-l border-t bg-white"
+                      :class="lastRowBorderClass(userGroup, dateGroup, dateIndex, todoIndex)"
                     >
-                      <div class="text-red-400">
-                        <i class="fas fa-tasks text-red-200 mb-2 mr-1"></i>
-                        <span>No todos found for this user. </span>
+                      <div class="sticky top-[180px] bg-white">
+                        {{ getDisplayDate(dateGroup.date) || dateGroup.date || '-' }}
                       </div>
+                    </td>
+                    <td
+                      class="border-l border-t border-r bg-white px-3 py-3 text-center"
+                      :class="lastRowBorderClass(userGroup, dateGroup, dateIndex, todoIndex)"
+                      colspan="2"
+                    >
+                      <div
+                        class="flex items-center justify-center gap-2 text-red-600 text-sm font-medium opacity-70"
+                      >
+                        <i class="far fa-clipboard-list text-red-400"></i>
+                        <span>No todos was provided.</span>
+                      </div>
+
+                      <div v-if="loadingAttendance" class="text-[11px] text-gray-500 mt-2">
+                        Loading attendance…
+                      </div>
+                      <template
+                        v-else
+                        v-for="attendance in [
+                          getAttendanceDetails(userGroup?.user?.id, dateGroup?.date),
+                        ]"
+                        :key="attendance.comment"
+                      >
+                        <div
+                          class="min-w-[180px] mt-3 text-[11px] text-red-600 text-left inline-block align-top"
+                        >
+                          <!-- <div
+                              class="flex items-center gap-1.5 text-gray-500 font-semibold text-xs"
+                            >
+                              <i class="far fa-user-clock text-indigo-300 text-sm"></i>
+                              <span>Attendance</span>
+                            </div> -->
+                          <div v-if="attendance.hasData" class="grid grid-cols-2 gap-4">
+                            <div
+                              v-if="attendance.in === '-' && attendance.out === '-'"
+                              class="text-center flex items-center justify-center rounded-md bg-slate-50 border text-xs border-dashed px-2 py-1.5 col-span-2"
+                              :class="[
+                                {
+                                  'text-red-500 border-red-300': attendance.comment === 'Absent',
+                                  'text-blue-500 border-blue-300': attendance.comment !== 'Absent',
+                                },
+                              ]"
+                            >
+                              {{ attendance.comment }}
+                            </div>
+                            <template v-else>
+                              <div class="rounded-md bg-indigo-50 border border-indigo-100 px-2">
+                                <div class="flex gap-1 items-center justify-between">
+                                  <span class="text-[10px] uppercase text-gray-500 tracking-wide">
+                                    In
+                                  </span>
+                                  <span
+                                    class="font-semibold text-indigo-700 text-xs whitespace-nowrap"
+                                  >
+                                    {{ attendance.in }}
+                                  </span>
+                                </div>
+                                <div class="flex gap-1 items-center justify-between">
+                                  <span class="text-[10px] uppercase text-gray-500 tracking-wide">
+                                    Late
+                                  </span>
+                                  <div>{{ attendance.late }}</div>
+                                </div>
+                              </div>
+
+                              <div class="rounded-md bg-indigo-50 border border-indigo-100 px-2">
+                                <div class="flex gap-1 items-center justify-between">
+                                  <span class="text-[10px] uppercase text-gray-500 tracking-wide">
+                                    Out
+                                  </span>
+                                  <span
+                                    class="font-semibold text-indigo-700 text-xs whitespace-nowrap"
+                                  >
+                                    {{ attendance.out }}
+                                  </span>
+                                </div>
+                                <div class="flex gap-1 items-center justify-between">
+                                  <span class="text-[10px] uppercase text-gray-500 tracking-wide">
+                                    Early
+                                  </span>
+                                  <div>{{ attendance.out !== '-' ? attendance.early : '-' }}</div>
+                                </div>
+                              </div>
+                            </template>
+                          </div>
+                          <div v-else class="mt-1 text-gray-500 text-center">
+                            Attendance data unavailable.
+                          </div>
+                        </div>
+                      </template>
                     </td>
                   </template>
                   <template v-else>
@@ -636,13 +839,17 @@ onBeforeUnmount(() => {
                       v-if="todoIndex === 0 && !isOnlyOneDate"
                       :rowspan="dateGroup.rowSpan || 1"
                       class="px-4 py-3 align-top text-xs text-gray-700 whitespace-nowrap border-l border-t bg-white"
+                      :class="lastRowBorderClass(userGroup, dateGroup, dateIndex, todoIndex)"
                     >
                       <div class="sticky top-[180px] bg-white">
                         {{ getDisplayDate(dateGroup.date) || dateGroup.date || '-' }}
                       </div>
                     </td>
 
-                    <td class="px-4 py-3 text-gray-800 border-l border-t">
+                    <td
+                      class="px-4 py-3 text-gray-800 border-l border-t"
+                      :class="lastRowBorderClass(userGroup, dateGroup, dateIndex, todoIndex)"
+                    >
                       <div class="font-medium">
                         <span class="text-gray-400 mr-2">{{ todoIndex + 1 }}.</span>
                         {{ todo.title }}
@@ -652,7 +859,10 @@ onBeforeUnmount(() => {
                       </div>
                     </td>
 
-                    <td class="px-4 py-3 border-l border-t border-r text-center">
+                    <td
+                      class="px-4 py-3 border-l border-t border-r text-center"
+                      :class="lastRowBorderClass(userGroup, dateGroup, dateIndex, todoIndex)"
+                    >
                       <span
                         class="text-xs font-semibold px-2.5 py-1 rounded-full"
                         :class="statusClass(todo.status)"

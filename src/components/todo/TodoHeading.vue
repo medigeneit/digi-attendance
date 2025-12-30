@@ -1,7 +1,5 @@
 <script setup>
-import { getYearMonthDayFormat, getYearMonthFormat } from '@/libs/datetime'
 import { computed, ref, watch } from 'vue'
-import { RouterLink } from 'vue-router'
 
 const props = defineProps({
   selected: {
