@@ -218,7 +218,9 @@ function applySelfEmployee() {
 function initFromRoute() {
   const q = route.query || {}
   selectedMonth.value =
-    typeof q.month === 'string' && q.month ? q.month : selectedMonth.value || getYearMonthFormat(new Date())
+    typeof q.month === 'string' && q.month
+      ? q.month
+      : selectedMonth.value || getYearMonthFormat(new Date())
   filterState.companyId = props.selfOnly ? '' : q.company_id || ''
   filterState.departmentId = props.selfOnly ? '' : q.department_id || ''
   filterState.employeeId = props.selfOnly ? selfEmployeeId.value : q.employee_id || ''
@@ -392,7 +394,7 @@ function handlePrint() {
         class="bg-white border rounded-md shadow-sm print:shadow-none print:border-0 print:rounded-none"
       >
         <div class="flex flex-wrap items-center gap-4 px-4 py-3 border-b bg-gray-50">
-          <UserHoverBubble :user="row.user">
+          <UserHoverBubble :user="row.user" v-if="!selfOnly">
             <template #trigger="{ user }">
               <div class="flex items-center gap-3">
                 <UserAvatar :user="user" size="medium" />
@@ -410,6 +412,21 @@ function handlePrint() {
               </div>
             </template>
           </UserHoverBubble>
+
+          <div class="flex items-center gap-3" v-else>
+            <UserAvatar :user="user" size="medium" />
+            <div>
+              <div class="font-semibold text-gray-800">
+                {{ user?.name || 'Unknown user' }}
+              </div>
+              <div class="text-xs text-gray-500">
+                {{ user?.department?.name || '-' }}
+              </div>
+              <div class="text-[11px] text-gray-400">
+                Month: {{ monthLabel }} <span v-if="rangeLabel">({{ rangeLabel }})</span>
+              </div>
+            </div>
+          </div>
 
           <div class="flex items-center gap-2 ml-auto text-xs md:text-sm">
             <span class="px-2 py-1 rounded-full bg-slate-100 text-gray-800 border border-slate-200">
