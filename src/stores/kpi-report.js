@@ -8,6 +8,29 @@ export const useKpiReportStore = defineStore('kpi-report', {
     reports: null,
     isLoading: false,
     error: null,
+    marking: {
+    isLoading: false,
+    error: null,
+    lanes: [],
+    reviewsByLane: {},
+    personalItems: [],
+    personalMaxTotal: 0,
+    employee: null,
+    annualTargetAvg: null,
+    annualPerformanceAvg: null,
+    lastKey: null, // cache key
+    marking: {
+      isLoading: false,
+      error: null,
+      lanes: [],
+      reviewsByLane: {},
+      personalItems: [],
+      personalMaxTotal: 0,
+      employee: null,
+      lastKey: null,
+    },
+
+  },
   }),
 
   actions: {
@@ -150,5 +173,65 @@ export const useKpiReportStore = defineStore('kpi-report', {
         this.isLoading = false
       }
     },
+
+    async fetchMarkingForm({ cycle_id, employee_id, lane_keys = 'supv_director,da', include_personal_items = 1, force = false }) {
+        const key = `${cycle_id}|${employee_id}|${lane_keys}|${include_personal_items}`
+        if (!force && this.marking.lastKey === key && this.marking.lanes?.length) return this.marking
+
+        this.marking.isLoading = true
+        this.marking.error = null
+        try {
+          const { data } = await apiClient.get(`/kpi/lanes/${cycle_id}/${employee_id}`, {
+            params: { lane_keys, include_personal_items },
+          })
+          
+
+          this.marking.lanes = data?.lanes || []
+          this.marking.reviewsByLane = data?.reviews_by_lane || {}
+          this.marking.personalItems = data?.personal_items || []
+          this.marking.personalMaxTotal = Number(data?.personal_max_total || 0)
+          this.marking.employee = data?.employee ?? null
+
+          this.marking.lastKey = key
+          return this.marking
+        } catch (e) {
+          const msg = e?.response?.data?.message || e?.message || 'Failed to load marking form'
+          this.marking.error = msg
+          throw new Error(msg)
+        } finally {
+          this.marking.isLoading = false
+      }
+    },
+
+    async submitOverallMark({
+      cycle_id,
+      employee_id,
+      reviewer_lane,
+      overall_mark,
+      group_key = 'personal',
+      strengths = null,
+      gaps = null,
+      suggestions = null,
+    }) {
+      try {
+        const payload = {
+          cycle_id,
+          employee_id,
+          reviewer_lane,
+          group_key,
+          overall_mark: Number(overall_mark), // ✅ ensure number
+          strengths,
+          gaps,
+          suggestions,
+        }
+
+        const { data } = await apiClient.post('/kpi/review/overall-submit', payload)
+        return data
+      } catch (e) {
+        const msg = e?.response?.data?.message || e?.message || 'Failed to submit overall mark'
+        throw new Error(msg)
+      }
+    }
+
   },
 })

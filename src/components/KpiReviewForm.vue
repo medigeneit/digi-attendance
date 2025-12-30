@@ -4,10 +4,25 @@ import { useKpiStore } from '@/stores/kpi'
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import KpiGroupTable from '@/components/kpi/KpiGroupTable.vue'
+import apiClient from '@/axios'
 
 const route = useRoute()
 const store = useKpiStore()
 const auth = useAuthStore()
+
+const props = defineProps({
+  mode: { type: String, default: 'full' },
+  allowedLanes: { type: Array, default: () => ['supv_director', 'da'] },
+  groupFilter: { type: String, default: null },
+  initialLane: { type: String, default: '' },
+  employeeId: { type: [Number, String], default: null },
+  employeeName: { type: String, default: '' },
+  year: { type: Number, default: null },
+})
+
+const emit = defineEmits(['saved'])
+
+const compactMode = computed(() => props.mode === 'compact')
 
 /* ---------- Local state ---------- */
 const marks = ref({})
@@ -18,6 +33,167 @@ const strengths = ref(''),
 const getTargetMarks = ref(null)
 const getPerformanceMarks = ref(null)
 const showSummaryDetails = ref(false)
+
+const compactEmployeeId = computed(() => {
+  const value = Number(props.employeeId)
+  return Number.isFinite(value) && value > 0 ? value : null
+})
+const compactYear = computed(() => {
+  const value = Number(props.year)
+  return Number.isFinite(value) && value > 0 ? value : new Date().getFullYear()
+})
+const compactGroup = computed(() => (props.groupFilter ? String(props.groupFilter) : 'personal'))
+const compactLanes = computed(() => {
+  const list = Array.isArray(props.allowedLanes) ? props.allowedLanes.filter(Boolean) : []
+  return list.length ? list : ['supv_director', 'da']
+})
+const compactLane = ref(props.initialLane || compactLanes.value[0] || '')
+const compactItems = ref([])
+const compactMarks = ref({})
+const compactComments = ref({})
+const compactLoading = ref(false)
+const compactSaving = ref(false)
+const compactError = ref('')
+const compactEmployeeLabel = computed(
+  () => props.employeeName || employee.value?.name || 'Employee',
+)
+
+const compactLaneLabels = {
+  supv_director: 'Supv. Director',
+  da: 'DA',
+}
+const compactLaneLabel = (key) => compactLaneLabels[key] || key
+
+const compactGroupLabel = computed(() =>
+  compactGroup.value ? compactGroup.value.replace(/_/g, ' ') : 'personal',
+)
+
+function normalizeCompactItems(rawItems) {
+  if (!Array.isArray(rawItems)) return []
+  return rawItems.map((item, index) => {
+    const id = item?.id ?? item?.item_id ?? item?.kpi_item_id ?? item?.kpi_id ?? index
+    const title = item?.title ?? item?.name ?? item?.label ?? `Item ${index + 1}`
+    const weight = item?.weight ?? item?.weightage ?? item?.weight_value ?? item?.score_weight ?? null
+    const maxScore = item?.max_score ?? item?.max ?? item?.max_marks ?? item?.score_max ?? 0
+    const score = item?.score ?? item?.mark ?? item?.obtained ?? item?.value ?? null
+    const comment = item?.comment ?? item?.note ?? item?.remark ?? ''
+    return { id, title, weight, maxScore, score, comment }
+  })
+}
+
+function buildScoreOptions(maxScore) {
+  const max = Number(maxScore)
+  if (!Number.isFinite(max) || max <= 0) return [0]
+  const step = Number.isInteger(max) ? 1 : 0.5
+  const options = []
+  for (let value = 0; value <= max + 0.0001; value += step) {
+    const rounded = step === 1 ? Math.round(value) : Number(value.toFixed(1))
+    options.push(rounded)
+  }
+  if (options[options.length - 1] !== max) options.push(max)
+  return options
+}
+
+async function fetchCompactForm() {
+  if (!compactMode.value) return
+  if (!compactEmployeeId.value || !compactYear.value || !compactLane.value) return
+  compactLoading.value = true
+  compactError.value = ''
+  try {
+    const { data } = await apiClient.get(
+      `/kpi/yearly/${compactYear.value}/employees/${compactEmployeeId.value}/marking-form`,
+      {
+        params: {
+          lane: compactLane.value,
+          group: compactGroup.value,
+        },
+      },
+    )
+
+    const payload = data?.data ?? data ?? {}
+    const rawItems =
+      payload?.items || payload?.form?.items || payload?.group?.items || payload?.data || []
+    const normalized = normalizeCompactItems(rawItems)
+    const marks = {}
+    const comments = {}
+
+    normalized.forEach((item) => {
+      const scoreFromMap = payload?.marks?.[item.id]
+      const commentFromMap = payload?.comments?.[item.id]
+      const score = item.score ?? scoreFromMap ?? 0
+      const comment = item.comment ?? commentFromMap ?? ''
+      marks[item.id] = score === '' || score == null ? 0 : Number(score)
+      comments[item.id] = comment ?? ''
+    })
+
+    compactItems.value = normalized
+    compactMarks.value = marks
+    compactComments.value = comments
+  } catch (err) {
+    compactError.value = err?.response?.data?.message || 'Failed to load KPI marking form.'
+    compactItems.value = []
+  } finally {
+    compactLoading.value = false
+  }
+}
+
+async function saveCompact(submit) {
+  if (!compactEmployeeId.value || !compactYear.value || !compactLane.value) return
+  compactSaving.value = true
+  compactError.value = ''
+  try {
+    const itemsPayload = compactItems.value.map((item) => ({
+      item_id: item.id,
+      score: Number(compactMarks.value[item.id] ?? 0),
+      comment: compactComments.value[item.id] ?? '',
+    }))
+
+    const payload = {
+      lane: compactLane.value,
+      group: compactGroup.value,
+      submit: Boolean(submit),
+      items: itemsPayload,
+      marks: { ...compactMarks.value },
+      comments: { ...compactComments.value },
+    }
+
+    await apiClient.post(
+      `/kpi/yearly/${compactYear.value}/employees/${compactEmployeeId.value}/marking-form`,
+      payload,
+    )
+    emit('saved')
+  } catch (err) {
+    compactError.value = err?.response?.data?.message || 'Failed to save KPI marking form.'
+  } finally {
+    compactSaving.value = false
+  }
+}
+
+watch(
+  () => props.initialLane,
+  (value) => {
+    if (!value) return
+    compactLane.value = value
+  },
+)
+
+watch(
+  compactLanes,
+  (lanes) => {
+    if (!lanes.length) return
+    if (!lanes.includes(compactLane.value)) compactLane.value = lanes[0]
+  },
+  { immediate: true },
+)
+
+watch(
+  [compactMode, compactLane, compactEmployeeId, compactYear, compactGroup],
+  ([isCompact, lane, empId, year, group]) => {
+    if (!isCompact || !lane || !empId || !year || !group) return
+    fetchCompactForm()
+  },
+  { immediate: true },
+)
 
 /**
  * lanes: [{ key,label,rank,assigned_user_id,can_current_user_review,can_view_marks,is_hr_lane? }, ...]
@@ -584,7 +760,120 @@ function applyHint(field, value) {
 </script>
 
 <template>
-  <div class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+  <div v-if="compactMode" class="space-y-4">
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <div class="text-sm font-semibold text-slate-900">{{ compactEmployeeLabel }}</div>
+        <div class="text-xs text-slate-500">
+          Year {{ compactYear }} / Group {{ compactGroupLabel }}
+        </div>
+      </div>
+      <div class="text-xs text-slate-400" v-if="compactLane">
+        Lane: {{ compactLaneLabel(compactLane) }}
+      </div>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2">
+      <button
+        v-for="lane in compactLanes"
+        :key="lane"
+        type="button"
+        class="rounded-full border px-3 py-1 text-xs font-semibold transition"
+        :class="
+          lane === compactLane
+            ? 'bg-slate-900 text-white border-slate-900'
+            : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+        "
+        @click="compactLane = lane"
+      >
+        {{ compactLaneLabel(lane) }}
+      </button>
+    </div>
+
+    <div
+      v-if="compactLoading"
+      class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600"
+    >
+      Loading KPI items...
+    </div>
+    <div
+      v-else-if="compactError"
+      class="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700"
+    >
+      {{ compactError }}
+    </div>
+    <div v-else class="space-y-3">
+      <div
+        v-if="!compactItems.length"
+        class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600"
+      >
+        No KPI items found for this lane.
+      </div>
+      <div v-else class="space-y-3">
+        <div
+          v-for="item in compactItems"
+          :key="item.id"
+          class="rounded-xl border border-slate-200 bg-white p-3"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="text-sm font-semibold text-slate-900 truncate" :title="item.title">
+                {{ item.title }}
+              </div>
+              <div class="mt-0.5 text-[11px] text-slate-500">
+                <span v-if="item.weight != null">Weight: {{ item.weight }}</span>
+                <span v-if="item.maxScore != null"> / Max: {{ item.maxScore }}</span>
+              </div>
+            </div>
+            <div class="shrink-0">
+              <select
+                v-model.number="compactMarks[item.id]"
+                class="rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400/50"
+              >
+                <option
+                  v-for="opt in buildScoreOptions(item.maxScore)"
+                  :key="opt"
+                  :value="opt"
+                >
+                  {{ opt }}
+                </option>
+              </select>
+            </div>
+          </div>
+          <div class="mt-2">
+            <label class="block text-[11px] font-medium text-slate-500">Comment (optional)</label>
+            <textarea
+              v-model="compactComments[item.id]"
+              rows="2"
+              class="mt-1 w-full rounded-lg border border-slate-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400/40"
+              placeholder="Add a note if needed"
+            ></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-end gap-2 pt-2">
+      <button
+        type="button"
+        class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+        :disabled="compactSaving || compactLoading || !compactItems.length"
+        @click="saveCompact(false)"
+      >
+        {{ compactSaving ? 'Saving...' : 'Save Draft' }}
+      </button>
+      <button
+        type="button"
+        class="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+        :disabled="compactSaving || compactLoading || !compactItems.length"
+        @click="saveCompact(true)"
+      >
+        {{ compactSaving ? 'Saving...' : 'Submit' }}
+      </button>
+    </div>
+  </div>
+
+  <div v-else class="max-w-7xl mx-auto px-4 py-6 space-y-6">
     <!-- Header / Employee context -->
     <header class="border rounded-2xl bg-white/80 backdrop-blur px-4 py-3 shadow-sm">
       <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -1249,5 +1538,4 @@ function applyHint(field, value) {
     </div>
   </div>
 </transition>
-
 </template>

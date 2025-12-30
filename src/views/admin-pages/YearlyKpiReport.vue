@@ -1,6 +1,7 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
+import KpiMarkingModal from '@/components/KpiMarkingModal.vue'
 import { useKpiReportStore } from '@/stores/kpi-report'
 import { storeToRefs } from 'pinia'
 import { ref, reactive, computed, onMounted, watch } from 'vue'
@@ -33,6 +34,21 @@ const filters = reactive({
 
 const filtersInitialized = ref(false)
 
+
+function canShowMarkEdit(row, laneKey) {
+  // ✅ Prefer new API field: marking_permissions (boolean map per row)
+  if (row?.marking_permissions && Object.prototype.hasOwnProperty.call(row.marking_permissions, laneKey)) {
+    return !!row.marking_permissions[laneKey]
+  }
+  // ✅ Backward-compat: lane_lens
+  return !!row?.lane_lens?.[laneKey]?.can_current_user_review
+}
+
+function markingAssigneeName(row, laneKey) {
+  // optional (only if backend sends assignee name)
+  return row?.lane_lens?.[laneKey]?.assigned_user_name || ''
+}
+
 /* =========================
  * Year options
  * ========================= */
@@ -64,6 +80,17 @@ const laneDefinitions = computed(() => {
   return [...arr].sort((a, b) => Number(a.rank || 0) - Number(b.rank || 0))
 })
 
+const displayLaneDefinitions = computed(() => {
+  return laneDefinitions.value.filter((ld) => {
+    const key = String(ld?.key || '').toLowerCase()
+    const label = String(ld?.label || '').toLowerCase()
+    if (key === 'hr' || /^hr\d*$/.test(key)) return false
+    if (key.includes('avg') || /\bavg\b/i.test(label) || label.includes('average')) return false
+    if (label.includes('hr') && key === '') return false
+    return true
+  })
+})
+
 const summary = computed(() => report.value?.summary || {})
 const items = computed(() => (Array.isArray(report.value?.data) ? report.value.data : []))
 
@@ -73,6 +100,16 @@ const laneCount = computed(() => {
   return Number.isFinite(n) && n > 0 ? n : 0
 })
 
+
+const computedCols = [
+  // { key: 'avg', label: 'Avg' },
+  { key: 'training', label: 'Training' },
+  { key: 'discipline', label: 'Dis' },
+  { key: 'execution', label: 'Exe' },
+  { key: 'target', label: 'Target' },
+  { key: 'final', label: 'Final' },
+]
+
 /* =========================
  * Helpers
  * ========================= */
@@ -81,6 +118,14 @@ function pct(n) {
   if (!Number.isFinite(x)) return '0%'
   return `${Math.round(x)}%`
 }
+
+function scoreText(v, digits = 2) {
+  const n = Number(v)
+  if (!Number.isFinite(n)) return '—'
+  const fixed = Number(n.toFixed(digits))
+  return Number.isInteger(fixed) ? String(fixed) : String(fixed)
+}
+
 
 function safeText(v, fallback = '-') {
   const s = (v ?? '').toString().trim()
@@ -165,33 +210,59 @@ function formatReviewSummary(review) {
  * If row.lanes is empty => "—"
  * ========================= */
 function laneCell(row, laneKey) {
+  const key = String(laneKey || '')
+
+  // ✅ Prefer backend-computed scores (fast + consistent)
+  const isHrLane = key === 'hr' || key === 'hr1'
+  const preferred = isHrLane
+    ? (row?.computed?.hr_total ?? null)
+    : (row?.computed?.personal_by_lane?.[key] ?? null)
+
+  const n = Number(preferred)
+  if (Number.isFinite(n)) {
+    return {
+      text: scoreText(n),
+      cls: n > 0
+        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+        : 'bg-amber-50 text-amber-700 border-amber-200',
+    }
+  }
+
+  // ✅ Backward compat: old shape (row.lanes[].average_marks)
   const lanes = Array.isArray(row?.lanes) ? row.lanes : []
-  const found = lanes.find((l) => l?.key === laneKey) || null
+  const found = lanes.find((l) => l?.key === key) || null
 
   if (!found) {
     return {
       text: '-',
       cls: 'bg-slate-50 text-slate-500 border border-slate-200',
-      percentText: '--',
     }
   }
 
-  const submittedAt = found.submitted_at || found.submittedAt || found.review?.submitted_at
-  const completed = !!(found.completed ?? found.is_completed ?? found.review_submitted ?? submittedAt)
-  const rawPercent = found.average_marks ?? 0
-  // const percent = Number.isFinite(Number(rawPercent)) ? Number(rawPercent) : null
-  // const percentText = percent !== null ? pct(percent) : '--'
+  const submittedAt = found.latest_review_at || found.submitted_at || found.submittedAt || found.review?.submitted_at
+  const completed = !!submittedAt || !!(Array.isArray(found.reviewers) && found.reviewers.length)
 
-  if (completed) {
+  const raw =
+    found.average_marks ??
+    found.obtained_total ??
+    found.obtained ??
+    null
+
+  const rn = Number(raw)
+  if (!Number.isFinite(rn)) {
     return {
-      text: rawPercent,
-      cls: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      text: '-',
+      cls: completed
+        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+        : 'bg-amber-50 text-amber-700 border-amber-200',
     }
   }
 
   return {
-    text: rawPercent,
-    cls: 'bg-amber-50 text-amber-700 border-amber-200',
+    text: scoreText(rn),
+    cls: completed
+      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+      : 'bg-amber-50 text-amber-700 border-amber-200',
   }
 }
 /* =========================
@@ -222,6 +293,8 @@ const rows = computed(() =>
       aggregatedStrengths: joinList(comments?.strengths),
       aggregatedGaps: joinList(comments?.gaps),
       aggregatedSuggestions: joinList(comments?.suggestions),
+      computed: x?.computed || {},
+      finalTotal: x?.computed?.final ?? null,
       finalPercent:
         x?.kpi_result?.final_percent ??
         x?.kpi_result?.final_percentage ??
@@ -277,6 +350,50 @@ function closeReviewModal() {
   reviewModalOpen.value = false
   reviewModalRow.value = null
 }
+
+const markingOpen = ref(false)
+const markingCtx = reactive({
+  employee_id: null,
+  employee_name: '',
+  lane_key: '',
+})
+
+const markingLaneKeys = computed(() => {
+  const defs = laneDefinitions.value || []
+  const keys = []
+  const addKey = (ld) => {
+    if (ld?.key && !keys.includes(ld.key)) keys.push(ld.key)
+  }
+  const findByKey = (key) => defs.find((ld) => ld.key === key)
+  const findByLabel = (regex) => defs.find((ld) => regex.test(String(ld.label || '')))
+
+  const supvLane = findByKey('supv_director') || findByLabel(/supv\.?\s*director|supervising\s+director/i)
+  const daLane = findByKey('da') || findByLabel(/\bda\b|director\s*of\s*admin|director\s*admin/i)
+
+  addKey(supvLane)
+  addKey(daLane)
+
+  return keys
+})
+
+function isMarkingLaneKey(key) {
+  return markingLaneKeys.value.includes(key)
+}
+
+function openMarkingModal(row, laneKey) {
+ // ✅ permission gate
+  if (!canShowMarkEdit(row, laneKey)) return
+
+  const empId = row?.employee?.id ?? row?.employee_id ?? row?.id ?? null
+  if (!empId) return
+
+  markingCtx.cycle_id = row?.cycle?.id ?? cycle.value?.id ?? null
+  markingCtx.employee_id = empId
+  markingCtx.employee_name = row?._name || row?.employee?.name || ''
+  markingCtx.lane_key = laneKey
+  markingOpen.value = true
+}
+
 
 const exportingExcel = ref(false)
 const exportingCommentExcel = ref(false)
@@ -524,15 +641,15 @@ const modalLaneGroups = computed(() => {
               <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5">
                 Employees: <b class="text-slate-900">{{ summary?.total_employees ?? 0 }}</b>
               </span>
-              <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5">
+              <!-- <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5">
                 With results: <b class="text-slate-900">{{ summary?.with_results ?? 0 }}</b>
-              </span>
-              <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5">
+              </span> -->
+              <!-- <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5">
                 Avg final: <b class="text-slate-900">{{ pct(summary?.avg_final_percent ?? 0) }}</b>
-              </span>
-              <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5">
+              </span> -->
+              <!-- <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5">
                 Completion: <b class="text-slate-900">{{ pct(summary?.review_completion_percent ?? 0) }}</b>
-              </span>
+              </span> -->
               <span v-if="laneCount" class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5">
                 Lanes: <b class="text-slate-900">{{ laneCount }}</b>
               </span>
@@ -575,9 +692,9 @@ const modalLaneGroups = computed(() => {
             </div>
           </div>
 
-          <div class="mt-2 grid grid-cols-4 gap-2" v-if="laneDefinitions.length">
+          <div class="mt-2 grid grid-cols-4 gap-2" v-if="displayLaneDefinitions.length">
             <div
-              v-for="ld in laneDefinitions"
+              v-for="ld in displayLaneDefinitions"
               :key="'m-lane-'+ld.key"
               class="rounded-xl border p-2 text-center"
             >
@@ -585,12 +702,79 @@ const modalLaneGroups = computed(() => {
                 {{ ld.label }}
               </div>
               <div class="mt-1 flex flex-col items-center gap-1">
+                <!-- <button
+                  v-if="isMarkingLaneKey(ld.key)"
+                  type="button"
+                  class="group inline-flex flex-col items-center gap-1"
+                  @click="openMarkingModal(r, ld.key)"
+                >
+                  <span
+                    class="inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-[11px] font-semibold"
+                    :class="laneCell(r, ld.key).cls"
+                  >
+                    {{ laneCell(r, ld.key).text }}
+                  </span>
+                  <span class="text-[10px] font-semibold text-sky-600 group-hover:text-sky-700">
+                    Mark/Edit
+                  </span>
+                </button>
                 <span
+                  v-else
                   class="inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-[11px] font-semibold"
                   :class="laneCell(r, ld.key).cls"
                 >
                   {{ laneCell(r, ld.key).text }}
+                </span> -->
+
+                <button
+                  v-if="isMarkingLaneKey(ld.key) && canShowMarkEdit(r, ld.key)"
+                  type="button"
+                  class="group inline-flex flex-col items-center gap-1"
+                  @click="openMarkingModal(r, ld.key)"
+                >
+                  <span
+                    class="inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-[11px] font-semibold"
+                    :class="laneCell(r, ld.key).cls"
+                  >
+                    {{ laneCell(r, ld.key).text }}
+                  </span>
+                  <span class="text-[10px] font-semibold text-sky-600 group-hover:text-sky-700">
+                    Mark/Edit
+                  </span>
+                </button>
+
+                <!-- ✅ marking lane কিন্তু permission নাই -> শুধু score দেখাবে -->
+                <div v-else-if="isMarkingLaneKey(ld.key)" class="flex flex-col items-center gap-1">
+                  <span
+                    class="inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-[11px] font-semibold"
+                    :class="laneCell(r, ld.key).cls"
+                  >
+                    {{ laneCell(r, ld.key).text }}
+                  </span>
+                  <!-- <span class="text-[10px] text-slate-400">
+                    {{ markingAssigneeName(r, ld.key) ? `Assigned: ${markingAssigneeName(r, ld.key)}` : 'No access' }}
+                  </span> -->
+                </div>
+
+                <!-- non-marking lanes -->
+                <span v-else class="inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-[11px] font-semibold"
+                      :class="laneCell(r, ld.key).cls">
+                  {{ laneCell(r, ld.key).text }}
                 </span>
+
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-3 grid grid-cols-3 gap-2">
+            <div
+              v-for="cc in computedCols"
+              :key="'m-calc-'+cc.key"
+              class="rounded-xl border border-slate-200 bg-slate-50 p-2 text-center"
+            >
+              <div class="text-[10px] font-medium text-slate-600">{{ cc.label }}</div>
+              <div class="mt-1 text-[11px] font-semibold text-slate-900">
+                {{ (r?.computed?.[cc.key] == null || r?.computed?.[cc.key] === '') ? '—' : scoreText(r.computed[cc.key]) }}
               </div>
             </div>
           </div>
@@ -601,7 +785,7 @@ const modalLaneGroups = computed(() => {
               class="text-xs font-semibold text-sky-600 hover:text-sky-800"
               @click="viewReviewDetails(r)"
             >
-              Open review modal
+              Open  modal
             </button>
           </div>
         </div>
@@ -609,6 +793,7 @@ const modalLaneGroups = computed(() => {
         <div v-if="displayRows.length === 0" class="px-3 py-8 text-center text-gray-600">No data</div>
       </div>
 
+      
       <!-- ===== Desktop Table ===== -->
       <div class="hidden md:block rounded-2xl border bg-white shadow-sm">
         <table class="w-full text-sm">
@@ -619,30 +804,35 @@ const modalLaneGroups = computed(() => {
                 SL
               </th>
 
-              <th class="sticky z-[6] border-b border-r bg-gray-100/95 px-3 py-2 text-left"
-                  :style="{ left: '3rem', minWidth:'18rem', width:'18rem'}">
+              <th class="sticky z-[6] border-b border-r bg-gray-100/95 px-2 py-1 text-left"
+                  :style="{ left: '3rem', minWidth:'13rem', width:'13rem'}">
                 Employee
               </th>
 
-              <th class="border-b border-r px-3 py-2 text-center" style="min-width:7rem">
+              <th class="border-b border-r px-2 py-1 text-center" style="min-width:7rem">
                 Progress
               </th>
 
               <th
-                v-for="ld in laneDefinitions"
+                v-for="ld in displayLaneDefinitions"
                 :key="'lane-head-'+ld.key"
-                class="border-b border-r px-2 py-2 text-center"
+                class="border-b border-r px-2 py-1 text-center"
                 style="min-width:6.5rem"
               >
                 <span class="text-xs font-semibold text-slate-700">{{ ld.label }}</span>
               </th>
 
-              <th class="border-b border-r px-3 py-2 text-center" style="min-width:8rem">
-                Final
+              <th
+                v-for="cc in computedCols"
+                :key="'calc-head-'+cc.key"
+                class="border-b border-r px-2 py-1 text-center"
+                style="min-width:6rem"
+              >
+                <span class="text-xs font-semibold text-slate-700">{{ cc.label }}</span>
               </th>
 
-              <th class="border-b px-3 py-2 text-left">
-                All comments
+              <th class="border-b px-2 py-1 text-left">
+                comments
               </th>
             </tr>
           </thead>
@@ -653,12 +843,12 @@ const modalLaneGroups = computed(() => {
               :key="'d-'+(r.employee?.id ?? i)"
               class="border-t hover:bg-slate-50/80 transition-colors"
             >
-              <td class="sticky left-0 z-[4] border-r bg-inherit px-3 py-2 text-center">
+              <td class="sticky left-0 z-[4] border-r bg-inherit px-2 text-center">
                 {{ i + 1 }}
               </td>
 
-              <td class="sticky z-[4] border-r bg-inherit px-3 py-2" :style="{ left: '3rem' }">
-                <div class="max-w-[17rem]">
+              <td class="sticky z-[4] border-r bg-inherit px-2" :style="{ left: '3rem' }">
+                <div class="max-w-[12rem]">
                   <div class="font-semibold text-slate-900 truncate" :title="r._name">{{ r._name }}</div>
                   <div class="text-[11px] text-slate-500 truncate">
                     <span v-if="r._dept">{{ r._dept }}</span>
@@ -669,31 +859,91 @@ const modalLaneGroups = computed(() => {
                 </div>
               </td>
 
-              <td class="border-r px-3 py-2 text-center">
+              <td class="border-r px-2  text-center">
                 <span class="inline-flex items-center justify-center rounded-full border px-2 py-0.5 text-[12px] font-semibold"
                       :class="progressBadgeClass(r)">
                   {{ progressText(r) }}
                 </span>
               </td>
 
-              <td v-for="ld in laneDefinitions" :key="'lane-'+ld.key+'-'+i" class="border-r px-2 py-2 text-center">
+              <td v-for="ld in displayLaneDefinitions" :key="'lane-'+ld.key+'-'+i" class="border-r px-2 text-center">
                 <div class="flex flex-col items-center gap-1">
+                  <!-- <button
+                    v-if="isMarkingLaneKey(ld.key)"
+                    type="button"
+                    class="group inline-flex flex-col items-center gap-1"
+                    @click="openMarkingModal(r, ld.key)"
+                  >
+                    <span
+                      class="inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-[11px] font-semibold"
+                      :class="laneCell(r, ld.key).cls"
+                    >
+                      {{ laneCell(r, ld.key).text }}
+                    </span>
+                    <span class="text-[10px] font-semibold text-sky-600 group-hover:text-sky-700">
+                      Mark/Edit
+                    </span>
+                  </button>
                   <span
+                    v-else
                     class="inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-[11px] font-semibold"
                     :class="laneCell(r, ld.key).cls"
                   >
                     {{ laneCell(r, ld.key).text }}
+                  </span> -->
+                <button
+                    v-if="isMarkingLaneKey(ld.key) && canShowMarkEdit(r, ld.key)"
+                    type="button"
+                    class="group inline-flex flex-col items-center gap-1"
+                    @click="openMarkingModal(r, ld.key)"
+                  >
+                    <span
+                      class="inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-[11px] font-semibold"
+                      :class="laneCell(r, ld.key).cls"
+                    >
+                      {{ laneCell(r, ld.key).text }}
+                    </span>
+                    <span class="text-[10px] font-semibold text-sky-600 group-hover:text-sky-700">
+                      Mark/Edit
+                    </span>
+                  </button>
+
+                  <div v-else-if="isMarkingLaneKey(ld.key)" class="flex flex-col items-center gap-1">
+                    <span
+                      class="inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-[11px] font-semibold"
+                      :class="laneCell(r, ld.key).cls"
+                    >
+                      {{ laneCell(r, ld.key).text }}
+                    </span>
+                    <!-- <span class="text-[10px] text-slate-400">
+                      {{ markingAssigneeName(r, ld.key) ? `Assigned: ${markingAssigneeName(r, ld.key)}` : 'No access' }}
+                    </span> -->
+                  </div>
+
+                  <span v-else class="inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-[11px] font-semibold"
+                        :class="laneCell(r, ld.key).cls">
+                    {{ laneCell(r, ld.key).text }}
                   </span>
+
                 </div>
               </td>
 
-              <td class="border-r px-3 py-2 text-center">
-                <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[12px] font-semibold text-slate-700">
-                  {{ r.finalPercent == null ? '—' : pct(r.finalPercent) }}
+              <td
+                v-for="cc in computedCols"
+                :key="'calc-'+cc.key+'-'+i"
+                class="border-r px-2 text-center"
+              >
+                <span
+                  class="inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-[11px] font-semibold"
+                  :class="cc.key === 'final'
+                    ? 'border-sky-200 bg-sky-50 text-sky-700'
+                    : 'border-slate-200 bg-slate-50 text-slate-700'"
+                >
+                  {{ (r?.computed?.[cc.key] == null || r?.computed?.[cc.key] === '') ? '—' : scoreText(r.computed[cc.key]) }}
                 </span>
               </td>
 
-              <td class="px-3 py-2">
+              <td class="px-2">
                 <div class="space-y-1 text-[11px] text-slate-600">
                   <div class="mt-2 flex items-center justify-between gap-3">
                     <button
@@ -701,7 +951,7 @@ const modalLaneGroups = computed(() => {
                       class="text-[11px] font-semibold text-sky-600 hover:text-sky-800"
                       @click="viewReviewDetails(r)"
                     >
-                      Open review modal
+                      Open modal
                     </button>
                   </div>
                 </div>
@@ -830,7 +1080,7 @@ const modalLaneGroups = computed(() => {
                 Progress: <b class="text-slate-900">{{ progressText(reviewModalRow) }}</b>
               </span>
               <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5">
-                Final: <b class="text-slate-900">{{ reviewModalRow.finalPercent == null ? '—' : pct(reviewModalRow.finalPercent) }}</b>
+                Final: <b class="text-slate-900">{{ (reviewModalRow?.computed?.final == null || reviewModalRow?.computed?.final === '') ? '—' : scoreText(reviewModalRow.computed.final) }}</b>
               </span>
               <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5">
                 Reviews: <b class="text-slate-900">{{ reviewModalRow.progress?.review_count ?? 0 }}</b>
@@ -877,9 +1127,9 @@ const modalLaneGroups = computed(() => {
               <span class="rounded-full border border-slate-200 bg-white px-2 py-0.5">
                 Count: <b class="text-slate-900">{{ lane.count ?? (lane.reviewers?.length ?? 0) }}</b>
               </span>
-              <span class="rounded-full border border-slate-200 bg-white px-2 py-0.5">
+              <!-- <span class="rounded-full border border-slate-200 bg-white px-2 py-0.5">
                 Avg: <b class="text-slate-900">{{ lane.average_marks == null ? '—' : pct(lane.average_marks) }}</b>
-              </span>
+              </span> -->
               <span class="rounded-full border border-slate-200 bg-white px-2 py-0.5">
                 Latest: <b class="text-slate-900">{{ formatDateTime(lane.latest_review_at) || '—' }}</b>
               </span>
@@ -972,6 +1222,17 @@ const modalLaneGroups = computed(() => {
     </div>
   </div>
 </transition>
+
+   <KpiMarkingModal
+      v-model:open="markingOpen"
+      :cycle-id="markingCtx.cycle_id"
+      :employee-id="markingCtx.employee_id"
+      :employee-name="markingCtx.employee_name"
+      :lane-key="markingCtx.lane_key"
+      group="personal"
+      @saved="load"
+    />
+
 
   </div>
 </template>
