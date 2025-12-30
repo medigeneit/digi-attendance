@@ -693,11 +693,12 @@ function getAttendanceDetails(userId, date) {
                       :colspan="isOnlyOneDate ? 2 : 3"
                     >
                       <div
-                        class="flex items-center justify-center gap-2 text-red-600 text-sm font-medium"
+                        class="flex items-center justify-center gap-2 text-red-600 text-sm font-medium opacity-70"
                       >
                         <i class="far fa-clipboard-list text-red-400"></i>
-                        <span>No todos assigned.</span>
+                        <span>No todos was provided.</span>
                       </div>
+
                       <template v-if="isStartEndDateSame">
                         <div v-if="loadingAttendance" class="text-[11px] text-gray-500 mt-2">
                           Loading attendance…
@@ -710,72 +711,67 @@ function getAttendanceDetails(userId, date) {
                           :key="attendance.comment"
                         >
                           <div
-                            class="md:w-[360px] lg:w-[500px] mt-3 text-[11px] text-red-600 bg-gray-50 border border-dashed border-red-200 rounded-lg p-2.5 text-left inline-block min-w-[220px] align-top"
+                            class="min-w-[180px] mt-3 text-[11px] text-red-600 text-left inline-block align-top"
                           >
-                            <div
-                              class="flex items-center gap-1.5 text-gray-700 font-semibold text-xs"
+                            <!-- <div
+                              class="flex items-center gap-1.5 text-gray-500 font-semibold text-xs"
                             >
-                              <i class="far fa-user-clock text-indigo-500 text-sm"></i>
+                              <i class="far fa-user-clock text-indigo-300 text-sm"></i>
                               <span>Attendance</span>
-                            </div>
-                            <div
-                              v-if="attendance.hasData"
-                              class="mt-2 grid grid-cols-2 md:grid-cols-5 gap-1.5"
-                            >
+                            </div> -->
+                            <div v-if="attendance.hasData" class="grid grid-cols-2 gap-4">
                               <div
-                                class="gap-1 flex items-center justify-between rounded-full bg-indigo-50 border border-indigo-100 px-2 py-1.5"
+                                v-if="attendance.in === '-' && attendance.out === '-'"
+                                class="text-center flex items-center justify-center rounded-md bg-slate-50 border text-xs border-dashed px-2 py-1.5 col-span-2"
+                                :class="[
+                                  {
+                                    'text-red-500 border-red-300': attendance.comment === 'Absent',
+                                    'text-blue-500 border-blue-300':
+                                      attendance.comment !== 'Absent',
+                                  },
+                                ]"
                               >
-                                <span class="text-[10px] uppercase text-gray-500 tracking-wide"
-                                  >In</span
-                                >
-                                <span
-                                  class="font-semibold text-indigo-700 text-xs whitespace-nowrap"
-                                  >{{ attendance.in }}</span
-                                >
+                                {{ attendance.comment }}
                               </div>
-                              <div
-                                class="gap-1 flex items-center justify-between rounded-full bg-sky-50 border border-sky-100 px-2 py-1.5"
-                              >
-                                <span class="text-[10px] uppercase text-gray-500 tracking-wide"
-                                  >Out</span
-                                >
-                                <span
-                                  class="font-semibold text-sky-700 text-xs whitespace-nowrap"
-                                  >{{ attendance.out }}</span
-                                >
-                              </div>
-                              <div
-                                class="gap-1 flex items-center justify-between rounded-full bg-amber-50 border border-amber-100 px-2 py-1.5"
-                              >
-                                <span class="text-[10px] uppercase text-gray-500 tracking-wide"
-                                  >Late</span
-                                >
-                                <span
-                                  class="font-semibold text-amber-700 text-xs whitespace-nowrap"
-                                >
-                                  {{ attendance.late }}
-                                </span>
-                              </div>
-                              <div
-                                class="gap-1 flex items-center justify-between rounded-full bg-emerald-50 border border-emerald-100 px-2 py-1.5"
-                              >
-                                <span class="text-[10px] uppercase text-gray-500 tracking-wide"
-                                  >Early</span
-                                >
-                                <span
-                                  class="font-semibold text-emerald-700 text-xs whitespace-nowrap"
-                                >
-                                  {{ attendance.early }}
-                                </span>
-                              </div>
-                              <div
-                                class="text-center flex items-center justify-center rounded-full bg-slate-50 border border-slate-200 px-2 py-1.5 md:col-span-1 col-span-2"
-                              >
-                                <span
-                                  class="font-semibold text-slate-800 text-xs text-right whitespace-nowrap"
-                                  >{{ attendance.comment }}</span
-                                >
-                              </div>
+                              <template v-else>
+                                <div class="rounded-md bg-indigo-50 border border-indigo-100 px-2">
+                                  <div class="flex gap-1 items-center justify-between">
+                                    <span class="text-[10px] uppercase text-gray-500 tracking-wide">
+                                      In
+                                    </span>
+                                    <span
+                                      class="font-semibold text-indigo-700 text-xs whitespace-nowrap"
+                                    >
+                                      {{ attendance.in }}
+                                    </span>
+                                  </div>
+                                  <div class="flex gap-1 items-center justify-between">
+                                    <span class="text-[10px] uppercase text-gray-500 tracking-wide">
+                                      Late
+                                    </span>
+                                    <div>{{ attendance.late }}</div>
+                                  </div>
+                                </div>
+
+                                <div class="rounded-md bg-indigo-50 border border-indigo-100 px-2">
+                                  <div class="flex gap-1 items-center justify-between">
+                                    <span class="text-[10px] uppercase text-gray-500 tracking-wide">
+                                      Out
+                                    </span>
+                                    <span
+                                      class="font-semibold text-indigo-700 text-xs whitespace-nowrap"
+                                    >
+                                      {{ attendance.out }}
+                                    </span>
+                                  </div>
+                                  <div class="flex gap-1 items-center justify-between">
+                                    <span class="text-[10px] uppercase text-gray-500 tracking-wide">
+                                      Early
+                                    </span>
+                                    <div>{{ attendance.out !== '-' ? attendance.early : '-' }}</div>
+                                  </div>
+                                </div>
+                              </template>
                             </div>
                             <div v-else class="mt-1 text-gray-500">
                               Attendance data unavailable.
