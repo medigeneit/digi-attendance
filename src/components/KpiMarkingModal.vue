@@ -149,7 +149,7 @@ const canCurrentUserReview = computed(() => {
 
 
       <div class="px-4 py-3">
-        <div class="mb-3 flex gap-2">
+        <!-- <div class="mb-3 flex gap-2">
           <button
             class="rounded-md border px-3 py-1 text-sm"
             :class="activeLane==='supv_director' ? 'bg-gray-900 text-white' : ''"
@@ -164,7 +164,7 @@ const canCurrentUserReview = computed(() => {
           >
             DA
           </button>
-        </div>
+        </div> -->
 
         <div v-if="loading" class="py-6 text-center text-sm text-gray-600">Loading...</div>
         <div v-else>
