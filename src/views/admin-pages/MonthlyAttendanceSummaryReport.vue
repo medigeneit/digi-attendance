@@ -242,9 +242,6 @@ const recalcMonthlySnapshot = async () => {
   const line_type = filters.value.line_type !== 'all' ? filters.value.line_type : ''
   const employeeId = filters.value.employee_id || ''
   const departmentId = filters.value.department_id || ''
-
-  console.log({departmentId})
-
   try {
     isBusy.value = true
 

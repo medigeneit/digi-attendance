@@ -51,8 +51,8 @@ export const useAuthStore = defineStore('auth', () => {
   function logout() {
     user.value = null;
     token.value = null;
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user');
+    isAdminMood.value = false;
+    localStorage.clear();
   }
 
   async function checkPhone(phone) {
