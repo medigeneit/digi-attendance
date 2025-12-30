@@ -2,6 +2,7 @@
 import LoaderView from '@/components/common/LoaderView.vue'
 import TodoReportHeading from '@/components/todo/TodoReportHeading.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
+import UserHoverBubble from '@/components/user/UserHoverBubble.vue'
 import { getDisplayDate, getYearMonthDayFormat } from '@/libs/datetime'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useCompanyStore } from '@/stores/company'
@@ -712,25 +713,29 @@ function lastRowBorderClass(userGroup, dateGroup, dateIndex, todoIndex) {
                     class="px-4 py-3 align-top font-medium text-gray-800 whitespace-nowrap border-l border-t border-b bg-white"
                     :class="userBoundaryClass"
                   >
-                    <div class="sticky top-[180px] bg-white flex">
-                      <UserAvatar
-                        size="medium"
-                        :user="userGroup.user"
-                        class="inline-block mr-2 align-middle"
-                      />
-                      <div>
-                        <div>{{ userGroup.user?.name || 'Unknown user' }}</div>
-                        <div v-if="userGroup.user?.department?.name" class="text-xs text-gray-500">
-                          {{ userGroup.user?.department?.name }}
+                    <UserHoverBubble :user="userGroup.user" class="sticky top-[180px] bg-white">
+                      <template #trigger="{ user }">
+                        <div class="flex">
+                          <UserAvatar
+                            size="medium"
+                            :user="user"
+                            class="inline-block mr-2 align-middle"
+                          />
+                          <div>
+                            <div>{{ user?.name || 'Unknown user' }}</div>
+                            <div v-if="user?.department?.name" class="text-xs text-gray-500">
+                              {{ user?.department?.name }}
+                            </div>
+                            <!-- <div
+                              v-if="user?.department?.company?.name"
+                              class="text-[11px] text-gray-400"
+                            >
+                              {{ user?.department?.company?.name }}
+                            </div> -->
+                          </div>
                         </div>
-                        <!-- <div
-                          v-if="userGroup.user?.department?.company?.name"
-                          class="text-[11px] text-gray-400"
-                        >
-                          {{ userGroup.user?.department?.company?.name }}
-                        </div> -->
-                      </div>
-                    </div>
+                      </template>
+                    </UserHoverBubble>
                   </td>
                   <template v-if="todo.isPlaceholder">
                     <td
