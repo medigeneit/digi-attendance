@@ -6,12 +6,12 @@ import { useToast } from 'vue-toastification'
 
 import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
-import YearlyAttendanceSummaryFilters from '@/components/attendance/YearlyAttendanceSummaryFilters.vue'
 import YearlyAttendanceSummaryTable from '@/components/attendance/YearlyAttendanceSummaryTable.vue'
 import {
   exportYearlyAttendanceSummary,
   fetchYearlyAttendanceSummary,
 } from '@/services/yearly-attendance-summary'
+import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -20,24 +20,25 @@ const toast = useToast()
 const companyStore = useCompanyStore()
 const departmentStore = useDepartmentStore()
 const { companies } = storeToRefs(companyStore)
-const { departments } = storeToRefs(departmentStore)
 
 const now = new Date()
 const currentYear = now.getFullYear()
 
-const yearOptions = computed(() => {
-  return Array.from({ length: 6 }, (_, index) => {
+const yearOptions = computed(() =>
+  Array.from({ length: 6 }, (_, index) => {
     const year = currentYear - index
     return { id: String(year), label: String(year) }
-  })
-})
+  }),
+)
 
 const filters = ref({
   year: route.query.year || String(currentYear),
   company_id: route.query.company_id || '',
   department_id: route.query.department_id || '',
   department_id_is_null: route.query.department_id_is_null === '1',
-  user_id: route.query.user_id || '',
+  line_type: route.query.line_type || 'all',
+  employee_id: route.query.employee_id || route.query.user_id || '',
+  user_id: route.query.user_id || route.query.employee_id || '',
   search: route.query.search || '',
   page: route.query.page ? Number(route.query.page) : 1,
   per_page: route.query.per_page ? Number(route.query.per_page) : 25,
@@ -48,22 +49,7 @@ const filters = ref({
 const rows = ref([])
 const meta = ref({ total: 0, current_page: 1, last_page: 1, per_page: 25 })
 const isLoading = ref(false)
-
-const showCompanySelect = computed(() => (companies.value || []).length > 1)
-
-const companyOptions = computed(() =>
-  (companies.value || []).map((company) => ({
-    id: String(company.id),
-    label: company.name,
-  })),
-)
-
-const departmentOptions = computed(() =>
-  (departments.value || []).map((department) => ({
-    id: String(department.id),
-    label: department.name,
-  })),
-)
+const isBusy = computed(() => isLoading.value)
 
 const selectedRow = ref(null)
 const drawerOpen = ref(false)
@@ -113,7 +99,12 @@ const syncQuery = () => {
         company_id: filters.value.company_id || undefined,
         department_id: filters.value.department_id || undefined,
         department_id_is_null: filters.value.department_id_is_null ? '1' : undefined,
+        line_type:
+          filters.value.line_type && filters.value.line_type !== 'all'
+            ? filters.value.line_type
+            : undefined,
         user_id: filters.value.user_id || undefined,
+        employee_id: filters.value.employee_id || undefined,
         search: filters.value.search || undefined,
         page: filters.value.page > 1 ? String(filters.value.page) : undefined,
         per_page: filters.value.per_page !== 10 ? String(filters.value.per_page) : undefined,
@@ -149,6 +140,10 @@ const fetchSummary = async () => {
     year: filters.value.year || undefined,
     department_id: filters.value.department_id || undefined,
     department_id_is_null: filters.value.department_id_is_null ? 1 : undefined,
+    line_type:
+      filters.value.line_type && filters.value.line_type !== 'all'
+        ? filters.value.line_type
+        : undefined,
     user_id: filters.value.user_id || undefined,
     search: filters.value.search || undefined,
     page: filters.value.page,
@@ -181,6 +176,7 @@ const fetchSummary = async () => {
 
 const applyFilters = async () => {
   filters.value.page = 1
+  filters.value.user_id = filters.value.employee_id || ''
   await fetchSummary()
   syncQuery()
 }
@@ -194,6 +190,8 @@ const resetFilters = async () => {
     company_id: defaultCompanyId,
     department_id: '',
     department_id_is_null: false,
+    line_type: 'all',
+    employee_id: '',
     user_id: '',
     search: '',
     page: 1,
@@ -242,6 +240,10 @@ const handleExport = async () => {
       year: filters.value.year || undefined,
       department_id: filters.value.department_id || undefined,
       department_id_is_null: filters.value.department_id_is_null ? 1 : undefined,
+      line_type:
+        filters.value.line_type && filters.value.line_type !== 'all'
+          ? filters.value.line_type
+          : undefined,
       user_id: filters.value.user_id || undefined,
       search: filters.value.search || undefined,
       sort_by: filters.value.sort_by,
@@ -274,13 +276,24 @@ watch(
       rows.value = []
       filters.value.department_id = ''
       filters.value.department_id_is_null = false
+      filters.value.employee_id = ''
+      filters.value.user_id = ''
       return
     }
     filters.value.department_id = ''
     filters.value.department_id_is_null = false
+    filters.value.employee_id = ''
+    filters.value.user_id = ''
     await departmentStore.fetchDepartments(companyId)
   },
 )
+
+const onEmpFilterChange = () => {
+  filters.value.user_id = filters.value.employee_id || ''
+  if (filters.value.department_id) {
+    filters.value.department_id_is_null = false
+  }
+}
 
 onMounted(async () => {
   await companyStore.fetchCompanies({ ignore_permission: true })
@@ -320,10 +333,49 @@ onMounted(async () => {
       </div>
     </div>
 
-    <YearlyAttendanceSummaryFilters
+    <EmployeeFilter
+      v-model:company_id="filters.company_id"
+      v-model:department_id="filters.department_id"
+      v-model:employee_id="filters.employee_id"
+      v-model:line_type="filters.line_type"
+      :with-type="true"
+      :initial-value="{ ...$route.query, employee_id: $route.query.employee_id || $route.query.user_id }"
+      @filter-change="onEmpFilterChange"
+      class="w-full"
+    >
+      <div class="md:col-span-1 flex  gap-2">
+        <div class="min-w-0 relative">
+          <label class="top-label text-[10px] font-semibold uppercase tracking-wide text-slate-500">Year</label>
+          <select v-model="filters.year" class="input-1 h-8 py-0 w-full text-xs">
+            <option v-for="opt in yearOptions" :key="opt.id" :value="opt.id">
+              {{ opt.label }}
+            </option>
+          </select>
+        </div>
+        <button
+          type="button"
+          class="h-9 rounded-md border border-slate-300 px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+          :disabled="isBusy"
+          @click="resetFilters"
+        >
+          Reset
+        </button>
+        <button
+          type="button"
+          class="h-9 rounded-md bg-slate-900 px-3 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+          :disabled="isBusy"
+          @click="applyFilters"
+        >
+          Apply
+        </button>
+      </div>
+    </EmployeeFilter>
+
+    <!-- <YearlyAttendanceSummaryFilters
       v-model:year="filters.year"
       v-model:company-id="filters.company_id"
       v-model:department-id="filters.department_id"
+      v-model:line_type="filters.line_type"
       v-model:department-id-is-null="filters.department_id_is_null"
       v-model:search="filters.search"
       :years="yearOptions"
@@ -333,7 +385,7 @@ onMounted(async () => {
       :is-busy="isLoading"
       @apply="applyFilters"
       @reset="resetFilters"
-    />
+    /> -->
 
     <YearlyAttendanceSummaryTable
       :rows="rows"
@@ -383,7 +435,7 @@ onMounted(async () => {
               </span>
             </div>
             <div class="rounded-xl border border-slate-100 bg-white p-3">
-              <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Score Avg</p>
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Early & Delay Score Avg</p>
               <div class="mt-2 space-y-1">
                 <div class="h-2 w-full rounded-full bg-slate-100">
                   <div
@@ -402,12 +454,21 @@ onMounted(async () => {
                 {{ selectedRow?.score_months ?? '—' }}
               </p>
             </div>
+
+            <div class="rounded-xl border border-slate-100 bg-white p-3">
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Present Avg Score</p>
+              <p class="text-base font-semibold text-slate-800">
+                {{ selectedRow?.yearly_present_score_avg ?? '—' }}
+              </p>
+            </div>
+
             <div class="rounded-xl border border-slate-100 bg-white p-3">
               <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Total Months</p>
               <p class="text-base font-semibold text-slate-800">
                 {{ selectedRow?.total_months ?? '—' }}
               </p>
             </div>
+            
           </div>
 
           <div class="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
@@ -422,7 +483,7 @@ onMounted(async () => {
 <style scoped>
 .glass-panel { @apply rounded-2xl border border-slate-100 bg-white/70 shadow-sm; }
 .report-hero { @apply flex flex-col gap-4 md:flex-row md:items-center md:justify-between; }
-.drawer { @apply fixed inset-0 z-40; }
+.drawer { @apply fixed inset-0 top-5 z-40; }
 .drawer__overlay { @apply absolute inset-0 bg-black/30; }
 .drawer__panel { @apply absolute right-0 top-0 h-full w-full max-w-md overflow-y-auto bg-white p-5 shadow-xl; }
 </style>
