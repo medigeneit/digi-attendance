@@ -319,7 +319,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
         line_type: line_type && line_type !== 'all' ? line_type : undefined,
       })
 
-      const res = await apiClient.post('/attendance/recalculate-monthly-snapshot', payload)
+      const res = await apiClient.post('/attendance/monthly-snapshot/recalculate', payload)
       return res.data
     } catch (err) {
       handleApiError(err, 'Failed to recalculate monthly snapshot')
