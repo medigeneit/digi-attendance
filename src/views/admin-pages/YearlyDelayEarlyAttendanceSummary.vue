@@ -139,6 +139,8 @@ const formatScore = (value) => {
   return num.toFixed(2)
 }
 
+const monthGroupClass = (monthIndex) => (monthIndex % 2 === 0 ? 'month-group-odd' : 'month-group-even')
+
 const syncQuery = () => {
   router.replace({
     query: {
@@ -372,9 +374,10 @@ watch(
               <th class="th w-12" rowspan="2">#</th>
               <th class="th min-w-[180px]" rowspan="2">User</th>
               <th
-                v-for="month in months"
+                v-for="(month, monthIndex) in months"
                 :key="month.key"
                 class="th text-center"
+                :class="monthGroupClass(monthIndex)"
                 colspan="3"
               >
                 {{ month.label }}
@@ -382,10 +385,10 @@ watch(
               <th class="th text-center" rowspan="2">Score Avg</th>
             </tr>
             <tr class="bg-slate-50 text-[11px] text-left">
-              <template v-for="month in months" :key="month.key">
-                <th class="th text-center">Late</th>
-                <th class="th text-center">Early</th>
-                <th class="th text-center">Total</th>
+              <template v-for="(month, monthIndex) in months" :key="month.key">
+                <th class="th text-center" :class="monthGroupClass(monthIndex)">Late</th>
+                <th class="th text-center" :class="monthGroupClass(monthIndex)">Early</th>
+                <th class="th text-center" :class="monthGroupClass(monthIndex)">Score</th>
               </template>
             </tr>
           </thead>
@@ -404,10 +407,16 @@ watch(
                   <b>{{ row.department_name || '-' }}</b>
                 </div> -->
               </td>
-              <template v-for="month in months" :key="month.key">
-                <td class="td text-center">{{ monthCell(row, month.key).late }}</td>
-                <td class="td text-center">{{ monthCell(row, month.key).early }}</td>
-                <td class="td text-center">{{ monthCell(row, month.key).total }}</td>
+              <template v-for="(month, monthIndex) in months" :key="month.key">
+                <td class="td text-center" :class="monthGroupClass(monthIndex)">
+                  {{ monthCell(row, month.key).late }}
+                </td>
+                <td class="td text-center" :class="monthGroupClass(monthIndex)">
+                  {{ monthCell(row, month.key).early }}
+                </td>
+                <td class="td text-center" :class="monthGroupClass(monthIndex)">
+                  {{ monthCell(row, month.key).total }}
+                </td>
               </template>
               <td class="td text-center font-semibold">{{ formatScore(scoreAvg(row)) }}</td>
             </tr>
@@ -432,5 +441,11 @@ watch(
 }
 .td {
   @apply border border-slate-200 px-1.5 py-1 text-[11px] tabular-nums;
+}
+.month-group-odd {
+  @apply bg-sky-100;
+}
+.month-group-even {
+  @apply bg-emerald-50;
 }
 </style>
