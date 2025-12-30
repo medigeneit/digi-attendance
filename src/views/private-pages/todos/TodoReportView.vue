@@ -734,7 +734,7 @@ function lastRowBorderClass(userGroup, dateGroup, dateIndex, todoIndex) {
                   </td>
                   <template v-if="todo.isPlaceholder">
                     <td
-                      v-if="todoIndex === 0"
+                      v-if="todoIndex === 0 && !isOnlyOneDate"
                       :rowspan="dateGroup.rowSpan || 1"
                       class="px-4 py-3 align-top text-xs text-gray-700 whitespace-nowrap border-l border-t bg-white"
                       :class="lastRowBorderClass(userGroup, dateGroup, dateIndex, todoIndex)"
