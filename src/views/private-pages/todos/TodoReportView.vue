@@ -827,7 +827,9 @@ function lastRowBorderClass(userGroup, dateGroup, dateIndex, todoIndex) {
                               </div>
                             </template>
                           </div>
-                          <div v-else class="mt-1 text-gray-500">Attendance data unavailable.</div>
+                          <div v-else class="mt-1 text-gray-500 text-center">
+                            Attendance data unavailable.
+                          </div>
                         </div>
                       </template>
                     </td>
