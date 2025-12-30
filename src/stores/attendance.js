@@ -272,6 +272,31 @@ export const useAttendanceStore = defineStore('attendance', () => {
   }
 
 
+  const cleanPayload = (obj) => {
+    const cleaned = {}
+    Object.entries(obj).forEach(([k, v]) => {
+      // drop undefined/null and also drop '' to avoid "lost" meaning on backend
+      if (v === undefined || v === null || v === '') return
+      cleaned[k] = v
+    })
+    return cleaned
+  }
+
+  const requireFields = (company_id, month) => {
+    if (!company_id || !month) {
+      const msg = 'Company & month are required'
+      error.value = msg
+      throw new Error(msg)
+    }
+  }
+
+  const handleApiError = (err, fallback = 'Something went wrong') => {
+    const msg = err?.response?.data?.message || err?.message || fallback
+    error.value = msg
+    console.error(msg, err)
+    throw err
+  }
+
   const recalculateMonthlySnapshot = async (
     company_id,
     department_id,
@@ -279,39 +304,55 @@ export const useAttendanceStore = defineStore('attendance', () => {
     employee_id,
     month,
   ) => {
-     if (!company_id || !month) {
-        error.value = 'Company & month are required'
-        return
-      }
-
-      isLoading.value = true
-      try {
-      const payload = { month, company_id, department_id, line_type, employee_id }
-
-        error.value = null
-      } catch (err) {
-        error.value = err.response?.data?.message || 'Something went wrong'
-        console.error(error.value)
-      } finally {
-        isLoading.value = false
-      }
-  }
-
-  const finalizeMonthlySnapshot = async (company_id, line_type, employee_id, month, action = 'finalize') => {
-    if (!company_id || !month) {
-      error.value = 'Company & month are required'
-      return
-    }
+    requireFields(company_id, month)
 
     isLoading.value = true
+    error.value = null
+
     try {
-      const payload = { company_id, line_type, employee_id, month, action }
+      const payload = cleanPayload({
+        company_id,
+        month,
+        department_id: department_id || undefined,
+        employee_id: employee_id || undefined,
+        // ✅ omit when "all" or falsy instead of sending ''
+        line_type: line_type && line_type !== 'all' ? line_type : undefined,
+      })
 
-
-      error.value = null
+      const res = await apiClient.post('/attendance/monthly-snapshot/recalculate', payload)
+      return res.data
     } catch (err) {
-      error.value = err.response?.data?.message || 'Something went wrong'
-      console.error(error.value)
+      handleApiError(err, 'Failed to recalculate monthly snapshot')
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const finalizeMonthlySnapshot = async (
+    company_id,
+    line_type,
+    employee_id,
+    month,
+    action = 'finalize',
+  ) => {
+    requireFields(company_id, month)
+
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const payload = cleanPayload({
+        company_id,
+        month,
+        action, // 'finalize' | 'unfinalize'
+        employee_id: employee_id || undefined,
+        line_type: line_type && line_type !== 'all' ? line_type : undefined,
+      })
+
+      const res = await apiClient.post('/attendance/monthly-snapshot/finalize', payload)
+      return res.data
+    } catch (err) {
+      handleApiError(err, 'Failed to finalize monthly snapshot')
     } finally {
       isLoading.value = false
     }
