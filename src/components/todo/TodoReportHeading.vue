@@ -106,7 +106,10 @@ defineExpose({
         />
 
         <div class="flex items-center justify-between w-full md:w-auto gap-3">
-          <button class="btn-3 px-3 rounded size-7" @click.prevent="() => updateDateCountByDay(-1)">
+          <button
+            class="btn-3 px-3 rounded size-[31px]"
+            @click.prevent="() => updateDateCountByDay(-1)"
+          >
             <span class="fas fa-arrow-left"></span>
           </button>
           <div class="relative h-[32px] w-[150px] sm:w-[170px]">
@@ -132,7 +135,10 @@ defineExpose({
             />
           </div>
 
-          <button class="btn-3 px-3 rounded size-7" @click.prevent="() => updateDateCountByDay(1)">
+          <button
+            class="btn-3 px-3 rounded size-[31px]"
+            @click.prevent="() => updateDateCountByDay(1)"
+          >
             <span class="fas fa-arrow-right"></span>
           </button>
         </div>
