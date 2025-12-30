@@ -396,7 +396,7 @@ watch(
             <tr
               v-for="(row, index) in rows"
               :key="row.user_id || index"
-              class="border-b hover:bg-slate-100"
+              class="border-b hover:bg-sky-200"
             >
               <td class="td">{{ index + 1 }}</td>
               <td class="td font-semibold text-slate-700 whitespace-nowrap">
