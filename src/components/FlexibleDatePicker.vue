@@ -203,6 +203,59 @@ function updateModel(next) {
   emit('update:modelValue', fixed)
   emit('change', fixed)
 }
+
+function stepByDays(delta) {
+  const y = localYear.value
+  const m = localMonth.value
+  const d = localDay.value
+  const next = new Date(y, m - 1, d)
+  next.setDate(next.getDate() + delta)
+  updateModel({
+    year: next.getFullYear(),
+    month: next.getMonth() + 1,
+    day: next.getDate(),
+  })
+}
+
+function stepByMonths(delta) {
+  const y = localYear.value
+  const m = localMonth.value
+  const d = localDay.value
+  const next = new Date(y, m - 1 + delta, 1)
+  const maxD = daysInMonth(next.getFullYear(), next.getMonth() + 1)
+  updateModel({
+    year: next.getFullYear(),
+    month: next.getMonth() + 1,
+    day: Math.min(d, maxD),
+  })
+}
+
+function stepByYears(delta) {
+  const y = localYear.value + delta
+  const m = localMonth.value
+  const d = localDay.value
+  const maxD = daysInMonth(y, m)
+  updateModel({
+    year: y,
+    month: m,
+    day: Math.min(d, maxD),
+  })
+}
+
+function stepPeriod(delta) {
+  if (props.disabled) return
+  if (props.showDate) {
+    stepByDays(delta)
+    return
+  }
+  if (props.showMonth) {
+    stepByMonths(delta)
+    return
+  }
+  if (props.showYear) {
+    stepByYears(delta)
+  }
+}
 </script>
 
 <template>
@@ -217,6 +270,30 @@ function updateModel(next) {
 
     <!-- Controls -->
     <div class="flex flex-wrap items-center gap-2">
+      <div class="flex items-center gap-1">
+        <button
+          type="button"
+          aria-label="Previous"
+          @click="stepPeriod(-1)"
+          :disabled="disabled"
+          class="input-1 inline-flex h-8 w-8 items-center justify-center rounded
+                 text-xs font-semibold uppercase tracking-wide text-slate-500
+                 border-slate-200 bg-white shadow-sm disabled:opacity-50"
+        >
+          <span class="text-[12px] text-slate-400">&lt;</span>
+        </button>
+        <button
+          type="button"
+          aria-label="Next"
+          @click="stepPeriod(1)"
+          :disabled="disabled"
+          class="input-1 inline-flex h-8 w-8 items-center justify-center rounded
+                 text-xs font-semibold uppercase tracking-wide text-slate-500
+                 border-slate-200 bg-white shadow-sm disabled:opacity-50"
+        >
+          <span class="text-[12px] text-slate-400">&gt;</span>
+        </button>
+      </div>
       <!-- Year -->
       <select
         v-if="showYear"
