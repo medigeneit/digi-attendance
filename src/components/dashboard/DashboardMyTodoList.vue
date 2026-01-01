@@ -54,6 +54,15 @@ function handleTodoInputChange(changedSelected) {
         >
           {{ types[1]?.label }}
         </button>
+
+        <RouterLink
+          to="/my-personal-activity-report"
+          class="inline-flex items-center gap-2 rounded-md border border-sky-300 px-3 h-[32px] text-sm text-sky-700 bg-sky-50 hover:bg-sky-100 dark:border-sky-800 dark:text-sky-200 dark:bg-sky-900/20 dark:hover:bg-sky-900/40"
+        >
+          <i class="fas fa-tasks"></i>
+          <span class="hidden lg:inline">Personal Activity Report (PAR)</span>
+          <span class="inline lg:hidden">PAR</span>
+        </RouterLink>
       </div>
     </template>
   </TodoSection>
