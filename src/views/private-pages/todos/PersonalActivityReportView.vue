@@ -180,6 +180,8 @@ const aggregateTotals = computed(() =>
 )
 
 function syncQuery() {
+  console.log('syncQuery', filterState)
+
   router.replace({
     query: {
       ...route.query,
@@ -267,6 +269,20 @@ onMounted(() => {
 function handlePrint() {
   window.print()
 }
+
+function shiftMonth(byCount) {
+  const base = selectedMonth.value ? new Date(`${selectedMonth.value}-01`) : new Date()
+  base.setMonth(base.getMonth() + byCount)
+  selectedMonth.value = getYearMonthFormat(base)
+}
+
+function handlePrevMonth() {
+  shiftMonth(-1)
+}
+
+function handleNextMonth() {
+  shiftMonth(1)
+}
 </script>
 
 <template>
@@ -279,6 +295,31 @@ function handlePrint() {
         <p class="text-sm text-gray-500">Monthwise summary from todo dates</p>
       </div>
       <span class="ml-auto flex items-center gap-2 text-sm text-gray-600 print:hidden">
+        <template v-if="props.selfOnly">
+          <div class="relative h-[32px] flex gap-1 ml-auto justify-end print:hidden">
+            <button class="btn-3 h-[32px] px-3" @click.prevent="handlePrevMonth">
+              <i class="fas fa-arrow-left mr-1"></i>
+            </button>
+
+            <div class="relative h-[32px] flex gap-1 ml-auto justify-end">
+              <label
+                for="month"
+                class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30"
+                >Month</label
+              >
+              <input
+                id="month"
+                type="month"
+                v-model="selectedMonth"
+                class="border-2 border-gray-300 rounded px-3 h-[32px] text-sm w-full bg-white"
+              />
+            </div>
+            <button class="btn-3 h-[32px] px-3" @click.prevent="handleNextMonth">
+              <i class="fas fa-arrow-right ml-1"></i>
+            </button>
+          </div>
+        </template>
+
         <i class="far fa-calendar-alt text-blue-500"></i>
         <span>{{ monthLabel }}</span>
         <span v-if="rangeLabel" class="text-gray-400">({{ rangeLabel }})</span>
@@ -294,52 +335,52 @@ function handlePrint() {
       </button>
     </div>
 
-    <div class="bg-white border rounded-md p-4 mb-4 print:border-0 print:rounded-none print:p-0">
-      <template v-if="props.selfOnly">
-        <div class="flex flex-wrap items-center gap-3">
-          <div class="relative h-[32px] w-[170px]">
-            <label
-              for="month"
-              class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30"
-              >Month</label
-            >
-            <input
-              id="month"
-              type="month"
-              v-model="selectedMonth"
-              class="border-2 border-gray-300 rounded px-3 h-[32px] text-sm w-full bg-white"
-            />
-          </div>
-          <div class="text-xs text-blue-600 flex items-center gap-2">
-            <i class="fas fa-user-lock"></i>
-            Showing only my todos (Employee ID: {{ selfEmployeeId || 'loading...' }})
-          </div>
-        </div>
-      </template>
-      <template v-else>
-        <EmployeeFilter
-          ref="employeeFilterRef"
-          v-model:company_id="filterState.companyId"
-          v-model:department_id="filterState.departmentId"
-          v-model:employee_id="filterState.employeeId"
-          v-model:line_type="filterState.lineType"
-          @filter-change="handleFilterChange"
-        >
-          <div class="relative h-[32px]">
-            <label
-              for="month"
-              class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30"
-              >Month</label
-            >
-            <input
-              id="month"
-              type="month"
-              v-model="selectedMonth"
-              class="border-2 border-gray-300 rounded px-3 h-[32px] text-sm w-full bg-white"
-            />
+    <div
+      v-if="!props.selfOnly"
+      class="bg-white border rounded-md p-4 mb-4 print:border-0 print:rounded-none print:p-0 shadow-sm"
+    >
+      <div class="flex flex-wrap items-center gap-3">
+          <EmployeeFilter
+            ref="employeeFilterRef"
+            v-model:company_id="filterState.companyId"
+            v-model:department_id="filterState.departmentId"
+            v-model:employee_id="filterState.employeeId"
+            v-model:line_type="filterState.lineType"
+            :initial-value="route.query"
+            @filter-change="handleFilterChange"
+            class="flex-1 min-w-[240px]"
+          >
+          <div class="relative h-[32px] flex gap-1 ml-auto justify-end">
+            <button class="btn-3 h-[32px] px-3" @click.prevent="handlePrevMonth">
+              <i class="fas fa-arrow-left mr-1"></i>
+            </button>
+            <div class="relative h-[32px] flex">
+              <label
+                for="month"
+                class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30"
+                >Month</label
+              >
+              <input
+                id="month"
+                type="month"
+                v-model="selectedMonth"
+                class="border-2 border-gray-300 rounded px-3 h-[32px] text-sm w-full bg-white"
+              />
+            </div>
+            <button class="btn-3 h-[32px] px-3" @click.prevent="handleNextMonth">
+              <i class="fas fa-arrow-right ml-1"></i>
+            </button>
           </div>
         </EmployeeFilter>
-      </template>
+
+        <div
+          v-if="props.selfOnly"
+          class="text-xs text-blue-600 flex items-center gap-2 w-full md:w-auto md:ml-auto"
+        >
+          <i class="fas fa-user-lock"></i>
+          Showing only my todos (Employee ID: {{ selfEmployeeId || 'loading...' }})
+        </div>
+      </div>
     </div>
 
     <div
@@ -357,6 +398,7 @@ function handlePrint() {
 
     <div v-else class="space-y-4">
       <div
+        v-if="!selfOnly"
         class="bg-white border rounded-md shadow-sm print:shadow-none print:border-0 print:rounded-none px-4 py-3 flex flex-wrap gap-4"
       >
         <div class="text-sm text-gray-700">
@@ -450,13 +492,13 @@ function handlePrint() {
               <tr class="border-b">
                 <th class="px-4 py-3 border text-center w-12">sl</th>
                 <th class="px-4 py-3 border text-left">Todo</th>
-                <th class="px-4 py-3 border text-left">Last Activity Date</th>
+                <th class="px-4 py-3 border text-left">Last Activity</th>
                 <th class="px-4 py-3 border text-center">Status</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="row.latestTodos.length === 0">
-                <td colspan="5" class="px-4 py-6 text-center text-gray-400">
+                <td colspan="5" class="px-4 py-6 text-center text-gray-400 border rounded-b">
                   No activity recorded for this month.
                 </td>
               </tr>
