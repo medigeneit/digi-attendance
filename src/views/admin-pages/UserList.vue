@@ -9,9 +9,10 @@ import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
 import { useShiftStore } from '@/stores/shift'
 import { useUserStore } from '@/stores/user'
+import { useUserClearanceStore } from '@/stores/userClearance'
 
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref, reactive, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, reactive, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 /* ------------ stores & router ------------ */
@@ -22,11 +23,13 @@ const companyStore = useCompanyStore()
 const departmentStore = useDepartmentStore()
 const userStore = useUserStore()
 const shiftStore = useShiftStore()
+const clearanceStore = useUserClearanceStore()
 
 const { companies } = storeToRefs(companyStore)
 const { departments } = storeToRefs(departmentStore)
 const { shifts } = storeToRefs(shiftStore)
 const { users: storeUsers, isLoading } = storeToRefs(userStore)
+const { items: clearanceData, loading, error, currentUserInfo } = storeToRefs(clearanceStore)
 
 /* ------------ filters (single source of truth) ------------ */
 const filters = reactive({
@@ -48,6 +51,7 @@ const normalizedQuery = computed(() => {
   if (filters.status && filters.status !== 'all') q.status = filters.status
   if (filters.employee_id) q.employee_id = filters.employee_id
   if (filters.q) q.q = filters.q
+  if (route.query.action) q.action = route.query.action
   return q
 })
 
@@ -106,6 +110,7 @@ watch(
 const goBack = () => router.go(-1)
 
 /* ------------ helpers ------------ */
+const isClearanceContext = computed(() => route.query.action === 'clearance')
 const hasShift = (u) => !!u?.current_shift?.shift?.name
 const shiftName = (u) => u?.current_shift?.shift?.name || 'Not Assigned'
 
@@ -173,6 +178,142 @@ const groupedUsers = computed(() => {
   return grouped
 })
 
+/* ------------ clearance panel ------------ */
+const selectedUser = ref(null)
+const isClearanceOpen = ref(false)
+
+const clearanceUser = computed(() => {
+  const metaUser = currentUserInfo.value
+  if (metaUser?.id && selectedUser.value?.id && metaUser.id !== selectedUser.value.id) {
+    return selectedUser.value
+  }
+  return metaUser || selectedUser.value || {}
+})
+const clearanceName = computed(() => clearanceUser.value?.name || selectedUser.value?.name || '')
+const clearanceEmployeeId = computed(
+  () => clearanceUser.value?.employee_id || selectedUser.value?.employee_id || ''
+)
+const clearanceDept = computed(
+  () => clearanceUser.value?.department?.name || selectedUser.value?.department?.name || ''
+)
+const clearancePost = computed(
+  () =>
+    clearanceUser.value?.designation?.title ||
+    selectedUser.value?.designation?.title ||
+    selectedUser.value?.post ||
+    ''
+)
+const clearanceDate = computed(() => new Date().toLocaleDateString('en-GB'))
+
+function toVM(row = {}) {
+  const latest = row.latest || null
+  const clearedBy = latest?.cleared_by || null
+
+  return {
+    id: row.template_item_id ?? row.id,
+    template_item_id: row.template_item_id ?? row.id,
+    label: row.label || row.template_item_name || row.item_key || `#${row.template_item_id ?? row.id}`,
+    order_no: row.order_no ?? row.template_order_no ?? 0,
+    handover_to: row.handover_to || 'departmental_incharge',
+    handover_by: row.handover_user || 'departmental_incharge',
+    show_receiver: !!row.show_receiver,
+    is_cleared: !!row.is_cleared,
+    missing: !!row.missing,
+    status: latest?.status ?? null,
+    handover_status: latest?.handover_status ?? null,
+    present_condition: latest?.present_condition ?? '',
+    receiver_name: row.show_receiver ? (latest?.receiver_name ?? '') : '',
+    remarks: latest?.remarks ?? '',
+    cleared_by_user: clearedBy ? { id: clearedBy.id, name: clearedBy.name } : null,
+    cleared_at: latest?.cleared_at || null
+  }
+}
+
+const LABELS = {
+  departmental_incharge: 'Departmental In-charge',
+  technical_support_team: 'Technical Support Team',
+  it_incharge: 'IT In-charge',
+  hr_department: 'HR Department',
+  inventory_incharge: 'Inventory In-charge'
+}
+const ORDER = [
+  'Departmental In-charge',
+  'Technical Support Team',
+  'IT In-charge',
+  'HR Department',
+  'Inventory In-charge'
+]
+function mapGroupKey(row) {
+  const k = String(row?.handover_to || '').toLowerCase()
+  return LABELS[k] || 'Departmental In-charge'
+}
+
+const rowsVM = computed(() => {
+  const arr = Array.isArray(clearanceData.value) ? clearanceData.value : []
+  return arr.map(toVM)
+})
+
+const printableRows = computed(() => {
+  const buckets = new Map(ORDER.map((k) => [k, []]))
+  for (const r of rowsVM.value) {
+    buckets.get(mapGroupKey(r))?.push(r)
+  }
+  for (const [, arr] of buckets.entries()) {
+    arr.sort(
+      (a, b) =>
+        (a.order_no ?? a.template_item_id ?? a.id ?? 0) -
+        (b.order_no ?? b.template_item_id ?? b.id ?? 0)
+    )
+  }
+  const out = []
+  let sl = 1
+  for (const name of ORDER) {
+    const rows = buckets.get(name) || []
+    if (!rows.length) continue
+    rows.forEach((row, idx) =>
+      out.push({ sl: sl++, group: name, isGroupFirst: idx === 0, groupSpan: rows.length, row })
+    )
+  }
+  return out
+})
+
+function prettyYesNo(v) {
+  const t = String(v ?? '').trim().toLowerCase()
+  if (['y', 'yes', 'true', '1', 'done', 'cleared', 'complete', 'completed'].includes(t)) {
+    return 'Yes'
+  }
+  if (['n', 'no', 'false', '0', 'pending', 'not done', 'incomplete', 'rejected'].includes(t)) {
+    return 'No'
+  }
+  return 'N/A'
+}
+
+const STATUS_META = {
+  PENDING: { label: 'Pending', pill: 'bg-amber-50 text-amber-800 border-amber-200', dot: 'bg-amber-500' },
+  WORKING: { label: 'Working', pill: 'bg-sky-50 text-sky-800 border-sky-200', dot: 'bg-sky-500' },
+  COMPLETED: {
+    label: 'Completed',
+    pill: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+    dot: 'bg-emerald-500'
+  }
+}
+
+function statusLabel(row) {
+  if (row?.missing) return 'Pending'
+  const k = String(row?.status || '').toUpperCase()
+  return STATUS_META[k]?.label || (row?.status || 'N/A')
+}
+function statusPillClass(row) {
+  if (row?.missing) return STATUS_META.PENDING.pill
+  const k = String(row?.status || '').toUpperCase()
+  return STATUS_META[k]?.pill || 'bg-slate-50 text-slate-700 border-slate-200'
+}
+function statusDotClass(row) {
+  if (row?.missing) return STATUS_META.PENDING.dot
+  const k = String(row?.status || '').toUpperCase()
+  return STATUS_META[k]?.dot || 'bg-slate-400'
+}
+
 /* ------------ Modals ------------ */
 const selectedEmployee = ref(null)
 const userWeekendHistory = ref(null) // { history, current }
@@ -207,6 +348,33 @@ async function openWeekend(user) {
 function openAssign(user) {
   selectedEmployee.value = user
   kpiModalOpen.value = true
+}
+
+async function openClearance(user) {
+  if (!user?.id) return
+  selectedUser.value = user
+  isClearanceOpen.value = true
+  error.value = ''
+  clearanceStore.resetFilters?.()
+  clearanceStore.setUser?.(user.id)
+  try {
+    await clearanceStore.fetch?.()
+  } catch {
+    error.value = error.value || 'Failed to load clearance data'
+  }
+}
+
+function closeClearance() {
+  isClearanceOpen.value = false
+  selectedUser.value = null
+}
+
+async function printClearance() {
+  if (typeof window === 'undefined' || !document?.body) return
+  document.body.classList.add('printing-clearance')
+  await nextTick()
+  window.print()
+  setTimeout(() => document.body.classList.remove('printing-clearance'), 0)
 }
 
 async function excelDownload() {
@@ -259,6 +427,13 @@ function resetFilters() {
           <i class="far fa-file-excel text-2xl text-green-500"></i>Excel
         </button>
       </div>
+    </div>
+
+    <div
+      v-if="isClearanceContext"
+      class="rounded-md border border-indigo-200 bg-indigo-50 p-3 text-sm text-indigo-800"
+    >
+      Select a user to view clearance & print.
     </div>
 
     <!-- filters -->
@@ -369,6 +544,7 @@ function resetFilters() {
                   <button class="btn-3 !px-2 !py-1" @click="openShift(user)">Shift</button>
                   <button class="btn-3 !px-2 !py-1" @click="openWeekend(user)">Weekend</button>
                   <button class="btn-3 !px-2 !py-1" @click="openAssign(user)">KPI</button>
+                  <button class="btn-3 !px-2 !py-1" @click="openClearance(user)">Clearance</button>
                   <RouterLink :to="{ name: 'UserShow', params: { id: user.id }, query: { company: route.query.company } }" class="btn-3 !px-2 !py-1">View</RouterLink>
                 </div>
               </div>
@@ -557,6 +733,14 @@ function resetFilters() {
                     >
                       KPI
                     </RouterLink>
+                    <button
+                      type="button"
+                      class="btn-1 !px-2 !py-1 !text-xs"
+                      @click="openClearance(user)"
+                      title="Clearance"
+                    >
+                      Clearance
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -600,5 +784,183 @@ function resetFilters() {
         />
       </div>
     </div>
+
+    <!-- Clearance Panel -->
+    <div v-if="isClearanceOpen" class="fixed inset-0 z-[9999]">
+      <div class="absolute inset-0 bg-black/40" @click="closeClearance"></div>
+
+      <div class="absolute right-0 top-0 h-full w-full max-w-4xl bg-white shadow-xl overflow-y-auto">
+        <div class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-4 py-3">
+          <div>
+            <h2 class="text-lg font-semibold text-zinc-900">User Clearance</h2>
+            <p v-if="clearanceName" class="text-xs text-zinc-500">
+              Viewing: {{ clearanceName }}
+              <span v-if="clearanceEmployeeId"> (ID: {{ clearanceEmployeeId }})</span>
+            </p>
+          </div>
+          <div class="flex items-center gap-2 print:hidden">
+            <button type="button" class="btn-3" @click="printClearance" :disabled="loading">
+              Print
+            </button>
+            <button type="button" class="btn-1" @click="closeClearance">Close</button>
+          </div>
+        </div>
+
+        <div class="p-4 space-y-4">
+          <div id="print-clearance" class="space-y-4">
+            <div class="rounded-lg border border-zinc-200 bg-white p-4">
+              <div class="text-center">
+                <h3 class="text-lg font-semibold text-zinc-900">Clearance Sheet</h3>
+                <p class="text-xs text-zinc-500">Date: {{ clearanceDate }}</p>
+              </div>
+
+              <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                <div>
+                  <span class="text-zinc-500">Name:</span>
+                  <span class="font-medium text-zinc-900">{{ clearanceName || 'N/A' }}</span>
+                </div>
+                <div>
+                  <span class="text-zinc-500">Employee ID:</span>
+                  <span class="font-medium text-zinc-900">{{ clearanceEmployeeId || 'N/A' }}</span>
+                </div>
+                <div>
+                  <span class="text-zinc-500">Department:</span>
+                  <span class="font-medium text-zinc-900">{{ clearanceDept || 'N/A' }}</span>
+                </div>
+                <div>
+                  <span class="text-zinc-500">Designation:</span>
+                  <span class="font-medium text-zinc-900">{{ clearancePost || 'N/A' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div
+              v-if="loading"
+              class="rounded-md border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600"
+            >
+              Loading clearance...
+            </div>
+
+            <div
+              v-else-if="error"
+              class="rounded-md border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700"
+            >
+              {{ error }}
+            </div>
+
+            <div
+              v-else-if="!printableRows.length"
+              class="rounded-md border border-dashed border-zinc-300 bg-zinc-50 p-4 text-sm text-zinc-600"
+            >
+              No clearance data found.
+            </div>
+
+            <div v-else class="overflow-x-auto">
+              <table class="min-w-full border border-zinc-300 text-[13px]" style="border-collapse:collapse">
+                <thead>
+                  <tr class="bg-zinc-100 text-zinc-700">
+                    <th class="border border-zinc-300 px-2 py-1 text-left w-12">S. L.</th>
+                    <th class="border border-zinc-300 px-2 py-1 text-left w-[120px]">Handover To</th>
+                    <th class="border border-zinc-300 px-2 py-1 text-left">Particulars</th>
+                    <th class="border border-zinc-300 px-2 py-1 text-left w-[110px]">Handed over</th>
+                    <th class="border border-zinc-300 px-2 py-1 text-left">Present Condition</th>
+                    <th class="border border-zinc-300 px-2 py-1 text-left w-[140px]">Receiver Name</th>
+                    <th class="border border-zinc-300 px-2 py-1 text-left w-[110px]">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="item in printableRows" :key="item.row.template_item_id" class="align-top">
+                    <td class="border border-zinc-300 px-2 py-1 align-top tabular-nums">
+                      {{ item.sl }}.
+                    </td>
+
+                    <td
+                      v-if="item.isGroupFirst"
+                      :rowspan="item.groupSpan"
+                      class="border border-zinc-300 px-2 py-1 align-top font-medium"
+                    >
+                      <span class="text-xs">{{ item.group }}</span>
+                    </td>
+
+                    <td class="border border-zinc-300 px-2 py-1">
+                      <div class="font-medium text-zinc-900">{{ item.row.label }}</div>
+                      <div class="text-[11px] text-zinc-600 mt-0.5">
+                        Cleared by:
+                        <span class="font-semibold text-zinc-700">
+                          {{
+                            item.row.cleared_by_user?.name ||
+                            (item.row.cleared_by_user?.id ? '#' + item.row.cleared_by_user.id : 'N/A')
+                          }}
+                        </span>
+                        <span v-if="item.row.cleared_at" class="text-zinc-400">
+                          ({{ new Date(item.row.cleared_at).toLocaleString() }})
+                        </span>
+                        <span v-if="item.row.missing" class="ml-2 text-amber-700">(pending)</span>
+                      </div>
+                    </td>
+
+                    <td class="border border-zinc-300 px-2 py-1 text-center font-semibold">
+                      {{ prettyYesNo(item.row.handover_status) }}
+                    </td>
+
+                    <td class="border border-zinc-300 px-2 py-1">
+                      <div class="whitespace-pre-line">{{ item.row.present_condition || 'N/A' }}</div>
+                    </td>
+
+                    <td class="border border-zinc-300 px-2 py-1">
+                      <div>{{ item.row.receiver_name || 'N/A' }}</div>
+                      <div v-if="item.row.remarks" class="text-[11px] text-zinc-500 mt-0.5">
+                        {{ item.row.remarks }}
+                      </div>
+                    </td>
+
+                    <td class="border border-zinc-300 px-2 py-1">
+                      <span
+                        class="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium"
+                        :class="statusPillClass(item.row)"
+                        :title="item.row.missing ? 'Not cleared yet' : ('Status: ' + statusLabel(item.row))"
+                        :aria-label="statusLabel(item.row)"
+                      >
+                        <span class="h-1.5 w-1.5 rounded-full" :class="statusDotClass(item.row)"></span>
+                        {{ statusLabel(item.row) }}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div v-if="!loading && !error && printableRows.length" class="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+              <div class="pt-6 text-center border-t border-zinc-300 text-zinc-700">User Signature</div>
+              <div class="pt-6 text-center border-t border-zinc-300 text-zinc-700">Head of HR</div>
+              <div class="pt-6 text-center border-t border-zinc-300 text-zinc-700">Verified by ACC/CC</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
+
+<style>
+@media print {
+  body.printing-clearance * {
+    visibility: hidden;
+  }
+  body.printing-clearance #print-clearance,
+  body.printing-clearance #print-clearance * {
+    visibility: visible;
+  }
+  body.printing-clearance #print-clearance {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 12mm;
+  }
+  body.printing-clearance {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+</style>

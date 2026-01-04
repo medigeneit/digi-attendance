@@ -67,16 +67,16 @@ const hrdMenu = [
   { label: 'Job Card', routeName: 'EmployeeAttendance' },
   { label: 'Attendance Log', routeName: 'EmployeeAttendanceLog' },
   { label: 'Monthly Application Log', routeName: 'MonthWiseApplicationLog' },
-  { label: 'Annual Leave Applications', routeName: 'HrdAdminLeaveApplication' },
+  { label: 'Annual Leave History', routeName: 'HrdAdminLeaveApplication' },
   { label: 'Leave Applications', routeName: 'LeaveApplicationList' },
   { label: 'Short Leaves', routeName: 'ShortLeaveList' },
   { label: 'Shift Exchanges', routeName: 'ShiftExchangeList' },
   { label: 'Offday Exchanges', routeName: 'OffdayExchangeList' },
-  { label: 'Manual Attendance List', routeName: 'ManualAttendanceList' },
-  { label: 'Manual Attendance Application', routeName: 'HrdAdminManualAttendanceApplication' },
-  { label: 'Overtime List', routeName: 'OvertimeList' },
-  { label: 'PayCut List', routeName: 'PayCutList' },
-  { label: 'Notice List', routeName: 'NoticeList' },
+  { label: 'Manual Attendance', routeName: 'ManualAttendanceList' },
+  { label: 'Bulk Manual Attendance', routeName: 'HrdAdminManualAttendanceApplication' },
+  { label: 'Overtime', routeName: 'OvertimeList' },
+  { label: 'PayCut', routeName: 'PayCutList' },
+  { label: 'Notice', routeName: 'NoticeList' },
   { label: 'Shift Schedules', routeName: 'ShiftSchedule' },
   { label: 'User Clearances', routeName: 'UserClearance' },
 ]
@@ -337,18 +337,33 @@ watch(open, (val) => {
           </div>
         </RouterLink>
 
-        <nav v-if="open && isSubmenuOpen('reports')" class="mt-1 space-y-1">
-          <RouterLink
-            v-for="item in reportsMenu"
-            :key="item.routeName"
-            :to="{ name: item.routeName }"
-            class="flex items-center gap-2 pl-11 pr-3 py-1.5 text-sm text-gray-600 rounded hover:bg-blue-50 hover:text-blue-600"
-            :class="{ 'bg-blue-50 text-blue-600 font-medium': currentName === item.routeName }"
+        <transition name="submenu">
+          <nav
+            v-if="open && isSubmenuOpen('reports')"
+            class="submenu-accordion relative mt-2 ml-3 space-y-1 rounded-xl bg-slate-50/70 px-2 py-2 shadow-sm"
           >
-            <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
-            <span>{{ item.label }}</span>
-          </RouterLink>
-        </nav>
+            <span aria-hidden="true" class="absolute left-3 top-2 bottom-2 w-px bg-slate-200"></span>
+            <RouterLink
+              v-for="item in reportsMenu"
+              :key="item.routeName"
+              :to="{ name: item.routeName }"
+              class="group relative flex items-center gap-2 rounded-lg py-2 pl-7 pr-3 text-[13px] text-slate-600 transition duration-200 ease-out hover:bg-slate-100 hover:text-slate-900 hover:translate-x-0.5"
+              :class="{
+                'bg-blue-50/80 text-blue-700 font-semibold shadow-sm': currentName === item.routeName,
+              }"
+            >
+              <span
+                class="absolute left-3 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-slate-300 transition group-hover:bg-blue-400"
+                :class="currentName === item.routeName ? 'bg-blue-500' : ''"
+              ></span>
+              <span class="flex-1">{{ item.label }}</span>
+              <span
+                class="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-blue-600 opacity-0 transition"
+                :class="currentName === item.routeName ? 'opacity-100' : 'group-hover:opacity-60'"
+              ></span>
+            </RouterLink>
+          </nav>
+        </transition>
 
         <!-- KPI + Submenu -->
         <RouterLink to="/kpi" custom v-slot="{ navigate }">
@@ -380,18 +395,33 @@ watch(open, (val) => {
           </div>
         </RouterLink>
 
-        <nav v-if="open && isSubmenuOpen('kpi')" class="mt-1 space-y-1">
-          <RouterLink
-            v-for="item in kpiMenu"
-            :key="item.routeName"
-            :to="{ name: item.routeName }"
-            class="flex items-center gap-2 pl-11 pr-3 py-1.5 text-sm text-gray-600 rounded hover:bg-blue-50 hover:text-blue-600"
-            :class="{ 'bg-blue-50 text-blue-600 font-medium': currentName === item.routeName }"
+        <transition name="submenu">
+          <nav
+            v-if="open && isSubmenuOpen('kpi')"
+            class="submenu-accordion relative mt-2 ml-3 space-y-1 rounded-xl bg-slate-50/70 px-2 py-2 shadow-sm"
           >
-            <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
-            <span>{{ item.label }}</span>
-          </RouterLink>
-        </nav>
+            <span aria-hidden="true" class="absolute left-3 top-2 bottom-2 w-px bg-slate-200"></span>
+            <RouterLink
+              v-for="item in kpiMenu"
+              :key="item.routeName"
+              :to="{ name: item.routeName }"
+              class="group relative flex items-center gap-2 rounded-lg py-2 pl-7 pr-3 text-[13px] text-slate-600 transition duration-200 ease-out hover:bg-slate-100 hover:text-slate-900 hover:translate-x-0.5"
+              :class="{
+                'bg-blue-50/80 text-blue-700 font-semibold shadow-sm': currentName === item.routeName,
+              }"
+            >
+              <span
+                class="absolute left-3 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-slate-300 transition group-hover:bg-blue-400"
+                :class="currentName === item.routeName ? 'bg-blue-500' : ''"
+              ></span>
+              <span class="flex-1">{{ item.label }}</span>
+              <span
+                class="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-blue-600 opacity-0 transition"
+                :class="currentName === item.routeName ? 'opacity-100' : 'group-hover:opacity-60'"
+              ></span>
+            </RouterLink>
+          </nav>
+        </transition>
 
         <!-- HR Department + Submenu -->
         <RouterLink to="/hrd" custom v-slot="{ navigate }">
@@ -423,18 +453,33 @@ watch(open, (val) => {
           </div>
         </RouterLink>
 
-        <nav v-if="open && isSubmenuOpen('hrd')" class="mt-1 space-y-1">
-          <RouterLink
-            v-for="item in hrdMenu"
-            :key="item.routeName"
-            :to="{ name: item.routeName }"
-            class="flex items-center gap-2 pl-11 pr-3 py-1.5 text-sm text-gray-600 rounded hover:bg-blue-50 hover:text-blue-600"
-            :class="{ 'bg-blue-50 text-blue-600 font-medium': currentName === item.routeName }"
+        <transition name="submenu">
+          <nav
+            v-if="open && isSubmenuOpen('hrd')"
+            class="submenu-accordion relative mt-2 ml-3 space-y-1 rounded-xl bg-slate-50/70 px-2 py-2 shadow-sm"
           >
-            <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
-            <span>{{ item.label }}</span>
-          </RouterLink>
-        </nav>
+            <span aria-hidden="true" class="absolute left-3 top-2 bottom-2 w-px bg-slate-200"></span>
+            <RouterLink
+              v-for="item in hrdMenu"
+              :key="item.routeName"
+              :to="{ name: item.routeName }"
+              class="group relative flex items-center gap-2 rounded-lg py-2 pl-7 pr-3 text-[13px] text-slate-600 transition duration-200 ease-out hover:bg-slate-100 hover:text-slate-900 hover:translate-x-0.5"
+              :class="{
+                'bg-blue-50/80 text-blue-700 font-semibold shadow-sm': currentName === item.routeName,
+              }"
+            >
+              <span
+                class="absolute left-3 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-slate-300 transition group-hover:bg-blue-400"
+                :class="currentName === item.routeName ? 'bg-blue-500' : ''"
+              ></span>
+              <span class="flex-1">{{ item.label }}</span>
+              <span
+                class="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-blue-600 opacity-0 transition"
+                :class="currentName === item.routeName ? 'opacity-100' : 'group-hover:opacity-60'"
+              ></span>
+            </RouterLink>
+          </nav>
+        </transition>
 
         <!-- EmpManage + Submenu -->
         <template v-if="isSuperAdminOrDev">
@@ -467,20 +512,33 @@ watch(open, (val) => {
             </div>
           </RouterLink>
 
-          <nav v-if="open && isSubmenuOpen('emp')" class="mt-1 space-y-1">
-            <RouterLink
-              v-for="item in empManageMenu"
-              :key="item.key"
-              :to="item.to"
-              class="flex items-center gap-2 pl-11 pr-3 py-1.5 text-sm text-gray-600 rounded hover:bg-blue-50 hover:text-blue-600"
-              :class="{
-                'bg-blue-50 text-blue-600 font-medium': currentName === 'checklists.board',
-              }"
+          <transition name="submenu">
+            <nav
+              v-if="open && isSubmenuOpen('emp')"
+              class="submenu-accordion relative mt-2 ml-3 space-y-1 rounded-xl bg-slate-50/70 px-2 py-2 shadow-sm"
             >
-              <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
-              <span>{{ item.label }}</span>
-            </RouterLink>
-          </nav>
+              <span aria-hidden="true" class="absolute left-3 top-2 bottom-2 w-px bg-slate-200"></span>
+              <RouterLink
+                v-for="item in empManageMenu"
+                :key="item.key"
+                :to="item.to"
+                class="group relative flex items-center gap-2 rounded-lg py-2 pl-7 pr-3 text-[13px] text-slate-600 transition duration-200 ease-out hover:bg-slate-100 hover:text-slate-900 hover:translate-x-0.5"
+                :class="{
+                  'bg-blue-50/80 text-blue-700 font-semibold shadow-sm': currentName === 'checklists.board',
+                }"
+              >
+                <span
+                  class="absolute left-3 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-slate-300 transition group-hover:bg-blue-400"
+                  :class="currentName === 'checklists.board' ? 'bg-blue-500' : ''"
+                ></span>
+                <span class="flex-1">{{ item.label }}</span>
+                <span
+                  class="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-blue-600 opacity-0 transition"
+                  :class="currentName === 'checklists.board' ? 'opacity-100' : 'group-hover:opacity-60'"
+                ></span>
+              </RouterLink>
+            </nav>
+          </transition>
 
           <!-- Settings + Submenu -->
           <RouterLink to="/settings" custom v-slot="{ navigate }">
@@ -512,18 +570,33 @@ watch(open, (val) => {
             </div>
           </RouterLink>
 
-          <nav v-if="open && isSubmenuOpen('settings')" class="mt-1 space-y-1">
-            <RouterLink
-              v-for="item in settingsMenu"
-              :key="item.label"
-              :to="{ name: item.routeName, params: item.params }"
-              class="flex items-center gap-2 pl-11 pr-3 py-1.5 text-sm text-gray-600 rounded hover:bg-blue-50 hover:text-blue-600"
-              :class="{ 'bg-blue-50 text-blue-600 font-medium': currentName === item.routeName }"
+          <transition name="submenu">
+            <nav
+              v-if="open && isSubmenuOpen('settings')"
+              class="submenu-accordion relative mt-2 ml-3 space-y-1 rounded-xl bg-slate-50/70 px-2 py-2 shadow-sm"
             >
-              <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
-              <span>{{ item.label }}</span>
-            </RouterLink>
-          </nav>
+              <span aria-hidden="true" class="absolute left-3 top-2 bottom-2 w-px bg-slate-200"></span>
+              <RouterLink
+                v-for="item in settingsMenu"
+                :key="item.label"
+                :to="{ name: item.routeName, params: item.params }"
+                class="group relative flex items-center gap-2 rounded-lg py-2 pl-7 pr-3 text-[13px] text-slate-600 transition duration-200 ease-out hover:bg-slate-100 hover:text-slate-900 hover:translate-x-0.5"
+                :class="{
+                  'bg-blue-50/80 text-blue-700 font-semibold shadow-sm': currentName === item.routeName,
+                }"
+              >
+                <span
+                  class="absolute left-3 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-slate-300 transition group-hover:bg-blue-400"
+                  :class="currentName === item.routeName ? 'bg-blue-500' : ''"
+                ></span>
+                <span class="flex-1">{{ item.label }}</span>
+                <span
+                  class="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-blue-600 opacity-0 transition"
+                  :class="currentName === item.routeName ? 'opacity-100' : 'group-hover:opacity-60'"
+                ></span>
+              </RouterLink>
+            </nav>
+          </transition>
 
           <!-- Careers + Submenu -->
           <RouterLink to="/admin/careers" custom v-slot="{ navigate }">
@@ -555,18 +628,33 @@ watch(open, (val) => {
             </div>
           </RouterLink>
 
-          <nav v-if="open && isSubmenuOpen('careers')" class="mt-1 space-y-1">
-            <RouterLink
-              v-for="item in careerMenu"
-              :key="item.routeName"
-              :to="{ name: item.routeName }"
-              class="flex items-center gap-2 pl-11 pr-3 py-1.5 text-sm text-gray-600 rounded hover:bg-blue-50 hover:text-blue-600"
-              :class="{ 'bg-blue-50 text-blue-600 font-medium': currentName === item.routeName }"
+          <transition name="submenu">
+            <nav
+              v-if="open && isSubmenuOpen('careers')"
+              class="submenu-accordion relative mt-2 ml-3 space-y-1 rounded-xl bg-slate-50/70 px-2 py-2 shadow-sm"
             >
-              <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
-              <span>{{ item.label }}</span>
-            </RouterLink>
-          </nav>
+              <span aria-hidden="true" class="absolute left-3 top-2 bottom-2 w-px bg-slate-200"></span>
+              <RouterLink
+                v-for="item in careerMenu"
+                :key="item.routeName"
+                :to="{ name: item.routeName }"
+                class="group relative flex items-center gap-2 rounded-lg py-2 pl-7 pr-3 text-[13px] text-slate-600 transition duration-200 ease-out hover:bg-slate-100 hover:text-slate-900 hover:translate-x-0.5"
+                :class="{
+                  'bg-blue-50/80 text-blue-700 font-semibold shadow-sm': currentName === item.routeName,
+                }"
+              >
+                <span
+                  class="absolute left-3 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-slate-300 transition group-hover:bg-blue-400"
+                  :class="currentName === item.routeName ? 'bg-blue-500' : ''"
+                ></span>
+                <span class="flex-1">{{ item.label }}</span>
+                <span
+                  class="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-blue-600 opacity-0 transition"
+                  :class="currentName === item.routeName ? 'opacity-100' : 'group-hover:opacity-60'"
+                ></span>
+              </RouterLink>
+            </nav>
+          </transition>
         </template>
       </template>
 
@@ -582,3 +670,38 @@ watch(open, (val) => {
     </div>
   </aside>
 </template>
+
+<style scoped>
+.submenu-enter-active,
+.submenu-leave-active {
+  transition: max-height 0.25s ease, opacity 0.2s ease;
+  overflow: hidden;
+}
+
+.submenu-enter-from,
+.submenu-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
+
+.submenu-enter-to,
+.submenu-leave-from {
+  max-height: 900px;
+  opacity: 1;
+}
+
+.side-menu {
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.side-menu:hover {
+  transform: translateX(2px);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+}
+
+.side-menu:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.45);
+}
+</style>

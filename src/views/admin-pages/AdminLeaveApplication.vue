@@ -144,7 +144,7 @@ const formatDate = (ts) => {
         <span class="hidden md:flex">Back</span>
       </button>
 
-      <h1 class="title-md md:title-lg flex-wrap text-center">Annual Leave Applications</h1>
+      <h1 class="title-md md:title-lg flex-wrap text-center">Annual Leave History</h1>
       <div></div>
     </div>
 
