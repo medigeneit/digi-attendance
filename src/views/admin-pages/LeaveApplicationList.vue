@@ -146,31 +146,27 @@ const formatDate = (ts) => {
           :initial-value="$route.query"
          @filter-change="handleFilterChange"
       >
-      <div class="flex gap-4 items-center flex-wrap">
-       <div>
-        <label for="" class="top-label -top-1">Status </label>
-         <select
-           v-model="leaveApplicationStore.selectedStatus"
-           @change="fetchApplicationsByUser"
-           class="input-1 py-0.5"
-         >
-           <option value="" selected>All</option>
-           <option value="Pending">Pending</option>
-           <option value="Approved">Approved</option>
-           <option value="Rejected">Rejected</option>
-         </select>
-       </div>
-      <div class="relative">
-          <label  class="top-label -top-1">Month </label>
-          <FlexibleDatePicker
-          v-model="period"
-          :show-year="false"
-          :show-month="true"
-          :show-date="false"
-        />
+      <div>
+       <label for="" class="top-label -top-1">Status </label>
+        <select
+          v-model="leaveApplicationStore.selectedStatus"
+          @change="fetchApplicationsByUser"
+          class="input-1 py-0.5"
+        >
+          <option value="" selected>All</option>
+          <option value="Pending">Pending</option>
+          <option value="Approved">Approved</option>
+          <option value="Rejected">Rejected</option>
+        </select>
       </div>
-      </div>
-      </EmployeeFilter>
+    </EmployeeFilter>
+    <FlexibleDatePicker
+      v-model="period"
+      :show-year="false"
+      :show-month="true"
+      :show-date="false"
+      label="Month"
+    />
     </div>
 
     <div v-if="leaveApplicationStore.loading" class="text-center py-4">

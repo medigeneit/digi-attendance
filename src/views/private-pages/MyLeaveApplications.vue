@@ -83,6 +83,7 @@ function deleteApplication(applicationId) {
           :show-year="true"
           :show-month="false"
           :show-date="false"
+          label="Month"
         />
         <RouterLink :to="{ name: 'LeaveApplicationAdd' }" class="btn-2 flex items-center gap-2">
           <i class="far fa-paper-plane"></i>
@@ -101,10 +102,9 @@ function deleteApplication(applicationId) {
       <!-- Empty state -->
       <div v-if="myLeaveApplications.length === 0" class="flex justify-center">
         <div class="max-w-md w-full bg-white rounded-lg border border-dashed border-gray-300 p-6 text-center space-y-3 shadow-sm">
-          <div class="text-3xl mb-2">РY~п</div>
           <h2 class="font-semibold text-gray-700">No leave applications yet</h2>
           <p class="text-sm text-gray-500">
-            You havenѓ?Tt submitted any leave application. Click below to apply for leave.
+            You haven't ? submitted any leave application. Click below to apply for leave.
           </p>
           <RouterLink :to="{ name: 'LeaveApplicationAdd' }" class="btn-2 inline-flex items-center gap-2 mt-2">
             <i class="far fa-paper-plane"></i>

@@ -136,6 +136,7 @@ const formatTime = (timeString) => {
             :show-year="false"
             :show-month="true"
             :show-date="false"
+            label="Month"
           />
         </div>
       </div>

@@ -419,8 +419,7 @@ const goBack = () => router.go(-1)
           >
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p class="font-semibold text-slate-900">{{ day }}</p>
-                <p class="text-sm text-slate-500">{{ getWeekdayLabel(day) }}</p>
+                <p class="font-semibold text-slate-900">{{ day }} ({{ getWeekdayLabel(day) }})</p>
               </div>
               <span
                 v-if="selectedLeaveTypes[day]"

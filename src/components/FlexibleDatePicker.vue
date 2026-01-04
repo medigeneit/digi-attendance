@@ -295,21 +295,23 @@ function stepPeriod(delta) {
         </button>
       </div>
       <!-- Year -->
-      <select
-        v-if="showYear"
-        v-model="localYear"
-        :disabled="disabled"
-        class="input-1 py-1.5 px-3 rounded text-xs font-semibold uppercase tracking-wide
-               text-slate-500 border-slate-200 bg-slate-50 disabled:opacity-50"
-      >
-        <option
-          v-for="year in internalYearOptions"
-          :key="year"
-          :value="year"
-        >
-          {{ year }}
-        </option>
-      </select>
+       <div>
+         <select
+           v-if="showYear"
+           v-model="localYear"
+           :disabled="disabled"
+           class="input-1 py-1.5 px-3 rounded text-xs font-semibold uppercase tracking-wide
+                  text-slate-500 border-slate-200 bg-slate-50 disabled:opacity-50"
+         >
+           <option
+             v-for="year in internalYearOptions"
+             :key="year"
+             :value="year"
+           >
+             {{ year }}
+           </option>
+         </select>
+       </div>
 
       <!-- Month -->
       <div

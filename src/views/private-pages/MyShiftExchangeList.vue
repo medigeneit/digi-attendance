@@ -118,6 +118,7 @@ const goBack = () => {
                 :show-year="false"
                 :show-month="true"
                 :show-date="false"
+                label="Moth"
               />
           </div>
         </div>

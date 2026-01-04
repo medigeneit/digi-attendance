@@ -4,6 +4,7 @@ import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import SelectedEmployeeCard from '@/components/user/SelectedEmployeeCard.vue'
 import UserLeaveBalanceModal from '@/components/UserLeaveBalanceModal.vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
@@ -21,6 +22,13 @@ const { userLeaveBalance } = storeToRefs(userStore)
 
 const selectedYear = ref(route.query.year || leaveApplicationStore.selectedYear)
 const search = ref(route.query.search || '')
+const now = new Date()
+const period = ref({
+  year: Number(selectedYear.value) || now.getFullYear(),
+  month: now.getMonth() + 1,
+  day: now.getDate(),
+})
+const periodYear = computed(() => period.value?.year ?? now.getFullYear())
 
 const filters = ref({
   company_id: route.query.company_id || '',
@@ -52,7 +60,7 @@ onMounted(async () => {
   await fetchApplicationsByUser()
 
   if (route.query.employee_id) {
-    await userStore.fetchUserLeaveBalances(route.query.employee_id)
+    await userStore.fetchUserLeaveBalances(route.query.employee_id, { year: periodYear.value })
   }
 })
 
@@ -60,11 +68,22 @@ watch(
   () => route.query.employee_id,
   async (id) => {
     if (id) {
-      await userStore.fetchUserLeaveBalances(id)
+      await userStore.fetchUserLeaveBalances(id, { year: periodYear.value })
     }
   }
 )
 
+watch(
+  periodYear,
+  async (year) => {
+    if (!year) return
+    selectedYear.value = year
+    await fetchApplicationsByUser()
+    if (filters.value.employee_id) {
+      await userStore.fetchUserLeaveBalances(filters.value.employee_id, { year })
+    }
+  }
+)
 
 const filteredLeaveApplications = computed(() => leaveApplications.value || [])
 
@@ -107,7 +126,7 @@ const deleteApplication = async (applicationId) => {
 
 const closeLeaveTypeModal = () => {
   showLeaveTypeModal.value = false
-  userStore.fetchUserLeaveBalances(route.query.employee_id)
+  userStore.fetchUserLeaveBalances(route.query.employee_id, { year: periodYear.value })
 }
 
 const formatDate = (ts) => {
@@ -131,22 +150,24 @@ const formatDate = (ts) => {
 
     <div class="flex flex-wrap gap-2 p-3 rounded-2xl border border-white/20
          bg-white/60 backdrop-blur-md shadow-sm
-         supports-[backdrop-filter]:bg-white/50 sticky top-14">
-      <EmployeeFilter
-         v-model:company_id="filters.company_id"
-          v-model:department_id="filters.department_id"
-          v-model:employee_id="filters.employee_id"
-          v-model:line_type="filters.line_type"
-          :with-type="true"
-          :initial-value="$route.query"
-        @filter-change="handleFilterChange"
-        class="w-full"
-      />
-      <!-- <div>
-        <select v-model="selectedYear" @change="fetchApplicationsByUser" class="input-1">
-          <option v-for="year in yearOptions" :key="year" :value="year">{{ year }}</option>
-        </select>
-      </div> -->
+         supports-[backdrop-filter]:bg-white/50 sticky top-14 z-50">
+        <EmployeeFilter
+          v-model:company_id="filters.company_id"
+            v-model:department_id="filters.department_id"
+            v-model:employee_id="filters.employee_id"
+            v-model:line_type="filters.line_type"
+            :with-type="true"
+            :initial-value="$route.query"
+          @filter-change="handleFilterChange"
+        >
+          <FlexibleDatePicker
+            v-model="period"
+            :show-year="true"
+            :show-month="false"
+            :show-date="false"
+            label="Year"
+          />
+      </EmployeeFilter>
     </div>
 
     <div v-if="leaveApplicationStore.loading" class="text-center py-4">
