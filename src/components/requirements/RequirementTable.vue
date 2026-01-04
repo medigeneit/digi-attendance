@@ -133,7 +133,12 @@ const auth = useAuthStore()
               </div>
               <div class="flex items-center gap-2 whitespace-nowrap">
                 <span class="text-xs text-gray-500">By:</span>
-                <UserChip :user="req.created_by" v-if="req.created_by" avatar-size="xsmall" />
+                <UserChip
+                  :show-details-on-avatar-hover="auth.isAdminMood"
+                  :user="req.created_by"
+                  v-if="req.created_by"
+                  avatar-size="xsmall"
+                />
               </div>
               <span
                 v-if="req.priority"
@@ -189,6 +194,7 @@ const auth = useAuthStore()
             <div class="flex items-center gap-2 mt-4">
               <div class="text-xs text-gray-500 w-16 mr-1">In Charge:</div>
               <UserChip
+                :show-details-on-avatar-hover="auth.isAdminMood"
                 :user="req?.from_department?.in_charge"
                 v-if="req?.from_department?.in_charge"
                 avatar-size="xsmall"
@@ -200,6 +206,7 @@ const auth = useAuthStore()
             <div class="flex items-center gap-2 mt-3">
               <div class="text-xs text-gray-500 w-16 mr-1">Coordinator:</div>
               <UserChip
+                :show-details-on-avatar-hover="auth.isAdminMood"
                 :user="req.from_coordinator"
                 v-if="req.from_coordinator"
                 avatar-size="xsmall"
@@ -224,7 +231,12 @@ const auth = useAuthStore()
 
             <div class="flex items-center gap-2 mt-4">
               <div class="text-xs text-gray-500 w-16 mr-1">In Charge:</div>
-              <UserChip :user="req.to_incharge" v-if="req.to_incharge" avatar-size="xsmall" />
+              <UserChip
+                :show-details-on-avatar-hover="auth.isAdminMood"
+                :user="req.to_incharge"
+                v-if="req.to_incharge"
+                avatar-size="xsmall"
+              />
               <div v-else>
                 <div v-if="req?.to_department?.incharge_id" class="text-xs text-red-300">
                   Approval Pending
@@ -234,7 +246,12 @@ const auth = useAuthStore()
             </div>
             <div class="flex items-center gap-2 mt-3">
               <div class="text-xs text-gray-500 w-16 mr-1">Coordinator:</div>
-              <UserChip :user="req.to_coordinator" v-if="req.to_coordinator" avatar-size="xsmall" />
+              <UserChip
+                :show-details-on-avatar-hover="auth.isAdminMood"
+                :user="req.to_coordinator"
+                v-if="req.to_coordinator"
+                avatar-size="xsmall"
+              />
               <div v-else>
                 <div v-if="req?.to_department?.coordinator_id" class="text-xs text-red-300">
                   Approval Pending

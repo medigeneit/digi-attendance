@@ -37,7 +37,6 @@ const auth = useAuthStore()
 
 const sidebarTop = ref()
 const closingHistoryShown = ref(false)
-const shareComponent = ref()
 
 const requirement = ref(null)
 const detailEditForm = reactive({
@@ -60,6 +59,8 @@ const beforePrint = () => (isPrinting.value = true)
 const afterPrint = () => (isPrinting.value = false)
 
 const editingId = ref()
+
+const user_department_position = ref('')
 
 const employeeAssignForm = ref({
   isOpen: false,
@@ -96,7 +97,9 @@ onBeforeUnmount(() => {
 })
 async function fetchRequirement() {
   state.value = 'loading'
-  requirement.value = (await findRequirement(route.params.id)).data?.requirement
+  const requirementData = (await findRequirement(route.params.id)).data
+  requirement.value = requirementData?.requirement
+  user_department_position.value = requirementData?.user_department_position
   state.value = ''
 }
 
@@ -341,6 +344,7 @@ const reqClosingModal = ref({
                     <div v-if="requirement.created_by" class="flex items-center gap-1">
                       <span class="text-gray-400 text-sm">By</span>
                       <UserChip
+                        :show-details-on-avatar-hover="auth.isAdminMood"
                         avatar-size="xsmall"
                         :user="requirement.created_by"
                         class="border-sky-300"
@@ -542,14 +546,16 @@ const reqClosingModal = ref({
               </table>
             </div>
 
+            <!-- {{ requirement }} -->
             <div
               class="mt-8 border rounded-md p-8 flex items-start justify-between bg-gray-50 print:hidden"
-              v-if="state != 'loading' && !requirement?.status"
+              v-if="state != 'loading' && !requirement?.submission_date"
             >
               <div class="flex flex-col items-end">
                 <RequirementSubmissionHandler
                   :requirement-id="requirement?.id"
                   @success="fetchRequirement"
+                  :requirement-note="user_department_position == 'in_charge'"
                 >
                   <template #heading> Requirement Submission </template>
                   <template #acceptButtonLabel>
@@ -562,7 +568,7 @@ const reqClosingModal = ref({
               </div>
             </div>
 
-            <div class="mt-6 mb-8 break-before-avoid-page" v-if="requirement?.status">
+            <div class="mt-6 mb-8 break-before-avoid-page" v-if="requirement?.submission_date">
               <TextWithHr>
                 <h2 class="font-semibold text-lg px-2">Approvals</h2>
               </TextWithHr>
@@ -609,7 +615,11 @@ const reqClosingModal = ref({
                 </div>
                 <div class="text-gray-600 text-sm mb-2 border-b border-dashed">Supervisor</div>
                 <div class="flex items-center gap-x-3 gap-y-2 flex-wrap">
-                  <UserChip :user="requirement?.supervisor" v-if="requirement?.supervisor" />
+                  <UserChip
+                    :show-details-on-avatar-hover="auth.isAdminMood"
+                    :user="requirement?.supervisor"
+                    v-if="requirement?.supervisor"
+                  />
                 </div>
               </div>
 
