@@ -37,7 +37,6 @@ const auth = useAuthStore()
 
 const sidebarTop = ref()
 const closingHistoryShown = ref(false)
-const shareComponent = ref()
 
 const requirement = ref(null)
 const detailEditForm = reactive({
@@ -341,6 +340,7 @@ const reqClosingModal = ref({
                     <div v-if="requirement.created_by" class="flex items-center gap-1">
                       <span class="text-gray-400 text-sm">By</span>
                       <UserChip
+                        :show-details-on-avatar-hover="auth.isAdminMood"
                         avatar-size="xsmall"
                         :user="requirement.created_by"
                         class="border-sky-300"
@@ -609,7 +609,11 @@ const reqClosingModal = ref({
                 </div>
                 <div class="text-gray-600 text-sm mb-2 border-b border-dashed">Supervisor</div>
                 <div class="flex items-center gap-x-3 gap-y-2 flex-wrap">
-                  <UserChip :user="requirement?.supervisor" v-if="requirement?.supervisor" />
+                  <UserChip
+                    :show-details-on-avatar-hover="auth.isAdminMood"
+                    :user="requirement?.supervisor"
+                    v-if="requirement?.supervisor"
+                  />
                 </div>
               </div>
 
