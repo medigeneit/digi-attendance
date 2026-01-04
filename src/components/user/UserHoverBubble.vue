@@ -1,7 +1,7 @@
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import { useUserStore } from '@/stores/user'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 
 const props = defineProps({
   user: { type: Object, default: () => ({}) },
@@ -36,7 +36,9 @@ const lineTypeLabels = {
 }
 
 const mergedUser = computed(() => ({ ...(props.user || {}), ...(hydratedUser.value || {}) }))
-const resolvedLineType = computed(() => lineTypeLabels[mergedUser.value?.line_type] || mergedUser.value?.line_type || '')
+const resolvedLineType = computed(
+  () => lineTypeLabels[mergedUser.value?.type] || mergedUser.value?.type || '',
+)
 const jobCardUrl = computed(() => {
   const u = mergedUser.value || {}
   const employeeId = u?.id || u?.user_id || u?.employee_id
@@ -55,12 +57,14 @@ const infoRows = computed(() => {
   const u = mergedUser.value || {}
   const rows = [
     { label: 'Employee ID', value: u.employee_id || u.employeeId || u.id },
+    { label: 'Employment type', value: u.employment_type },
     { label: 'Email', value: u.email },
     { label: 'Phone', value: u.phone || u.contact_number || u.mobile },
-    { label: 'Designation', value: u.designation?.name },
+    { label: 'Designation', value: u.designation?.title },
     { label: 'Department', value: u.department?.name },
     { label: 'Company', value: u.department?.company?.name || u.company?.name },
     { label: 'Line Type', value: resolvedLineType.value },
+    { label: 'Blood Group', value: u.blood },
   ]
 
   return rows.map((row) => ({ ...row, value: row.value || '-' }))
@@ -228,7 +232,7 @@ const handleBubbleLeave = () => {
       <transition name="fade-scale">
         <div
           v-if="bubbleOpen"
-          class="fixed z-50 rounded-xl border border-gray-200 bg-white p-4 shadow-xl"
+          class="fixed z-50 rounded-xl border border-gray-200 bg-white p-4 shadow-xl overflow-y-auto max-h-[40vh] w-80 md:w-96"
           :style="bubbleStyle"
           ref="bubbleRef"
           @mouseenter="handleBubbleEnter"
@@ -241,17 +245,22 @@ const handleBubbleLeave = () => {
                 {{ mergedUser?.name || 'Unknown user' }}
               </div>
               <div class="text-xs text-gray-500 leading-tight">
-                <span v-if="mergedUser?.designation?.name">{{ mergedUser?.designation?.name }}</span>
-                <span
-                  v-if="mergedUser?.designation?.name && resolvedLineType"
-                  class="mx-1"
-                >
+                <span v-if="mergedUser?.designation?.title">{{
+                  mergedUser?.designation?.title
+                }}</span>
+                <span v-if="mergedUser?.designation?.title && resolvedLineType" class="mx-1">
                   &bull;
                 </span>
                 <span v-if="resolvedLineType">{{ resolvedLineType }}</span>
               </div>
               <div v-if="mergedUser?.employee_id" class="text-[11px] text-gray-500">
                 ID: {{ mergedUser?.employee_id }}
+              </div>
+              <div class="text-blue-500 mt-1 text-[11px]">
+                Shift: {{ mergedUser?.current_shift?.shift?.name || 'N/A' }}
+              </div>
+              <div>
+                <slot name="afterHeader" :user="mergedUser"></slot>
               </div>
             </div>
           </div>
@@ -274,10 +283,9 @@ const handleBubbleLeave = () => {
               Open Job Card
             </a>
           </div>
+          <!-- <pre>{{ mergedUser }}</pre> -->
 
-          <div v-if="isLoading" class="mt-2 text-[11px] text-indigo-600">
-            Loading more details…
-          </div>
+          <div v-if="isLoading" class="mt-2 text-[11px] text-indigo-600">Loading more details…</div>
           <div v-else-if="fetchError" class="mt-2 text-[11px] text-red-600">
             {{ fetchError }}
           </div>
@@ -290,7 +298,9 @@ const handleBubbleLeave = () => {
 <style scoped>
 .fade-scale-enter-active,
 .fade-scale-leave-active {
-  transition: opacity 120ms ease, transform 120ms ease;
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
 }
 .fade-scale-enter-from,
 .fade-scale-leave-to {
@@ -298,8 +308,3 @@ const handleBubbleLeave = () => {
   transform: translateY(4px) scale(0.98);
 }
 </style>
-
-
-
-
-
