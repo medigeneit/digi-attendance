@@ -60,6 +60,8 @@ const afterPrint = () => (isPrinting.value = false)
 
 const editingId = ref()
 
+const user_department_position = ref('')
+
 const employeeAssignForm = ref({
   isOpen: false,
   taskId: null,
@@ -95,7 +97,9 @@ onBeforeUnmount(() => {
 })
 async function fetchRequirement() {
   state.value = 'loading'
-  requirement.value = (await findRequirement(route.params.id)).data?.requirement
+  const requirementData = (await findRequirement(route.params.id)).data
+  requirement.value = requirementData?.requirement
+  user_department_position.value = requirementData?.user_department_position
   state.value = ''
 }
 
@@ -542,14 +546,16 @@ const reqClosingModal = ref({
               </table>
             </div>
 
+            <!-- {{ requirement }} -->
             <div
               class="mt-8 border rounded-md p-8 flex items-start justify-between bg-gray-50 print:hidden"
-              v-if="state != 'loading' && !requirement?.status"
+              v-if="state != 'loading' && !requirement?.submission_date"
             >
               <div class="flex flex-col items-end">
                 <RequirementSubmissionHandler
                   :requirement-id="requirement?.id"
                   @success="fetchRequirement"
+                  :requirement-note="user_department_position == 'in_charge'"
                 >
                   <template #heading> Requirement Submission </template>
                   <template #acceptButtonLabel>
@@ -562,7 +568,7 @@ const reqClosingModal = ref({
               </div>
             </div>
 
-            <div class="mt-6 mb-8 break-before-avoid-page" v-if="requirement?.status">
+            <div class="mt-6 mb-8 break-before-avoid-page" v-if="requirement?.submission_date">
               <TextWithHr>
                 <h2 class="font-semibold text-lg px-2">Approvals</h2>
               </TextWithHr>

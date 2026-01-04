@@ -8,6 +8,10 @@ const props = defineProps({
     type: [String, Number],
     required: true,
   },
+  requirementNote: {
+    type: Boolean,
+    default: true,
+  },
 })
 
 const emit = defineEmits(['loading', 'success', 'error'])
@@ -113,7 +117,7 @@ onBeforeUnmount(() => {
     >
       <div class="modal-card">
         <h3 class="title-lg">Requirement Submission</h3>
-        <div>
+        <div v-if="requirementNote">
           <textarea
             v-model="note"
             rows="4"
