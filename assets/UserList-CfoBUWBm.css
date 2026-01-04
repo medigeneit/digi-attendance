@@ -1,0 +1,1 @@
+@media print{body.printing-clearance *{visibility:hidden}body.printing-clearance #print-clearance,body.printing-clearance #print-clearance *{visibility:visible}body.printing-clearance #print-clearance{position:absolute;left:0;top:0;width:100%;padding:12mm}body.printing-clearance{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
