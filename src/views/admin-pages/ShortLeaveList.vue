@@ -188,13 +188,13 @@ const formatDate = (ts) => {
         </div>
       </EmployeeFilter>
 
-      <div class="flex gap-4 relative">
-        <label  class="top-label -top-1">Month </label>
+      <div class="flex gap-4">
         <FlexibleDatePicker
           v-model="period"
           :show-year="false"
           :show-month="true"
           :show-date="false"
+          label="Month"
         />
         <button type="button" @click="fetchShortLeavesByUser" class="btn-2 rounded">
           <span class="hidden md:flex">Search</span>

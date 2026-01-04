@@ -1,5 +1,6 @@
 ﻿<script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import { useNoticeStore } from '@/stores/notice'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watchEffect } from 'vue'
@@ -26,6 +27,13 @@ const sortBy = ref('published_at') // published_at | expired_at | title
 const sortDir = ref('desc')        // asc | desc
 const perPage = ref(15)
 const page = ref(1)
+const now = new Date()
+const period = ref({
+  year: now.getFullYear(),
+  month: now.getMonth() + 1,
+  day: now.getDate(),
+})
+const periodYear = computed(() => period.value?.year ?? now.getFullYear())
 
 /* Modal */
 const previewOpen = ref(false)
@@ -117,6 +125,13 @@ const isExpired = (notice) => {
   return d.getTime() < Date.now()
 }
 
+const matchesYear = (dateString, year) => {
+  if (!dateString || !year) return false
+  const d = new Date(dateString)
+  if (Number.isNaN(d.getTime())) return false
+  return d.getFullYear() === Number(year)
+}
+
 /* =========================
  * Normalize notices for UI
  * ========================= */
@@ -187,6 +202,9 @@ const filteredNotices = computed(() => {
       // expired filter
       if (!showExpired.value && n._expired) return false
 
+      // year filter (expiry date)
+      if (n?.expired_at && !matchesYear(n?.expired_at, periodYear.value)) return false
+
       // search
       if (keyword) {
         const hay = [
@@ -249,6 +267,7 @@ const filtersKey = computed(() => [
   sortBy.value,
   sortDir.value,
   perPage.value,
+  periodYear.value,
 ].join('|'))
 
 watchEffect(() => {
@@ -319,6 +338,13 @@ const hasNotices = computed(() => total.value > 0)
 
         <!-- Selects -->
         <div class="flex flex-wrap items-center gap-2">
+          <FlexibleDatePicker
+            v-model="period"
+            :show-year="true"
+            :show-month="false"
+            :show-date="false"
+            label="Year"
+          />
           <select
             v-model="typeFilter"
             class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-400/40"

@@ -362,19 +362,16 @@ const goBack = () => {
         <div class="rounded-lg bg-white p-3 shadow-sm">
           <p class="text-xs uppercase text-slate-400">Assigned</p>
           <p class="text-xl font-semibold text-slate-800">{{ leaveStats.assigned }}</p>
-          <p class="text-xs text-slate-500">Leave types selected</p>
         </div>
         <div class="rounded-lg bg-white p-3 shadow-sm">
           <p class="text-xs uppercase text-slate-400">Weekend / Holiday</p>
           <p class="text-xl font-semibold text-slate-800">
             {{ leaveStats.weekends + leaveStats.holidays }}
           </p>
-          <p class="text-xs text-slate-500">Auto-excluded</p>
         </div>
         <div class="rounded-lg bg-white p-3 shadow-sm">
           <p class="text-xs uppercase text-slate-400">Still Unassigned</p>
           <p class="text-xl font-semibold text-amber-600">{{ leaveStats.pending }}</p>
-          <p class="text-xs text-slate-500">Select a leave type below</p>
         </div>
       </div>
 
@@ -395,17 +392,17 @@ const goBack = () => {
           <div
             v-for="(day, index) in leaveDays"
             :key="index"
-            class="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition hover:border-blue-200 hover:shadow-md"
+            class="rounded-2xl border border-slate-100 bg-white px-3 py-2 shadow-sm transition hover:border-blue-200 hover:shadow-md"
           >
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p class="font-semibold text-slate-900">{{ day }}</p>
-                <p class="text-sm text-slate-500">{{ getWeekdayLabel(day) }}</p>
+                <p class="font-semibold text-slate-900">{{ day }}  ({{ getWeekdayLabel(day) }}) </p>
+                <!-- <p class="text-sm text-slate-500">{{ getWeekdayLabel(day) }}</p> -->
               </div>
 
               <span
                 v-if="selectedLeaveTypes[index]"
-                class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
+                class="inline-flex items-center rounded-full px-3 text-xs font-semibold"
                 :class="{
                   'bg-amber-50 text-amber-700': selectedLeaveTypes[index] === 'weekend',
                   'bg-emerald-50 text-emerald-700': selectedLeaveTypes[index] === 'holiday',
@@ -422,7 +419,7 @@ const goBack = () => {
               </span>
             </div>
 
-            <div class="mt-3 flex flex-wrap gap-2">
+            <div class="mt-1 flex flex-wrap gap-2">
               <label
                 v-for="type in userLeaveBalance"
                 :key="type.id"
@@ -502,6 +499,7 @@ const goBack = () => {
           label="label"
           placeholder="Search teammate"
           class="z-50"
+          top-label="User"
         />
       </div>
 

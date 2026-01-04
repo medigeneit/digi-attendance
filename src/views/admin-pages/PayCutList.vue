@@ -211,15 +211,13 @@ const formatDate = (ts) => {
           @filter-change="handleFilterChange"
           class="min-w-[220px]"
         >
-        <div class="relative">
-          <label class="top-label -top-1">Month</label>
-          <FlexibleDatePicker
-            v-model="period"
-            :show-year="false"
-            :show-month="true"
-            :show-date="false"
-          />
-        </div>
+        <FlexibleDatePicker
+          v-model="period"
+          :show-year="false"
+          :show-month="true"
+          :show-date="false"
+          label="Month"
+        />
         </EmployeeFilter>
       </div>
     </div>

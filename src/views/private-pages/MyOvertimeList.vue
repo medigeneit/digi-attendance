@@ -139,6 +139,7 @@ function deleteApplication(applicationId) {
               :show-year="false"
               :show-month="true"
               :show-date="false"
+              label="Month"
             />
         </div>
       </div>
