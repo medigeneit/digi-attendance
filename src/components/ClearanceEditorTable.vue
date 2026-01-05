@@ -55,6 +55,7 @@ const editForm  = reactive({
 const editErrors = reactive({})
 
 function openEditByRow(row, index) {
+  if (props.disabled) return
   editIndex.value = index
   editForm.handover_status   = row.handover_status ?? 'NA'
   editForm.present_condition = row.present_condition ?? ''
@@ -78,6 +79,7 @@ function validateEdit() {
 }
 
 function saveEdit() {
+  if (props.disabled) return
   if (!validateEdit()) return
   const idx = editIndex.value
   if (idx < 0) return
@@ -102,6 +104,15 @@ function saveEdit() {
 }
 function closeEdit(){ editOpen.value = false }
 
+function onRowClick(row, index) {
+  if (props.disabled) return
+  openEditByRow(row, index)
+}
+
+watch(() => props.disabled, (v) => {
+  if (v && editOpen.value) closeEdit()
+})
+
 /* Keyboard shortcuts in modal */
 function onKey(e) {
   if (!editOpen.value) return
@@ -122,7 +133,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       </div>
       <button
         class="rounded-md border px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-50"
-        :disabled="!internalRows.length"
+        :class="props.disabled ? 'cursor-not-allowed opacity-60' : ''"
+        :disabled="props.disabled || !internalRows.length"
         @click="openEditByRow(internalRows[0], 0)"
         title="Add/Update clearance"
       >
@@ -150,9 +162,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
           <tr
             v-for="(r, i) in internalRows"
             :key="byId(r)"
-            class="border-t hover:bg-gray-50 transition-colors cursor-pointer"
-            :class="rowAccent(r.status)"
-            @click="openEditByRow(r, i)"
+            class="border-t hover:bg-gray-50 transition-colors"
+            :class="[rowAccent(r.status), props.disabled ? 'cursor-default' : 'cursor-pointer']"
+            @click="onRowClick(r, i)"
           >
             <td class="px-3 py-2 align-top text-gray-500 tabular-nums">{{ i + 1 }}</td>
 
@@ -201,7 +213,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
             <td class="px-3 py-2 align-top" @click.stop>
               <button
-                class="inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-xs hover:bg-gray-50"
+                class="inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-xs hover:bg-gray-50 disabled:opacity-50"
+                :class="props.disabled ? 'cursor-not-allowed opacity-60' : ''"
+                :disabled="props.disabled"
                 @click="openEditByRow(r, i)"
                 title="Edit"
               >✎ Edit</button>
