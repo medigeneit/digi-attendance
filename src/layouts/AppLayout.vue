@@ -35,7 +35,7 @@ watch(
     if (route.name !== 'Dashboard') {
       router.push({ name: 'Dashboard' })
     }
-  }
+  },
 )
 
 onUnmounted(() => {
