@@ -10,6 +10,7 @@
     "dev-8883": "vite --port=8883",
     "dev-8884": "vite --port=8884",
     "build": "vite build",
+    "build:demo": "vite build --mode demo",
     "preview": "vite preview",
     "lint:oxlint": "oxlint . --fix -D correctness --ignore-path .gitignore",
     "lint:eslint": "eslint . --fix",
