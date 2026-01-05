@@ -1,5 +1,6 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import UserClearanceModal from '@/components/UserClearanceModal.vue'
 import { useUserStore } from '@/stores/user'
 import dayjs from 'dayjs'
 import { computed, onMounted, ref } from 'vue'
@@ -13,6 +14,7 @@ const route = useRoute()
 const user = ref(null)
 const isLoading = ref(true)
 const error = ref(null)
+const clearanceOpen = ref(false)
 
 const formatDate = (date) => {
   return date ? new Date(date).toLocaleDateString('en-GB') : 'N/A'
@@ -44,7 +46,7 @@ onMounted(async () => {
 
 <template>
   <div class="my-container space-y-6">
-    <div class="card-bg p-6">
+    <div class="card-bg p-6 print:hidden">
       <h2 class="title-lg text-center">User Details</h2>
       <LoaderView v-if="isLoading" class="shadow-none" />
       <div v-else-if="error" class="text-center text-red-500">
@@ -178,6 +180,13 @@ onMounted(async () => {
           >
             Back to List
           </RouterLink>
+          <button
+            type="button"
+            class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+            @click="clearanceOpen = true"
+          >
+            Clearance
+          </button>
           <RouterLink
             :to="{ name: 'UserEdit', params: { id: user?.id } }"
             class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
@@ -187,5 +196,12 @@ onMounted(async () => {
         </div>
       </div>
     </div>
+
+    <UserClearanceModal
+      v-if="user"
+      v-model:open="clearanceOpen"
+      :user="user"
+      :hide-trigger="true"
+    />
   </div>
 </template>

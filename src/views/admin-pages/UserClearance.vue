@@ -23,12 +23,42 @@ const {
   loading,
   saving,
   error,
-  dirty
+  dirty,
 } = storeToRefs(c)
 
 /* ---------------- Helpers ---------------- */
 const fmtDirtyCount = () => dirty.value.size
 const canLoad = () => !!departmentId.value && !!templateId.value
+
+const selectedDepartment = computed(() => {
+  return (departments.value || []).find((d) => d.id === departmentId.value) || null
+})
+const selectedUser = computed(() => {
+  return (users.value || []).find((u) => u.id === userId.value) || null
+})
+
+const userOptionLabel = (u) => {
+  if (!u) return ''
+  const name = u.name || 'Unnamed'
+  const code = u.employee_code || u.employee_id || u.code || ''
+  const desig = u.designation?.name || u.designation_name || ''
+  const extra = [code, desig].filter(Boolean).join(' • ')
+  return extra ? `${name} (${extra})` : name
+}
+
+const stepState = computed(() => {
+  if (!departmentId.value) return 'dept'
+  if (!userId.value) return 'user'
+  return 'work'
+})
+
+/* ---------------- Confirm before resetting (department change) ---------------- */
+const confirmDiscardIfDirty = async () => {
+  if (dirty.value.size > 0 && typeof window !== 'undefined') {
+    return window.confirm('You have unsaved changes. Changing Department will discard them. Continue?')
+  }
+  return true
+}
 
 /* ---------------- Bootstrap from auth dept ---------------- */
 watch(
@@ -40,9 +70,7 @@ watch(
     userId.value = null
     try {
       await c.loadUsersByDept(deptId)
-      if (canLoad()) {
-        await c.refreshAll(deptId, templateId.value)
-      }
+      if (canLoad()) await c.refreshAll(deptId, templateId.value)
     } catch (e) {
       console.error('bootstrap error', e)
     }
@@ -52,15 +80,23 @@ watch(
 
 /* ---------------- Reactivity ---------------- */
 // Department change → reset user, reload users, refresh template bindings
-watch(departmentId, async (newDept) => {
+watch(departmentId, async (newDept, oldDept) => {
+  if (newDept === oldDept) return
+
+  // dirty guard
+  const ok = await confirmDiscardIfDirty()
+  if (!ok) {
+    departmentId.value = oldDept ?? null
+    return
+  }
+
   users.value = []
   userId.value = null
+
   if (newDept) {
     try {
       await c.loadUsersByDept(newDept)
-      if (templateId.value) {
-        await c.refreshAll(newDept, templateId.value)
-      }
+      if (templateId.value) await c.refreshAll(newDept, templateId.value)
     } catch (e) {
       console.error('dept change error', e)
     }
@@ -72,6 +108,9 @@ watch(templateId, async (newTpl) => {
   if (departmentId.value && newTpl) {
     try {
       await c.refreshAll(departmentId.value, newTpl)
+      if (userId.value) {
+        await c.loadClearances(userId.value, departmentId.value, templateId.value)
+      }
     } catch (e) {
       console.error('template change error', e)
     }
@@ -128,7 +167,7 @@ const counts = computed(() => {
   return {
     pending: arr.filter((r) => r.status === 'PENDING').length,
     working: arr.filter((r) => r.status === 'WORKING').length,
-    completed: arr.filter((r) => r.status === 'COMPLETED').length
+    completed: arr.filter((r) => r.status === 'COMPLETED').length,
   }
 })
 
@@ -141,11 +180,9 @@ function beforeUnload(e) {
 }
 
 onMounted(async () => {
-  // Safe addEventListener (SSR guard)
   if (typeof window !== 'undefined') {
     window.addEventListener('beforeunload', beforeUnload)
   }
-  // initial departments fetch
   try {
     await c.fetchDepartments()
   } catch (e) {
@@ -159,12 +196,9 @@ onBeforeUnmount(() => {
   }
 })
 
-// Guard on route leave
 onBeforeRouteLeave((to, from, next) => {
   if (dirty.value.size > 0 && typeof window !== 'undefined') {
-    if (!window.confirm('You have unsaved changes. Leave anyway?')) {
-      return next(false)
-    }
+    if (!window.confirm('You have unsaved changes. Leave anyway?')) return next(false)
   }
   next()
 })
@@ -175,15 +209,54 @@ onBeforeRouteLeave((to, from, next) => {
     <!-- Sticky Header / Actions -->
     <div class="sticky top-0 z-10 bg-white/90 backdrop-blur border-b">
       <div class="flex flex-wrap items-center justify-between gap-4 py-3">
-        <div class="p-2">
-          <h1 class="text-2xl font-semibold tracking-tight">User Clearance</h1>
+        <div class="p-2 space-y-1">
+          <div class="flex items-center gap-2">
+            <h1 class="text-2xl font-semibold tracking-tight">User Clearance</h1>
+
+            <!-- Step badge -->
+            <span
+              class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold"
+              :class="{
+                'bg-slate-100 text-slate-700': stepState === 'dept',
+                'bg-blue-50 text-blue-700': stepState === 'user',
+                'bg-emerald-50 text-emerald-700': stepState === 'work',
+              }"
+            >
+              {{
+                stepState === 'dept'
+                  ? 'Step 1: Department'
+                  : stepState === 'user'
+                  ? 'Step 2: User'
+                  : 'Step 3: Update'
+              }}
+            </span>
+          </div>
+
           <p class="text-sm text-gray-600">
             Assign করা আইটেম অনুযায়ী ইউজারের ক্লিয়ারেন্স আপডেট করুন
           </p>
+
+          <!-- Selected context -->
+          <div class="flex flex-wrap items-center gap-2 text-xs text-slate-600">
+            <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1">
+              Dept:
+              <b class="text-slate-800">{{ selectedDepartment?.name || '—' }}</b>
+            </span>
+            <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1">
+              User:
+              <b class="text-slate-800">{{ selectedUser?.name || '—' }}</b>
+            </span>
+            <span
+              v-if="dirty.size"
+              class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-amber-700"
+            >
+              Unsaved: <b>{{ fmtDirtyCount() }}</b>
+            </span>
+          </div>
         </div>
 
         <div class="flex items-center gap-2">
-          <!-- quick status chips (non-blocking) -->
+          <!-- quick status chips -->
           <div
             v-if="userId"
             class="hidden md:flex items-center gap-2 text-xs text-gray-600"
@@ -228,39 +301,65 @@ onBeforeRouteLeave((to, from, next) => {
     <!-- Filters / Context -->
     <div class="card p-4 space-y-4">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div>
-          <label class="text-sm font-medium">Department</label>
+        <!-- Department -->
+        <div class="space-y-1">
+          <label class="text-sm font-medium text-slate-700">Department</label>
           <select v-model="departmentId" class="input-1">
             <option :value="null">Select Department</option>
-            <option v-for="d in departments" :key="d.id" :value="d.id">{{ d.name }}</option>
+            <option v-for="d in departments" :key="d.id" :value="d.id">
+              {{ d.name }}
+            </option>
           </select>
+          <p v-if="!departmentId" class="text-[11px] text-slate-500">
+            Step 1: প্রথমে Department সিলেক্ট করুন
+          </p>
         </div>
 
-        <div>
-          <label class="text-sm font-medium">User</label>
-          <select v-model="userId" class="input-1" :disabled="!departmentId">
-            <option :value="null">Select user</option>
-            <option v-for="u in users" :key="u.id" :value="u.id">{{ u.name }}</option>
+        <!-- User -->
+        <div class="space-y-1">
+          <label class="text-sm font-medium text-slate-700">User</label>
+          <select
+            v-model="userId"
+            class="input-1"
+            :disabled="!departmentId || loading"
+          >
+            <option :value="null">
+              {{ !departmentId ? 'Select Department first' : loading ? 'Loading users…' : 'Select User' }}
+            </option>
+            <option v-for="u in users" :key="u.id" :value="u.id">
+              {{ userOptionLabel(u) }}
+            </option>
           </select>
+          <p v-if="departmentId && !userId" class="text-[11px] text-slate-500">
+            Step 2: এখন একটি User সিলেক্ট করুন
+          </p>
         </div>
 
-        <div>
-          <label class="text-sm font-medium">Status Filter</label>
-          <select v-model="statusFilter" class="input-1">
+        <!-- Status Filter -->
+        <div class="space-y-1">
+          <label class="text-sm font-medium text-slate-700">Status Filter</label>
+          <select v-model="statusFilter" class="input-1" :disabled="!userId">
             <option value="">All</option>
             <option value="PENDING">Pending</option>
             <option value="WORKING">Working</option>
             <option value="COMPLETED">Completed</option>
           </select>
+          <p v-if="!userId" class="text-[11px] text-slate-500">
+            User সিলেক্ট করলে filter কাজ করবে
+          </p>
         </div>
       </div>
 
       <div v-if="error" class="mt-2 text-sm text-rose-600">{{ error }}</div>
     </div>
 
-    <!-- Empty state before user select -->
-    <div v-if="!userId" class="card p-6 text-gray-600">
-      Select a <b>User</b> to load clearance items.
+    <!-- Empty states -->
+    <div v-if="!departmentId" class="card p-6 text-slate-600">
+      <b>Step 1:</b> Select a <b>Department</b> to load users.
+    </div>
+
+    <div v-else-if="!userId" class="card p-6 text-slate-600">
+      <b>Step 2:</b> Select a <b>User</b> to load clearance items.
     </div>
 
     <!-- Table / Loading -->
@@ -273,10 +372,11 @@ onBeforeRouteLeave((to, from, next) => {
           <div class="h-4 bg-gray-200 rounded"></div>
         </div>
       </div>
+
       <ClearanceEditorTable
         v-else
         :rows="itemsForTable"
-        :key="userId"  
+        :key="userId"
         @update:row="onRowUpdate"
       />
     </div>

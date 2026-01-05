@@ -4,20 +4,21 @@ import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useHolidayStore } from '@/stores/holiday'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
-import { useLeaveTypeStore } from '@/stores/leave-type'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+
 const leaveApplicationStore = useLeaveApplicationStore()
 const authStore = useAuthStore()
-const leaveTypeStore = useLeaveTypeStore()
 const userStore = useUserStore()
 const holidayStore = useHolidayStore()
+
 const selectUser = ref('')
 const { userLeaveBalance } = storeToRefs(userStore)
+
 const form = ref({
   last_working_date: '',
   resumption_date: '',
@@ -28,8 +29,32 @@ const form = ref({
 })
 
 const selectedLeaveTypes = ref([])
+
 const loading = ref(false)
 const error = ref(null)
+
+const currentYear = new Date().getFullYear()
+
+const toYMD = (d) => {
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}
+
+const yearStart = (year) => toYMD(new Date(year, 0, 1))
+const yearEnd = (year) => toYMD(new Date(year, 11, 31))
+
+const minLastWorkingDate = computed(() => {
+  return yearStart(currentYear)
+})
+
+const maxLastWorkingDate = computed(() => {
+  return yearEnd(currentYear)
+})
+
+
+/** leave type usage count */
 const typeUsageCounts = computed(() => {
   const counts = {}
   selectedLeaveTypes.value.forEach((val) => {
@@ -39,6 +64,7 @@ const typeUsageCounts = computed(() => {
   })
   return counts
 })
+
 const normalizedRemaining = (type) => {
   const raw = Number(type?.remaining_days)
   return Number.isFinite(raw) ? raw : Infinity
@@ -50,61 +76,78 @@ const exceededTypes = computed(() => {
     .map((type) => {
       const used = typeUsageCounts.value[type.id] || 0
       const remain = normalizedRemaining(type)
-      return {
-        id: type.id,
-        name: type.name,
-        used,
-        remain,
-      }
+      return { id: type.id, name: type.name, used, remain }
     })
     .filter((type) => type.remain !== Infinity && type.used > type.remain)
 })
+
 const leaveLimitMessage = computed(() => {
   if (!exceededTypes.value.length) return ''
-  const names = exceededTypes.value.map((type) => type.name).join(', ')
+  const names = exceededTypes.value.map((t) => t.name).join(', ')
   return `You have exceeded remaining days for: ${names}`
+})
+
+/** weekends */
+const weekends = computed(() => {
+  return authStore?.user?.assign_weekend?.weekends || authStore?.user?.weekends || []
+})
+
+/** leave days between last_working_date and resumption_date (exclusive) */
+const leaveDays = computed(() => {
+  const startDateStr = form.value.last_working_date
+  const endDateStr = form.value.resumption_date
+  if (!startDateStr || !endDateStr) return []
+
+  const start = new Date(startDateStr)
+  const end = new Date(endDateStr)
+
+  // must be after
+  if (end <= start) return []
+
+  const days = []
+  let current = new Date(start)
+  current.setDate(current.getDate() + 1)
+
+  while (current < end) {
+    days.push(toYMD(current))
+    current.setDate(current.getDate() + 1)
+  }
+  return days
+})
+
+const leaveDaysMessage = computed(() => {
+  const startDateStr = form.value.last_working_date
+  const endDateStr = form.value.resumption_date
+  if (!startDateStr || !endDateStr) return ''
+
+  const start = new Date(startDateStr)
+  const end = new Date(endDateStr)
+
+  if (end <= start) return 'Resumption date must be after Last Working Date.'
+  if (leaveDays.value.length === 0) return 'No leave days between the selected dates.'
+  return null
 })
 
 const leaveStats = computed(() => {
   const total = leaveDays.value.length
-  if (!total) {
-    return {
-      total: 0,
-      weekends: 0,
-      holidays: 0,
-      assigned: 0,
-      pending: 0,
-    }
-  }
+  if (!total) return { total: 0, weekends: 0, holidays: 0, assigned: 0, pending: 0 }
 
-  let weekends = 0
-  let holidays = 0
+  let weekendsCount = 0
+  let holidaysCount = 0
   let assigned = 0
 
   selectedLeaveTypes.value.forEach((val) => {
-    if (val === 'weekend') {
-      weekends += 1
-    } else if (val === 'holiday') {
-      holidays += 1
-    } else if (val) {
-      assigned += 1
-    }
+    if (val === 'weekend') weekendsCount += 1
+    else if (val === 'holiday') holidaysCount += 1
+    else if (val) assigned += 1
   })
 
-  const pending = Math.max(total - (weekends + holidays + assigned), 0)
+  const pending = Math.max(total - (weekendsCount + holidaysCount + assigned), 0)
 
-  return {
-    total,
-    weekends,
-    holidays,
-    assigned,
-    pending,
-  }
+  return { total, weekends: weekendsCount, holidays: holidaysCount, assigned, pending }
 })
 
-const getWeekdayLabel = (day) => {
-  return new Date(day).toLocaleString('en-us', { weekday: 'long' })
-}
+const getWeekdayLabel = (day) => new Date(day).toLocaleString('en-us', { weekday: 'long' })
 
 const getLeaveTypeName = (typeId) => {
   const type = userLeaveBalance.value.find((item) => item.id === typeId)
@@ -132,12 +175,11 @@ onMounted(async () => {
       await userStore.fetchUserLeaveBalances(authStore.user.id)
     }
     await userStore.fetchTypeWiseEmployees({ except: 'auth' })
-  } catch (error) {
-    console.error('Error while initializing leave form:', error)
+  } catch (e) {
+    console.error('Error while initializing leave form:', e)
   }
 })
 
-// Watch user change (if login info is loaded async later)
 watch(
   () => authStore.user?.id,
   async (userId) => {
@@ -147,127 +189,92 @@ watch(
   }
 )
 
-
-
-// onMounted(async () => {
-//   console.log(authStore?.user);
-//   if(authStore?.user?.id) {
-//     await userStore.fetchUserLeaveBalances(authStore?.user?.id)
-//   }
-//   await userStore.fetchTypeWiseEmployees({ except: 'auth' })
-// })
-
-const weekends = computed(() => {
-  return authStore?.user?.assign_weekend?.weekends || authStore?.user?.weekends
-})
-
-const leaveDays = computed(() => {
-  const startDateStr = form.value.last_working_date
-  const endDateStr = form.value.resumption_date
-
-  if (!startDateStr || !endDateStr) return []
-
-  const start = new Date(startDateStr)
-  const end = new Date(endDateStr)
-
-  if (end <= start) return []
-
-  const days = []
-  let current = new Date(start)
-  current.setDate(current.getDate() + 1)
-
-  while (current < end) {
-    const yyyy = current.getFullYear()
-    const mm = (current.getMonth() + 1).toString().padStart(2, '0')
-    const dd = current.getDate().toString().padStart(2, '0')
-    days.push(`${yyyy}-${mm}-${dd}`)
-    current.setDate(current.getDate() + 1)
-  }
-
-  return days
-})
-
-const leaveDaysMessage = computed(() => {
-  const startDateStr = form.value.last_working_date
-  const endDateStr = form.value.resumption_date
-
-  if (!startDateStr || !endDateStr) return ''
-
-  const start = new Date(startDateStr)
-  const end = new Date(endDateStr)
-
-  if (end <= start) {
-    return 'Resumption date must be after Last Working Date.'
-  }
-
-  if (leaveDays.value.length === 0) {
-    return 'No leave days between the selected dates.'
-  }
-
-  return null;
-})
-
-watchEffect(async () => {
-  if (leaveDays.value.length && userLeaveBalance.value.length) {
-    await holidayStore.fetchHolidays({
-      company_id: authStore?.user?.company_id,
-      start_date: leaveDays.value[0],
-      end_date: leaveDays.value[leaveDays.value.length - 1],
-    })
-
-    // Check each leave day and select "weekend" for weekends based on the weekends array
-    leaveDays.value.forEach(async (day, index) => {
-      const weekdayName = new Date(day).toLocaleString('en-us', { weekday: 'long' }).toLowerCase()
-
-      // Capitalize weekdayName for comparison (e.g., "friday" -> "Friday")
-      const capitalizedWeekday = weekdayName.charAt(0).toUpperCase() + weekdayName.slice(1)
-
-      // Check if the current day matches any of the user's weekends
-      if (weekends.value.includes(capitalizedWeekday)) {
-        selectedLeaveTypes.value[index] = 'weekend' // Auto-select "weekend" for matching days
-      }
-
-      if (holidayStore.holidayDates.includes(day)) {
-        selectedLeaveTypes.value[index] = 'holiday'
-      }
-    })
-  }
-})
-
 watch(
   () => selectUser.value,
   (newValue) => {
     form.value.handover_user_id = newValue?.id
-  },
+  }
 )
+
+/**
+ * ✅ Auto tag weekend/holiday WITHOUT overwriting user manual selection
+ * ✅ Avoid async in forEach
+ */
+watchEffect(async () => {
+  if (!leaveDays.value.length || !userLeaveBalance.value.length) return
+
+  const start = leaveDays.value[0]
+  const end = leaveDays.value[leaveDays.value.length - 1]
+
+  await holidayStore.fetchHolidays({
+    company_id: authStore?.user?.company_id,
+    start_date: start,
+    end_date: end,
+  })
+
+  for (let index = 0; index < leaveDays.value.length; index++) {
+    const day = leaveDays.value[index]
+
+    // if user already selected something, don't override
+    if (selectedLeaveTypes.value[index]) continue
+
+    const weekdayName = new Date(day).toLocaleString('en-us', { weekday: 'long' })
+    const isWeekend = weekends.value.includes(weekdayName)
+
+    if (holidayStore.holidayDates.includes(day)) {
+      selectedLeaveTypes.value[index] = 'holiday'
+      continue
+    }
+
+    if (isWeekend) {
+      selectedLeaveTypes.value[index] = 'weekend'
+    }
+  }
+})
 
 const submitLeaveApplication = async () => {
   loading.value = true
   error.value = null
 
   try {
-    const leaveDaysPayload = leaveDays.value
-      .map((day, index) => {
-        return {
-          date: day,
-          leave_type_id:
-            selectedLeaveTypes.value[index] !== 'weekend' &&
-            selectedLeaveTypes.value[index] !== 'holiday'
-              ? selectedLeaveTypes.value[index]
-              : null,
-        }
-      })
-      .filter((leaveDay) => leaveDay.leave_type_id !== null) // 'weekend' অপশন ফিল্টার করে সরিয়ে ফেলছে
+    // basic date validation (extra safety)
+    if (!form.value.last_working_date || !form.value.resumption_date) {
+      error.value = 'Please select both Last Working Date and Resumption Date.'
+      return
+    }
+    if (
+      form.value.last_working_date < minLastWorkingDate.value ||
+      form.value.last_working_date > maxLastWorkingDate.value
+    ) {
+      error.value = `Last Working Date must be within ${currentYear}.`
+      return
+    }
+    if (new Date(form.value.resumption_date) <= new Date(form.value.last_working_date)) {
+      error.value = 'Resumption date must be after Last Working Date.'
+      return
+    }
 
-      
-    const leaveDaysJson = leaveDays.value
-      .map((day, index) => {
-        return {
-          date: day,
-          leave_type_id: selectedLeaveTypes.value[index] || '',
-        }
-      })
-      .filter((leaveDay) => leaveDay.leave_type_id !== null) // 'weekend' অপশন ফিল্টার করে সরিয়ে ফেলছে
+    // if exceeded leave types, block submit (optional but recommended)
+    if (exceededTypes.value.length) {
+      error.value = leaveLimitMessage.value
+      return
+    }
+
+    const leaveDaysPayload = leaveDays.value
+      .map((day, index) => ({
+        date: day,
+        leave_type_id:
+          selectedLeaveTypes.value[index] !== 'weekend' &&
+          selectedLeaveTypes.value[index] !== 'holiday'
+            ? selectedLeaveTypes.value[index]
+            : null,
+      }))
+      .filter((x) => x.leave_type_id !== null)
+
+    const leaveDaysJson = leaveDays.value.map((day, index) => ({
+      date: day,
+      leave_type_id: selectedLeaveTypes.value[index] || '',
+    }))
 
     const payload = {
       user_id: authStore?.user?.id,
@@ -279,23 +286,19 @@ const submitLeaveApplication = async () => {
       leave_days: leaveDaysPayload,
       json_data: leaveDaysJson,
     }
-    
+
     const newApplication = await leaveApplicationStore.storeLeaveApplication(payload)
     if (newApplication) {
       router.push({ name: 'LeaveApplicationShow', params: { id: newApplication?.id } })
     }
   } catch (err) {
-    error.value = err.message || 'Failed to submit leave application'
+    error.value = err?.message || 'Failed to submit leave application'
   } finally {
     loading.value = false
   }
 }
 
-
-
-const goBack = () => {
-  router.go(-1)
-}
+const goBack = () => router.go(-1)
 </script>
 
 <template>
@@ -325,29 +328,38 @@ const goBack = () => {
     >
       <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
-          <label for="last-working-date" class="block text-sm font-medium text-slate-600">Last Working Date</label>
+          <label for="last-working-date" class="block text-sm font-medium text-slate-600">
+            Last Working Date
+          </label>
           <input
             type="date"
             id="last-working-date"
             v-model="form.last_working_date"
             class="input-1 mt-1 w-full"
             required
+            :min="minLastWorkingDate"
           />
+          
         </div>
-
         <div>
-          <label for="resumption-date" class="block text-sm font-medium text-slate-600">Resumption Date</label>
+          <label for="resumption-date" class="block text-sm font-medium text-slate-600">
+            Resumption Date
+          </label>
           <input
             type="date"
             id="resumption-date"
             v-model="form.resumption_date"
             class="input-1 mt-1 w-full"
             required
+            :min="form.last_working_date"
           />
         </div>
       </div>
 
-      <div v-if="form.last_working_date && form.resumption_date && leaveDaysMessage" class="rounded-lg bg-blue-50 p-3 text-sm text-blue-700">
+      <div
+        v-if="form.last_working_date && form.resumption_date && leaveDaysMessage"
+        class="rounded-lg bg-blue-50 p-3 text-sm text-blue-700"
+      >
         {{ leaveDaysMessage }}
       </div>
 
@@ -388,6 +400,7 @@ const goBack = () => {
           <h2 class="text-lg font-semibold text-slate-700">Leave Days</h2>
           <p class="text-xs text-slate-500">Tap a badge to classify each date</p>
         </div>
+
         <div class="max-h-[28rem] space-y-3 overflow-y-auto pr-1">
           <div
             v-for="(day, index) in leaveDays"
@@ -396,8 +409,9 @@ const goBack = () => {
           >
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p class="font-semibold text-slate-900">{{ day }}  ({{ getWeekdayLabel(day) }}) </p>
-                <!-- <p class="text-sm text-slate-500">{{ getWeekdayLabel(day) }}</p> -->
+                <p class="font-semibold text-slate-900">
+                  {{ day }} ({{ getWeekdayLabel(day) }})
+                </p>
               </div>
 
               <span
@@ -406,7 +420,8 @@ const goBack = () => {
                 :class="{
                   'bg-amber-50 text-amber-700': selectedLeaveTypes[index] === 'weekend',
                   'bg-emerald-50 text-emerald-700': selectedLeaveTypes[index] === 'holiday',
-                  'bg-blue-50 text-blue-700': selectedLeaveTypes[index] !== 'weekend' && selectedLeaveTypes[index] !== 'holiday',
+                  'bg-blue-50 text-blue-700':
+                    selectedLeaveTypes[index] !== 'weekend' && selectedLeaveTypes[index] !== 'holiday',
                 }"
               >
                 {{
@@ -446,9 +461,11 @@ const goBack = () => {
 
               <label
                 class="cursor-pointer rounded-full px-3 py-1 text-sm font-medium transition"
-                :class="selectedLeaveTypes[index] === 'weekend'
-                  ? 'border-amber-400 bg-amber-50 text-amber-700'
-                  : 'border-slate-200 text-slate-600 hover:border-amber-200 hover:text-amber-700'"
+                :class="
+                  selectedLeaveTypes[index] === 'weekend'
+                    ? 'border-amber-400 bg-amber-50 text-amber-700'
+                    : 'border-slate-200 text-slate-600 hover:border-amber-200 hover:text-amber-700'
+                "
               >
                 <input
                   type="radio"
@@ -459,11 +476,14 @@ const goBack = () => {
                 />
                 Weekend
               </label>
+
               <label
                 class="cursor-pointer rounded-full px-3 py-1 text-sm font-medium transition"
-                :class="selectedLeaveTypes[index] === 'holiday'
-                  ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
-                  : 'border-slate-200 text-slate-600 hover:border-emerald-200 hover:text-emerald-700'"
+                :class="
+                  selectedLeaveTypes[index] === 'holiday'
+                    ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
+                    : 'border-slate-200 text-slate-600 hover:border-emerald-200 hover:text-emerald-700'
+                "
               >
                 <input
                   type="radio"
@@ -487,7 +507,7 @@ const goBack = () => {
           class="input-1 w-full"
           placeholder="Let approvers know why you need the time off"
           rows="3"
-        ></textarea>
+        />
       </div>
 
       <div class="space-y-1">
@@ -511,7 +531,7 @@ const goBack = () => {
           class="input-1 w-full"
           placeholder="Share current deliverables so the team has context"
           rows="6"
-        ></textarea>
+        />
       </div>
 
       <div

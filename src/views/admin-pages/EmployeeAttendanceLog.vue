@@ -143,15 +143,13 @@ const handleFilterChange = () => {
         @filter-change="handleFilterChange"
         class="w-full"
       >
-      <div>
-        <label class="top-label -top-1">Select Month</label>
-        <FlexibleDatePicker
-          v-model="period"
-          :show-year="false"
-          :show-month="true"
-          :show-date="false"
-        />
-      </div>
+      <FlexibleDatePicker
+        v-model="period"
+        :show-year="false"
+        :show-month="true"
+        :show-date="false"
+        label="Month"
+      />
       </EmployeeFilter>
     </div>
 

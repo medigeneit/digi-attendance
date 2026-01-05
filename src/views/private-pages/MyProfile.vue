@@ -13,6 +13,7 @@ const clearanceOpen = ref(false)
 
 // Logged-in user
 const user = computed(() => authStore.user || {})
+const isAdmin = computed(() => ['admin', 'super_admin', 'developer'].includes(user.value?.role))
 
 // Helpers
 const formatDate = (date) => (date ? new Date(date).toLocaleDateString('en-GB') : 'N/A')
@@ -243,6 +244,14 @@ const togglePassword = () => {
               class="inline-flex items-center gap-2 rounded-md border border-sky-300 px-3 py-2 text-sm text-sky-700 bg-sky-50 hover:bg-sky-100 dark:border-sky-800 dark:text-sky-200 dark:bg-sky-900/20 dark:hover:bg-sky-900/40"
             >
               <i class="fas fa-tasks"></i> Personal Activity Report (PAR)
+            </RouterLink>
+
+            <RouterLink
+              v-if="isAdmin"
+              :to="{ name: 'UserList', query: { action: 'clearance' } }"
+              class="inline-flex items-center gap-2 rounded-md border border-indigo-300 px-3 py-2 text-sm text-indigo-700 bg-indigo-50 hover:bg-indigo-100 dark:border-indigo-800 dark:text-indigo-200 dark:bg-indigo-900/20 dark:hover:bg-indigo-900/40"
+            >
+              <i class="far fa-clipboard-check"></i> User Clearance
             </RouterLink>
 
             <!-- <RouterLink

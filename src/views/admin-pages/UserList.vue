@@ -9,9 +9,10 @@ import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
 import { useShiftStore } from '@/stores/shift'
 import { useUserStore } from '@/stores/user'
+import { useUserClearanceStore } from '@/stores/userClearance'
 
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref, reactive, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, reactive, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 /* ------------ stores & router ------------ */
@@ -22,11 +23,13 @@ const companyStore = useCompanyStore()
 const departmentStore = useDepartmentStore()
 const userStore = useUserStore()
 const shiftStore = useShiftStore()
+const clearanceStore = useUserClearanceStore()
 
 const { companies } = storeToRefs(companyStore)
 const { departments } = storeToRefs(departmentStore)
 const { shifts } = storeToRefs(shiftStore)
 const { users: storeUsers, isLoading } = storeToRefs(userStore)
+const { items: clearanceData, loading, error, currentUserInfo } = storeToRefs(clearanceStore)
 
 /* ------------ filters (single source of truth) ------------ */
 const filters = reactive({
@@ -48,6 +51,7 @@ const normalizedQuery = computed(() => {
   if (filters.status && filters.status !== 'all') q.status = filters.status
   if (filters.employee_id) q.employee_id = filters.employee_id
   if (filters.q) q.q = filters.q
+  if (route.query.action) q.action = route.query.action
   return q
 })
 
@@ -106,6 +110,7 @@ watch(
 const goBack = () => router.go(-1)
 
 /* ------------ helpers ------------ */
+const isClearanceContext = computed(() => route.query.action === 'clearance')
 const hasShift = (u) => !!u?.current_shift?.shift?.name
 const shiftName = (u) => u?.current_shift?.shift?.name || 'Not Assigned'
 
@@ -173,6 +178,9 @@ const groupedUsers = computed(() => {
   return grouped
 })
 
+/* ------------ clearance panel ------------ */
+const selectedUser = ref(null)
+
 /* ------------ Modals ------------ */
 const selectedEmployee = ref(null)
 const userWeekendHistory = ref(null) // { history, current }
@@ -225,7 +233,6 @@ async function excelDownload() {
 function afterAssigned() {
   kpiModalOpen.value = false
 }
-
 function resetFilters() {
   filters.company = 'all'
   filters.department = 'all'
@@ -259,6 +266,13 @@ function resetFilters() {
           <i class="far fa-file-excel text-2xl text-green-500"></i>Excel
         </button>
       </div>
+    </div>
+
+    <div
+      v-if="isClearanceContext"
+      class="rounded-md border border-indigo-200 bg-indigo-50 p-3 text-sm text-indigo-800"
+    >
+      Select a user to view clearance & print.
     </div>
 
     <!-- filters -->
@@ -602,3 +616,26 @@ function resetFilters() {
     </div>
   </div>
 </template>
+
+<style>
+@media print {
+  body.printing-clearance * {
+    visibility: hidden;
+  }
+  body.printing-clearance #print-clearance,
+  body.printing-clearance #print-clearance * {
+    visibility: visible;
+  }
+  body.printing-clearance #print-clearance {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 12mm;
+  }
+  body.printing-clearance {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+</style>

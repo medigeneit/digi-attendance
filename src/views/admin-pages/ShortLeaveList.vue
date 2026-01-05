@@ -189,6 +189,7 @@ const formatDate = (ts) => {
       </EmployeeFilter>
 
       <div class="flex gap-4">
+        
         <FlexibleDatePicker
           v-model="period"
           :show-year="false"

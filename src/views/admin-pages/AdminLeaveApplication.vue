@@ -141,10 +141,8 @@ const formatDate = (ts) => {
         <span class="hidden sm:inline">Back</span>
       </button>
 
-      <h1 class="title-md md:title-lg flex-wrap text-center order-3 w-full md:w-auto md:order-2">
-        Annual Leave Applications
-      </h1>
-      <div class="order-2 md:order-3" />
+      <h1 class="title-md md:title-lg flex-wrap text-center">Annual Leave History</h1>
+
     </div>
 
     <div
@@ -245,7 +243,10 @@ const formatDate = (ts) => {
             </div>
             <div class="flex justify-between">
               <span class="text-gray-500">Total Days</span>
-              <span class="font-medium" v-html="application?.duration || application?.total_leave_days"></span>
+              <span
+                class="font-medium"
+                v-html="application?.duration || application?.total_leave_days"
+              ></span>
             </div>
             <div class="flex justify-between">
               <span class="text-gray-500">Type</span>
@@ -280,7 +281,10 @@ const formatDate = (ts) => {
             >
               Edit
             </RouterLink>
-            <button @click="deleteApplication(application?.id)" class="btn-3 px-3 py-1 text-xs text-red-600">
+            <button
+              @click="deleteApplication(application?.id)"
+              class="btn-3 px-3 py-1 text-xs text-red-600"
+            >
               Delete
             </button>
           </div>
