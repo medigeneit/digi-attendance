@@ -107,7 +107,7 @@ const departmentLabel = (row) => {
             </th>
             <th class="th text-center">Score Months</th> -->
             <th class="th cursor-pointer text-center" @click="toggleSort('total_months')">
-              Total Months <span class="ml-1 text-[11px]">{{ sortIndicator('total_months') }}</span>
+              Score Months <span class="ml-1 text-[11px]">{{ sortIndicator('total_months') }}</span>
             </th>
             <th class="th text-center">Grading</th>
           </tr>
@@ -145,7 +145,7 @@ const departmentLabel = (row) => {
               </div>
             </td>
             <td class="td text-center">{{ row?.score_months ?? '—' }}</td> -->
-            <td class="td text-center">{{ row?.total_months ?? '—' }}</td>
+            <td class="td text-center">{{ row?.yearly_present_score_months ?? '—' }}</td>
             <td class="td text-center">{{ row?.yearly_present_score_avg }}</td>
           </tr>
         </tbody>

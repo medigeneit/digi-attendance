@@ -5,6 +5,8 @@ import ShiftAssignmentModal from '@/components/common/ShiftAssignmentModal.vue'
 import ShiftWeekendModal from '@/components/common/WeekendAssignModal.vue'
 import CriteriaAssignModal from '@/components/CriteriaAssignModal.vue'
 
+import apiClient from '@/axios'
+import { useAuthStore } from '@/stores/auth'
 import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
 import { useShiftStore } from '@/stores/shift'
@@ -12,13 +14,16 @@ import { useUserStore } from '@/stores/user'
 import { useUserClearanceStore } from '@/stores/userClearance'
 
 import { storeToRefs } from 'pinia'
-import { computed, nextTick, onMounted, ref, reactive, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, reactive, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useToast } from 'vue-toastification'
 
 /* ------------ stores & router ------------ */
 const router = useRouter()
 const route = useRoute()
+const toast = useToast()
 
+const authStore = useAuthStore()
 const companyStore = useCompanyStore()
 const departmentStore = useDepartmentStore()
 const userStore = useUserStore()
@@ -29,7 +34,11 @@ const { companies } = storeToRefs(companyStore)
 const { departments } = storeToRefs(departmentStore)
 const { shifts } = storeToRefs(shiftStore)
 const { users: storeUsers, isLoading } = storeToRefs(userStore)
-const { items: clearanceData, loading, error, currentUserInfo } = storeToRefs(clearanceStore)
+const {
+  items: clearanceItems,
+  loading: clearanceLoading,
+  error: clearanceError
+} = storeToRefs(clearanceStore)
 
 /* ------------ filters (single source of truth) ------------ */
 const filters = reactive({
@@ -82,8 +91,8 @@ watch(
   { deep: true }
 )
 
-function fetchFromRoute() {
-  userStore.fetchUsers({
+async function fetchFromRoute() {
+  await userStore.fetchUsers({
     company_id: route.query.company,
     department_id: route.query.department,
     line_type: route.query.line_type,
@@ -110,7 +119,31 @@ watch(
 const goBack = () => router.go(-1)
 
 /* ------------ helpers ------------ */
+const normalizeDate = (value) => {
+  if (!value) return ''
+  if (typeof value === 'string') return value.slice(0, 10)
+  const d = new Date(value)
+  return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10)
+}
 const isClearanceContext = computed(() => route.query.action === 'clearance')
+const canManageExit = computed(() => {
+  const role = String(authStore.user?.role || '').toLowerCase()
+  return ['admin', 'super_admin', 'developer'].includes(role)
+})
+const todayKey = () => {
+  const now = new Date()
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+  return local.toISOString().slice(0, 10)
+}
+const isExitInactive = (u) => {
+  const d = normalizeDate(u?.last_working_date)
+  return !!d && d <= todayKey()
+}
+const isInactiveUser = (u) => {
+  if (u?.is_inactive) return true
+  if (isExitInactive(u)) return true
+  return Number(u?.is_active ?? 0) === 0
+}
 const hasShift = (u) => !!u?.current_shift?.shift?.name
 const shiftName = (u) => u?.current_shift?.shift?.name || 'Not Assigned'
 
@@ -132,8 +165,8 @@ const matchesQuickSearch = (u, q) => {
 
 const statusMatches = (u) => {
   if (filters.status === 'all') return true
-  const is_active = filters.status === 'active' ? 1 : 0
-  return Number(u?.is_active ?? 0) === is_active
+  const isInactive = isInactiveUser(u)
+  return filters.status === 'active' ? !isInactive : isInactive
 }
 
 /* Base filtered list (before grouping) */
@@ -190,6 +223,32 @@ const shiftModalOpen = ref(false)
 const weekendModalOpen = ref(false)
 const kpiModalOpen = ref(false)
 
+/* ------------ Exit modal ------------ */
+const showExitModal = ref(false)
+const selectedExitUser = ref(null)
+const exitForm = reactive({
+  last_working_date: '',
+  exit_reason: ''
+})
+const exitLoading = ref(false)
+const exitError = ref('')
+const printLoading = ref(false)
+const printError = ref('')
+
+const printUser = computed(() => selectedExitUser.value)
+const printCompanyName = computed(() => printUser.value?.company?.name || 'Digi Attendance')
+const printClearanceRows = computed(() => {
+  const list = Array.isArray(clearanceItems.value) ? clearanceItems.value : []
+  return list.map((row) => {
+    const latest = row.latest || {}
+    return {
+      label: row.label || row.template_item_name || row.item_key || `#${row.template_item_id ?? row.id ?? ''}`,
+      status: latest.status || row.status || (row.is_cleared ? 'COMPLETED' : 'PENDING'),
+      remarks: latest.remarks || row.remarks || ''
+    }
+  })
+})
+
 /* ------------ actions ------------ */
 async function openShift(user) {
   selectedEmployee.value = user
@@ -217,6 +276,83 @@ function openAssign(user) {
   kpiModalOpen.value = true
 }
 
+function openExitModal(user) {
+  if (!user?.id) return
+  selectedExitUser.value = user
+  exitForm.last_working_date = normalizeDate(user?.last_working_date)
+  exitForm.exit_reason = user?.exit_reason || ''
+  exitError.value = ''
+  printError.value = ''
+  showExitModal.value = true
+}
+
+function closeExitModal() {
+  showExitModal.value = false
+  exitError.value = ''
+  printError.value = ''
+}
+
+function onExitKeydown(e) {
+  if (e.key === 'Escape') closeExitModal()
+}
+
+async function printExitSheet() {
+  if (!selectedExitUser.value?.id || !selectedExitUser.value?.last_working_date) return
+  printLoading.value = true
+  printError.value = ''
+  try {
+    clearanceStore.resetFilters?.()
+    clearanceStore.setUser?.(selectedExitUser.value.id)
+    await clearanceStore.fetch?.()
+    document.body.classList.add('printing-exit')
+    await nextTick()
+    window.print()
+  } catch (err) {
+    printError.value = err?.response?.data?.message || 'Failed to load clearance for print.'
+    toast.error(printError.value)
+  } finally {
+    printLoading.value = false
+    setTimeout(() => document.body.classList.remove('printing-exit'), 0)
+  }
+}
+
+async function saveExitInfo() {
+  if (!selectedExitUser.value?.id) {
+    exitError.value = 'Select a user first.'
+    return
+  }
+  if (!exitForm.last_working_date) {
+    exitError.value = 'Last working date is required.'
+    return
+  }
+
+  exitLoading.value = true
+  exitError.value = ''
+  try {
+    await apiClient.put(`/users/${selectedExitUser.value.id}/exit`, {
+      last_working_date: exitForm.last_working_date,
+      exit_reason: exitForm.exit_reason || null
+    })
+    const applyExit = (u) => {
+      if (!u) return
+      u.last_working_date = exitForm.last_working_date
+      u.exit_reason = exitForm.exit_reason || ''
+      u.is_inactive = isExitInactive(u)
+    }
+    applyExit(selectedExitUser.value)
+    const list = Array.isArray(storeUsers.value) ? storeUsers.value : []
+    const match = list.find((u) => u.id === selectedExitUser.value?.id)
+    applyExit(match)
+    showExitModal.value = false
+    toast.success('Exit information updated.')
+  } catch (err) {
+    exitError.value = err?.response?.data?.message || 'Failed to update exit info.'
+    toast.error(exitError.value)
+  } finally {
+    exitLoading.value = false
+  }
+}
+
 async function excelDownload() {
   await userStore.fetchUsersExcelExport({
     data: {
@@ -241,6 +377,19 @@ function resetFilters() {
   filters.employee_id = ''
   filters.q = ''
 }
+
+watch(showExitModal, (open) => {
+  if (open) {
+    window.addEventListener('keydown', onExitKeydown)
+  } else {
+    window.removeEventListener('keydown', onExitKeydown)
+    selectedExitUser.value = null
+  }
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onExitKeydown)
+})
 </script>
 
 <template>
@@ -374,15 +523,52 @@ function resetFilters() {
                 <div class="text-[12px] text-zinc-500">ID: {{ user?.employee_id }} • {{ user?.designation?.title || '—' }}</div>
                 <div class="mt-1 text-[12px] text-zinc-600">Shift: {{ shiftName(user) }}</div>
                 <div class="text-[12px] text-zinc-600">Weekend: {{ weekendDays(user) }}</div>
+                <div class="mt-1">
+                  <span
+                    class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
+                    :class="isInactiveUser(user) ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'"
+                  >
+                    {{ isInactiveUser(user) ? 'Inactive' : 'Active' }}
+                  </span>
+                </div>
                 <div class="mt-1 text-[12px]">
                   <a class="underline" :href="'tel:' + user?.phone" @click.stop>{{ user?.phone || '—' }}</a>
                   <span class="mx-1">•</span>
                   <a class="underline" :href="'mailto:' + (user?.email || '')" @click.stop>{{ user?.email || 'নেই' }}</a>
                 </div>
                 <div class="mt-2 flex gap-1">
-                  <button class="btn-3 !px-2 !py-1" @click="openShift(user)">Shift</button>
-                  <button class="btn-3 !px-2 !py-1" @click="openWeekend(user)">Weekend</button>
-                  <button class="btn-3 !px-2 !py-1" @click="openAssign(user)">KPI</button>
+                  <button
+                    class="btn-3 !px-2 !py-1"
+                    :class="isInactiveUser(user) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''"
+                    :disabled="isInactiveUser(user)"
+                    @click="openShift(user)"
+                  >
+                    Shift
+                  </button>
+                  <button
+                    class="btn-3 !px-2 !py-1"
+                    :class="isInactiveUser(user) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''"
+                    :disabled="isInactiveUser(user)"
+                    @click="openWeekend(user)"
+                  >
+                    Weekend
+                  </button>
+                  <button
+                    class="btn-3 !px-2 !py-1"
+                    :class="isInactiveUser(user) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''"
+                    :disabled="isInactiveUser(user)"
+                    @click="openAssign(user)"
+                  >
+                    KPI
+                  </button>
+                  <button
+                    v-if="canManageExit"
+                    class="btn-1 !px-2 !py-1"
+                    @click="openExitModal(user)"
+                    title="Exit / Leave"
+                  >
+                    Exit
+                  </button>
                   <RouterLink :to="{ name: 'UserShow', params: { id: user.id }, query: { company: route.query.company } }" class="btn-3 !px-2 !py-1">View</RouterLink>
                 </div>
               </div>
@@ -416,7 +602,10 @@ function resetFilters() {
               <tr
                 v-for="(user, index) in users"
                 :key="user.id"
-                class="border-b text-sm border-gray-100 hover:bg-indigo-50/50"
+                :class="[
+                  'border-b text-sm border-gray-100 hover:bg-indigo-50/50',
+                  isInactiveUser(user) ? 'opacity-70' : ''
+                ]"
               >
                 <td class="border border-gray-100 px-2 py-2">{{ index + 1 }}</td>
 
@@ -466,10 +655,12 @@ function resetFilters() {
                     :class="[
                       'group inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium transition',
                       'focus:outline-none focus:ring-2 focus:ring-offset-1',
+                      isInactiveUser(user) ? 'opacity-50 cursor-not-allowed pointer-events-none' : '',
                       hasShift(user)
                         ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 focus:ring-amber-300'
                         : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-white focus:ring-slate-300'
                     ]"
+                    :disabled="isInactiveUser(user)"
                   >
                     <span class="ml-1 hidden lg:inline">
                       {{ hasShift(user) ? 'Manage' : 'Assign' }}
@@ -494,10 +685,12 @@ function resetFilters() {
                     :class="[
                       'group inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium transition',
                       'focus:outline-none focus:ring-2 focus:ring-offset-1',
+                      isInactiveUser(user) ? 'opacity-50 cursor-not-allowed pointer-events-none' : '',
                       hasWeekend(user)
                         ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 focus:ring-emerald-300'
                         : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-white focus:ring-slate-300'
                     ]"
+                    :disabled="isInactiveUser(user)"
                   >
                     <span class="ml-1 hidden lg:inline">
                       {{ hasWeekend(user) ? 'Manage' : 'Assign' }}
@@ -517,9 +710,15 @@ function resetFilters() {
                 
 
                 <td class="border border-gray-100 px-2 py-2">
-                  <span :class="user?.is_active ? 'text-emerald-600' : 'text-rose-500'">
-                    {{ user?.is_active ? 'Active' : 'Inactive' }}
+                  <span
+                    class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                    :class="isInactiveUser(user) ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'"
+                  >
+                    {{ isInactiveUser(user) ? 'Inactive' : 'Active' }}
                   </span>
+                  <div v-if="isExitInactive(user)" class="mt-1 text-[11px] text-rose-600">
+                    Exit: {{ normalizeDate(user?.last_working_date) }}
+                  </div>
                 </td>
 
                 <!-- KPI -->
@@ -530,10 +729,12 @@ function resetFilters() {
                     :class="[
                       'group inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium transition',
                       'focus:outline-none focus:ring-2 focus:ring-offset-1',
+                      isInactiveUser(user) ? 'opacity-50 cursor-not-allowed pointer-events-none' : '',
                       (user?.criteria_assignments?.length || 0) > 0
                         ? 'border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 focus:ring-indigo-300'
                         : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-white focus:ring-slate-300'
                     ]"
+                    :disabled="isInactiveUser(user)"
                   >
                     <span class="ml-1 hidden lg:inline">
                       {{ (user?.criteria_assignments?.length || 0) > 0 ? 'Manage' : 'Assign' }}
@@ -559,18 +760,29 @@ function resetFilters() {
                     </RouterLink>
                     <RouterLink
                       :to="{ name: 'UserEdit', params: { id: user.id }, query: { company: route.query.company } }"
-                      class="btn-icon"
+                      :class="['btn-icon', isInactiveUser(user) ? 'pointer-events-none opacity-50' : '']"
+                      :tabindex="isInactiveUser(user) ? -1 : 0"
                       title="Edit"
                     >
                       <i class="far fa-edit"></i>
                     </RouterLink>
                     <RouterLink
                       :to="{ name: 'KpiReview', params: { employeeId: user.id } }"
-                      class="btn-icon"
+                      :class="['btn-icon', isInactiveUser(user) ? 'pointer-events-none opacity-50' : '']"
+                      :tabindex="isInactiveUser(user) ? -1 : 0"
                       title="KPI"
                     >
                       KPI
                     </RouterLink>
+                    <button
+                      v-if="canManageExit"
+                      type="button"
+                      class="btn-1 !px-2 !py-1 !text-xs"
+                      @click="openExitModal(user)"
+                      title="Exit / Leave"
+                    >
+                      Exit
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -614,11 +826,170 @@ function resetFilters() {
         />
       </div>
     </div>
+
+    <!-- Exit / Leave Modal -->
+    <div v-if="showExitModal" class="fixed inset-0 z-[9999] flex items-center justify-center">
+      <div class="absolute inset-0 bg-black/40" @click="closeExitModal"></div>
+      <div class="relative w-full max-w-lg rounded-lg bg-white shadow-xl">
+        <div class="flex items-center justify-between border-b px-4 py-3">
+          <h3 class="text-lg font-semibold text-gray-900">User Exit Information</h3>
+          <button
+            type="button"
+            class="text-gray-500 hover:text-gray-700"
+            aria-label="Close"
+            @click="closeExitModal"
+          >
+            <i class="far fa-times"></i>
+          </button>
+        </div>
+
+        <div class="space-y-4 p-4">
+          <div class="text-sm text-gray-600">
+            User:
+            <span class="font-semibold text-gray-900">{{ selectedExitUser?.name || 'N/A' }}</span>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">
+              Last Working Date <span class="text-red-500">*</span>
+            </label>
+            <input
+              v-model="exitForm.last_working_date"
+              type="date"
+              class="input-1 w-full"
+              required
+            />
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">Exit Reason</label>
+            <textarea
+              v-model.trim="exitForm.exit_reason"
+              class="input-1 w-full min-h-[90px]"
+              placeholder="Optional"
+            ></textarea>
+          </div>
+
+          <div
+            v-if="exitError"
+            class="rounded-md border border-red-200 bg-red-50 p-2 text-sm text-red-700"
+          >
+            {{ exitError }}
+          </div>
+          <div
+            v-if="printError"
+            class="rounded-md border border-amber-200 bg-amber-50 p-2 text-sm text-amber-800"
+          >
+            {{ printError }}
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 border-t bg-gray-50 px-4 py-3">
+          <button type="button" class="btn-3" @click="closeExitModal">Cancel</button>
+          <button
+            type="button"
+            class="btn-2"
+            :disabled="printLoading || !selectedExitUser?.last_working_date"
+            @click="printExitSheet"
+            title="Print Exit + Clearance"
+          >
+            <span v-if="printLoading">Preparing...</span>
+            <span v-else>Print Exit Sheet</span>
+          </button>
+          <button
+            type="button"
+            class="btn-1"
+            :disabled="exitLoading"
+            @click="saveExitInfo"
+          >
+            <span v-if="exitLoading">Saving...</span>
+            <span v-else>Save Exit Info</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Print Area (Exit + Clearance Summary) -->
+    <div id="print-area" class="print-area">
+      <div class="text-center">
+        <h1 class="text-xl font-bold tracking-wide">{{ printCompanyName }}</h1>
+        <p class="text-xs text-gray-500">User Exit & Clearance Summary</p>
+      </div>
+
+      <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+        <div><span class="text-gray-500">Name:</span> <span class="font-medium">{{ printUser?.name || 'N/A' }}</span></div>
+        <div><span class="text-gray-500">Employee ID:</span> <span class="font-medium">{{ printUser?.employee_id || 'N/A' }}</span></div>
+        <div><span class="text-gray-500">Department:</span> <span class="font-medium">{{ printUser?.department?.name || 'N/A' }}</span></div>
+        <div><span class="text-gray-500">Designation:</span> <span class="font-medium">{{ printUser?.designation?.title || 'N/A' }}</span></div>
+      </div>
+
+      <div class="mt-4 rounded-md border border-gray-200 p-3 text-sm">
+        <div><span class="text-gray-500">Last Working Date:</span> <span class="font-medium">{{ normalizeDate(printUser?.last_working_date) || 'N/A' }}</span></div>
+        <div class="mt-1"><span class="text-gray-500">Exit Reason:</span> <span class="font-medium">{{ printUser?.exit_reason || 'N/A' }}</span></div>
+      </div>
+
+      <div class="mt-4">
+        <div class="mb-2 text-sm font-semibold text-gray-700">Clearance Items Summary</div>
+        <div v-if="clearanceLoading" class="text-sm text-gray-600">Loading clearance...</div>
+        <div v-else-if="clearanceError" class="text-sm text-rose-600">{{ clearanceError }}</div>
+        <table v-else class="w-full border border-gray-300 text-sm" style="border-collapse:collapse">
+          <thead>
+            <tr class="bg-gray-100 text-gray-700">
+              <th class="border border-gray-300 px-2 py-1 text-left">Item</th>
+              <th class="border border-gray-300 px-2 py-1 text-left w-[120px]">Status</th>
+              <th class="border border-gray-300 px-2 py-1 text-left">Remarks</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(row, idx) in printClearanceRows" :key="idx">
+              <td class="border border-gray-300 px-2 py-1">{{ row.label || 'N/A' }}</td>
+              <td class="border border-gray-300 px-2 py-1">{{ row.status || 'N/A' }}</td>
+              <td class="border border-gray-300 px-2 py-1">{{ row.remarks || '—' }}</td>
+            </tr>
+            <tr v-if="!printClearanceRows.length">
+              <td colspan="3" class="border border-gray-300 px-2 py-4 text-center text-gray-500">
+                No clearance items found.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mt-6 text-xs text-gray-500">
+        Printed: {{ new Date().toLocaleString() }}
+      </div>
+    </div>
   </div>
 </template>
 
 <style>
+.print-area {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  width: 100%;
+}
+
 @media print {
+  body.printing-exit * {
+    visibility: hidden;
+  }
+  body.printing-exit #print-area,
+  body.printing-exit #print-area * {
+    visibility: visible;
+  }
+  body.printing-exit #print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 12mm;
+    background: white;
+  }
+  body.printing-exit {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
   body.printing-clearance * {
     visibility: hidden;
   }

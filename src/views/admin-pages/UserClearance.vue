@@ -1,18 +1,37 @@
 <script setup>
-import { ref, computed, watch, onBeforeUnmount, onMounted } from 'vue'
+import { ref, computed, watch, onBeforeUnmount, onMounted, nextTick } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useClearanceStore } from '@/stores/clearance'
 import { useAuthStore } from '@/stores/auth'
 import ClearanceEditorTable from '@/components/ClearanceEditorTable.vue'
-import { onBeforeRouteLeave } from 'vue-router'
+import { onBeforeRouteLeave, useRoute } from 'vue-router'
 
 /* ---------------- Stores ---------------- */
 const c = useClearanceStore()
 const auth = useAuthStore()
+const route = useRoute()
 
 /* ---------------- Local State ---------------- */
 const departmentId = ref(null)
 const templateId = ref(2) // default selected template
+const autoPrintPending = ref(false)
+
+const queryUserId = computed(() => {
+  const raw = route.query.userId ?? route.query.user_id ?? route.query.uid
+  const id = Number(raw)
+  return Number.isNaN(id) ? null : id
+})
+const queryDepartmentId = computed(() => {
+  const raw = route.query.departmentId ?? route.query.department_id ?? route.query.deptId
+  const id = Number(raw)
+  return Number.isNaN(id) ? null : id
+})
+const queryTemplateId = computed(() => {
+  const raw = route.query.templateId ?? route.query.template_id
+  const id = Number(raw)
+  return Number.isNaN(id) ? null : id
+})
+const printRequested = computed(() => String(route.query.print || '') === '1')
 
 const {
   userId,
@@ -46,10 +65,29 @@ const userOptionLabel = (u) => {
   return extra ? `${name} (${extra})` : name
 }
 
+const normalizeDate = (value) => {
+  if (!value) return ''
+  if (typeof value === 'string') return value.slice(0, 10)
+  const d = new Date(value)
+  return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10)
+}
+
+const todayKey = () => {
+  const now = new Date()
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+  return local.toISOString().slice(0, 10)
+}
+
 const stepState = computed(() => {
   if (!departmentId.value) return 'dept'
   if (!userId.value) return 'user'
   return 'work'
+})
+
+const exitDateKey = computed(() => normalizeDate(selectedUser.value?.last_working_date))
+const isReadOnly = computed(() => {
+  if (!exitDateKey.value) return false
+  return exitDateKey.value <= todayKey()
 })
 
 /* ---------------- Confirm before resetting (department change) ---------------- */
@@ -65,6 +103,7 @@ watch(
   () => auth.user?.department_id,
   async (deptId) => {
     if (!deptId) return
+    if (queryDepartmentId.value) return
     departmentId.value = deptId
     users.value = []
     userId.value = null
@@ -74,6 +113,17 @@ watch(
     } catch (e) {
       console.error('bootstrap error', e)
     }
+  },
+  { immediate: true }
+)
+
+watch(
+  () => route.query,
+  () => {
+    if (queryDepartmentId.value) departmentId.value = queryDepartmentId.value
+    if (queryTemplateId.value) templateId.value = queryTemplateId.value
+    if (queryUserId.value) userId.value = queryUserId.value
+    if (printRequested.value) autoPrintPending.value = true
   },
   { immediate: true }
 )
@@ -96,6 +146,7 @@ watch(departmentId, async (newDept, oldDept) => {
   if (newDept) {
     try {
       await c.loadUsersByDept(newDept)
+      if (queryUserId.value) userId.value = queryUserId.value
       if (templateId.value) await c.refreshAll(newDept, templateId.value)
     } catch (e) {
       console.error('dept change error', e)
@@ -130,6 +181,7 @@ watch(userId, async () => {
 
 /* ---------------- Row update (local patch + dirty) ---------------- */
 function onRowUpdate(tid, patch) {
+  if (isReadOnly.value) return
   const rows = itemsForTable.value
   const idx = rows.findIndex((x) => x.template_item_id === tid)
   if (idx >= 0) {
@@ -142,6 +194,7 @@ function onRowUpdate(tid, patch) {
 async function onSave() {
   try {
     if (!userId.value) return
+    if (isReadOnly.value) return
     await c.saveBulk(departmentId.value, templateId.value)
   } catch (e) {
     console.error(e)
@@ -160,6 +213,14 @@ async function onRefresh() {
   }
 }
 
+async function printClearanceSummary() {
+  if (!userId.value) return
+  document.body.classList.add('printing-clearance-summary')
+  await nextTick()
+  window.print()
+  setTimeout(() => document.body.classList.remove('printing-clearance-summary'), 0)
+}
+
 /* ---------------- Summary counts ---------------- */
 const counts = computed(() => {
   if (!userId.value) return { pending: 0, working: 0, completed: 0 }
@@ -169,6 +230,16 @@ const counts = computed(() => {
     working: arr.filter((r) => r.status === 'WORKING').length,
     completed: arr.filter((r) => r.status === 'COMPLETED').length,
   }
+})
+
+const printCompanyName = computed(() => selectedUser.value?.company?.name || 'Digi Attendance')
+const printRows = computed(() => {
+  const arr = itemsForTable.value || []
+  return arr.map((row) => ({
+    label: row.label || row.item_label || row.item_key || `#${row.template_item_id ?? row.id ?? ''}`,
+    status: row.status || 'N/A',
+    remarks: row.remarks || row.present_condition || ''
+  }))
 })
 
 /* ---------------- Dirty guard (SSR-safe) ---------------- */
@@ -188,6 +259,14 @@ onMounted(async () => {
   } catch (e) {
     console.error('fetchDepartments error', e)
   }
+})
+
+watch([loading, itemsForTable, userId], async () => {
+  if (!autoPrintPending.value) return
+  if (!userId.value || loading.value) return
+  autoPrintPending.value = false
+  await nextTick()
+  printClearanceSummary()
 })
 
 onBeforeUnmount(() => {
@@ -274,6 +353,15 @@ onBeforeRouteLeave((to, from, next) => {
           </div>
 
           <button
+            class="btn-3"
+            @click="printClearanceSummary"
+            :disabled="!userId"
+            title="Print clearance summary"
+          >
+            Print
+          </button>
+
+          <button
             class="btn-2"
             @click="onRefresh"
             :disabled="loading || !departmentId || !templateId"
@@ -287,8 +375,8 @@ onBeforeRouteLeave((to, from, next) => {
           <button
             class="btn-1"
             @click="onSave"
-            :disabled="saving || dirty.size === 0 || !userId"
-            :title="!userId ? 'Select a user first' : ''"
+            :disabled="saving || dirty.size === 0 || !userId || isReadOnly"
+            :title="isReadOnly ? 'This user is exited. Clearance is read-only.' : (!userId ? 'Select a user first' : '')"
             :aria-busy="saving ? 'true' : 'false'"
           >
             <span v-if="saving">Saving…</span>
@@ -296,6 +384,13 @@ onBeforeRouteLeave((to, from, next) => {
           </button>
         </div>
       </div>
+    </div>
+
+    <div
+      v-if="isReadOnly"
+      class="rounded-md border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800"
+    >
+      Read-only: user has an exit date (Last working date: {{ exitDateKey || 'N/A' }}).
     </div>
 
     <!-- Filters / Context -->
@@ -377,8 +472,89 @@ onBeforeRouteLeave((to, from, next) => {
         v-else
         :rows="itemsForTable"
         :key="userId"
+        :disabled="isReadOnly"
         @update:row="onRowUpdate"
       />
     </div>
+
+    <!-- Print Area -->
+    <div id="print-area" class="print-area">
+      <div class="text-center">
+        <h1 class="text-xl font-bold tracking-wide">{{ printCompanyName }}</h1>
+        <p class="text-xs text-gray-500">User Exit & Clearance Summary</p>
+      </div>
+
+      <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+        <div><span class="text-gray-500">Name:</span> <span class="font-medium">{{ selectedUser?.name || 'N/A' }}</span></div>
+        <div><span class="text-gray-500">Employee ID:</span> <span class="font-medium">{{ selectedUser?.employee_id || 'N/A' }}</span></div>
+        <div><span class="text-gray-500">Department:</span> <span class="font-medium">{{ selectedUser?.department?.name || selectedDepartment?.name || 'N/A' }}</span></div>
+        <div><span class="text-gray-500">Designation:</span> <span class="font-medium">{{ selectedUser?.designation?.title || selectedUser?.designation?.name || 'N/A' }}</span></div>
+      </div>
+
+      <div class="mt-4 rounded-md border border-gray-200 p-3 text-sm">
+        <div><span class="text-gray-500">Last Working Date:</span> <span class="font-medium">{{ exitDateKey || 'N/A' }}</span></div>
+        <div class="mt-1"><span class="text-gray-500">Exit Reason:</span> <span class="font-medium">{{ selectedUser?.exit_reason || 'N/A' }}</span></div>
+      </div>
+
+      <div class="mt-4">
+        <div class="mb-2 text-sm font-semibold text-gray-700">Clearance Items Summary</div>
+        <table class="w-full border border-gray-300 text-sm" style="border-collapse:collapse">
+          <thead>
+            <tr class="bg-gray-100 text-gray-700">
+              <th class="border border-gray-300 px-2 py-1 text-left">Item</th>
+              <th class="border border-gray-300 px-2 py-1 text-left w-[120px]">Status</th>
+              <th class="border border-gray-300 px-2 py-1 text-left">Remarks</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(row, idx) in printRows" :key="idx">
+              <td class="border border-gray-300 px-2 py-1">{{ row.label || 'N/A' }}</td>
+              <td class="border border-gray-300 px-2 py-1">{{ row.status || 'N/A' }}</td>
+              <td class="border border-gray-300 px-2 py-1">{{ row.remarks || '—' }}</td>
+            </tr>
+            <tr v-if="!printRows.length">
+              <td colspan="3" class="border border-gray-300 px-2 py-4 text-center text-gray-500">
+                No clearance items found.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mt-6 text-xs text-gray-500">
+        Printed: {{ new Date().toLocaleString() }}
+      </div>
+    </div>
   </div>
 </template>
+
+<style>
+.print-area {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  width: 100%;
+}
+
+@media print {
+  body.printing-clearance-summary * {
+    visibility: hidden;
+  }
+  body.printing-clearance-summary #print-area,
+  body.printing-clearance-summary #print-area * {
+    visibility: visible;
+  }
+  body.printing-clearance-summary #print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 12mm;
+    background: white;
+  }
+  body.printing-clearance-summary {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+</style>
