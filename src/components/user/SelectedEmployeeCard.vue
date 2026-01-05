@@ -7,7 +7,9 @@
     <div class="relative isolate">
       <div class="h-1 w-full bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-400"></div>
 
-      <header class="flex items-center justify-between px-4 md:px-5 pt-3 pb-2 md:pt-4 md:pb-3">
+      <header
+        class="flex-col xl:flex-row flex xl:items-center justify-between px-4 md:px-5 pt-3 pb-2 md:pt-4 md:pb-3"
+      >
         <div class="flex min-w-0 items-center gap-3">
           <!-- Avatar -->
           <div
@@ -24,7 +26,10 @@
           </div>
 
           <div class="min-w-0">
-            <h2 id="employee-info-title" class="truncate text-base md:text-lg font-semibold text-zinc-900">
+            <h2
+              id="employee-info-title"
+              class="truncate text-base md:text-lg font-semibold text-zinc-900"
+            >
               {{ safe(user?.name) }}
             </h2>
             <p v-if="subtitle" class="mt-0.5 line-clamp-1 text-[11px] md:text-xs text-zinc-500">
@@ -33,15 +38,17 @@
           </div>
         </div>
 
-        <div class="flex items-center gap-1 md:gap-2">
-          <InfoRow label="Phone" :value="formatPhone(user?.phone)"/>
+        <div class="flex items-center gap-1 md:gap-2 mt-3 xl:mt-0">
+          <InfoRow label="Phone" :value="formatPhone(user?.phone)" />
         </div>
       </header>
     </div>
 
     <!-- Chips (horizontal scroll on mobile for tight spaces) -->
     <div v-if="user && badgeList.length" class="px-4 md:px-5 pb-2 overflow-hidden">
-      <div class="-mx-1 flex items-center gap-2 overflow-x-auto py-0.5 px-1">
+      <div
+        class="-mx-1 flex flex-col xl:flex-row xl:items-center gap-2 overflow-x-auto py-0.5 px-1"
+      >
         <span
           v-for="b in badgeList"
           :key="b.key"
@@ -76,7 +83,9 @@
         <i class="far fa-user text-lg"></i>
       </div>
       <p class="text-sm text-zinc-500">No employee selected.</p>
-      <p class="mt-1 text-xs text-zinc-400">Choose an employee from the list to view details here.</p>
+      <p class="mt-1 text-xs text-zinc-400">
+        Choose an employee from the list to view details here.
+      </p>
     </div>
     <footer class="px-4 md:px-5 pb-4 md:pb-5">
       <slot />
@@ -85,9 +94,9 @@
 </template>
 
 <script setup>
-import InfoRow from './InfoRow.vue'
+import { computed } from 'vue'
 import BaseSkeleton from './BaseSkeleton.vue'
-import { computed, ref } from 'vue'
+import InfoRow from './InfoRow.vue'
 
 const props = defineProps({
   user: { type: Object, default: null },
@@ -97,8 +106,6 @@ const props = defineProps({
   /** Optional: direct avatar url */
   avatar: { type: String, default: '' },
 })
-
-const copiedKey = ref('')
 
 // ✅ Fix: avoid name collision & bad prop reference; prefer provided prop > user.photo
 const avatarUrl = computed(() => props.avatar || props.user?.photo || '')
@@ -118,10 +125,34 @@ const subtitle = computed(() => {
 
 const badgeList = computed(() => {
   const out = []
-   if (props.user?.email) out.push({ key: 'email', label: props.user.email, icon: 'far fa-envelope', class: 'border-emerald-200 bg-emerald-50 text-emerald-700' })
-  if (props.user?.blood) out.push({ key: 'blood', label: props.user?.blood, icon: 'far fa-tint', class: 'border-red-200 bg-sky-50 text-red-700' })
-  if (props.user?.employee_id) out.push({ key: 'id', label: props.user.employee_id, icon: 'far fa-hashtag', class: 'border-amber-200 bg-amber-50 text-amber-700' })
-  if (props.user?.joining_date) out.push({ key: 'date', label: ' Joining Date : ' + formatDate(props.user.joining_date), icon: 'far fa-calendar', class: 'border-sky-200 bg-sky-50 text-sky-700' })
+  if (props.user?.email)
+    out.push({
+      key: 'email',
+      label: props.user.email,
+      icon: 'far fa-envelope',
+      class: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    })
+  if (props.user?.blood)
+    out.push({
+      key: 'blood',
+      label: props.user?.blood,
+      icon: 'far fa-tint',
+      class: 'border-red-200 bg-sky-50 text-red-700',
+    })
+  if (props.user?.employee_id)
+    out.push({
+      key: 'id',
+      label: props.user.employee_id,
+      icon: 'far fa-hashtag',
+      class: 'border-amber-200 bg-amber-50 text-amber-700',
+    })
+  if (props.user?.joining_date)
+    out.push({
+      key: 'date',
+      label: ' Joining Date : ' + formatDate(props.user.joining_date),
+      icon: 'far fa-calendar',
+      class: 'border-sky-200 bg-sky-50 text-sky-700',
+    })
   return out
 })
 
@@ -147,23 +178,10 @@ function formatDate(input) {
   }
 }
 
-function formatEmail(v) {
-  if (!v) return props.placeholder
-  const s = String(v).trim()
-  return s ? `<a href="mailto:${s}" class="underline underline-offset-2">${s}</a>` : props.placeholder
-}
 function formatPhone(v) {
   if (!v) return props.placeholder
   const s = String(v).trim()
   return s ? `<a href="tel:${s}" class="underline underline-offset-2">${s}</a>` : props.placeholder
-}
-
-async function copy(text, key = 'phone') {
-  try {
-    await navigator.clipboard.writeText(String(text))
-    copiedKey.value = key
-    setTimeout(() => (copiedKey.value = ''), 1500)
-  } catch {}
 }
 </script>
 

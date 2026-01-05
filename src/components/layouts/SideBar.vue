@@ -31,8 +31,33 @@ const toggleSubmenu = (key) => {
 }
 
 const isSubmenuOpen = (key) => expandedMenuKey.value === key
+const searchQuery = ref('')
+const normalizedQuery = computed(() => searchQuery.value.trim().toLowerCase())
+const isSearching = computed(() => !!normalizedQuery.value)
 
-// --------- MENU DEFINITIONS (using your route names) ----------
+const matchesQuery = (label) => {
+  if (!normalizedQuery.value) return true
+  return label.toLowerCase().includes(normalizedQuery.value)
+}
+
+// --------- MENU DEFINITIONS ----------
+
+// Core (visible for everyone)
+const coreMenu = [
+  { label: 'Dashboard', to: { path: '/dashboard' }, icon: 'fad fa-table' },
+  { label: 'Task List', to: { path: '/my-requirement-tasks' }, icon: 'fad fa-tasks' },
+  { label: 'Profile', to: { path: '/profile' }, icon: 'fad fa-user' },
+  { label: 'Notifications', to: { path: '/notifications' }, icon: 'fad fa-bells' },
+  { label: 'Notices', to: { path: '/notices' }, icon: 'fad fa-exclamation-triangle' },
+  { label: 'Attendance', to: { path: '/attendance' }, icon: 'fad fa-list' },
+  { label: 'Applications', to: { path: '/applications' }, icon: 'fad fa-list-alt' },
+]
+
+// Admin entry points
+const adminMenu = [
+  { label: 'Requirement', to: { path: '/requirements' }, icon: 'fad fa-tasks' },
+  { label: 'Task Management', to: { path: '/requirement-tasks' }, icon: 'fad fa-tasks' },
+]
 
 // Reports
 const reportsMenu = [
@@ -53,7 +78,6 @@ const reportRouteNames = reportsMenu.map((i) => i.routeName)
 // KPI
 const kpiMenu = [
   { label: 'Monthly KPI Forms', routeName: 'MonthlyKpiFormList' },
-  // { label: 'Assignment List', routeName: 'AssignmentList' },
   { label: 'Monthly Evaluation List', routeName: 'EvaluationList' },
   { label: 'Monthly KPI Reports', routeName: 'MonthlyKpiReportList' },
   { label: 'Yearly Evaluation', routeName: 'YearlyEvaluationList' },
@@ -95,7 +119,6 @@ const empManageMenu = [
     key: 'exit',
   },
 ]
-// there’s only one routeName here, but with different query
 const empRouteNames = ['checklists.board']
 
 // Settings
@@ -127,6 +150,45 @@ const careerMenu = [
 ]
 const careerRouteNames = careerMenu.map((i) => i.routeName)
 
+const filteredReportsMenu = computed(() =>
+  normalizedQuery.value ? reportsMenu.filter((i) => matchesQuery(i.label)) : reportsMenu,
+)
+const filteredKpiMenu = computed(() =>
+  normalizedQuery.value ? kpiMenu.filter((i) => matchesQuery(i.label)) : kpiMenu,
+)
+const filteredHrdMenu = computed(() =>
+  normalizedQuery.value ? hrdMenu.filter((i) => matchesQuery(i.label)) : hrdMenu,
+)
+const filteredEmpManageMenu = computed(() =>
+  normalizedQuery.value ? empManageMenu.filter((i) => matchesQuery(i.label)) : empManageMenu,
+)
+const filteredSettingsMenu = computed(() =>
+  normalizedQuery.value ? settingsMenu.filter((i) => matchesQuery(i.label)) : settingsMenu,
+)
+const filteredCareerMenu = computed(() =>
+  normalizedQuery.value ? careerMenu.filter((i) => matchesQuery(i.label)) : careerMenu,
+)
+
+const submenuOpen = (key, filteredList) =>
+  normalizedQuery.value ? filteredList.length > 0 : isSubmenuOpen(key)
+
+const hasSearchHit = computed(() => {
+  if (!normalizedQuery.value) return true
+
+  const coreHits = coreMenu.some((i) => matchesQuery(i.label))
+  const adminTopHits = adminMenu.some((i) => matchesQuery(i.label))
+
+  const anySubmenuHit =
+    filteredReportsMenu.value.length ||
+    filteredKpiMenu.value.length ||
+    filteredHrdMenu.value.length ||
+    filteredEmpManageMenu.value.length ||
+    filteredSettingsMenu.value.length ||
+    filteredCareerMenu.value.length
+
+  return coreHits || (isAdmin.value && authStore.isAdminMood && (adminTopHits || anySubmenuHit))
+})
+
 // ----- helpers for group active -----
 const groupActive = (names, basePath = null) => {
   if (names.includes(currentName.value)) return true
@@ -148,18 +210,24 @@ onMounted(() => {
 watch(open, (val) => {
   if (!val) expandedMenuKey.value = null
 })
+
+watch(
+  () => route.fullPath,
+  () => {
+    searchQuery.value = ''
+  },
+)
 </script>
 
 <template>
   <aside
-    class="bg-white sidebar h-screen overflow-auto scrollbar pb-24 z-[500]"
-    :class="{ 'sm:min-w-[240px]': open }"
+    class="bg-white sidebar h-screen z-[500000] flex flex-col transition-all duration-300 shadow"
+    :class="{ 'w-[240px]': open, 'w-[70px]': !open }"
   >
-    <div class="space-y-1 pt-16 md:pt-0">
+    <!-- Header Section (Switcher + Search) -->
+    <div class="flex flex-col border-b bg-white">
       <!-- Admin Mode + Toggle Menu Row -->
-      <div
-        class="flex items-center justify-between md:gap-2 px-2 py-5 sticky top-0 z-30 bg-white border-b"
-      >
+      <div class="flex items-center justify-between gap-2 py-5" :class="[open ? 'px-4' : 'px-1']">
         <!-- Admin Toggle -->
         <div v-if="isAdmin" class="flex items-center gap-2">
           <span v-if="open" class="text-sm font-medium text-gray-600">Admin Mode</span>
@@ -192,8 +260,35 @@ watch(open, (val) => {
         </button>
       </div>
 
-      <!-- Default Menus (hidden for adminMode ON + admin roles) -->
+      <div v-if="open" class="px-3 pb-4">
+        <div class="relative">
+          <i class="far fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          <input
+            v-model="searchQuery"
+            type="search"
+            class="w-full rounded-lg border border-slate-200 bg-slate-50 px-9 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+            placeholder="Search menu..."
+          />
+          <button
+            v-if="searchQuery"
+            class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            @click="searchQuery = ''"
+          >
+            <i class="far fa-times"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scrollable Menu Content -->
+    <div class="flex-1 overflow-y-auto overflow-x-hidden py-4 space-y-1 custom-scrollbar">
+      <!-- Menus (filtered when searching) -->
+      <div v-if="isSearching && !hasSearchHit" class="px-3 py-2 text-sm text-slate-500">
+        No matches found.
+      </div>
+
       <RouterLink
+        v-if="matchesQuery('Dashboard')"
         to="/dashboard"
         class="side-menu"
         :class="{
@@ -207,6 +302,7 @@ watch(open, (val) => {
 
       <template v-if="!authStore.isAdminMood || !isAdmin">
         <RouterLink
+          v-if="matchesQuery('Task List')"
           :to="`/my-requirement-tasks`"
           class="side-menu"
           :class="{
@@ -219,6 +315,7 @@ watch(open, (val) => {
         </RouterLink>
 
         <RouterLink
+          v-if="matchesQuery('Profile')"
           to="/profile"
           class="side-menu"
           :class="{
@@ -231,6 +328,7 @@ watch(open, (val) => {
         </RouterLink>
 
         <RouterLink
+          v-if="matchesQuery('Notifications')"
           to="/notifications"
           class="side-menu"
           :class="{
@@ -243,6 +341,7 @@ watch(open, (val) => {
         </RouterLink>
 
         <RouterLink
+          v-if="matchesQuery('Notices')"
           to="/notices"
           class="side-menu"
           :class="{
@@ -255,6 +354,7 @@ watch(open, (val) => {
         </RouterLink>
 
         <RouterLink
+          v-if="matchesQuery('Attendance')"
           to="/attendance"
           class="side-menu"
           :class="{
@@ -267,6 +367,7 @@ watch(open, (val) => {
         </RouterLink>
 
         <RouterLink
+          v-if="matchesQuery('Applications')"
           to="/applications"
           class="side-menu"
           :class="{
@@ -281,8 +382,8 @@ watch(open, (val) => {
 
       <!-- Admin Menus -->
       <template v-if="isAdmin && authStore.isAdminMood">
-        <!-- Requirement -->
         <RouterLink
+          v-if="matchesQuery('Requirement')"
           to="/requirements"
           class="side-menu"
           :class="{
@@ -294,8 +395,8 @@ watch(open, (val) => {
           <h4 v-if="open">Requirement</h4>
         </RouterLink>
 
-        <!-- Task Management -->
         <RouterLink
+          v-if="matchesQuery('Task Management')"
           to="/requirement-tasks"
           class="side-menu"
           :class="{
@@ -307,182 +408,204 @@ watch(open, (val) => {
           <h4 v-if="open">Task Management</h4>
         </RouterLink>
 
-        <!-- Reports + Submenu -->
-        <RouterLink to="/reports" custom v-slot="{ navigate }">
-          <div
-            class="side-menu"
-            :class="{
-              'flex justify-center': !open,
-              'side-menu-active': groupActive(reportRouteNames, '/reports'),
-            }"
-            @click="navigate"
-          >
-            <div class="flex items-center justify-between w-full">
-              <div class="flex items-center gap-2">
-                <i class="fas fa-file-chart-line py-2"></i>
-                <h4 v-if="open">Reports</h4>
-              </div>
-              <button
-                v-if="open"
-                class="p-1 rounded hover:bg-gray-100 hover:text-black"
-                @click.stop="toggleSubmenu('reports')"
-                :aria-expanded="isSubmenuOpen('reports')"
-              >
-                <i
-                  class="fas text-xs"
-                  :class="isSubmenuOpen('reports') ? 'fa-chevron-up' : 'fa-chevron-down'"
-                ></i>
-              </button>
-            </div>
-          </div>
-        </RouterLink>
-
-        <transition name="submenu">
-          <nav
-            v-if="open && isSubmenuOpen('reports')"
-            class="submenu-accordion relative mt-2 ml-3 space-y-1 rounded-xl bg-slate-50/70 px-2 py-2 shadow-sm"
-          >
-            <span aria-hidden="true" class="absolute left-3 top-2 bottom-2 w-px bg-slate-200"></span>
-            <RouterLink
-              v-for="item in reportsMenu"
-              :key="item.routeName"
-              :to="{ name: item.routeName }"
-              class="group relative flex items-center gap-2 rounded-lg py-2 pl-7 pr-3 text-[13px] text-slate-600 transition duration-200 ease-out hover:bg-slate-100 hover:text-slate-900 hover:translate-x-0.5"
+        <template v-if="!isSearching || filteredReportsMenu.length">
+          <RouterLink to="/reports" custom v-slot="{ navigate }">
+            <div
+              class="side-menu"
               :class="{
-                'bg-blue-50/80 text-blue-700 font-semibold shadow-sm': currentName === item.routeName,
+                'flex justify-center': !open,
+                'side-menu-active': groupActive(reportRouteNames, '/reports'),
               }"
+              @click="navigate"
+            >
+              <div class="flex items-center justify-between w-full">
+                <div class="flex items-center gap-2">
+                  <i class="fas fa-file-chart-line py-2"></i>
+                  <h4 v-if="open">Reports</h4>
+                </div>
+                <button
+                  v-if="open"
+                  class="p-1 rounded hover:bg-gray-100 hover:text-black"
+                  @click.stop="toggleSubmenu('reports')"
+                  :aria-expanded="submenuOpen('reports', filteredReportsMenu)"
+                >
+                  <i
+                    class="fas text-xs"
+                    :class="
+                      submenuOpen('reports', filteredReportsMenu)
+                        ? 'fa-chevron-up'
+                        : 'fa-chevron-down'
+                    "
+                  ></i>
+                </button>
+              </div>
+            </div>
+          </RouterLink>
+
+          <transition name="submenu">
+            <nav
+              v-if="open && submenuOpen('reports', filteredReportsMenu)"
+              class="submenu-accordion relative mt-2 ml-3 space-y-1 rounded-xl bg-slate-50/70 px-2 py-2 shadow-sm"
             >
               <span
-                class="absolute left-3 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-slate-300 transition group-hover:bg-blue-400"
-                :class="currentName === item.routeName ? 'bg-blue-500' : ''"
+                aria-hidden="true"
+                class="absolute left-3 top-2 bottom-2 w-px bg-slate-200"
               ></span>
-              <span class="flex-1">{{ item.label }}</span>
-              <span
-                class="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-blue-600 opacity-0 transition"
-                :class="currentName === item.routeName ? 'opacity-100' : 'group-hover:opacity-60'"
-              ></span>
-            </RouterLink>
-          </nav>
-        </transition>
-
-        <!-- KPI + Submenu -->
-        <RouterLink to="/kpi" custom v-slot="{ navigate }">
-          <div
-            class="side-menu"
-            :class="{
-              'flex justify-center': !open,
-              'side-menu-active': groupActive(kpiRouteNames, '/kpi'),
-            }"
-            @click="navigate"
-          >
-            <div class="flex items-center justify-between w-full">
-              <div class="flex items-center gap-2">
-                <i class="fas fa-file-chart-line py-2"></i>
-                <h4 v-if="open">KPI</h4>
-              </div>
-              <button
-                v-if="open"
-                class="p-1 rounded hover:bg-gray-100 hover:text-black"
-                @click.stop="toggleSubmenu('kpi')"
-                :aria-expanded="isSubmenuOpen('kpi')"
+              <RouterLink
+                v-for="item in filteredReportsMenu"
+                :key="item.routeName"
+                :to="{ name: item.routeName }"
+                class="group relative flex items-center gap-2 rounded-lg py-2 pl-7 pr-3 text-[13px] text-slate-600 transition duration-200 ease-out hover:bg-slate-100 hover:text-slate-900 hover:translate-x-0.5"
+                :class="{
+                  'bg-blue-50/80 text-blue-700 font-semibold shadow-sm':
+                    currentName === item.routeName,
+                }"
               >
-                <i
-                  class="fas text-xs"
-                  :class="isSubmenuOpen('kpi') ? 'fa-chevron-up' : 'fa-chevron-down'"
-                ></i>
-              </button>
-            </div>
-          </div>
-        </RouterLink>
+                <span
+                  class="absolute left-3 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-slate-300 transition group-hover:bg-blue-400"
+                  :class="currentName === item.routeName ? 'bg-blue-500' : ''"
+                ></span>
+                <span class="flex-1">{{ item.label }}</span>
+                <span
+                  class="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-blue-600 opacity-0 transition"
+                  :class="currentName === item.routeName ? 'opacity-100' : 'group-hover:opacity-60'"
+                ></span>
+              </RouterLink>
+            </nav>
+          </transition>
+        </template>
 
-        <transition name="submenu">
-          <nav
-            v-if="open && isSubmenuOpen('kpi')"
-            class="submenu-accordion relative mt-2 ml-3 space-y-1 rounded-xl bg-slate-50/70 px-2 py-2 shadow-sm"
-          >
-            <span aria-hidden="true" class="absolute left-3 top-2 bottom-2 w-px bg-slate-200"></span>
-            <RouterLink
-              v-for="item in kpiMenu"
-              :key="item.routeName"
-              :to="{ name: item.routeName }"
-              class="group relative flex items-center gap-2 rounded-lg py-2 pl-7 pr-3 text-[13px] text-slate-600 transition duration-200 ease-out hover:bg-slate-100 hover:text-slate-900 hover:translate-x-0.5"
+        <template v-if="!isSearching || filteredKpiMenu.length">
+          <RouterLink to="/kpi" custom v-slot="{ navigate }">
+            <div
+              class="side-menu"
               :class="{
-                'bg-blue-50/80 text-blue-700 font-semibold shadow-sm': currentName === item.routeName,
+                'flex justify-center': !open,
+                'side-menu-active': groupActive(kpiRouteNames, '/kpi'),
               }"
+              @click="navigate"
+            >
+              <div class="flex items-center justify-between w-full">
+                <div class="flex items-center gap-2">
+                  <i class="fas fa-file-chart-line py-2"></i>
+                  <h4 v-if="open">KPI</h4>
+                </div>
+                <button
+                  v-if="open"
+                  class="p-1 rounded hover:bg-gray-100 hover:text-black"
+                  @click.stop="toggleSubmenu('kpi')"
+                  :aria-expanded="submenuOpen('kpi', filteredKpiMenu)"
+                >
+                  <i
+                    class="fas text-xs"
+                    :class="
+                      submenuOpen('kpi', filteredKpiMenu) ? 'fa-chevron-up' : 'fa-chevron-down'
+                    "
+                  ></i>
+                </button>
+              </div>
+            </div>
+          </RouterLink>
+
+          <transition name="submenu">
+            <nav
+              v-if="open && submenuOpen('kpi', filteredKpiMenu)"
+              class="submenu-accordion relative mt-2 ml-3 space-y-1 rounded-xl bg-slate-50/70 px-2 py-2 shadow-sm"
             >
               <span
-                class="absolute left-3 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-slate-300 transition group-hover:bg-blue-400"
-                :class="currentName === item.routeName ? 'bg-blue-500' : ''"
+                aria-hidden="true"
+                class="absolute left-3 top-2 bottom-2 w-px bg-slate-200"
               ></span>
-              <span class="flex-1">{{ item.label }}</span>
-              <span
-                class="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-blue-600 opacity-0 transition"
-                :class="currentName === item.routeName ? 'opacity-100' : 'group-hover:opacity-60'"
-              ></span>
-            </RouterLink>
-          </nav>
-        </transition>
-
-        <!-- HR Department + Submenu -->
-        <RouterLink to="/hrd" custom v-slot="{ navigate }">
-          <div
-            class="side-menu"
-            :class="{
-              'flex justify-center': !open,
-              'side-menu-active': groupActive(hrdRouteNames, '/hrd'),
-            }"
-            @click="navigate"
-          >
-            <div class="flex items-center justify-between w-full">
-              <div class="flex items-center gap-2">
-                <i class="fas fa-users-cog py-2"></i>
-                <h4 v-if="open">HR Department</h4>
-              </div>
-              <button
-                v-if="open"
-                class="p-1 rounded hover:bg-gray-100 hover:text-black"
-                @click.stop="toggleSubmenu('hrd')"
-                :aria-expanded="isSubmenuOpen('hrd')"
+              <RouterLink
+                v-for="item in filteredKpiMenu"
+                :key="item.routeName"
+                :to="{ name: item.routeName }"
+                class="group relative flex items-center gap-2 rounded-lg py-2 pl-7 pr-3 text-[13px] text-slate-600 transition duration-200 ease-out hover:bg-slate-100 hover:text-slate-900 hover:translate-x-0.5"
+                :class="{
+                  'bg-blue-50/80 text-blue-700 font-semibold shadow-sm':
+                    currentName === item.routeName,
+                }"
               >
-                <i
-                  class="fas text-xs"
-                  :class="isSubmenuOpen('hrd') ? 'fa-chevron-up' : 'fa-chevron-down'"
-                ></i>
-              </button>
-            </div>
-          </div>
-        </RouterLink>
+                <span
+                  class="absolute left-3 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-slate-300 transition group-hover:bg-blue-400"
+                  :class="currentName === item.routeName ? 'bg-blue-500' : ''"
+                ></span>
+                <span class="flex-1">{{ item.label }}</span>
+                <span
+                  class="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-blue-600 opacity-0 transition"
+                  :class="currentName === item.routeName ? 'opacity-100' : 'group-hover:opacity-60'"
+                ></span>
+              </RouterLink>
+            </nav>
+          </transition>
+        </template>
 
-        <transition name="submenu">
-          <nav
-            v-if="open && isSubmenuOpen('hrd')"
-            class="submenu-accordion relative mt-2 ml-3 space-y-1 rounded-xl bg-slate-50/70 px-2 py-2 shadow-sm"
-          >
-            <span aria-hidden="true" class="absolute left-3 top-2 bottom-2 w-px bg-slate-200"></span>
-            <RouterLink
-              v-for="item in hrdMenu"
-              :key="item.routeName"
-              :to="{ name: item.routeName }"
-              class="group relative flex items-center gap-2 rounded-lg py-2 pl-7 pr-3 text-[13px] text-slate-600 transition duration-200 ease-out hover:bg-slate-100 hover:text-slate-900 hover:translate-x-0.5"
+        <template v-if="!isSearching || filteredHrdMenu.length">
+          <RouterLink to="/hrd" custom v-slot="{ navigate }">
+            <div
+              class="side-menu"
               :class="{
-                'bg-blue-50/80 text-blue-700 font-semibold shadow-sm': currentName === item.routeName,
+                'flex justify-center': !open,
+                'side-menu-active': groupActive(hrdRouteNames, '/hrd'),
               }"
+              @click="navigate"
+            >
+              <div class="flex items-center justify-between w-full">
+                <div class="flex items-center gap-2">
+                  <i class="fas fa-users-cog py-2"></i>
+                  <h4 v-if="open">HR Department</h4>
+                </div>
+                <button
+                  v-if="open"
+                  class="p-1 rounded hover:bg-gray-100 hover:text-black"
+                  @click.stop="toggleSubmenu('hrd')"
+                  :aria-expanded="submenuOpen('hrd', filteredHrdMenu)"
+                >
+                  <i
+                    class="fas text-xs"
+                    :class="
+                      submenuOpen('hrd', filteredHrdMenu) ? 'fa-chevron-up' : 'fa-chevron-down'
+                    "
+                  ></i>
+                </button>
+              </div>
+            </div>
+          </RouterLink>
+
+          <transition name="submenu">
+            <nav
+              v-if="open && submenuOpen('hrd', filteredHrdMenu)"
+              class="submenu-accordion relative mt-2 ml-3 space-y-1 rounded-xl bg-slate-50/70 px-2 py-2 shadow-sm"
             >
               <span
-                class="absolute left-3 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-slate-300 transition group-hover:bg-blue-400"
-                :class="currentName === item.routeName ? 'bg-blue-500' : ''"
+                aria-hidden="true"
+                class="absolute left-3 top-2 bottom-2 w-px bg-slate-200"
               ></span>
-              <span class="flex-1">{{ item.label }}</span>
-              <span
-                class="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-blue-600 opacity-0 transition"
-                :class="currentName === item.routeName ? 'opacity-100' : 'group-hover:opacity-60'"
-              ></span>
-            </RouterLink>
-          </nav>
-        </transition>
+              <RouterLink
+                v-for="item in filteredHrdMenu"
+                :key="item.routeName"
+                :to="{ name: item.routeName }"
+                class="group relative flex items-center gap-2 rounded-lg py-2 pl-7 pr-3 text-[13px] text-slate-600 transition duration-200 ease-out hover:bg-slate-100 hover:text-slate-900 hover:translate-x-0.5"
+                :class="{
+                  'bg-blue-50/80 text-blue-700 font-semibold shadow-sm':
+                    currentName === item.routeName,
+                }"
+              >
+                <span
+                  class="absolute left-3 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-slate-300 transition group-hover:bg-blue-400"
+                  :class="currentName === item.routeName ? 'bg-blue-500' : ''"
+                ></span>
+                <span class="flex-1">{{ item.label }}</span>
+                <span
+                  class="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-blue-600 opacity-0 transition"
+                  :class="currentName === item.routeName ? 'opacity-100' : 'group-hover:opacity-60'"
+                ></span>
+              </RouterLink>
+            </nav>
+          </transition>
+        </template>
 
-        <!-- EmpManage + Submenu -->
-        <template v-if="isSuperAdminOrDev">
+        <template v-if="isSuperAdminOrDev && (!isSearching || filteredEmpManageMenu.length)">
           <RouterLink to="/employee-management" custom v-slot="{ navigate }">
             <div
               class="side-menu"
@@ -501,11 +624,15 @@ watch(open, (val) => {
                   v-if="open"
                   class="p-1 rounded hover:bg-gray-100 hover:text-black"
                   @click.stop="toggleSubmenu('emp')"
-                  :aria-expanded="isSubmenuOpen('emp')"
+                  :aria-expanded="submenuOpen('emp', filteredEmpManageMenu)"
                 >
                   <i
                     class="fas text-xs"
-                    :class="isSubmenuOpen('emp') ? 'fa-chevron-up' : 'fa-chevron-down'"
+                    :class="
+                      submenuOpen('emp', filteredEmpManageMenu)
+                        ? 'fa-chevron-up'
+                        : 'fa-chevron-down'
+                    "
                   ></i>
                 </button>
               </div>
@@ -514,17 +641,21 @@ watch(open, (val) => {
 
           <transition name="submenu">
             <nav
-              v-if="open && isSubmenuOpen('emp')"
+              v-if="open && submenuOpen('emp', filteredEmpManageMenu)"
               class="submenu-accordion relative mt-2 ml-3 space-y-1 rounded-xl bg-slate-50/70 px-2 py-2 shadow-sm"
             >
-              <span aria-hidden="true" class="absolute left-3 top-2 bottom-2 w-px bg-slate-200"></span>
+              <span
+                aria-hidden="true"
+                class="absolute left-3 top-2 bottom-2 w-px bg-slate-200"
+              ></span>
               <RouterLink
-                v-for="item in empManageMenu"
+                v-for="item in filteredEmpManageMenu"
                 :key="item.key"
                 :to="item.to"
                 class="group relative flex items-center gap-2 rounded-lg py-2 pl-7 pr-3 text-[13px] text-slate-600 transition duration-200 ease-out hover:bg-slate-100 hover:text-slate-900 hover:translate-x-0.5"
                 :class="{
-                  'bg-blue-50/80 text-blue-700 font-semibold shadow-sm': currentName === 'checklists.board',
+                  'bg-blue-50/80 text-blue-700 font-semibold shadow-sm':
+                    currentName === 'checklists.board',
                 }"
               >
                 <span
@@ -534,13 +665,16 @@ watch(open, (val) => {
                 <span class="flex-1">{{ item.label }}</span>
                 <span
                   class="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-blue-600 opacity-0 transition"
-                  :class="currentName === 'checklists.board' ? 'opacity-100' : 'group-hover:opacity-60'"
+                  :class="
+                    currentName === 'checklists.board' ? 'opacity-100' : 'group-hover:opacity-60'
+                  "
                 ></span>
               </RouterLink>
             </nav>
           </transition>
+        </template>
 
-          <!-- Settings + Submenu -->
+        <template v-if="!isSearching || filteredSettingsMenu.length">
           <RouterLink to="/settings" custom v-slot="{ navigate }">
             <div
               class="side-menu"
@@ -559,11 +693,15 @@ watch(open, (val) => {
                   v-if="open"
                   class="p-1 rounded hover:bg-gray-100 hover:text-black"
                   @click.stop="toggleSubmenu('settings')"
-                  :aria-expanded="isSubmenuOpen('settings')"
+                  :aria-expanded="submenuOpen('settings', filteredSettingsMenu)"
                 >
                   <i
                     class="fas text-xs"
-                    :class="isSubmenuOpen('settings') ? 'fa-chevron-up' : 'fa-chevron-down'"
+                    :class="
+                      submenuOpen('settings', filteredSettingsMenu)
+                        ? 'fa-chevron-up'
+                        : 'fa-chevron-down'
+                    "
                   ></i>
                 </button>
               </div>
@@ -572,17 +710,21 @@ watch(open, (val) => {
 
           <transition name="submenu">
             <nav
-              v-if="open && isSubmenuOpen('settings')"
+              v-if="open && submenuOpen('settings', filteredSettingsMenu)"
               class="submenu-accordion relative mt-2 ml-3 space-y-1 rounded-xl bg-slate-50/70 px-2 py-2 shadow-sm"
             >
-              <span aria-hidden="true" class="absolute left-3 top-2 bottom-2 w-px bg-slate-200"></span>
+              <span
+                aria-hidden="true"
+                class="absolute left-3 top-2 bottom-2 w-px bg-slate-200"
+              ></span>
               <RouterLink
-                v-for="item in settingsMenu"
+                v-for="item in filteredSettingsMenu"
                 :key="item.label"
                 :to="{ name: item.routeName, params: item.params }"
                 class="group relative flex items-center gap-2 rounded-lg py-2 pl-7 pr-3 text-[13px] text-slate-600 transition duration-200 ease-out hover:bg-slate-100 hover:text-slate-900 hover:translate-x-0.5"
                 :class="{
-                  'bg-blue-50/80 text-blue-700 font-semibold shadow-sm': currentName === item.routeName,
+                  'bg-blue-50/80 text-blue-700 font-semibold shadow-sm':
+                    currentName === item.routeName,
                 }"
               >
                 <span
@@ -597,8 +739,9 @@ watch(open, (val) => {
               </RouterLink>
             </nav>
           </transition>
+        </template>
 
-          <!-- Careers + Submenu -->
+        <template v-if="!isSearching || filteredCareerMenu.length">
           <RouterLink to="/admin/careers" custom v-slot="{ navigate }">
             <div
               class="side-menu"
@@ -617,11 +760,15 @@ watch(open, (val) => {
                   v-if="open"
                   class="p-1 rounded hover:bg-gray-100 hover:text-black"
                   @click.stop="toggleSubmenu('careers')"
-                  :aria-expanded="isSubmenuOpen('careers')"
+                  :aria-expanded="submenuOpen('careers', filteredCareerMenu)"
                 >
                   <i
                     class="fas text-xs"
-                    :class="isSubmenuOpen('careers') ? 'fa-chevron-up' : 'fa-chevron-down'"
+                    :class="
+                      submenuOpen('careers', filteredCareerMenu)
+                        ? 'fa-chevron-up'
+                        : 'fa-chevron-down'
+                    "
                   ></i>
                 </button>
               </div>
@@ -630,17 +777,21 @@ watch(open, (val) => {
 
           <transition name="submenu">
             <nav
-              v-if="open && isSubmenuOpen('careers')"
+              v-if="open && submenuOpen('careers', filteredCareerMenu)"
               class="submenu-accordion relative mt-2 ml-3 space-y-1 rounded-xl bg-slate-50/70 px-2 py-2 shadow-sm"
             >
-              <span aria-hidden="true" class="absolute left-3 top-2 bottom-2 w-px bg-slate-200"></span>
+              <span
+                aria-hidden="true"
+                class="absolute left-3 top-2 bottom-2 w-px bg-slate-200"
+              ></span>
               <RouterLink
-                v-for="item in careerMenu"
+                v-for="item in filteredCareerMenu"
                 :key="item.routeName"
                 :to="{ name: item.routeName }"
                 class="group relative flex items-center gap-2 rounded-lg py-2 pl-7 pr-3 text-[13px] text-slate-600 transition duration-200 ease-out hover:bg-slate-100 hover:text-slate-900 hover:translate-x-0.5"
                 :class="{
-                  'bg-blue-50/80 text-blue-700 font-semibold shadow-sm': currentName === item.routeName,
+                  'bg-blue-50/80 text-blue-700 font-semibold shadow-sm':
+                    currentName === item.routeName,
                 }"
               >
                 <span
@@ -657,11 +808,13 @@ watch(open, (val) => {
           </transition>
         </template>
       </template>
+    </div>
 
-      <!-- Logout -->
+    <!-- Footer Section (Logout) -->
+    <div class="mt-auto border-t bg-white p-2">
       <button
         :class="{ 'flex justify-center': !open }"
-        class="side-menu bg-rose-50 w-full hover:bg-rose-600 text-rose-700"
+        class="side-menu bg-rose-50 w-full hover:bg-rose-600 text-rose-700 rounded-lg"
         @click="logout"
       >
         <i class="fad fa-sign-out-alt py-2"></i>
@@ -674,7 +827,9 @@ watch(open, (val) => {
 <style scoped>
 .submenu-enter-active,
 .submenu-leave-active {
-  transition: max-height 0.25s ease, opacity 0.2s ease;
+  transition:
+    max-height 0.25s ease,
+    opacity 0.2s ease;
   overflow: hidden;
 }
 
@@ -691,7 +846,10 @@ watch(open, (val) => {
 }
 
 .side-menu {
-  transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease,
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    background-color 0.18s ease,
     color 0.18s ease;
 }
 
@@ -703,5 +861,22 @@ watch(open, (val) => {
 .side-menu:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.45);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
 }
 </style>

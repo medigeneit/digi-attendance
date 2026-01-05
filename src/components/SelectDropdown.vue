@@ -105,83 +105,88 @@
     </div>
 
     <!-- Dropdown -->
-    <div
-      v-show="isOpen"
-      class="absolute border rounded shadow-[0px_0px_10px_0px_rgba(0,0,0,0.25)] z-50 border-teal-500 bg-white"
-      ref="dropdownMenuRef"
-      :class="positionClass"
-    >
-      <div class="px-2 pt-2" v-if="searchable && !taggable">
-        <slot name="search">
-          <input
-            type="text"
-            v-model="search"
-            ref="searchInput"
-            class="w-full px-2 py-1 border rounded outline-blue-400 focus:outline-1"
-            placeholder="Search..."
-            @focus="$emit('search:focus')"
-            @blur="$emit('search:blur')"
-            @keydown.stop.enter="($event) => handleSearchEnter($event)"
-          />
-        </slot>
-      </div>
+    <teleport :to="teleportTarget || 'body'" :disabled="!teleportTarget">
+      <div
+        v-show="isOpen"
+        class="fixed border rounded shadow-[0px_0px_10px_0px_rgba(0,0,0,0.25)] z-50 border-teal-500 bg-white"
+        ref="dropdownMenuRef"
+        :style="dropdownStyles"
+      >
+        <div class="px-2 pt-2" v-if="searchable && !taggable">
+          <slot name="search">
+            <input
+              type="text"
+              v-model="search"
+              ref="searchInput"
+              class="w-full px-2 py-1 border rounded outline-blue-400 focus:outline-1"
+              placeholder="Search..."
+              @focus="$emit('search:focus')"
+              @blur="$emit('search:blur')"
+              @keydown.stop.enter="($event) => handleSearchEnter($event)"
+            />
+          </slot>
+        </div>
 
-      <slot name="list-header"></slot>
+        <slot name="list-header"></slot>
 
-      <ul class="max-h-60 overflow-y-auto py-2">
-        <template v-if="filteredOptions.length">
-          <template
-            v-for="(option, filteredOptionIndex) in filteredOptions"
-            :key="getOptionKey(option)"
-          >
-            <li v-if="isOptionGroup">
-              <div class="mx-2 text-sm font-semibold">
-                {{ option?.[groupLabel] }}
-              </div>
-              <ul class="px-2 text-sm text-gray-700">
-                <li
-                  v-for="groupOption in option?.[optGroupOptionKey] || []"
-                  :key="getOptionKey(groupOption)"
-                  tabindex="0"
-                  :class="{ 'bg-blue-50': isSelected(groupOption) }"
-                  class="px-3 py-1 my-0.5 hover:bg-blue-100 focus:bg-blue-100 focus:outline-blue-500 cursor-pointer"
-                  @click="selectOption(groupOption, option)"
-                  @keydown.prevent.space="selectOption(groupOption, option)"
-                  @keydown.prevent.enter="selectOption(groupOption, option)"
-                >
-                  <slot name="option" :option="groupOption" :group="option">
-                    {{ getOptionLabel(groupOption) }}
-                  </slot>
-                </li>
-              </ul>
-            </li>
-            <li
-              v-else
-              tabindex="0"
-              :class="{
-                'bg-blue-50': isSelected(option),
-                'border border-blue-700': focusIndex === filteredOptionIndex,
-              }"
-              class="px-3 py-1 my-0.5 hover:bg-blue-100 focus:bg-blue-100 focus:outline-blue-500 cursor-pointer"
-              @click="selectOption(option)"
-              @keydown.prevent.space="selectOption(option)"
-              @keydown.prevent.enter="selectOption(option)"
+        <ul class="max-h-60 overflow-y-auto py-2">
+          <template v-if="filteredOptions.length">
+            <template
+              v-for="(option, filteredOptionIndex) in filteredOptions"
+              :key="getOptionKey(option)"
             >
-              <slot name="option" :option="option">
-                {{ getOptionLabel(option) }}
-              </slot>
-            </li>
+              <li v-if="isOptionGroup">
+                <div class="mx-2 text-sm font-semibold">
+                  {{ option?.[groupLabel] }}
+                </div>
+                <ul class="px-2 text-sm text-gray-700">
+                  <li
+                    v-for="groupOption in option?.[optGroupOptionKey] || []"
+                    :key="getOptionKey(groupOption)"
+                    tabindex="0"
+                    :class="{ 'bg-blue-50': isSelected(groupOption) }"
+                    class="px-3 py-1 my-0.5 hover:bg-blue-100 focus:bg-blue-100 focus:outline-blue-500 cursor-pointer"
+                    @click="selectOption(groupOption, option)"
+                    @keydown.prevent.space="selectOption(groupOption, option)"
+                    @keydown.prevent.enter="selectOption(groupOption, option)"
+                  >
+                    <slot name="option" :option="groupOption" :group="option">
+                      {{ getOptionLabel(groupOption) }}
+                    </slot>
+                  </li>
+                </ul>
+              </li>
+              <li
+                v-else
+                tabindex="0"
+                :class="{
+                  'bg-blue-50': isSelected(option),
+                  'border border-blue-700': focusIndex === filteredOptionIndex,
+                }"
+                class="px-3 py-1 my-0.5 hover:bg-blue-100 focus:bg-blue-100 focus:outline-blue-500 cursor-pointer"
+                @click="selectOption(option)"
+                @keydown.prevent.space="selectOption(option)"
+                @keydown.prevent.enter="selectOption(option)"
+              >
+                <slot name="option" :option="option">
+                  {{ getOptionLabel(option) }}
+                </slot>
+              </li>
+            </template>
           </template>
-        </template>
-        <li v-else class="px-3 py-2 text-gray-500 min-h-24 flex justify-center items-center -mt-2">
-          <slot name="no-options">{{
-            taggable ? 'No option found, Enter to add' : 'No options found'
-          }}</slot>
-        </li>
-      </ul>
+          <li
+            v-else
+            class="px-3 py-2 text-gray-500 min-h-24 flex justify-center items-center -mt-2"
+          >
+            <slot name="no-options">{{
+              taggable ? 'No option found, Enter to add' : 'No options found'
+            }}</slot>
+          </li>
+        </ul>
 
-      <slot name="list-footer"></slot>
-    </div>
+        <slot name="list-footer"></slot>
+      </div>
+    </teleport>
   </div>
 </template>
 
@@ -211,6 +216,7 @@ const props = defineProps({
   isOptionGroup: { type: Boolean, default: false },
   optGroupOptionKey: { type: String, default: 'children' },
   groupLabel: { type: String, default: 'name' },
+  teleportTarget: { type: String, default: 'body' },
 })
 
 const emit = defineEmits([
@@ -236,13 +242,16 @@ const dropdownMenuRef = ref()
 const dropdownPosition = ref(props.position)
 const selectedGroup = ref('')
 const focusIndex = ref(0)
+const dropdownStyles = ref({})
+const dropdownOffset = 6
 
 function handleOutsideClick(event) {
-  if (dropdownRef.value && !dropdownRef.value.contains(event.target)) {
-    if (isOpen.value) {
-      isOpen.value = false
-      emit('close')
-    }
+  const clickedInsideTrigger = dropdownRef.value?.contains(event.target)
+  const clickedInsideMenu = dropdownMenuRef.value?.contains(event.target)
+
+  if (!clickedInsideTrigger && !clickedInsideMenu && isOpen.value) {
+    isOpen.value = false
+    emit('close')
   }
 }
 
@@ -272,6 +281,9 @@ function handleKeydown(e) {
   }
 }
 
+const handleContainmentScroll = () => calculatePosition(isOpen.value)
+const handleWindowResize = () => calculatePosition(isOpen.value)
+
 const handleSearchEnter = (e) => {
   if (!isOpen.value || props.isOptionGroup) return
 
@@ -287,10 +299,8 @@ const handleSearchEnter = (e) => {
 onMounted(() => {
   document.addEventListener('click', handleOutsideClick)
   window.addEventListener('keydown', handleKeydown)
-  props.containment?.addEventListener('scroll', () => {
-    // console.log('containment', props.containment)
-    calculatePosition(isOpen.value)
-  })
+  props.containment?.addEventListener('scroll', handleContainmentScroll)
+  window.addEventListener('resize', handleWindowResize)
 
   setTimeout(() => {
     tagSearchInput.value?.focus()
@@ -300,19 +310,11 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener('click', handleOutsideClick)
   window.removeEventListener('keydown', handleKeydown)
-  props.containment?.removeEventListener('scroll', () => calculatePosition(isOpen.value))
+  props.containment?.removeEventListener('scroll', handleContainmentScroll)
+  window.removeEventListener('resize', handleWindowResize)
 })
 
 const isMultiSelection = computed(() => props.multiple || props.taggable)
-const positionClass = computed(() => {
-  const map = {
-    top: 'bottom-[100%] mb-0.5',
-    left: 'right-[100%] mr-0.5',
-    right: 'left-[100%] ml-0.5',
-    bottom: 'top-[100%] mt-0.5',
-  }
-  return map[dropdownPosition.value] || map.bottom
-})
 
 const selectedItems = computed(() => {
   if (props.multiple || props.taggable) {
@@ -496,35 +498,50 @@ const itemsWithHiddenBySelected = (items) => {
 }
 
 async function calculatePosition(dropdownOpen) {
-  if (!props.containment) {
-    return null
-  }
+  if (!dropdownOpen) return null
 
-  if (dropdownOpen && props.position === 'auto') {
-    await nextTick()
-    const trigger = dropdownRef.value
-    const dropdown = dropdownMenuRef.value
-    if (trigger && dropdown) {
-      console.log({ cm: props.containment })
+  await nextTick()
+  const trigger = dropdownRef.value
+  const dropdown = dropdownMenuRef.value
+  if (!(trigger && dropdown)) return null
 
-      const triggerRect = trigger.getBoundingClientRect()
-      const dropdownHeight = dropdown.offsetHeight
-      const spaceBelow =
-        (props.containment.innerHeight || props.containment.clientHeight) - triggerRect.bottom
-      const spaceAbove = triggerRect.top
+  const containment = props.containment || window
+  const triggerRect = trigger.getBoundingClientRect()
+  const dropdownRect = dropdown.getBoundingClientRect()
+  const containerRect =
+    typeof containment.getBoundingClientRect === 'function'
+      ? containment.getBoundingClientRect()
+      : null
 
-      console.log({ triggerRect, dropdownHeight, spaceBelow, spaceAbove })
+  const spaceBelow = (containerRect?.bottom ?? window.innerHeight) - triggerRect.bottom
+  const spaceAbove = triggerRect.top - (containerRect?.top ?? 0)
+  const dropdownHeight = dropdownRect.height
 
-      if (spaceAbove < dropdownHeight) {
-        dropdownPosition.value = 'bottom'
-      } else {
-        dropdownPosition.value =
-          spaceBelow < dropdownHeight && spaceAbove > dropdownHeight ? 'top' : 'bottom'
-      }
-    }
+  if (props.position === 'auto') {
+    dropdownPosition.value =
+      spaceBelow < dropdownHeight && spaceAbove > dropdownHeight ? 'top' : 'bottom'
   } else {
     dropdownPosition.value = props.position
   }
+
+  const style = {
+    position: 'fixed',
+    minWidth: `${triggerRect.width}px`,
+    left: `${triggerRect.left}px`,
+    top: `${triggerRect.bottom + dropdownOffset}px`,
+  }
+
+  if (dropdownPosition.value === 'top') {
+    style.top = `${triggerRect.top - dropdownHeight - dropdownOffset}px`
+  } else if (dropdownPosition.value === 'left') {
+    style.left = `${triggerRect.left - dropdownRect.width - dropdownOffset}px`
+    style.top = `${triggerRect.top}px`
+  } else if (dropdownPosition.value === 'right') {
+    style.left = `${triggerRect.right + dropdownOffset}px`
+    style.top = `${triggerRect.top}px`
+  }
+
+  dropdownStyles.value = style
 }
 
 const searchedItem = computed(() => {
