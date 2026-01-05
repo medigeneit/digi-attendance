@@ -2,9 +2,9 @@
 import LeaveApplicationForm from '@/components/AdminLeaveApplicationAddForm.vue'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import SelectedEmployeeCard from '@/components/user/SelectedEmployeeCard.vue'
 import UserLeaveBalanceModal from '@/components/UserLeaveBalanceModal.vue'
-import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
@@ -16,7 +16,7 @@ const route = useRoute()
 const leaveApplicationStore = useLeaveApplicationStore()
 const userStore = useUserStore()
 
-const { user, leave_balances, leaveApplications, loading } = storeToRefs(leaveApplicationStore)
+const { user, leaveApplications, loading } = storeToRefs(leaveApplicationStore)
 
 const { userLeaveBalance } = storeToRefs(userStore)
 
@@ -70,20 +70,17 @@ watch(
     if (id) {
       await userStore.fetchUserLeaveBalances(id, { year: periodYear.value })
     }
-  }
+  },
 )
 
-watch(
-  periodYear,
-  async (year) => {
-    if (!year) return
-    selectedYear.value = year
-    await fetchApplicationsByUser()
-    if (filters.value.employee_id) {
-      await userStore.fetchUserLeaveBalances(filters.value.employee_id, { year })
-    }
+watch(periodYear, async (year) => {
+  if (!year) return
+  selectedYear.value = year
+  await fetchApplicationsByUser()
+  if (filters.value.employee_id) {
+    await userStore.fetchUserLeaveBalances(filters.value.employee_id, { year })
   }
-)
+})
 
 const filteredLeaveApplications = computed(() => leaveApplications.value || [])
 
@@ -137,36 +134,39 @@ const formatDate = (ts) => {
 </script>
 
 <template>
-  <div class="space-y-2 px-4">
-    <div class="flex items-center justify-between gap-2">
-      <button class="btn-3" @click="goBack">
+  <div class="space-y-2 px-4 overflow-x-hidden">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <button class="btn-3 order-1" @click="goBack">
         <i class="far fa-arrow-left"></i>
-        <span class="hidden md:flex">Back</span>
+        <span class="hidden sm:inline">Back</span>
       </button>
 
-      <h1 class="title-md md:title-lg flex-wrap text-center">Annual Leave Applications</h1>
-      <div></div>
+      <h1 class="title-md md:title-lg flex-wrap text-center order-3 w-full md:w-auto md:order-2">
+        Annual Leave Applications
+      </h1>
+      <div class="order-2 md:order-3" />
     </div>
 
-    <div class="flex flex-wrap gap-2 p-3 rounded-2xl border border-white/20
-         bg-white/60 backdrop-blur-md shadow-sm
-         supports-[backdrop-filter]:bg-white/50 sticky top-14 z-50">
-        <EmployeeFilter
-          v-model:company_id="filters.company_id"
-            v-model:department_id="filters.department_id"
-            v-model:employee_id="filters.employee_id"
-            v-model:line_type="filters.line_type"
-            :with-type="true"
-            :initial-value="$route.query"
-          @filter-change="handleFilterChange"
-        >
-          <FlexibleDatePicker
-            v-model="period"
-            :show-year="true"
-            :show-month="false"
-            :show-date="false"
-            label="Year"
-          />
+    <div
+      class="flex flex-wrap gap-2 p-3 rounded-2xl border border-white/20 bg-white/60 backdrop-blur-md shadow-sm supports-[backdrop-filter]:bg-white/50 sticky top-14 z-50 w-full"
+    >
+      <EmployeeFilter
+        v-model:company_id="filters.company_id"
+        v-model:department_id="filters.department_id"
+        v-model:employee_id="filters.employee_id"
+        v-model:line_type="filters.line_type"
+        :with-type="true"
+        :initial-value="$route.query"
+        @filter-change="handleFilterChange"
+        class="w-full"
+      >
+        <FlexibleDatePicker
+          v-model="period"
+          :show-year="true"
+          :show-month="false"
+          :show-date="false"
+          label="Year"
+        />
       </EmployeeFilter>
     </div>
 
@@ -219,9 +219,78 @@ const formatDate = (ts) => {
         </div>
       </div>
 
-      
+      <!-- Mobile cards -->
+      <div class="grid gap-3 md:hidden">
+        <div
+          v-for="(application, index) in filteredLeaveApplications"
+          :key="index"
+          class="bg-white border rounded-lg shadow-sm p-3 space-y-2 break-words"
+        >
+          <div class="flex items-center justify-between text-xs text-gray-500">
+            <div class="font-semibold text-gray-800">#{{ index + 1 }}</div>
+            <div>{{ formatDate(application?.created_at) }}</div>
+          </div>
+          <div class="text-sm text-gray-700">
+            <div class="flex justify-between">
+              <span class="text-gray-500">Last Working</span>
+              <span class="font-medium">{{ formatDate(application?.last_working_date) }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500">Resumption</span>
+              <span class="font-medium">{{ formatDate(application?.resumption_date) }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500">Period</span>
+              <span class="font-medium">{{ application?.leave_period }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500">Total Days</span>
+              <span class="font-medium" v-html="application?.duration || application?.total_leave_days"></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500">Type</span>
+              <span class="font-medium">
+                {{
+                  [
+                    ...new Set(
+                      application?.leave_days?.map((leave_day) => leave_day?.leave_type?.name),
+                    ),
+                  ].join(',')
+                }}
+              </span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500">Status</span>
+              <span class="font-semibold text-blue-700">{{ application?.status || 'N/A' }}</span>
+            </div>
+          </div>
+          <div class="flex justify-end gap-2">
+            <RouterLink
+              :to="{ name: 'LeaveApplicationShow', params: { id: application?.id } }"
+              class="btn-2 px-3 py-1 text-xs"
+              target="_blank"
+            >
+              View
+            </RouterLink>
+            <RouterLink
+              v-if="!['Approved', 'Rejected'].includes(application?.status)"
+              :to="{ name: 'LeaveApplicationEdit', params: { id: application?.id } }"
+              class="btn-3 px-3 py-1 text-xs"
+              target="_blank"
+            >
+              Edit
+            </RouterLink>
+            <button @click="deleteApplication(application?.id)" class="btn-3 px-3 py-1 text-xs text-red-600">
+              Delete
+            </button>
+          </div>
+        </div>
+        <div v-if="!filteredLeaveApplications.length" class="text-center text-red-500 text-sm">
+          No application found
+        </div>
+      </div>
 
-      <div class="overflow-x-auto">
+      <div class="overflow-x-auto hidden md:block">
         <table
           class="min-w-full table-auto border-collapse border border-gray-200 bg-white rounded-md text-sm"
         >
@@ -246,7 +315,7 @@ const formatDate = (ts) => {
             >
               <td class="border border-gray-300 px-2 py-2">{{ index + 1 }}</td>
               <td class="border border-gray-300 px-2 py-2 text-center">
-                {{ formatDate(application?.created_at) }} 
+                {{ formatDate(application?.created_at) }}
               </td>
               <td class="border border-gray-300 px-2 py-2 text-center">
                 {{ formatDate(application?.last_working_date) }}
@@ -294,12 +363,12 @@ const formatDate = (ts) => {
               </td>
             </tr>
             <tr v-if="!filteredLeaveApplications.length">
-              <td colspan="7" class="p-1 text-center text-red-500">No application found</td>
+              <td colspan="10" class="p-1 text-center text-red-500">No application found</td>
             </tr>
           </tbody>
           <tfoot>
             <tr v-if="filters?.employee_id">
-              <th class="text-center py-2" colspan="6">
+              <th class="text-center py-2" colspan="10">
                 <button
                   @click="showModal = true"
                   class="text-white font-semibold px-4 py-2 rounded-full shadow-md bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 transition"
@@ -314,15 +383,7 @@ const formatDate = (ts) => {
     </div>
   </div>
 
-  <UserLeaveBalanceModal
-      :show="showLeaveTypeModal"
-      :user="user"
-      @close="closeLeaveTypeModal"
-    />
-
-
-
-
+  <UserLeaveBalanceModal :show="showLeaveTypeModal" :user="user" @close="closeLeaveTypeModal" />
 
   <!-- ✅ MODAL -->
   <Teleport to="body">
