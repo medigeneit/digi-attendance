@@ -182,9 +182,11 @@ const formatDate = (ts) => {
 
           <!-- Leave Balance Card -->
           <div class="bg-white border rounded-lg md:p-4 shadow">
-            <div class="flex justify-between items-start py-2 px-1 sm:px-4">
-              <h3 class="text-lg font-semibold text-gray-700 mb-4">Leave Balance</h3>
-              <button @click="openAddModal" type="button" class="btn-2">Set Leave Balance</button>
+            <div class="flex justify-between items-center py-2 px-4 md:px-0">
+              <h3 class="text-sm md:text-lg font-semibold text-gray-700">Leave Balance</h3>
+              <button @click="openAddModal" type="button" class="btn-2 text-xs md:text-sm">
+                Set Leave Balance
+              </button>
             </div>
             <div class="overflow-x-auto">
               <table class="min-w-full text-sm text-left text-gray-700 border">
