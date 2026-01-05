@@ -8,7 +8,7 @@
       <div class="h-1 w-full bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-400"></div>
 
       <header
-        class="flex-col md:flex-row flex md:items-center justify-between px-4 md:px-5 pt-3 pb-2 md:pt-4 md:pb-3"
+        class="flex-col xl:flex-row flex xl:items-center justify-between px-4 md:px-5 pt-3 pb-2 md:pt-4 md:pb-3"
       >
         <div class="flex min-w-0 items-center gap-3">
           <!-- Avatar -->
@@ -38,7 +38,7 @@
           </div>
         </div>
 
-        <div class="flex items-center gap-1 md:gap-2 mt-3 md:mt-0">
+        <div class="flex items-center gap-1 md:gap-2 mt-3 xl:mt-0">
           <InfoRow label="Phone" :value="formatPhone(user?.phone)" />
         </div>
       </header>
@@ -47,7 +47,7 @@
     <!-- Chips (horizontal scroll on mobile for tight spaces) -->
     <div v-if="user && badgeList.length" class="px-4 md:px-5 pb-2 overflow-hidden">
       <div
-        class="-mx-1 flex flex-col md:flex-row md:items-center gap-2 overflow-x-auto py-0.5 px-1"
+        class="-mx-1 flex flex-col xl:flex-row xl:items-center gap-2 overflow-x-auto py-0.5 px-1"
       >
         <span
           v-for="b in badgeList"

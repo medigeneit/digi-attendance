@@ -142,7 +142,6 @@ const formatDate = (ts) => {
       </button>
 
       <h1 class="title-md md:title-lg flex-wrap text-center">Annual Leave History</h1>
-
     </div>
 
     <div
@@ -173,29 +172,29 @@ const formatDate = (ts) => {
     </div>
 
     <div v-else class="space-y-4">
-      <div v-if="filters?.employee_id" class="bg-sky-100/30 p-4 rounded-lg shadow mb-6 space-y-6">
+      <div v-if="filters?.employee_id" class="mt-6 mb-6 space-y-6">
         <!-- Section Title -->
         <!-- <h2 class="text-xl font-bold text-gray-800 text-center">Employee Overview</h2> -->
 
         <!-- Grid for Info and Leave -->
-        <div class="grid md:grid-cols-2 gap-6">
-          <SelectedEmployeeCard :user="user" />
+        <div class="flex flex-col gap-6 md:flex-row">
+          <SelectedEmployeeCard :user="user" class="grow" />
 
           <!-- Leave Balance Card -->
-          <div class="bg-white border rounded-lg p-4 shadow">
-            <div class="flex justify-between items-start">
+          <div class="bg-white border rounded-lg md:p-4 shadow">
+            <div class="flex justify-between items-start py-2 px-1 sm:px-4">
               <h3 class="text-lg font-semibold text-gray-700 mb-4">Leave Balance</h3>
               <button @click="openAddModal" type="button" class="btn-2">Set Leave Balance</button>
             </div>
             <div class="overflow-x-auto">
               <table class="min-w-full text-sm text-left text-gray-700 border">
-                <thead class="bg-gray-100 text-xs uppercase">
+                <thead class="bg-gray-100 text-[11px] md:text-xs uppercase">
                   <tr>
-                    <th class="px-4 py-2 text-center">Type</th>
-                    <th class="px-4 py-2 text-center">Total</th>
-                    <th class="px-4 py-2 text-center">Used</th>
-                    <th class="px-4 py-2 text-center">Pending</th>
-                    <th class="px-4 py-2 text-center">Remaining</th>
+                    <th class="px-3 sm:px-4 py-2 text-left">Type</th>
+                    <th class="px-1 sm:px-4 py-2 text-center">Total</th>
+                    <th class="px-1 sm:px-4 py-2 text-center">Used</th>
+                    <th class="px-1 sm:px-4 py-2 text-center">Pending</th>
+                    <th class="px-1 sm:px-4 py-2 text-center">Remaining</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -204,11 +203,11 @@ const formatDate = (ts) => {
                     :key="leave.id"
                     class="border-t hover:bg-gray-50"
                   >
-                    <td class="px-4 py-1 text-center font-medium">{{ leave.name }}</td>
-                    <td class="px-4 py-1 text-center">{{ leave.annual_quota }}</td>
-                    <td class="px-4 py-1 text-center">{{ leave.used_days }}</td>
-                    <td class="px-4 py-1 text-center">{{ leave?.pending_days }}</td>
-                    <td class="px-4 py-1 text-center">{{ leave.remaining_days }}</td>
+                    <td class="px-3 sm:px-4 py-1 text-left font-medium">{{ leave.name }}</td>
+                    <td class="px-1 sm:px-4 py-1 text-center">{{ leave.annual_quota }}</td>
+                    <td class="px-1 sm:px-4 py-1 text-center">{{ leave.used_days }}</td>
+                    <td class="px-1 sm:px-4 py-1 text-center">{{ leave?.pending_days }}</td>
+                    <td class="px-1 sm:px-4 py-1 text-center">{{ leave.remaining_days }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -224,31 +223,31 @@ const formatDate = (ts) => {
           :key="index"
           class="bg-white border rounded-lg shadow-sm p-3 space-y-2 break-words"
         >
-          <div class="flex items-center justify-between text-xs text-gray-500">
+          <div class="flex items-center justify-between text-xs text-gray-500 px-1">
             <div class="font-semibold text-gray-800">#{{ index + 1 }}</div>
             <div>{{ formatDate(application?.created_at) }}</div>
           </div>
           <div class="text-sm text-gray-700">
-            <div class="flex justify-between">
+            <div class="flex justify-between bg-gray-50 p-1">
               <span class="text-gray-500">Last Working</span>
               <span class="font-medium">{{ formatDate(application?.last_working_date) }}</span>
             </div>
-            <div class="flex justify-between">
+            <div class="flex justify-between p-1">
               <span class="text-gray-500">Resumption</span>
               <span class="font-medium">{{ formatDate(application?.resumption_date) }}</span>
             </div>
-            <div class="flex justify-between">
+            <div class="flex justify-between bg-gray-50 p-1">
               <span class="text-gray-500">Period</span>
               <span class="font-medium">{{ application?.leave_period }}</span>
             </div>
-            <div class="flex justify-between">
+            <div class="flex justify-between p-1">
               <span class="text-gray-500">Total Days</span>
               <span
                 class="font-medium"
                 v-html="application?.duration || application?.total_leave_days"
               ></span>
             </div>
-            <div class="flex justify-between">
+            <div class="flex justify-between bg-gray-50 p-1">
               <span class="text-gray-500">Type</span>
               <span class="font-medium">
                 {{
@@ -260,12 +259,12 @@ const formatDate = (ts) => {
                 }}
               </span>
             </div>
-            <div class="flex justify-between">
+            <div class="flex justify-between p-1">
               <span class="text-gray-500">Status</span>
               <span class="font-semibold text-blue-700">{{ application?.status || 'N/A' }}</span>
             </div>
           </div>
-          <div class="flex justify-end gap-2">
+          <div class="flex justify-end gap-2 px-1">
             <RouterLink
               :to="{ name: 'LeaveApplicationShow', params: { id: application?.id } }"
               class="btn-2 px-3 py-1 text-xs"
