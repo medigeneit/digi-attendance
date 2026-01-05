@@ -221,7 +221,7 @@ watch(
 
 <template>
   <aside
-    class="bg-white sidebar h-screen z-[500] flex flex-col transition-all duration-300"
+    class="bg-white sidebar h-screen z-[500000] flex flex-col transition-all duration-300 shadow"
     :class="{ 'w-[240px]': open, 'w-[70px]': !open }"
   >
     <!-- Header Section (Switcher + Search) -->
