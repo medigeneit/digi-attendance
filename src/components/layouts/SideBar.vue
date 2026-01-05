@@ -281,7 +281,7 @@ watch(
     </div>
 
     <!-- Scrollable Menu Content -->
-    <div class="flex-1 overflow-y-auto overflow-x-hidden py-4 space-y-1 custom-scrollbar">
+    <div class="flex-1 overflow-y-auto scrollbar overflow-x-hidden py-4 space-y-1">
       <!-- Menus (filtered when searching) -->
       <div v-if="isSearching && !hasSearchHit" class="px-3 py-2 text-sm text-slate-500">
         No matches found.
