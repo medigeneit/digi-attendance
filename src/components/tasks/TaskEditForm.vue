@@ -6,7 +6,7 @@ import { useTagStore } from '@/stores/tags'
 import { useTaskStore } from '@/stores/useTaskStore'
 import { onMounted, ref, watch } from 'vue'
 import SectionLoading from '../common/SectionLoading.vue'
-import MultiselectDropdown from '../MultiselectDropdown.vue'
+import SelectDropdown from '../SelectDropdown.vue'
 import TextEditor from '../TextEditor.vue'
 
 const props = defineProps({
@@ -37,6 +37,12 @@ onMounted(async () => {
   task.value = (
     await store.fetchTask(props.taskId, {}, { fetchOnly: true, loadingBeforeFetch: false })
   )?.task
+
+  websiteTags.value = tagStore.tags
+    .filter((t) => {
+      return task.value?.website_tags?.some((st) => st.id === t.id) || false
+    })
+    .map((t) => t.id)
 
   await companyStore.fetchCompanies({
     with: 'departments',
@@ -85,7 +91,7 @@ const update = async () => {
     const payload = {
       ...form.value,
       user_ids: selectedUsers.value?.map((u) => Number(u.id)) || [],
-      website_tags: selectedWebsiteTags.value?.map((t) => Number(t.id)) || [],
+      website_tags: websiteTags.value?.map((tagId) => Number(tagId)) || [],
     }
 
     await store.updateTask(props.taskId, payload, { loadingBeforeFetch: false })
@@ -97,6 +103,8 @@ const update = async () => {
     loading.value = false
   }
 }
+
+const websiteTags = ref([])
 </script>
 
 <template>
@@ -123,13 +131,28 @@ const update = async () => {
 
       <div class="mb-4">
         <label class="text-gray-800">Websites</label>
-        <MultiselectDropdown
+        <SelectDropdown
+          :options="tagStore.tags"
+          key="id"
+          label="name"
+          v-model="websiteTags"
+          :multiple="true"
+          :clearable="true"
+        />
+
+        <!-- <MultiselectDropdown
           :options="tagStore.tags"
           :multiple="true"
           v-model="selectedWebsiteTags"
           label="name"
-          track-by="id"
-        />
+          track-by="name"
+        /> -->
+        <!-- <pre
+          >{{ websiteTags }}
+        </pre> -->
+        <!-- <pre
+          >{{ selectedWebsiteTags }}
+        </pre> -->
       </div>
 
       <div class="mb-4" v-if="task?.requirement">
