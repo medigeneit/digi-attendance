@@ -218,7 +218,7 @@ const onRowOpen = (donor) => emit('edit', donor)
 
               <!-- Blood -->
               <td class="px-4 py-2.5">
-                <span class="inline-flex items-center rounded-md bg-zinc-900 px-2 py-1 text-[11px] font-semibold">
+                <span class="inline-flex items-center rounded-md bg-zinc-900 px-2 py-1 text-[11px] font-semibold text-white">
                   {{ donor?.blood || 'N/A' }}
                 </span>
               </td>
