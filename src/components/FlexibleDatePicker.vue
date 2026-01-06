@@ -219,11 +219,11 @@ function stepPeriod(delta) {
     </label>
 
     <!-- ✅ COMPACT FILTER STYLE (Year/Month/Date all same) -->
-    <div v-if="isCompactMode" class="inline-flex items-center gap-2">
+    <div v-if="isCompactMode" class="flex items-center gap-2">
       <!-- Year only -->
       <div
         v-if="showYear"
-        class="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-1 py-1 shadow-sm"
+        class="flex items-center gap-1 rounded-md border border-slate-200 bg-white px-1 py-1 shadow-sm"
       >
         <button
           type="button"
