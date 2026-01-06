@@ -108,7 +108,7 @@
     <teleport :to="teleportTarget || 'body'" :disabled="!teleportTarget">
       <div
         v-show="isOpen"
-        class="fixed border rounded shadow-[0px_0px_10px_0px_rgba(0,0,0,0.25)] z-[80] border-teal-500 bg-white"
+        class="fixed border rounded shadow-[0px_0px_10px_0px_rgba(0,0,0,0.25)] z-[50000000] border-teal-500 bg-white"
         ref="dropdownMenuRef"
         :style="dropdownStyles"
       >
