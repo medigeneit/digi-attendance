@@ -226,12 +226,14 @@ watch(
     :class="{ 'w-[240px]': open, 'w-[70px]': !open }"
   >
     <!-- Header Section (Switcher + Search) -->
-    <div class="flex flex-col border-b bg-white">
+    <div class="flex flex-col border-b bg-white mt-12 md:mt-0">
       <!-- Admin Mode + Toggle Menu Row -->
       <div class="flex items-center justify-between gap-2 py-5" :class="[open ? 'px-4' : 'px-1']">
         <!-- Admin Toggle -->
         <div v-if="isAdmin" class="flex items-center gap-2">
-          <span v-if="open" class="text-sm font-medium text-gray-600">Admin Mode</span>
+          <span v-if="open" class="font-medium text-gray-600 text-xs md:text-sm whitespace-nowrap"
+            >Admin Mode</span
+          >
           <label class="inline-flex items-center cursor-pointer">
             <input
               type="checkbox"
@@ -254,8 +256,9 @@ watch(
         <!-- Menu Toggle Button -->
         <button
           @click="open = !open"
-          class="text-gray-500 hover:text-blue-600 transition flex justify-center items-center"
+          class="text-gray-500 hover:text-blue-600 transition justify-center items-center rounded-full"
           :title="open ? 'Minimize Menu' : 'Expand Menu'"
+          :class="[open ? 'flex' : ' md:flex']"
         >
           <i :class="['fas', 'fa-chevron-left', 'text-lg', { 'rotate-180': !open }]"></i>
         </button>
@@ -754,9 +757,10 @@ watch(
             >
               <div class="flex items-center justify-between w-full">
                 <div class="flex items-center gap-2">
-                  <i class="far fa-briefcase"></i>
+                  <i class="far fa-briefcase py-2"></i>
                   <h4 v-if="open">Careers</h4>
                 </div>
+
                 <button
                   v-if="open"
                   class="p-1 rounded hover:bg-gray-100 hover:text-black"
