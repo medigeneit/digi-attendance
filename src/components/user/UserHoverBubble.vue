@@ -232,7 +232,7 @@ const handleBubbleLeave = () => {
       <transition name="fade-scale">
         <div
           v-if="bubbleOpen"
-          class="fixed z-50 rounded-xl border border-gray-200 bg-white p-4 shadow-xl overflow-y-auto max-h-[40vh] w-80 md:w-96"
+          class="fixed z-[5000000] rounded-xl border border-gray-200 bg-white p-4 shadow-xl overflow-y-auto max-h-[40vh] w-80 md:w-96"
           :style="bubbleStyle"
           ref="bubbleRef"
           @mouseenter="handleBubbleEnter"
