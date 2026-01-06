@@ -617,7 +617,7 @@ const toggleFinalize = async () => {
                   <th rowspan="2" class="th">#</th>
                   <th rowspan="2" class="th text-left">Employee Name</th>
                   <th rowspan="2" class="th text-left">Designation</th>
-                  <th colspan="5" class="th">Attendance Summary</th>
+                  <th colspan="6" class="th">Attendance Summary</th>
                   <th colspan="2" class="th">Actual Late</th>
                   <th colspan="2" class="th">Remaining Late</th>
                   <th colspan="2" class="th">Actual Early</th>
@@ -635,6 +635,7 @@ const toggleFinalize = async () => {
                   <th class="th">TW</th>
                   <th class="th">TL</th>
                   <th class="th">TA</th>
+                  <th class="th">THD</th>
                   <th class="th">Day</th>
                   <th class="th">Hour</th>
                   <th class="th">Day</th>
@@ -671,6 +672,7 @@ const toggleFinalize = async () => {
                   <td class="td">{{ log?.total_weekend }}</td>
                   <td class="td">{{ log?.total_leave }}</td>
                   <td class="td">{{ log?.total_absent }}</td>
+                  <td class="td">{{ log?.total_holiday }}</td>
 
                   <td class="td">{{ log?.actual_late_day }}</td>
                   <td class="td">{{ log?.actual_late_hour }}</td>
