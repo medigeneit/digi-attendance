@@ -11,7 +11,7 @@ const props = defineProps({
 
 // 🔹 computed এ শুধু method কল করা হচ্ছে
 const computedMessage = computed(() => {
-  return convertHttpLinks(convertTaskLinks(props.message))
+  return convertHttpLinks(convertTaskLinks(props.message.trim()))
 })
 </script>
 
