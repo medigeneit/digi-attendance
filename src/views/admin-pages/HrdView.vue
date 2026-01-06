@@ -152,6 +152,14 @@ const hasAccessTo = (routeName) => {
       <i class="far fa-exclamation-circle text-3xl"></i>
       User Clearances
     </RouterLink>
+    <RouterLink
+      v-if="hasAccessTo('BloodDonorIndex')"
+      :to="{ name: 'BloodDonorIndex' }"
+      class="main-button"
+    >
+      <i class="far fa-exclamation-circle text-3xl"></i>
+      Blood Donor List
+    </RouterLink>
   </div>
 </template>
 

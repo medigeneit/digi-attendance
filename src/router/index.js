@@ -1314,11 +1314,17 @@ const router = createRouter({
           },
         },
 
-         {
+        {
           path: '/employee-management',
           name: 'EmployeeManagementView',
           component: () => import('@/views/admin-pages/EmployeeManagement.vue'),
           meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'Employee Management' },
+        },
+        {
+          path: '/blood-donors',
+          name: 'BloodDonorIndex',
+          component: () => import('@/views/admin-pages/BloodDonorList.vue'),
+          meta: { requiresAuth: true, title: 'Blood Donors' },
         },
 
         {

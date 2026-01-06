@@ -2,14 +2,18 @@
 import LoaderView from '@/components/common/LoaderView.vue'
 import ChangePasswordModal from '@/components/user/ChangePasswordModal.vue'
 import UserClearanceModal from '@/components/UserClearanceModal.vue'
+import DonorMeModal from '@/components/DonorMeModal.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useBloodDonorMeStore } from '@/stores/bloodDonorMe'
 import { computed, ref } from 'vue'
 
 const authStore = useAuthStore()
+const donorMeStore = useBloodDonorMeStore()
 
 const isLoading = ref(false)
 const changePasswordModal = ref(false)
 const clearanceOpen = ref(false)
+const donorModalLoading = ref(false)
 
 // Logged-in user
 const user = computed(() => authStore.user || {})
@@ -38,6 +42,15 @@ const openClearance = () => {
 }
 const togglePassword = () => {
   changePasswordModal.value = !changePasswordModal.value
+}
+
+const openMyDonorProfile = async () => {
+  donorModalLoading.value = true
+  try {
+    await donorMeStore.openModal()
+  } finally {
+    donorModalLoading.value = false
+  }
 }
 </script>
 
@@ -136,6 +149,18 @@ const togglePassword = () => {
             >
               <i class="far fa-key"></i>
               Change Password
+            </button>
+
+            <button
+              type="button"
+              class="inline-flex items-center gap-2 rounded-md border border-slate-300 px-3 py-2 text-xs md:text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800"
+              :disabled="donorModalLoading"
+              @click="openMyDonorProfile"
+              title="My Donor Profile"
+            >
+              <i class="far fa-tint"></i>
+              <span v-if="donorModalLoading">Loading...</span>
+              <span v-else>My Donor Profile</span>
             </button>
           </div>
         </div>
@@ -268,5 +293,6 @@ const togglePassword = () => {
 
     <!-- Clearance Modal -->
     <UserClearanceModal v-model:open="clearanceOpen" :user="user" :hide-trigger="true" />
+    <DonorMeModal />
   </div>
 </template>
