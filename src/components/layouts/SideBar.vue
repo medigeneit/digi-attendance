@@ -103,6 +103,7 @@ const hrdMenu = [
   { label: 'Notice', routeName: 'NoticeList' },
   { label: 'Shift Schedules', routeName: 'ShiftSchedule' },
   { label: 'User Clearances', routeName: 'UserClearance' },
+  { label: 'Blood Donor List', routeName: 'BloodDonorIndex' },
 ]
 const hrdRouteNames = hrdMenu.map((i) => i.routeName)
 

@@ -414,11 +414,11 @@ watch(
                 <td class="td text-center" :class="monthGroupClass(monthIndex)">
                   {{ monthCell(row, month.key).early }}
                 </td>
-                <td class="td text-center" :class="monthGroupClass(monthIndex)">
+                <td class="td text-center text-red-500 font-semibold" :class="monthGroupClass(monthIndex)">
                   {{ monthCell(row, month.key).total }}
                 </td>
               </template>
-              <td class="td text-center font-semibold">{{ formatScore(scoreAvg(row)) }}</td>
+              <td class="td text-center text-red-500 font-bold !text-lg">{{ formatScore(scoreAvg(row)) }}</td>
             </tr>
           </tbody>
         </table>
