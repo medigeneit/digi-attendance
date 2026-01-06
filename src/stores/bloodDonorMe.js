@@ -112,8 +112,8 @@ export const useBloodDonorMeStore = defineStore('bloodDonorMe', () => {
 
   async function refreshListOptional() {
     try {
-      const mod = await import('@/stores/bloodDonors')
-      const donorStore = mod?.useBloodDonorStore?.()
+      const mod = await import('@/stores/bloodDonorAdmin')
+      const donorStore = mod?.useBloodDonorAdminStore?.()
       if (donorStore?.fetchDonors) {
         await donorStore.fetchDonors()
       }
