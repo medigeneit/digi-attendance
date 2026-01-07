@@ -131,7 +131,7 @@ function deleteApplication(applicationId) {
                 <th class="px-4 py-3 text-left">#</th>
                 <th class="px-4 py-3 text-left">Created Date</th>
                 <th class="px-4 py-3 text-left">Type</th>
-                <th class="px-4 py-3 text-left">Punch/Offside Type</th>
+                <th class="px-4 py-3 text-left">Punch/Offsite Type</th>
                 <th class="px-4 py-3 text-left">Check-In</th>
                 <th class="px-4 py-3 text-left">Check-Out</th>
                 <th class="px-4 py-3 text-left">Status</th>

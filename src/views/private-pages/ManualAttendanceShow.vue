@@ -33,7 +33,7 @@ const requestDate = computed(() => {
 })
 
 const showForgetPunchType = computed(() => manualAttendance.value?.type === 'Forget Punch')
-const showOffsideType = computed(() => manualAttendance.value?.type === 'Offside Work')
+const showOffsiteType = computed(() => manualAttendance.value?.type === 'Offsite Work')
 
 const punchTypeLabel = computed(() => {
   const pt = manualAttendance.value?.punch_type
@@ -41,8 +41,8 @@ const punchTypeLabel = computed(() => {
   return pt === 'entry' ? 'Entry' : pt === 'exit' ? 'Exit' : 'Both'
 })
 
-const offsideTypeLabel = computed(() => {
-  const ot = manualAttendance.value?.offside_type
+const offsiteTypeLabel = computed(() => {
+  const ot = manualAttendance.value?.offsite_type
   if (!ot) return 'N/A'
   return ot === 'pre' ? 'Before Office (Pre)' : ot === 'post' ? 'After Office (Post)' : 'Both'
 })
@@ -119,8 +119,8 @@ const onAction = async () => {
           <b>Forget Punch Type:</b> {{ punchTypeLabel }}
         </div>
 
-        <div v-if="showOffsideType">
-          <b>Offside Work Type:</b> {{ offsideTypeLabel }}
+        <div v-if="showOffsiteType">
+          <b>Offsite Work Type:</b> {{ offsiteTypeLabel }}
         </div>
 
         <div v-if="manualAttendance?.check_in">

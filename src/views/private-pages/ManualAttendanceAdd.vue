@@ -47,35 +47,35 @@ const form = reactive({
   check_out: exit_time ? formatTime(exit_time) : '',
   description: '',
   punch_type: '',
-  offside_type: '',
+  offsite_type: '',
 })
 
 /* ---------------- type flags ---------------- */
 const isForgetPunch = computed(() => form.type === 'Forget Punch')
-const isOffsideWork = computed(() => form.type === 'Offside Work')
+const isOffsiteWork = computed(() => form.type === 'Offsite Work')
 const showPunchType = computed(() => isForgetPunch.value)
-const showOffsideType = computed(() => isOffsideWork.value)
+const showOffsiteType = computed(() => isOffsiteWork.value)
 
 /* ---------------- time enable/required (stable layout) ---------------- */
 const entryEnabled = computed(() => {
   if (isForgetPunch.value) return form.punch_type !== 'exit'
-  if (isOffsideWork.value) return form.offside_type !== 'post'
+  if (isOffsiteWork.value) return form.offsite_type !== 'post'
   return true
 })
 const exitEnabled = computed(() => {
   if (isForgetPunch.value) return form.punch_type !== 'entry'
-  if (isOffsideWork.value) return form.offside_type !== 'pre'
+  if (isOffsiteWork.value) return form.offsite_type !== 'pre'
   return true
 })
 
 const entryRequired = computed(() => {
   if (isForgetPunch.value) return form.punch_type === 'entry' || form.punch_type === 'both'
-  if (isOffsideWork.value) return form.offside_type === 'pre' || form.offside_type === 'both'
+  if (isOffsiteWork.value) return form.offsite_type === 'pre' || form.offsite_type === 'both'
   return false
 })
 const exitRequired = computed(() => {
   if (isForgetPunch.value) return form.punch_type === 'exit' || form.punch_type === 'both'
-  if (isOffsideWork.value) return form.offside_type === 'post' || form.offside_type === 'both'
+  if (isOffsiteWork.value) return form.offsite_type === 'post' || form.offsite_type === 'both'
   return false
 })
 
@@ -93,7 +93,7 @@ watch(
   () => form.type,
   (newType) => {
     if (newType !== 'Forget Punch') form.punch_type = ''
-    if (newType !== 'Offside Work') form.offside_type = ''
+    if (newType !== 'isOffsiteWork') form.offsite_type = ''
   },
 )
 
@@ -107,9 +107,9 @@ watch(
 )
 
 watch(
-  () => form.offside_type,
+  () => form.offsite_type,
   (val) => {
-    if (!isOffsideWork.value) return
+    if (!isOffsiteWork.value) return
     if (val === 'pre') form.check_out = ''
     if (val === 'post') form.check_in = ''
   },
@@ -120,7 +120,7 @@ const touched = reactive({
   date: false,
   type: false,
   punch_type: false,
-  offside_type: false,
+  offsite_type: false,
   check_in: false,
   check_out: false,
   description: false,
@@ -135,7 +135,7 @@ const errors = computed(() => {
   if (!form.type) e.type = 'Type is required.'
 
   if (isForgetPunch.value && !form.punch_type) e.punch_type = 'Select Entry / Exit / Both.'
-  if (isOffsideWork.value && !form.offside_type) e.offside_type = 'Select Pre / Post / Both.'
+  if (isOffsiteWork.value && !form.offsite_type) e.offsite_type = 'Select Pre / Post / Both.'
 
   if (entryRequired.value && !form.check_in) e.check_in = 'Entry Time is required.'
   if (exitRequired.value && !form.check_out) e.check_out = 'Exit Time is required.'
@@ -234,7 +234,7 @@ const pillClass = (active) =>
             <option value="Home Office">Home Office</option>
             <option value="Remote Work">Remote Work</option>
             <option value="Forget Punch">Forget Punch</option>
-            <option value="Offside Work">Offside Work</option>
+            <option value="Offsite Work">Offsite Work</option>
           </select>
           <p v-if="touched.type && errors.type" class="text-xs text-red-600 mt-1">{{ errors.type }}</p>
         </div>
@@ -277,8 +277,8 @@ const pillClass = (active) =>
         <p v-if="touched.punch_type && errors.punch_type" class="text-xs text-red-600">{{ errors.punch_type }}</p>
       </div>
 
-      <!-- Offside Work Type -->
-      <div v-if="showOffsideType" class="space-y-2">
+      <!-- Offsite Work Type -->
+      <div v-if="showOffsiteType" class="space-y-2">
         <div class="flex items-center justify-between">
           <label class="block text-sm font-medium">Work Schedule <span class="text-red-500">*</span></label>
           <span class="text-xs text-slate-500">Select one</span>
@@ -288,30 +288,30 @@ const pillClass = (active) =>
           <button
             type="button"
             class="px-3 py-2 rounded-lg border text-sm"
-            :class="pillClass(form.offside_type === 'pre')"
-            @click="form.offside_type = 'pre'; markTouched('offside_type')"
+            :class="pillClass(form.offsite_type === 'pre')"
+            @click="form.offsite_type = 'pre'; markTouched('offsite_type')"
           >
             Before Office (Pre)
           </button>
           <button
             type="button"
             class="px-3 py-2 rounded-lg border text-sm"
-            :class="pillClass(form.offside_type === 'post')"
-            @click="form.offside_type = 'post'; markTouched('offside_type')"
+            :class="pillClass(form.offsite_type === 'post')"
+            @click="form.offsite_type = 'post'; markTouched('offsite_type')"
           >
             After Office (Post)
           </button>
           <button
             type="button"
             class="px-3 py-2 rounded-lg border text-sm"
-            :class="pillClass(form.offside_type === 'both')"
-            @click="form.offside_type = 'both'; markTouched('offside_type')"
+            :class="pillClass(form.offsite_type === 'both')"
+            @click="form.offsite_type = 'both'; markTouched('offsite_type')"
           >
             Both
           </button>
         </div>
 
-        <p v-if="touched.offside_type && errors.offside_type" class="text-xs text-red-600">{{ errors.offside_type }}</p>
+        <p v-if="touched.offsite_type && errors.offsite_type" class="text-xs text-red-600">{{ errors.offsite_type }}</p>
       </div>
 
       <!-- Entry/Exit Time always visible -->
