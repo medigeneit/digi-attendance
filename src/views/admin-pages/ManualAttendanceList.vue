@@ -209,6 +209,7 @@ const handleFilterChange = () => {
             <th class="border border-gray-300 px-2 text-left">Created Date</th>
             <th class="border border-gray-300 px-2 text-left">Date</th>
             <th class="border border-gray-300 px-2 text-left">Type</th>
+            <th class="border border-gray-300 px-2 text-left">Punch/Offside Type</th>
             <th class="border border-gray-300 px-2 text-left">Check-In</th>
             <th class="border border-gray-300 px-2 text-left">Check-Out</th>
             <th class="border border-gray-300 px-2 text-left">Status</th>
@@ -231,6 +232,7 @@ const handleFilterChange = () => {
               {{ formatDate(attendance.check_in || attendance.check_out) }}
             </td>
             <td class="border border-gray-300 px-2">{{ attendance.type }}</td>
+            <td class="border border-gray-300 px-2">{{ attendance.punch_type || attendance.offside_type || 'N/A' }}</td>
             <td class="border border-gray-300 px-2">
               {{ formatTime(attendance.check_in) || 'N/A' }}
             </td>
