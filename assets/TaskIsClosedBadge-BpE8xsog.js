@@ -1,0 +1,1 @@
+import{_ as s,c as t,o,a as r,b as a}from"./index-DKWWYaTY.js";const c={},n={class:"border rounded-full px-2 bg-blue-500/60 text-white flex items-center text-sm"};function l(d,e){return o(),t("div",n,e[0]||(e[0]=[r("i",{class:"fas fa-lock mr-2 text-sm"},null,-1),a("CLOSED ")]))}const x=s(c,[["render",l]]);export{x as T};
