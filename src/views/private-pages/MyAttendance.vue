@@ -60,7 +60,7 @@ const goBack = () => router.go(-1)
 </script>
 
 <template>
-  <div class="px-4 space-y-4">
+  <div class="space-y-4">
     <div class="md:flex items-center justify-between gap-2">
       <button class="btn-3" @click="goBack">
         <i class="far fa-arrow-left"></i>
@@ -81,7 +81,6 @@ const goBack = () => router.go(-1)
         </div>
       </div>
     </div>
-
 
     <div class="grid md:grid-cols-2 gap-4 text-sm">
       <div class="card-bg p-4 gap-1">

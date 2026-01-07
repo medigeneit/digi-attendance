@@ -93,7 +93,7 @@ onUnmounted(() => {
         </div>
       </header>
 
-      <main class="flex-grow py-4 print:py-0 flex-none">
+      <main class="flex-grow p-4 print:py-0 flex-none">
         <RouterView />
       </main>
 

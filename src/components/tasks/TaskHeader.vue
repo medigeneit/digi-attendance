@@ -253,23 +253,25 @@ const companyDepartments = computed(() => {
   <div>
     <div class="mb-3 task-header">
       <div class="flex justify-between items-start">
-        <h2 class="text-2xl font-bold text-gray-800 leading-none h-10">
-          {{ isClosed ? 'Closed' : '' }} Task List
+        <h2 class="text-2xl font-bold text-gray-800 leading-none h-7">
+          <i class="fad fa-tasks"></i>{{ isClosed ? 'Closed' : '' }} Task List
         </h2>
 
         <div class="ml-auto flex gap-6 items-center" v-if="!isMyTask">
-          <button @click="emit('clickAddTask')" class="btn-1">Add Main Task / Project</button>
+          <button @click="emit('clickAddTask')" class="btn-1">
+            <i class="fad fa-plus-circle"></i>Add Task
+          </button>
         </div>
       </div>
       <!-- {{ employees }} -->
 
-      <div class="flex flex-wrap items-center justify-center gap-2 mt-3">
-        <div class="flex flex-wrap gap-x-4 gap-y-3 justify-between">
+      <div class="flex flex-wrap items-center justify-stretch gap-2 mt-3">
+        <div class="flex flex-wrap gap-x-4 gap-y-5 justify-between w-full">
           <CompanyDepartmentSelectInput
             v-model="fromDepartmentId"
             :companies="companyDepartments || []"
             class="relative w-full md:w-48 flex-grow"
-            :className="{ select: 'h-10 text-sm border-2 border-gray-300' }"
+            :className="{ select: 'h-7 text-sm border-2 border-gray-300' }"
             defaultOption="--ALL DEPARTMENT--"
           >
             <template #label>
@@ -287,7 +289,7 @@ const companyDepartments = computed(() => {
               :companies="companyDepartments || []"
               class="relative w-full md:w-40 flex-grow"
               :className="{
-                select: 'h-10 text-sm border-2 border-gray-300  ',
+                select: 'h-7 text-sm border-2 border-gray-300  ',
               }"
               v-if="route.name !== 'MyRequirementTaskList'"
               defaultOption="--ALL DEPARTMENT--"
@@ -310,7 +312,7 @@ const companyDepartments = computed(() => {
                 <EmployeeDropdownInput
                   :employees="employees"
                   v-model="selectedEmployeeId"
-                  class="border-2 border-gray-300 rounded h-[40px] w-full bg-white !text-sm"
+                  class="border-2 border-gray-300 rounded h-[28px] w-full bg-white !text-sm"
                 />
                 <div
                   class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30"
@@ -325,7 +327,7 @@ const companyDepartments = computed(() => {
             </div>
           </template>
 
-          <div class="w-32 relative h-10">
+          <div class="w-32 relative h-7">
             <label class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500"
               >Status</label
             >
@@ -363,7 +365,7 @@ const companyDepartments = computed(() => {
             </label>
           </div>
 
-          <div class="text-gray-600 w-full md:w-32 relative">
+          <div class="text-gray-600 w-full md:w-32 relative xl:ml-auto">
             <label class="absolute text-xs left-2.5 -top-1.5 bg-slate-100 text-blue-500"
               >Month</label
             >
@@ -371,18 +373,22 @@ const companyDepartments = computed(() => {
               id="month-filter"
               v-model="month"
               type="month"
-              class="h-10 text-xs px-2 text-gray-600 border-2 border-gray-400 rounded-md w-full"
+              class="h-7 text-xs px-2 text-gray-600 border-2 border-gray-400 rounded-md w-full"
               placeholder="All month"
             />
           </div>
         </div>
 
-        <SearchInput v-model="search" class="w-full md:w-64 lg:w-64 md:ml-auto" v-if="isMyTask" />
+        <SearchInput
+          v-model="search"
+          class="w-full md:w-64 lg:w-64 md:ml-auto h-7"
+          v-if="isMyTask"
+        />
       </div>
     </div>
 
     <div
-      class="flex flex-col md:flex-row mb-2 items-end mt-6 gap-6 sticky top-[4.1rem] z-40 bg-white/80"
+      class="flex flex-col lg:flex-row mb-2 items-end mt-6 gap-6 sticky top-[4.1rem] z-40 bg-white/80"
     >
       <SearchInput v-model="search" class="w-full md:w-64 md:ml-auto" v-if="!isMyTask" />
 

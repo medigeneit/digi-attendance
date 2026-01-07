@@ -197,7 +197,9 @@ function getTaskRouterLink(task) {
 </script>
 
 <template>
-  <div class="my-container p-6 mt-2 relative bg-white rounded-md shadow-md min-h-[50vh]">
+  <div
+    class="p-6 mt-2 container mx-auto relative bg-white rounded-md shadow-md min-h-[calc(100vh-12rem)]"
+  >
     <OverlyModal v-if="editingId">
       <TaskEditForm :taskId="editingId" @close="editingId = null" @updated="handleTaskUpdate" />
     </OverlyModal>
@@ -255,7 +257,7 @@ function getTaskRouterLink(task) {
     </div>
 
     <!-- <pre>{{ taskUsers }}</pre> -->
-    <div class="relative min-h-[20vh]">
+    <div class="relative min-h-[60vh]">
       <div v-if="route.query?.view === 'userwise'" class="space-y-6">
         <div v-for="user in taskUsers" :key="user.id" class="rounded-md border-2 border-sky-300">
           <div
@@ -352,7 +354,7 @@ function getTaskRouterLink(task) {
 
       <div
         v-if="state !== 'loading' && store.tasks?.length === 0"
-        class="text-center py-4 text-gray-500 border h-[30vh] flex items-center justify-center rounded bg-gray-50 italic"
+        class="text-center py-4 text-gray-500 border h-[60vh] flex items-center justify-center rounded bg-gray-50 italic"
       >
         No tasks
       </div>

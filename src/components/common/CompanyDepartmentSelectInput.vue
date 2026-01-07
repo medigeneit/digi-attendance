@@ -59,7 +59,7 @@ function departmentFilterBy(options, term) {
         </slot>
       </template>
       <template #option="{ option }">
-        <div class="w-40 my-0.5">
+        <div class="my-0.5">
           {{ option.name }}
         </div>
       </template>
