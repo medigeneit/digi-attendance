@@ -27,6 +27,11 @@ const onSuccess = async () => {
 }
 
 // Totals in MINUTES
+const totalWorkingMinutes = computed(() => {
+  const list = overtimeStore.overtimes || []
+  return list.reduce((sum, o) => sum + (Number(o?.working_hours) || 0), 0)
+})
+
 const totalRequestedMinutes = computed(() => {
   const list = overtimeStore.overtimes || []
   return list.reduce((sum, o) => sum + (Number(o?.request_overtime_hours) || 0), 0)
@@ -198,6 +203,8 @@ const totalApprovedMinutes = computed(() => {
         <tfoot v-if="overtimeStore.overtimes?.length" class="bg-gray-50">
           <tr class="*:py-2 font-semibold">
             <td class="border border-gray-300 px-2 text-right" colspan="7">Totals</td>
+
+            <td class="border border-gray-300 px-2 text-center">{{ totalWorkingMinutes }}</td>
 
             <!-- Requested total -->
             <td class="border border-gray-300 px-2 text-center">

@@ -5,41 +5,42 @@ import { useToast } from 'vue-toastification'
 import { useUserStore } from '@/stores/user'
 
 const props = defineProps({
-  /* v-model style (new) */
   modelValue: { type: Boolean, default: false },
-  /* legacy (back-compat) */
   isOpen: { type: Boolean, default: false },
 
   userId: { type: [Number, String], default: '' },
   userLabel: { type: String, default: '' },
 
-  /* month range defaults (YYYY-MM) */
-  defaultFrom: { type: String, default: () => new Date().toISOString().slice(0,7) },
-  defaultTo:   { type: String, default: '' },
+  defaultFrom: { type: String, default: () => new Date().toISOString().slice(0, 7) },
+  defaultTo: { type: String, default: '' },
 
-  /* single assignment (legacy) */
   assign_weekend: { type: Object, default: null },
-
-  /* full history (array/object) - legacy */
   weekend_assignments: { type: [Object, Array, null], default: null },
 
-  /* ✅ NEW: API object shape { history: [...], current: {...} } */
+  // ✅ NEW: { history: [...], current: {...} }
   assign_weekends: { type: Object, default: null },
 })
 
-const emit = defineEmits(['update:modelValue','saved','close','update'])
+const emit = defineEmits(['update:modelValue', 'saved', 'close', 'update'])
 
 const toast = useToast()
 const userStore = useUserStore()
 
-/* ------------ open state (one-way sync from props) ------------ */
+/* ------------ open state ------------ */
 const open = ref(false)
-watch(() => props.modelValue, v => { if (v !== open.value) open.value = v })
-watch(() => props.isOpen,     v => { if (v !== open.value) open.value = v })
-onMounted(() => { open.value = !!(props.modelValue || props.isOpen) })
+watch(() => props.modelValue, (v) => { if (v !== open.value) open.value = v })
+watch(() => props.isOpen, (v) => { if (v !== open.value) open.value = v })
+onMounted(() => { open.value = !!(props.modelValue || props.isOpen) }),
+
+/* Body scroll lock (nice UX) */
+watch(open, (v) => {
+  document.documentElement.style.overflow = v ? 'hidden' : ''
+})
 
 /* --------------------------- form --------------------------- */
 const isSaving = ref(false)
+const showEndMonth = ref(false)
+
 const form = ref({
   weekends: [],
   start_month: props.defaultFrom,
@@ -47,12 +48,12 @@ const form = ref({
   active: true,
 })
 
-/* ----------------------- helpers/labels ---------------------- */
+/* ----------------------- helpers ---------------------- */
 const avatarText = computed(() => {
   const label = props.userLabel || String(props.userId || '')
   const parts = label.trim().split(/\s+/)
   const two = (parts[0]?.[0] || '') + (parts[1]?.[0] || '')
-  return (two || label[0] || '#').toUpperCase().slice(0,2)
+  return (two || label[0] || '#').toUpperCase().slice(0, 2)
 })
 
 function fmtMonth(m) {
@@ -62,14 +63,13 @@ function fmtMonth(m) {
 }
 
 function makeWeekendLabel(item) {
-  const days  = Array.isArray(item?.weekends) ? item.weekends.join(',') : ''
+  const days = Array.isArray(item?.weekends) ? item.weekends.join(', ') : ''
   const start = fmtMonth(item?.start_month)
-  const end   = fmtMonth(item?.end_month)
-  return `${days || '—'} — ${start || '—'} → ${end || 'present'}`
+  const end = fmtMonth(item?.end_month)
+  return `${days || '—'} • ${start || '—'} → ${end || 'present'}`
 }
 
 /* ------------------- normalize/history ------------------- */
-// Prefer NEW API: assign_weekends.history; fallback to legacy props.
 const historySource = computed(() => {
   if (props.assign_weekends?.history && Array.isArray(props.assign_weekends.history)) {
     return props.assign_weekends.history
@@ -79,10 +79,11 @@ const historySource = computed(() => {
 })
 
 const history = computed(() => {
-  const norm = historySource.value.map(x => {
+  const norm = historySource.value.map((x) => {
     const start = fmtMonth(x.start_month)
-    const end   = fmtMonth(x.end_month)
-    const active = x.active // end null/blank হলে active
+    const end = fmtMonth(x.end_month)
+    const active = typeof x.active === 'boolean' ? x.active : !end
+
     return {
       id: x.id ?? null,
       weekends: Array.isArray(x.weekends) ? x.weekends : [],
@@ -93,33 +94,32 @@ const history = computed(() => {
       created_at: x.created_at ? new Date(x.created_at).getTime() : 0,
     }
   })
-  // active first, then latest start desc
-  return norm.sort((a,b) => {
+
+  return norm.sort((a, b) => {
     if (a.active !== b.active) return a.active ? -1 : 1
     return (b.start_month || '').localeCompare(a.start_month || '')
   })
 })
 
-// Prefer NEW API: assign_weekends.current; fallback to history active/first
 const currentAssignment = computed(() => {
   const cur = props.assign_weekends?.current || null
   if (cur) {
+    const end = fmtMonth(cur.end_month)
     return {
       id: cur.id ?? null,
       weekends: Array.isArray(cur.weekends) ? cur.weekends : [],
       start_month: fmtMonth(cur.start_month),
-      end_month: fmtMonth(cur.end_month),
-      active: !!cur.active || !fmtMonth(cur.end_month),
+      end_month: end,
+      active: typeof cur.active === 'boolean' ? cur.active : !end,
       label: makeWeekendLabel(cur),
       created_at: cur.created_at ? new Date(cur.created_at).getTime() : 0,
     }
   }
-  return history.value.find(h => h.active) || history.value[0] || null
+  return history.value.find((h) => h.active) || history.value[0] || null
 })
 
 const hasActiveAssignment = computed(() => !!currentAssignment.value && currentAssignment.value.active)
 
-/* same assignment? (days + start/end all equal) */
 const isSameAssignment = computed(() => {
   if (!hasActiveAssignment.value) return false
   const cur = currentAssignment.value
@@ -128,7 +128,7 @@ const isSameAssignment = computed(() => {
   return (
     selDays === curDays &&
     fmtMonth(form.value.start_month) === fmtMonth(cur.start_month) &&
-    fmtMonth(form.value.end_month)   === fmtMonth(cur.end_month)
+    fmtMonth(form.value.end_month) === fmtMonth(cur.end_month)
   )
 })
 
@@ -138,19 +138,25 @@ const canSubmit = computed(() => {
   return !!props.userId && hasDays && hasStart && !isSaving.value && !isSameAssignment.value
 })
 
-/* -------------------- init/preselect behaviours -------------------- */
+const selectedDaysLabel = computed(() => {
+  const arr = form.value.weekends || []
+  return arr.length ? arr.join(', ') : '—'
+})
+
+/* -------------------- init/preselect -------------------- */
 function preselectFromCurrent() {
   const cur = currentAssignment.value
   if (!cur) return
   form.value.weekends = Array.isArray(cur.weekends) ? cur.weekends.slice() : []
   form.value.start_month = fmtMonth(cur.start_month) || props.defaultFrom
-  form.value.end_month   = fmtMonth(cur.end_month)   || ''
+  form.value.end_month = fmtMonth(cur.end_month) || ''
+  form.value.active = !!cur.active
+  showEndMonth.value = !!fmtMonth(cur.end_month)
 }
 
 watch(open, (v, ov) => { if (v && !ov) nextTick(preselectFromCurrent) })
 watch(() => props.assign_weekends, () => { if (open.value) nextTick(preselectFromCurrent) }, { deep: true })
 
-// live update to parent (compat with your old API)
 watch(form, (v) => { emit('update', { ...v }) }, { deep: true })
 
 /* -------------------------- actions -------------------------- */
@@ -183,11 +189,14 @@ async function submit() {
       active: !!form.value.active,
     }
 
-    // Backend should accept selected_weekend shape
     const res = await userStore.updateOrCreateWeekend(props.userId, payload)
 
+    open.value = false
+    emit('update:modelValue', false)
+    emit('close', false)
+
     toast.success(hasActiveAssignment.value ? 'Reassigned' : 'Assigned')
-    emit('saved', res) // parent refresh করে assign_weekends আপডেট পাঠাবে
+    emit('saved', res)
     close()
   } catch (e) {
     const msg = e?.response?.data?.message || e?.message || 'Failed'
@@ -197,147 +206,266 @@ async function submit() {
   }
 }
 
-/* ----------------------- keyboard UX ----------------------- */
+/* keyboard UX */
 function onKey(e) {
   if (!open.value) return
   if (e.key === 'Escape') close()
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'enter' && canSubmit.value) submit()
 }
 onMounted(() => window.addEventListener('keydown', onKey))
-onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKey)
+  document.documentElement.style.overflow = ''
+})
 
-/* ---------------------- checkbox helpers ---------------------- */
-const DAYS = ['Saturday','Sunday','Monday','Tuesday','Wednesday','Thursday','Friday']
+/* ---------------------- day helpers ---------------------- */
+const DAYS = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+const short = (d) => d.slice(0, 3).toUpperCase()
+
 function toggleAll() {
-  if ((form.value.weekends || []).length === DAYS.length) {
-    form.value.weekends = []
-  } else {
-    form.value.weekends = DAYS.slice()
-  }
+  if ((form.value.weekends || []).length === DAYS.length) form.value.weekends = []
+  else form.value.weekends = DAYS.slice()
 }
+
+watch(showEndMonth, (v) => {
+  if (!v) form.value.end_month = ''
+})
+
+/* ---------------------- Tailwind classes ---------------------- */
+const inputCls =
+  'w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm ' +
+  'placeholder:text-slate-400 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-400/20'
+
+const iconBtn =
+  'inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-600 ' +
+  'transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-900/10'
 </script>
 
 <template>
   <Teleport to="body">
-    <Transition name="fade">
-      <div v-if="open" class="fixed inset-0 z-50 flex items-center justify-center">
-        <!-- overlay -->
-        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="close"></div>
-        <!-- card -->
-        <Transition name="pop">
-          <div class="relative w-full max-w-xl rounded-2xl bg-white shadow-xl ring-1 ring-black/5 p-5">
-            <!-- header -->
-            <div class="flex items-start justify-between mb-4">
-              <div class="flex items-center gap-3">
-                <div class="h-10 w-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-semibold">
+    <!-- container stays, we use v-show so transitions work + no eslint warning -->
+    <div class="fixed inset-0 z-50" :class="open ? 'pointer-events-auto' : 'pointer-events-none'">
+      <!-- Overlay -->
+      <Transition
+        enter-active-class="transition-opacity duration-150 ease-out"
+        enter-from-class="opacity-0"
+        enter-to-class="opacity-100"
+        leave-active-class="transition-opacity duration-120 ease-in"
+        leave-from-class="opacity-100"
+        leave-to-class="opacity-0"
+      >
+        <div
+          v-show="open"
+          class="absolute inset-0 backdrop-blur-sm"
+          @click="close"
+        />
+      </Transition>
+
+      <!-- Dialog -->
+      <div class="relative flex min-h-full items-center justify-center p-4 sm:p-6">
+        <Transition
+          enter-active-class="transition duration-150 ease-out"
+          enter-from-class="opacity-0 translate-y-2 scale-[0.98]"
+          enter-to-class="opacity-100 translate-y-0 scale-100"
+          leave-active-class="transition duration-120 ease-in"
+          leave-from-class="opacity-100 translate-y-0 scale-100"
+          leave-to-class="opacity-0 translate-y-2 scale-[0.98]"
+        >
+          <div
+            v-show="open"
+            class="w-full max-w-4xl overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-black/5"
+            role="dialog"
+            aria-modal="true"
+          >
+            <!-- Header -->
+            <div class="flex items-start justify-between gap-4 border-b border-slate-200 bg-gradient-to-br from-white to-slate-50 px-6 py-5">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="h-11 w-11 rounded-2xl bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100 flex items-center justify-center font-bold">
                   {{ avatarText }}
                 </div>
-                <div>
-                  <h3 class="text-base font-semibold text-gray-900">Assign Weekends</h3>
-                  <p class="text-xs text-gray-500">{{ userLabel || ('#' + userId) }}</p>
+
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <h3 class="text-base font-semibold text-slate-900">Assign Weekends</h3>
+                    <span
+                      class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ring-1"
+                      :class="hasActiveAssignment ? 'bg-emerald-50 text-emerald-700 ring-emerald-100' : 'bg-slate-100 text-slate-700 ring-slate-200'"
+                    >
+                      {{ hasActiveAssignment ? 'Active config exists' : 'No active config' }}
+                    </span>
+                  </div>
+                  <p class="mt-0.5 truncate text-xs text-slate-500">
+                    {{ userLabel || ('#' + userId) }}
+                    <span class="mx-2 text-slate-300">•</span>
+                    <span class="text-slate-400">Esc</span>
+                    <span class="mx-1 text-slate-300">/</span>
+                    <span class="text-slate-400">Ctrl/⌘ + Enter</span>
+                  </p>
                 </div>
               </div>
-              <button class="btn-icon" @click="close" aria-label="Close">✕</button>
+
+              <button :class="iconBtn" @click="close" aria-label="Close">
+                <span class="text-lg leading-none">✕</span>
+              </button>
             </div>
 
-            <div class=" flex flex-col gap-2">
-              <!-- right: history -->
-              <div class="rounded-lg border bg-white p-2">
-                <div class="flex items-center justify-between">
-                  <h4 class="text-sm font-semibold text-gray-800">Weekend history</h4>
-                  <span class="text-xs text-gray-500">{{ history.length }} item(s)</span>
+            <!-- Content -->
+            <div class="grid gap-6 px-6 py-6 lg:grid-cols-2">
+              <!-- History -->
+              <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div class="flex items-center justify-between px-4 py-4">
+                  <div>
+                    <p class="text-sm font-semibold text-slate-900">History</p>
+                    <p class="text-xs text-slate-500">Latest assignments at top</p>
+                  </div>
+                  <span class="text-xs font-semibold text-slate-500">{{ history.length }} item(s)</span>
                 </div>
 
-                <div v-if="!history.length" class="text-sm text-gray-500">
-                  No assignment history
-                </div>
+                <div class="h-px bg-slate-200" />
 
-                <ul v-else class="divide-y">
-                  <li v-for="(h, idx) in history" :key="h.id ?? idx" class="py-2 flex items-start gap-3">
-                    <input type="checkbox" class="mt-1 rounded border-gray-300" :checked="h.active" disabled>
-                    <div class="flex-1">
-                      <div class="flex items-center gap-2">
-                        <span class="text-sm text-gray-900">{{ h.label }}</span>
-                        
-                        <span v-if="h.active" class="inline-flex items-center text-xs font-medium rounded-full bg-green-100 text-green-700 px-2 py-0.5">
-                          Active
-                        </span>
-                        <span v-else class="inline-flex items-center text-xs font-medium rounded-full bg-gray-100 text-gray-700 px-2 py-0.5">
-                          Closed
-                        </span>
+                <div class="max-h-[340px] overflow-auto px-4 py-4">
+                  <div
+                    v-if="!history.length"
+                    class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center"
+                  >
+                    <p class="text-sm font-medium text-slate-700">No assignment history</p>
+                    <p class="mt-1 text-xs text-slate-500">Create the first weekend configuration.</p>
+                  </div>
+
+                  <ol v-else class="space-y-3">
+                    <li
+                      v-for="(h, idx) in history"
+                      :key="h.id ?? idx"
+                      class="rounded-2xl border border-slate-200 bg-white p-4 transition hover:bg-slate-50"
+                    >
+                      <div class="flex items-start gap-3">
+                        <div class="mt-1 h-3 w-3 rounded-full" :class="h.active ? 'bg-emerald-500' : 'bg-slate-300'" />
+                        <div class="min-w-0 flex-1">
+                          <div class="flex flex-wrap items-center gap-2">
+                            <p class="truncate text-sm font-semibold text-slate-900">{{ h.label }}</p>
+                            <span
+                              class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ring-1"
+                              :class="h.active ? 'bg-emerald-50 text-emerald-700 ring-emerald-100' : 'bg-slate-100 text-slate-700 ring-slate-200'"
+                            >
+                              {{ h.active ? 'Active' : 'Closed' }}
+                            </span>
+                          </div>
+
+                          <p class="mt-1 text-xs text-slate-500">
+                            Period:
+                            <span class="font-semibold text-slate-700">{{ h.start_month || '—' }}</span>
+                            →
+                            <span class="font-semibold text-slate-700">{{ h.end_month || 'present' }}</span>
+                          </p>
+                        </div>
                       </div>
-                      <div class="mt-0.5 text-xs text-gray-600">
-                        Period: {{ h.start_month || '—' }} → {{ h.end_month || 'present' }}
-                      </div>
+                    </li>
+                  </ol>
+                </div>
+              </section>
+
+              <!-- Form -->
+              <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div class="px-4 py-4">
+                  <p class="text-sm font-semibold text-slate-900">Configure</p>
+                  <p class="text-xs text-slate-500">Pick weekend days & effective month</p>
+                </div>
+                <div class="h-px bg-slate-200" />
+
+                <div class="space-y-5 px-4 py-4">
+                  <!-- Day chips -->
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                      <label class="text-sm font-semibold text-slate-800">Weekend Days</label>
+                      <button
+                        type="button"
+                        class="text-xs font-semibold text-indigo-600 hover:text-indigo-700"
+                        @click="toggleAll"
+                      >
+                        {{ (form.weekends || []).length === DAYS.length ? 'Clear all' : 'Select all' }}
+                      </button>
                     </div>
-                  </li>
-                </ul>
-              </div>
-              <!-- left: form -->
-              <div class="rounded-lg border bg-white p-4">
-                <div class="grid gap-4 md:grid-cols-12">
-                  <div class="md:col-span-12">
-                    <label class="block text-sm font-medium text-gray-700">Weekend Days</label>
 
-                    <div class="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      <label v-for="d in DAYS" :key="d" class="flex items-center gap-2 text-sm">
-                        <input class="rounded border-gray-300" type="checkbox" :value="d" v-model="form.weekends">
-                        <span class="text-gray-700">{{ d.slice(0,3).toUpperCase() }}</span>
+                    <div class="grid grid-cols-4 gap-2">
+                      <label v-for="d in DAYS" :key="d" class="relative">
+                        <input class="peer sr-only" type="checkbox" :value="d" v-model="form.weekends" />
+                        <span
+                          class="flex cursor-pointer items-center justify-center rounded-xl border px-2 py-2 text-xs font-semibold transition
+                                 border-slate-200 bg-white text-slate-700 hover:bg-slate-50
+                                 peer-checked:border-indigo-200 peer-checked:bg-indigo-50 peer-checked:text-indigo-700"
+                        >
+                          {{ short(d) }}
+                        </span>
                       </label>
                     </div>
 
-                    <div class="mt-2 flex items-center gap-3">
-                      <button type="button" class="text-xs px-2 py-1 rounded border hover:bg-gray-50"
-                              @click="toggleAll">
-                        {{ (form.weekends || []).length === DAYS.length ? 'Clear all' : 'Select all' }}
-                      </button>
-                      <span class="text-xs text-gray-500">
-                        Selected: {{ (form.weekends || []).join(', ') || '—' }}
+                    <p class="text-xs text-slate-500">
+                      Selected: <span class="font-semibold text-slate-700">{{ selectedDaysLabel }}</span>
+                    </p>
+                  </div>
+
+                  <!-- Callouts -->
+                  <div v-if="isSameAssignment" class="rounded-2xl border border-sky-200 bg-sky-50 p-3 text-xs text-sky-700">
+                    This configuration already matches the active assignment.
+                  </div>
+                  <div
+                    v-else-if="hasActiveAssignment && (form.weekends?.length || 0) > 0"
+                    class="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800"
+                  >
+                    Saving will close the current configuration and apply the new one.
+                  </div>
+
+                  <!-- Dates -->
+                  <div class="grid gap-4 sm:grid-cols-2">
+                    <div class="space-y-1">
+                      <label class="text-sm font-semibold text-slate-800">Effective From</label>
+                      <input v-model="form.start_month" type="month" :class="inputCls" />
+                    </div>
+
+                    <div class="space-y-1">
+                      <div class="flex items-center justify-between">
+                        <label class="text-sm font-semibold text-slate-800">End Month</label>
+                        <label class="inline-flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-600">
+                          <input type="checkbox" class="rounded border-slate-300" v-model="showEndMonth" />
+                          Set end
+                        </label>
+                      </div>
+
+                      <input v-if="showEndMonth" v-model="form.end_month" type="month" :class="inputCls" />
+                      <div v-else class="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                        No end month (present)
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Active toggle -->
+                  <label class="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                    <div>
+                      <p class="text-sm font-semibold text-slate-800">Active</p>
+                      <p class="text-xs text-slate-500">Keep this configuration active</p>
+                    </div>
+                    <input type="checkbox" v-model="form.active" class="h-5 w-5 rounded border-slate-300" />
+                  </label>
+                </div>
+
+                <!-- Footer -->
+                <div class="flex items-end justify-end gap-3 border-t border-slate-200 bg-slate-50 px-4 py-4">
+                 
+                  <div class="flex items-center gap-2">
+                    <button class="btn-2-red" @click="close" :disabled="isSaving">Cancel</button>
+                    <button class="btn-2" @click="submit" :disabled="!canSubmit || isSaving">
+                      <span v-if="!isSaving">
+                        {{ hasActiveAssignment ? (isSameAssignment ? 'Assigned' : 'Reassign') : 'Assign' }}
                       </span>
-                    </div>
-
-                    <div class="mt-2">
-                      <p v-if="isSameAssignment" class="text-xs text-blue-600">
-                        এই কনফিগ ইতিমধ্যেই active আছে।
-                      </p>
-                      <p v-else-if="hasActiveAssignment && (form.weekends?.length || 0) > 0" class="text-xs text-amber-600">
-                        Reassign করলে আগের assignment close/update হয়ে নতুনটি save হবে।
-                      </p>
-                    </div>
-                  </div>
-
-                  <div class="md:col-span-5">
-                    <label class="block text-sm font-medium text-gray-700">From</label>
-                    <input v-model="form.start_month" type="month" class="mt-1 w-full rounded-md border px-3 py-2">
-                  </div>
-
-                  <div class="md:col-span-2 flex items-end">
-                    <label class="inline-flex items-center gap-2 select-none mt-1">
-                      <input type="checkbox" v-model="form.active" class="rounded border-gray-300">
-                      <span class="text-sm text-gray-700">Active</span>
-                    </label>
+                      <span v-else>Processing…</span>
+                    </button>
                   </div>
                 </div>
-
-                <div class="mt-4 flex justify-end gap-2">
-                  <button class="btn-3" @click="close" :disabled="isSaving">Cancel</button>
-                  <button class="btn-2" @click="submit" :disabled="!canSubmit">
-                    <span v-if="!isSaving">{{ hasActiveAssignment ? (isSameAssignment ? 'Assigned' : 'Reassign') : 'Assign' }}</span>
-                    <span v-else>Processing…</span>
-                  </button>
-                </div>
-              </div>
+              </section>
             </div>
           </div>
         </Transition>
       </div>
-    </Transition>
+    </div>
   </Teleport>
 </template>
-
-<style scoped>
-.fade-enter-active, .fade-leave-active { transition: opacity .12s ease; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
-.pop-enter-active, .pop-leave-active { transition: transform .15s ease, opacity .15s ease; }
-.pop-enter-from, .pop-leave-to { transform: scale(.96); opacity: 0; }
-</style>

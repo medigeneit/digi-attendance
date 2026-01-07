@@ -333,6 +333,25 @@ async function openWeekend(user) {
   }
 }
 
+function closeWeekendModal() {
+  weekendModalOpen.value = false
+  userWeekendHistory.value = null
+}
+
+function handleWeekendSaved(res) {
+  weekendModalOpen.value = false
+  const current = res?.current
+  if (current && selectedEmployee.value) {
+    selectedEmployee.value.assign_weekend = {
+      weekends: current.weekends || [],
+      start_month: current.start_month,
+      end_month: current.end_month,
+    }
+  }
+
+  userWeekendHistory.value = null
+}
+
 function openAssign(user) {
   selectedEmployee.value = user
   kpiModalOpen.value = true
@@ -871,40 +890,7 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <!-- Modals (once per group ok, but better globally; keeping as your style) -->
-        <CriteriaAssignModal
-          v-model="kpiModalOpen"
-          :user-id="selectedEmployee?.id"
-          :user-label="selectedEmployee?.name"
-          :criteria_assignments="selectedEmployee?.criteria_assignments"
-          @assigned="afterAssigned"
-        />
-
-        <ShiftWeekendModal
-          v-model="weekendModalOpen"
-          :user-id="selectedEmployee?.id"
-          :user-label="selectedEmployee?.name"
-          :assign_weekends="userWeekendHistory"
-          @saved="(res) => {
-            const current = res?.current
-            if (current && selectedEmployee) {
-              selectedEmployee.assign_weekend = {
-                weekends: current.weekends || [],
-                start_month: current.start_month,
-                end_month: current.end_month
-              }
-            }
-          }"
-        />
-
-        <ShiftAssignmentModal
-          v-model="shiftModalOpen"
-          :shifts="shifts"
-          :employee="{ id: selectedEmployee?.id, name: selectedEmployee?.name }"
-          :has-shift="selectedEmployee?.current_shift"
-          :shift_history="userShiftHistory"
-          @close="shiftModalOpen = false"
-        />
+        
       </div>
     </div>
 
@@ -1079,6 +1065,34 @@ onBeforeUnmount(() => {
 
       <div class="mt-6 text-xs text-gray-500">Printed: {{ new Date().toLocaleString() }}</div>
     </div>
+
+    <!-- Modals (once per group ok, but better globally; keeping as your style) -->
+        <CriteriaAssignModal
+          v-model="kpiModalOpen"
+          :user-id="selectedEmployee?.id"
+          :user-label="selectedEmployee?.name"
+          :criteria_assignments="selectedEmployee?.criteria_assignments"
+          @assigned="afterAssigned"
+        />
+
+        <ShiftWeekendModal
+          v-model="weekendModalOpen"
+          :user-id="selectedEmployee?.id"
+          :user-label="selectedEmployee?.name"
+          :assign_weekends="userWeekendHistory"
+          @saved="handleWeekendSaved"
+          @close="closeWeekendModal"
+        />
+
+
+        <ShiftAssignmentModal
+          v-model="shiftModalOpen"
+          :shifts="shifts"
+          :employee="{ id: selectedEmployee?.id, name: selectedEmployee?.name }"
+          :has-shift="selectedEmployee?.current_shift"
+          :shift_history="userShiftHistory"
+          @close="shiftModalOpen = false"
+        />
   </div>
 </template>
 
