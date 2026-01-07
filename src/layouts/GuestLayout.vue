@@ -1,7 +1,7 @@
 <script setup>
-import { RouterView } from 'vue-router'
 import FooterMain from '@/components/layouts/FooterMain.vue'
 import HeaderPublic from '@/components/layouts/HeaderPublic.vue'
+import { RouterView } from 'vue-router'
 </script>
 
 <template>
@@ -10,7 +10,7 @@ import HeaderPublic from '@/components/layouts/HeaderPublic.vue'
       <HeaderPublic />
     </header>
 
-    <main class="flex-grow pb-10">
+    <main class="flex-grow">
       <RouterView />
     </main>
     <footer class="print:hidden">
