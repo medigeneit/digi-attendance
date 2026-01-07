@@ -1,1 +1,0 @@
-import{_ as s,c as t,o,a as c,O as a}from"./index-CWp1vNWv.js";const r={},n={class:"fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-[1000]"},d={class:"body max-w-2xl w-full bg-white min-h-40 mx-4 rounded-md"};function i(e,l){return o(),t("div",n,[c("div",d,[a(e.$slots,"default")])])}const f=s(r,[["render",i]]);export{f as O};
