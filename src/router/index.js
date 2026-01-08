@@ -699,6 +699,17 @@ const router = createRouter({
         },
 
         {
+          path: '/reports/yearly-leave-report',
+          name: 'YearlyLeaveReport',
+          component: () => import('@/views/admin-pages/YearlyLeaveReport.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Yearly Leave Report',
+          },
+        },
+
+        {
           path: '/reports/overtime-report',
           name: 'OvertimeReport',
           component: () => import('@/views/admin-pages/OvertimeReport.vue'),
