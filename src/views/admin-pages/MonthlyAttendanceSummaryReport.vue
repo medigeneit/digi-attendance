@@ -770,7 +770,7 @@ const toggleFinalize = async () => {
 
               <tfoot>
                 <tr class="bg-gray-100 text-center text-sm font-semibold">
-                  <td colspan="17" class="td">Total</td>
+                  <td colspan="18" class="td">Total</td>
 
                   <td class="td">{{ totals.cl }}</td>
                   <td class="td">{{ totals.ml }}</td>

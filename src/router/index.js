@@ -716,7 +716,7 @@ const router = createRouter({
           meta: {
             requiresAuth: true,
             roles: ['admin', 'super_admin', 'developer'],
-            title: 'Late Attendance Report',
+            title: 'Overtime Report',
           },
         },
 
