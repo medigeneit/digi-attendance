@@ -82,5 +82,9 @@ const hasAccessTo = (routeName) => {
       <i class="fas fa-user-clock text-3xl"></i>
       Yearly Leave Report
     </RouterLink>
+    <RouterLink :to="{ name: 'MonthlyLeaveReport' }" class="main-button">
+      <i class="fas fa-user-clock text-3xl"></i>
+      Monthly Leave Report
+    </RouterLink>
   </div>
 </template>

@@ -42,6 +42,25 @@ export const useLeaveReportStore = defineStore('leaveReport', () => {
       isLoading.value = false
     }
   }
+  const fetchMonthlyLeaveReport = async (params) => {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const { data } = await apiClient.get('/leave/monthly-report', { params })
+
+      pagination.value = data?.pagination ?? null
+      companyReports.value = Array.isArray(data?.data) ? data.data : []
+      filters.value = data?.filters ?? null
+
+      return data
+    } catch (e) {
+      error.value = e?.response?.data?.message || e?.message || 'Failed to load report'
+      throw e
+    } finally {
+      isLoading.value = false
+    }
+  }
 
   return {
     // state
@@ -55,5 +74,6 @@ export const useLeaveReportStore = defineStore('leaveReport', () => {
     // actions
     reset,
     fetchYearlyLeaveReport,
+    fetchMonthlyLeaveReport
   }
 })
