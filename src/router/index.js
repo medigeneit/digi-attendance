@@ -458,6 +458,17 @@ const router = createRouter({
         },
 
         {
+          path: '/weekly-leave-histories',
+          name: 'WeekLeaveHistories',
+          component: () => import('@/views/admin-pages/WeeklyUpdatesGrid.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['super_admin', 'developer'],
+            title: 'Weekly Leave Histories',
+          },
+        },
+
+        {
           path: '/settings/user-list',
           name: 'UserList',
           component: () => import('@/views/admin-pages/UserList.vue'),
