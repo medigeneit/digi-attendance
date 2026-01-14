@@ -444,13 +444,13 @@ onBeforeUnmount(() => {
             <tr
               v-for="(row, index) in rows"
               :key="row.user.id"
-              class="border-t border-slate-300 hover:bg-slate-50/60"
+              class="border-t border-slate-300 hover:bg-sky-100"
             >
-              <td class="sticky left-0 z-20 w-12 border-r border-slate-200 bg-white px-3 py-3 text-xs font-semibold text-slate-600">
+              <td class="sticky left-0 z-20 w-12 border-r border-slate-200  bg-white hover:bg-sky-100 px-3 py-3 text-xs font-semibold text-slate-600">
                 {{ index + 1 }}
               </td>
 
-              <td class="sticky left-12 z-20 border-r border-slate-200 bg-white px-4 py-3">
+              <td class="sticky left-12 z-20 border-r border-slate-200 bg-white hover:bg-sky-100 px-4 py-3">
                 <div class="min-w-0">
                   <div class="truncate font-semibold text-slate-900">{{ row.user.name }}</div>
                   <div class="text-[11px] text-slate-500">
