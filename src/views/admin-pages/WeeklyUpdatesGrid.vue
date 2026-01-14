@@ -125,6 +125,29 @@ const metaRange = computed(() => {
   return `${formatDate(meta.value.start_date)} - ${formatDate(meta.value.end_date)}`
 })
 
+const reportAnchorDate = computed(() => {
+  const value = params.value.anchor_date || meta.value?.anchor_date
+  return value ? toDate(value) : new Date()
+})
+
+const monthlyLeaveReportUrl = computed(() => {
+  const date = reportAnchorDate.value
+  const year = date.getFullYear()
+  const month = date.getMonth() + 1
+  const query = new URLSearchParams({
+    company_id: filters.value.company_id || '',
+    department_id: filters.value.department_id || 'all',
+    line_type: filters.value.line_type || 'all',
+    employee_id: filters.value.employee_id || '',
+    year: String(year),
+    month: String(month),
+    strict_user: '0',
+    per_page: '25',
+    page: '1',
+  })
+  return `/reports/monthly-leave-report?${query.toString()}`
+})
+
 /* ---------------- query sync ---------------- */
 const syncQuery = () => {
   router
@@ -359,14 +382,24 @@ onBeforeUnmount(() => {
               />
             </label>
 
-            <button
-              type="button"
-              class="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800"
-              @click="applyRange"
-            >
-              Apply
-            </button>
-          </div>
+          <button
+            type="button"
+            class="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800"
+            @click="applyRange"
+          >
+            Apply
+          </button>
+
+          <a
+            :href="monthlyLeaveReportUrl"
+            target="_blank"
+            rel="noopener"
+            class="btn-1 rounded-lg"
+            title="Open Monthly Leave Report"
+          >
+            Monthly Leave Report
+          </a>
+        </div>
 
           <div class="flex items-center justify-between gap-3 text-xs text-slate-500 lg:justify-end">
             <div>
