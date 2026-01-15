@@ -387,7 +387,7 @@ watch(
       <!-- Admin Menus -->
       <template v-if="isAdmin && authStore.isAdminMood">
         <RouterLink
-          v-if="matchesQuery('Requirement')"
+          v-if="matchesQuery('Requirements')"
           to="/requirements"
           class="side-menu"
           :class="{
@@ -395,8 +395,8 @@ watch(
             'side-menu-active': currentPath.startsWith('/requirements'),
           }"
         >
-          <i class="fad fa-tasks py-2"></i>
-          <h4 v-if="open">Requirement</h4>
+          <i class="fad fa-file-alt py-2"></i>
+          <h4 v-if="open">Requirements</h4>
         </RouterLink>
 
         <RouterLink
@@ -413,7 +413,12 @@ watch(
         </RouterLink>
 
         <template v-if="!isSearching || filteredReportsMenu.length">
-          <RouterLink to="/reports" custom v-slot="{ navigate }">
+          <RouterLink
+            to="/reports"
+            custom
+            v-slot="{ navigate }"
+            v-if="matchesQuery('Requirements')"
+          >
             <div
               class="side-menu"
               :class="{

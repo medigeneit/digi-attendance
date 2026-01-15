@@ -1,8 +1,10 @@
 <script setup>
 import { getYearMonthDayFormat } from '@/libs/datetime'
+import { useTagStore } from '@/stores/tags'
 import { useTodoStore } from '@/stores/useTodoStore'
 import { nextTick, onMounted, ref, watch } from 'vue'
 import FormHandler from '../FormHandler.vue'
+import SelectDropdown from '../SelectDropdown.vue'
 import LoaderView from '../common/LoaderView.vue'
 import TodoTypeInput from './TodoTypeInput.vue'
 
@@ -24,6 +26,8 @@ const state = ref()
 const showTodoTypes = ref(false)
 const titleRef = ref()
 const todoStore = useTodoStore()
+const tagStore = useTagStore()
+const selectedTagId = ref(null)
 
 const emit = defineEmits(['update', 'cancelClick'])
 
@@ -38,14 +42,20 @@ async function handleFormSubmit() {
   try {
     state.value = 'submitting'
 
-    if (!form.value?.todo_type_id) {
-      form.value = {
-        title: form.value.title,
-        date: form.value.date,
-      }
+    const payload = { ...form.value }
+
+    if (!payload.todo_type_id) {
+      delete payload.todo_type_id
+      delete payload.todo_type
     }
 
-    await todoStore.createTodo(form.value, {
+    if (selectedTagId.value) {
+      payload.tag_ids = [selectedTagId.value]
+    } else {
+      payload.tag_ids = []
+    }
+
+    await todoStore.createTodo(payload, {
       returnWith: props.userRole !== 'employee' ? 'user,department,company' : '',
     })
     emit('update')
@@ -61,7 +71,7 @@ watch(
     todo_type_id: props.todoTypeId,
   }),
   (newValue) => {
-    form.value = newValue
+    form.value = { ...form.value, ...newValue }
   },
   { immediate: true },
 )
@@ -69,6 +79,7 @@ watch(
 onMounted(async () => {
   await nextTick()
   titleRef.value?.focus()
+  await tagStore.fetchTags()
 })
 </script>
 
@@ -117,8 +128,19 @@ onMounted(async () => {
         </div>
 
         <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-1 text-sm">Task (optional)</label>
+          <label class="block text-gray-700 font-medium mb-1 text-sm">Website/Project</label>
+          <SelectDropdown
+            v-model="selectedTagId"
+            :options="tagStore.tags"
+            value="id"
+            label="name"
+            :clearable="true"
+            class="py-1 h-10"
+          />
+        </div>
 
+        <div class="mb-4">
+          <label class="block text-gray-700 font-medium mb-1 text-sm">Task (optional)</label>
           <TodoTypeInput
             v-model:show="showTodoTypes"
             v-model:todoType="form.todo_type"

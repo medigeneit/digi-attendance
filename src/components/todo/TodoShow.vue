@@ -82,6 +82,15 @@ onMounted(async () => {
           <div>
             <div class="text-xs text-gray-500">Todo</div>
             {{ todoDateStore.todo_date?.title }}
+            <div v-if="todoDateStore?.todo_date?.todo?.tags?.length > 0" class="mt-1">
+              <span
+                class="bg-gray-100 px-2 rounded-full border border-blue-500 text-blue-500"
+                v-for="tag in todoDateStore?.todo_date?.todo?.tags || []"
+                :key="tag.id"
+              >
+                {{ tag.name }}
+              </span>
+            </div>
           </div>
 
           <button

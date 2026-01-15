@@ -1,11 +1,13 @@
 <script setup>
 import { getYearMonthDayFormat } from '@/libs/datetime'
+import { useTagStore } from '@/stores/tags'
 import { useTodoStore } from '@/stores/useTodoStore'
 import { computed, nextTick, onMounted, ref } from 'vue'
 
 import { deleteTodoSetting, findTodoSetting, upsertTodoSetting } from '@/services/todo'
 import LoaderView from '../common/LoaderView.vue'
 import FormHandler from '../FormHandler.vue'
+import SelectDropdown from '../SelectDropdown.vue'
 import TodoTypeInput from './TodoTypeInput.vue'
 
 // API helpers
@@ -23,6 +25,8 @@ const state = ref()
 const showTodoTypes = ref(false)
 const titleRef = ref()
 const todoStore = useTodoStore()
+const tagStore = useTagStore()
+const selectedTagId = ref(null)
 const emit = defineEmits(['update', 'cancelClick'])
 
 const form = ref({
@@ -53,6 +57,15 @@ async function fetchTodo() {
   await todoStore.fetchTodo(props.todo?.id)
   form.value.title = todoStore.todo?.title
   form.value.todo_type_id = todoStore.todo?.todoable_id
+
+  if (todoStore.todo?.tags) {
+    // SelectDropdown with multiple expects array of IDs or Objects?
+    // Based on TaskEditForm, it used objects or IDs.
+    // SelectDropdown source shows: items.filter(o => getOptionKey(o) === val).
+    // Let's assume passed IDs or objects work. The store usually gives full objects.
+    selectedTagId.value = todoStore.todo.tags?.[0]?.id || null
+    // selectedTags.value = todoStore.todo.tags.map((t) => t.id)
+  }
 }
 
 const settingId = ref(null)
@@ -89,11 +102,19 @@ async function fetchSetting() {
 
 async function submitTodo() {
   // 1) Update Todo
-  await todoStore.updateTodo(props.todo.id, {
+  const payload = {
     title: form.value.title,
     todo_type: form.value.todo_type,
     todo_type_id: form.value.todo_type_id,
-  })
+  }
+
+  if (selectedTagId.value) {
+    payload.tag_ids = [selectedTagId.value]
+  } else {
+    payload.tag_ids = []
+  }
+
+  await todoStore.updateTodo(props.todo.id, payload)
 }
 
 async function submitSettings() {
@@ -135,6 +156,7 @@ const settingsLoading = ref(false)
 const settingsError = ref(false)
 
 async function loadEverything() {
+  tagStore.fetchTags()
   await fetchTodo()
   settingsLoading.value = true
   await fetchSetting()
@@ -200,6 +222,26 @@ onMounted(() => {
             required
             placeholder="Enter todo title"
             class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 shadow-sm"
+          />
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-gray-500 font-medium text-sm">Tags</label>
+          <!-- <SelectDropdown
+            v-model="selectedTags"
+            :options="tagStore.tags"
+            :multiple="true"
+            label="name"
+            :clearable="true"
+          /> -->
+
+          <SelectDropdown
+            v-model="selectedTagId"
+            :options="tagStore.tags"
+            value="id"
+            label="name"
+            :clearable="true"
+            class="py-1 h-10"
           />
         </div>
 

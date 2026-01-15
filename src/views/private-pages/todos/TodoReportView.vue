@@ -1,8 +1,8 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
 import TodoReportHeading from '@/components/todo/TodoReportHeading.vue'
-import UserAvatar from '@/components/UserAvatar.vue'
 import UserHoverBubble from '@/components/user/UserHoverBubble.vue'
+import UserAvatar from '@/components/UserAvatar.vue'
 import { getDisplayDate, getYearMonthDayFormat } from '@/libs/datetime'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useCompanyStore } from '@/stores/company'

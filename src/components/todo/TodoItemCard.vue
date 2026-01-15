@@ -59,13 +59,25 @@ const emit = defineEmits([
     <TodoStatusIcon :todoDate="todoDate" />
     <div class="">
       <div
-        class="line-clamp-1"
+        class=""
         :class="{
           'text-green-800': todoDate.status == 'COMPLETED',
           'text-blue-800': todoDate.status != 'COMPLETED',
         }"
       >
-        {{ todoDate.id }} - {{ todoDate.title }}
+        <div class="flex items-center gap-1">
+          <span class="font-semibold">{{ todoDate.todo?.id }} -</span>
+          <span class="line-clamp-1">{{ todoDate.title }}</span>
+        </div>
+        <div v-if="todoDate.todo?.tags?.length > 0" class="mt-1 space-x-1">
+          <span
+            class="bg-gray-100 px-2 rounded-full border border-blue-500 text-blue-500"
+            v-for="tag in todoDate?.todo.tags || []"
+            :key="tag.id"
+          >
+            {{ tag.name }}
+          </span>
+        </div>
       </div>
 
       <div class="mt-1 flex items-center gap-2" v-if="todoDate.user">

@@ -1,8 +1,8 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import DonorMeModal from '@/components/DonorMeModal.vue'
 import ChangePasswordModal from '@/components/user/ChangePasswordModal.vue'
 import UserClearanceModal from '@/components/UserClearanceModal.vue'
-import DonorMeModal from '@/components/DonorMeModal.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useBloodDonorMeStore } from '@/stores/bloodDonorMe'
 import { computed, ref } from 'vue'
@@ -76,7 +76,7 @@ const openMyDonorProfile = async () => {
           <!-- Avatar -->
           <div class="flex items-center gap-4">
             <div
-              class="h-20 w-20 rounded-2xl ring-4 ring-white shadow-md overflow-hidden bg-slate-100 dark:bg-slate-800 flex items-center justify-center"
+              class="h-20 w-20 rounded-2xl ring-4 ring-white shadow-md overflow-hidden bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0"
             >
               <img
                 v-if="avatarUrl"
