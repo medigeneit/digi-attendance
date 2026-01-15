@@ -128,7 +128,9 @@ onMounted(async () => {
         </div>
 
         <div class="mb-4">
-          <label class="block text-gray-700 font-medium mb-1 text-sm">Website/Project</label>
+          <label class="block text-gray-700 font-medium mb-1 text-sm">
+            Issue/Website/Project <span class="text-gray-500">(Optional)</span>
+          </label>
           <SelectDropdown
             v-model="selectedTagId"
             :options="tagStore.tags"

@@ -226,14 +226,9 @@ onMounted(() => {
         </div>
 
         <div class="mb-4">
-          <label class="block text-gray-500 font-medium text-sm">Tags</label>
-          <!-- <SelectDropdown
-            v-model="selectedTags"
-            :options="tagStore.tags"
-            :multiple="true"
-            label="name"
-            :clearable="true"
-          /> -->
+          <label class="block text-gray-500 font-medium text-sm">
+            Issue/Website/Project <span class="text-gray-500">(Optional)</span>
+          </label>
 
           <SelectDropdown
             v-model="selectedTagId"
