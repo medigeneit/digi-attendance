@@ -25,6 +25,8 @@
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
     "html2canvas": "^1.4.1",
+    "jspdf": "^4.0.0",
+    "jspdf-autotable": "^5.0.7",
     "laravel-echo": "^2.2.4",
     "pinia": "^2.2.6",
     "pusher-js": "^8.4.0",

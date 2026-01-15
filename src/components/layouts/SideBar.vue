@@ -66,12 +66,15 @@ const reportsMenu = [
   { label: 'Monthly Late ', routeName: 'LateAttendanceReport' },
   { label: 'Monthly  Summary', routeName: 'AttendanceSummaryReport' },
   { label: 'Date Range Attendance ', routeName: 'DateWiseAttendanceSummaryReport' },
-  { label: 'Overtime ', routeName: 'OvertimeReport' },
+  { label: 'Overtime Report', routeName: 'OvertimeReport' },
   { label: 'Monthly Application', routeName: 'MonthWiseApplicationReport' },
   { label: 'Todo Report', routeName: 'TodoReport' },
   { label: 'Personal Activity Report (PAR)', routeName: 'PersonalActivityReport' },
   { label: 'Yearly Delay Early Summary', routeName: 'YearlyDealyEarlyAttendanceSummary' },
   { label: 'Yearly Attendance Summary', routeName: 'YearlyAttendanceSummary' },
+  { label: 'Monthly Leave Report', routeName: 'MonthlyLeaveReport' },
+  { label: 'Yearly Leave Report', routeName: 'YearlyLeaveReport' },
+  { label: 'Weekly Leave Histories', routeName: 'WeekLeaveHistories' },
 ]
 const reportRouteNames = reportsMenu.map((i) => i.routeName)
 

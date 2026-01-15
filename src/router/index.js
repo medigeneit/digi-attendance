@@ -458,6 +458,17 @@ const router = createRouter({
         },
 
         {
+          path: '/weekly-leave-histories',
+          name: 'WeekLeaveHistories',
+          component: () => import('@/views/admin-pages/WeeklyUpdatesGrid.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['super_admin', 'developer'],
+            title: 'Weekly Leave Histories',
+          },
+        },
+
+        {
           path: '/settings/user-list',
           name: 'UserList',
           component: () => import('@/views/admin-pages/UserList.vue'),
@@ -699,13 +710,35 @@ const router = createRouter({
         },
 
         {
+          path: '/reports/yearly-leave-report',
+          name: 'YearlyLeaveReport',
+          component: () => import('@/views/admin-pages/YearlyLeaveReport.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Yearly Leave Report',
+          },
+        },
+
+        {
+          path: '/reports/monthly-leave-report',
+          name: 'MonthlyLeaveReport',
+          component: () => import('@/views/admin-pages/MonthlyLeaveReport.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Monthly Leave Report',
+          },
+        },
+
+        {
           path: '/reports/overtime-report',
           name: 'OvertimeReport',
           component: () => import('@/views/admin-pages/OvertimeReport.vue'),
           meta: {
             requiresAuth: true,
             roles: ['admin', 'super_admin', 'developer'],
-            title: 'Late Attendance Report',
+            title: 'Overtime Report',
           },
         },
 

@@ -209,7 +209,7 @@ const handleFilterChange = () => {
             <th class="border border-gray-300 px-2 text-left">Created Date</th>
             <th class="border border-gray-300 px-2 text-left">Date</th>
             <th class="border border-gray-300 px-2 text-left">Type</th>
-            <th class="border border-gray-300 px-2 text-left">Punch/Offside Type</th>
+            <th class="border border-gray-300 px-2 text-left">Punch/Offsite Type</th>
             <th class="border border-gray-300 px-2 text-left">Check-In</th>
             <th class="border border-gray-300 px-2 text-left">Check-Out</th>
             <th class="border border-gray-300 px-2 text-left">Status</th>

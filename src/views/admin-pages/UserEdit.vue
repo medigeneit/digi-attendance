@@ -254,6 +254,9 @@ function clearWeekend() {
   <div class="my-container">
     <div class="card-bg md:p-8 p-4 mx-4">
       <h2 class="title-lg text-center">Edit Employee</h2>
+      <p class="text-sm text-gray-500 text-center mb-3">
+        Fields marked <span class="text-red-600">*</span> are required.
+      </p>
 
       <!-- <LoaderView v-if="isPageLoading" class="bg-gray-100 border shadow-none" /> -->
 
@@ -268,10 +271,11 @@ function clearWeekend() {
                 id="name"
                 v-model.trim="form.name"
                 type="text"
-                class="w-full p-2 border rounded"
+                class="input-light"
                 :aria-invalid="!!errors.name"
                 autocomplete="name"
                 required
+                placeholder="Enter full name"
               />
               <p v-if="errors.name" class="text-red-600 text-sm mt-1">{{ errors.name }}</p>
             </div>
@@ -282,8 +286,9 @@ function clearWeekend() {
                 id="bnName"
                 v-model.trim="form.bn_name"
                 type="text"
-                class="w-full p-2 border rounded"
+                class="input-light"
                 autocomplete="name"
+                placeholder="বাংলায় নাম লিখুন"
               />
             </div>
 
@@ -294,10 +299,11 @@ function clearWeekend() {
                 v-model.trim="form.phone"
                 type="tel"
                 inputmode="tel"
-                class="w-full p-2 border rounded"
+                class="input-light"
                 :aria-invalid="!!errors.phone"
                 autocomplete="tel"
                 required
+                placeholder="01xxxxxxxxx"
               />
               <p v-if="errors.phone" class="text-red-600 text-sm mt-1">{{ errors.phone }}</p>
             </div>
@@ -308,7 +314,7 @@ function clearWeekend() {
                 id="email"
                 v-model.trim.lazy="form.email"
                 type="email"
-                class="w-full p-2 border rounded"
+                class="input-light"
                 :aria-invalid="!!errors.email"
                 autocomplete="email"
                 placeholder="name@example.com"
@@ -322,7 +328,7 @@ function clearWeekend() {
                 id="address"
                 v-model.trim="form.address"
                 type="text"
-                class="w-full p-2 border rounded"
+                class="input-light"
                 autocomplete="street-address"
                 placeholder="House / Street / Area"
               />
@@ -330,17 +336,29 @@ function clearWeekend() {
 
             <div>
               <label for="nid">NID</label>
-              <input id="nid" v-model.trim="form.nid" type="text" class="w-full p-2 border rounded" />
+              <input
+                id="nid"
+                v-model.trim="form.nid"
+                type="text"
+                class="input-light"
+                placeholder="National ID / Passport"
+              />
             </div>
 
             <div>
               <label for="dob">Date of Birth</label>
-              <input id="dob" v-model="form.date_of_birth" type="date" class="w-full p-2 border rounded" />
+              <input
+                id="dob"
+                v-model="form.date_of_birth"
+                type="date"
+                class="input-light"
+                placeholder="YYYY-MM-DD"
+              />
             </div>
 
             <div>
               <label for="bloodGroup" class="text-gray-700 flex items-center gap-2">Blood Group</label>
-              <select id="bloodGroup" v-model="form.blood" class="py-2 px-4 border rounded w-full">
+              <select id="bloodGroup" v-model="form.blood" class="input-light">
                 <option disabled value="">Select blood group</option>
                 <option v-for="g in BLOOD_GROUPS" :key="g" :value="g">{{ g }}</option>
               </select>
@@ -357,7 +375,7 @@ function clearWeekend() {
               <select
                 id="company"
                 v-model="form.company_id"
-                class="w-full border rounded px-3 py-2"
+                class="input-light"
                 :aria-invalid="!!errors.company_id"
                 required
               >
@@ -372,7 +390,7 @@ function clearWeekend() {
               <select
                 id="department"
                 v-model="form.department_id"
-                class="w-full p-2 border rounded"
+                class="input-light"
                 :disabled="isDepsLoading || !form.company_id"
                 :aria-invalid="!!errors.department_id"
                 required
@@ -390,7 +408,7 @@ function clearWeekend() {
               <select
                 id="designation"
                 v-model="form.designation_id"
-                class="w-full p-2 border rounded"
+                class="input-light"
                 :disabled="isDepsLoading || !form.company_id"
               >
                 <option value="" disabled>
@@ -402,12 +420,18 @@ function clearWeekend() {
 
             <div>
               <label for="joining">Joining Date</label>
-              <input id="joining" v-model="form.joining_date" type="date" class="w-full p-2 border rounded" />
+              <input
+                id="joining"
+                v-model="form.joining_date"
+                type="date"
+                class="input-light"
+                placeholder="YYYY-MM-DD"
+              />
             </div>
 
             <div>
               <label for="lineType">Line Type</label>
-              <select id="lineType" v-model="form.type" class="w-full p-2 border rounded" required>
+              <select id="lineType" v-model="form.type" class="input-light" required>
                 <option value="" disabled>Select Line Type</option>
                 <option value="executive">Executive</option>
                 <option value="support_staff">Support Staff</option>
@@ -418,7 +442,7 @@ function clearWeekend() {
 
             <div>
               <label for="empType">Employment Type</label>
-              <select id="empType" v-model="form.employment_type" class="w-full p-2 border rounded">
+              <select id="empType" v-model="form.employment_type" class="input-light">
                 <option v-for="t in EMPLOYMENT_TYPES" :key="t" :value="t">{{ t }}</option>
               </select>
             </div>
@@ -426,11 +450,25 @@ function clearWeekend() {
             <template v-if="form.employment_type === 'Probationary'">
               <div>
                 <label for="probMonth">Probationary Period (month)</label>
-                <input id="probMonth" v-model.number="form.provisional_month" type="number" min="0" placeholder="3" class="w-full p-2 border rounded" />
+                <input
+                  id="probMonth"
+                  v-model.number="form.provisional_month"
+                  type="number"
+                  min="0"
+                  placeholder="Number of months"
+                  class="input-light"
+                />
               </div>
               <div>
                 <label for="probExt">Extended Probationary (month)</label>
-                <input id="probExt" v-model.number="form.extended_provisional_month" type="number" min="0" placeholder="3" class="w-full p-2 border rounded" />
+                <input
+                  id="probExt"
+                  v-model.number="form.extended_provisional_month"
+                  type="number"
+                  min="0"
+                  placeholder="Additional months"
+                  class="input-light"
+                />
               </div>
             </template>
 
@@ -443,8 +481,8 @@ function clearWeekend() {
                   type="number"
                   min="0"
                   max="120"
-                  placeholder="6"
-                  class="w-full p-2 border rounded"
+                  placeholder="Duration in months"
+                  class="input-light"
                   :aria-invalid="!!errors.contract_month"
                   required
                 />
@@ -467,7 +505,7 @@ function clearWeekend() {
 
             <div>
               <label>Leave Approval Group</label> 
-              <select v-model="form.leave_approval_id" class="w-full p-2 border rounded"> 
+              <select v-model="form.leave_approval_id" class="input-light"> 
                 <option value="" disabled>Select Leave Approval Group</option> 
                 <template v-for="leaveApproval in leaveApprovalStore.leaveApprovals" :key="leaveApproval.id" > 
                   <option v-if="leaveApproval.type === 'leave'" :value="leaveApproval.id"> {{ leaveApproval.name }} </option> 
@@ -477,7 +515,7 @@ function clearWeekend() {
 
             <div>
              <label>Other Approval Group</label> 
-              <select v-model="form.other_approval_id" class="w-full p-2 border rounded"> 
+              <select v-model="form.other_approval_id" class="input-light"> 
                 <option value="" disabled>Select Other Approval Group</option> 
                 <template v-for="leaveApproval in leaveApprovalStore.leaveApprovals" :key="leaveApproval.id" > 
                   <option v-if="leaveApproval.type === 'other'" :value="leaveApproval.id"> {{ leaveApproval.name }} </option> 
@@ -487,7 +525,7 @@ function clearWeekend() {
 
             <div>
               <label for="active">Active Status</label>
-              <select id="active" v-model="form.is_active" class="w-full p-2 border rounded">
+              <select id="active" v-model="form.is_active" class="input-light">
                 <option :value="true">Active</option>
                 <option :value="false">Inactive</option>
               </select>
@@ -495,7 +533,14 @@ function clearWeekend() {
 
             <div class="md:col-span-2" v-if="!form.is_active">
               <label for="inactiveNote">Inactive Note</label>
-              <input id="inactiveNote" v-model.trim="form.note" type="text" class="w-full p-2 border rounded" placeholder="Reason / context…" :required="!form.is_active" />
+              <input
+                id="inactiveNote"
+                v-model.trim="form.note"
+                type="text"
+                class="input-light"
+                placeholder="Reason / context…"
+                :required="!form.is_active"
+              />
             </div>
           </div>
         </fieldset>
@@ -506,7 +551,13 @@ function clearWeekend() {
           <div class="grid md:grid-cols-4 gap-4">
             <div>
               <label for="role">Role<span class="text-red-500">*</span></label>
-              <select id="role" v-model="form.role" class="w-full p-2 border rounded" :aria-invalid="!!errors.role" required>
+              <select
+                id="role"
+                v-model="form.role"
+                class="input-light"
+                :aria-invalid="!!errors.role"
+                required
+              >
                 <option value="employee">Employee</option>
                 <option value="admin">Admin</option>
                 <option value="super_admin">Super Admin</option>
@@ -517,20 +568,41 @@ function clearWeekend() {
 
             <div>
               <label for="deviceId">Device User ID</label>
-              <input id="deviceId" v-model.number="form.device_user_id" type="number" inputmode="numeric" placeholder="3456" class="w-full p-2 border rounded" />
+              <input
+                id="deviceId"
+                v-model.number="form.device_user_id"
+                type="number"
+                inputmode="numeric"
+                placeholder="3456"
+                class="input-light"
+              />
             </div>
 
             <div>
               <label for="empId">Employee ID</label>
-              <input id="empId" v-model.trim="form.employee_id" type="text" class="w-full p-2 border rounded" placeholder="M123456" autocomplete="off" />
+              <input
+                id="empId"
+                v-model.trim="form.employee_id"
+                type="text"
+                class="input-light"
+                placeholder="Employee ID : M123456"
+                autocomplete="off"
+              />
             </div>
 
             <div>
               <label for="password">Password</label>
               <div class="relative">
-                <input id="password" v-model="form.password" :type="showPassword ? 'text' : 'password'" class="w-full p-2 border rounded pr-10" autocomplete="new-password" />
+                <input
+                  id="password"
+                  v-model="form.password"
+                  :type="showPassword ? 'text' : 'password'"
+                  class="`${input-light} pr-10`"
+                  autocomplete="new-password"
+                  placeholder="Create a secure password"
+                />
                 <button type="button" class="absolute inset-y-0 right-2 px-1 text-gray-600" @click="showPassword = !showPassword" :aria-label="showPassword ? 'Hide password' : 'Show password'">
-                  <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                  <i class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
                 </button>
               </div>
             </div>

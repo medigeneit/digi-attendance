@@ -145,7 +145,7 @@ const reportTotals = computed(() => {
         <span class="hidden md:flex">Back</span>
       </button>
 
-      <h1 class="title-md md:title-lg flex-wrap text-center">Monthly Overtime Report</h1>
+      <h1 class="title-md md:title-lg flex-wrap text-center">Overtime Report</h1>
       <div class="flex gap-2">
         <button @click="exportExcel" class="btn-1" title="Download Excel">
           <i class="far fa-file-excel text-2xl text-green-500"></i>

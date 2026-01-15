@@ -138,5 +138,18 @@ const date = computed(() => {
       </span>
       Todos In This Month
     </RouterLink>
+    <RouterLink
+      :to="{
+        name: 'WeekLeaveHistories',
+        query: {
+          month: date.getMonth() + 1,
+          year: date.getFullYear(),
+          type: 'month-view',
+        },
+      }"
+      class="main-button"
+    >
+      Week Leave Histories
+    </RouterLink>
   </div>
 </template>

@@ -14,6 +14,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
   const selectedDate = ref(new Date().toISOString().substring(0, 10))
   const error = ref(null)
   const isLoading = ref(false)
+  const reportMeta = ref(null)
 
   const getUserDailyLogsByDate = async (_userId, date) => {
     const formattedDate = formatDateToDayMonthYear(date)
@@ -262,6 +263,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
       // যদি API resource style হয় -> { data: [...] }
       // না হলে সরাসরি array হলেও handle হবে
       monthly_company_summary.value = response.data?.data ?? response.data
+      reportMeta.value = response.data?.meta || null
       error.value = null
     } catch (err) {
       error.value = err?.response?.data?.message || 'Something went wrong'
@@ -516,6 +518,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     isLoading,
     dailyLogs,
     attendanceLogs,
+    reportMeta,
     getUserDailyLogsByDate,
     getMonthlyAttendanceByShift,
     getTodayAttendanceReport,
