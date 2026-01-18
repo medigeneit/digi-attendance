@@ -102,6 +102,38 @@ const badgeClass = (item) => {
   return 'bg-slate-50 text-slate-700 ring-slate-200'
 }
 
+const isDayMarker = (item) => {
+  const kind = String(item?.kind || '').toLowerCase()
+  return kind === 'weekend' || kind === 'holiday' || kind === 'present'
+}
+
+const itemBadgeText = (item) => {
+  const kind = String(item?.kind || '').toLowerCase()
+  if (kind === 'weekend') return 'WK'
+  if (kind === 'holiday') return 'HD'
+  if (kind === 'present') return 'P'
+  return item?.code
+}
+
+const itemBadgeClass = (item) => {
+  const kind = String(item?.kind || '').toLowerCase()
+  if (kind === 'weekend') return 'bg-slate-50 text-slate-700 ring-slate-200'
+  if (kind === 'holiday') return 'bg-sky-50 text-sky-700 ring-sky-200'
+  if (kind === 'present') return 'bg-emerald-50 text-emerald-700 ring-emerald-200'
+  return badgeClass(item)
+}
+
+const itemTooltip = (item) => {
+  const parts = []
+  const label = item?.label || item?.kind || itemBadgeText(item)
+  if (label) parts.push(label)
+  if (item?.status) parts.push(item.status)
+  if (item?.ref_id) parts.push(`#${item.ref_id}`)
+  return parts.join(' - ')
+}
+
+const isExchangeItem = (item) => String(item?.kind || '').toLowerCase() === 'exchange'
+
 const toastClass = computed(() => {
   const t = ui.value.toast?.type
   if (t === 'success') return 'border-emerald-200 bg-emerald-50 text-emerald-800'
@@ -207,12 +239,21 @@ function showToast(type, text) {
 }
 
 /* ---------------- LAST item selector ---------------- */
+const isSmsEligible = (item) => {
+  if (!item?.kind || !item?.ref_id) return false
+  return !isDayMarker(item)
+}
+
 const getLastItem = (row) => {
   const ds = dates.value || []
   for (let i = ds.length - 1; i >= 0; i--) {
     const d = ds[i]
     const items = dayItems(row, d)
-    if (items?.length) return items[items.length - 1]
+    if (!items?.length) continue
+    for (let j = items.length - 1; j >= 0; j--) {
+      const item = items[j]
+      if (isSmsEligible(item)) return item
+    }
   }
   return null
 }
@@ -487,17 +528,17 @@ onBeforeUnmount(() => {
               </td>
 
               <td v-for="date in dates" :key="`${row.user.id}-${date}`" class="px-3 py-3 align-top border-r border-slate-200">
-                <div v-if="dayItems(row, date).length" class="flex flex-wrap gap-1.5">
+                <div v-if="dayItems(row, date).length" class="flex flex-col items-start gap-1.5">
                   <button
                     v-for="item in dayItems(row, date)"
                     :key="`${item.kind}-${item.ref_id}-${item.code}`"
                     type="button"
                     class="rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset"
-                    :class="badgeClass(item)"
-                    :title="`${item.label} • ${item.status} • #${item.ref_id}`"
+                    :class="itemBadgeClass(item)"
+                    :title="itemTooltip(item)"
                     @click="openDetails(item)"
                   >
-                    {{ item.code }}
+                    {{ itemBadgeText(item) }}
                   </button>
                 </div>
                 <span v-else class="text-slate-300 text-sm">&mdash;</span>
@@ -629,6 +670,16 @@ onBeforeUnmount(() => {
             <span class="text-xs font-semibold text-slate-500">Ref ID</span>
             <span class="font-semibold">#{{ ui.selectedItem?.ref_id }}</span>
           </div>
+          <template v-if="isExchangeItem(ui.selectedItem)">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-slate-500">Current Date</span>
+              <span class="font-semibold">{{ ui.selectedItem?.current_date || 'N/A' }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-slate-500">Exchange Date</span>
+              <span class="font-semibold">{{ ui.selectedItem?.exchange_date || 'N/A' }}</span>
+            </div>
+          </template>
         </div>
 
         <div class="mt-4 flex items-center justify-end gap-2">
