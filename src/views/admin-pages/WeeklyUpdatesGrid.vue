@@ -23,12 +23,6 @@ const ui = ref({
   toast: null,
 })
 
-/* ---------------- sticky top offsets ----------------
-   We have:
-   1) sticky filter bar (EmployeeFilter)
-   2) controls bar (Prev/Past/Future/Next/Anchor/Apply)
-   Table THEAD should stick *below* both.
------------------------------------------------------- */
 const stickyBarRef = ref(null)
 const controlsRef = ref(null)
 const headerTop = ref(0)
@@ -457,7 +451,7 @@ onBeforeUnmount(() => {
               <th
                 v-for="date in dates"
                 :key="date"
-                class="sticky z-20 min-w-[110px] bg-slate-50 px-3 py-3 text-left"
+                class="sticky z-20 min-w-[40px] bg-slate-50 px-3 py-3 text-center"
                 :style="headerTopStyle"
               >
                 <div class="text-[11px] font-semibold text-slate-400">{{ formatDay(date) }}</div>
@@ -492,7 +486,7 @@ onBeforeUnmount(() => {
                 </div>
               </td>
 
-              <td v-for="date in dates" :key="`${row.user.id}-${date}`" class="px-3 py-3 align-top">
+              <td v-for="date in dates" :key="`${row.user.id}-${date}`" class="px-3 py-3 align-top border-r border-slate-200">
                 <div v-if="dayItems(row, date).length" class="flex flex-wrap gap-1.5">
                   <button
                     v-for="item in dayItems(row, date)"
