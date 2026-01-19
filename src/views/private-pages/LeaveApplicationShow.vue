@@ -337,7 +337,6 @@ const removeAttachment = async () => {
             :application="leaveApplication"
             type="leave_applications"
             item="handover"
-            :date="formatDateTime(leaveApplication.handover_set_at)"
             :onAction="refreshApplication"
           />
         </div>
@@ -422,21 +421,18 @@ const removeAttachment = async () => {
             :application="leaveApplication"
             type="leave_applications"
             item="in_charge"
-            :date="formatDateTime(leaveApplication.in_charge_set_at)"
             :onAction="refreshApplication"
           />
           <ApprovalItem
             :application="leaveApplication"
             type="leave_applications"
             item="coordinator"
-            :date="formatDateTime(leaveApplication.coordinator_set_at)"
             :onAction="refreshApplication"
           />
           <ApprovalItem
             :application="leaveApplication"
             type="leave_applications"
             item="operational_admin"
-            :date="formatDateTime(leaveApplication.operational_admin_set_at)"
             :onAction="refreshApplication"
           />
         </div>
@@ -446,14 +442,12 @@ const removeAttachment = async () => {
             :application="leaveApplication"
             type="leave_applications"
             item="recommend_by"
-            :date="formatDateTime(leaveApplication.recommended_at)"
             :onAction="refreshApplication"
           />
           <ApprovalItem
             :application="leaveApplication"
             type="leave_applications"
             item="approved_by"
-            :date="formatDateTime(leaveApplication.approved_at)"
             :onAction="refreshApplication"
           />
         </div>

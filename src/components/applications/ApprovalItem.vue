@@ -82,11 +82,8 @@ const isPending = computed(
     <div v-if="itemUserId" class="text-center">
       <p class="text-center">{{ itemUser?.name || '' }}</p>
 
-      <div class="text-xs text-gray-400 text-center">
-        
-        <i v-if="date" class="far fa-clock"></i> {{ date }}
-        <span v-if="date && itemNote">  — </span>
-        <span v-if="itemNote">  {{ itemNote }}</span>
+      <div class="text-xs text-gray-400 text-center max-w-[250px] md:max-w-[350px]  mx-auto">
+        {{ itemNote }}
       </div>
     </div>
     <p v-else class="text-center">

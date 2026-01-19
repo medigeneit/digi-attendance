@@ -246,7 +246,7 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
     error.value = null
     try {
       const response = await apiClient.get(`/leave-applications/${id}`)
-      leaveApplication.value = response?.data
+      leaveApplication.value = response?.data?.data || response?.data
 
       const notificationStore = useNotificationStore()
 
