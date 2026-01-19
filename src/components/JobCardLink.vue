@@ -1,12 +1,19 @@
+<script setup>
+import { computed } from 'vue'
 
-export function objectToQuery( object ){
-  return Object.entries( object )
-    .map((item)=> `${item[0]}=${item[1]}`)
-    .join('&')
-}
+const props = defineProps({
+  user: {
+    type: Object,
+    default: null,
+  },
+  date: {
+    type: String,
+    default: '',
+  },
+})
 
-export const jobCardUrl = (user, date = null) => {
-  const u = user || {}
+const jobCardUrl = computed(() => {
+  const u = props.user || {}
   const employeeId = u.id || u.user_id || u.employee_id
 
   if (!employeeId) return ''
@@ -19,9 +26,14 @@ export const jobCardUrl = (user, date = null) => {
   if (companyId) params.set('company_id', companyId)
   params.set('employee_id', employeeId)
 
-  if (date) {
-    params.set('date', date)
+  if (props.date) {
+    params.set('date', props.date)
   }
 
   return `/hrd/em-attendance?${params.toString()}`
-}
+})
+</script>
+
+<template>
+  <slot :url="jobCardUrl" />
+</template>
