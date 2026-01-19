@@ -885,8 +885,17 @@ function lastRowBorderClass(userGroup, dateGroup, dateIndex, todoIndex) {
                         <span class="text-gray-400 mr-2">{{ todoIndex + 1 }}.</span>
                         {{ todo.title }}
                       </div>
-                      <div class="text-xs text-gray-500">
-                        {{ todo.todoable?.title || todo.todoable_type?.split('\\').pop() || '' }}
+                      <div class="text-xs text-gray-500 mt-1 flex flex-wrap gap-2">
+                        <span
+                          v-if="todo.todo?.todo_project?.title"
+                          class="font-semibold text-blue-600"
+                        >
+                          <i class="fas fa-project-diagram mr-1"></i>
+                          {{ todo.todo.todo_project.title }}
+                        </span>
+                        <span v-if="todo.todoable?.title || todo.todoable_type">
+                          {{ todo.todoable?.title || todo.todoable_type?.split('\\').pop() || '' }}
+                        </span>
                       </div>
                     </td>
 

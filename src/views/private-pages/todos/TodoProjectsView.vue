@@ -106,7 +106,7 @@ const deleteProject = async (id) => {
 <template>
   <div class="p-6 max-w-6xl mx-auto">
     <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold">Manage Todo Projects</h1>
+      <h1 class="text-2xl font-bold">Manage Project/Website/Issue for todo</h1>
       <button
         v-if="authStore.isAdminMood"
         @click="openCreateModal(null)"
@@ -234,11 +234,11 @@ const deleteProject = async (id) => {
     </div>
 
     <!-- Create/Edit Modal -->
-    <OverlyModal v-if="showModal" @click.self="cancelEdit">
-      <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-auto overflow-hidden">
+    <OverlyModal v-if="showModal" @click.self="cancelEdit" class="">
+      <div class="bg-white overflow-hidden rounded-lg shadow-lg">
         <div class="bg-gray-50 px-6 py-4 border-b flex justify-between items-center">
           <h2 class="text-lg font-bold text-gray-800">
-            {{ isEditing ? 'Edit Project' : 'New Project' }}
+            {{ isEditing ? 'Edit Project/Website/Issue' : 'New Project/Website/Issue' }}
           </h2>
           <button @click="cancelEdit" class="text-gray-400 hover:text-gray-600 text-3xl font-light">
             &times;
@@ -248,6 +248,7 @@ const deleteProject = async (id) => {
         <div class="p-6 space-y-5">
           <div v-if="authStore.isAdminMood">
             <CompanyDepartmentSelectInput
+              defaultOption="-- Accessible for all department --"
               v-model="selectedDepartmentId"
               :companies="companyStore?.myCompanies || []"
             >
@@ -263,9 +264,9 @@ const deleteProject = async (id) => {
           </div>
 
           <div>
-            <label class="text-sm font-bold text-gray-700 block mb-2 uppercase tracking-wide"
-              >Project Title</label
-            >
+            <label class="text-sm font-bold text-gray-700 block mb-2 uppercase tracking-wide">
+              Project/Website/Issue Title
+            </label>
             <input
               v-model="formTitle"
               class="w-full border-2 border-gray-100 px-4 py-3 rounded-lg focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all"

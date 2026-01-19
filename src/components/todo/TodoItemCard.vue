@@ -69,14 +69,12 @@ const emit = defineEmits([
           <span class="font-semibold">{{ todoDate.todo?.id }} -</span>
           <span class="line-clamp-1">{{ todoDate.title }}</span>
         </div>
-        <div v-if="todoDate.todo?.tags?.length > 0" class="mt-1 space-x-1">
-          <span
-            class="bg-gray-100 px-2 rounded-full border border-blue-500 text-blue-500"
-            v-for="tag in todoDate?.todo.tags || []"
-            :key="tag.id"
-          >
-            {{ tag.name }}
-          </span>
+        <div
+          v-if="todoDate.todo?.todo_project?.title"
+          class="text-[11px] font-semibold text-blue-600 mt-0.5"
+        >
+          <i class="fas fa-project-diagram mr-1 text-[10px]"></i>
+          {{ todoDate.todo.todo_project.title }}
         </div>
       </div>
 

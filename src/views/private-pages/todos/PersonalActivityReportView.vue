@@ -174,6 +174,22 @@ const monthlyRows = computed(() => {
         return (a.priority || 0) - (b.priority || 0)
       })
 
+      const groupedByProject = latestTodos.reduce((acc, todo) => {
+        const projectId = todo.todo?.todo_project?.id || 'others'
+        const projectName = todo.todo?.todo_project?.title || 'Others'
+        if (!acc[projectId]) {
+          acc[projectId] = { id: projectId, name: projectName, todos: [] }
+        }
+        acc[projectId].todos.push(todo)
+        return acc
+      }, {})
+
+      const projects = Object.values(groupedByProject).sort((a, b) => {
+        if (a.id === 'others') return 1
+        if (b.id === 'others') return -1
+        return a.name.localeCompare(b.name)
+      })
+
       const totals = {
         total: latestTodos.length,
         completed: latestTodos.filter((t) => t.status === 'COMPLETED').length,
@@ -183,7 +199,7 @@ const monthlyRows = computed(() => {
 
       return {
         user: employee,
-        latestTodos,
+        projects,
         totals,
       }
     })
@@ -535,36 +551,52 @@ function handleNextMonth() {
               </tr>
             </thead>
             <tbody>
-              <tr v-if="row.latestTodos.length === 0">
-                <td colspan="5" class="px-4 py-6 text-center text-gray-400 border rounded-b">
-                  No activity recorded for this month.
-                </td>
-              </tr>
-              <tr
-                v-for="(todo, todoIndex) in row.latestTodos"
-                :key="getTodoKey(todo)"
-                class="border-b"
-              >
-                <td class="px-4 py-3 text-center border">{{ todoIndex + 1 }}</td>
-                <td class="px-4 py-3 border">
-                  <div class="font-semibold text-gray-800">{{ todo.title }}</div>
-                  <div class="text-xs text-gray-500">
-                    {{ todo.todo?.todoable?.title || '' }}
-                  </div>
-                </td>
-
-                <td class="px-4 py-3 border text-xs text-gray-700">
-                  {{ getDisplayDate(todo.date) || todo.date }}
-                </td>
-                <td class="px-4 py-3 border text-center">
-                  <div
-                    class="inline-block text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap"
-                    :class="statusClass(todo.status)"
+              <template v-if="row.projects.length === 0">
+                <tr>
+                  <td colspan="4" class="px-4 py-6 text-center text-gray-400 border rounded-b">
+                    No activity recorded for this month.
+                  </td>
+                </tr>
+              </template>
+              <template v-for="project in row.projects" :key="project.id">
+                <tr class="bg-gray-100/50">
+                  <td
+                    colspan="4"
+                    class="px-4 py-2 border font-bold text-blue-800 text-xs uppercase tracking-wider"
                   >
-                    {{ todo.status === 'WORKING' ? 'IN PROGRESS' : todo.status || 'N/A' }}
-                  </div>
-                </td>
-              </tr>
+                    <i class="fas fa-project-diagram mr-2"></i>
+                    {{ project.name }}
+                    <span class="ml-2 font-normal text-gray-500"
+                      >({{ project.todos.length }} todos)</span
+                    >
+                  </td>
+                </tr>
+                <tr
+                  v-for="(todo, todoIndex) in project.todos"
+                  :key="getTodoKey(todo)"
+                  class="border-b"
+                >
+                  <td class="px-4 py-3 text-center border">{{ todoIndex + 1 }}</td>
+                  <td class="px-4 py-3 border">
+                    <div class="font-semibold text-gray-800">{{ todo.title }}</div>
+                    <div class="text-xs text-gray-500">
+                      {{ todo.todo?.todoable?.title || '' }}
+                    </div>
+                  </td>
+
+                  <td class="px-4 py-3 border text-xs text-gray-700">
+                    {{ getDisplayDate(todo.date) || todo.date }}
+                  </td>
+                  <td class="px-4 py-3 border text-center">
+                    <div
+                      class="inline-block text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap"
+                      :class="statusClass(todo.status)"
+                    >
+                      {{ todo.status === 'WORKING' ? 'IN PROGRESS' : todo.status || 'N/A' }}
+                    </div>
+                  </td>
+                </tr>
+              </template>
             </tbody>
           </table>
         </div>
