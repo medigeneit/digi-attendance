@@ -13,10 +13,10 @@ const router = createRouter({
       component: GuestLayout,
       children: [
         { path: '', name: 'Home', component: HomeView, meta: { title: 'Home', guestOnly: true } },
-        { 
-          path: '/about', 
-          name: 'About', 
-          component: () => import('@/views/public-pages/AboutView.vue'), 
+        {
+          path: '/about',
+          name: 'About',
+          component: () => import('@/views/public-pages/AboutView.vue'),
           meta: { title: 'About', guestOnly: true } },
 
         {
@@ -40,16 +40,16 @@ const router = createRouter({
           meta: { title: 'Privacy Policy' },
         },
 
-        { 
-          path: '/careers', 
-          name: 'careers.index', 
-          component: () => import('@/views/public-pages/CareersIndex.vue'), 
+        {
+          path: '/careers',
+          name: 'careers.index',
+          component: () => import('@/views/public-pages/CareersIndex.vue'),
           meta: { title: 'Careers', guestOnly: true } },
-        { 
-          path: '/careers/jobs/:slug', 
-          name: 'careers.show', 
-          component: () => import('@/views/public-pages/CareerShow.vue'), 
-          props: true, 
+        {
+          path: '/careers/jobs/:slug',
+          name: 'careers.show',
+          component: () => import('@/views/public-pages/CareerShow.vue'),
+          props: true,
           meta: { title: 'Job Details', guestOnly: true } },
 
          {
@@ -262,6 +262,12 @@ const router = createRouter({
           name: 'TodoList',
           component: () => import('@/views/private-pages/todos/TodoList.vue'),
           meta: { requiresAuth: true, title: 'Todo List' },
+        },
+        {
+          path: 'todo-projects',
+          name: 'TodoProjects',
+          component: () => import('@/views/private-pages/todos/TodoProjectsView.vue'),
+          meta: { requiresAuth: true, title: 'Manage Projects' },
         },
         {
           path: 'todos/report',
@@ -1422,10 +1428,10 @@ const router = createRouter({
           path: '/admin/careers',
           name: 'CareerView',
           component: () => import('@/views/admin-pages/CareerView.vue'),
-          meta: { 
-            requiresAuth: true, 
-            roles: ['super_admin', 'developer'], 
-            title: 'Career View' 
+          meta: {
+            requiresAuth: true,
+            roles: ['super_admin', 'developer'],
+            title: 'Career View'
           },
         },
 
@@ -1433,8 +1439,8 @@ const router = createRouter({
           path: '/admin/careers/jobs',
           name: 'AdminCareersJobs',
           component: () => import('@/views/admin-pages/JobsIndex.vue'),
-          meta: { 
-            requiresAuth: true, 
+          meta: {
+            requiresAuth: true,
             roles: ['super_admin', 'developer'],
             title:'Careers Jobs'
           }

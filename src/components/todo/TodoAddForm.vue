@@ -1,10 +1,10 @@
 <script setup>
 import { getYearMonthDayFormat } from '@/libs/datetime'
-import { useTagStore } from '@/stores/tags'
+import { useTodoProjectStore } from '@/stores/useTodoProjectStore'
 import { useTodoStore } from '@/stores/useTodoStore'
 import { nextTick, onMounted, ref, watch } from 'vue'
 import FormHandler from '../FormHandler.vue'
-import SelectDropdown from '../SelectDropdown.vue'
+import InputWithSuggestions from '../InputWithSuggestions.vue'
 import LoaderView from '../common/LoaderView.vue'
 import TodoTypeInput from './TodoTypeInput.vue'
 
@@ -26,8 +26,9 @@ const state = ref()
 const showTodoTypes = ref(false)
 const titleRef = ref()
 const todoStore = useTodoStore()
-const tagStore = useTagStore()
-const selectedTagId = ref(null)
+const todoProjectStore = useTodoProjectStore()
+const selectedProjectId = ref(null)
+const projectInputValue = ref('')
 
 const emit = defineEmits(['update', 'cancelClick'])
 
@@ -49,10 +50,11 @@ async function handleFormSubmit() {
       delete payload.todo_type
     }
 
-    if (selectedTagId.value) {
-      payload.tag_ids = [selectedTagId.value]
-    } else {
-      payload.tag_ids = []
+    if (selectedProjectId.value) {
+      payload.todo_project_id = selectedProjectId.value
+    } else if (projectInputValue.value) {
+      const newProject = await todoProjectStore.createProject({ title: projectInputValue.value })
+      payload.todo_project_id = newProject.id
     }
 
     await todoStore.createTodo(payload, {
@@ -79,7 +81,7 @@ watch(
 onMounted(async () => {
   await nextTick()
   titleRef.value?.focus()
-  await tagStore.fetchTags()
+  await todoProjectStore.fetchProjects()
 })
 </script>
 
@@ -131,13 +133,13 @@ onMounted(async () => {
           <label class="block text-gray-700 font-medium mb-1 text-sm">
             Issue/Website/Project <span class="text-gray-500">(Optional)</span>
           </label>
-          <SelectDropdown
-            v-model="selectedTagId"
-            :options="tagStore.tags"
+          <InputWithSuggestions
+            v-model="selectedProjectId"
+            @update:inputValue="(val) => (projectInputValue = val)"
+            :options="todoProjectStore.projects"
+            label="title"
             value="id"
-            label="name"
-            :clearable="true"
-            class="py-1 h-10"
+            placeholder="Select or type project..."
           />
         </div>
 
