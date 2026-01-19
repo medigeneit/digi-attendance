@@ -1,10 +1,13 @@
 <script setup>
 import { getYearMonthDayFormat } from '@/libs/datetime'
+import { useAuthStore } from '@/stores/auth'
+import { useCompanyStore } from '@/stores/company'
 import { useTodoProjectStore } from '@/stores/useTodoProjectStore'
 import { useTodoStore } from '@/stores/useTodoStore'
 import { computed, nextTick, onMounted, ref } from 'vue'
 
 import { deleteTodoSetting, findTodoSetting, upsertTodoSetting } from '@/services/todo'
+import CompanyDepartmentSelectInput from '../common/CompanyDepartmentSelectInput.vue'
 import LoaderView from '../common/LoaderView.vue'
 import FormHandler from '../FormHandler.vue'
 import InputWithSuggestions from '../InputWithSuggestions.vue'
@@ -26,8 +29,11 @@ const showTodoTypes = ref(false)
 const titleRef = ref()
 const todoStore = useTodoStore()
 const todoProjectStore = useTodoProjectStore()
+const authStore = useAuthStore()
+const companyStore = useCompanyStore()
 const selectedProjectId = ref(null)
 const projectInputValue = ref('')
+const selectedDepartmentId = ref(null)
 const emit = defineEmits(['update', 'cancelClick'])
 
 const form = ref({
@@ -104,7 +110,10 @@ async function submitTodo() {
   if (selectedProjectId.value) {
     payload.todo_project_id = selectedProjectId.value
   } else if (projectInputValue.value) {
-    const newProject = await todoProjectStore.createProject({ title: projectInputValue.value })
+    const newProject = await todoProjectStore.createProject({
+      title: projectInputValue.value,
+      department_id: selectedDepartmentId.value,
+    })
     payload.todo_project_id = newProject.id
   }
 
@@ -150,6 +159,11 @@ const settingsLoading = ref(false)
 const settingsError = ref(false)
 
 async function loadEverything() {
+  if (authStore.isAdminMood) {
+    await companyStore.fetchMyCompanies({
+      with: 'departments',
+    })
+  }
   todoProjectStore.fetchProjects()
   await fetchTodo()
   settingsLoading.value = true
@@ -218,6 +232,19 @@ onMounted(() => {
             class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 shadow-sm"
           />
         </div>
+
+        <CompanyDepartmentSelectInput
+          v-if="authStore.isAdminMood"
+          v-model="selectedDepartmentId"
+          :companies="companyStore?.myCompanies || []"
+          class="mb-4"
+        >
+          <template #label>
+            <label class="block text-gray-500 font-medium text-sm">
+              Project Department <span class="text-gray-500">(Optional - for new project)</span>
+            </label>
+          </template>
+        </CompanyDepartmentSelectInput>
 
         <div class="mb-4">
           <label class="block text-gray-500 font-medium text-sm">

@@ -8,11 +8,11 @@ export const useTodoProjectStore = defineStore('todoProject', () => {
   const loading = ref(false);
   const error = ref(null);
 
-  const fetchProjects = async () => {
+  const fetchProjects = async (params = {}) => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await apiClient.get('/todo-projects');
+      const response = await apiClient.get('/todo-projects', { params });
       projects.value = response.data?.todo_projects || [];
     } catch (err) {
       error.value = err.response?.data?.message || 'Projects load failed';

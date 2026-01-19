@@ -12,6 +12,7 @@ export const useAuthStore = defineStore('auth', () => {
   // ✅ Admin Mode state
   const isAdminMood = ref(localStorage.getItem('admin_mode') === 'true')
 
+
    function toggleAdminMode() {
     isAdminMood.value = !isAdminMood.value
     localStorage.setItem('admin_mode', isAdminMood.value)
@@ -152,6 +153,7 @@ export const useAuthStore = defineStore('auth', () => {
     token,
     error,
     isAuthenticated,
+    // isSuperAdmin,
     isAdminMood, // ✅ exposed state
     toggleAdminMode, // ✅ exposed action
     setAdminMode,
