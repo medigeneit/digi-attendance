@@ -1,13 +1,16 @@
 <script setup>
 import { getYearMonthDayFormat } from '@/libs/datetime'
-import { useTagStore } from '@/stores/tags'
+import { useAuthStore } from '@/stores/auth'
+import { useCompanyStore } from '@/stores/company'
+import { useTodoProjectStore } from '@/stores/useTodoProjectStore'
 import { useTodoStore } from '@/stores/useTodoStore'
 import { computed, nextTick, onMounted, ref } from 'vue'
 
 import { deleteTodoSetting, findTodoSetting, upsertTodoSetting } from '@/services/todo'
+import CompanyDepartmentSelectInput from '../common/CompanyDepartmentSelectInput.vue'
 import LoaderView from '../common/LoaderView.vue'
 import FormHandler from '../FormHandler.vue'
-import SelectDropdown from '../SelectDropdown.vue'
+import InputWithSuggestions from '../InputWithSuggestions.vue'
 import TodoTypeInput from './TodoTypeInput.vue'
 
 // API helpers
@@ -25,8 +28,12 @@ const state = ref()
 const showTodoTypes = ref(false)
 const titleRef = ref()
 const todoStore = useTodoStore()
-const tagStore = useTagStore()
-const selectedTagId = ref(null)
+const todoProjectStore = useTodoProjectStore()
+const authStore = useAuthStore()
+const companyStore = useCompanyStore()
+const selectedProjectId = ref(null)
+const projectInputValue = ref('')
+const selectedDepartmentId = ref(null)
 const emit = defineEmits(['update', 'cancelClick'])
 
 const form = ref({
@@ -57,15 +64,7 @@ async function fetchTodo() {
   await todoStore.fetchTodo(props.todo?.id)
   form.value.title = todoStore.todo?.title
   form.value.todo_type_id = todoStore.todo?.todoable_id
-
-  if (todoStore.todo?.tags) {
-    // SelectDropdown with multiple expects array of IDs or Objects?
-    // Based on TaskEditForm, it used objects or IDs.
-    // SelectDropdown source shows: items.filter(o => getOptionKey(o) === val).
-    // Let's assume passed IDs or objects work. The store usually gives full objects.
-    selectedTagId.value = todoStore.todo.tags?.[0]?.id || null
-    // selectedTags.value = todoStore.todo.tags.map((t) => t.id)
-  }
+  selectedProjectId.value = todoStore.todo?.todo_project_id || null
 }
 
 const settingId = ref(null)
@@ -108,10 +107,14 @@ async function submitTodo() {
     todo_type_id: form.value.todo_type_id,
   }
 
-  if (selectedTagId.value) {
-    payload.tag_ids = [selectedTagId.value]
-  } else {
-    payload.tag_ids = []
+  if (selectedProjectId.value) {
+    payload.todo_project_id = selectedProjectId.value
+  } else if (projectInputValue.value) {
+    const newProject = await todoProjectStore.createProject({
+      title: projectInputValue.value,
+      department_id: selectedDepartmentId.value,
+    })
+    payload.todo_project_id = newProject.id
   }
 
   await todoStore.updateTodo(props.todo.id, payload)
@@ -156,7 +159,12 @@ const settingsLoading = ref(false)
 const settingsError = ref(false)
 
 async function loadEverything() {
-  tagStore.fetchTags()
+  if (authStore.isAdminMood) {
+    await companyStore.fetchMyCompanies({
+      with: 'departments',
+    })
+  }
+  todoProjectStore.fetchProjects()
   await fetchTodo()
   settingsLoading.value = true
   await fetchSetting()
@@ -225,18 +233,31 @@ onMounted(() => {
           />
         </div>
 
+        <CompanyDepartmentSelectInput
+          v-if="authStore.isAdminMood"
+          v-model="selectedDepartmentId"
+          :companies="companyStore?.myCompanies || []"
+          class="mb-4"
+        >
+          <template #label>
+            <label class="block text-gray-500 font-medium text-sm">
+              Project Department <span class="text-gray-500">(Optional - for new project)</span>
+            </label>
+          </template>
+        </CompanyDepartmentSelectInput>
+
         <div class="mb-4">
           <label class="block text-gray-500 font-medium text-sm">
             Issue/Website/Project <span class="text-gray-500">(Optional)</span>
           </label>
 
-          <SelectDropdown
-            v-model="selectedTagId"
-            :options="tagStore.tags"
+          <InputWithSuggestions
+            v-model="selectedProjectId"
+            @update:inputValue="(val) => (projectInputValue = val)"
+            :options="todoProjectStore.projects"
             value="id"
-            label="name"
-            :clearable="true"
-            class="py-1 h-10"
+            label="title"
+            placeholder="Select or type project..."
           />
         </div>
 

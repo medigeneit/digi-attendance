@@ -1,10 +1,13 @@
 <script setup>
 import { getYearMonthDayFormat } from '@/libs/datetime'
-import { useTagStore } from '@/stores/tags'
+import { useAuthStore } from '@/stores/auth'
+import { useCompanyStore } from '@/stores/company'
+import { useTodoProjectStore } from '@/stores/useTodoProjectStore'
 import { useTodoStore } from '@/stores/useTodoStore'
 import { nextTick, onMounted, ref, watch } from 'vue'
 import FormHandler from '../FormHandler.vue'
-import SelectDropdown from '../SelectDropdown.vue'
+import InputWithSuggestions from '../InputWithSuggestions.vue'
+import CompanyDepartmentSelectInput from '../common/CompanyDepartmentSelectInput.vue'
 import LoaderView from '../common/LoaderView.vue'
 import TodoTypeInput from './TodoTypeInput.vue'
 
@@ -26,8 +29,12 @@ const state = ref()
 const showTodoTypes = ref(false)
 const titleRef = ref()
 const todoStore = useTodoStore()
-const tagStore = useTagStore()
-const selectedTagId = ref(null)
+const todoProjectStore = useTodoProjectStore()
+const authStore = useAuthStore()
+const companyStore = useCompanyStore()
+const selectedProjectId = ref(null)
+const projectInputValue = ref('')
+const selectedDepartmentId = ref(null)
 
 const emit = defineEmits(['update', 'cancelClick'])
 
@@ -49,10 +56,14 @@ async function handleFormSubmit() {
       delete payload.todo_type
     }
 
-    if (selectedTagId.value) {
-      payload.tag_ids = [selectedTagId.value]
-    } else {
-      payload.tag_ids = []
+    if (selectedProjectId.value) {
+      payload.todo_project_id = selectedProjectId.value
+    } else if (projectInputValue.value) {
+      const newProject = await todoProjectStore.createProject({
+        title: projectInputValue.value,
+        department_id: selectedDepartmentId.value,
+      })
+      payload.todo_project_id = newProject.id
     }
 
     await todoStore.createTodo(payload, {
@@ -79,7 +90,14 @@ watch(
 onMounted(async () => {
   await nextTick()
   titleRef.value?.focus()
-  await tagStore.fetchTags()
+
+  if (authStore.isAdminMood) {
+    await companyStore.fetchMyCompanies({
+      with: 'departments',
+    })
+  }
+
+  await todoProjectStore.fetchProjects()
 })
 </script>
 
@@ -127,17 +145,30 @@ onMounted(async () => {
           />
         </div>
 
+        <CompanyDepartmentSelectInput
+          v-if="authStore.isAdminMood"
+          v-model="selectedDepartmentId"
+          :companies="companyStore?.myCompanies || []"
+          class="mb-4"
+        >
+          <template #label>
+            <label class="block text-gray-700 font-medium mb-1 text-sm">
+              Project Department <span class="text-gray-500">(Optional - for new project)</span>
+            </label>
+          </template>
+        </CompanyDepartmentSelectInput>
+
         <div class="mb-4">
           <label class="block text-gray-700 font-medium mb-1 text-sm">
             Issue/Website/Project <span class="text-gray-500">(Optional)</span>
           </label>
-          <SelectDropdown
-            v-model="selectedTagId"
-            :options="tagStore.tags"
+          <InputWithSuggestions
+            v-model="selectedProjectId"
+            @update:inputValue="(val) => (projectInputValue = val)"
+            :options="todoProjectStore.projects"
+            label="title"
             value="id"
-            label="name"
-            :clearable="true"
-            class="py-1 h-10"
+            placeholder="Select or type project..."
           />
         </div>
 

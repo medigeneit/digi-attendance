@@ -10,6 +10,7 @@ import {
   getYearMonthDayFormat,
   getYearMonthFormat,
 } from '@/libs/datetime'
+import { jobCardUrl } from '@/libs/url'
 import { useAuthStore } from '@/stores/auth'
 import { useTodoDateStore } from '@/stores/useTodoDateStore'
 import { storeToRefs } from 'pinia'
@@ -147,9 +148,47 @@ const monthlyRows = computed(() => {
         }
       }
 
-      const latestTodos = Object.values(latestByTodo).sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-      )
+      const statusSortOrder = {
+        WORKING: 1,
+        PENDING: 2,
+        DEPENDANT: 3,
+        COMPLETED: 4,
+        BACK_LOG: 5,
+      }
+
+      const latestTodos = Object.values(latestByTodo).sort((a, b) => {
+        const dateA = new Date(a.date).getTime()
+        const dateB = new Date(b.date).getTime()
+
+        if (dateA !== dateB) {
+          return dateB - dateA // Date descending
+        }
+
+        const orderA = statusSortOrder[a.status] || 999
+        const orderB = statusSortOrder[b.status] || 999
+
+        if (orderA !== orderB) {
+          return orderA - orderB
+        }
+
+        return (a.priority || 0) - (b.priority || 0)
+      })
+
+      const groupedByProject = latestTodos.reduce((acc, todo) => {
+        const projectId = todo.todo?.todo_project?.id || 'others'
+        const projectName = todo.todo?.todo_project?.title || 'Others'
+        if (!acc[projectId]) {
+          acc[projectId] = { id: projectId, name: projectName, todos: [] }
+        }
+        acc[projectId].todos.push(todo)
+        return acc
+      }, {})
+
+      const projects = Object.values(groupedByProject).sort((a, b) => {
+        if (a.id === 'others') return 1
+        if (b.id === 'others') return -1
+        return a.name.localeCompare(b.name)
+      })
 
       const totals = {
         total: latestTodos.length,
@@ -160,7 +199,7 @@ const monthlyRows = computed(() => {
 
       return {
         user: employee,
-        latestTodos,
+        projects,
         totals,
       }
     })
@@ -340,16 +379,16 @@ function handleNextMonth() {
       class="bg-white border rounded-md p-4 mb-4 print:border-0 print:rounded-none print:p-0 shadow-sm"
     >
       <div class="flex flex-wrap items-center gap-3">
-          <EmployeeFilter
-            ref="employeeFilterRef"
-            v-model:company_id="filterState.companyId"
-            v-model:department_id="filterState.departmentId"
-            v-model:employee_id="filterState.employeeId"
-            v-model:line_type="filterState.lineType"
-            :initial-value="route.query"
-            @filter-change="handleFilterChange"
-            class="flex-1 min-w-[240px]"
-          >
+        <EmployeeFilter
+          ref="employeeFilterRef"
+          v-model:company_id="filterState.companyId"
+          v-model:department_id="filterState.departmentId"
+          v-model:employee_id="filterState.employeeId"
+          v-model:line_type="filterState.lineType"
+          :initial-value="route.query"
+          @filter-change="handleFilterChange"
+          class="flex-1 min-w-[240px]"
+        >
           <div class="relative h-[32px] flex gap-1 ml-auto justify-end">
             <button class="btn-3 h-[32px] px-3" @click.prevent="handlePrevMonth">
               <i class="fas fa-arrow-left mr-1"></i>
@@ -436,24 +475,38 @@ function handleNextMonth() {
         class="bg-white border rounded-md shadow-sm print:shadow-none print:border-0 print:rounded-none"
       >
         <div class="flex flex-wrap items-center gap-4 px-4 py-3 border-b bg-gray-50">
-          <UserHoverBubble :user="row.user" v-if="!selfOnly">
-            <template #trigger="{ user }">
-              <div class="flex items-center gap-3">
+          <div v-if="!selfOnly" class="flex items-center gap-3">
+            <UserHoverBubble :user="row.user">
+              <template #trigger="{ user }">
                 <UserAvatar :user="user" size="medium" />
-                <div>
-                  <div class="font-semibold text-gray-800">
+              </template>
+            </UserHoverBubble>
+
+            <div>
+              <div class="font-semibold text-gray-800">
+                <!-- {{ user?.name || 'Unknown user' }} -->
+
+                <a
+                  :href="jobCardUrl(row.user, selectedMonth)"
+                  target="_blank"
+                  rel="noopener"
+                  class="inline-flex hover:underline"
+                >
+                  <div>
                     {{ user?.name || 'Unknown user' }}
+                    <i class="far fa-external-link-alt print:hidden"></i>
                   </div>
-                  <div class="text-xs text-gray-500">
-                    {{ user?.department?.name || '-' }}
-                  </div>
-                  <div class="text-[11px] text-gray-400">
-                    Month: {{ monthLabel }} <span v-if="rangeLabel">({{ rangeLabel }})</span>
-                  </div>
-                </div>
+                </a>
               </div>
-            </template>
-          </UserHoverBubble>
+              <div class="text-xs text-gray-500">
+                {{ user?.department?.name || '-' }}
+              </div>
+              <div class="text-[11px] text-blue-800">
+                Month: {{ monthLabel }}
+                <span v-if="rangeLabel" class="font-bold">({{ rangeLabel }})</span>
+              </div>
+            </div>
+          </div>
 
           <div class="flex items-center gap-3" v-else>
             <UserAvatar :user="user" size="medium" />
@@ -464,8 +517,9 @@ function handleNextMonth() {
               <div class="text-xs text-gray-500">
                 {{ user?.department?.name || '-' }}
               </div>
-              <div class="text-[11px] text-gray-400">
-                Month: {{ monthLabel }} <span v-if="rangeLabel">({{ rangeLabel }})</span>
+              <div class="text-[11px] text-blue-800">
+                Month: {{ monthLabel }}
+                <span v-if="rangeLabel" class="font-bold">({{ rangeLabel }})</span>
               </div>
             </div>
           </div>
@@ -497,36 +551,52 @@ function handleNextMonth() {
               </tr>
             </thead>
             <tbody>
-              <tr v-if="row.latestTodos.length === 0">
-                <td colspan="5" class="px-4 py-6 text-center text-gray-400 border rounded-b">
-                  No activity recorded for this month.
-                </td>
-              </tr>
-              <tr
-                v-for="(todo, todoIndex) in row.latestTodos"
-                :key="getTodoKey(todo)"
-                class="border-b"
-              >
-                <td class="px-4 py-3 text-center border">{{ todoIndex + 1 }}</td>
-                <td class="px-4 py-3 border">
-                  <div class="font-semibold text-gray-800">{{ todo.title }}</div>
-                  <div class="text-xs text-gray-500">
-                    {{ todo.todo?.todoable?.title || '' }}
-                  </div>
-                </td>
-
-                <td class="px-4 py-3 border text-xs text-gray-700">
-                  {{ getDisplayDate(todo.date) || todo.date }}
-                </td>
-                <td class="px-4 py-3 border text-center">
-                  <span
-                    class="text-xs font-semibold px-2.5 py-1 rounded-full"
-                    :class="statusClass(todo.status)"
+              <template v-if="row.projects.length === 0">
+                <tr>
+                  <td colspan="4" class="px-4 py-6 text-center text-gray-400 border rounded-b">
+                    No activity recorded for this month.
+                  </td>
+                </tr>
+              </template>
+              <template v-for="project in row.projects" :key="project.id">
+                <tr class="bg-gray-100/50">
+                  <td
+                    colspan="4"
+                    class="px-4 py-2 border font-bold text-blue-800 text-xs uppercase tracking-wider"
                   >
-                    {{ todo.status || 'N/A' }}
-                  </span>
-                </td>
-              </tr>
+                    <i class="fas fa-project-diagram mr-2"></i>
+                    {{ project.name }}
+                    <span class="ml-2 font-normal text-gray-500"
+                      >({{ project.todos.length }} todos)</span
+                    >
+                  </td>
+                </tr>
+                <tr
+                  v-for="(todo, todoIndex) in project.todos"
+                  :key="getTodoKey(todo)"
+                  class="border-b"
+                >
+                  <td class="px-4 py-3 text-center border">{{ todoIndex + 1 }}</td>
+                  <td class="px-4 py-3 border">
+                    <div class="font-semibold text-gray-800">{{ todo.title }}</div>
+                    <div class="text-xs text-gray-500">
+                      {{ todo.todo?.todoable?.title || '' }}
+                    </div>
+                  </td>
+
+                  <td class="px-4 py-3 border text-xs text-gray-700">
+                    {{ getDisplayDate(todo.date) || todo.date }}
+                  </td>
+                  <td class="px-4 py-3 border text-center">
+                    <div
+                      class="inline-block text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap"
+                      :class="statusClass(todo.status)"
+                    >
+                      {{ todo.status === 'WORKING' ? 'IN PROGRESS' : todo.status || 'N/A' }}
+                    </div>
+                  </td>
+                </tr>
+              </template>
             </tbody>
           </table>
         </div>

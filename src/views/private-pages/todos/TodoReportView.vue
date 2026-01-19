@@ -4,6 +4,7 @@ import TodoReportHeading from '@/components/todo/TodoReportHeading.vue'
 import UserHoverBubble from '@/components/user/UserHoverBubble.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import { getDisplayDate, getYearMonthDayFormat } from '@/libs/datetime'
+import { jobCardUrl } from '@/libs/url'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
@@ -68,7 +69,25 @@ const groupedByUser = computed(() => {
       })
 
       let dates = selectedDateRange.value.map((date) => {
-        const todosForDate = userTodos.filter((todo) => todo.date === date)
+        const statusSortOrder = {
+          WORKING: 1,
+          PENDING: 2,
+          DEPENDANT: 3,
+          COMPLETED: 4,
+          BACK_LOG: 5,
+        }
+
+        const todosForDate = userTodos
+          .filter((todo) => todo.date === date)
+          .sort((a, b) => {
+            const orderA = statusSortOrder[a.status] || 999
+            const orderB = statusSortOrder[b.status] || 999
+
+            if (orderA !== orderB) {
+              return orderA - orderB
+            }
+            return (a.priority || 0) - (b.priority || 0)
+          })
 
         if (!todosForDate.length) {
           return {
@@ -713,29 +732,36 @@ function lastRowBorderClass(userGroup, dateGroup, dateIndex, todoIndex) {
                     class="px-4 py-3 align-top font-medium text-gray-800 whitespace-nowrap border-l border-t border-b bg-white"
                     :class="userBoundaryClass"
                   >
-                    <UserHoverBubble :user="userGroup.user" class="sticky top-[180px] bg-white">
-                      <template #trigger="{ user }">
-                        <div class="flex">
-                          <UserAvatar
-                            size="medium"
-                            :user="user"
-                            class="inline-block mr-2 align-middle"
-                          />
-                          <div>
-                            <div>{{ user?.name || 'Unknown user' }}</div>
-                            <div v-if="user?.department?.name" class="text-xs text-gray-500">
-                              {{ user?.department?.name }}
-                            </div>
-                            <!-- <div
-                              v-if="user?.department?.company?.name"
-                              class="text-[11px] text-gray-400"
+                    <div :user="userGroup.user" class="sticky top-[180px] bg-white">
+                      <div v-if="!selfOnly" class="flex items-center gap-3">
+                        <UserHoverBubble :user="userGroup.user">
+                          <template #trigger="{ user }">
+                            <UserAvatar :user="user" size="medium" />
+                          </template>
+                        </UserHoverBubble>
+
+                        <div>
+                          <div class="font-semibold text-gray-800">
+                            <!-- {{ user?.name || 'Unknown user' }} -->
+
+                            <a
+                              :href="jobCardUrl(userGroup.user)"
+                              target="_blank"
+                              rel="noopener"
+                              class="inline-flex hover:underline"
                             >
-                              {{ user?.department?.company?.name }}
-                            </div> -->
+                              <div>
+                                {{ userGroup.user?.name || 'Unknown user' }}
+                                <i class="far fa-external-link-alt print:hidden"></i>
+                              </div>
+                            </a>
+                          </div>
+                          <div class="text-xs text-gray-500">
+                            {{ userGroup.user?.department?.name || '-' }}
                           </div>
                         </div>
-                      </template>
-                    </UserHoverBubble>
+                      </div>
+                    </div>
                   </td>
                   <template v-if="todo.isPlaceholder">
                     <td
@@ -859,8 +885,17 @@ function lastRowBorderClass(userGroup, dateGroup, dateIndex, todoIndex) {
                         <span class="text-gray-400 mr-2">{{ todoIndex + 1 }}.</span>
                         {{ todo.title }}
                       </div>
-                      <div class="text-xs text-gray-500">
-                        {{ todo.todoable?.title || todo.todoable_type?.split('\\').pop() || '' }}
+                      <div class="text-xs text-gray-500 mt-1 flex flex-wrap gap-2">
+                        <span
+                          v-if="todo.todo?.todo_project?.title"
+                          class="font-semibold text-blue-600"
+                        >
+                          <i class="fas fa-project-diagram mr-1"></i>
+                          {{ todo.todo.todo_project.title }}
+                        </span>
+                        <span v-if="todo.todoable?.title || todo.todoable_type">
+                          {{ todo.todoable?.title || todo.todoable_type?.split('\\').pop() || '' }}
+                        </span>
                       </div>
                     </td>
 
@@ -868,12 +903,12 @@ function lastRowBorderClass(userGroup, dateGroup, dateIndex, todoIndex) {
                       class="px-4 py-3 border-l border-t border-r text-center"
                       :class="lastRowBorderClass(userGroup, dateGroup, dateIndex, todoIndex)"
                     >
-                      <span
-                        class="text-xs font-semibold px-2.5 py-1 rounded-full"
+                      <div
+                        class="inline-block text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap"
                         :class="statusClass(todo.status)"
                       >
-                        {{ todo.status || 'N/A' }}
-                      </span>
+                        {{ todo.status === 'WORKING' ? 'IN PROGRESS' : todo.status || 'N/A' }}
+                      </div>
                     </td>
                   </template>
                 </tr>
