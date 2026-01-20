@@ -14,170 +14,180 @@ const route = useRoute()
 const exchangeStore = useExchangeStore()
 const authStore = useAuthStore()
 const toast = useToast()
+
 const loading = ref(true)
 const attachment = ref(null)
 
 const exchange = computed(() => exchangeStore.exchange)
 
 onMounted(async () => {
-  const { id } = route.params
   try {
-    await exchangeStore.fetchExchange(id)
-  } catch (err) {
-    console.error('Failed to fetch exchange details:', err)
+    await exchangeStore.fetchExchange(route.params.id)
   } finally {
     loading.value = false
   }
 })
 
-const fileUploadLink = async (event) => {
-  const file = event.target.files[0]
-  if (file) {
-    const formData = new FormData()
-    formData.append('file', file)
-    const response = await exchangeStore.fetchFileUpload(formData)
-    attachment.value = response?.url
-    if (response?.url) {
-      uploadAttachment()
-      toast.success('File uploaded successfully')
-    } else {
-      toast.error('Failed to upload file')
-    }
-  }
-}
-
-const uploadAttachment = async () => {
-  try {
-    const payload = {
-      attachment: attachment.value,
-    }
-    await exchangeStore.uploadAttachmentExchange(route.params.id, payload)
-  } catch (err) {
-    console.error('Failed to reject short leave:', err)
-    alert('Failed to reject short leave.')
-  }
-}
-
-function print() {
-  window.print()
-}
-
 const goBack = () => router.go(-1)
-
-const formatDate = (timestamp) => {
-  if (!timestamp) return ''
-  const d = new Date(timestamp)
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-}
-
-const getDayName = (dateString) => {
-  const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', { weekday: 'long' })
-}
+const print = () => window.print()
 
 const onAction = async () => {
   await exchangeStore.fetchExchange(route.params.id)
 }
+
+const formatDate = (d) => {
+  if (!d) return ''
+  return new Date(d).toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
+const getDayName = (d) =>
+  d ? new Date(d).toLocaleDateString('en-US', { weekday: 'long' }) : ''
 </script>
 
 <template>
-  <div class="my-container max-w-3xl space-y-6">
-    <div class="flex items-center justify-between gap-2 print:hidden">
-      <button class="btn-3" @click="goBack">
-        <i class="far fa-arrow-left"></i>
-        <span class="hidden md:flex">Back</span>
+  <div class="max-w-2xl mx-auto space-y-3 print:p-0">
+    <!-- Top Bar -->
+    <div class="flex items-center justify-between print:hidden">
+      <button
+        @click="goBack"
+        class="flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-black"
+      >
+        ← Back
       </button>
-      <h1 class="title-lg text-center">Exchange Details</h1>
-      <div>
-        <button class="btn-2" @click="print">
-          <i class="far fa-print"></i>
-          Print
-        </button>
-      </div>
+
+      <h1 class="text-base md:text-lg font-bold text-slate-900">Exchange Details</h1>
+
+      <button
+        @click="print"
+        class="text-sm font-semibold text-slate-600 hover:text-black"
+      >
+        Print
+      </button>
     </div>
 
     <LoaderView v-if="loading" />
 
+    <!-- PAPER -->
     <div
       v-else
-      class="bg-white rounded p-4 md:p-8 text-sm md:text-base space-y-1"
       id="leave-application"
+      class="bg-white rounded-lg p-4 md:p-8 text-sm md:text-base leading-relaxed"
     >
-      <div>
-        <h1 class="title-lg text-center">Shift Exchange Application</h1>
-      </div>
-      <div class="flex md:justify-end">
-        <div>Date: {{ formatDate(exchange?.created_at) }}</div>
-      </div>
-      <div>
-        <p class="font-medium">
-          Name: <b>{{ exchange?.user?.name }}</b>
-        </p>
-        <div class="gap-y-1">
-          <p>
-            Designation: <b>{{ exchange?.user?.designation?.title }}</b>
-          </p>
-        </div>
-        <div class="gap-y-1">
-          <p>
-            Department: <b>{{ exchange?.user?.company?.name }}</b>
-          </p>
-        </div>
-      </div>
+      <!-- Title -->
+      <div class="text-center space-y-1">
+        <h1 class="text-xl md:text-2xl font-extrabold text-slate-900">
+          Shift Exchange Application
+        </h1>
 
-      <div class="grid md:grid-cols-2 pt-2">
-        <div><b>Exchange Day:</b> {{ getDayName(exchange?.exchange_date) }}</div>
-        <div><b>Date:</b> {{formatDate(exchange?.exchange_date) }}</div>
-        <div><b>From:</b> {{ exchange?.current_shift?.name }}</div>
-        <div><b>To:</b> {{ exchange?.shift?.name }}</div>
-        <div class="col-span-2 pt-2"><b>Reason:</b> {{ exchange?.reason || 'N/A' }}</div>
-      </div>
+        <div class="flex justify-center items-center gap-2 text-xs md:text-sm text-slate-500">
+          <span>Created:</span>
+          <span class="font-semibold text-slate-900">
+            {{ formatDate(exchange?.created_at) }}
+          </span>
 
-      <div class="grid md:grid-cols-3 gap-x-4 py-1 md:justify-between items-end md:items-start">
-        <div class="md:col-span-2 print:col-span-2">
-          <div><b>Works in Hand:</b> {{ exchange?.works_in_hand || 'N/A' }}</div>
-        </div>
-        <ApprovalItem
-          :application="exchange"
-          type="shift_exchange_applications"
-          item="handover"
-          :onAction="onAction"
-          class="pt-10 ml-auto hidden md:block"
-        />
-      </div>
-
-      <hr class="my-2" />
-
-      <div class="text-center">
-        <h3 class="title-md">
-          Approvals
           <span
+            class="px-2 py-0.5 rounded-full font-semibold"
             :class="{
-              'text-yellow-500': exchange?.status === 'Pending',
-              'text-green-500': exchange?.status === 'Approved',
-              'text-red-500': exchange?.status === 'Rejected',
+              'bg-yellow-100 text-yellow-700': exchange?.status === 'Pending',
+              'bg-green-100 text-green-700': exchange?.status === 'Approved',
+              'bg-red-100 text-red-700': exchange?.status === 'Rejected',
             }"
           >
-            ({{ exchange?.status || 'N/A' }})
+            {{ exchange?.status }}
           </span>
-        </h3>
-        <div v-if="exchange?.status === 'Rejected'">
-          <div><b>Rejected By:</b> {{ exchange?.rejected_by_user?.name || 'N/A' }}</div>
-          <div><b>Rejection Reason:</b> {{ exchange?.rejection_reason || 'N/A' }}</div>
         </div>
       </div>
 
-      <div
-        class="grid grid-cols-2 text-sm md:text-base md:grid-cols-3 md:gap-x-4 gap-y-14 pt-14 items-end"
-      >
-        <ApprovalItem
-          :application="exchange"
-          type="shift_exchange_applications"
-          item="handover"
-          :onAction="onAction"
-          class="md:hidden"
-        />
+      <!-- Applicant -->
+      <div class="grid md:grid-cols-3 gap-6 mt-6">
+        <div class="space-y-2 md:col-span-2">
+          <div class="flex">
+            <span class="w-32 text-slate-500">Name</span>
+            <span class="font-medium">{{ exchange?.user?.name }}</span>
+          </div>
 
+          <div class="flex">
+            <span class="w-32 text-slate-500">Designation</span>
+            <span class="font-medium">{{ exchange?.user?.designation?.title }}</span>
+          </div>
+
+          <div class="flex">
+            <span class="w-32 text-slate-500">Department</span>
+            <span class="font-medium">{{ exchange?.user?.department?.name }}</span>
+          </div>
+        </div>
+
+        <div class="flex md:justify-end">
+          <ApprovalItem
+            :application="exchange"
+            type="shift_exchange_applications"
+            item="handover"
+            :onAction="onAction"
+          />
+        </div>
+      </div>
+
+      <!-- Exchange Details -->
+      <div class="mt-8">
+        <h3 class="text-lg font-bold text-slate-900">Exchange Details</h3>
+
+        <div class="grid md:grid-cols-2 gap-x-10 gap-y-3 mt-4">
+          <div class="flex">
+            <span class="w-32 text-slate-500">Exchange Day</span>
+            <span class="font-medium">{{ getDayName(exchange?.exchange_date) }}</span>
+          </div>
+
+          <div class="flex">
+            <span class="w-32 text-slate-500">Exchange Date</span>
+            <span class="font-medium">{{ formatDate(exchange?.exchange_date) }}</span>
+          </div>
+
+          <div class="flex">
+            <span class="w-32 text-slate-500">From Shift</span>
+            <span class="font-medium">{{ exchange?.current_shift?.name }}</span>
+          </div>
+
+          <div class="flex">
+            <span class="w-32 text-slate-500">To Shift</span>
+            <span class="font-medium">{{ exchange?.shift?.name }}</span>
+          </div>
+
+          <div class="md:col-span-2 flex items-start">
+            <span class="w-32 text-slate-500">Reason</span>
+            <span class="font-medium leading-relaxed">
+              {{ exchange?.reason || 'N/A' }}
+            </span>
+          </div>
+
+          <div class="md:col-span-2 flex items-start">
+            <span class="w-32 text-slate-500">Works in Hand</span>
+            <span class="font-medium leading-relaxed">
+              {{ exchange?.works_in_hand || 'N/A' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Approvals -->
+      <hr class="my-4" />
+
+      <div class="text-center space-y-1">
+        <h3 class="text-lg font-bold">Approvals</h3>
+
+        <div
+          v-if="exchange?.status === 'Rejected'"
+          class="text-sm text-red-700 mt-2"
+        >
+          <div><b>Rejected By:</b> {{ exchange?.rejected_by_user?.name }}</div>
+          <div><b>Reason:</b> {{ exchange?.rejection_reason }}</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-y-16 gap-x-6 mt-2">
         <ApprovalItem
           :application="exchange"
           type="shift_exchange_applications"
@@ -201,28 +211,22 @@ const onAction = async () => {
       </div>
     </div>
 
-    <div class="print:hidden">
-      <div>
-        <label>Attachment</label>
-        <!-- Show existing file link if available -->
-        <div v-if="exchange?.attachment && typeof exchange?.attachment === 'string'" class="mb-2">
-          <a :href="exchange?.attachment" target="_blank" class="text-blue-500 underline">
-            View Current File
-          </a>
-        </div>
-        <div v-else class="text-center text-lg italic text-gray-400">No attachment</div>
-        <!-- File Input -->
-        <div v-if="authStore?.user?.id === exchange?.user_id">
-          <input type="file" @change="fileUploadLink" class="w-full p-2 border rounded" />
-          <p class="text-sm text-gray-600 mt-1">Selected File</p>
-        </div>
+    <!-- Attachment -->
+    <div class="bg-white rounded-lg p-4 flex justify-between items-center print:hidden">
+      <h3 class="font-bold">Attachment</h3>
 
-        <!-- Show Selected File Name -->
-      </div>
-      <!-- <button type="button" v-if="attachment" class="btn-2" @click="uploadAttachment">
-        Upload Attachment
-      </button> -->
+      <a
+        v-if="exchange?.attachment"
+        :href="exchange.attachment"
+        target="_blank"
+        class="text-emerald-600 font-semibold hover:underline"
+      >
+        View file
+      </a>
+
+      <span v-else class="text-slate-400 italic">No attachment</span>
     </div>
+
     <ShareComponent>
       <ScreenshotCapture targetId="leave-application" platform="whatsapp" />
     </ShareComponent>
