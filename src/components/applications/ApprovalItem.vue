@@ -3,7 +3,7 @@ import { useNotificationStore } from '@/stores/notification'
 import { computed } from 'vue'
 import AcceptAndRejectHandler from './AcceptAndRejectHandler.vue'
 
-const { application, type, item, onAction } = defineProps({
+const props = defineProps({
   application: Object,
   type: String,
   item: String,
@@ -17,8 +17,8 @@ const { application, type, item, onAction } = defineProps({
 const notificationStore = useNotificationStore()
 
 const title = computed(() => {
-  if (!item) return ''
-  return item
+  if (!props.item) return ''
+  return props.item
     .replace(/[_-]/g, ' ')
     .replace(/([A-Z])/g, ' $1')
     .replace(/\s+/g, ' ')
@@ -29,66 +29,101 @@ const title = computed(() => {
 })
 
 const approvalKey = computed(() => {
-  let key = ''
-
-  switch (type) {
+  switch (props.type) {
     case 'overtime_applications':
-      key = 'overtime_approval'
-      break
+      return 'overtime_approval'
     case 'leave_applications':
-      key = 'leave_approval'
-      break
+      return 'leave_approval'
     default:
-      key = 'other_approval'
-      break
+      return 'other_approval'
   }
-
-  return key
 })
 
-const itemUser = computed(() => application?.[`${item}_user`])
-const itemUserId = computed(() => application?.[`${item}_user_id`])
-const itemNote = computed(() => application?.[`${item}_note`] || '')
+/**
+ * ✅ RULE:
+ * - If application has actor user (ex: application.approved_by_user) use it
+ * - Else fallback to configured approver user from application.user.leave_approval.approved_by_user
+ * - Exception:
+ *    - handover_user -> application.handover_user
+ *    - rejected_by_user -> application.rejected_by_user
+ */
+const displayUser = computed(() => {
+  const a = props.application || {}
+  const u = a.user || {}
+  const approval = u?.[approvalKey.value] || {}
 
-const approvalUser = computed(() => application?.user?.[approvalKey.value]?.[`${item}_user`] || {})
+  if (props.item === 'handover') return a.handover_user || null
+  if (props.item === 'rejected_by') return a.rejected_by_user || null // (if you ever pass item="rejected_by")
 
-const hasPermission = computed(() => notificationStore.approvalPermissions?.[`allow_${item}`])
+  // general case: ex item="approved_by" => key "approved_by_user"
+  const actorKey = `${props.item}_user`
+  return a?.[actorKey] || approval?.[actorKey] || null
+})
+
+const displayUserId = computed(() => {
+  const a = props.application || {}
+  const u = a.user || {}
+  const approval = u?.[approvalKey.value] || {}
+
+  // handover/rejected id live on application
+  if (props.item === 'handover') return a.handover_user_id || null
+  if (props.item === 'rejected_by') return a.rejected_by_user_id || null
+
+  const idKey = `${props.item}_user_id`
+  // If the actor is set it will be on application.*_user_id
+  // fallback to approval chain user_id
+  return a?.[idKey] || approval?.[idKey] || null
+})
+
+const displayNote = computed(() => {
+  const a = props.application || {}
+  const noteKey = `${props.item}_note`
+  return a?.[noteKey] || ''
+})
+
+const hasPermission = computed(() => notificationStore.approvalPermissions?.[`allow_${props.item}`])
 
 const isApproved = computed(() => {
-  if (!application.status || !itemUserId.value) {
-    return false
-  }
+  const a = props.application || {}
 
-  if (item === 'handover') {
+  if (!a.status || !displayUserId.value) return false
+
+  // special: handover can be invalid if rejected by same handover user
+  if (props.item === 'handover') {
     const isNotRejectedOrRejectedByOther =
-      application.status !== 'Rejected' ||
-      application.rejected_by_user_id !== application.handover_user_id
-
+      a.status !== 'Rejected' || a.rejected_by_user_id !== a.handover_user_id
     return isNotRejectedOrRejectedByOther
   }
 
   return true
 })
 
-const isPending = computed(
-  () =>
-    (item === 'handover' && application?.handover_user_id) ||
-    application?.user?.[approvalKey.value]?.[`${item}_user_id`],
-)
+const isPending = computed(() => {
+  const a = props.application || {}
+  const u = a.user || {}
+  const approval = u?.[approvalKey.value] || {}
+
+  if (props.item === 'handover') return !!a.handover_user_id
+
+  return !!approval?.[`${props.item}_user_id`]
+})
 </script>
 
 <template>
   <div class="flex flex-col justify-center items-center text-sm md:text-base text-center">
-    <div v-if="itemUserId" class="text-center">
-      <p class="text-center">{{ itemUser?.name || '' }}</p>
+    <!-- ✅ Show actor/assigned user -->
+    <div v-if="displayUser" class="text-center">
+      <p class="text-center">{{ displayUser?.name || '' }}</p>
 
-      <div class="text-xs text-gray-400 text-center max-w-[250px] md:max-w-[350px]  mx-auto">
-        {{ itemNote }}
+      <div
+        v-if="displayNote"
+        class="text-xs text-gray-400 text-center max-w-[250px] md:max-w-[350px] mx-auto"
+      >
+        {{ displayNote }}
       </div>
     </div>
-    <p v-else class="text-center">
-      {{ approvalUser?.name || 'N/A' }}
-    </p>
+
+    <p v-else class="text-center">N/A</p>
 
     <AcceptAndRejectHandler
       v-if="hasPermission"
