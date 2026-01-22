@@ -523,7 +523,7 @@ onBeforeUnmount(() => {
 
               <th
                 class="sticky z-20 bg-slate-50 px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide"
-                :style="headerTopStyle"
+                
               >
                 SMS
               </th>
@@ -586,16 +586,20 @@ onBeforeUnmount(() => {
                 <span v-else class="text-slate-300 text-sm">&mdash;</span>
               </td>
 
-              <td class="p-2 text-right">
-                <button
-                  type="button"
-                  class="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-                  :disabled="!getLastItem(row) || !!ui.busyKey"
-                  @click="openSmsForRow(row)"
-                >
-                  <span v-if="ui.busyKey">Sending...</span>
-                  <span v-else>Send SMS</span>
-                </button>
+              <td class="px-2">
+                <div class="flex justify-end">
+                  <button
+                    type="button"
+                    class="btn-4"
+                    :disabled="!getLastItem(row) || !!ui.busyKey"
+                    @click="openSmsForRow(row)"
+                  >
+                    <span v-if="ui.busyKey">Sending...</span>
+                    <span v-else>Send SMS 
+                      <span class="font-bold" v-if="row.user?.yearly_message_count">({{ row.user?.yearly_message_count }})</span>
+                    </span>
+                  </button>
+                </div>
               </td>
             </tr>
 
@@ -626,35 +630,6 @@ onBeforeUnmount(() => {
           >
             Close
           </button>
-        </div>
-
-        <div class="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-          <div class="flex items-center justify-between">
-            <div class="font-semibold text-slate-700">Application</div>
-
-            <a
-              v-if="applicationLink(ui.smsTarget?.item)"
-              :href="applicationLink(ui.smsTarget?.item)"
-              target="_blank"
-              rel="noopener"
-              class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
-              title="Open application details"
-            >
-              Open
-            </a>
-          </div>
-
-          <div class="mt-2 flex flex-wrap items-center gap-2">
-            <span class="rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200">
-              {{ ui.smsTarget?.item?.code || ui.smsTarget?.item?.kind || 'N/A' }}
-            </span>
-            <span class="text-[11px] text-slate-500">#{{ ui.smsTarget?.item?.ref_id || 'N/A' }}</span>
-            <span class="text-[11px] text-slate-500">{{ ui.smsTarget?.item?.status || 'Unknown' }}</span>
-          </div>
-
-          <div v-if="ui.smsTarget?.item?.label" class="mt-1 text-[11px] text-slate-500">
-            {{ ui.smsTarget?.item?.label }}
-          </div>
         </div>
 
         <div class="mt-4">
