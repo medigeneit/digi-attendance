@@ -27,6 +27,21 @@ const periodMonth = computed(() => {
   return `${value.year}-${pad(value.month)}`
 })
 
+const deleteApplication = async (id) => {
+  if (!id) return
+  const confirmed = window.confirm('Are you sure you want to delete this exchange request?')
+  if (!confirmed) return
+
+  try {
+    await exchangeStore.deleteExchange(id) 
+    alert('Exchange request deleted successfully.')
+    await exchangeStore.fetchExchanges({ payload: { type, date: periodMonth.value } }) 
+  } catch (error) {
+    alert(exchangeStore.error || 'Failed to delete the exchange request. Please try again.')
+  }
+}
+
+
 const fetchExchanges = (date) => {
   exchangeStore.fetchExchanges({
     payload: {
@@ -105,13 +120,7 @@ const goBack = () => {
             <i class="far fa-plus mr-1"></i>
             Request Offday Exchange
           </RouterLink>
-          <FlexibleDatePicker
-            v-model="period"
-            :show-year="false"
-            :show-month="true"
-            :show-date="false"
-            label="Month"
-          />
+          <FlexibleDatePicker v-model="period" :show-year="false" :show-month="true" :show-date="false" label="Month" />
         </div>
       </div>
     </div>
@@ -121,7 +130,8 @@ const goBack = () => {
     </div>
 
     <div v-else class="space-y-4">
-      <div v-if="totalExchanges === 0" class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-slate-600">
+      <div v-if="totalExchanges === 0"
+        class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-slate-600">
         <p class="text-lg font-semibold text-slate-800">No exchanges yet</p>
         <p class="text-sm text-slate-500">Try a different month or create a new request</p>
       </div>
@@ -144,17 +154,14 @@ const goBack = () => {
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <tr
-                v-for="(exchange, index) in myExchanges"
-                :key="exchange?.id"
-                class="hover:bg-slate-50 transition"
-              >
+              <tr v-for="(exchange, index) in myExchanges" :key="exchange?.id" class="hover:bg-slate-50 transition">
                 <td class="px-4 py-3 font-semibold text-slate-600">{{ index + 1 }}</td>
                 <td class="px-4 py-3 text-slate-700">{{ formatDate(exchange?.created_at) }}</td>
                 <td class="px-4 py-3 text-slate-700">{{ formatDate(exchange?.current_date) }}</td>
                 <td class="px-4 py-3 text-slate-700">{{ formatDate(exchange?.exchange_date) }}</td>
                 <td class="px-4 py-3">
-                  <div v-if="exchange?.attachment" class="flex items-center gap-1 text-xs font-semibold text-indigo-600">
+                  <div v-if="exchange?.attachment"
+                    class="flex items-center gap-1 text-xs font-semibold text-indigo-600">
                     <i class="far fa-paperclip"></i>
                     Attached
                   </div>
@@ -162,26 +169,20 @@ const goBack = () => {
                 </td>
                 <td class="px-4 py-3">
                   <span
-                    :class="['inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold tracking-wide', statusBadgeClass(exchange?.status)]"
-                  >
+                    :class="['inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold tracking-wide', statusBadgeClass(exchange?.status)]">
                     {{ exchange?.status || 'Pending' }}
                   </span>
                 </td>
                 <td class="px-4 py-3">
                   <div class="flex items-center justify-end gap-2">
-                    <RouterLink
-                      :to="{ name: 'ExchangeOffdayShow', params: { id: exchange?.id } }"
-                      class="inline-flex items-center rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-indigo-200 hover:text-indigo-700"
-                    >
+                    <RouterLink :to="{ name: 'ExchangeOffdayShow', params: { id: exchange?.id } }"
+                      class="inline-flex items-center rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-indigo-200 hover:text-indigo-700">
                       <i class="far fa-eye mr-1"></i>
                       View
                     </RouterLink>
-                    <button
-                      v-if="exchange.status == 'Pending' || !exchange.status"
-                      type="button"
+                    <button v-if="exchange.status == 'Pending' || !exchange.status" type="button"
                       @click="deleteApplication(exchange?.id)"
-                      class="inline-flex items-center rounded-full border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:border-red-300 hover:text-red-700"
-                    >
+                      class="inline-flex items-center rounded-full border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:border-red-300 hover:text-red-700">
                       <i class="far fa-trash mr-1"></i>
                       Delete
                     </button>

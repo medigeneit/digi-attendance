@@ -118,6 +118,7 @@ export const useExchangeStore = defineStore('exchange', () => {
       exchanges.value = exchanges.value.filter((ex) => ex.id !== id)
     } catch (err) {
       error.value = err.response?.data?.message || `Failed to delete exchange with ID ${id}`
+      throw err
     } finally {
       loading.value = false
     }
