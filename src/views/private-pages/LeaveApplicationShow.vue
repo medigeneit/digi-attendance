@@ -301,14 +301,14 @@ const removeAttachment = async () => {
         <!-- details -->
         <div>
           <h3 class="font-bold">Leave Details:</h3>
-          <div class="grid print:grid-cols-2 md:grid-cols-2 text-sm list-none px-2">
-            <li><strong>Reason: </strong>{{ leaveApplication?.reason || 'No reason provided' }}</li>
+          <div class="grid print:grid-cols-2 md:grid-cols-2 gap-1 text-sm list-none px-2">
             <li><strong>Leave Days:</strong> {{ leaveApplication?.leave_period }}</li>
             <li><strong>Total Days:</strong> {{ leaveApplication?.total_leave_days }}</li>
             <li><strong>Weekends:</strong> {{ leaveApplication?.user?.assign_weekend?.weekends?.join(', ') }}</li>
             <li><strong>Last Working Date:</strong> {{ formatDate(leaveApplication?.last_working_date) }}</li>
             <li><strong>Resumption Date:</strong> {{ formatDate(leaveApplication?.resumption_date) }}</li>
             <li><strong>Create Date:</strong> {{ formatDateTime(leaveApplication?.created_at) }}</li>
+            <li class="col-span-full"><strong>Reason: </strong>{{ leaveApplication?.reason || 'No reason provided' }}</li>
           </div>
         </div>
 
