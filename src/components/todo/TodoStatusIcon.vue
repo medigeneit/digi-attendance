@@ -13,6 +13,10 @@ const color = computed(() => {
       return 'text-yellow-600'
     case 'COMPLETED':
       return 'text-green-400'
+    case 'DEPENDANT':
+      return 'text-orange-400'
+    case 'BACK_LOG':
+      return 'text-purple-400'
   }
   return ''
 })
@@ -27,5 +31,11 @@ const color = computed(() => {
       v-if="todoDate.status == 'COMPLETED'"
       title="Completed"
     ></i>
+    <i
+      class="fas fa-pause-circle text-base"
+      v-if="todoDate.status == 'DEPENDANT'"
+      title="Dependant"
+    ></i>
+    <i class="fas fa-history text-base" v-if="todoDate.status == 'BACK_LOG'" title="Back Log"></i>
   </span>
 </template>

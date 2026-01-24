@@ -18,7 +18,7 @@ const isLoading = ref(true)
 const error = ref(null)
 
 const formatDate = (dateString) => {
-  if(dateString) {
+  if (dateString) {
     const date = new Date(dateString)
     return date.toLocaleString('en-US', {
       weekday: 'long',
@@ -57,18 +57,18 @@ const downloadFile = async (fileUrl) => {
 }
 
 const isImage = (file) => {
-  if (!file) return false;
-  return /\.(jpg|jpeg|png|gif|webp)$/i.test(file);
-};
+  if (!file) return false
+  return /\.(jpg|jpeg|png|gif|webp)$/i.test(file)
+}
 
 const isPDF = (file) => {
-  if (!file) return false;
-  return /\.pdf$/i.test(file);
-};
+  if (!file) return false
+  return /\.pdf$/i.test(file)
+}
 
 const getFilename = (file) => {
-  return file?.split('/').pop();
-};
+  return file?.split('/').pop()
+}
 </script>
 
 <template>
@@ -89,7 +89,13 @@ const getFilename = (file) => {
               <p class="text-sm text-gray-800">{{ notice?.title }}</p>
             </div>
 
-            <div v-if="authStore?.user?.role === 'super_admin' ||  authStore?.user?.role === 'developer' || authStore?.user?.id === notice?.created_id" >
+            <div
+              v-if="
+                authStore?.user?.role === 'super_admin' ||
+                authStore?.user?.role === 'developer' ||
+                authStore?.user?.id === notice?.created_id
+              "
+            >
               <p class="font-bold text-gray-600">Company:</p>
               <p
                 class="text-gray-800 text-sm"
@@ -103,7 +109,13 @@ const getFilename = (file) => {
               <p v-else class="text-lg text-gray-800">All department</p>
             </div>
 
-            <div v-if="authStore?.user?.role === 'super_admin' ||  authStore?.user?.role === 'developer' || authStore?.user?.id === notice?.created_id">
+            <div
+              v-if="
+                authStore?.user?.role === 'super_admin' ||
+                authStore?.user?.role === 'developer' ||
+                authStore?.user?.id === notice?.created_id
+              "
+            >
               <p class="font-bold text-gray-600">Department:</p>
               <p
                 class="text-gray-800"
@@ -117,7 +129,13 @@ const getFilename = (file) => {
               <p v-else class="text-gray-800">All department</p>
             </div>
 
-            <div v-if="authStore?.user?.role === 'super_admin' ||  authStore?.user?.role === 'developer' || authStore?.user?.id === notice?.created_id">
+            <div
+              v-if="
+                authStore?.user?.role === 'super_admin' ||
+                authStore?.user?.role === 'developer' ||
+                authStore?.user?.id === notice?.created_id
+              "
+            >
               <p class="font-bold text-gray-600">Employee:</p>
               <p
                 v-if="Array.isArray(notice?.employees) && !notice?.employees?.length"
@@ -152,13 +170,13 @@ const getFilename = (file) => {
 
             <div class="col-span-full" v-if="notice?.file">
               <div class="flex items-center gap-2">
-                 <!-- যদি ইমেজ হয় -->
+                <!-- যদি ইমেজ হয় -->
                 <img
                   v-if="isImage(notice?.file)"
                   :src="notice?.file"
                   alt="Notice File"
                   class="object-cover rounded-md cursor-pointer"
-                  style="width: 80%;"
+                  style="width: 80%"
                   @click="downloadFile(notice?.file)"
                 />
 
@@ -170,7 +188,11 @@ const getFilename = (file) => {
                 ></iframe>
 
                 <!-- অন্য ফাইল -->
-                <span v-else class="text-blue-500 cursor-pointer" @click="downloadFile(notice?.file)">
+                <span
+                  v-else
+                  class="text-blue-500 cursor-pointer"
+                  @click="downloadFile(notice?.file)"
+                >
                   File: {{ getFilename(notice?.file) }}
                 </span>
               </div>

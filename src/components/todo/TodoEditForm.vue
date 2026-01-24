@@ -40,6 +40,7 @@ const form = ref({
   title: '',
   todo_type: 'task',
   todo_type_id: '',
+  status: 'PENDING',
 })
 
 // --- Recurrence setting state controlled by parent ---
@@ -64,6 +65,7 @@ async function fetchTodo() {
   await todoStore.fetchTodo(props.todo?.id)
   form.value.title = todoStore.todo?.title
   form.value.todo_type_id = todoStore.todo?.todoable_id
+  form.value.status = todoStore.todo?.status || 'PENDING'
   selectedProjectId.value = todoStore.todo?.todo_project_id || null
 }
 
@@ -105,6 +107,7 @@ async function submitTodo() {
     title: form.value.title,
     todo_type: form.value.todo_type,
     todo_type_id: form.value.todo_type_id,
+    status: form.value.status,
   }
 
   if (selectedProjectId.value) {
@@ -222,33 +225,78 @@ onMounted(() => {
           <span>{{ getDisplayDate(selectedDate, { weekDay: 'long' }) }}</span>
         </div> -->
 
-        <div class="mb-4">
-          <label class="block text-gray-500 font-medium text-sm">Title</label>
-          <input
-            ref="titleRef"
-            v-model="form.title"
-            required
-            placeholder="Enter todo title"
-            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 shadow-sm"
-          />
+        <div class="mb-5">
+          <label
+            class="block text-slate-500 font-bold text-[11px] uppercase tracking-wider mb-1.5 ml-1"
+          >
+            Title
+          </label>
+          <div class="relative group">
+            <input
+              ref="titleRef"
+              v-model="form.title"
+              required
+              placeholder="Enter todo title"
+              class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-400 outline-none transition-all duration-200 font-medium text-slate-700"
+            />
+            <div
+              class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-sky-500 transition-colors"
+            >
+              <i class="fas fa-edit text-sm"></i>
+            </div>
+          </div>
+        </div>
+        <div class="mb-5">
+          <label
+            class="block text-slate-500 font-bold text-[11px] uppercase tracking-wider mb-1.5 ml-1"
+          >
+            Status
+          </label>
+          <div class="relative group">
+            <select
+              v-model="form.status"
+              class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-400 outline-none appearance-none transition-all duration-200 font-medium text-slate-700"
+            >
+              <option value="PENDING" v-if="form.status === 'PENDING'">PENDING</option>
+              <option value="WORKING">WORKING</option>
+              <option value="DEPENDANT">DEPENDANT</option>
+              <option value="BACK_LOG">BACK_LOG</option>
+              <option value="COMPLETED">COMPLETED</option>
+            </select>
+            <div
+              class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-sky-500 transition-colors"
+            >
+              <i class="fas fa-tasks text-sm"></i>
+            </div>
+            <div
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+            >
+              <i class="fas fa-chevron-down text-[10px]"></i>
+            </div>
+          </div>
         </div>
 
         <CompanyDepartmentSelectInput
           v-if="authStore.isAdminMood"
           v-model="selectedDepartmentId"
           :companies="companyStore?.myCompanies || []"
-          class="mb-4"
+          class="mb-5"
         >
           <template #label>
-            <label class="block text-gray-500 font-medium text-sm">
-              Project Department <span class="text-gray-500">(Optional - for new project)</span>
+            <label
+              class="block text-slate-500 font-bold text-[11px] uppercase tracking-wider mb-1.5 ml-1"
+            >
+              Project Department
+              <span class="text-[10px] lowercase font-normal">(Optional - for new project)</span>
             </label>
           </template>
         </CompanyDepartmentSelectInput>
 
-        <div class="mb-4">
-          <label class="block text-gray-500 font-medium text-sm">
-            Issue/Website/Project <span class="text-gray-500">(Optional)</span>
+        <div class="mb-5">
+          <label
+            class="block text-slate-500 font-bold text-[11px] uppercase tracking-wider mb-1.5 ml-1"
+          >
+            Issue/Website/Project <span class="text-[10px] lowercase font-normal">(Optional)</span>
           </label>
 
           <InputWithSuggestions
@@ -261,8 +309,12 @@ onMounted(() => {
           />
         </div>
 
-        <div class="mb-4">
-          <label class="block text-gray-500 font-medium text-sm">Task ID (optional)</label>
+        <div class="mb-8">
+          <label
+            class="block text-slate-500 font-bold text-[11px] uppercase tracking-wider mb-1.5 ml-1"
+          >
+            Task ID <span class="text-[10px] lowercase font-normal">(Optional)</span>
+          </label>
           <TodoTypeInput
             v-model:show="showTodoTypes"
             v-model:todoType="form.todo_type"
