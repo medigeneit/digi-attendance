@@ -3,7 +3,7 @@ import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
 import { useDepartmentStore } from '@/stores/department'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
-import { onMounted, reactive, ref, watch } from 'vue'
+import { onMounted, onUnmounted, reactive, ref, watch, nextTick } from 'vue'
 
 const props = defineProps({
   show: { type: Boolean, required: true },
@@ -12,22 +12,26 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'save'])
-const selectedDepartment = ref(null)
+
 const userStore = useUserStore()
 const departmentStore = useDepartmentStore()
 const { departments } = storeToRefs(departmentStore)
 
 const isEditMode = ref(false)
 
+// ✅ Multiselect expects object
+const selectedDepartment = ref(null)
+
 const form = reactive({
   id: null,
   name: '',
-  department_id: '',
-  in_charge_user_id: '',
-  coordinator_user_id: '',
-  operational_admin_user_id: '',
-  recommend_by_user_id: '',
-  approved_by_user_id: '',
+  department_id: null,
+  in_charge_user_id: null,
+  coordinator_user_id: null,
+  operational_admin_user_id: null,
+  recommend_by_user_id: null,
+  approved_by_user_id: null,
+  type: props.approvalType,
 })
 
 const selectedUsers = reactive({
@@ -40,16 +44,15 @@ const selectedUsers = reactive({
 
 const loadSelectedUsers = () => {
   Object.keys(selectedUsers).forEach((field) => {
-    selectedUsers[field] = userStore.users.find((user) => user.id === form[field]) || null
+    selectedUsers[field] = userStore.users.find((u) => u.id === form[field]) || null
   })
 }
 
+// ✅ keep form id in sync with selected user
 Object.keys(selectedUsers).forEach((field) => {
   watch(
     () => selectedUsers[field],
     (newVal) => {
-      console.log(newVal)
-
       form[field] = newVal ? newVal.id : null
     },
   )
@@ -59,42 +62,70 @@ const resetForm = () => {
   Object.assign(form, {
     id: null,
     name: '',
-    department_id: '',
-    in_charge_user_id: '',
-    coordinator_user_id: '',
-    operational_admin_user_id: '',
-    recommend_by_user_id: '',
-    approved_by_user_id: '',
+    department_id: null,
+    in_charge_user_id: null,
+    coordinator_user_id: null,
+    operational_admin_user_id: null,
+    recommend_by_user_id: null,
+    approved_by_user_id: null,
+    type: props.approvalType,
   })
-  isEditMode.value = false
-}
-
-const selectvalueResetForm = () => {
   Object.assign(selectedUsers, {
-    in_charge_user_id: '',
-    coordinator_user_id: '',
-    operational_admin_user_id: '',
-    recommend_by_user_id: '',
-    approved_by_user_id: '',
+    in_charge_user_id: null,
+    coordinator_user_id: null,
+    operational_admin_user_id: null,
+    recommend_by_user_id: null,
+    approved_by_user_id: null,
   })
+  selectedDepartment.value = null
   isEditMode.value = false
 }
 
+// ✅ 핵심: department_id -> department object sync
+const syncSelectedDepartment = async () => {
+  await nextTick()
+  const deptId = form.department_id || props.leaveApproval?.department_id || null
+  if (!deptId) {
+    selectedDepartment.value = null
+    return
+  }
+
+  // departments store list থেকে খুঁজে set
+  const found = (departments.value || []).find((d) => d.id === deptId)
+
+  // যদি list এখনো না আসে কিন্তু backend response এ `department` object থাকে, সেটা fallback
+  selectedDepartment.value = found || props.leaveApproval?.department || null
+}
+
+// ✅ when props.leaveApproval changes (edit/open modal)
 watch(
   () => props.leaveApproval,
-  (newLeaveApproval) => {
+  async (newLeaveApproval) => {
     if (newLeaveApproval) {
       isEditMode.value = true
-      Object.assign(form, newLeaveApproval)
+
+      Object.assign(form, {
+        id: newLeaveApproval.id ?? null,
+        name: newLeaveApproval.name ?? '',
+        department_id: newLeaveApproval.department_id ?? newLeaveApproval.department?.id ?? null,
+        in_charge_user_id: newLeaveApproval.in_charge_user_id ?? null,
+        coordinator_user_id: newLeaveApproval.coordinator_user_id ?? null,
+        operational_admin_user_id: newLeaveApproval.operational_admin_user_id ?? null,
+        recommend_by_user_id: newLeaveApproval.recommend_by_user_id ?? null,
+        approved_by_user_id: newLeaveApproval.approved_by_user_id ?? null,
+        type: newLeaveApproval.type ?? props.approvalType,
+      })
+
       loadSelectedUsers()
+      await syncSelectedDepartment()
     } else {
       resetForm()
-      selectvalueResetForm()
     }
   },
-  { immediate: true, deep: true },
+  { immediate: true },
 )
 
+// ✅ when user changes department dropdown
 watch(
   () => selectedDepartment.value,
   (newDepartment) => {
@@ -102,23 +133,42 @@ watch(
   },
 )
 
+// ✅ departments async load হলে আবার sync (edit mode এর জন্য দরকার)
+watch(
+  () => departments.value,
+  async () => {
+    if (props.leaveApproval) await syncSelectedDepartment()
+  },
+  { deep: true },
+)
+
 const handleSubmit = () => {
   if (!form.name || !form.approved_by_user_id) {
     alert('Name and Approved By are required!')
     return
   }
-  emit('save', { ...form })
+  emit('save', { ...form, type: form.type || props.approvalType })
   closeModal()
 }
+
+watch(
+  () => props.approvalType,
+  (newType) => {
+    if (!props.leaveApproval) {
+      form.type = newType
+    }
+  },
+)
 
 const closeModal = () => {
   resetForm()
   emit('close')
 }
 
-onMounted(() => {
-  userStore.fetchUsers()
-  departmentStore.fetchDepartments()
+onMounted(async () => {
+  // যদি action promise return করে, await কাজ করবে
+  await Promise.all([userStore.fetchUsers(), departmentStore.fetchDepartments()])
+  await syncSelectedDepartment()
 })
 </script>
 
@@ -133,6 +183,7 @@ onMounted(() => {
           {{ isEditMode ? 'Edit' : 'Add' }} {{ approvalType }} Approval
         </h3>
       </div>
+
       <form @submit.prevent="handleSubmit" class="p-6 space-y-4">
         <div>
           <label for="name" class="block text-sm font-medium">Approval Name</label>
@@ -145,10 +196,13 @@ onMounted(() => {
             required
           />
         </div>
+
+        <!-- ✅ Department selected দেখাবে -->
         <MultiselectDropdown
           v-model="selectedDepartment"
           :multiple="false"
           label="name"
+          top-label="Select Department"
           :options="departments"
           placeholder="Choose department"
         />
@@ -163,37 +217,18 @@ onMounted(() => {
           }"
           :key="field"
         >
-          <div
-            v-if="
-              approvalType === 'leave' ||
-              !['coordinator_user_id', 'operational_admin_user_id'].includes(field)
-            "
-          >
+          <div v-if="approvalType === 'leave' || !['operational_admin_user_id'].includes(field)">
             <label :for="field" class="block text-sm font-medium">{{ label }}</label>
             <MultiselectDropdown
               v-model="selectedUsers[field]"
               :multiple="false"
               label="name"
+              :top-label="`Select ${label}`"
               label-prefix="employee_id"
               :options="userStore.users"
             />
           </div>
         </template>
-
-        <!-- <select
-          :id="field"
-          v-model="form[field]"
-          class="w-full border rounded px-3 py-2"
-        >
-          <option value="">-- N/A --</option>
-          <option
-            v-for="user in userStore.users || []"
-            :key="user.id"
-            :value="user.id"
-          >
-            {{ user.name }}
-          </option>
-        </select> -->
 
         <div class="flex justify-end space-x-4">
           <button

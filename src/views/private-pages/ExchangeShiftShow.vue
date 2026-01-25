@@ -184,6 +184,13 @@ const onAction = async () => {
           item="in_charge"
           :onAction="onAction"
         />
+        
+        <ApprovalItem
+          :application="exchange"
+          type="shift_exchange_applications"
+          item="coordinator"
+          :onAction="onAction"
+        />
 
         <ApprovalItem
           :application="exchange"
