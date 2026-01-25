@@ -704,6 +704,18 @@ function pickMarksFromGroups(groups) {
   return pickMarksByItemIds(uniq)
 }
 
+const canSubmitPersonal = computed(() => {
+  if (!myEditablePersonalLaneKey.value) return false
+  if (!personalGroup.value) return false
+  return Object.keys(pickMarksFromGroup(personalGroup.value)).length > 0
+})
+
+const canSubmitHr = computed(() => {
+  if (!canHR.value || !myHrLaneKey.value) return false
+  if (!Array.isArray(otherGroups.value) || otherGroups.value.length === 0) return false
+  return Object.keys(pickMarksFromGroups(otherGroups.value)).length > 0
+})
+
 function applyLaneMarksToItemIds(laneKey, ids) {
   if (!laneKey || !ids?.length) return false
   const r = laneLatestReview(laneKey)
@@ -788,73 +800,67 @@ watch(
   { immediate: true },
 )
 
-/* ---------- Submit (✅ UPDATED: split submit for incharge+hr dual role) ---------- */
-async function submit() {
+/* ---------- Submit (split) ---------- */
+async function submitPersonal() {
   const empId = Number(route.params.employeeId)
   const cycleId = store.cycle?.id
+  const personalLane = myEditablePersonalLaneKey.value
 
   if (!cycleId || !empId) {
     alert('Invalid cycle/employee.')
     return
   }
-
-  const personalLane = myEditablePersonalLaneKey.value
-  const hrLane = myHrLaneKey.value
-
-  // fallback single-lane mode
-  const singleLane = reviewerLaneKey.value
+  if (!personalLane || !personalGroup.value) {
+    alert('Unable to determine personal reviewer lane.')
+    return
+  }
 
   try {
-    // ✅ Dual submit: Personal -> incharge lane, Others -> hr lane
-    if (hasDualRolePersonalAndHR.value && personalLane && hrLane) {
-      // 1) personal only -> personal lane
-      await store.submitReview({
-        cycle_id: cycleId,
-        employee_id: empId,
-        reviewer_lane: personalLane,
-        marks: pickMarksFromGroup(personalGroup.value),
-        // notes avoid duplicate: keep empty here (you can change if you want incharge notes)
-        strengths: '',
-        gaps: '',
-        suggestions: '',
-      })
-
-      // 2) other groups -> hr lane (notes here)
-      await store.submitReview({
-        cycle_id: cycleId,
-        employee_id: empId,
-        reviewer_lane: hrLane,
-        marks: pickMarksFromGroups(otherGroups.value),
-        strengths: strengths.value,
-        gaps: gaps.value,
-        suggestions: suggestions.value,
-      })
-
-      await refreshReviewData()
-      alert('Submitted')
-      return
-    }
-
-    // ✅ Normal submit (single lane as before)
-    if (!singleLane) {
-      alert('Unable to determine reviewer lane.')
-      return
-    }
-
     await store.submitReview({
       cycle_id: cycleId,
       employee_id: empId,
-      reviewer_lane: singleLane,
-      marks: marks.value,
+      reviewer_lane: personalLane,
+      marks: pickMarksFromGroup(personalGroup.value),
+      strengths: '',
+      gaps: '',
+      suggestions: '',
+    })
+    await refreshReviewData()
+    alert('Personal review submitted')
+  } catch (e) {
+    const msg = e?.response?.data?.message || e?.message || 'Failed to submit personal review.'
+    alert(msg)
+  }
+}
+
+async function submitHr() {
+  const empId = Number(route.params.employeeId)
+  const cycleId = store.cycle?.id
+  const hrLane = myHrLaneKey.value
+
+  if (!cycleId || !empId) {
+    alert('Invalid cycle/employee.')
+    return
+  }
+  if (!hrLane) {
+    alert('Unable to determine HR reviewer lane.')
+    return
+  }
+
+  try {
+    await store.submitReview({
+      cycle_id: cycleId,
+      employee_id: empId,
+      reviewer_lane: hrLane,
+      marks: pickMarksFromGroups(otherGroups.value),
       strengths: strengths.value,
       gaps: gaps.value,
       suggestions: suggestions.value,
     })
-
     await refreshReviewData()
-    alert('Submitted')
+    alert('HR review submitted')
   } catch (e) {
-    const msg = e?.response?.data?.message || e?.message || 'Failed to submit.'
+    const msg = e?.response?.data?.message || e?.message || 'Failed to submit HR review.'
     alert(msg)
   }
 }
@@ -896,7 +902,6 @@ function applyHint(field, value) {
   target.value = appendWithNewline(target.value, text)
 }
 </script>
-
 
 <template>
   <div v-if="compactMode" class="space-y-4">
@@ -969,11 +974,7 @@ function applyHint(field, value) {
                 v-model.number="compactMarks[item.id]"
                 class="rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400/50"
               >
-                <option
-                  v-for="opt in buildScoreOptions(item.maxScore)"
-                  :key="opt"
-                  :value="opt"
-                >
+                <option v-for="opt in buildScoreOptions(item.maxScore)" :key="opt" :value="opt">
                   {{ opt }}
                 </option>
               </select>
@@ -1021,32 +1022,51 @@ function applyHint(field, value) {
             <span class="text-xs font-semibold text-indigo-700">KPI Cycle</span>
             <span class="text-xs text-indigo-900">{{ store.cycle?.title }}</span>
           </div>
+
           <div class="text-sm text-slate-600">
             <div class="font-medium text-slate-800">
               {{ employee?.name || 'Employee' }}
             </div>
+
             <div class="flex flex-wrap gap-2 text-xs mt-0.5">
               <span
                 v-if="employee?.designation?.title"
                 class="inline-flex items-center rounded-full bg-slate-50 px-2 py-0.5 text-slate-600"
               >
                 Designation:
-                <span class="ml-1 font-medium text-slate-800">{{
-                  employee.designation.title
-                }}</span>
+                <span class="ml-1 font-medium text-slate-800">
+                  {{ employee.designation.title }}
+                </span>
               </span>
+
               <span
                 v-if="employee?.department?.name"
                 class="inline-flex items-center rounded-full bg-slate-50 px-2 py-0.5 text-slate-600"
               >
                 Department:
-                <span class="ml-1 font-medium text-slate-800">{{ employee.department.name }}</span>
+                <span class="ml-1 font-medium text-slate-800">
+                  {{ employee.department.name }}
+                </span>
               </span>
-              <span
-                class="inline-flex items-center rounded-full bg-slate-50 px-2 py-0.5 text-slate-600"
-              >
+
+              <span class="inline-flex items-center rounded-full bg-slate-50 px-2 py-0.5 text-slate-600">
                 Reviewing as:
-                <span v-if="reviewingAsHR" class="ml-1 inline-flex items-center gap-1">
+                <span v-if="hasDualRolePersonalAndHR" class="ml-1 inline-flex items-center gap-1">
+                  <span class="font-semibold text-slate-800">
+                    {{ myEditablePersonalLaneKey }}
+                  </span>
+                  <span class="text-slate-400">+</span>
+                  <span class="font-semibold text-emerald-700">
+                    {{ myHrLaneKey }}
+                  </span>
+                  <span
+                    class="text-[10px] rounded bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 text-emerald-700"
+                  >
+                    dual mode
+                  </span>
+                </span>
+
+                <span v-else-if="reviewingAsHR" class="ml-1 inline-flex items-center gap-1">
                   <span class="font-semibold text-emerald-700">HR</span>
                   <span
                     class="text-[10px] rounded bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 text-emerald-700"
@@ -1054,6 +1074,7 @@ function applyHint(field, value) {
                     HR mode
                   </span>
                 </span>
+
                 <span v-else class="ml-1 font-semibold text-slate-800">
                   {{ reviewerLaneKey || 'No lane' }}
                 </span>
@@ -1106,13 +1127,11 @@ function applyHint(field, value) {
           v-for="active_criteria in employee.active_criteria"
           :key="active_criteria.id"
         >
-          <div
-            class="print:block richtext print:break-inside-avoid"
-            v-html="active_criteria?.description"
-          ></div>
+          <div class="print:block richtext print:break-inside-avoid" v-html="active_criteria?.description"></div>
         </div>
       </section>
     </div>
+
     <!-- PERSONAL GROUP -->
     <KpiGroupTable
       v-if="store.cycle && personalGroup"
@@ -1124,13 +1143,36 @@ function applyHint(field, value) {
       :marks="marks"
       :header-label="'Personal Evaluation'"
       :item-label="personalGroup?.label || 'Personal'"
-      :helper-text="staffMode ? 'All reviewer lanes score the Personal table.' : 'Fill only your lane; others appear as read-only.'"
+      :helper-text="
+        staffMode
+          ? 'All reviewer lanes score the Personal table.'
+          : canEditPersonal && canHR
+            ? 'Submit Personal and HR reviews separately using the buttons below.'
+            : 'Fill only your lane; others appear as read-only.'
+      "
       :serial-map="serialMap"
       :get-lane-mark="laneMark"
       :on-mark-change="setMark"
       :on-cap="cap"
       :on-quick-fill-item="quickFill"
     />
+    <div
+      v-if="canEditPersonal"
+      class="mt-2 flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-white px-4 py-3 shadow-sm"
+    >
+      <div class="text-sm text-slate-600">
+        Personal total:
+        <b class="text-slate-900">{{ personalTotals.got.toFixed(2) }}</b>
+        <span class="text-slate-400">/ {{ personalTotals.max.toFixed(2) }}</span>
+      </div>
+      <button
+        @click="submitPersonal"
+        :disabled="!canSubmitPersonal"
+        class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-medium text-white shadow hover:bg-slate-800 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-slate-300"
+      >
+        Submit Personal
+      </button>
+    </div>
 
     <!-- OTHER GROUPS + RIGHT SIDEBAR -->
     <section class="mt-2">
@@ -1158,26 +1200,18 @@ function applyHint(field, value) {
         </div>
 
         <!-- Right sidebar (Annual Target Summary + Comments) -->
-        <aside
-          class="space-y-4 sticky top-10 z-50"
-          :class="[otherGroups.length === 0 ? 'lg:col-span-full' : 'lg:col-span-2']"
-        >
+        <aside class="space-y-4 sticky top-10 z-50" :class="[otherGroups.length === 0 ? 'lg:col-span-full' : 'lg:col-span-2']">
           <section
             v-if="!staffMode && hasTargetSummary && canHR"
             class="sticky top-6 border rounded-2xl bg-white shadow-sm"
           >
-            <header
-              class="flex flex-wrap items-center justify-between border-b px-4 py-3 text-sm font-semibold text-slate-800"
-            >
+            <header class="flex flex-wrap items-center justify-between border-b px-4 py-3 text-sm font-semibold text-slate-800">
               <span>Annual Summary</span>
               <div class="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
                 <span class="rounded-full border bg-slate-50 px-2 py-0.5 text-slate-700">
                   {{ summaryLabel }}
                 </span>
-                <span
-                  v-if="summaryYear"
-                  class="rounded-full border bg-slate-50 px-2 py-0.5 text-slate-700"
-                >
+                <span v-if="summaryYear" class="rounded-full border bg-slate-50 px-2 py-0.5 text-slate-700">
                   Year {{ summaryYear }}
                 </span>
                 <span class="rounded-full border bg-slate-50 px-2 py-0.5 text-slate-700">
@@ -1209,32 +1243,20 @@ function applyHint(field, value) {
                   <div class="rounded-xl border bg-slate-50 p-3">
                     <div class="flex items-center justify-between">
                       <span class="text-xs font-medium text-slate-600">Incharge</span>
-                      <span
-                        class="text-[11px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200"
-                      >
-                        {{
-                          pct(
-                            summaryData.per_scored_month?.incharge,
-                            summaryData.per_scored_month?.max,
-                          )
-                        }}%
+                      <span class="text-[11px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                        {{ pct(summaryData.per_scored_month?.incharge, summaryData.per_scored_month?.max) }}%
                       </span>
                     </div>
                     <div class="mt-1 text-sm font-semibold text-slate-900">
                       {{ fmt(summaryData.per_scored_month?.incharge) }}
-                      <span class="text-xs text-slate-500"
-                        >/ {{ fmt(summaryData.per_scored_month?.max) }}</span
-                      >
+                      <span class="text-xs text-slate-500">/ {{ fmt(summaryData.per_scored_month?.max) }}</span>
                     </div>
                     <div class="mt-2 h-2 rounded bg-slate-100 overflow-hidden">
                       <div
                         class="h-2 bg-blue-500"
                         :style="{
                           width:
-                            pct(
-                              summaryData.per_scored_month?.incharge,
-                              summaryData.per_scored_month?.max,
-                            ) + '%',
+                            pct(summaryData.per_scored_month?.incharge, summaryData.per_scored_month?.max) + '%',
                         }"
                       ></div>
                     </div>
@@ -1243,32 +1265,20 @@ function applyHint(field, value) {
                   <div class="rounded-xl border bg-slate-50 p-3">
                     <div class="flex items-center justify-between">
                       <span class="text-xs font-medium text-slate-600">Coordinator</span>
-                      <span
-                        class="text-[11px] px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 border border-violet-200"
-                      >
-                        {{
-                          pct(
-                            summaryData.per_scored_month?.coordinator,
-                            summaryData.per_scored_month?.max,
-                          )
-                        }}%
+                      <span class="text-[11px] px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 border border-violet-200">
+                        {{ pct(summaryData.per_scored_month?.coordinator, summaryData.per_scored_month?.max) }}%
                       </span>
                     </div>
                     <div class="mt-1 text-sm font-semibold text-slate-900">
                       {{ fmt(summaryData.per_scored_month?.coordinator) }}
-                      <span class="text-xs text-slate-500"
-                        >/ {{ fmt(summaryData.per_scored_month?.max) }}</span
-                      >
+                      <span class="text-xs text-slate-500">/ {{ fmt(summaryData.per_scored_month?.max) }}</span>
                     </div>
                     <div class="mt-2 h-2 rounded bg-slate-100 overflow-hidden">
                       <div
                         class="h-2 bg-violet-500"
                         :style="{
                           width:
-                            pct(
-                              summaryData.per_scored_month?.coordinator,
-                              summaryData.per_scored_month?.max,
-                            ) + '%',
+                            pct(summaryData.per_scored_month?.coordinator, summaryData.per_scored_month?.max) + '%',
                         }"
                       ></div>
                     </div>
@@ -1277,32 +1287,20 @@ function applyHint(field, value) {
                   <div class="rounded-xl border bg-slate-50 p-3 sm:col-span-2">
                     <div class="flex items-center justify-between">
                       <span class="text-xs font-medium text-slate-600">Final</span>
-                      <span
-                        class="text-[11px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200"
-                      >
-                        {{
-                          pct(
-                            summaryData.per_form_yearly?.final,
-                            summaryData.per_scored_month?.max,
-                          )
-                        }}%
+                      <span class="text-[11px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        {{ pct(summaryData.per_form_yearly?.final, summaryData.per_scored_month?.max) }}%
                       </span>
                     </div>
                     <div class="mt-1 text-sm font-semibold text-slate-900">
                       {{ fmt(summaryData.per_form_yearly?.final) }}
-                      <span class="text-xs text-slate-500"
-                        >/ {{ fmt(summaryData.per_scored_month?.max) }}</span
-                      >
+                      <span class="text-xs text-slate-500">/ {{ fmt(summaryData.per_scored_month?.max) }}</span>
                     </div>
                     <div class="mt-2 h-2 rounded bg-slate-100 overflow-hidden">
                       <div
                         class="h-2 bg-emerald-500"
                         :style="{
                           width:
-                            pct(
-                              summaryData.per_form_yearly?.final,
-                              summaryData.per_scored_month?.max,
-                            ) + '%',
+                            pct(summaryData.per_form_yearly?.final, summaryData.per_scored_month?.max) + '%',
                         }"
                       ></div>
                     </div>
@@ -1329,40 +1327,27 @@ function applyHint(field, value) {
                       <div class="text-slate-500">Group</div>
                       <div class="font-medium text-slate-800">{{ summaryGroupLabel }}</div>
                       <div class="text-slate-500">Max (denominator)</div>
-                      <div class="font-medium text-slate-800">
-                        {{ fmt(summaryData.per_scored_month?.max) }}
-                      </div>
+                      <div class="font-medium text-slate-800">{{ fmt(summaryData.per_scored_month?.max) }}</div>
                       <div class="text-slate-500">Incharge avg</div>
-                      <div class="font-medium text-slate-800">
-                        {{ fmt(summaryData.per_form_yearly?.incharge) }}
-                      </div>
+                      <div class="font-medium text-slate-800">{{ fmt(summaryData.per_form_yearly?.incharge) }}</div>
                       <div class="text-slate-500">Coordinator avg</div>
-                      <div class="font-medium text-slate-800">
-                        {{ fmt(summaryData.per_form_yearly?.coordinator) }}
-                      </div>
+                      <div class="font-medium text-slate-800">{{ fmt(summaryData.per_form_yearly?.coordinator) }}</div>
                       <div class="text-slate-500">Final avg</div>
-                      <div class="font-medium text-slate-800">
-                        {{ fmt(summaryData.per_form_yearly?.final) }}
-                      </div>
+                      <div class="font-medium text-slate-800">{{ fmt(summaryData.per_form_yearly?.final) }}</div>
                       <div class="text-slate-500">Percent (simple)</div>
-                      <div class="font-medium text-slate-800">
-                        {{ fmt(summaryData.percent_simple) }}%
-                      </div>
+                      <div class="font-medium text-slate-800">{{ fmt(summaryData.percent_simple) }}%</div>
                       <div class="text-slate-500">Percent (weighted)</div>
-                      <div class="font-medium text-slate-800">
-                        {{ fmt(summaryData.percent_weighted) }}%
-                      </div>
+                      <div class="font-medium text-slate-800">{{ fmt(summaryData.percent_weighted) }}%</div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           </section>
+
           <!-- Review comments -->
           <section v-if="reviewComments.length" class="border rounded-2xl bg-white shadow-sm">
-            <header
-              class="flex items-center justify-between border-b px-4 py-3 text-sm font-semibold text-slate-800"
-            >
+            <header class="flex items-center justify-between border-b px-4 py-3 text-sm font-semibold text-slate-800">
               <span>Review Comments</span>
               <span class="text-[11px] text-slate-500"> {{ reviewComments.length }} lane(s) </span>
             </header>
@@ -1411,31 +1396,20 @@ function applyHint(field, value) {
     </section>
 
     <!-- Notes (enable if editing in either mode) -->
-    <section
-      v-if="canEditPersonal || canHR"
-      class="rounded-2xl bg-white border shadow-sm px-4 py-4 space-y-4"
-    >
+    <section v-if="canEditPersonal || canHR" class="rounded-2xl bg-white border shadow-sm px-4 py-4 space-y-4">
       <header class="flex items-center justify-between mb-1">
         <div>
           <h2 class="text-sm font-semibold text-slate-800">Overall Review Notes</h2>
-          <p class="text-[11px] text-slate-500">
-            Use saved hints or write your own detailed comments.
-          </p>
+          <p class="text-[11px] text-slate-500">Use saved hints or write your own detailed comments.</p>
         </div>
         <div class="hidden md:flex items-center gap-2 text-[11px] text-slate-500">
-          <span
-            class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 border border-emerald-100"
-          >
+          <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 border border-emerald-100">
             <span class="text-xs">●</span> Strengths
           </span>
-          <span
-            class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 border border-amber-100"
-          >
+          <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 border border-amber-100">
             <span class="text-xs">●</span> Gaps
           </span>
-          <span
-            class="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 border border-sky-100"
-          >
+          <span class="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 border border-sky-100">
             <span class="text-xs">●</span> Suggestions
           </span>
         </div>
@@ -1454,7 +1428,6 @@ function applyHint(field, value) {
             </span>
           </header>
 
-          <!-- Hint chips -->
           <div
             v-if="strengthOptions.length"
             class="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 h-40 overflow-y-auto"
@@ -1472,11 +1445,9 @@ function applyHint(field, value) {
               </button>
             </div>
           </div>
-          <p v-else class="text-[11px] text-slate-400">
-            No historical strengths yet. Write your own notes below.
-          </p>
 
-          <!-- Textarea -->
+          <p v-else class="text-[11px] text-slate-400">No historical strengths yet. Write your own notes below.</p>
+
           <div class="space-y-1">
             <label class="text-[11px] font-medium text-slate-500"> Key Strength(s) </label>
             <textarea
@@ -1499,7 +1470,6 @@ function applyHint(field, value) {
             </span>
           </header>
 
-          <!-- Hint chips -->
           <div
             v-if="gapOptions.length"
             class="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 h-40 overflow-y-auto"
@@ -1517,9 +1487,9 @@ function applyHint(field, value) {
               </button>
             </div>
           </div>
+
           <p v-else class="text-[11px] text-slate-400">No historical gaps yet.</p>
 
-          <!-- Textarea -->
           <div class="space-y-1">
             <label class="text-[11px] font-medium text-slate-500">GAP(s)</label>
             <textarea
@@ -1542,7 +1512,6 @@ function applyHint(field, value) {
             </span>
           </header>
 
-          <!-- Suggestion hint chips (optional but nice) -->
           <div
             v-if="suggestionOptions.length"
             class="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 h-40 overflow-y-auto"
@@ -1561,11 +1530,8 @@ function applyHint(field, value) {
             </div>
           </div>
 
-          <!-- Textarea -->
           <div class="space-y-1">
-            <label class="text-[11px] font-medium text-slate-500">
-              Suggestions / Development plan
-            </label>
+            <label class="text-[11px] font-medium text-slate-500"> Suggestions / Development plan </label>
             <textarea
               v-model="suggestions"
               placeholder="Specific actions, training plans, timeline and expectations…"
@@ -1577,104 +1543,103 @@ function applyHint(field, value) {
     </section>
 
     <!-- Sticky action -->
-    <div
-      class="mt-2 flex flex-col gap-3 border-t pt-3 md:flex-row md:items-center md:justify-between"
-    >
-      <div class="text-sm text-slate-600">
-        My (Personal) Total:
-        <b class="text-slate-900">{{ personalTotals.got.toFixed(2) }}</b>
-        <span class="text-slate-400">/ {{ personalTotals.max.toFixed(2) }}</span>
-      </div>
-      <button
-        @click="submit"
-        :disabled="!(canHR || canEditPersonal)"
-        class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white shadow hover:bg-emerald-700 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-      >
-        Submit
-      </button>
-    </div>
-  </div>
-
-<transition name="fade-scale">
-  <div
-    v-if="reviewCommentModalOpen && reviewCommentModalItem"
-    class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
-    @keydown.escape.window="closeReviewCommentModal"
-  >
-    <div
-      class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-      aria-hidden="true"
-      @click="closeReviewCommentModal"
-    ></div>
-
-    <div
-      class="relative w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-5 shadow-xl"
-      role="dialog"
-      aria-modal="true"
-    >
-      <div class="flex items-start justify-between gap-3">
-        <div>
-          <p class="text-lg font-semibold text-slate-900">{{ reviewCommentModalItem.label }}</p>
-          <p class="text-xs text-slate-500">
-            Lane: {{ reviewCommentModalItem.lane }} - Reviewed by {{ reviewCommentModalItem.reviewer_name || '––' }}
-          </p>
-          <p class="text-xs text-slate-400 mt-1" v-if="reviewCommentModalItem.submitted_at">
-            {{ new Date(reviewCommentModalItem.submitted_at).toLocaleString() }}
-          </p>
-        </div>
+    <div class="mt-2 flex flex-col gap-3 border-t pt-3 md:flex-row md:items-center md:justify-between">
+      <div class="text-sm text-slate-600">HR review (other groups)</div>
+      <div class="flex flex-wrap items-center gap-2">
         <button
-          type="button"
-          class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
-          @click="closeReviewCommentModal"
+          v-if="canHR"
+          @click="submitHr"
+          :disabled="!canSubmitHr"
+          class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white shadow hover:bg-emerald-700 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-emerald-300"
         >
-          Close
+          Submit HR Review
         </button>
       </div>
+    </div>
+  </div>
 
-      <div class="mt-5 space-y-4 text-sm text-slate-700">
-        <div>
-          <div class="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase">
-            <span>Strengths</span>
+  <transition name="fade-scale">
+    <div
+      v-if="reviewCommentModalOpen && reviewCommentModalItem"
+      class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
+      @keydown.escape.window="closeReviewCommentModal"
+    >
+      <div
+        class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+        aria-hidden="true"
+        @click="closeReviewCommentModal"
+      ></div>
+
+      <div
+        class="relative w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-5 shadow-xl"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <p class="text-lg font-semibold text-slate-900">{{ reviewCommentModalItem.label }}</p>
+            <p class="text-xs text-slate-500">
+              Lane: {{ reviewCommentModalItem.lane }} - Reviewed by
+              {{ reviewCommentModalItem.reviewer_name || '––' }}
+            </p>
+            <p class="text-xs text-slate-400 mt-1" v-if="reviewCommentModalItem.submitted_at">
+              {{ new Date(reviewCommentModalItem.submitted_at).toLocaleString() }}
+            </p>
           </div>
-          <div class="mt-2 min-h-[40px] space-y-1 text-[13px] text-slate-600">
-            <div v-if="reviewCommentModalItem.strengths?.length">
-                <p v-for="(text, idx) in reviewCommentModalItem.strengths" :key="'modal-strength-'+idx">
-                  - {{ text }}
-                </p>
-            </div>
-            <p v-else class="text-slate-400">No strengths entered.</p>
-          </div>
+          <button
+            type="button"
+            class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            @click="closeReviewCommentModal"
+          >
+            Close
+          </button>
         </div>
 
-        <div>
-          <div class="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase">
-            <span>Gaps</span>
-          </div>
-          <div class="mt-2 min-h-[40px] space-y-1 text-[13px] text-slate-600">
-            <div v-if="reviewCommentModalItem.gaps?.length">
-                <p v-for="(text, idx) in reviewCommentModalItem.gaps" :key="'modal-gap-'+idx">
+        <div class="mt-5 space-y-4 text-sm text-slate-700">
+          <div>
+            <div class="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase">
+              <span>Strengths</span>
+            </div>
+            <div class="mt-2 min-h-[40px] space-y-1 text-[13px] text-slate-600">
+              <div v-if="reviewCommentModalItem.strengths?.length">
+                <p v-for="(text, idx) in reviewCommentModalItem.strengths" :key="'modal-strength-' + idx">
                   - {{ text }}
                 </p>
+              </div>
+              <p v-else class="text-slate-400">No strengths entered.</p>
             </div>
-            <p v-else class="text-slate-400">No gaps recorded.</p>
           </div>
-        </div>
 
-        <div>
-          <div class="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase">
-            <span>Suggestions</span>
-          </div>
-          <div class="mt-2 min-h-[40px] space-y-1 text-[13px] text-slate-600">
-            <div v-if="reviewCommentModalItem.suggestions?.length">
-                <p v-for="(text, idx) in reviewCommentModalItem.suggestions" :key="'modal-sug-'+idx">
+          <div>
+            <div class="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase">
+              <span>Gaps</span>
+            </div>
+            <div class="mt-2 min-h-[40px] space-y-1 text-[13px] text-slate-600">
+              <div v-if="reviewCommentModalItem.gaps?.length">
+                <p v-for="(text, idx) in reviewCommentModalItem.gaps" :key="'modal-gap-' + idx">
                   - {{ text }}
                 </p>
+              </div>
+              <p v-else class="text-slate-400">No gaps recorded.</p>
             </div>
-            <p v-else class="text-slate-400">No suggestions provided.</p>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase">
+              <span>Suggestions</span>
+            </div>
+            <div class="mt-2 min-h-[40px] space-y-1 text-[13px] text-slate-600">
+              <div v-if="reviewCommentModalItem.suggestions?.length">
+                <p v-for="(text, idx) in reviewCommentModalItem.suggestions" :key="'modal-sug-' + idx">
+                  - {{ text }}
+                </p>
+              </div>
+              <p v-else class="text-slate-400">No suggestions provided.</p>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
 </transition>
 </template>
+
