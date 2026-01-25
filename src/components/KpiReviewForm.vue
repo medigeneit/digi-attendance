@@ -34,6 +34,7 @@ const getTargetMarks = ref(null)
 const getPerformanceMarks = ref(null)
 const showSummaryDetails = ref(false)
 
+/* ---------- Compact mode (unchanged) ---------- */
 const compactEmployeeId = computed(() => {
   const value = Number(props.employeeId)
   return Number.isFinite(value) && value > 0 ? value : null
@@ -54,9 +55,7 @@ const compactComments = ref({})
 const compactLoading = ref(false)
 const compactSaving = ref(false)
 const compactError = ref('')
-const compactEmployeeLabel = computed(
-  () => props.employeeName || employee.value?.name || 'Employee',
-)
+const compactEmployeeLabel = computed(() => props.employeeName || employee.value?.name || 'Employee')
 
 const compactLaneLabels = {
   supv_director: 'Supv. Director',
@@ -73,7 +72,8 @@ function normalizeCompactItems(rawItems) {
   return rawItems.map((item, index) => {
     const id = item?.id ?? item?.item_id ?? item?.kpi_item_id ?? item?.kpi_id ?? index
     const title = item?.title ?? item?.name ?? item?.label ?? `Item ${index + 1}`
-    const weight = item?.weight ?? item?.weightage ?? item?.weight_value ?? item?.score_weight ?? null
+    const weight =
+      item?.weight ?? item?.weightage ?? item?.weight_value ?? item?.score_weight ?? null
     const maxScore = item?.max_score ?? item?.max ?? item?.max_marks ?? item?.score_max ?? 0
     const score = item?.score ?? item?.mark ?? item?.obtained ?? item?.value ?? null
     const comment = item?.comment ?? item?.note ?? item?.remark ?? ''
@@ -111,24 +111,24 @@ async function fetchCompactForm() {
     )
 
     const payload = data?.data ?? data ?? {}
-    const rawItems =
-      payload?.items || payload?.form?.items || payload?.group?.items || payload?.data || []
+    const rawItems = payload?.items || payload?.form?.items || payload?.group?.items || payload?.data || []
     const normalized = normalizeCompactItems(rawItems)
-    const marks = {}
-    const comments = {}
+
+    const nextMarks = {}
+    const nextComments = {}
 
     normalized.forEach((item) => {
       const scoreFromMap = payload?.marks?.[item.id]
       const commentFromMap = payload?.comments?.[item.id]
       const score = item.score ?? scoreFromMap ?? 0
       const comment = item.comment ?? commentFromMap ?? ''
-      marks[item.id] = score === '' || score == null ? 0 : Number(score)
-      comments[item.id] = comment ?? ''
+      nextMarks[item.id] = score === '' || score == null ? 0 : Number(score)
+      nextComments[item.id] = comment ?? ''
     })
 
     compactItems.value = normalized
-    compactMarks.value = marks
-    compactComments.value = comments
+    compactMarks.value = nextMarks
+    compactComments.value = nextComments
   } catch (err) {
     compactError.value = err?.response?.data?.message || 'Failed to load KPI marking form.'
     compactItems.value = []
@@ -209,18 +209,24 @@ const groupsAll = computed(() => store.cycle?.groups_json || [])
 const mode = computed(() => {
   const cycle = store.cycle || {}
   const groups = Array.isArray(cycle?.groups_json) ? cycle.groups_json : []
-  const isStaff =
-    cycle?.slug === 'support_staff' && groups.length === 1 && groups[0]?.id === 'personal'
+  const isStaff = cycle?.slug === 'support_staff' && groups.length === 1 && groups[0]?.id === 'personal'
   return isStaff ? 'staff' : 'executive'
 })
 
 const staffMode = computed(() => mode.value === 'staff')
 
-const isPersonalGroup = (g) => g?.id === 'personal'
+const isPersonalGroup = (g) => {
+  if (!g) return false
+  const normalizedId = String(g.id || '').toLowerCase()
+  const normalizedLabel = String(g.label || '').toLowerCase()
+  if (normalizedId === 'personal' || normalizedId === 'personal_evaluation' || normalizedId === 'personal_eval') {
+    return true
+  }
+  return normalizedLabel.includes('personal')
+}
+
 const personalGroup = computed(() => groupsAll.value.find(isPersonalGroup) || null)
-const otherGroups = computed(() =>
-  staffMode.value ? [] : groupsAll.value.filter((g) => !isPersonalGroup(g)),
-)
+const otherGroups = computed(() => (staffMode.value ? [] : groupsAll.value.filter((g) => !isPersonalGroup(g))))
 
 /** Fallback label if a group name is missing */
 const safeGroupLabel = (grp, idx) => grp?.label || `Group ${idx + 1}`
@@ -238,6 +244,7 @@ const sortedLanes = computed(() => {
 const hrLanes = computed(() => sortedLanes.value.filter(isHrLane))
 const nonHrLanes = computed(() => sortedLanes.value.filter((l) => !isHrLane(l)))
 const personalLanes = computed(() => (staffMode.value ? sortedLanes.value : nonHrLanes.value))
+
 const myEditablePersonalLaneKey = computed(
   () => personalLanes.value.find((ln) => ln.can_current_user_review)?.key || null,
 )
@@ -247,6 +254,7 @@ const myPersonalLane = computed(
 const myPersonalLaneRank = computed(() => myPersonalLane.value?.rank ?? null)
 
 const currentUserId = computed(() => Number(auth?.user?.id || 0))
+
 const myHrLane = computed(() => {
   const uid = currentUserId.value
   if (!uid) return null
@@ -258,9 +266,31 @@ const myHrLaneKey = computed(() => myHrLane.value?.key || null)
 
 const canEditHR = computed(() => !!(myHrLane.value && myHrLane.value.can_current_user_review))
 const canHR = computed(() => !!(isHR.value || canEditHR.value))
-
 const canEditPersonal = computed(() => !!myEditablePersonalLaneKey.value)
 
+/**
+ * ✅ Dual-role detect:
+ * - executive mode
+ * - canHR true
+ * - personal lane আছে (incharge)
+ * - hr lane আছে
+ * - দুইটা lane key আলাদা
+ * - otherGroups আছে
+ */
+const hasDualRolePersonalAndHR = computed(() => {
+  if (staffMode.value) return false
+  if (!canHR.value) return false
+  const p = myEditablePersonalLaneKey.value
+  const h = myHrLaneKey.value
+  if (!p || !h) return false
+  if (p === h) return false
+  return otherGroups.value.length > 0
+})
+
+/**
+ * UI label (আগের মতই রাখলাম)
+ * reviewerLaneKey শুধু display/legacy fallback এ আছে; submit এখন split করে।
+ */
 const reviewerLaneKey = computed(() => {
   if (staffMode.value) return myEditablePersonalLaneKey.value
   if (canHR.value && myHrLaneKey.value) return myHrLaneKey.value
@@ -268,9 +298,7 @@ const reviewerLaneKey = computed(() => {
 })
 
 const reviewingAsHR = computed(() =>
-  Boolean(
-    reviewerLaneKey.value && myHrLaneKey.value && reviewerLaneKey.value === myHrLaneKey.value,
-  ),
+  Boolean(reviewerLaneKey.value && myHrLaneKey.value && reviewerLaneKey.value === myHrLaneKey.value),
 )
 
 /* ---------- Existing review readers ---------- */
@@ -341,7 +369,7 @@ const personalTotals = computed(() => {
   let max = 0,
     got = 0
   const grp = personalGroup.value
-  if (grp) {
+  if (grp && Array.isArray(grp.items)) {
     grp.items.forEach((it) => {
       max += Number(it.max || 0)
       const v = Number(marks.value[it.id] || 0)
@@ -357,9 +385,7 @@ const personalTotals = computed(() => {
 })
 
 /* ---------- Target summary (sidebar) ---------- */
-const hasTargetSummary = computed(
-  () => !!getTargetMarks.value && typeof getTargetMarks.value === 'object',
-)
+const hasTargetSummary = computed(() => !!getTargetMarks.value && typeof getTargetMarks.value === 'object')
 
 const targetAvg = computed(
   () =>
@@ -371,6 +397,7 @@ const targetAvg = computed(
     },
 )
 const targetYear = computed(() => getTargetMarks.value?.year ?? null)
+
 const performanceAvg = computed(
   () =>
     getPerformanceMarks.value?.avg || {
@@ -381,44 +408,42 @@ const performanceAvg = computed(
     },
 )
 const performanceYear = computed(() => getPerformanceMarks.value?.year ?? null)
+
 const activeSummaryTab = ref('target')
 const summaryTabs = [
   { key: 'target', label: 'Annual Target' },
   { key: 'performance', label: 'Annual Performance' },
 ]
 const targetMonths = computed(() => getTargetMarks.value?.months_total_form ?? 0)
-const performanceMonths = computed(
-  () => getPerformanceMarks.value?.months_total_form ?? targetMonths.value,
-)
-const summaryData = computed(() =>
-  activeSummaryTab.value === 'target' ? targetAvg.value : performanceAvg.value,
-)
+const performanceMonths = computed(() => getPerformanceMarks.value?.months_total_form ?? targetMonths.value)
+
+const summaryData = computed(() => (activeSummaryTab.value === 'target' ? targetAvg.value : performanceAvg.value))
 const summaryFinal = computed(() => Number(summaryData.value?.per_form_yearly?.final || 0))
 const summaryMax = computed(() => Number(summaryData.value?.per_scored_month?.max || 0))
+
 const summaryPercent = computed(() => {
   if (!summaryMax.value) return 0
   return Math.round((summaryFinal.value / summaryMax.value) * 100)
 })
+
 const canAutoFillFromSummary = computed(() => canHR.value && !staffMode.value)
-const summaryYear = computed(() =>
-  activeSummaryTab.value === 'target' ? targetYear.value : performanceYear.value,
-)
-const summaryMonths = computed(() =>
-  activeSummaryTab.value === 'target' ? targetMonths.value : performanceMonths.value,
-)
-const summaryLabel = computed(
-  () => summaryTabs.find((tab) => tab.key === activeSummaryTab.value)?.label || 'Annual Target',
-)
+const summaryYear = computed(() => (activeSummaryTab.value === 'target' ? targetYear.value : performanceYear.value))
+const summaryMonths = computed(() => (activeSummaryTab.value === 'target' ? targetMonths.value : performanceMonths.value))
+
+const summaryLabel = computed(() => summaryTabs.find((tab) => tab.key === activeSummaryTab.value)?.label || 'Annual Target')
+
 const summaryGroupMap = {
   target: 'target',
   performance: 'regular_activities_of_the_department',
 }
+
 const summaryGroup = computed(() => {
   const key = summaryGroupMap[activeSummaryTab.value]
   if (!key) return null
   return otherGroups.value.find((g) => g.id === key) || null
 })
 const summaryGroupLabel = computed(() => summaryGroup.value?.label || summaryLabel.value)
+
 const setSummaryTab = (tabKey) => {
   if (summaryTabs.some((tab) => tab.key === tabKey)) {
     activeSummaryTab.value = tabKey
@@ -460,7 +485,6 @@ const applySummaryToMappedGroup = (tabKey, { overwrite } = { overwrite: false })
 
   const finalScore = summaryFinal.value
   const groupMax = items.reduce((acc, item) => acc + Number(item.max || 0), 0)
-
   if (!groupMax) return
 
   if (items.length === 1) {
@@ -491,12 +515,13 @@ watch(
   { immediate: true },
 )
 
+/* ---------- Review comments (unchanged) ---------- */
 const reviewComments = computed(() => {
-  const orderedLanes = staffMode.value ? sortedLanes.value : nonHrLanes.value // rank অনুযায়ী sorted
+  const orderedLanes = staffMode.value ? sortedLanes.value : nonHrLanes.value
   const result = []
 
-  // HR মোড হলে সব দেখতে পারবে, না হলে নিজের rank পর্যন্ত
-  const viewerRank = reviewingAsHR.value || canHR.value ? Infinity : (myPersonalLaneRank.value ?? null)
+  const viewerRank =
+    reviewingAsHR.value || canHR.value ? Infinity : myPersonalLaneRank.value ?? null
 
   const toArr = (v) => {
     if (!v) return []
@@ -519,7 +544,6 @@ const reviewComments = computed(() => {
     const laneKey = ln.key
     if (!laneKey) return
 
-    // 🔹 hierarchy filter: নিজের rank এর নিচের lane গুলো hide
     if (viewerRank != null) {
       const laneRank = ln.rank ?? 999
       if (laneRank > viewerRank) return
@@ -552,7 +576,6 @@ const reviewComments = computed(() => {
 
 const makeOptions = (field) => {
   const set = new Set()
-
   reviewComments.value.forEach((item) => {
     const arr = Array.isArray(item[field]) ? item[field] : []
     arr.forEach((val) => {
@@ -560,7 +583,6 @@ const makeOptions = (field) => {
       if (v) set.add(v)
     })
   })
-
   return Array.from(set)
 }
 
@@ -646,14 +668,72 @@ const serialMap = computed(() => {
   const map = {}
   let i = 1
   const grp = personalGroup.value
-  if (grp)
+  if (grp && Array.isArray(grp.items)) {
     grp.items.forEach((it) => {
       map[it.id] = i++
     })
+  }
   return map
 })
 
-/* ---------- Init ---------- */
+/* ---------- Helpers: pick marks only for group items ---------- */
+function groupItemIds(group) {
+  const items = Array.isArray(group?.items) ? group.items : []
+  return items.map((it) => it.id).filter((id) => id != null)
+}
+
+function pickMarksByItemIds(ids) {
+  const out = {}
+  ;(Array.isArray(ids) ? ids : []).forEach((id) => {
+    out[id] = Number(marks.value?.[id] ?? 0)
+  })
+  return out
+}
+
+function pickMarksFromGroup(group) {
+  return pickMarksByItemIds(groupItemIds(group))
+}
+
+function pickMarksFromGroups(groups) {
+  const ids = []
+  ;(Array.isArray(groups) ? groups : []).forEach((g) => {
+    ids.push(...groupItemIds(g))
+  })
+  // unique
+  const uniq = Array.from(new Set(ids))
+  return pickMarksByItemIds(uniq)
+}
+
+const canSubmitPersonal = computed(() => {
+  if (!myEditablePersonalLaneKey.value) return false
+  if (!personalGroup.value) return false
+  return Object.keys(pickMarksFromGroup(personalGroup.value)).length > 0
+})
+
+const canSubmitHr = computed(() => {
+  if (!canHR.value || !myHrLaneKey.value) return false
+  if (!Array.isArray(otherGroups.value) || otherGroups.value.length === 0) return false
+  return Object.keys(pickMarksFromGroups(otherGroups.value)).length > 0
+})
+
+function applyLaneMarksToItemIds(laneKey, ids) {
+  if (!laneKey || !ids?.length) return false
+  const r = laneLatestReview(laneKey)
+  const laneMarks = r?.marks
+  if (!laneMarks) return false
+
+  let applied = false
+  ids.forEach((id) => {
+    const v = laneMarks?.[id]
+    if (v !== '' && v != null) {
+      marks.value[id] = Number(v)
+      applied = true
+    }
+  })
+  return applied
+}
+
+/* ---------- Init / Hydrate ---------- */
 const employeeId = computed(() => Number(route.params.employeeId))
 
 const hydrateReviewData = (resp) => {
@@ -664,59 +744,125 @@ const hydrateReviewData = (resp) => {
   reviewsByLane.value = resp.reviews_by_lane || {}
   isHR.value = !!(resp?.meta?.is_hr ?? resp?.hr ?? false)
 
+  // reset all marks = 0 for all items
   marks.value = {}
-  groupsAll.value.forEach((g) =>
-    g.items.forEach((it) => {
+  const allGroups = Array.isArray(groupsAll.value) ? groupsAll.value : []
+  allGroups.forEach((g) => {
+    const items = Array.isArray(g?.items) ? g.items : []
+    items.forEach((it) => {
       marks.value[it.id] = 0
-    }),
-  )
+    })
+  })
 
-  if (myEditablePersonalLaneKey.value) {
-    const myExisting = laneLatestReview(myEditablePersonalLaneKey.value)
-    if (myExisting?.marks) Object.assign(marks.value, myExisting.marks)
+  // ✅ PERSONAL: prefer personal lane (incharge). If not found, legacy fallback: HR lane (older bug data)
+  const personalIds = groupItemIds(personalGroup.value)
+  const personalLane = myEditablePersonalLaneKey.value
+  const hrLane = myHrLaneKey.value
+
+  const appliedPersonal = applyLaneMarksToItemIds(personalLane, personalIds)
+  if (!appliedPersonal && hrLane) {
+    // legacy fallback (আগে ভুল করে hr lane-এ personal save হয়ে থাকলে)
+    applyLaneMarksToItemIds(hrLane, personalIds)
   }
 
+  // ✅ OTHER GROUPS: fill from HR lane (or latest hr*)
   if (canHR.value && otherGroups.value.length) {
     otherGroups.value.forEach((g) => {
-      g.items.forEach((it) => {
-        let v = myHrLaneKey.value ? laneMark(myHrLaneKey.value, it.id) : ''
-        if (v === '' || v == null) v = hrMark(it.id)
-        if (v !== '' && v != null) marks.value[it.id] = Number(v)
+      const ids = groupItemIds(g)
+      ids.forEach((id) => {
+        let v = hrLane ? laneMark(hrLane, id) : ''
+        if (v === '' || v == null) v = hrMark(id)
+        if (v !== '' && v != null) marks.value[id] = Number(v)
       })
     })
   }
+}
+
+const loadReviewData = async (id) => {
+  if (!id) return
+  await store.fetchActiveCycle(id)
+  const resp = await store.fetchLanes(store.cycle.id, id)
+  hydrateReviewData(resp)
+}
+
+const refreshReviewData = async () => {
+  if (!employeeId.value || !store.cycle?.id) return
+  const resp = await store.fetchLanes(store.cycle.id, employeeId.value)
+  hydrateReviewData(resp)
 }
 
 watch(
   employeeId,
   async (id, prev) => {
     if (!id || (prev && id === prev)) return
-    await store.fetchActiveCycle(id)
-    // NOTE: consider a single endpoint returning cycle + lanes + reviews + optional annual summary for HR.
-    // NOTE: consider returning latest review per lane (not full arrays) to reduce payload size.
-    const resp = await store.fetchLanes(store.cycle.id, id)
-    hydrateReviewData(resp)
+    await loadReviewData(id)
   },
   { immediate: true },
 )
 
-/* ---------- Submit ---------- */
-async function submit() {
-  const reviewerLane = reviewerLaneKey.value
-  if (!reviewerLane) {
-    alert('Unable to determine reviewer lane.')
+/* ---------- Submit (split) ---------- */
+async function submitPersonal() {
+  const empId = Number(route.params.employeeId)
+  const cycleId = store.cycle?.id
+  const personalLane = myEditablePersonalLaneKey.value
+
+  if (!cycleId || !empId) {
+    alert('Invalid cycle/employee.')
     return
   }
-  await store.submitReview({
-    cycle_id: store.cycle.id,
-    employee_id: Number(route.params.employeeId),
-    reviewer_lane: reviewerLane,
-    marks: marks.value,
-    strengths: strengths.value,
-    gaps: gaps.value,
-    suggestions: suggestions.value,
-  })
-  alert('Submitted')
+  if (!personalLane || !personalGroup.value) {
+    alert('Unable to determine personal reviewer lane.')
+    return
+  }
+
+  try {
+    await store.submitReview({
+      cycle_id: cycleId,
+      employee_id: empId,
+      reviewer_lane: personalLane,
+      marks: pickMarksFromGroup(personalGroup.value),
+      strengths: '',
+      gaps: '',
+      suggestions: '',
+    })
+    await refreshReviewData()
+    alert('Personal review submitted')
+  } catch (e) {
+    const msg = e?.response?.data?.message || e?.message || 'Failed to submit personal review.'
+    alert(msg)
+  }
+}
+
+async function submitHr() {
+  const empId = Number(route.params.employeeId)
+  const cycleId = store.cycle?.id
+  const hrLane = myHrLaneKey.value
+
+  if (!cycleId || !empId) {
+    alert('Invalid cycle/employee.')
+    return
+  }
+  if (!hrLane) {
+    alert('Unable to determine HR reviewer lane.')
+    return
+  }
+
+  try {
+    await store.submitReview({
+      cycle_id: cycleId,
+      employee_id: empId,
+      reviewer_lane: hrLane,
+      marks: pickMarksFromGroups(otherGroups.value),
+      strengths: strengths.value,
+      gaps: gaps.value,
+      suggestions: suggestions.value,
+    })
+    await refreshReviewData()
+    alert('HR review submitted')
+  } catch (e) {
+    const msg = e?.response?.data?.message || e?.message || 'Failed to submit HR review.'
+    alert(msg)
+  }
 }
 
 /* ---------- Utils ---------- */
@@ -752,9 +898,7 @@ function applyHint(field, value) {
   const text = typeof value === 'string' ? value.trim() : ''
   if (!text) return
 
-  // 🔒 ডুপ্লিকেট ব্লক
   if (hasHint(field, text)) return
-
   target.value = appendWithNewline(target.value, text)
 }
 </script>
@@ -830,11 +974,7 @@ function applyHint(field, value) {
                 v-model.number="compactMarks[item.id]"
                 class="rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400/50"
               >
-                <option
-                  v-for="opt in buildScoreOptions(item.maxScore)"
-                  :key="opt"
-                  :value="opt"
-                >
+                <option v-for="opt in buildScoreOptions(item.maxScore)" :key="opt" :value="opt">
                   {{ opt }}
                 </option>
               </select>
@@ -882,32 +1022,51 @@ function applyHint(field, value) {
             <span class="text-xs font-semibold text-indigo-700">KPI Cycle</span>
             <span class="text-xs text-indigo-900">{{ store.cycle?.title }}</span>
           </div>
+
           <div class="text-sm text-slate-600">
             <div class="font-medium text-slate-800">
               {{ employee?.name || 'Employee' }}
             </div>
+
             <div class="flex flex-wrap gap-2 text-xs mt-0.5">
               <span
                 v-if="employee?.designation?.title"
                 class="inline-flex items-center rounded-full bg-slate-50 px-2 py-0.5 text-slate-600"
               >
                 Designation:
-                <span class="ml-1 font-medium text-slate-800">{{
-                  employee.designation.title
-                }}</span>
+                <span class="ml-1 font-medium text-slate-800">
+                  {{ employee.designation.title }}
+                </span>
               </span>
+
               <span
                 v-if="employee?.department?.name"
                 class="inline-flex items-center rounded-full bg-slate-50 px-2 py-0.5 text-slate-600"
               >
                 Department:
-                <span class="ml-1 font-medium text-slate-800">{{ employee.department.name }}</span>
+                <span class="ml-1 font-medium text-slate-800">
+                  {{ employee.department.name }}
+                </span>
               </span>
-              <span
-                class="inline-flex items-center rounded-full bg-slate-50 px-2 py-0.5 text-slate-600"
-              >
+
+              <span class="inline-flex items-center rounded-full bg-slate-50 px-2 py-0.5 text-slate-600">
                 Reviewing as:
-                <span v-if="reviewingAsHR" class="ml-1 inline-flex items-center gap-1">
+                <span v-if="hasDualRolePersonalAndHR" class="ml-1 inline-flex items-center gap-1">
+                  <span class="font-semibold text-slate-800">
+                    {{ myEditablePersonalLaneKey }}
+                  </span>
+                  <span class="text-slate-400">+</span>
+                  <span class="font-semibold text-emerald-700">
+                    {{ myHrLaneKey }}
+                  </span>
+                  <span
+                    class="text-[10px] rounded bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 text-emerald-700"
+                  >
+                    dual mode
+                  </span>
+                </span>
+
+                <span v-else-if="reviewingAsHR" class="ml-1 inline-flex items-center gap-1">
                   <span class="font-semibold text-emerald-700">HR</span>
                   <span
                     class="text-[10px] rounded bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 text-emerald-700"
@@ -915,6 +1074,7 @@ function applyHint(field, value) {
                     HR mode
                   </span>
                 </span>
+
                 <span v-else class="ml-1 font-semibold text-slate-800">
                   {{ reviewerLaneKey || 'No lane' }}
                 </span>
@@ -967,13 +1127,11 @@ function applyHint(field, value) {
           v-for="active_criteria in employee.active_criteria"
           :key="active_criteria.id"
         >
-          <div
-            class="print:block richtext print:break-inside-avoid"
-            v-html="active_criteria?.description"
-          ></div>
+          <div class="print:block richtext print:break-inside-avoid" v-html="active_criteria?.description"></div>
         </div>
       </section>
     </div>
+
     <!-- PERSONAL GROUP -->
     <KpiGroupTable
       v-if="store.cycle && personalGroup"
@@ -985,13 +1143,36 @@ function applyHint(field, value) {
       :marks="marks"
       :header-label="'Personal Evaluation'"
       :item-label="personalGroup?.label || 'Personal'"
-      :helper-text="staffMode ? 'All reviewer lanes score the Personal table.' : 'Fill only your lane; others appear as read-only.'"
+      :helper-text="
+        staffMode
+          ? 'All reviewer lanes score the Personal table.'
+          : canEditPersonal && canHR
+            ? 'Submit Personal and HR reviews separately using the buttons below.'
+            : 'Fill only your lane; others appear as read-only.'
+      "
       :serial-map="serialMap"
       :get-lane-mark="laneMark"
       :on-mark-change="setMark"
       :on-cap="cap"
       :on-quick-fill-item="quickFill"
     />
+    <div
+      v-if="canEditPersonal"
+      class="mt-2 flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-white px-4 py-3 shadow-sm"
+    >
+      <div class="text-sm text-slate-600">
+        Personal total:
+        <b class="text-slate-900">{{ personalTotals.got.toFixed(2) }}</b>
+        <span class="text-slate-400">/ {{ personalTotals.max.toFixed(2) }}</span>
+      </div>
+      <button
+        @click="submitPersonal"
+        :disabled="!canSubmitPersonal"
+        class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-medium text-white shadow hover:bg-slate-800 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-slate-300"
+      >
+        Submit Personal
+      </button>
+    </div>
 
     <!-- OTHER GROUPS + RIGHT SIDEBAR -->
     <section class="mt-2">
@@ -1019,26 +1200,18 @@ function applyHint(field, value) {
         </div>
 
         <!-- Right sidebar (Annual Target Summary + Comments) -->
-        <aside
-          class="space-y-4 sticky top-10 z-50"
-          :class="[otherGroups.length === 0 ? 'lg:col-span-full' : 'lg:col-span-2']"
-        >
+        <aside class="space-y-4 sticky top-10 z-50" :class="[otherGroups.length === 0 ? 'lg:col-span-full' : 'lg:col-span-2']">
           <section
             v-if="!staffMode && hasTargetSummary && canHR"
             class="sticky top-6 border rounded-2xl bg-white shadow-sm"
           >
-            <header
-              class="flex flex-wrap items-center justify-between border-b px-4 py-3 text-sm font-semibold text-slate-800"
-            >
+            <header class="flex flex-wrap items-center justify-between border-b px-4 py-3 text-sm font-semibold text-slate-800">
               <span>Annual Summary</span>
               <div class="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
                 <span class="rounded-full border bg-slate-50 px-2 py-0.5 text-slate-700">
                   {{ summaryLabel }}
                 </span>
-                <span
-                  v-if="summaryYear"
-                  class="rounded-full border bg-slate-50 px-2 py-0.5 text-slate-700"
-                >
+                <span v-if="summaryYear" class="rounded-full border bg-slate-50 px-2 py-0.5 text-slate-700">
                   Year {{ summaryYear }}
                 </span>
                 <span class="rounded-full border bg-slate-50 px-2 py-0.5 text-slate-700">
@@ -1070,32 +1243,20 @@ function applyHint(field, value) {
                   <div class="rounded-xl border bg-slate-50 p-3">
                     <div class="flex items-center justify-between">
                       <span class="text-xs font-medium text-slate-600">Incharge</span>
-                      <span
-                        class="text-[11px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200"
-                      >
-                        {{
-                          pct(
-                            summaryData.per_scored_month?.incharge,
-                            summaryData.per_scored_month?.max,
-                          )
-                        }}%
+                      <span class="text-[11px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                        {{ pct(summaryData.per_scored_month?.incharge, summaryData.per_scored_month?.max) }}%
                       </span>
                     </div>
                     <div class="mt-1 text-sm font-semibold text-slate-900">
                       {{ fmt(summaryData.per_scored_month?.incharge) }}
-                      <span class="text-xs text-slate-500"
-                        >/ {{ fmt(summaryData.per_scored_month?.max) }}</span
-                      >
+                      <span class="text-xs text-slate-500">/ {{ fmt(summaryData.per_scored_month?.max) }}</span>
                     </div>
                     <div class="mt-2 h-2 rounded bg-slate-100 overflow-hidden">
                       <div
                         class="h-2 bg-blue-500"
                         :style="{
                           width:
-                            pct(
-                              summaryData.per_scored_month?.incharge,
-                              summaryData.per_scored_month?.max,
-                            ) + '%',
+                            pct(summaryData.per_scored_month?.incharge, summaryData.per_scored_month?.max) + '%',
                         }"
                       ></div>
                     </div>
@@ -1104,32 +1265,20 @@ function applyHint(field, value) {
                   <div class="rounded-xl border bg-slate-50 p-3">
                     <div class="flex items-center justify-between">
                       <span class="text-xs font-medium text-slate-600">Coordinator</span>
-                      <span
-                        class="text-[11px] px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 border border-violet-200"
-                      >
-                        {{
-                          pct(
-                            summaryData.per_scored_month?.coordinator,
-                            summaryData.per_scored_month?.max,
-                          )
-                        }}%
+                      <span class="text-[11px] px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 border border-violet-200">
+                        {{ pct(summaryData.per_scored_month?.coordinator, summaryData.per_scored_month?.max) }}%
                       </span>
                     </div>
                     <div class="mt-1 text-sm font-semibold text-slate-900">
                       {{ fmt(summaryData.per_scored_month?.coordinator) }}
-                      <span class="text-xs text-slate-500"
-                        >/ {{ fmt(summaryData.per_scored_month?.max) }}</span
-                      >
+                      <span class="text-xs text-slate-500">/ {{ fmt(summaryData.per_scored_month?.max) }}</span>
                     </div>
                     <div class="mt-2 h-2 rounded bg-slate-100 overflow-hidden">
                       <div
                         class="h-2 bg-violet-500"
                         :style="{
                           width:
-                            pct(
-                              summaryData.per_scored_month?.coordinator,
-                              summaryData.per_scored_month?.max,
-                            ) + '%',
+                            pct(summaryData.per_scored_month?.coordinator, summaryData.per_scored_month?.max) + '%',
                         }"
                       ></div>
                     </div>
@@ -1138,32 +1287,20 @@ function applyHint(field, value) {
                   <div class="rounded-xl border bg-slate-50 p-3 sm:col-span-2">
                     <div class="flex items-center justify-between">
                       <span class="text-xs font-medium text-slate-600">Final</span>
-                      <span
-                        class="text-[11px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200"
-                      >
-                        {{
-                          pct(
-                            summaryData.per_form_yearly?.final,
-                            summaryData.per_scored_month?.max,
-                          )
-                        }}%
+                      <span class="text-[11px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        {{ pct(summaryData.per_form_yearly?.final, summaryData.per_scored_month?.max) }}%
                       </span>
                     </div>
                     <div class="mt-1 text-sm font-semibold text-slate-900">
                       {{ fmt(summaryData.per_form_yearly?.final) }}
-                      <span class="text-xs text-slate-500"
-                        >/ {{ fmt(summaryData.per_scored_month?.max) }}</span
-                      >
+                      <span class="text-xs text-slate-500">/ {{ fmt(summaryData.per_scored_month?.max) }}</span>
                     </div>
                     <div class="mt-2 h-2 rounded bg-slate-100 overflow-hidden">
                       <div
                         class="h-2 bg-emerald-500"
                         :style="{
                           width:
-                            pct(
-                              summaryData.per_form_yearly?.final,
-                              summaryData.per_scored_month?.max,
-                            ) + '%',
+                            pct(summaryData.per_form_yearly?.final, summaryData.per_scored_month?.max) + '%',
                         }"
                       ></div>
                     </div>
@@ -1190,40 +1327,27 @@ function applyHint(field, value) {
                       <div class="text-slate-500">Group</div>
                       <div class="font-medium text-slate-800">{{ summaryGroupLabel }}</div>
                       <div class="text-slate-500">Max (denominator)</div>
-                      <div class="font-medium text-slate-800">
-                        {{ fmt(summaryData.per_scored_month?.max) }}
-                      </div>
+                      <div class="font-medium text-slate-800">{{ fmt(summaryData.per_scored_month?.max) }}</div>
                       <div class="text-slate-500">Incharge avg</div>
-                      <div class="font-medium text-slate-800">
-                        {{ fmt(summaryData.per_form_yearly?.incharge) }}
-                      </div>
+                      <div class="font-medium text-slate-800">{{ fmt(summaryData.per_form_yearly?.incharge) }}</div>
                       <div class="text-slate-500">Coordinator avg</div>
-                      <div class="font-medium text-slate-800">
-                        {{ fmt(summaryData.per_form_yearly?.coordinator) }}
-                      </div>
+                      <div class="font-medium text-slate-800">{{ fmt(summaryData.per_form_yearly?.coordinator) }}</div>
                       <div class="text-slate-500">Final avg</div>
-                      <div class="font-medium text-slate-800">
-                        {{ fmt(summaryData.per_form_yearly?.final) }}
-                      </div>
+                      <div class="font-medium text-slate-800">{{ fmt(summaryData.per_form_yearly?.final) }}</div>
                       <div class="text-slate-500">Percent (simple)</div>
-                      <div class="font-medium text-slate-800">
-                        {{ fmt(summaryData.percent_simple) }}%
-                      </div>
+                      <div class="font-medium text-slate-800">{{ fmt(summaryData.percent_simple) }}%</div>
                       <div class="text-slate-500">Percent (weighted)</div>
-                      <div class="font-medium text-slate-800">
-                        {{ fmt(summaryData.percent_weighted) }}%
-                      </div>
+                      <div class="font-medium text-slate-800">{{ fmt(summaryData.percent_weighted) }}%</div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           </section>
+
           <!-- Review comments -->
           <section v-if="reviewComments.length" class="border rounded-2xl bg-white shadow-sm">
-            <header
-              class="flex items-center justify-between border-b px-4 py-3 text-sm font-semibold text-slate-800"
-            >
+            <header class="flex items-center justify-between border-b px-4 py-3 text-sm font-semibold text-slate-800">
               <span>Review Comments</span>
               <span class="text-[11px] text-slate-500"> {{ reviewComments.length }} lane(s) </span>
             </header>
@@ -1272,31 +1396,20 @@ function applyHint(field, value) {
     </section>
 
     <!-- Notes (enable if editing in either mode) -->
-    <section
-      v-if="canEditPersonal || canHR"
-      class="rounded-2xl bg-white border shadow-sm px-4 py-4 space-y-4"
-    >
+    <section v-if="canEditPersonal || canHR" class="rounded-2xl bg-white border shadow-sm px-4 py-4 space-y-4">
       <header class="flex items-center justify-between mb-1">
         <div>
           <h2 class="text-sm font-semibold text-slate-800">Overall Review Notes</h2>
-          <p class="text-[11px] text-slate-500">
-            Use saved hints or write your own detailed comments.
-          </p>
+          <p class="text-[11px] text-slate-500">Use saved hints or write your own detailed comments.</p>
         </div>
         <div class="hidden md:flex items-center gap-2 text-[11px] text-slate-500">
-          <span
-            class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 border border-emerald-100"
-          >
+          <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 border border-emerald-100">
             <span class="text-xs">●</span> Strengths
           </span>
-          <span
-            class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 border border-amber-100"
-          >
+          <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 border border-amber-100">
             <span class="text-xs">●</span> Gaps
           </span>
-          <span
-            class="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 border border-sky-100"
-          >
+          <span class="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 border border-sky-100">
             <span class="text-xs">●</span> Suggestions
           </span>
         </div>
@@ -1315,7 +1428,6 @@ function applyHint(field, value) {
             </span>
           </header>
 
-          <!-- Hint chips -->
           <div
             v-if="strengthOptions.length"
             class="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 h-40 overflow-y-auto"
@@ -1333,11 +1445,9 @@ function applyHint(field, value) {
               </button>
             </div>
           </div>
-          <p v-else class="text-[11px] text-slate-400">
-            No historical strengths yet. Write your own notes below.
-          </p>
 
-          <!-- Textarea -->
+          <p v-else class="text-[11px] text-slate-400">No historical strengths yet. Write your own notes below.</p>
+
           <div class="space-y-1">
             <label class="text-[11px] font-medium text-slate-500"> Key Strength(s) </label>
             <textarea
@@ -1360,7 +1470,6 @@ function applyHint(field, value) {
             </span>
           </header>
 
-          <!-- Hint chips -->
           <div
             v-if="gapOptions.length"
             class="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 h-40 overflow-y-auto"
@@ -1378,9 +1487,9 @@ function applyHint(field, value) {
               </button>
             </div>
           </div>
+
           <p v-else class="text-[11px] text-slate-400">No historical gaps yet.</p>
 
-          <!-- Textarea -->
           <div class="space-y-1">
             <label class="text-[11px] font-medium text-slate-500">GAP(s)</label>
             <textarea
@@ -1403,7 +1512,6 @@ function applyHint(field, value) {
             </span>
           </header>
 
-          <!-- Suggestion hint chips (optional but nice) -->
           <div
             v-if="suggestionOptions.length"
             class="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 h-40 overflow-y-auto"
@@ -1422,11 +1530,8 @@ function applyHint(field, value) {
             </div>
           </div>
 
-          <!-- Textarea -->
           <div class="space-y-1">
-            <label class="text-[11px] font-medium text-slate-500">
-              Suggestions / Development plan
-            </label>
+            <label class="text-[11px] font-medium text-slate-500"> Suggestions / Development plan </label>
             <textarea
               v-model="suggestions"
               placeholder="Specific actions, training plans, timeline and expectations…"
@@ -1438,104 +1543,103 @@ function applyHint(field, value) {
     </section>
 
     <!-- Sticky action -->
-    <div
-      class="mt-2 flex flex-col gap-3 border-t pt-3 md:flex-row md:items-center md:justify-between"
-    >
-      <div class="text-sm text-slate-600">
-        My (Personal) Total:
-        <b class="text-slate-900">{{ personalTotals.got.toFixed(2) }}</b>
-        <span class="text-slate-400">/ {{ personalTotals.max.toFixed(2) }}</span>
-      </div>
-      <button
-        @click="submit"
-        :disabled="!(canHR || canEditPersonal)"
-        class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white shadow hover:bg-emerald-700 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-      >
-        Submit
-      </button>
-    </div>
-  </div>
-
-<transition name="fade-scale">
-  <div
-    v-if="reviewCommentModalOpen && reviewCommentModalItem"
-    class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
-    @keydown.escape.window="closeReviewCommentModal"
-  >
-    <div
-      class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-      aria-hidden="true"
-      @click="closeReviewCommentModal"
-    ></div>
-
-    <div
-      class="relative w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-5 shadow-xl"
-      role="dialog"
-      aria-modal="true"
-    >
-      <div class="flex items-start justify-between gap-3">
-        <div>
-          <p class="text-lg font-semibold text-slate-900">{{ reviewCommentModalItem.label }}</p>
-          <p class="text-xs text-slate-500">
-            Lane: {{ reviewCommentModalItem.lane }} - Reviewed by {{ reviewCommentModalItem.reviewer_name || '––' }}
-          </p>
-          <p class="text-xs text-slate-400 mt-1" v-if="reviewCommentModalItem.submitted_at">
-            {{ new Date(reviewCommentModalItem.submitted_at).toLocaleString() }}
-          </p>
-        </div>
+    <div class="mt-2 flex flex-col gap-3 border-t pt-3 md:flex-row md:items-center md:justify-between">
+      <div class="text-sm text-slate-600">HR review (other groups)</div>
+      <div class="flex flex-wrap items-center gap-2">
         <button
-          type="button"
-          class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
-          @click="closeReviewCommentModal"
+          v-if="canHR"
+          @click="submitHr"
+          :disabled="!canSubmitHr"
+          class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white shadow hover:bg-emerald-700 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-emerald-300"
         >
-          Close
+          Submit HR Review
         </button>
       </div>
+    </div>
+  </div>
 
-      <div class="mt-5 space-y-4 text-sm text-slate-700">
-        <div>
-          <div class="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase">
-            <span>Strengths</span>
+  <transition name="fade-scale">
+    <div
+      v-if="reviewCommentModalOpen && reviewCommentModalItem"
+      class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
+      @keydown.escape.window="closeReviewCommentModal"
+    >
+      <div
+        class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+        aria-hidden="true"
+        @click="closeReviewCommentModal"
+      ></div>
+
+      <div
+        class="relative w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-5 shadow-xl"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <p class="text-lg font-semibold text-slate-900">{{ reviewCommentModalItem.label }}</p>
+            <p class="text-xs text-slate-500">
+              Lane: {{ reviewCommentModalItem.lane }} - Reviewed by
+              {{ reviewCommentModalItem.reviewer_name || '––' }}
+            </p>
+            <p class="text-xs text-slate-400 mt-1" v-if="reviewCommentModalItem.submitted_at">
+              {{ new Date(reviewCommentModalItem.submitted_at).toLocaleString() }}
+            </p>
           </div>
-          <div class="mt-2 min-h-[40px] space-y-1 text-[13px] text-slate-600">
-            <div v-if="reviewCommentModalItem.strengths?.length">
-                <p v-for="(text, idx) in reviewCommentModalItem.strengths" :key="'modal-strength-'+idx">
-                  - {{ text }}
-                </p>
-            </div>
-            <p v-else class="text-slate-400">No strengths entered.</p>
-          </div>
+          <button
+            type="button"
+            class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            @click="closeReviewCommentModal"
+          >
+            Close
+          </button>
         </div>
 
-        <div>
-          <div class="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase">
-            <span>Gaps</span>
-          </div>
-          <div class="mt-2 min-h-[40px] space-y-1 text-[13px] text-slate-600">
-            <div v-if="reviewCommentModalItem.gaps?.length">
-                <p v-for="(text, idx) in reviewCommentModalItem.gaps" :key="'modal-gap-'+idx">
+        <div class="mt-5 space-y-4 text-sm text-slate-700">
+          <div>
+            <div class="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase">
+              <span>Strengths</span>
+            </div>
+            <div class="mt-2 min-h-[40px] space-y-1 text-[13px] text-slate-600">
+              <div v-if="reviewCommentModalItem.strengths?.length">
+                <p v-for="(text, idx) in reviewCommentModalItem.strengths" :key="'modal-strength-' + idx">
                   - {{ text }}
                 </p>
+              </div>
+              <p v-else class="text-slate-400">No strengths entered.</p>
             </div>
-            <p v-else class="text-slate-400">No gaps recorded.</p>
           </div>
-        </div>
 
-        <div>
-          <div class="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase">
-            <span>Suggestions</span>
-          </div>
-          <div class="mt-2 min-h-[40px] space-y-1 text-[13px] text-slate-600">
-            <div v-if="reviewCommentModalItem.suggestions?.length">
-                <p v-for="(text, idx) in reviewCommentModalItem.suggestions" :key="'modal-sug-'+idx">
+          <div>
+            <div class="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase">
+              <span>Gaps</span>
+            </div>
+            <div class="mt-2 min-h-[40px] space-y-1 text-[13px] text-slate-600">
+              <div v-if="reviewCommentModalItem.gaps?.length">
+                <p v-for="(text, idx) in reviewCommentModalItem.gaps" :key="'modal-gap-' + idx">
                   - {{ text }}
                 </p>
+              </div>
+              <p v-else class="text-slate-400">No gaps recorded.</p>
             </div>
-            <p v-else class="text-slate-400">No suggestions provided.</p>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase">
+              <span>Suggestions</span>
+            </div>
+            <div class="mt-2 min-h-[40px] space-y-1 text-[13px] text-slate-600">
+              <div v-if="reviewCommentModalItem.suggestions?.length">
+                <p v-for="(text, idx) in reviewCommentModalItem.suggestions" :key="'modal-sug-' + idx">
+                  - {{ text }}
+                </p>
+              </div>
+              <p v-else class="text-slate-400">No suggestions provided.</p>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
 </transition>
 </template>
+
