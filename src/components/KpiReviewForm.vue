@@ -34,6 +34,7 @@ const getTargetMarks = ref(null)
 const getPerformanceMarks = ref(null)
 const showSummaryDetails = ref(false)
 
+/* ---------- Compact mode (unchanged) ---------- */
 const compactEmployeeId = computed(() => {
   const value = Number(props.employeeId)
   return Number.isFinite(value) && value > 0 ? value : null
@@ -54,9 +55,7 @@ const compactComments = ref({})
 const compactLoading = ref(false)
 const compactSaving = ref(false)
 const compactError = ref('')
-const compactEmployeeLabel = computed(
-  () => props.employeeName || employee.value?.name || 'Employee',
-)
+const compactEmployeeLabel = computed(() => props.employeeName || employee.value?.name || 'Employee')
 
 const compactLaneLabels = {
   supv_director: 'Supv. Director',
@@ -73,7 +72,8 @@ function normalizeCompactItems(rawItems) {
   return rawItems.map((item, index) => {
     const id = item?.id ?? item?.item_id ?? item?.kpi_item_id ?? item?.kpi_id ?? index
     const title = item?.title ?? item?.name ?? item?.label ?? `Item ${index + 1}`
-    const weight = item?.weight ?? item?.weightage ?? item?.weight_value ?? item?.score_weight ?? null
+    const weight =
+      item?.weight ?? item?.weightage ?? item?.weight_value ?? item?.score_weight ?? null
     const maxScore = item?.max_score ?? item?.max ?? item?.max_marks ?? item?.score_max ?? 0
     const score = item?.score ?? item?.mark ?? item?.obtained ?? item?.value ?? null
     const comment = item?.comment ?? item?.note ?? item?.remark ?? ''
@@ -111,24 +111,24 @@ async function fetchCompactForm() {
     )
 
     const payload = data?.data ?? data ?? {}
-    const rawItems =
-      payload?.items || payload?.form?.items || payload?.group?.items || payload?.data || []
+    const rawItems = payload?.items || payload?.form?.items || payload?.group?.items || payload?.data || []
     const normalized = normalizeCompactItems(rawItems)
-    const marks = {}
-    const comments = {}
+
+    const nextMarks = {}
+    const nextComments = {}
 
     normalized.forEach((item) => {
       const scoreFromMap = payload?.marks?.[item.id]
       const commentFromMap = payload?.comments?.[item.id]
       const score = item.score ?? scoreFromMap ?? 0
       const comment = item.comment ?? commentFromMap ?? ''
-      marks[item.id] = score === '' || score == null ? 0 : Number(score)
-      comments[item.id] = comment ?? ''
+      nextMarks[item.id] = score === '' || score == null ? 0 : Number(score)
+      nextComments[item.id] = comment ?? ''
     })
 
     compactItems.value = normalized
-    compactMarks.value = marks
-    compactComments.value = comments
+    compactMarks.value = nextMarks
+    compactComments.value = nextComments
   } catch (err) {
     compactError.value = err?.response?.data?.message || 'Failed to load KPI marking form.'
     compactItems.value = []
@@ -209,18 +209,24 @@ const groupsAll = computed(() => store.cycle?.groups_json || [])
 const mode = computed(() => {
   const cycle = store.cycle || {}
   const groups = Array.isArray(cycle?.groups_json) ? cycle.groups_json : []
-  const isStaff =
-    cycle?.slug === 'support_staff' && groups.length === 1 && groups[0]?.id === 'personal'
+  const isStaff = cycle?.slug === 'support_staff' && groups.length === 1 && groups[0]?.id === 'personal'
   return isStaff ? 'staff' : 'executive'
 })
 
 const staffMode = computed(() => mode.value === 'staff')
 
-const isPersonalGroup = (g) => g?.id === 'personal'
+const isPersonalGroup = (g) => {
+  if (!g) return false
+  const normalizedId = String(g.id || '').toLowerCase()
+  const normalizedLabel = String(g.label || '').toLowerCase()
+  if (normalizedId === 'personal' || normalizedId === 'personal_evaluation' || normalizedId === 'personal_eval') {
+    return true
+  }
+  return normalizedLabel.includes('personal')
+}
+
 const personalGroup = computed(() => groupsAll.value.find(isPersonalGroup) || null)
-const otherGroups = computed(() =>
-  staffMode.value ? [] : groupsAll.value.filter((g) => !isPersonalGroup(g)),
-)
+const otherGroups = computed(() => (staffMode.value ? [] : groupsAll.value.filter((g) => !isPersonalGroup(g))))
 
 /** Fallback label if a group name is missing */
 const safeGroupLabel = (grp, idx) => grp?.label || `Group ${idx + 1}`
@@ -238,6 +244,7 @@ const sortedLanes = computed(() => {
 const hrLanes = computed(() => sortedLanes.value.filter(isHrLane))
 const nonHrLanes = computed(() => sortedLanes.value.filter((l) => !isHrLane(l)))
 const personalLanes = computed(() => (staffMode.value ? sortedLanes.value : nonHrLanes.value))
+
 const myEditablePersonalLaneKey = computed(
   () => personalLanes.value.find((ln) => ln.can_current_user_review)?.key || null,
 )
@@ -247,6 +254,7 @@ const myPersonalLane = computed(
 const myPersonalLaneRank = computed(() => myPersonalLane.value?.rank ?? null)
 
 const currentUserId = computed(() => Number(auth?.user?.id || 0))
+
 const myHrLane = computed(() => {
   const uid = currentUserId.value
   if (!uid) return null
@@ -258,9 +266,31 @@ const myHrLaneKey = computed(() => myHrLane.value?.key || null)
 
 const canEditHR = computed(() => !!(myHrLane.value && myHrLane.value.can_current_user_review))
 const canHR = computed(() => !!(isHR.value || canEditHR.value))
-
 const canEditPersonal = computed(() => !!myEditablePersonalLaneKey.value)
 
+/**
+ * ✅ Dual-role detect:
+ * - executive mode
+ * - canHR true
+ * - personal lane আছে (incharge)
+ * - hr lane আছে
+ * - দুইটা lane key আলাদা
+ * - otherGroups আছে
+ */
+const hasDualRolePersonalAndHR = computed(() => {
+  if (staffMode.value) return false
+  if (!canHR.value) return false
+  const p = myEditablePersonalLaneKey.value
+  const h = myHrLaneKey.value
+  if (!p || !h) return false
+  if (p === h) return false
+  return otherGroups.value.length > 0
+})
+
+/**
+ * UI label (আগের মতই রাখলাম)
+ * reviewerLaneKey শুধু display/legacy fallback এ আছে; submit এখন split করে।
+ */
 const reviewerLaneKey = computed(() => {
   if (staffMode.value) return myEditablePersonalLaneKey.value
   if (canHR.value && myHrLaneKey.value) return myHrLaneKey.value
@@ -268,9 +298,7 @@ const reviewerLaneKey = computed(() => {
 })
 
 const reviewingAsHR = computed(() =>
-  Boolean(
-    reviewerLaneKey.value && myHrLaneKey.value && reviewerLaneKey.value === myHrLaneKey.value,
-  ),
+  Boolean(reviewerLaneKey.value && myHrLaneKey.value && reviewerLaneKey.value === myHrLaneKey.value),
 )
 
 /* ---------- Existing review readers ---------- */
@@ -341,7 +369,7 @@ const personalTotals = computed(() => {
   let max = 0,
     got = 0
   const grp = personalGroup.value
-  if (grp) {
+  if (grp && Array.isArray(grp.items)) {
     grp.items.forEach((it) => {
       max += Number(it.max || 0)
       const v = Number(marks.value[it.id] || 0)
@@ -357,9 +385,7 @@ const personalTotals = computed(() => {
 })
 
 /* ---------- Target summary (sidebar) ---------- */
-const hasTargetSummary = computed(
-  () => !!getTargetMarks.value && typeof getTargetMarks.value === 'object',
-)
+const hasTargetSummary = computed(() => !!getTargetMarks.value && typeof getTargetMarks.value === 'object')
 
 const targetAvg = computed(
   () =>
@@ -371,6 +397,7 @@ const targetAvg = computed(
     },
 )
 const targetYear = computed(() => getTargetMarks.value?.year ?? null)
+
 const performanceAvg = computed(
   () =>
     getPerformanceMarks.value?.avg || {
@@ -381,44 +408,42 @@ const performanceAvg = computed(
     },
 )
 const performanceYear = computed(() => getPerformanceMarks.value?.year ?? null)
+
 const activeSummaryTab = ref('target')
 const summaryTabs = [
   { key: 'target', label: 'Annual Target' },
   { key: 'performance', label: 'Annual Performance' },
 ]
 const targetMonths = computed(() => getTargetMarks.value?.months_total_form ?? 0)
-const performanceMonths = computed(
-  () => getPerformanceMarks.value?.months_total_form ?? targetMonths.value,
-)
-const summaryData = computed(() =>
-  activeSummaryTab.value === 'target' ? targetAvg.value : performanceAvg.value,
-)
+const performanceMonths = computed(() => getPerformanceMarks.value?.months_total_form ?? targetMonths.value)
+
+const summaryData = computed(() => (activeSummaryTab.value === 'target' ? targetAvg.value : performanceAvg.value))
 const summaryFinal = computed(() => Number(summaryData.value?.per_form_yearly?.final || 0))
 const summaryMax = computed(() => Number(summaryData.value?.per_scored_month?.max || 0))
+
 const summaryPercent = computed(() => {
   if (!summaryMax.value) return 0
   return Math.round((summaryFinal.value / summaryMax.value) * 100)
 })
+
 const canAutoFillFromSummary = computed(() => canHR.value && !staffMode.value)
-const summaryYear = computed(() =>
-  activeSummaryTab.value === 'target' ? targetYear.value : performanceYear.value,
-)
-const summaryMonths = computed(() =>
-  activeSummaryTab.value === 'target' ? targetMonths.value : performanceMonths.value,
-)
-const summaryLabel = computed(
-  () => summaryTabs.find((tab) => tab.key === activeSummaryTab.value)?.label || 'Annual Target',
-)
+const summaryYear = computed(() => (activeSummaryTab.value === 'target' ? targetYear.value : performanceYear.value))
+const summaryMonths = computed(() => (activeSummaryTab.value === 'target' ? targetMonths.value : performanceMonths.value))
+
+const summaryLabel = computed(() => summaryTabs.find((tab) => tab.key === activeSummaryTab.value)?.label || 'Annual Target')
+
 const summaryGroupMap = {
   target: 'target',
   performance: 'regular_activities_of_the_department',
 }
+
 const summaryGroup = computed(() => {
   const key = summaryGroupMap[activeSummaryTab.value]
   if (!key) return null
   return otherGroups.value.find((g) => g.id === key) || null
 })
 const summaryGroupLabel = computed(() => summaryGroup.value?.label || summaryLabel.value)
+
 const setSummaryTab = (tabKey) => {
   if (summaryTabs.some((tab) => tab.key === tabKey)) {
     activeSummaryTab.value = tabKey
@@ -460,7 +485,6 @@ const applySummaryToMappedGroup = (tabKey, { overwrite } = { overwrite: false })
 
   const finalScore = summaryFinal.value
   const groupMax = items.reduce((acc, item) => acc + Number(item.max || 0), 0)
-
   if (!groupMax) return
 
   if (items.length === 1) {
@@ -491,12 +515,13 @@ watch(
   { immediate: true },
 )
 
+/* ---------- Review comments (unchanged) ---------- */
 const reviewComments = computed(() => {
-  const orderedLanes = staffMode.value ? sortedLanes.value : nonHrLanes.value // rank অনুযায়ী sorted
+  const orderedLanes = staffMode.value ? sortedLanes.value : nonHrLanes.value
   const result = []
 
-  // HR মোড হলে সব দেখতে পারবে, না হলে নিজের rank পর্যন্ত
-  const viewerRank = reviewingAsHR.value || canHR.value ? Infinity : (myPersonalLaneRank.value ?? null)
+  const viewerRank =
+    reviewingAsHR.value || canHR.value ? Infinity : myPersonalLaneRank.value ?? null
 
   const toArr = (v) => {
     if (!v) return []
@@ -519,7 +544,6 @@ const reviewComments = computed(() => {
     const laneKey = ln.key
     if (!laneKey) return
 
-    // 🔹 hierarchy filter: নিজের rank এর নিচের lane গুলো hide
     if (viewerRank != null) {
       const laneRank = ln.rank ?? 999
       if (laneRank > viewerRank) return
@@ -552,7 +576,6 @@ const reviewComments = computed(() => {
 
 const makeOptions = (field) => {
   const set = new Set()
-
   reviewComments.value.forEach((item) => {
     const arr = Array.isArray(item[field]) ? item[field] : []
     arr.forEach((val) => {
@@ -560,7 +583,6 @@ const makeOptions = (field) => {
       if (v) set.add(v)
     })
   })
-
   return Array.from(set)
 }
 
@@ -646,14 +668,60 @@ const serialMap = computed(() => {
   const map = {}
   let i = 1
   const grp = personalGroup.value
-  if (grp)
+  if (grp && Array.isArray(grp.items)) {
     grp.items.forEach((it) => {
       map[it.id] = i++
     })
+  }
   return map
 })
 
-/* ---------- Init ---------- */
+/* ---------- Helpers: pick marks only for group items ---------- */
+function groupItemIds(group) {
+  const items = Array.isArray(group?.items) ? group.items : []
+  return items.map((it) => it.id).filter((id) => id != null)
+}
+
+function pickMarksByItemIds(ids) {
+  const out = {}
+  ;(Array.isArray(ids) ? ids : []).forEach((id) => {
+    out[id] = Number(marks.value?.[id] ?? 0)
+  })
+  return out
+}
+
+function pickMarksFromGroup(group) {
+  return pickMarksByItemIds(groupItemIds(group))
+}
+
+function pickMarksFromGroups(groups) {
+  const ids = []
+  ;(Array.isArray(groups) ? groups : []).forEach((g) => {
+    ids.push(...groupItemIds(g))
+  })
+  // unique
+  const uniq = Array.from(new Set(ids))
+  return pickMarksByItemIds(uniq)
+}
+
+function applyLaneMarksToItemIds(laneKey, ids) {
+  if (!laneKey || !ids?.length) return false
+  const r = laneLatestReview(laneKey)
+  const laneMarks = r?.marks
+  if (!laneMarks) return false
+
+  let applied = false
+  ids.forEach((id) => {
+    const v = laneMarks?.[id]
+    if (v !== '' && v != null) {
+      marks.value[id] = Number(v)
+      applied = true
+    }
+  })
+  return applied
+}
+
+/* ---------- Init / Hydrate ---------- */
 const employeeId = computed(() => Number(route.params.employeeId))
 
 const hydrateReviewData = (resp) => {
@@ -664,59 +732,131 @@ const hydrateReviewData = (resp) => {
   reviewsByLane.value = resp.reviews_by_lane || {}
   isHR.value = !!(resp?.meta?.is_hr ?? resp?.hr ?? false)
 
+  // reset all marks = 0 for all items
   marks.value = {}
-  groupsAll.value.forEach((g) =>
-    g.items.forEach((it) => {
+  const allGroups = Array.isArray(groupsAll.value) ? groupsAll.value : []
+  allGroups.forEach((g) => {
+    const items = Array.isArray(g?.items) ? g.items : []
+    items.forEach((it) => {
       marks.value[it.id] = 0
-    }),
-  )
+    })
+  })
 
-  if (myEditablePersonalLaneKey.value) {
-    const myExisting = laneLatestReview(myEditablePersonalLaneKey.value)
-    if (myExisting?.marks) Object.assign(marks.value, myExisting.marks)
+  // ✅ PERSONAL: prefer personal lane (incharge). If not found, legacy fallback: HR lane (older bug data)
+  const personalIds = groupItemIds(personalGroup.value)
+  const personalLane = myEditablePersonalLaneKey.value
+  const hrLane = myHrLaneKey.value
+
+  const appliedPersonal = applyLaneMarksToItemIds(personalLane, personalIds)
+  if (!appliedPersonal && hrLane) {
+    // legacy fallback (আগে ভুল করে hr lane-এ personal save হয়ে থাকলে)
+    applyLaneMarksToItemIds(hrLane, personalIds)
   }
 
+  // ✅ OTHER GROUPS: fill from HR lane (or latest hr*)
   if (canHR.value && otherGroups.value.length) {
     otherGroups.value.forEach((g) => {
-      g.items.forEach((it) => {
-        let v = myHrLaneKey.value ? laneMark(myHrLaneKey.value, it.id) : ''
-        if (v === '' || v == null) v = hrMark(it.id)
-        if (v !== '' && v != null) marks.value[it.id] = Number(v)
+      const ids = groupItemIds(g)
+      ids.forEach((id) => {
+        let v = hrLane ? laneMark(hrLane, id) : ''
+        if (v === '' || v == null) v = hrMark(id)
+        if (v !== '' && v != null) marks.value[id] = Number(v)
       })
     })
   }
+}
+
+const loadReviewData = async (id) => {
+  if (!id) return
+  await store.fetchActiveCycle(id)
+  const resp = await store.fetchLanes(store.cycle.id, id)
+  hydrateReviewData(resp)
+}
+
+const refreshReviewData = async () => {
+  if (!employeeId.value || !store.cycle?.id) return
+  const resp = await store.fetchLanes(store.cycle.id, employeeId.value)
+  hydrateReviewData(resp)
 }
 
 watch(
   employeeId,
   async (id, prev) => {
     if (!id || (prev && id === prev)) return
-    await store.fetchActiveCycle(id)
-    // NOTE: consider a single endpoint returning cycle + lanes + reviews + optional annual summary for HR.
-    // NOTE: consider returning latest review per lane (not full arrays) to reduce payload size.
-    const resp = await store.fetchLanes(store.cycle.id, id)
-    hydrateReviewData(resp)
+    await loadReviewData(id)
   },
   { immediate: true },
 )
 
-/* ---------- Submit ---------- */
+/* ---------- Submit (✅ UPDATED: split submit for incharge+hr dual role) ---------- */
 async function submit() {
-  const reviewerLane = reviewerLaneKey.value
-  if (!reviewerLane) {
-    alert('Unable to determine reviewer lane.')
+  const empId = Number(route.params.employeeId)
+  const cycleId = store.cycle?.id
+
+  if (!cycleId || !empId) {
+    alert('Invalid cycle/employee.')
     return
   }
-  await store.submitReview({
-    cycle_id: store.cycle.id,
-    employee_id: Number(route.params.employeeId),
-    reviewer_lane: reviewerLane,
-    marks: marks.value,
-    strengths: strengths.value,
-    gaps: gaps.value,
-    suggestions: suggestions.value,
-  })
-  alert('Submitted')
+
+  const personalLane = myEditablePersonalLaneKey.value
+  const hrLane = myHrLaneKey.value
+
+  // fallback single-lane mode
+  const singleLane = reviewerLaneKey.value
+
+  try {
+    // ✅ Dual submit: Personal -> incharge lane, Others -> hr lane
+    if (hasDualRolePersonalAndHR.value && personalLane && hrLane) {
+      // 1) personal only -> personal lane
+      await store.submitReview({
+        cycle_id: cycleId,
+        employee_id: empId,
+        reviewer_lane: personalLane,
+        marks: pickMarksFromGroup(personalGroup.value),
+        // notes avoid duplicate: keep empty here (you can change if you want incharge notes)
+        strengths: '',
+        gaps: '',
+        suggestions: '',
+      })
+
+      // 2) other groups -> hr lane (notes here)
+      await store.submitReview({
+        cycle_id: cycleId,
+        employee_id: empId,
+        reviewer_lane: hrLane,
+        marks: pickMarksFromGroups(otherGroups.value),
+        strengths: strengths.value,
+        gaps: gaps.value,
+        suggestions: suggestions.value,
+      })
+
+      await refreshReviewData()
+      alert('Submitted')
+      return
+    }
+
+    // ✅ Normal submit (single lane as before)
+    if (!singleLane) {
+      alert('Unable to determine reviewer lane.')
+      return
+    }
+
+    await store.submitReview({
+      cycle_id: cycleId,
+      employee_id: empId,
+      reviewer_lane: singleLane,
+      marks: marks.value,
+      strengths: strengths.value,
+      gaps: gaps.value,
+      suggestions: suggestions.value,
+    })
+
+    await refreshReviewData()
+    alert('Submitted')
+  } catch (e) {
+    const msg = e?.response?.data?.message || e?.message || 'Failed to submit.'
+    alert(msg)
+  }
 }
 
 /* ---------- Utils ---------- */
@@ -752,12 +892,11 @@ function applyHint(field, value) {
   const text = typeof value === 'string' ? value.trim() : ''
   if (!text) return
 
-  // 🔒 ডুপ্লিকেট ব্লক
   if (hasHint(field, text)) return
-
   target.value = appendWithNewline(target.value, text)
 }
 </script>
+
 
 <template>
   <div v-if="compactMode" class="space-y-4">
