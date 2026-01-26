@@ -46,6 +46,43 @@ const formatDate = (d) => {
 
 const getDayName = (d) =>
   d ? new Date(d).toLocaleDateString('en-US', { weekday: 'long' }) : ''
+
+const fileUploadLink = async (event) => {
+  const file = event.target.files?.[0]
+  if (!file) return
+
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await exchangeStore.fetchFileUpload(formData)
+    attachment.value = response?.url
+
+    if (attachment.value) {
+      await uploadAttachment()
+      toast.success('File uploaded successfully')
+    } else {
+      toast.error('Failed to upload file')
+    }
+  } catch (e) {
+    console.error(e)
+    toast.error('Failed to upload file')
+  } finally {
+    event.target.value = ''
+  }
+}
+
+const uploadAttachment = async () => {
+  try {
+    await exchangeStore.uploadAttachmentExchange(route.params.id, {
+      attachment: attachment.value,
+    })
+    await exchangeStore.fetchExchange(route.params.id)
+  } catch (err) {
+    console.error('Failed to upload attachment:', err)
+    toast.error('Failed to upload attachment')
+  }
+}
 </script>
 
 <template>
@@ -211,20 +248,33 @@ const getDayName = (d) =>
       </div>
     </div>
 
-    <!-- Attachment -->
-    <div class="bg-white rounded-lg p-4 flex justify-between items-center print:hidden">
-      <h3 class="font-bold">Attachment</h3>
+    <!-- Attachment (clean) -->
+    <div class="bg-white rounded-lg p-4 flex items-center justify-between gap-4 print:hidden">
+      <div>
+        <h3 class="font-bold text-slate-900">Attachment</h3>
+        <p class="text-xs text-slate-500">Upload a file if needed.</p>
+      </div>
 
-      <a
-        v-if="exchange?.attachment"
-        :href="exchange.attachment"
-        target="_blank"
-        class="text-emerald-600 font-semibold hover:underline"
-      >
-        View file
-      </a>
+      <div class="flex items-center gap-3">
+        <a
+          v-if="exchange?.attachment"
+          :href="exchange.attachment"
+          target="_blank"
+          class="text-emerald-600 font-semibold hover:underline"
+        >
+          View file
+        </a>
 
-      <span v-else class="text-slate-400 italic">No attachment</span>
+        <span v-else class="text-slate-400 italic">No attachment</span>
+
+        <label
+          v-if="authStore?.user?.id === exchange?.user_id"
+          class="inline-flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700"
+        >
+          Upload
+          <input type="file" class="hidden" @change="fileUploadLink" />
+        </label>
+      </div>
     </div>
 
     <ShareComponent>
