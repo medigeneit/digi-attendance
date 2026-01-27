@@ -1186,6 +1186,7 @@ function pct(got, max) {
         :marks="marks"
         :header-label="'Personal Evaluation'"
         :item-label="personalGroup?.label || 'Personal'"
+        :mode="staffMode"
         :helper-text="
           staffMode
             ? 'All reviewer lanes score the Personal table.'
@@ -1199,24 +1200,6 @@ function pct(got, max) {
         :on-cap="cap"
         :on-quick-fill-item="quickFill"
       />
-
-      <div
-        v-if="canEditPersonal"
-        class="mt-2 flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-white px-4 py-3 shadow-sm"
-      >
-        <div class="text-sm text-slate-600">
-          Personal total:
-          <b class="text-slate-900">{{ personalTotals.got.toFixed(2) }}</b>
-          <span class="text-slate-400">/ {{ personalTotals.max.toFixed(2) }}</span>
-        </div>
-        <button
-          @click="submitPersonal"
-          :disabled="!canSubmitPersonal"
-          class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-medium text-white shadow hover:bg-slate-800 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-slate-300"
-        >
-          Submit Personal
-        </button>
-      </div>
 
       <!-- OTHER GROUPS + RIGHT SIDEBAR -->
       <section class="mt-2">
@@ -1560,10 +1543,18 @@ function pct(got, max) {
 
       <!-- Sticky action -->
       <div class="mt-2 flex flex-col gap-3 border-t pt-3 md:flex-row md:items-center md:justify-between">
-        <div class="text-sm text-slate-600">HR review (other groups)</div>
+        <div class="text-sm text-slate-600"></div>
         <div class="flex flex-wrap items-center gap-2">
           <button
-            v-if="canHR"
+            v-if="canEditPersonal"
+            @click="submitPersonal"
+            :disabled="!canSubmitPersonal"
+            class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-medium text-white shadow hover:bg-slate-800 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-slate-300"
+          >
+              {{ staffMode ? 'Submit & Review':'Submit Personal' }}
+          </button>
+          <button
+            v-if="canHR && !staffMode"
             @click="submitHr"
             :disabled="!canSubmitHr"
             class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white shadow hover:bg-emerald-700 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-emerald-300"

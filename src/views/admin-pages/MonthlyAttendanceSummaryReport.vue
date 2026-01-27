@@ -839,7 +839,7 @@ onBeforeUnmount(() => {
                     </div>
                   </td>
 
-                  <td class="td">{{ log?.payable_hour }}h</td>
+                  <td class="td">{{ log?.payable_hour }}</td>
 
                   <td class="td">
                     <router-link
