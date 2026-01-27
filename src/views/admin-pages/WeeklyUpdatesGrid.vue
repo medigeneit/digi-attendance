@@ -155,9 +155,14 @@ const canSendSms = computed(() => {
   return !!message && !!ui.value.smsTarget?.item && !ui.value.busyKey
 })
 
+const isSmsKindAllowed = (item) => {
+  const kind = String(item?.kind || '').toLowerCase()
+  return kind === 'leave' || kind === 'exchange' || kind === 'offday'
+}
+
 const isSmsEligible = (item) => {
   if (!item?.kind || !item?.ref_id) return false
-  return !isDayMarker(item)
+  return isSmsKindAllowed(item)
 }
 
 const getLastItem = (row) => {
@@ -196,7 +201,7 @@ const sendForItem = async (item, message = '') => {
 
   try {
     await store.sendWeeklyMessage({
-      kind: item.kind,
+      kind: String(item.kind).toLowerCase(),
       ref_id: item.ref_id,
       status: item.status,
       message,
