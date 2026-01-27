@@ -1,6 +1,7 @@
 import AppLayout from '@/layouts/AppLayout.vue'
 import GuestLayout from '@/layouts/GuestLayout.vue'
 import { useAuthStore } from '@/stores/auth'
+import { disciplineReportRoutes } from '@/router/disciplineReportRoutes'
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/public-pages/HomeView.vue'
 import { useRouteHistory } from './history'
@@ -1464,6 +1465,7 @@ const router = createRouter({
           component: () => import('@/views/admin-pages/ApplicationsIndex.vue'),
           meta: { requiresAuth: true, roles:  ['super_admin', 'developer'] }
         },
+        ...disciplineReportRoutes,
       ],
     },
   ],

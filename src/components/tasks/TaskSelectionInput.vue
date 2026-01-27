@@ -121,9 +121,9 @@ const searchedTasks = computed(() => {
 
   if (text.length) {
     return filteredTasks.filter((task) => {
-      return String(task.title || '')
-        .toUpperCase()
-        .includes(text)
+      const title = String(task.title || '').toUpperCase()
+      const idStr = String(task.id ?? '').toUpperCase()
+      return title.includes(text) || idStr.includes(text)
     })
   }
 

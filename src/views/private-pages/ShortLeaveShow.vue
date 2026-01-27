@@ -199,6 +199,13 @@ const onAction = async () => {
         <ApprovalItem
           :application="shortLeave"
           type="short_leave_applications"
+          item="coordinator"
+          :onAction="onAction"
+        />
+
+        <ApprovalItem
+          :application="shortLeave"
+          type="short_leave_applications"
           item="recommend_by"
           :onAction="onAction"
         />
@@ -213,7 +220,7 @@ const onAction = async () => {
     </div>
     <div>
       <div>
-        <label>Attachment</label>
+        <!-- <label>Attachment</label> -->
         <!-- Show existing file link if available -->
         <div
           v-if="shortLeave?.attachment && typeof shortLeave?.attachment === 'string'"

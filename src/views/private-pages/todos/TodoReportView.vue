@@ -181,11 +181,11 @@ const filterSummary = computed(() => {
 const showAssignmentSummary = ref(false)
 const assignmentSummaryRef = ref(null)
 const selectedEmployeesCount = computed(() => groupedByUser.value?.length || 0)
-const givenTodosCount = computed(() =>
-  Math.max(
-    0,
-    selectedEmployeesCount.value - (todoAssignmentSummary.value?.withoutTodos?.length || 0),
-  ),
+const givenTodosCount = computed(() => todoAssignmentSummary.value?.withTodos?.length || 0)
+const presentEmployeesCount = computed(
+  () =>
+    (todoAssignmentSummary.value?.withTodos?.length || 0) +
+    (todoAssignmentSummary.value?.withoutTodosPresent?.length || 0),
 )
 const showWithoutTodos = ref(true)
 const showTableWithoutTodos = ref(false)
@@ -201,7 +201,11 @@ const handleAssignmentOutsideClick = (event) => {
 }
 
 const todoAssignmentSummary = computed(() => {
-  if (!groupedByUser.value?.length) return { withTodos: [], withoutTodos: [] }
+  if (!groupedByUser.value?.length) {
+    return { withTodos: [], withoutTodosPresent: [], withoutTodosAbsent: [] }
+  }
+
+  const range = selectedDateRange.value
 
   return groupedByUser.value.reduce(
     (acc, group, index) => {
@@ -223,11 +227,30 @@ const todoAssignmentSummary = computed(() => {
       if (totalTodos > 0) {
         acc.withTodos.push(entry)
       } else {
-        acc.withoutTodos.push(entry)
+        // Evaluate attendance to categorize "Not Given"
+        let hasPresentDay = false
+        let hasAttendanceData = false
+
+        range.forEach((date) => {
+          const attendance = getAttendanceDetails(group.user?.id, date)
+          if (attendance.hasData) {
+            hasAttendanceData = true
+            if (attendance.comment !== 'Absent') {
+              hasPresentDay = true
+            }
+          }
+        })
+
+        if (hasPresentDay) {
+          acc.withoutTodosPresent.push(entry)
+        } else {
+          // If no attendance data, we assume absent or unavailable for the summary
+          acc.withoutTodosAbsent.push(entry)
+        }
       }
       return acc
     },
-    { withTodos: [], withoutTodos: [] },
+    { withTodos: [], withoutTodosPresent: [], withoutTodosAbsent: [] },
   )
 })
 
@@ -235,7 +258,10 @@ const visibleGroupedByUser = computed(() => {
   if (!hideNoTodoRows.value) return groupedByUser.value
 
   const withoutSet = new Set(
-    (todoAssignmentSummary.value.withoutTodos || []).map((u) => String(u.id ?? u.name ?? '')),
+    [
+      ...(todoAssignmentSummary.value.withoutTodosPresent || []),
+      ...(todoAssignmentSummary.value.withoutTodosAbsent || []),
+    ].map((u) => String(u.id ?? u.name ?? '')),
   )
 
   return groupedByUser.value.filter((group) => {
@@ -530,7 +556,10 @@ function lastRowBorderClass(userGroup, dateGroup, dateIndex, todoIndex) {
           >
             <div class="uppercase">Todo given</div>
             <div class="inline-flex items-center gap-5 font-bold">
-              <div class="text-gray-700">{{ givenTodosCount }} / {{ selectedEmployeesCount }}</div>
+              <div class="text-gray-700">
+                {{ givenTodosCount }} / {{ presentEmployeesCount }} /
+                {{ selectedEmployeesCount }}
+              </div>
               <i
                 class="fas"
                 :class="[showAssignmentSummary ? 'fa-chevron-up' : 'fa-chevron-down']"
@@ -545,7 +574,8 @@ function lastRowBorderClass(userGroup, dateGroup, dateIndex, todoIndex) {
             <div class="flex items-center justify-between mb-2">
               <div class="text-xs text-gray-500 uppercase tracking-wide">Todo Status</div>
               <div class="text-[11px] text-gray-500">
-                {{ givenTodosCount }} given / {{ selectedEmployeesCount }} selected
+                {{ givenTodosCount }} given / {{ presentEmployeesCount }} present /
+                {{ selectedEmployeesCount }} selected
               </div>
             </div>
 
@@ -555,11 +585,11 @@ function lastRowBorderClass(userGroup, dateGroup, dateIndex, todoIndex) {
                   class="text-[11px] text-gray-500 uppercase tracking-wide mb-1 flex items-center justify-between"
                 >
                   <div class="flex items-center gap-2">
-                    <span>Not given todos</span>
+                    <span>Not given (Absent)</span>
                     <span
-                      v-if="todoAssignmentSummary.withoutTodos?.length"
+                      v-if="todoAssignmentSummary.withoutTodosAbsent?.length"
                       class="bg-red-500 rounded-md px-1.5 text-white text-center"
-                      >{{ todoAssignmentSummary.withoutTodos?.length }}</span
+                      >{{ todoAssignmentSummary.withoutTodosAbsent?.length }}</span
                     >
                   </div>
                   <button
@@ -571,17 +601,49 @@ function lastRowBorderClass(userGroup, dateGroup, dateIndex, todoIndex) {
                   </button>
                 </div>
                 <template v-if="showWithoutTodos">
-                  <div class="flex flex-wrap gap-2">
+                  <div class="flex flex-wrap gap-2 mb-3">
                     <span
-                      v-if="!todoAssignmentSummary.withoutTodos.length"
+                      v-if="!todoAssignmentSummary.withoutTodosAbsent.length"
                       class="text-xs text-gray-400"
                     >
-                      Everyone has todos
+                      No one is absent
                     </span>
                     <span
-                      v-for="user in todoAssignmentSummary.withoutTodos"
-                      :key="`without-${user.id}`"
+                      v-for="user in todoAssignmentSummary.withoutTodosAbsent"
+                      :key="`absent-${user.id}`"
                       class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-red-50 text-red-700 border border-red-100 text-xs max-w-full"
+                      :title="user.name"
+                    >
+                      <i class="fas fa-user-times"></i>
+                      <span class="block max-w-[160px] truncate">{{ user.name }}</span>
+                    </span>
+                  </div>
+                </template>
+
+                <div
+                  class="text-[11px] text-gray-500 uppercase tracking-wide mb-1 flex items-center justify-between mt-3"
+                >
+                  <div class="flex items-center gap-2">
+                    <span>Not given (Present)</span>
+                    <span
+                      v-if="todoAssignmentSummary.withoutTodosPresent?.length"
+                      class="bg-amber-500 rounded-md px-1.5 text-white text-center"
+                      >{{ todoAssignmentSummary.withoutTodosPresent?.length }}</span
+                    >
+                  </div>
+                </div>
+                <template v-if="showWithoutTodos">
+                  <div class="flex flex-wrap gap-2">
+                    <span
+                      v-if="!todoAssignmentSummary.withoutTodosPresent.length"
+                      class="text-xs text-gray-400"
+                    >
+                      Everyone present has todos
+                    </span>
+                    <span
+                      v-for="user in todoAssignmentSummary.withoutTodosPresent"
+                      :key="`no-todo-${user.id}`"
+                      class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-100 text-xs max-w-full"
                       :title="user.name"
                     >
                       <i class="fas fa-exclamation-circle"></i>
@@ -592,7 +654,7 @@ function lastRowBorderClass(userGroup, dateGroup, dateIndex, todoIndex) {
               </div>
 
               <div>
-                <div class="text-[11px] text-gray-500 uppercase tracking-wide mb-1">
+                <div class="text-[11px] text-gray-500 uppercase tracking-wide mb-1 mt-3">
                   Given todos
                   <span
                     v-if="todoAssignmentSummary.withTodos?.length"
@@ -668,7 +730,10 @@ function lastRowBorderClass(userGroup, dateGroup, dateIndex, todoIndex) {
                     class="text-[11px] px-2 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-50"
                     @click.stop="toggleHideNoTodos()"
                   >
-                    No Todos ({{ todoAssignmentSummary.withoutTodos.length }})
+                    No Todos ({{
+                      todoAssignmentSummary.withoutTodosPresent.length +
+                      todoAssignmentSummary.withoutTodosAbsent.length
+                    }})
                     <span class="ml-1 text-[10px] text-gray-500">
                       {{ hideNoTodoRows ? 'Hidden' : 'Showing' }}
                     </span>

@@ -477,8 +477,8 @@ function handleNextMonth() {
         <div class="flex flex-wrap items-center gap-4 px-4 py-3 border-b bg-gray-50">
           <div v-if="!selfOnly" class="flex items-center gap-3">
             <UserHoverBubble :user="row.user">
-              <template #trigger="{ user }">
-                <UserAvatar :user="user" size="medium" />
+              <template #trigger>
+                <UserAvatar :user="row.user" size="medium" />
               </template>
             </UserHoverBubble>
 
@@ -493,13 +493,13 @@ function handleNextMonth() {
                   class="inline-flex hover:underline"
                 >
                   <div>
-                    {{ user?.name || 'Unknown user' }}
+                    {{ row.user?.name || 'Unknown user' }}
                     <i class="far fa-external-link-alt print:hidden"></i>
                   </div>
                 </a>
               </div>
               <div class="text-xs text-gray-500">
-                {{ user?.department?.name || '-' }}
+                {{ row.user?.department?.name || '-' }}
               </div>
               <div class="text-[11px] text-blue-800">
                 Month: {{ monthLabel }}
@@ -509,13 +509,13 @@ function handleNextMonth() {
           </div>
 
           <div class="flex items-center gap-3" v-else>
-            <UserAvatar :user="user" size="medium" />
+            <UserAvatar :user="row.user" size="medium" />
             <div>
               <div class="font-semibold text-gray-800">
-                {{ user?.name || 'Unknown user' }}
+                {{ row.user?.name || 'Unknown user' }}
               </div>
               <div class="text-xs text-gray-500">
-                {{ user?.department?.name || '-' }}
+                {{ row.user?.department?.name || '-' }}
               </div>
               <div class="text-[11px] text-blue-800">
                 Month: {{ monthLabel }}
