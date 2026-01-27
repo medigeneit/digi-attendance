@@ -7,7 +7,6 @@ import { useTodoStore } from '@/stores/useTodoStore'
 import { computed, nextTick, onMounted, ref } from 'vue'
 
 import { deleteTodoSetting, findTodoSetting, upsertTodoSetting } from '@/services/todo'
-import CompanyDepartmentSelectInput from '../common/CompanyDepartmentSelectInput.vue'
 import LoaderView from '../common/LoaderView.vue'
 import FormHandler from '../FormHandler.vue'
 import InputWithSuggestions from '../InputWithSuggestions.vue'
@@ -246,37 +245,8 @@ onMounted(() => {
             </div>
           </div>
         </div>
-        <div class="mb-5">
-          <label
-            class="block text-slate-500 font-bold text-[11px] uppercase tracking-wider mb-1.5 ml-1"
-          >
-            Status
-          </label>
-          <div class="relative group">
-            <select
-              v-model="form.status"
-              class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-400 outline-none appearance-none transition-all duration-200 font-medium text-slate-700"
-            >
-              <option value="PENDING" v-if="form.status === 'PENDING'">PENDING</option>
-              <option value="WORKING">WORKING</option>
-              <option value="DEPENDANT">DEPENDANT</option>
-              <option value="BACK_LOG">BACK_LOG</option>
-              <option value="COMPLETED">COMPLETED</option>
-            </select>
-            <div
-              class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-sky-500 transition-colors"
-            >
-              <i class="fas fa-tasks text-sm"></i>
-            </div>
-            <div
-              class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-            >
-              <i class="fas fa-chevron-down text-[10px]"></i>
-            </div>
-          </div>
-        </div>
 
-        <CompanyDepartmentSelectInput
+        <!-- <CompanyDepartmentSelectInput
           v-if="authStore.isAdminMood"
           v-model="selectedDepartmentId"
           :companies="companyStore?.myCompanies || []"
@@ -290,7 +260,7 @@ onMounted(() => {
               <span class="text-[10px] lowercase font-normal">(Optional - for new project)</span>
             </label>
           </template>
-        </CompanyDepartmentSelectInput>
+        </CompanyDepartmentSelectInput> -->
 
         <div class="mb-5">
           <label

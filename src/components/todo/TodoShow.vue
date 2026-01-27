@@ -78,7 +78,6 @@ onMounted(async () => {
           </div>
 
           <button
-            v-if="todoDateStore.todo_date?.status !== 'COMPLETED'"
             class="btn-2 bg-sky-400 text-white hover:bg-sky-600 hover:text-white bg-none"
             @click.prevent.stop="emit('clickEdit', todoDateStore.todo_date?.todo)"
           >
