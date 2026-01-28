@@ -398,7 +398,7 @@ const EMP_W = 260
       </div>
 
       <!-- Month selector -->
-      <div class="border-t border-slate-300 bg-slate-50 px-3 py-2">
+      <div class="border-t border-slate-400 bg-slate-50 px-3 py-2">
         <div class="month-strip">
           <button
             v-for="(name, i) in monthNames"
@@ -415,7 +415,7 @@ const EMP_W = 260
         <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
           <div class="flex items-center gap-2">
             <label
-              class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-[11px] font-semibold text-slate-700"
+              class="inline-flex items-center gap-2 rounded-xl border border-slate-400 bg-white px-3 py-2 text-[11px] font-semibold text-slate-700"
             >
               <input type="checkbox" v-model="strictUser" class="accent-slate-700" />
               Strict user
@@ -453,8 +453,8 @@ const EMP_W = 260
     </div>
 
     <!-- Table -->
-    <div v-else class="rounded-2xl border border-slate-300 bg-white shadow-sm overflow-hidden">
-      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-300 bg-white px-4 py-3">
+    <div v-else class="rounded-2xl border border-slate-400 bg-white shadow-sm overflow-hidden">
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-400 bg-white px-4 py-3">
         <div class="min-w-0">
           <p class="text-sm font-semibold text-slate-900 truncate">
             {{ activeMonthLabel }} <span class="text-slate-500 font-medium">{{ selectedYear }}</span>
@@ -481,7 +481,7 @@ const EMP_W = 260
               <th
                 v-for="d in days"
                 :key="d.date"
-                class="px-2 py-2 text-center border-l border-slate-300 whitespace-nowrap"
+                class="px-2 py-2 text-center border-l border-slate-400 whitespace-nowrap"
                 :title="d.date"
               >
                 <div class="font-bold text-slate-700">{{ compactDate(d.label || d.date) }}</div>
@@ -490,7 +490,7 @@ const EMP_W = 260
             </tr>
           </thead>
 
-          <tbody class="divide-y divide-slate-300">
+          <tbody class="divide-y divide-slate-400">
             <tr v-for="row in companyReports" :key="row?.user?.id" class="hover:bg-sky-50">
               <td class="sticky-col sticky-col--sl px-3 py-2 font-bold bg-white">
                 {{ row?.sl ?? '' }}
@@ -508,7 +508,7 @@ const EMP_W = 260
               <td
                 v-for="d in days"
                 :key="row?.user?.id + '_' + d.date"
-                class="px-2 py-2 text-center border-l border-slate-300 tabular-nums"
+                class="px-2 py-2 text-center border-l border-slate-400 tabular-nums"
                 :class="cellTdClass(cellValue(row, d))"
               >
                 <span :class="cellBadgeClass(cellValue(row, d))">
