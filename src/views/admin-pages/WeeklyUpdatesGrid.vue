@@ -106,18 +106,22 @@ const isDayMarker = (item) => {
   return kind === 'weekend' || kind === 'holiday' || kind === 'present'
 }
 
+const isWeekendItem = (item) => String(item?.kind || '').toLowerCase() === 'weekend'
+
 const itemBadgeText = (item) => {
+  const label = String(item?.label || '').toUpperCase()
+  if (label === 'WPL') return 'WPL'
   const kind = String(item?.kind || '').toLowerCase()
-  if (kind === 'weekend') return 'WK'
+  if (kind === 'weekend') return 'W'
   if (kind === 'holiday') return 'HD'
   if (kind === 'present') return 'P'
-  if (kind === 'worked') return 'W'
+  if (kind === 'worked') return 'P'
   return item?.code
 }
 
 const itemBadgeClass = (item) => {
   const kind = String(item?.kind || '').toLowerCase()
-  if (kind === 'weekend') return 'bg-slate-50 text-slate-700 ring-slate-200'
+  if (kind === 'weekend') return '!bg-slate-500 text-slate-700 ring-slate-200'
   if (kind === 'holiday') return 'bg-sky-50 text-sky-700 ring-sky-200'
   if (kind === 'present') return 'bg-emerald-50 text-emerald-700 ring-emerald-200'
   if (kind === 'worked') return 'bg-indigo-50 text-indigo-700 ring-indigo-200'
@@ -575,18 +579,25 @@ onBeforeUnmount(() => {
                 :class="tdClass(date)"
               >
                 <div v-if="dayItems(row, date).length" class="flex flex-col items-center justify-center">
-                  <button
-                    v-for="item in dayItems(row, date)"
-                    :key="`${item.kind}-${item.ref_id}-${item.code}`"
-                    type="button"
-                    class="rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset transition hover:scale-[1.02] active:scale-[0.99]"
-                    :class="itemBadgeClass(item)"
-                    :title="itemTooltip(item)"
-                    @click="openDetails(item)"
-                  >
-                    {{ itemBadgeText(item) }} 
-                    
-                  </button>
+                  <template v-for="item in dayItems(row, date)" :key="`${item.kind}-${item.ref_id}-${item.code}`">
+                    <span
+                      v-if="isWeekendItem(item)"
+                      class="px-2 py-0.5 text-[11px] font-semibold text-slate-500"
+                      :title="itemTooltip(item)"
+                    >
+                      {{ itemBadgeText(item) }}
+                    </span>
+                    <button
+                      v-else
+                      type="button"
+                      class="rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset transition hover:scale-[1.02] active:scale-[0.99]"
+                      :class="itemBadgeClass(item)"
+                      :title="itemTooltip(item)"
+                      @click="openDetails(item)"
+                    >
+                      {{ itemBadgeText(item) }}
+                    </button>
+                  </template>
                 </div>
                 <span v-else class="text-slate-300 text-sm">&mdash;</span>
               </td>
