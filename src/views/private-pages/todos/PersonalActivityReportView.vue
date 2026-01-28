@@ -613,7 +613,7 @@ function handleClickAddTodoDate(todoId, date) {
                     <div class="font-semibold text-gray-800 flex items-center gap-2">
                       <span>{{ todo.title }}</span>
                       <span
-                        v-if="concurrentCount(todo) > 1"
+                        v-if="concurrentCount(todo) > 0"
                         class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full"
                       >
                         + {{ concurrentCount(todo) }} dates
