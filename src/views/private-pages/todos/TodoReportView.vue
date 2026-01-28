@@ -235,7 +235,7 @@ const todoAssignmentSummary = computed(() => {
           const attendance = getAttendanceDetails(group.user?.id, date)
           if (attendance.hasData) {
             hasAttendanceData = true
-            if (attendance.comment !== 'Absent') {
+            if (!attendance.is_absent) {
               hasPresentDay = true
             }
           }
@@ -442,6 +442,7 @@ function getAttendanceDetails(userId, date) {
       late: '-',
       early: '-',
       comment: '-',
+      is_absent: false,
     }
   }
 
@@ -452,6 +453,7 @@ function getAttendanceDetails(userId, date) {
     late: attendance.late || '-',
     early: attendance.early || '-',
     comment: attendance.comment || '-',
+    is_absent: attendance.is_absent || false,
   }
 }
 
