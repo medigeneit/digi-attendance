@@ -2,7 +2,7 @@
 import { getDisplayDate } from '@/libs/datetime'
 import { useAuthStore } from '@/stores/auth'
 import { useTodoDateStore } from '@/stores/useTodoDateStore'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import LoaderView from '../common/LoaderView.vue'
 import UserChip from '../user/UserChip.vue'
 import TodoStatusIcon from './TodoStatusIcon.vue'
@@ -19,6 +19,43 @@ const emit = defineEmits(['cancelClick', 'clickEdit', 'update', 'clickAddTodoDat
 async function fetchTodo() {
   console.log({ todo_date: 'dd' })
   await todoDateStore.fetchTodoDate(props.todoDate?.id)
+  const todoId = todoDateStore.todo_date?.todo_id || todoDateStore.todo_date?.todo?.id
+  if (todoId) {
+    try {
+      await todoDateStore.fetchTodoDates({ 'todo-id': todoId })
+    } catch (e) {
+      // ignore
+    }
+  }
+}
+
+const showHistory = ref(false)
+
+const projectName = computed(() => {
+  const t = todoDateStore.todo_date?.todo
+  return (
+    t?.project?.name ||
+    t?.project?.title ||
+    t?.project?.display_name ||
+    t?.project?.project_name ||
+    ''
+  )
+})
+
+const concurrentDates = computed(() => {
+  const currentTodoId = todoDateStore.todo_date?.todo_id || todoDateStore.todo_date?.todo?.id
+  if (!currentTodoId) return []
+  const list = todoDateStore.todo_dates?.filter((d) => d.todo_id == currentTodoId) || []
+  return [...list].sort((a, b) => {
+    const da = a?.date ? new Date(a.date).getTime() : 0
+    const db = b?.date ? new Date(b.date).getTime() : 0
+    return db - da
+  })
+})
+
+async function handleClickHistoryDate(id) {
+  if (!id) return
+  await todoDateStore.fetchTodoDate(id)
 }
 
 const selectedDate = computed(() => {
@@ -74,7 +111,8 @@ onMounted(async () => {
         <div class="mb-4 flex justify-between items-end">
           <div>
             <div class="text-xs text-gray-500">Todo</div>
-            {{ todoDateStore.todo_date?.title }}
+            <div class="text-base font-semibold">{{ todoDateStore.todo_date?.title }}</div>
+            <div v-if="projectName" class="text-xs text-slate-400 mt-1">{{ projectName }}</div>
           </div>
 
           <button
@@ -121,7 +159,7 @@ onMounted(async () => {
           </div>
         </div>
 
-        <div class="mt-6 p-4 bg-slate-50 rounded-xl border border-slate-200 shadow-inner">
+        <div class="mt-6 p-4 rounded-xl border border-slate-200 border-dashed">
           <div class="flex items-center justify-between mb-4">
             <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
               Current Status
@@ -201,6 +239,58 @@ onMounted(async () => {
           >
             <i class="fas fa-check-circle text-2xl mb-1"></i>
             <div class="text-xs font-bold uppercase tracking-wider">This Todo is Completed</div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="mx-4" />
+
+      <div class="px-4 mb-4">
+        <!-- Todo history: collapsed by title -->
+        <div class="mt-4">
+          <button
+            class="w-full text-left flex items-center justify-between px-2 py-2 bg-white border rounded-md"
+            @click.prevent="showHistory = !showHistory"
+          >
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              Todo history ({{ concurrentDates.length }})
+            </div>
+            <div class="text-sm text-slate-500">{{ showHistory ? '▾' : '▸' }}</div>
+          </button>
+
+          <div v-if="showHistory" class="mt-2 max-h-40 overflow-y-auto border rounded p-2 bg-white">
+            <div v-if="concurrentDates.length === 0" class="text-xs text-slate-400 py-2">
+              No history
+            </div>
+            <div
+              v-for="d in concurrentDates"
+              :key="d.id"
+              class="flex items-center justify-between py-2 px-2 hover:bg-slate-50 border-b last:border-b-0"
+            >
+              <div>
+                <a
+                  href="#"
+                  @click.prevent="handleClickHistoryDate(d.id)"
+                  class="text-sm font-semibold text-sky-600"
+                  >{{ d.date }}
+                </a>
+                <div class="text-xs text-slate-400">{{ d.status }}</div>
+              </div>
+              <div>
+                <span
+                  v-if="d.id === todoDateStore.todo_date?.id"
+                  class="text-xs text-emerald-600 font-bold"
+                  >Current</span
+                >
+                <button
+                  v-else
+                  class="btn-2 py-1 px-2 text-xs"
+                  @click.prevent="handleClickHistoryDate(d.id)"
+                >
+                  Show
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
