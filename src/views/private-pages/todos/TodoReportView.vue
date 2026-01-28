@@ -442,6 +442,7 @@ function getAttendanceDetails(userId, date) {
       late: '-',
       early: '-',
       comment: '-',
+      is_absent: false,
     }
   }
 
@@ -452,6 +453,7 @@ function getAttendanceDetails(userId, date) {
     late: attendance.late || '-',
     early: attendance.early || '-',
     comment: attendance.comment || '-',
+    is_absent: attendance.is_absent || false,
   }
 }
 
