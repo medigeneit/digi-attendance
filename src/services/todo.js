@@ -61,6 +61,10 @@ export async function findTodoDate(todoDateId, data){
   return apiClient.get(`/todo-dates/${todoDateId}`, data);
 }
 
+export async function getTodoHistories(todoId, { params = {} } = {}){
+  return apiClient.get(`/todos/${todoId}/histories`, { params });
+}
+
 export async function updateTodoDate(todoDateId, data){
   return apiClient.put(`/todo-dates/${todoDateId}`, data);
 }

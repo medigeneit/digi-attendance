@@ -16,6 +16,7 @@ import { useTodoDateStore } from '@/stores/useTodoDateStore'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import TodoCreateEditShow from './TodoCreateEditShow.vue'
 
 const props = defineProps({
   selfOnly: { type: Boolean, default: false },
@@ -98,6 +99,18 @@ function getTodoKey(todo) {
     todo.id ||
     `${todo.title}-${todo.date}`
   )
+}
+
+function getBaseTodoId(todo) {
+  return todo?.todo?.id || todo?.todo_id || todo?.todoId || todo?.id || null
+}
+
+function concurrentCount(todo) {
+  const id = getBaseTodoId(todo)
+  if (!id) return 0
+  return (todoDates.value || []).filter((td) => {
+    return (td?.todo?.id || td?.todo_id || td?.id) == id
+  }).length
 }
 
 const employees = computed(() => {
@@ -322,6 +335,35 @@ function handlePrevMonth() {
 function handleNextMonth() {
   shiftMonth(1)
 }
+
+const todoModal = ref({ action: null })
+
+function openTodo(todo) {
+  // alert('Opening todo modal is disabled in Personal Activity Report view.')
+  todoModal.value = { action: 'show', todo }
+}
+
+function closeTodoModal() {
+  todoModal.value = { action: null, todo: null }
+}
+
+function handleTodoUpdate() {
+  fetchTodos()
+  closeTodoModal()
+}
+
+function handleTodoDateUpdate() {
+  fetchTodos()
+  closeTodoModal()
+}
+
+function handleClickEdit(todo) {
+  todoModal.value = { action: 'edit', todo }
+}
+
+function handleClickAddTodoDate(todoId, date) {
+  todoModal.value = { action: 'addDate', todo_id: todoId, date }
+}
 </script>
 
 <template>
@@ -363,6 +405,7 @@ function handleNextMonth() {
         <span>{{ monthLabel }}</span>
         <span v-if="rangeLabel" class="text-gray-400">({{ rangeLabel }})</span>
       </span>
+
       <button
         type="button"
         class="btn-icon print-hide ml-2"
@@ -422,22 +465,9 @@ function handleNextMonth() {
       </div>
     </div>
 
-    <div
-      v-if="!reportReady"
-      class="text-center text-gray-500 py-12 border bg-gray-50 rounded-md min-h-[60vh] flex flex-col items-center justify-center space-y-4"
-    >
-      <i class="fad fa-tasks text-4xl"></i>
-      <div class="empty-state glass-panel">
-        <p class="text-base font-semibold text-rose-500">Select company and month to view PAR.</p>
-        <p class="text-sm text-gray-500">Use the filter set above to load records.</p>
-      </div>
-    </div>
-
-    <LoaderView v-else-if="todoDateStore.loading">Loading report...</LoaderView>
-
-    <div v-else class="space-y-4">
+    <div class="space-y-4" v-if="reportReady">
       <div
-        v-if="!selfOnly"
+        v-if="!props.selfOnly"
         class="bg-white border rounded-md shadow-sm print:shadow-none print:border-0 print:rounded-none px-4 py-3 flex flex-wrap gap-4"
       >
         <div class="text-sm text-gray-700">
@@ -475,7 +505,7 @@ function handleNextMonth() {
         class="bg-white border rounded-md shadow-sm print:shadow-none print:border-0 print:rounded-none"
       >
         <div class="flex flex-wrap items-center gap-4 px-4 py-3 border-b bg-gray-50">
-          <div v-if="!selfOnly" class="flex items-center gap-3">
+          <div v-if="!props.selfOnly" class="flex items-center gap-3">
             <UserHoverBubble :user="row.user">
               <template #trigger>
                 <UserAvatar :user="row.user" size="medium" />
@@ -551,57 +581,90 @@ function handleNextMonth() {
               </tr>
             </thead>
             <tbody>
-              <template v-if="row.projects.length === 0">
-                <tr>
-                  <td colspan="4" class="px-4 py-6 text-center text-gray-400 border rounded-b">
-                    No activity recorded for this month.
-                  </td>
-                </tr>
-              </template>
-              <template v-for="project in row.projects" :key="project.id">
-                <tr class="bg-gray-100/50">
-                  <td
-                    colspan="4"
-                    class="px-4 py-2 border font-bold text-blue-800 text-xs uppercase tracking-wider"
-                  >
-                    <i class="fas fa-project-diagram mr-2"></i>
-                    {{ project.name }}
-                    <span class="ml-2 font-normal text-gray-500"
-                      >({{ project.todos.length }} todos)</span
-                    >
-                  </td>
-                </tr>
-                <tr
-                  v-for="(todo, todoIndex) in project.todos"
-                  :key="getTodoKey(todo)"
-                  class="border-b"
+              <tr v-if="row.projects.length === 0">
+                <td colspan="4" class="px-4 py-6 text-center text-gray-400 border rounded-b">
+                  No activity recorded for this month.
+                </td>
+              </tr>
+            </tbody>
+
+            <tbody v-for="project in row.projects" :key="project.id">
+              <tr class="bg-gray-100/50">
+                <td
+                  colspan="4"
+                  class="px-4 py-2 border font-bold text-blue-800 text-xs uppercase tracking-wider"
                 >
-                  <td class="px-4 py-3 text-center border">{{ todoIndex + 1 }}</td>
-                  <td class="px-4 py-3 border">
-                    <div class="font-semibold text-gray-800">{{ todo.title }}</div>
-                    <div class="text-xs text-gray-500">
+                  <i class="fas fa-project-diagram mr-2"></i>
+                  {{ project.name }}
+                  <span class="ml-2 font-normal text-gray-500"
+                    >({{ project.todos.length }} todos)</span
+                  >
+                </td>
+              </tr>
+
+              <tr
+                v-for="(todo, todoIndex) in project.todos"
+                :key="getTodoKey(todo)"
+                class="border-b cursor-pointer hover:bg-slate-50"
+              >
+                <td class="px-4 py-3 text-center border">{{ todoIndex + 1 }}</td>
+                <td class="px-4 py-3 border">
+                  <a href="#" class="text-blue-600 hover:underline" @click.prevent="openTodo(todo)">
+                    <div class="font-semibold text-gray-800 flex items-center gap-2">
+                      <span>{{ todo.title }}</span>
+                      <span
+                        v-if="concurrentCount(todo) > 1"
+                        class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full"
+                      >
+                        + {{ concurrentCount(todo) }} dates
+                      </span>
+                    </div>
+                    <div class="text-xs text-gray-500" @click.prevent="openTodo(todo)">
                       {{ todo.todo?.todoable?.title || '' }}
                     </div>
-                  </td>
+                  </a>
+                </td>
 
-                  <td class="px-4 py-3 border text-xs text-gray-700">
-                    {{ getDisplayDate(todo.date) || todo.date }}
-                  </td>
-                  <td class="px-4 py-3 border text-center">
-                    <div
-                      class="inline-block text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap"
-                      :class="statusClass(todo.status)"
-                    >
-                      {{ todo.status === 'WORKING' ? 'IN PROGRESS' : todo.status || 'N/A' }}
-                    </div>
-                  </td>
-                </tr>
-              </template>
+                <td class="px-4 py-3 border text-xs text-gray-700">
+                  {{ getDisplayDate(todo.date) || todo.date }}
+                </td>
+                <td class="px-4 py-3 border text-center">
+                  <div
+                    class="inline-block text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap"
+                    :class="statusClass(todo.status)"
+                  >
+                    {{ todo.status === 'WORKING' ? 'IN PROGRESS' : todo.status || 'N/A' }}
+                  </div>
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
       </div>
+      <!-- Todo show modal -->
     </div>
+
+    <div
+      v-if="!reportReady && !todoDateStore.loading"
+      class="text-center text-gray-500 py-12 border bg-gray-50 rounded-md min-h-[60vh] flex flex-col items-center justify-center space-y-4"
+    >
+      <i class="fad fa-tasks text-4xl"></i>
+      <div class="empty-state glass-panel">
+        <p class="text-base font-semibold text-rose-500">Select company and month to view PAR.</p>
+        <p class="text-sm text-gray-500">Use the filter set above to load records.</p>
+      </div>
+    </div>
+
+    <LoaderView v-else-if="todoDateStore.loading">Loading report...</LoaderView>
+    <TodoCreateEditShow
+      :todoModal="todoModal"
+      userRole="employee"
+      @cancelClick="closeTodoModal"
+      @todoUpdate="handleTodoUpdate"
+      @todoDateUpdate="handleTodoDateUpdate"
+      @clickEdit="handleClickEdit"
+      @clickAddTodoDate="handleClickAddTodoDate"
+    />
   </div>
 </template>
 

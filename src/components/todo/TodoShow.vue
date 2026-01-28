@@ -1,5 +1,6 @@
 <script setup>
 import { getDisplayDate } from '@/libs/datetime'
+import { getTodoHistories } from '@/services/todo'
 import { useAuthStore } from '@/stores/auth'
 import { useTodoDateStore } from '@/stores/useTodoDateStore'
 import { computed, onMounted, ref } from 'vue'
@@ -8,7 +9,7 @@ import UserChip from '../user/UserChip.vue'
 import TodoStatusIcon from './TodoStatusIcon.vue'
 
 const props = defineProps({
-  todoDate: { type: Object, default: () => {} },
+  todoDate: { type: [Object, Number], default: null },
 })
 
 const todoDateStore = useTodoDateStore()
@@ -16,19 +17,48 @@ const authStore = useAuthStore()
 
 const emit = defineEmits(['cancelClick', 'clickEdit', 'update', 'clickAddTodoDate'])
 
-async function fetchTodo() {
-  console.log({ todo_date: 'dd' })
-  await todoDateStore.fetchTodoDate(props.todoDate?.id)
-  const todoId = todoDateStore.todo_date?.todo_id || todoDateStore.todo_date?.todo?.id
-  if (todoId) {
-    try {
-      await todoDateStore.fetchTodoDates({ 'todo-id': todoId })
-    } catch (e) {
-      // ignore
+const lastFetchedId = ref(null)
+const isFetching = ref(false)
+
+const incomingId = computed(() => {
+  if (!props.todoDate) return null
+  if (typeof props.todoDate === 'number') return props.todoDate
+  return props.todoDate?.id || null
+})
+
+async function fetchTodo(id) {
+  const todoDateId = id || incomingId.value
+  if (!todoDateId) return
+
+  if (isFetching.value && lastFetchedId.value === todoDateId) {
+    console.log('fetchTodo: already fetching', todoDateId)
+    return
+  }
+
+  // mark fetching
+  isFetching.value = true
+  lastFetchedId.value = todoDateId
+  console.log('fetchTodo:start', todoDateId, new Date().toISOString())
+
+  try {
+    await todoDateStore.fetchTodoDate(todoDateId)
+
+    const todoId = todoDateStore.todo_date?.todo_id || todoDateStore.todo_date?.todo?.id
+    if (todoId) {
+      try {
+        const resp = await getTodoHistories(todoId)
+        historyDates.value = resp.data?.todo_dates || []
+      } catch (e) {
+        console.error('getTodoHistories failed', e)
+      }
     }
+  } catch (e) {
+    console.error('fetchTodo failed', e)
+  } finally {
+    isFetching.value = false
+    console.log('fetchTodo:end', todoDateId, new Date().toISOString())
   }
 }
-
 const showHistory = ref(false)
 
 const projectName = computed(() => {
@@ -42,10 +72,10 @@ const projectName = computed(() => {
   )
 })
 
+const historyDates = ref([])
+
 const concurrentDates = computed(() => {
-  const currentTodoId = todoDateStore.todo_date?.todo_id || todoDateStore.todo_date?.todo?.id
-  if (!currentTodoId) return []
-  const list = todoDateStore.todo_dates?.filter((d) => d.todo_id == currentTodoId) || []
+  const list = historyDates.value || []
   return [...list].sort((a, b) => {
     const da = a?.date ? new Date(a.date).getTime() : 0
     const db = b?.date ? new Date(b.date).getTime() : 0
@@ -84,8 +114,10 @@ async function handleChangeTodoStatus(todo, status) {
   }
 }
 
+// fetch once when component mounts (parent mounts the modal when opening)
 onMounted(async () => {
-  await fetchTodo()
+  const id = incomingId.value
+  if (id) await fetchTodo(id)
 })
 </script>
 
@@ -150,33 +182,29 @@ onMounted(async () => {
           </button>
         </div>
 
-        <div class="mt-1 flex items-center gap-2 mb-4" v-if="todoDate?.user">
-          <UserChip :user="todoDate.user" avatar-size="xsmall" />
+        <div class="mt-1 flex items-center gap-2 mb-4" v-if="todoDateStore.todo_date?.user">
+          <UserChip :user="todoDateStore.todo_date.user" avatar-size="xsmall" />
           <div
             class="border border-sky-400 rounded-full text-sky-500 font-semibold bg-sky-50 px-1 py-0.5 text-xs inline-block"
           >
-            {{ todoDate.user?.department?.name }}
+            {{ todoDateStore.todo_date?.user?.department?.name }}
           </div>
         </div>
 
-        <div class="mt-6 p-4 rounded-xl border border-slate-200 border-dashed">
-          <div class="flex items-center justify-between mb-4">
-            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              Current Status
-            </div>
-            <div
-              class="flex items-center gap-2 px-3 py-1.5 bg-white rounded-full shadow-sm border border-slate-100"
-            >
-              <TodoStatusIcon
-                :todoDate="todoDateStore?.todo_date"
-                v-if="todoDateStore?.todo_date"
-              />
-              <span class="text-xs font-bold text-slate-700 tracking-wide">{{
-                todoDateStore.todo_date?.status
-              }}</span>
-            </div>
+        <div class="flex items-center justify-between mb-4">
+          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            Current Status
           </div>
-
+          <div
+            class="flex items-center gap-2 px-3 py-1.5 bg-white rounded-full shadow-sm border border-slate-100"
+          >
+            <TodoStatusIcon :todoDate="todoDateStore?.todo_date" v-if="todoDateStore?.todo_date" />
+            <span class="text-xs font-bold text-slate-700 tracking-wide">{{
+              todoDateStore.todo_date?.status
+            }}</span>
+          </div>
+        </div>
+        <div class="mt-6 p-4 rounded-xl border border-slate-200 border-dashed">
           <div
             v-if="
               isOwnTodo && !todoDateStore.loading && todoDateStore.todo_date?.status !== 'COMPLETED'
@@ -248,17 +276,20 @@ onMounted(async () => {
       <div class="px-4 mb-4">
         <!-- Todo history: collapsed by title -->
         <div class="mt-4">
-          <button
-            class="w-full text-left flex items-center justify-between px-2 py-2 bg-white border rounded-md"
+          <h2
+            class="w-full text-left flex items-center justify-between cursor-pointer py-2 bg-white rounded-md"
             @click.prevent="showHistory = !showHistory"
           >
-            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            <div class="text-sm font-bold text-slate-600 uppercase tracking-widest">
               Todo history ({{ concurrentDates.length }})
             </div>
-            <div class="text-sm text-slate-500">{{ showHistory ? '▾' : '▸' }}</div>
-          </button>
+            <div class="text-lg text-slate-500">{{ showHistory ? '▾' : '▸' }}</div>
+          </h2>
 
-          <div v-if="showHistory" class="mt-2 max-h-40 overflow-y-auto border rounded p-2 bg-white">
+          <div
+            v-if="showHistory"
+            class="mt-0.5 max-h-40 overflow-y-auto border rounded p-2 bg-white"
+          >
             <div v-if="concurrentDates.length === 0" class="text-xs text-slate-400 py-2">
               No history
             </div>
