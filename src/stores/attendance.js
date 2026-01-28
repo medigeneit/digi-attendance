@@ -273,6 +273,42 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   }
 
+  const postPayrollPeriods = async (payload) => {
+    isLoading.value = true
+    error.value = null
+    try {
+      const response = await apiClient.post('/add-on', payload)
+      return response.data
+    } catch (err) {
+      error.value = err?.response?.data?.message || 'Something went wrong'
+      console.error(error.value)
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const updatePayrollPeriod = async (periodId, payload) => {
+    if (!periodId) {
+      const msg = 'Payroll period id is required'
+      error.value = msg
+      throw new Error(msg)
+    }
+
+    isLoading.value = true
+    error.value = null
+    try {
+      const response = await apiClient.put(`/add-on/${periodId}`, payload)
+      return response.data
+    } catch (err) {
+      error.value = err?.response?.data?.message || 'Something went wrong'
+      console.error(error.value)
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
 
   const cleanPayload = (obj) => {
     const cleaned = {}
@@ -524,6 +560,8 @@ export const useAttendanceStore = defineStore('attendance', () => {
     getTodayAttendanceReport,
     getAttendanceLateReport,
     getMonthlyAttendanceSummaryReport,
+    postPayrollPeriods,
+    updatePayrollPeriod,
     downloadExcel,
     downloadPDF,
     attendanceDownloadExcel,

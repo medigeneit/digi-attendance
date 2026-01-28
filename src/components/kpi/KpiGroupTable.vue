@@ -192,9 +192,8 @@ const capMark = (id, max) => props.onCap?.(id, max)
       <div v-if="helperText" class="text-[11px] text-slate-500 truncate">
         {{ helperText }}
       </div>
-
       <!-- Group quick fill -->
-      <div v-if="showQuickFillGroupEffective" class="flex items-center gap-2 shrink-0">
+      <div v-if="showQuickFillGroupEffective && itemLabel !=='Personal Attributes' " class="flex items-center gap-2 shrink-0">
         <div class="inline-flex items-center rounded-xl border bg-white p-1 shadow-sm">
           <button
             type="button"

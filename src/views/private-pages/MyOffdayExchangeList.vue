@@ -160,11 +160,15 @@ const goBack = () => {
                 <td class="px-4 py-3 text-slate-700">{{ formatDate(exchange?.current_date) }}</td>
                 <td class="px-4 py-3 text-slate-700">{{ formatDate(exchange?.exchange_date) }}</td>
                 <td class="px-4 py-3">
-                  <div v-if="exchange?.attachment"
-                    class="flex items-center gap-1 text-xs font-semibold text-indigo-600">
+                  <a
+                    v-if="exchange?.attachment && typeof exchange?.attachment === 'string'"
+                    :href="exchange.attachment"
+                    target="_blank"
+                    class="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:underline"
+                  >
                     <i class="far fa-paperclip"></i>
-                    Attached
-                  </div>
+                    View
+                  </a>
                   <span v-else class="text-xs text-slate-400">None</span>
                 </td>
                 <td class="px-4 py-3">

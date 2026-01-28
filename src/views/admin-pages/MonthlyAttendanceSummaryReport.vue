@@ -5,6 +5,7 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import UpdateApprovalTime from '@/components/paycut/UpdateOrCreate.vue'
 import DisplayFormattedWorkingHours from '@/components/paycut/DisplayFormattedWorkingHours.vue'
 
+import AddonModal from '@/components/payroll/AddonModal.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useAuthStore } from '@/stores/auth'
 import { storeToRefs } from 'pinia'
@@ -23,6 +24,30 @@ const toNum = (v) => {
   const n = Number(v)
   return Number.isFinite(n) ? n : 0
 }
+
+const payrollByUserId = ref({})
+
+const getAddOnHour = (row) => {
+  const period = payrollByUserId.value?.[row?.user_id]
+  if (period && period.payable_hour !== undefined && period.payable_hour !== null) {
+    return toNum(period.payable_hour)
+  }
+  const candidates = [
+    row?.add_on,
+    row?.add_on_hour,
+    row?.add_on_hours,
+    row?.total_addition,
+    row?.total_addition_hours,
+    row?.payable_hour,
+    row?.addon,
+  ]
+  for (const val of candidates) {
+    if (val === null || val === undefined || String(val).trim() === '') continue
+    return toNum(val)
+  }
+  return 0
+}
+
 const sumBy = (rows, keyPath) => {
   return rows.reduce((acc, row) => {
     try {
@@ -34,6 +59,11 @@ const sumBy = (rows, keyPath) => {
   }, 0)
 }
 const pad = (value) => String(value || '').padStart(2, '0')
+const formatOneDecimal = (value) => {
+  const n = Number(value)
+  if (!Number.isFinite(n)) return '0.0'
+  return n.toFixed(1)
+}
 
 /* ---------------- reactive state ---------------- */
 const selectedMonth = ref((route.query.date && String(route.query.date)) || attendanceStore.selectedMonth || '')
@@ -98,6 +128,7 @@ const totals = computed(() => {
     sl: sumBy(rows, 'total_sl_leave'),
     wplDays: sumBy(rows, 'total_wpl_leave'),
     otHour: sumBy(rows, 'total_overtime_hours'),
+    addOnHour: rows.reduce((acc, row) => acc + row.payroll, 0),
     absentDays: sumBy(rows, 'total_absent'),
     wplHour: sumBy(rows, 'total_wpl_hour'),
     paycutHour: sumBy(rows, 'approved_paycut'),
@@ -148,6 +179,11 @@ function showBanner(type, text, ms = 4000) {
   ui.value.banner = { type, text }
   window.clearTimeout(showBanner._b)
   showBanner._b = window.setTimeout(() => (ui.value.banner = null), ms)
+}
+
+const handleAddonUpdated = ({ period, userId }) => {
+  if (!userId || !period) return
+  payrollByUserId.value = { ...payrollByUserId.value, [userId]: period }
 }
 
 /* ---------------- data actions ---------------- */
@@ -224,6 +260,7 @@ const getDownloadPDF = async () => {
 }
 const goBack = () => router.go(-1)
 const refreshPaycutList = async () => fetchAttendance()
+
 
 /* ---------------- recalc & finalize ---------------- */
 const isBusy = ref(false)
@@ -698,8 +735,9 @@ onBeforeUnmount(() => {
                   <th rowspan="2" class="th">Working Hour</th>
                   <th colspan="4" class="th">Leave Day</th>
                   <th colspan="2" class="th">Short Leave</th>
-                  <th rowspan="2" class="th">OT Hour</th>
-                  <th colspan="4" class="th">Deduction</th>
+                  <th colspan="2" class="th">Addition Hour</th>
+                  <th colspan="3" class="th">Deduction Hour</th>
+                  <th rowspan="2" class="th">Payable</th>
                   <th rowspan="2" class="th">Action</th>
                 </tr>
                 <tr class="bg-gray-50 text-xs">
@@ -710,7 +748,8 @@ onBeforeUnmount(() => {
                   <th class="th">Day</th><th class="th">Hour</th>
                   <th class="th">CL</th><th class="th">ML</th><th class="th">SL</th><th class="th">WPL</th>
                   <th class="th">Delay</th><th class="th">Early</th>
-                  <th class="th">Absent Hour</th><th class="th">WPL(Hour)</th><th class="th">Pay Cut</th><th class="th">Payable Hour</th>
+                  <th class="th">OT Hour</th><th class="th">Add-on</th>
+                  <th class="th">Absent</th><th class="th">WPL</th><th class="th">Pay-cut</th>
                 </tr>
               </thead>
 
@@ -772,9 +811,20 @@ onBeforeUnmount(() => {
                   </td>
 
                   <td class="td">{{ log?.total_overtime_hours ? `${log?.total_overtime_hours} H` : '' }}</td>
+                  <td class="td">
+                    <div class="flex gap-2 items-center">
+                      <DisplayFormattedWorkingHours :workingHours="log?.payroll" />
+                      <AddonModal
+                        :userId="log.user_id"
+                        :employeeName="log.user"
+                        :month="selectedMonth"
+                        @updated="handleAddonUpdated"
+                      />
+                    </div>
+                  </td>
 
-                  <td class="td">{{ toNum(log?.total_absent) * 9 }}H</td>
-                  <td class="td">{{ log?.total_wpl_hour }}H</td>
+                  <td class="td">{{ toNum(log?.total_absent) * 9 }}h</td>
+                  <td class="td">{{ log?.total_wpl_hour }}h</td>
 
                   <td class="td">
                     <div class="flex items-center justify-center gap-2">
@@ -789,7 +839,7 @@ onBeforeUnmount(() => {
                     </div>
                   </td>
 
-                  <td class="td">{{ log?.payable_hour }}H</td>
+                  <td class="td">{{ log?.payable_hour }}h</td>
 
                   <td class="td">
                     <router-link
@@ -814,10 +864,11 @@ onBeforeUnmount(() => {
                   <td class="td"></td>
                   <td class="td"></td>
                   <td class="td">{{ totals.otHour }}</td>
+                  <td class="td">{{ formatOneDecimal(totals.addOnHour) }}</td>
                   <td class="td">{{ totals.absentDays }} day</td>
                   <td class="td">{{ totals.wplHour }}</td>
                   <td class="td">{{ totals.paycutHour }}</td>
-                  <td class="td">{{ totals.payableHour }}</td>
+                  <td class="td">{{ formatOneDecimal(totals.payableHour) }}</td>
                   <td class="td"></td>
                 </tr>
               </tfoot>
@@ -826,6 +877,9 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </div>
+
+    <!-- Add-on Modal -->
+
   </div>
 </template>
 
