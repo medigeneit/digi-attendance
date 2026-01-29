@@ -106,7 +106,7 @@ const badgeClass = (item) => {
  */
 const isDayMarker = (item) => {
   const kind = String(item?.kind || '').toLowerCase()
-  return kind === 'weekend' || kind === 'holiday' || kind === 'present' || kind === 'worked'
+  return kind === 'weekend' || kind === 'holiday' || kind === 'present' || kind === 'absent'
 }
 
 const itemBadgeText = (item) => {
@@ -117,10 +117,7 @@ const itemBadgeText = (item) => {
   if (kind === 'weekend') return 'W'
   if (kind === 'holiday') return 'HD'
   if (kind === 'present') return 'P'
-  if (kind === 'worked') return 'P'
-  if (item?.label === 'Offday Exchange') return item?.code
-
-  return item?.label || ''
+  return item?.code || ''
 }
 
 const itemBadgeClass = (item) => {
@@ -129,7 +126,7 @@ const itemBadgeClass = (item) => {
   // MARKERS (circle chips)
   if (kind === 'weekend') return 'text-slate-700 ring-slate-200'
   if (kind === 'holiday') return 'text-sky-700 ring-sky-200'
-  if (kind === 'present' || kind === 'worked') return 'text-emerald-800 ring-emerald-200'
+  if (kind === 'present' || kind === 'absent') return 'text-emerald-800 ring-emerald-200'
 
   // ACTIONABLE (leave/exchange etc)
   return badgeClass(item)
@@ -590,7 +587,8 @@ onBeforeUnmount(() => {
                     <!-- MARKER (P/WK/HD): no button -->
                     <span
                       v-if="isDayMarker(item)"
-                      class="text-[11px] font-semibold !text-gray-400"
+                      class="text-[11px] font-semibold text-gray-400"
+                      :class="{ '!text-red-500':itemBadgeText(item) === 'A'}"
                       :title="itemTooltip(item)"
                     >
                       {{ itemBadgeText(item) }}
@@ -744,7 +742,7 @@ onBeforeUnmount(() => {
 
           <template v-if="isExchangeItem(ui.selectedItem)">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-semibold text-slate-500">Current Date</span>
+              <span class="text-xs font-semibold text-slate-500">Weekend/Holiday Date</span>
               <span class="font-semibold">{{ ui.selectedItem?.current_date || 'N/A' }}</span>
             </div>
             <div class="flex items-center justify-between">
