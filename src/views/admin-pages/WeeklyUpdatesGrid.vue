@@ -118,8 +118,9 @@ const itemBadgeText = (item) => {
   if (kind === 'holiday') return 'HD'
   if (kind === 'present') return 'P'
   if (kind === 'worked') return 'P'
+  if (item?.label === 'Offday Exchange') return item?.code
 
-  return item?.code || ''
+  return item?.label || ''
 }
 
 const itemBadgeClass = (item) => {
