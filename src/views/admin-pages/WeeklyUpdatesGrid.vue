@@ -101,30 +101,36 @@ const badgeClass = (item) => {
   return 'bg-slate-50 text-slate-700 ring-slate-200'
 }
 
+/**
+ * MARKER items: present / weekend / holiday (এগুলো শুধু indicator, কোনো button লাগবে না)
+ */
 const isDayMarker = (item) => {
   const kind = String(item?.kind || '').toLowerCase()
-  return kind === 'weekend' || kind === 'holiday' || kind === 'present'
+  return kind === 'weekend' || kind === 'holiday' || kind === 'present' || kind === 'worked'
 }
-
-const isWeekendItem = (item) => String(item?.kind || '').toLowerCase() === 'weekend'
 
 const itemBadgeText = (item) => {
   const label = String(item?.label || '').toUpperCase()
   if (label === 'WPL') return 'WPL'
+
   const kind = String(item?.kind || '').toLowerCase()
   if (kind === 'weekend') return 'W'
   if (kind === 'holiday') return 'HD'
   if (kind === 'present') return 'P'
   if (kind === 'worked') return 'P'
-  return item?.code
+
+  return item?.code || ''
 }
 
 const itemBadgeClass = (item) => {
   const kind = String(item?.kind || '').toLowerCase()
-  if (kind === 'weekend') return '!bg-slate-500 text-slate-700 ring-slate-200'
-  if (kind === 'holiday') return 'bg-sky-50 text-sky-700 ring-sky-200'
-  if (kind === 'present') return 'bg-emerald-50 text-emerald-700 ring-emerald-200'
-  if (kind === 'worked') return 'bg-indigo-50 text-indigo-700 ring-indigo-200'
+
+  // MARKERS (circle chips)
+  if (kind === 'weekend') return 'text-slate-700 ring-slate-200'
+  if (kind === 'holiday') return 'text-sky-700 ring-sky-200'
+  if (kind === 'present' || kind === 'worked') return 'text-emerald-800 ring-emerald-200'
+
+  // ACTIONABLE (leave/exchange etc)
   return badgeClass(item)
 }
 
@@ -250,11 +256,7 @@ const anchorYearMonth = computed(() => {
   return `${y}-${m}`
 })
 
-/* ---------------- (A) Employee name click -> hrd/em-attendance ----------------
-   Uses row.user.employee_id, company_id, department_id
-   + keeps current filter line_type
-   + uses anchor month (YYYY-MM)
---------------------------------------------------------------- */
+/* ---------------- (A) Employee name click -> hrd/em-attendance ---------------- */
 const employeeAttendanceUrl = (user) => {
   if (!user) return '#'
   const query = new URLSearchParams({
@@ -267,10 +269,7 @@ const employeeAttendanceUrl = (user) => {
   return `/hrd/em-attendance?${query.toString()}`
 }
 
-/* ---------------- (B) Application show link by type ----------------
-   leave    -> /leave-application-show/{ref_id}
-   exchange -> /exchange-offday-show/{ref_id}
---------------------------------------------------------------- */
+/* ---------------- (B) Application show link by type ---------------- */
 const applicationLink = (item) => {
   if (!item?.kind || !item?.ref_id) return null
   const kind = String(item.kind).toLowerCase()
@@ -467,6 +466,7 @@ onBeforeUnmount(() => {
             <div class="text-right bg-gray-100 rounded-full px-2 py-1">
               <div class="font-semibold text-slate-800" v-if="metaRange">{{ metaRange }}</div>
             </div>
+
             <div class="flex justify-center items-center gap-3">
               <div class="text-[11px] text-slate-400 bg-gray-100 rounded-full px-2 py-1">
                 Attendance month: <span class="font-semibold text-slate-600">{{ anchorYearMonth }}</span>
@@ -482,6 +482,17 @@ onBeforeUnmount(() => {
               </span>
               <span class="inline-flex items-center gap-1 text-[11px] text-slate-500">
                 <span class="h-2.5 w-2.5 rounded-full bg-rose-300"></span> Rejected
+              </span>
+
+              <!-- Markers -->
+              <span class="inline-flex items-center gap-1 text-[11px] text-slate-500">
+                <span class="h-2.5 w-2.5 rounded-full bg-emerald-300"></span> Present
+              </span>
+              <span class="inline-flex items-center gap-1 text-[11px] text-slate-500">
+                <span class="h-2.5 w-2.5 rounded-full bg-slate-300"></span> Weekend
+              </span>
+              <span class="inline-flex items-center gap-1 text-[11px] text-slate-500">
+                <span class="h-2.5 w-2.5 rounded-full bg-sky-300"></span> Holiday
               </span>
             </div>
           </div>
@@ -530,10 +541,7 @@ onBeforeUnmount(() => {
                 <div v-if="isToday(date)" class="mt-1 text-[10px] font-semibold text-amber-700">Today</div>
               </th>
 
-              <th
-                class="sticky z-20 bg-slate-50 px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide"
-                
-              >
+              <th class="sticky z-20 bg-slate-50 px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide">
                 SMS
               </th>
             </tr>
@@ -545,9 +553,7 @@ onBeforeUnmount(() => {
               :key="row.user.id"
               class="border-t border-slate-200 hover:bg-sky-50/70"
             >
-              <td
-                class="sticky left-0 z-20 w-10 border-r border-slate-200 bg-white p-2 text-xs font-semibold text-slate-600"
-              >
+              <td class="sticky left-0 z-20 w-10 border-r border-slate-200 bg-white p-2 text-xs font-semibold text-slate-600">
                 {{ index + 1 }}
               </td>
 
@@ -571,37 +577,41 @@ onBeforeUnmount(() => {
                 </div>
               </td>
 
-              <!-- TD center + today highlight -->
+              <!-- Days -->
               <td
                 v-for="date in dates"
                 :key="`${row.user.id}-${date}`"
                 class="p-2 border-r border-slate-200 text-center"
                 :class="tdClass(date)"
               >
-                <div v-if="dayItems(row, date).length" class="flex flex-col items-center justify-center">
+                <div v-if="dayItems(row, date).length" class="flex flex-wrap items-center justify-center gap-1">
                   <template v-for="item in dayItems(row, date)" :key="`${item.kind}-${item.ref_id}-${item.code}`">
+                    <!-- MARKER (P/WK/HD): no button -->
                     <span
-                      v-if="isWeekendItem(item)"
-                      class="px-2 py-0.5 text-[11px] font-semibold text-slate-500"
+                      v-if="isDayMarker(item)"
+                      class="text-[11px] font-semibold !text-gray-400"
                       :title="itemTooltip(item)"
                     >
                       {{ itemBadgeText(item) }}
                     </span>
-                    <button
+
+                    <!-- ACTIONABLE: clickable pill (still no button element) -->
+                    <span
                       v-else
-                      type="button"
-                      class="rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset transition hover:scale-[1.02] active:scale-[0.99]"
+                      class="inline-flex items-center rounded-full px-2 py-1 text-[11px] font-semibold ring-1 ring-inset cursor-pointer select-none hover:opacity-90"
                       :class="itemBadgeClass(item)"
                       :title="itemTooltip(item)"
                       @click="openDetails(item)"
                     >
                       {{ itemBadgeText(item) }}
-                    </button>
+                    </span>
                   </template>
                 </div>
+
                 <span v-else class="text-slate-300 text-sm">&mdash;</span>
               </td>
 
+              <!-- SMS -->
               <td class="px-2">
                 <div class="flex justify-end">
                   <button
@@ -611,8 +621,11 @@ onBeforeUnmount(() => {
                     @click="openSmsForRow(row)"
                   >
                     <span v-if="ui.busyKey">Sending...</span>
-                    <span v-else>Send SMS 
-                      <span class="font-bold" v-if="row.user?.yearly_message_count">({{ row.user?.yearly_message_count }})</span>
+                    <span v-else>
+                      Send SMS
+                      <span class="font-bold" v-if="(row.user?.yearly_messages_count ?? row.user?.yearly_message_count)">
+                        ({{ row.user?.yearly_messages_count ?? row.user?.yearly_message_count }})
+                      </span>
                     </span>
                   </button>
                 </div>
@@ -727,10 +740,6 @@ onBeforeUnmount(() => {
             <span class="text-xs font-semibold text-slate-500">Kind</span>
             <span class="font-semibold">{{ ui.selectedItem?.kind }}</span>
           </div>
-          <!-- <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold text-slate-500">Ref ID</span>
-            <span class="font-semibold">#{{ ui.selectedItem?.ref_id }}</span>
-          </div> -->
 
           <template v-if="isExchangeItem(ui.selectedItem)">
             <div class="flex items-center justify-between">
