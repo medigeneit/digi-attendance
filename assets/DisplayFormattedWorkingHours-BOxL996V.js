@@ -1,0 +1,1 @@
+import{x as a,c as e,o as u,t as c}from"./index-DmUmJ6hT.js";const p={__name:"DisplayFormattedWorkingHours",props:["workingHours"],setup(n){const r=n,s=a(()=>{if(!r.workingHours)return"-";const o=Math.floor(r.workingHours),t=Math.round((r.workingHours-o)*60);return t?`${o}h ${t}m`:`${o}h`});return(o,t)=>(u(),e("span",null,c(s.value),1))}};export{p as _};
