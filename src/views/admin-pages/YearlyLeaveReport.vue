@@ -551,7 +551,7 @@ const EMP_W = 280 // px (compact but enough)
     </div>
 
     <!-- Filters (compact card) -->
-    <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div class="rounded-2xl bg-white shadow-sm">
       <div class="p-3">
         <EmployeeFilter
           v-model:company_id="filters.company_id"
@@ -567,7 +567,7 @@ const EMP_W = 280 // px (compact but enough)
       </div>
 
       <!-- Tabs (pill) -->
-      <div class="flex flex-wrap gap-2 border-t border-slate-100 px-3 py-2">
+      <div class="flex flex-wrap gap-2 border-t border-gray-200 px-3 py-2">
         <button
           class="tab-pill"
           :class="activePart === 'part1' ? 'tab-pill--active' : ''"
@@ -584,8 +584,8 @@ const EMP_W = 280 // px (compact but enough)
           Part 2 (Total / Used / Balance)
         </button>
 
-          <label
-              class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-semibold text-slate-700"
+            <label
+              class="inline-flex items-center gap-2 rounded-xl border bg-slate-50 px-3 py-2 text-[11px] font-semibold text-slate-700"
             >
               <input type="checkbox" v-model="includePending" class="accent-slate-700" />
               Include Pending
@@ -593,7 +593,7 @@ const EMP_W = 280 // px (compact but enough)
 
           <div class="flex items-center gap-2">
             <span class="text-[11px] font-semibold text-slate-600">Per Page</span>
-            <select v-model="perPage" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px]">
+            <select v-model="perPage" class="rounded-xl border bg-white px-3 py-2 text-[11px]">
               <option :value="10">10</option>
               <option :value="25">25</option>
               <option :value="50">50</option>
@@ -604,7 +604,7 @@ const EMP_W = 280 // px (compact but enough)
     </div>
 
     <!-- Loading -->
-    <div v-if="isLoading" class="rounded-2xl border border-slate-200 bg-white shadow-sm p-6 text-center">
+    <div v-if="isLoading" class="rounded-2xl border bg-white shadow-sm p-6 text-center">
       <LoaderView />
     </div>
 
@@ -618,23 +618,23 @@ const EMP_W = 280 // px (compact but enough)
       <!-- ===================== PART 1 ===================== -->
       <div
         v-if="activePart === 'part1'"
-        class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+        class="rounded-2xl border bg-white shadow-sm overflow-hidden"
       >
         <!-- title bar -->
-        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-slate-50 px-4 py-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-300 bg-slate-50 px-4 py-3">
           <div class="flex flex-wrap items-center gap-2">
             <span class="text-sm font-semibold text-slate-800">Yearly Leave Matrix (Part-1)</span>
 
             <span
               v-if="filters.employee_id"
-              class="text-[11px] font-semibold rounded-full bg-indigo-100 text-indigo-700 px-3 py-1"
+              class="text-[11px] font-semibold rounded-full bg-indigo-100 text-indigo-700 px-3 py-1 border border-ink"
             >
               User: {{ filters.employee_id }}
             </span>
 
             <span
               v-if="storeFilters?.fallback_company_only"
-              class="text-[11px] rounded-full bg-amber-100 text-amber-700 px-3 py-1"
+              class="text-[11px] rounded-full bg-amber-100 text-amber-700 px-3 py-1 border border-ink"
             >
               Fallback: Company users
             </span>
@@ -664,7 +664,7 @@ const EMP_W = 280 // px (compact but enough)
                 <th
                   v-for="ym in monthKeys"
                   :key="ym"
-                  class="px-2 py-2 text-center border-l border-slate-200"
+                  class="px-2 py-2 text-center border-l border-ink"
                   :colspan="monthSubCols.length"
                 >
                   {{ monthLabel(ym) }}
@@ -676,7 +676,7 @@ const EMP_W = 280 // px (compact but enough)
                   <th
                     v-for="c in monthSubCols"
                     :key="ym + '_' + c.key"
-                    class="px-2 py-2 text-center border-l border-slate-200"
+                    class="px-2 py-2 text-center border-l border-b border-t border-ink"
                     :title="c.key"
                   >
                     {{ c.label }}
@@ -685,7 +685,7 @@ const EMP_W = 280 // px (compact but enough)
               </tr>
             </thead>
 
-            <tbody class="divide-y divide-slate-100">
+            <tbody class="divide-y divide-ink-soft">
               <tr
                 v-for="row in companyReports"
                 :key="row?.user?.id"
@@ -712,7 +712,7 @@ const EMP_W = 280 // px (compact but enough)
                   <td
                     v-for="c in monthSubCols"
                     :key="row?.user?.id + '_' + ym + '_' + c.key"
-                    class="px-2 py-2 text-center border-l border-slate-100 tabular-nums"
+                    class="px-2 py-2 text-center border-l border-ink-soft tabular-nums"
                     :class="cellClass(getMonthVal(row, ym, c.key))"
                   >
                     {{ getMonthVal(row, ym, c.key) }}
@@ -733,7 +733,7 @@ const EMP_W = 280 // px (compact but enough)
         </div>
 
         <!-- Pagination -->
-        <div v-if="pagination" class="flex items-center justify-between gap-2 border-t border-slate-100 px-4 py-3">
+        <div v-if="pagination" class="flex items-center justify-between gap-2 border-t border-ink px-4 py-3">
           <p class="text-[11px] text-slate-500">
             Page {{ pagination.current_page }} of {{ pagination.last_page }} • Total {{ pagination.total }}
           </p>
@@ -753,8 +753,8 @@ const EMP_W = 280 // px (compact but enough)
       </div>
 
       <!-- ===================== PART 2 ===================== -->
-      <div v-else class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-slate-50 px-4 py-3">
+      <div v-else class="rounded-2xl border border-ink-strong bg-white shadow-sm overflow-hidden">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-ink bg-slate-50 px-4 py-3">
           <div class="flex flex-wrap items-center gap-2">
             <span class="text-sm font-semibold text-slate-800">Yearly Leave Report (Part-2)</span>
             <span class="text-[11px] font-medium text-slate-500">Total / Used / Balance</span>
@@ -779,7 +779,7 @@ const EMP_W = 280 // px (compact but enough)
                 <th
                   v-for="g in part2Groups"
                   :key="g.title"
-                  class="px-2 py-2 text-center border-l border-slate-200"
+                  class="px-2 py-2 text-center border-l border-ink"
                   :colspan="g.cols.length"
                 >
                   {{ g.title }}
@@ -791,7 +791,7 @@ const EMP_W = 280 // px (compact but enough)
                   <th
                     v-for="k in g.cols"
                     :key="g.title + '_' + k"
-                    class="px-2 py-2 text-center border-l border-slate-200"
+                    class="px-2 py-2 text-center border-l border-ink"
                     :title="k"
                   >
                     {{ PART2_LABEL(k) }}
@@ -800,7 +800,7 @@ const EMP_W = 280 // px (compact but enough)
               </tr>
             </thead>
 
-            <tbody class="divide-y divide-slate-100">
+            <tbody class="divide-y divide-ink-soft">
               <tr v-for="row in companyReports" :key="row?.user?.id" class="hover:bg-sky-100">
                 <td class="sticky-col sticky-col--sl px-3 py-2 font-bold">
                   {{ row?.sl ?? '' }}
@@ -819,7 +819,7 @@ const EMP_W = 280 // px (compact but enough)
                   <td
                     v-for="k in g.cols"
                     :key="row?.user?.id + '_' + g.title + '_' + k"
-                    class="px-2 py-2 text-center border-l border-slate-100 tabular-nums"
+                    class="px-2 py-2 text-center border-l border-ink-soft tabular-nums"
                     :class="part2CellClass(part2Cell(row, g.mode, k))"
                   >
                     {{ part2Cell(row, g.mode, k) }}
@@ -840,7 +840,7 @@ const EMP_W = 280 // px (compact but enough)
         </div>
 
         <!-- Pagination -->
-        <div v-if="pagination" class="flex items-center justify-between gap-2 border-t border-slate-100 px-4 py-3">
+        <div v-if="pagination" class="flex items-center justify-between gap-2 border-t border-ink px-4 py-3">
           <p class="text-[11px] text-slate-500">
             Page {{ pagination.current_page }} of {{ pagination.last_page }} • Total {{ pagination.total }}
           </p>
@@ -867,10 +867,10 @@ const EMP_W = 280 // px (compact but enough)
 
       <!-- modal -->
       <div
-        class="absolute left-1/2 top-1/2 w-[95vw] max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white shadow-xl overflow-hidden"
+        class="absolute left-1/2 top-1/2 w-[95vw] max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white shadow-xl overflow-hidden border border-ink-strong"
       >
         <!-- header -->
-        <div class="flex items-start justify-between gap-3 border-b border-slate-100 bg-slate-50 px-4 py-3">
+        <div class="flex items-start justify-between gap-3 border-b border-ink bg-slate-50 px-4 py-3">
           <div class="min-w-0">
             <p class="text-sm font-semibold text-slate-800 truncate">
               {{ safe(summaryRow?.user?.name, 'Employee') }}
@@ -899,7 +899,7 @@ const EMP_W = 280 // px (compact but enough)
         <!-- body -->
         <div class="p-4 space-y-4">
           <!-- Total Summary -->
-          <div class="rounded-2xl border border-slate-200 bg-white p-4">
+          <div class="rounded-2xl border border-ink-strong bg-white p-4">
             <div class="flex items-start justify-between gap-3">
               <div>
                 <p class="text-xs font-semibold text-slate-700">Total Summary</p>
@@ -936,8 +936,8 @@ const EMP_W = 280 // px (compact but enough)
           </div>
 
           <!-- Balance table -->
-          <div class="rounded-2xl border border-slate-200 overflow-hidden">
-            <div class="px-4 py-2 bg-slate-50 border-b border-slate-100 text-xs font-semibold text-slate-700">
+          <div class="rounded-2xl border border-ink-strong overflow-hidden">
+            <div class="px-4 py-2 bg-slate-50 border-b border-ink text-xs font-semibold text-slate-700">
               Balance Summary (By Type)
             </div>
 
@@ -952,7 +952,7 @@ const EMP_W = 280 // px (compact but enough)
                   </tr>
                 </thead>
 
-                <tbody class="divide-y divide-slate-100">
+                <tbody class="divide-y divide-ink-soft">
                   <tr v-for="t in balanceTypes" :key="t.key">
                     <td class="px-4 py-2 font-semibold text-slate-800">{{ t.label }}</td>
                     <td class="px-4 py-2 text-right tabular-nums">{{ getBalance(summaryRow, t.key, 'quota') }}</td>
@@ -962,7 +962,7 @@ const EMP_W = 280 // px (compact but enough)
                     </td>
                   </tr>
 
-                  <tr class="bg-slate-50">
+                  <tr class="bg-slate-50 border-t border-ink-soft">
                     <td class="px-4 py-2 font-bold text-slate-800">Total</td>
                     <td class="px-4 py-2 text-right font-bold tabular-nums">{{ summaryTotals.quota }}</td>
                     <td class="px-4 py-2 text-right font-bold tabular-nums text-emerald-700">{{ summaryTotals.used }}</td>
@@ -1010,6 +1010,20 @@ const EMP_W = 280 // px (compact but enough)
   border-radius: 999px;
 }
 
+.border-ink-strong {
+  border-color: #0f172a; /* slate-900 */
+}
+.border-ink {
+  border-color: #575f69; /* slate-800 */
+}
+.border-ink-soft {
+  border-color: #334155; /* slate-700 */
+}
+.divide-ink-soft > :not([hidden]) ~ :not([hidden]) {
+  border-top-width: 1px;
+  border-color: #334155; /* slate-700 */
+}
+
 /* ✅ Sticky columns without overlap (uses CSS vars from table style) */
 .sticky-col {
   position: sticky;
@@ -1036,7 +1050,7 @@ const EMP_W = 280 // px (compact but enough)
 /* subtle divider shadow so sticky area looks separated */
 .sticky-col--emp,
 .sticky-col--sl {
-  box-shadow: 1px 0 0 rgba(226, 232, 240, 1); /* slate-200 */
+  box-shadow: 1px 0 0 rgba(30, 41, 59, 0.7); /* slate-800 */
 }
 
 /* compact tab pills */
@@ -1046,7 +1060,7 @@ const EMP_W = 280 // px (compact but enough)
   gap: 0.5rem;
   padding: 0.45rem 0.75rem;
   border-radius: 999px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #1f2937;
   background: #fff;
   color: #334155;
   font-size: 12px;

@@ -27,27 +27,6 @@ const toNum = (v) => {
 
 const payrollByUserId = ref({})
 
-const getAddOnHour = (row) => {
-  const period = payrollByUserId.value?.[row?.user_id]
-  if (period && period.payable_hour !== undefined && period.payable_hour !== null) {
-    return toNum(period.payable_hour)
-  }
-  const candidates = [
-    row?.add_on,
-    row?.add_on_hour,
-    row?.add_on_hours,
-    row?.total_addition,
-    row?.total_addition_hours,
-    row?.payable_hour,
-    row?.addon,
-  ]
-  for (const val of candidates) {
-    if (val === null || val === undefined || String(val).trim() === '') continue
-    return toNum(val)
-  }
-  return 0
-}
-
 const sumBy = (rows, keyPath) => {
   return rows.reduce((acc, row) => {
     try {
@@ -103,21 +82,6 @@ const finalizedAtLabel = computed(() => {
   }
 })
 
-/**
- * If backend has snapshot refreshed_at / recalculated_at, bind it here.
- * Otherwise we show “Loaded just now”.
- */
-const lastRefreshedAt = ref(null) // Date | null
-const lastRefreshedLabel = computed(() => {
-  if (!lastRefreshedAt.value) return 'Not refreshed yet'
-  try {
-    return new Intl.DateTimeFormat('en', {
-      month: 'short', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
-    }).format(lastRefreshedAt.value)
-  } catch {
-    return String(lastRefreshedAt.value)
-  }
-})
 
 /* ---------------- footer totals (safe) ---------------- */
 const totals = computed(() => {
@@ -200,7 +164,6 @@ const fetchAttendance = async () => {
 
   try {
     await attendanceStore.getMonthlyAttendanceSummaryReport(companyId, departmentId, line_type, employeeId, selectedMonth.value)
-    lastRefreshedAt.value = new Date()
   } catch (error) {
     console.error('Failed:', error)
     showToast('error', 'Failed to load attendance data.')
@@ -735,7 +698,7 @@ onBeforeUnmount(() => {
                   <th rowspan="2" class="th">Working Hour</th>
                   <th colspan="4" class="th">Leave Day</th>
                   <th colspan="2" class="th">Short Leave</th>
-                  <th colspan="2" class="th">Addition Hour</th>
+                  <th colspan="2" class="th">Addition</th>
                   <th colspan="3" class="th">Deduction Hour</th>
                   <th rowspan="2" class="th">Payable</th>
                   <th rowspan="2" class="th">Action</th>
@@ -748,7 +711,7 @@ onBeforeUnmount(() => {
                   <th class="th">Day</th><th class="th">Hour</th>
                   <th class="th">CL</th><th class="th">ML</th><th class="th">SL</th><th class="th">WPL</th>
                   <th class="th">Delay</th><th class="th">Early</th>
-                  <th class="th">OT Hour</th><th class="th">Add-on</th>
+                  <th class="th" title="Over Time">OTH</th><th class="th">Add-on</th>
                   <th class="th">Absent</th><th class="th">WPL</th><th class="th">Pay-cut</th>
                 </tr>
               </thead>
@@ -812,7 +775,7 @@ onBeforeUnmount(() => {
 
                   <td class="td">{{ log?.total_overtime_hours ? `${log?.total_overtime_hours} H` : '' }}</td>
                   <td class="td">
-                    <div class="flex gap-2 items-center">
+                    <div class="flex gap-2 justify-center items-center">
                       <DisplayFormattedWorkingHours :workingHours="log?.payroll" />
                       <AddonModal
                         :userId="log.user_id"
