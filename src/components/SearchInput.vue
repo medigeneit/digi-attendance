@@ -31,7 +31,7 @@ const search = computed({
 })
 </script>
 <template>
-  <div class="text-gray-600 relative rounded-md px-2 py-1 border-2 border-gray-400">
+  <div class="text-gray-600 relative rounded-md px-2 py-0.5 border border-gray-400">
     <input
       ref="searchInput"
       id="search"

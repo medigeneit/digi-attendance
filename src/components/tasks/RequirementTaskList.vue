@@ -20,7 +20,7 @@ const props = defineProps({
   inContainer: { type: Boolean, default: true },
 })
 
-const emit = defineEmits(['update:taskFilters'])
+const emit = defineEmits(['update:taskFilters', 'loading'])
 
 const store = useTaskStore()
 const requirementStore = useRequirementStore()
@@ -71,15 +71,18 @@ const { saveTaskPriority, listHasRearranged } = useTaskPriorityUpdate(() => stor
 
 onMounted(() => {
   state.value = 'loading'
+
   fetchTasks()
 })
 
 async function fetchTasks() {
+  emit('loading', true)
   if (props.showOnlyMyTasks) {
     await store.fetchAllMyTasks({ ...props.taskFilters, ...{ page: 1 } })
   } else {
     await store.fetchAllTasks({ ...props.taskFilters, ...{ page: 1 } })
   }
+  emit('loading', false)
   state.value = ''
   queryLogs.value = store.query_log || []
 }

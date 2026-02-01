@@ -11,6 +11,7 @@ export const useTodoDateStore = defineStore('todo-date', () => {
   const updatingPriority = ref(false)
   const error = ref(null);
   const todo_dates = ref([])
+  const todo_date_counts = ref({})
 
 
   const emptyTodoDates = () => todo_date.value = []
@@ -30,6 +31,36 @@ export const useTodoDateStore = defineStore('todo-date', () => {
     } finally {
       loading.value = false;
     }
+  }
+
+  const fetchTodoDateCounts = async (todoIds = [], { companyId } = {}) => {
+    if (!todoIds || !todoIds.length) return {}
+    loading.value = true
+    error.value = null
+    try {
+      // request todo-dates filtered by todo ids so server returns full set across months
+      const params = { todo_ids: todoIds, per_page: 1000 }
+      if (companyId) params['company-id'] = companyId
+      const response = await getTodoDates({ params })
+      const list = response.data?.todo_dates || []
+      const counts = {}
+      list.forEach((td) => {
+        const id = td?.todo?.id || td?.todo_id || td?.id || null
+        if (!id) return
+        counts[id] = (counts[id] || 0) + 1
+      })
+      todo_date_counts.value = counts
+      return counts
+    } catch (err) {
+      error.value = err.response?.data?.message || 'TodoDates count load failed'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const getTodoDateCount = (todoId) => {
+    return todo_date_counts.value?.[String(todoId)] ?? null
   }
 
   function sortTodoDateList(){
@@ -242,6 +273,8 @@ export const useTodoDateStore = defineStore('todo-date', () => {
     updateStatus,
     getTodoDatesByDate,
     setNewTodoDate,
-    emptyTodoDates
+    emptyTodoDates,
+    fetchTodoDateCounts,
+    getTodoDateCount
   };
 });

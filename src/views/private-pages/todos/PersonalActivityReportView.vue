@@ -84,9 +84,11 @@ function handleFilterChange(payload) {
 }
 
 function statusClass(status) {
-  if (status === 'COMPLETED') return 'bg-green-100 text-green-700 border border-green-200'
-  if (status === 'WORKING') return 'bg-blue-100 text-blue-700 border border-blue-200'
-  if (status === 'PENDING') return 'bg-yellow-100 text-yellow-700 border border-yellow-200'
+  if (status === 'COMPLETED') return 'bg-green-500 text-green-100 border border-green-200'
+  if (status === 'WORKING') return 'bg-amber-100 text-amber-700 border border-amber-200'
+  if (status === 'BACK_LOG') return 'bg-slate-100 text-slate-500 border border-slate-400'
+  if (status === 'DEPENDANT') return 'bg-neutral-50 text-neutral-700 border border-neutral-400'
+  if (status === 'PENDING') return 'bg-yellow-50 text-yellow-700 border border-yellow-400'
   return 'bg-gray-100 text-gray-700 border border-gray-200'
 }
 
@@ -108,6 +110,21 @@ function getBaseTodoId(todo) {
 function concurrentCount(todo) {
   const id = getBaseTodoId(todo)
   if (!id) return 0
+
+  // 1) First prefer counts fetched by the store (server-side aggregated)
+  const storeCount = todoDateStore.getTodoDateCount(id)
+  if (typeof storeCount === 'number') return storeCount
+
+  // 2) Then check any server-provided embedded fields on the todo object
+  const serverCount =
+    todo?.todo?.todo_dates_count ??
+    todo?.todo_dates_count ??
+    todo?.todo?.todo_dates?.length ??
+    todo?.todo?.dates_count ??
+    null
+  if (typeof serverCount === 'number') return serverCount
+
+  // 3) Fallback: count from currently loaded todoDates (may be limited to selected month)
   return (todoDates.value || []).filter((td) => {
     return (td?.todo?.id || td?.todo_id || td?.id) == id
   }).length
@@ -261,6 +278,16 @@ async function fetchTodos() {
     'start-date': startDate.value,
     'end-date': endDate.value,
   })
+  try {
+    const ids = Array.from(
+      new Set((todoDates.value || []).map((td) => getBaseTodoId(td)).filter((v) => v)),
+    )
+    if (ids.length) {
+      await todoDateStore.fetchTodoDateCounts(ids, { companyId: effectiveCompanyId.value || '' })
+    }
+  } catch (e) {
+    console.error('fetchTodoDateCounts failed', e)
+  }
 }
 
 function applySelfEmployee() {
@@ -613,7 +640,7 @@ function handleClickAddTodoDate(todoId, date) {
                     <div class="font-semibold text-gray-800 flex items-center gap-2">
                       <span>{{ todo.title }}</span>
                       <span
-                        v-if="concurrentCount(todo) > 0"
+                        v-if="concurrentCount(todo) > 1"
                         class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full"
                       >
                         + {{ concurrentCount(todo) }} dates
@@ -623,6 +650,7 @@ function handleClickAddTodoDate(todoId, date) {
                       {{ todo.todo?.todoable?.title || '' }}
                     </div>
                   </a>
+                  <!-- <pre>{{ concurrentCount(todo) }}</pre> -->
                 </td>
 
                 <td class="px-4 py-3 border text-xs text-gray-700">

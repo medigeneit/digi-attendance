@@ -220,7 +220,7 @@ watch(
 
 <template>
   <div>
-    <div class="border bg-white relative">
+    <div class="bg-white relative">
       <LoaderView
         v-if="todoDateStore.loading"
         class="absolute inset-0 bg-opacity-80 text-center py-4 text-gray-500 z-10 flex items-center justify-center"
@@ -230,7 +230,7 @@ watch(
 
       <TodoHeading
         :selected="selected"
-        class="border-b shadow z-20"
+        class="z-20 rounded-b-md"
         @change="handleHeadingChange"
         @reload-click="handleReloadClick"
       >

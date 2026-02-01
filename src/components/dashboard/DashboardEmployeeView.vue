@@ -34,7 +34,7 @@ watch(
       <div
         class="gap-0 rounded-md bg-white shadow-md border border-gray-300 col-span-full lg:col-span-3 lg:row-span-2"
       >
-        <div class="flex items-center justify-center gap-4 py-2">
+        <div class="flex items-center justify-center gap-4 py-2 border-b bg-gray-50 rounded-t-md">
           <button
             @click.prevent="mainSection = 'todos'"
             class="!py-0.5 text-sm"
@@ -65,7 +65,7 @@ watch(
         class="col-span-full lg:col-span-1 grid sm:grid-cols-2 lg:grid-cols-1 gap-6 sticky top-[80px]"
       >
         <div class="card-bg gap-0 shadow-md border border-gray-300">
-          <DashboardRecentApplications /> 
+          <DashboardRecentApplications />
         </div>
 
         <div class="card-bg gap-0 shadow-md border border-gray-300">

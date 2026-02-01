@@ -7,7 +7,6 @@ import { useTodoStore } from '@/stores/useTodoStore'
 import { nextTick, onMounted, ref, watch } from 'vue'
 import FormHandler from '../FormHandler.vue'
 import InputWithSuggestions from '../InputWithSuggestions.vue'
-import CompanyDepartmentSelectInput from '../common/CompanyDepartmentSelectInput.vue'
 import LoaderView from '../common/LoaderView.vue'
 import TodoTypeInput from './TodoTypeInput.vue'
 
@@ -145,7 +144,7 @@ onMounted(async () => {
           />
         </div>
 
-        <CompanyDepartmentSelectInput
+        <!-- <CompanyDepartmentSelectInput
           v-if="authStore.isAdminMood"
           v-model="selectedDepartmentId"
           :companies="companyStore?.myCompanies || []"
@@ -156,7 +155,7 @@ onMounted(async () => {
               Project Department <span class="text-gray-500">(Optional - for new project)</span>
             </label>
           </template>
-        </CompanyDepartmentSelectInput>
+        </CompanyDepartmentSelectInput> -->
 
         <div class="mb-4">
           <label class="block text-gray-700 font-medium mb-1 text-sm">
