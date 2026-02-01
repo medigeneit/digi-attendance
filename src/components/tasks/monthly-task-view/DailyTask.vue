@@ -7,22 +7,17 @@ import {
   getYearMonthDayFormat,
   getYearMonthFormat,
 } from '@/libs/datetime'
-import { dateWiseTaskList } from '@/libs/task'
-import { mapAndFilterTask } from '@/libs/task-tree'
-import { useAuthStore } from '@/stores/auth'
 import { useTaskStore } from '@/stores/useTaskStore'
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { onMounted, reactive, ref, watch } from 'vue'
+import RequirementTaskList from '../RequirementTaskList.vue'
 import DailyTaskHeading from './DailyTaskHeading.vue'
 import MonthlyTaskHeading from './MonthlyTaskHeading.vue'
-import TaskInMonth from './TaskInMonth.vue'
-import TaskListOnDay from './TaskListOnDay.vue'
 
 const selected = reactive({ day: null, month: null, year: null })
 const selectedDay = ref()
 const selectedMonth = ref()
 const state = ref('loading')
 const taskStore = useTaskStore()
-const auth = useAuthStore()
 
 const search = ref('')
 const listType = ref('day-wise')
@@ -72,46 +67,6 @@ const handleReloadClick = async () => {
   await fetchMyTask()
   state.value = ''
 }
-
-const filteredTasks = computed(() => {
-  const titlePartiallyMatched = (taskTitle) => {
-    if (!search.value) {
-      return true
-    }
-    return taskTitle?.toUpperCase()?.includes(search.value?.toUpperCase())
-  }
-
-  const filters =
-    listType.value == 'day-wise'
-      ? {
-          ['user-ids']: auth?.user?.id,
-          status: taskStatus.value,
-        }
-      : {
-          ['user-ids']: auth?.user?.id,
-        }
-
-  return mapAndFilterTask(
-    dateWiseTaskList(taskStore.tasks, selected.day, selected.month, selected.year),
-    filters,
-  )
-    .filter((task) => {
-      return (
-        titlePartiallyMatched(task.title) ||
-        task.children_tasks?.some((childTask) => titlePartiallyMatched(childTask?.title))
-      )
-    })
-    .map((task) => {
-      return {
-        ...task,
-        children_tasks: task.children_tasks.filter((childTask) =>
-          titlePartiallyMatched(childTask.title),
-        ),
-      }
-    })
-
-  // return dateWiseTaskList(tasks, selected.day, selected.month, selected.year)
-})
 </script>
 
 <template>
@@ -174,23 +129,14 @@ const filteredTasks = computed(() => {
             </div>
           </div>
         </div>
-        <TaskListOnDay
-          class="p-4 overflow-y-auto"
-          :tasks="filteredTasks"
-          :tree="true"
-          v-if="listType == 'day-wise'"
-        />
-        <TaskInMonth
-          :tasks="filteredTasks || []"
-          :month="selectedMonth"
-          class="bg-gray-50"
-          v-else-if="listType == 'month-wise'"
-        />
+        <!-- :taskFilters="route.query"
+        @update:taskFilters="handleUpdateTaskFilter" -->
       </div>
       <LoaderView
         class="absolute inset-0 flex items-center justify-center z-20 bg-opacity-70"
         v-if="state === 'loading'"
       />
+      <RequirementTaskList :showOnlyMyTasks="true" />
     </div>
   </div>
 </template>
