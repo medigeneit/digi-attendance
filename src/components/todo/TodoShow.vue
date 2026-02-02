@@ -1,5 +1,6 @@
 <script setup>
 import { getDisplayDate } from '@/libs/datetime'
+import { todoStatusClass } from '@/libs/todos'
 import { getTodoHistories } from '@/services/todo'
 import { useAuthStore } from '@/stores/auth'
 import { useTodoDateStore } from '@/stores/useTodoDateStore'
@@ -191,25 +192,37 @@ onMounted(async () => {
           </div>
         </div>
 
-        <div class="flex items-center justify-between mb-4">
+        <div
+          class="py-4 text-center rounded-lg border"
+          :class="todoStatusClass(todoDateStore.todo_date?.status)"
+        >
+          <TodoStatusIcon
+            :class="[todoDateStore.todo_date?.status == 'COMPLETED' ? 'text-green-50' : '']"
+            :todoDate="todoDateStore?.todo_date"
+            v-if="todoDateStore?.todo_date"
+          />
+          <div class="text-xs font-bold uppercase tracking-wider">
+            This Todo is {{ todoDateStore.todo_date?.status }}
+          </div>
+        </div>
+
+        <!-- <div class="flex items-center justify-between mb-4">
           <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
             Current Status
           </div>
           <div
-            class="flex items-center gap-2 px-3 py-1.5 bg-white rounded-full shadow-sm border border-slate-100"
+            class="flex items-center gap-2 px-3 py-1.5 rounded-full shadow-sm border"
+            :class="todoStatusClass(todoDateStore.todo_date?.status)"
           >
             <TodoStatusIcon :todoDate="todoDateStore?.todo_date" v-if="todoDateStore?.todo_date" />
             <span class="text-xs font-bold text-slate-700 tracking-wide">{{
               todoDateStore.todo_date?.status
             }}</span>
           </div>
-        </div>
-        <div class="mt-6 p-4 rounded-xl border border-slate-200 border-dashed">
-          <div
-            v-if="
-              isOwnTodo && !todoDateStore.loading && todoDateStore.todo_date?.status !== 'COMPLETED'
-            "
-          >
+        </div> -->
+
+        <div class="mt-6 p-4 rounded-xl border border-slate-200 border-dashed" v-if="isOwnTodo">
+          <div v-if="!todoDateStore.loading && todoDateStore.todo_date?.status !== 'COMPLETED'">
             <div
               class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 text-center"
             >
@@ -259,14 +272,6 @@ onMounted(async () => {
                 <i class="fas fa-history mr-1"></i> Backlog
               </button>
             </div>
-          </div>
-
-          <div
-            v-else-if="todoDateStore.todo_date?.status === 'COMPLETED'"
-            class="py-4 text-center text-emerald-600 bg-emerald-50 rounded-lg border border-emerald-100"
-          >
-            <i class="fas fa-check-circle text-2xl mb-1"></i>
-            <div class="text-xs font-bold uppercase tracking-wider">This Todo is Completed</div>
           </div>
         </div>
       </div>

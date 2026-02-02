@@ -1,8 +1,9 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import { todoStatusClass } from '@/libs/todos'
 import { useKpiReportStore } from '@/stores/kpi-report'
 import { storeToRefs } from 'pinia'
-import { ref, computed, onMounted, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 /* ===== Store & Refs ===== */
 const store = useKpiReportStore()
@@ -15,8 +16,8 @@ const years = ref([])
 
 /* ===== Derived meta ===== */
 const columns = computed(() => meta.value?.columns || [])
-const dynamicColumns = computed(() => 
-  columns.value.filter(c => c.key !== 'sl' && c.key !== 'department')
+const dynamicColumns = computed(() =>
+  columns.value.filter((c) => c.key !== 'sl' && c.key !== 'department'),
 )
 
 /* ===== Year options ===== */
@@ -31,16 +32,6 @@ watch(year, () => {
   if (!Number.isInteger(y) || y < 2000 || y > 2100) return
   load()
 })
-
-/* ===== UI helpers ===== */
-function statusClass(cell) {
-  const completed = Number(cell?.completed ?? 0)
-  const total = Number(cell?.total ?? 0)
-  if (total === 0) return 'bg-gray-50 text-gray-600'
-  if (completed >= total) return 'bg-emerald-50 text-emerald-700'
-  if (completed > 0) return 'bg-amber-50 text-amber-700'
-  return 'bg-rose-50 text-rose-700'
-}
 
 function doPrint() {
   window.print()
@@ -80,7 +71,9 @@ onMounted(() => {
     </div>
 
     <!-- Controls -->
-    <div class="flex flex-wrap items-end gap-3 sticky top-0 z-10 bg-white/80 backdrop-blur print:hidden p-2 -mx-2 rounded-md border border-gray-100">
+    <div
+      class="flex flex-wrap items-end gap-3 sticky top-0 z-10 bg-white/80 backdrop-blur print:hidden p-2 -mx-2 rounded-md border border-gray-100"
+    >
       <div class="flex items-center gap-2">
         <label class="text-xs font-medium text-gray-600">Year</label>
         <select
@@ -104,23 +97,39 @@ onMounted(() => {
     <div v-if="isLoading" class="py-10 text-center">
       <LoaderView />
     </div>
-    <div v-else-if="error" class="rounded-md border border-red-200 bg-red-50 p-3 text-red-700" role="alert" aria-live="polite">
+    <div
+      v-else-if="error"
+      class="rounded-md border border-red-200 bg-red-50 p-3 text-red-700"
+      role="alert"
+      aria-live="polite"
+    >
       {{ error }}
     </div>
 
     <!-- ===== Mobile Cards (sm-only) ===== -->
     <div v-else class="space-y-3 md:hidden">
-      <div v-for="(r, i) in rows" :key="'card-'+r.key" class="rounded-xl border border-gray-200 bg-white shadow-sm p-3 break-inside-avoid">
+      <div
+        v-for="(r, i) in rows"
+        :key="'card-' + r.key"
+        class="rounded-xl border border-gray-200 bg-white shadow-sm p-3 break-inside-avoid"
+      >
         <div class="flex items-center justify-between">
-          <div class="text-sm font-medium text-gray-900 truncate" :title="r.name">{{ i + 1 }}. {{ r.name }}</div>
+          <div class="text-sm font-medium text-gray-900 truncate" :title="r.name">
+            {{ i + 1 }}. {{ r.name }}
+          </div>
           <div class="text-xs text-gray-500">Total: {{ r.employees_total }}</div>
         </div>
 
         <div class="mt-2 grid grid-cols-2 gap-2">
-          <div v-for="col in dynamicColumns" :key="col.key" 
-               class="rounded-lg border border-gray-200 p-2 text-center"
-               :class="statusClass(r.cells?.[col.key])">
-            <div class="text-[11px] font-medium text-gray-600 truncate" :title="col.label">{{ col.label }}</div>
+          <div
+            v-for="col in dynamicColumns"
+            :key="col.key"
+            class="rounded-lg border border-gray-200 p-2 text-center"
+            :class="todoStatusClass(r.cells?.[col.key])"
+          >
+            <div class="text-[11px] font-medium text-gray-600 truncate" :title="col.label">
+              {{ col.label }}
+            </div>
             <div class="text-sm font-semibold mt-1">
               {{ r.cells?.[col.key]?.display || '0/0' }}
             </div>
@@ -128,7 +137,9 @@ onMounted(() => {
         </div>
       </div>
 
-      <div v-if="!rows || rows.length===0" class="px-3 py-6 text-center text-gray-600">No data</div>
+      <div v-if="!rows || rows.length === 0" class="px-3 py-6 text-center text-gray-600">
+        No data
+      </div>
     </div>
 
     <!-- ===== Desktop Table (md+) ===== -->
@@ -136,11 +147,17 @@ onMounted(() => {
       <table class="table table-auto w-full text-sm">
         <thead class="text-gray-800 sticky top-0 z-[5]">
           <tr class="bg-gray-100/95 backdrop-blur">
-            <th class="sticky left-0 z-[6] border-y border-r bg-gray-100/95 px-2 py-2 text-center"
-                style="min-width:2.25rem; width:2.25rem">SL</th>
+            <th
+              class="sticky left-0 z-[6] border-y border-r bg-gray-100/95 px-2 py-2 text-center"
+              style="min-width: 2.25rem; width: 2.25rem"
+            >
+              SL
+            </th>
 
-            <th class="sticky z-[6] border-y border-r bg-gray-100/95 px-2 py-2 text-left"
-                :style="{ left: '2rem', minWidth:'12.5rem', width:'12.5rem'}">
+            <th
+              class="sticky z-[6] border-y border-r bg-gray-100/95 px-2 py-2 text-left"
+              :style="{ left: '2rem', minWidth: '12.5rem', width: '12.5rem' }"
+            >
               Department
             </th>
 
@@ -155,8 +172,11 @@ onMounted(() => {
         </thead>
 
         <tbody class="text-gray-800">
-          <tr v-for="(r, i) in rows" :key="r.key"
-              class="border-t even:bg-gray-100 hover:bg-sky-500/40 transition-colors break-inside-avoid">
+          <tr
+            v-for="(r, i) in rows"
+            :key="r.key"
+            class="border-t even:bg-gray-100 hover:bg-sky-500/40 transition-colors break-inside-avoid"
+          >
             <!-- sticky first 2 columns -->
             <td class="sticky left-0 z-[4] border-r bg-inherit px-2 text-center">{{ i + 1 }}</td>
 
@@ -164,16 +184,17 @@ onMounted(() => {
               <div class="truncate max-w-48 white-space-wrap" :title="r.name">{{ r.name }}</div>
             </td>
 
-            <td v-for="col in dynamicColumns" :key="col.key" 
-                class="border-r text-center px-2 py-1">
-              <span class="inline-block rounded py-0.5 px-1.5 font-mono text-[12px]"
-                    :class="statusClass(r.cells?.[col.key])">
+            <td v-for="col in dynamicColumns" :key="col.key" class="border-r text-center px-2 py-1">
+              <span
+                class="inline-block rounded py-0.5 px-1.5 font-mono text-[12px]"
+                :class="todoStatusClass(r.cells?.[col.key])"
+              >
                 {{ r.cells?.[col.key]?.display || '0/0' }}
               </span>
             </td>
           </tr>
 
-          <tr v-if="!rows || rows.length===0">
+          <tr v-if="!rows || rows.length === 0">
             <td colspan="100" class="px-3 py-6 text-center text-gray-600">No data</td>
           </tr>
         </tbody>
@@ -183,18 +204,36 @@ onMounted(() => {
 </template>
 
 <style scoped>
-thead tr { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+thead tr {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
 
 /* Prevent row splitting across pages */
-.break-inside-avoid { break-inside: avoid; page-break-inside: avoid; }
+.break-inside-avoid {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
 
 /* Print cleanup */
 @media print {
-  .print\:hidden { display: none !important; }
-  .rounded-xl { border-radius: 0 !important; }
-  .shadow-sm { box-shadow: none !important; }
-  .md\:hidden { display: none !important; }
-  .md\:block { display: block !important; }
-  table { width: 100% !important; }
+  .print\:hidden {
+    display: none !important;
+  }
+  .rounded-xl {
+    border-radius: 0 !important;
+  }
+  .shadow-sm {
+    box-shadow: none !important;
+  }
+  .md\:hidden {
+    display: none !important;
+  }
+  .md\:block {
+    display: block !important;
+  }
+  table {
+    width: 100% !important;
+  }
 }
 </style>

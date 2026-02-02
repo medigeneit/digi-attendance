@@ -1,8 +1,9 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
+import { todoStatusClass } from '@/libs/todos'
 import { useKpiReportStore } from '@/stores/kpi-report'
 import { storeToRefs } from 'pinia'
-import { ref, computed, onMounted, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 /* ===== Store & Refs ===== */
@@ -11,13 +12,13 @@ const { meta, rows, isLoading, error } = storeToRefs(store)
 
 /* ===== Filters / Params ===== */
 const currentYear = new Date().getFullYear()
-const year  = ref(currentYear)
+const year = ref(currentYear)
 const years = ref([])
 
-const scope          = ref('department') // or 'user'
-const department_id  = ref('')
-const form_id        = ref('')
-const rule           = ref('any')        // 'any' | 'both'
+const scope = ref('department') // or 'user'
+const department_id = ref('')
+const form_id = ref('')
+const rule = ref('any') // 'any' | 'both'
 
 /* ===== Derived meta ===== */
 const periods = computed(() => meta.value?.periods || [])
@@ -30,16 +31,22 @@ const periodByKey = computed(() => {
 
 /* ===== Highlight Keys (dynamic) ===== */
 const route = useRoute()
-const localDefaultHot = ['feb_mar','jun_jul','nov']
+const localDefaultHot = ['feb_mar', 'jun_jul', 'nov']
 const highlightKeys = computed(() => {
   const q = route.query.hl
-  if (q) return new Set(String(q).split(',').map(s => s.trim()).filter(Boolean))
+  if (q)
+    return new Set(
+      String(q)
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+    )
   const metaKeys = meta.value?.highlight_period_keys
   if (Array.isArray(metaKeys) && metaKeys.length) return new Set(metaKeys)
   return new Set(localDefaultHot)
 })
-const isHot   = (p) => highlightKeys.value.has(p.key)
-const hotBg   = (p) => (isHot(p) ? 'bg-amber-50' : 'bg-white')
+const isHot = (p) => highlightKeys.value.has(p.key)
+const hotBg = (p) => (isHot(p) ? 'bg-amber-50' : 'bg-white')
 const hotEdge = (p) => (isHot(p) ? 'border-amber-300' : 'border-gray-200')
 
 /* ===== Year options ===== */
@@ -67,13 +74,13 @@ watch(year, () => {
 })
 
 /* ===== Cell states ===== */
-const completed            = ref(Object.create(null))
-const targetCompleted      = ref(Object.create(null))
-const isSaving             = ref(Object.create(null))
-const prevCompleted        = ref(Object.create(null))
-const prevTargetCompleted  = ref(Object.create(null))
-const lastSubmitAt         = ref(Object.create(null))
-const SUBMIT_COOLDOWN_MS   = 1500
+const completed = ref(Object.create(null))
+const targetCompleted = ref(Object.create(null))
+const isSaving = ref(Object.create(null))
+const prevCompleted = ref(Object.create(null))
+const prevTargetCompleted = ref(Object.create(null))
+const lastSubmitAt = ref(Object.create(null))
+const SUBMIT_COOLDOWN_MS = 1500
 
 const keyOf = (rowKey, pKey) => `${rowKey}::${pKey}`
 
@@ -92,16 +99,17 @@ function labelOfPeriod(pKey) {
 }
 function canSubmitNow(k) {
   const last = lastSubmitAt.value[k] || 0
-  return (Date.now() - last) >= SUBMIT_COOLDOWN_MS
+  return Date.now() - last >= SUBMIT_COOLDOWN_MS
 }
 
 /* ===== Report (existing) ===== */
 function syncPrevCompleted() {
   const m = Object.create(null)
-  for (const r of rows.value || []) for (const p of periods.value) {
-    const k = keyOf(r.key, p.key)
-    m[k] = completed.value[k]
-  }
+  for (const r of rows.value || [])
+    for (const p of periods.value) {
+      const k = keyOf(r.key, p.key)
+      m[k] = completed.value[k]
+    }
   prevCompleted.value = m
 }
 function initCompleted() {
@@ -117,13 +125,14 @@ function initCompleted() {
       if (deptId && completedDeptByPeriod[p.key].has(deptId)) {
         val = true
       } else {
-        const c       = r.cells?.[p.key]
-        const assigned= Number(c?.assigned ?? 0)
-        const icDone  = Number(c?.incharge?.done ?? 0)
-        const coDone  = Number(c?.coordinator?.done ?? 0)
-        val = rule.value === 'both'
-          ? (assigned > 0 && icDone >= assigned && coDone >= assigned)
-          : (assigned > 0 && (icDone >= assigned || coDone >= assigned))
+        const c = r.cells?.[p.key]
+        const assigned = Number(c?.assigned ?? 0)
+        const icDone = Number(c?.incharge?.done ?? 0)
+        const coDone = Number(c?.coordinator?.done ?? 0)
+        val =
+          rule.value === 'both'
+            ? assigned > 0 && icDone >= assigned && coDone >= assigned
+            : assigned > 0 && (icDone >= assigned || coDone >= assigned)
       }
       m[keyOf(r.key, p.key)] = val
     }
@@ -139,16 +148,27 @@ async function onCompletedChange(r, p) {
   const k = keyOf(r.key, p.key)
   const newVal = !!completed.value[k]
   const oldVal = !!prevCompleted.value[k]
-  const title  = `${r?.name ?? ''} • ${labelOfPeriod(p.key)}`
+  const title = `${r?.name ?? ''} • ${labelOfPeriod(p.key)}`
   const action = newVal ? 'mark as Completed' : 'mark as Pending'
   const ok = window.confirm(`Confirm\n${title}\n\nDo you want to ${action}?`)
-  if (!ok) { completed.value[k] = oldVal; return }
-  if (isSaving.value[k]) { completed.value[k] = oldVal; window.alert('Already updating…'); return }
-  if (!canSubmitNow(k)) { completed.value[k] = oldVal; window.alert('Just updated. Try again shortly.'); return }
+  if (!ok) {
+    completed.value[k] = oldVal
+    return
+  }
+  if (isSaving.value[k]) {
+    completed.value[k] = oldVal
+    window.alert('Already updating…')
+    return
+  }
+  if (!canSubmitNow(k)) {
+    completed.value[k] = oldVal
+    window.alert('Just updated. Try again shortly.')
+    return
+  }
 
-  const formId   = formIdOfPeriod(p.key)
-  const deptId   = deptIdOfRow(r)
-  const hasForm  = !!(r?.cells?.[p.key]?.form_id && formId)
+  const formId = formIdOfPeriod(p.key)
+  const deptId = deptIdOfRow(r)
+  const hasForm = !!(r?.cells?.[p.key]?.form_id && formId)
   if (meta.value?.scope !== 'department' || !deptId || !hasForm) {
     completed.value[k] = oldVal
     window.alert('This period is not assignable (no form).')
@@ -160,7 +180,7 @@ async function onCompletedChange(r, p) {
     await store.setReportCompletion({ form_id: formId, department_id: deptId, completed: newVal })
     lastSubmitAt.value[k] = Date.now()
     prevCompleted.value[k] = newVal
-    const idx = periods.value.findIndex(x => x.key === p.key)
+    const idx = periods.value.findIndex((x) => x.key === p.key)
     if (idx >= 0) {
       const set = new Set((meta.value.periods[idx].completed_departments || []).map(Number))
       newVal ? set.add(deptId) : set.delete(deptId)
@@ -168,7 +188,8 @@ async function onCompletedChange(r, p) {
     }
   } catch (e) {
     completed.value[k] = oldVal
-    console.error(e); window.alert('Failed to update.')
+    console.error(e)
+    window.alert('Failed to update.')
   } finally {
     isSaving.value[k] = false
   }
@@ -177,9 +198,11 @@ async function onCompletedChange(r, p) {
 /* ===== Target (mirror of Report) ===== */
 function syncPrevTargetCompleted() {
   const m = Object.create(null)
-  for (const r of rows.value || []) for (const p of periods.value) {
-    const k = keyOf(r.key, p.key); m[k] = targetCompleted.value[k]
-  }
+  for (const r of rows.value || [])
+    for (const p of periods.value) {
+      const k = keyOf(r.key, p.key)
+      m[k] = targetCompleted.value[k]
+    }
   prevTargetCompleted.value = m
 }
 function initTargetCompleted() {
@@ -195,9 +218,9 @@ function initTargetCompleted() {
       if (deptId && targetDeptByPeriod[p.key].has(deptId)) {
         val = true
       } else {
-        const mt   = r?.cells?.[p.key]?.monthly_target
+        const mt = r?.cells?.[p.key]?.monthly_target
         const have = Number(mt?.have ?? 0)
-        const of   = Number(mt?.of ?? 0)
+        const of = Number(mt?.of ?? 0)
         val = of > 0 && have >= of
       }
       m[keyOf(r.key, p.key)] = val
@@ -207,31 +230,50 @@ function initTargetCompleted() {
   syncPrevTargetCompleted()
 }
 function startTargetCompletedEdit(r, p) {
-  const k = keyOf(r.key, p.key); prevTargetCompleted.value[k] = targetCompleted.value[k]
+  const k = keyOf(r.key, p.key)
+  prevTargetCompleted.value[k] = targetCompleted.value[k]
 }
 async function onTargetCompletedChange(r, p) {
   const k = keyOf(r.key, p.key)
   const newVal = !!targetCompleted.value[k]
   const oldVal = !!prevTargetCompleted.value[k]
-  const title  = `${r?.name ?? ''} • ${labelOfPeriod(p.key)}`
+  const title = `${r?.name ?? ''} • ${labelOfPeriod(p.key)}`
   const action = newVal ? 'mark Target as Completed' : 'mark Target as Pending'
   const ok = window.confirm(`Confirm\n${title}\n\nDo you want to ${action}?`)
-  if (!ok) { targetCompleted.value[k] = oldVal; return }
-  if (isSaving.value[k]) { targetCompleted.value[k] = oldVal; window.alert('Already updating…'); return }
-  if (!canSubmitNow(k)) { targetCompleted.value[k] = oldVal; window.alert('Just updated. Try again shortly.'); return }
+  if (!ok) {
+    targetCompleted.value[k] = oldVal
+    return
+  }
+  if (isSaving.value[k]) {
+    targetCompleted.value[k] = oldVal
+    window.alert('Already updating…')
+    return
+  }
+  if (!canSubmitNow(k)) {
+    targetCompleted.value[k] = oldVal
+    window.alert('Just updated. Try again shortly.')
+    return
+  }
 
   const deptId = deptIdOfRow(r)
   if (meta.value?.scope !== 'department' || !deptId) {
-    targetCompleted.value[k] = oldVal; window.alert('Not assignable.'); return
+    targetCompleted.value[k] = oldVal
+    window.alert('Not assignable.')
+    return
   }
   const formId = formIdOfPeriod(p.key)
 
   isSaving.value[k] = true
   try {
-    await store.setTargetCompletion({ period_key: p.key, form_id: formId || undefined, department_id: deptId, completed: newVal })
+    await store.setTargetCompletion({
+      period_key: p.key,
+      form_id: formId || undefined,
+      department_id: deptId,
+      completed: newVal,
+    })
     lastSubmitAt.value[k] = Date.now()
     prevTargetCompleted.value[k] = newVal
-    const idx = periods.value.findIndex(x => x.key === p.key)
+    const idx = periods.value.findIndex((x) => x.key === p.key)
     if (idx >= 0) {
       const set = new Set((meta.value.periods[idx].target_completed_departments || []).map(Number))
       newVal ? set.add(deptId) : set.delete(deptId)
@@ -239,7 +281,8 @@ async function onTargetCompletedChange(r, p) {
     }
   } catch (e) {
     targetCompleted.value[k] = oldVal
-    console.error(e); window.alert('Failed to update.')
+    console.error(e)
+    window.alert('Failed to update.')
   } finally {
     isSaving.value[k] = false
   }
@@ -257,21 +300,17 @@ const cellTargetAssignable = (row, pk) => {
 const tick = (v) => (v ? '✓' : '—')
 function countStr(cell, total, role) {
   const assigned = Number(cell?.assigned ?? 0)
-  const done = role === 'ic' ? Number(cell?.incharge?.done ?? 0) : Number(cell?.coordinator?.done ?? 0)
+  const done =
+    role === 'ic' ? Number(cell?.incharge?.done ?? 0) : Number(cell?.coordinator?.done ?? 0)
   if (assigned === 0 && done === 0) {
     const boolVal = role === 'ic' ? cell?.incharge : cell?.coordinator
     if (typeof boolVal === 'boolean') return tick(boolVal)
   }
   return `${done}/${total}`
 }
-function statusClass(cell, role) {
-  const assigned = Number(cell?.assigned ?? 0)
-  const done = role === 'ic' ? Number(cell?.incharge?.done ?? 0) : Number(cell?.coordinator?.done ?? 0)
-  if (assigned === 0)   return 'bg-gray-50 text-gray-600'
-  if (done >= assigned) return 'bg-emerald-50 text-emerald-700'
-  return 'bg-rose-50 text-rose-700'
+function doPrint() {
+  window.print()
 }
-function doPrint(){ window.print() }
 function nowStr() {
   const d = new Date()
   // readable, local timezone
@@ -286,7 +325,7 @@ async function load() {
       scope: scope.value,
       department_id: department_id.value ? Number(department_id.value) : undefined,
       form_id: form_id.value ? Number(form_id.value) : undefined,
-      rule: rule.value
+      rule: rule.value,
     })
   } catch (e) {
     console.error('fetchBiMonthly failed:', e)
@@ -302,7 +341,7 @@ async function exportBiMonthly() {
       scope: scope.value,
       department_id: department_id.value ? Number(department_id.value) : undefined,
       form_id: form_id.value ? Number(form_id.value) : undefined,
-      rule: rule.value
+      rule: rule.value,
     })
   } catch (e) {
     console.error('exportBiMonthly failed:', e)
@@ -312,7 +351,7 @@ async function exportBiMonthly() {
 
 /* ===== Reactive rebuilds ===== */
 watch([rows, periods, rule], initCompleted)
-watch([rows, periods],       initTargetCompleted)
+watch([rows, periods], initTargetCompleted)
 
 /* ===== Init ===== */
 onMounted(() => {
@@ -332,7 +371,9 @@ onMounted(() => {
     </div>
 
     <!-- Controls -->
-    <div class="flex flex-wrap items-end gap-3 sticky top-0 z-10 bg-white/80 backdrop-blur print:hidden p-2 -mx-2 rounded-md border border-gray-100">
+    <div
+      class="flex flex-wrap items-end gap-3 sticky top-0 z-10 bg-white/80 backdrop-blur print:hidden p-2 -mx-2 rounded-md border border-gray-100"
+    >
       <div class="flex items-center gap-2">
         <label class="text-xs font-medium text-gray-600">Year</label>
         <select
@@ -359,21 +400,36 @@ onMounted(() => {
     <div v-if="isLoading" class="py-10 text-center">
       <LoaderView />
     </div>
-    <div v-else-if="error" class="rounded-md border border-red-200 bg-red-50 p-3 text-red-700" role="alert" aria-live="polite">
+    <div
+      v-else-if="error"
+      class="rounded-md border border-red-200 bg-red-50 p-3 text-red-700"
+      role="alert"
+      aria-live="polite"
+    >
       {{ error }}
     </div>
 
     <!-- ===== Mobile Cards (sm-only) ===== -->
     <div v-else class="space-y-3 md:hidden">
-      <div v-for="(r, i) in rows" :key="'card-'+r.key" class="rounded-xl border border-gray-200 bg-white shadow-sm p-3 break-inside-avoid">
+      <div
+        v-for="(r, i) in rows"
+        :key="'card-' + r.key"
+        class="rounded-xl border border-gray-200 bg-white shadow-sm p-3 break-inside-avoid"
+      >
         <div class="flex items-center justify-between">
-          <div class="text-sm font-medium text-gray-900 truncate" :title="r.name">{{ i + 1 }}. {{ r.name }}</div>
+          <div class="text-sm font-medium text-gray-900 truncate" :title="r.name">
+            {{ i + 1 }}. {{ r.name }}
+          </div>
           <div class="text-xs text-gray-500">Total: {{ r.employees_total }}</div>
         </div>
 
         <div class="mt-2 grid grid-cols-1 gap-2">
-          <div v-for="p in periods" :key="p.key" class="rounded-lg border p-2"
-               :class="[hotBg(p), isHot(p) ? 'border-amber-300' : 'border-gray-200']">
+          <div
+            v-for="p in periods"
+            :key="p.key"
+            class="rounded-lg border p-2"
+            :class="[hotBg(p), isHot(p) ? 'border-amber-300' : 'border-gray-200']"
+          >
             <div class="flex items-center justify-between">
               <div class="text-[13px] font-semibold text-gray-800">{{ p.label }}</div>
               <div class="flex items-center gap-3">
@@ -409,21 +465,32 @@ onMounted(() => {
             </div>
 
             <div class="mt-2 grid grid-cols-2 gap-2 text-center">
-              <div class="rounded px-2 py-1 text-[12px]" :class="statusClass(r.cells[p.key], 'ic')">
+              <div
+                class="rounded px-2 py-1 text-[12px]"
+                :class="todoStatusClass(r.cells[p.key], 'ic')"
+              >
                 Inch: {{ countStr(r.cells[p.key], r.employees_total, 'ic') }}
               </div>
-              <div class="rounded px-2 py-1 text-[12px]" :class="statusClass(r.cells[p.key], 'co')">
+              <div
+                class="rounded px-2 py-1 text-[12px]"
+                :class="todoStatusClass(r.cells[p.key], 'co')"
+              >
                 Coord: {{ countStr(r.cells[p.key], r.employees_total, 'co') }}
               </div>
             </div>
-            <div v-if="r.cells[p.key]?.max_total" class="mt-1 text-[10px] text-gray-500 text-center">
+            <div
+              v-if="r.cells[p.key]?.max_total"
+              class="mt-1 text-[10px] text-gray-500 text-center"
+            >
               {{ r.cells[p.key].final_total }} / {{ r.cells[p.key].max_total }}
             </div>
           </div>
         </div>
       </div>
 
-      <div v-if="!rows || rows.length===0" class="px-3 py-6 text-center text-gray-600">No data</div>
+      <div v-if="!rows || rows.length === 0" class="px-3 py-6 text-center text-gray-600">
+        No data
+      </div>
     </div>
 
     <!-- ===== Desktop Table (md+) ===== -->
@@ -432,13 +499,19 @@ onMounted(() => {
         <thead class="text-gray-800 sticky top-0 z-[5]">
           <!-- Row 1: group headers -->
           <tr class="bg-gray-100/95 backdrop-blur">
-            <th rowspan="2"
-                class="sticky left-0 z-[6] border-y border-r bg-gray-100/95 px-2 py-2 text-center"
-                style="min-width:2.25rem; width:2.25rem">SL</th>
+            <th
+              rowspan="2"
+              class="sticky left-0 z-[6] border-y border-r bg-gray-100/95 px-2 py-2 text-center"
+              style="min-width: 2.25rem; width: 2.25rem"
+            >
+              SL
+            </th>
 
-            <th rowspan="2"
-                class="sticky z-[6] border-y border-r bg-gray-100/95 px-2 py-2 text-left"
-                :style="{ left: '2rem', minWidth:'12.5rem', width:'12.5rem'}">
+            <th
+              rowspan="2"
+              class="sticky z-[6] border-y border-r bg-gray-100/95 px-2 py-2 text-left"
+              :style="{ left: '2rem', minWidth: '12.5rem', width: '12.5rem' }"
+            >
               {{ meta?.scope === 'user' ? 'Employee' : 'Department' }}
             </th>
 
@@ -447,7 +520,7 @@ onMounted(() => {
               :key="p.key"
               colspan="4"
               class="border-y px-2 py-2 text-center font-semibold border-x-2 text-red-500 print:text-black"
-              :class="[ hotBg(p), hotEdge(p) ]"
+              :class="[hotBg(p), hotEdge(p)]"
             >
               <span class="whitespace-nowrap">{{ p.label }}</span>
             </th>
@@ -456,17 +529,34 @@ onMounted(() => {
           <!-- Row 2: sub-columns -->
           <tr class="bg-gray-100/95 text-gray-700 whitespace-nowrap">
             <template v-for="p in periods" :key="p.key + '-sub'">
-              <th class="border-y py-1 text-center text-[11px] w-8 border-r" :class="hotBg(p)">Report</th>
-              <th class="border-y py-1 text-center text-[11px] w-8 border-r" :class="[ hotBg(p), hotEdge(p) ]">Target</th>
-              <th class="border-y py-1 text-center text-[11px] w-8 border-r" :class="hotBg(p)">Inch.</th>
-              <th class="border-y py-1 text-center text-[11px] border-r-2 w-8" :class="[ hotBg(p), hotEdge(p) ]">Coord.</th>
+              <th class="border-y py-1 text-center text-[11px] w-8 border-r" :class="hotBg(p)">
+                Report
+              </th>
+              <th
+                class="border-y py-1 text-center text-[11px] w-8 border-r"
+                :class="[hotBg(p), hotEdge(p)]"
+              >
+                Target
+              </th>
+              <th class="border-y py-1 text-center text-[11px] w-8 border-r" :class="hotBg(p)">
+                Inch.
+              </th>
+              <th
+                class="border-y py-1 text-center text-[11px] border-r-2 w-8"
+                :class="[hotBg(p), hotEdge(p)]"
+              >
+                Coord.
+              </th>
             </template>
           </tr>
         </thead>
 
         <tbody class="text-gray-800">
-          <tr v-for="(r, i) in rows" :key="r.key"
-              class="border-t odd:bg-gray-50 hover:bg-sky-50/40 transition-colors break-inside-avoid">
+          <tr
+            v-for="(r, i) in rows"
+            :key="r.key"
+            class="border-t odd:bg-gray-50 hover:bg-sky-50/40 transition-colors break-inside-avoid"
+          >
             <!-- sticky first 2 columns -->
             <td class="sticky left-0 z-[4] border-r bg-inherit px-2 text-center">{{ i + 1 }}</td>
 
@@ -492,7 +582,7 @@ onMounted(() => {
               </td>
 
               <!-- Target -->
-              <td class="text-center border-r" :class="[ hotBg(p), hotEdge(p) ]">
+              <td class="text-center border-r" :class="[hotBg(p), hotEdge(p)]">
                 <label class="inline-flex items-center justify-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -509,26 +599,33 @@ onMounted(() => {
 
               <!-- Incharge -->
               <td class="border-r text-center" :class="hotBg(p)">
-                <span class="inline-block rounded py-0.5 font-mono text-[12px]"
-                      :class="statusClass(r.cells[p.key], 'ic')">
+                <span
+                  class="inline-block rounded py-0.5 font-mono text-[12px]"
+                  :class="todoStatusClass(r.cells[p.key], 'ic')"
+                >
                   {{ countStr(r.cells[p.key], r.employees_total, 'ic') }}
                 </span>
               </td>
 
               <!-- Coordinator -->
-              <td class="border-y text-center border-r-2" :class="[ hotBg(p), hotEdge(p) ]">
-                <span class="inline-block rounded py-0.5 font-mono text-[12px]"
-                      :class="statusClass(r.cells[p.key], 'co')">
-                  {{ countStr(r.cells[p.key],  r.employees_total, 'co') }}
+              <td class="border-y text-center border-r-2" :class="[hotBg(p), hotEdge(p)]">
+                <span
+                  class="inline-block rounded py-0.5 font-mono text-[12px]"
+                  :class="todoStatusClass(r.cells[p.key], 'co')"
+                >
+                  {{ countStr(r.cells[p.key], r.employees_total, 'co') }}
                 </span>
-                <div v-if="r.cells[p.key]?.max_total" class="mt-1 text-[10px] text-gray-500 text-center">
+                <div
+                  v-if="r.cells[p.key]?.max_total"
+                  class="mt-1 text-[10px] text-gray-500 text-center"
+                >
                   {{ r.cells[p.key].final_total }} / {{ r.cells[p.key].max_total }}
                 </div>
               </td>
             </template>
           </tr>
 
-          <tr v-if="!rows || rows.length===0">
+          <tr v-if="!rows || rows.length === 0">
             <td colspan="100" class="px-3 py-6 text-center text-gray-600">No data</td>
           </tr>
         </tbody>
@@ -538,18 +635,36 @@ onMounted(() => {
 </template>
 
 <style scoped>
-thead tr { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+thead tr {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
 
 /* Prevent row splitting across pages */
-.break-inside-avoid { break-inside: avoid; page-break-inside: avoid; }
+.break-inside-avoid {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
 
 /* Print cleanup */
 @media print {
-  .print\:hidden { display: none !important; }
-  .rounded-xl { border-radius: 0 !important; }
-  .shadow-sm { box-shadow: none !important; }
-  .md\:hidden { display: none !important; }
-  .md\:block { display: block !important; }
-  table { width: 100% !important; }
+  .print\:hidden {
+    display: none !important;
+  }
+  .rounded-xl {
+    border-radius: 0 !important;
+  }
+  .shadow-sm {
+    box-shadow: none !important;
+  }
+  .md\:hidden {
+    display: none !important;
+  }
+  .md\:block {
+    display: block !important;
+  }
+  table {
+    width: 100% !important;
+  }
 }
 </style>
