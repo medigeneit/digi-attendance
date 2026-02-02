@@ -38,6 +38,9 @@ const auth = useAuthStore()
           v-for="(req, serial) in requirements"
           :key="req.id"
           class="border-t hover:bg-blue-50 odd:bg-gray-50 group/item relative"
+          :class="{
+            '*:bg-green-100': req.tasks_count > 0 && req.completed_tasks_count === req.tasks_count,
+          }"
         >
           <td
             class="px-4 py-4 font-semibold text-xl text-gray-700 border border-gray-200 text-center"
