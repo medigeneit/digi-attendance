@@ -25,7 +25,6 @@ const companyStore = useCompanyStore()
 const state = ref('')
 const requirement = ref()
 const error = ref('')
-const containerRef = ref()
 
 const form = ref({
   from_department_id: '',
@@ -181,7 +180,7 @@ const hasAccessOnMyCompanyDepartment = computed(() => {
         </div>
         <template v-else>
           <div class="mb-4">
-            <label class="text-gray-800">Title</label>
+            <label class="text-gray-800">Title <RequiredIcon /></label>
             <input
               v-model="form.title"
               required
@@ -201,7 +200,7 @@ const hasAccessOnMyCompanyDepartment = computed(() => {
             </select>
           </div>
           <div class="mb-4">
-            <label class="text-gray-800">Description</label>
+            <label class="text-gray-800">Description <RequiredIcon /></label>
             <TextEditor v-model="form.description" />
           </div>
           <div class="mb-4">

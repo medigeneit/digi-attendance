@@ -205,7 +205,9 @@ function handleDetailAdd() {
                   </div>
 
                   <div class="">
-                    <label class="block text-gray-600 text-sm mb-1 font-medium">Description</label>
+                    <label class="block text-gray-600 text-sm mb-1 font-medium"
+                      >Description <RequiredIcon
+                    /></label>
 
                     <TextEditor v-model="form.description" class="w-full" />
                   </div>
