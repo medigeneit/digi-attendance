@@ -122,7 +122,7 @@ export const useDisciplineReportStore = defineStore('discipline-report', () => {
   })
   const loading = ref(false)
   const error = ref(null)
-
+  const attachmentShow = ref(null)
   const reportUsers = computed(() => users.value)
   const reportMonths = computed(() => months.value)
   const reportPagination = computed(() => pagination.value)
@@ -313,10 +313,12 @@ export const useDisciplineReportStore = defineStore('discipline-report', () => {
     if (context?.month_start) await refreshMonth(context.month_start)
   }
 
-  const uploadAttachment = async ({ file, title, user_id, month_start, year }) => {
+  const uploadAttachment = async ({ file, title, doc_type, mode, user_id, month_start, year }) => {
     const form = new FormData()
     form.append('file', file)
     if (title) form.append('title', title)
+    if (doc_type) form.append('doc_type', doc_type)
+    if (mode) form.append('mode', mode)
     if (user_id) form.append('user_id', user_id)
     if (month_start) form.append('month_start', month_start)
     if (year) form.append('year', year)
@@ -326,10 +328,12 @@ export const useDisciplineReportStore = defineStore('discipline-report', () => {
     if (month_start) await refreshMonth(month_start)
   }
 
-  const createLetter = async ({ title, body_html, user_id, month_start, year }) => {
+  const createLetter = async ({ title, body_html, doc_type, mode, user_id, month_start, year }) => {
     await apiClient.post('/discipline/letters', {
       title,
       body_html,
+      doc_type,
+      mode,
       user_id,
       month_start,
       year,
@@ -366,6 +370,41 @@ export const useDisciplineReportStore = defineStore('discipline-report', () => {
     }
   }
 
+  const showAttachment = async (id) => {
+    loading.value = true
+    try {
+      const { data } = await apiClient.get(`/discipline-attachments/${id}`)
+      // backend returns: { data: {...} }
+      attachmentShow.value = data?.data ?? null
+      return attachmentShow.value
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const acknowledgeAttachment = async (id) => {
+    if (!id) return
+
+    loading.value = true
+    try {
+      const { data } = await apiClient.patch(`/discipline/attachments/${id}/acknowledge`)
+
+      // ✅ যদি show data already open থাকে, আপডেট করে দাও
+      if (attachmentShow.value?.id === id) {
+        attachmentShow.value = {
+          ...attachmentShow.value,
+          ...(data?.data ?? data ?? {}),
+          acknowledged_at: (data?.data?.acknowledged_at ?? data?.acknowledged_at) ?? attachmentShow.value.acknowledged_at,
+          acknowledged_by: (data?.data?.acknowledged_by ?? data?.acknowledged_by) ?? attachmentShow.value.acknowledged_by,
+        }
+      }
+      return data
+    } finally {
+      loading.value = false
+    }
+  }
+
+
   return {
     filters,
     loading: computed(() => loading.value),
@@ -373,6 +412,8 @@ export const useDisciplineReportStore = defineStore('discipline-report', () => {
     users: reportUsers,
     months: reportMonths,
     pagination: reportPagination,
+    showAttachment,
+    acknowledgeAttachment,
     fetchReport,
     refreshMonth,
     ensureMonthRecord,

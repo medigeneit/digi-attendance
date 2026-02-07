@@ -118,6 +118,52 @@ const months = computed(() =>
   storeMonths.value?.length ? storeMonths.value : buildMonths(filters.value.year)
 )
 
+const currentMonthStart = computed(() => {
+  const now = new Date()
+  const month = pad(now.getMonth() + 1)
+  return `${filters.value.year}-${month}-01`
+})
+
+const selectedMonthStarts = ref([])
+
+const visibleMonths = computed(() => {
+  if (!selectedMonthStarts.value.length) return months.value
+  const set = new Set(selectedMonthStarts.value)
+  return months.value.filter((month) => set.has(month.month_start))
+})
+
+const setDefaultMonths = (year) => {
+  const allMonths = buildMonths(year).map((month) => month.month_start)
+  if (year === currentYear) {
+    selectedMonthStarts.value = [currentMonthStart.value]
+  } else {
+    selectedMonthStarts.value = allMonths
+  }
+}
+
+const toggleMonth = (monthStart) => {
+  const next = new Set(selectedMonthStarts.value)
+  if (next.has(monthStart)) {
+    next.delete(monthStart)
+  } else {
+    next.add(monthStart)
+  }
+  if (!next.size) {
+    next.add(currentMonthStart.value)
+  }
+  selectedMonthStarts.value = Array.from(next)
+}
+
+const selectAllMonths = () => {
+  selectedMonthStarts.value = months.value.map((month) => month.month_start)
+}
+
+const selectCurrentMonth = () => {
+  selectedMonthStarts.value = [currentMonthStart.value]
+}
+
+const monthTone = (index) => (index % 2 === 0 ? 'tone-a' : 'tone-b')
+
 const users = computed(() => storeUsers.value || [])
 
 const yearOptions = computed(() => {
@@ -216,6 +262,14 @@ watch(
     filters.value.page = 1
   }
 )
+
+watch(
+  () => filters.value.year,
+  (year) => {
+    setDefaultMonths(year)
+  },
+  { immediate: true }
+)
 </script>
 
 <template>
@@ -274,6 +328,24 @@ watch(
           </select>
         </div>
       </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <p class="text-xs font-semibold text-slate-600">Months</p>
+        <button class="chip" type="button" @click="selectCurrentMonth">Current</button>
+        <button class="chip" type="button" @click="selectAllMonths">All</button>
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            v-for="month in months"
+            :key="`toggle-${month.month_start}`"
+            type="button"
+            class="chip"
+            :class="{ active: selectedMonthStarts.includes(month.month_start) }"
+            @click="toggleMonth(month.month_start)"
+          >
+            {{ month.label || monthLabel(month.month_start) }}
+          </button>
+        </div>
+      </div>
     </div>
 
     <LoaderView v-if="loading" />
@@ -295,20 +367,24 @@ watch(
                 </div>
               </th>
               <th
-                v-for="month in months"
+                v-for="(month, monthIndex) in visibleMonths"
                 :key="`group-${month.month_start}`"
                 colspan="3"
                 class="th text-center"
+                :class="monthTone(monthIndex)"
               >
                 {{ month.label || monthLabel(month.month_start) }}
               </th>
               <th rowspan="2" class="th text-center">Final Outcome</th>
             </tr>
             <tr>
-              <template v-for="month in months" :key="`sub-${month.month_start}`">
-                <th class="th">Indiscipline</th>
-                <th class="th">Action</th>
-                <th class="th">Attachment</th>
+              <template
+                v-for="(month, monthIndex) in visibleMonths"
+                :key="`sub-${month.month_start}`"
+              >
+                <th class="th" :class="monthTone(monthIndex)">Indiscipline</th>
+                <th class="th" :class="monthTone(monthIndex)">Action</th>
+                <th class="th" :class="monthTone(monthIndex)">Attachment</th>
               </template>
             </tr>
           </thead>
@@ -326,8 +402,11 @@ watch(
                 </div>
               </td>
 
-              <template v-for="month in months" :key="`${getUserId(user)}-${month.month_start}`">
-                <td class="td min-w-[220px]">
+              <template
+                v-for="(month, monthIndex) in visibleMonths"
+                :key="`${getUserId(user)}-${month.month_start}`"
+              >
+                <td class="td min-w-[100px]" :class="monthTone(monthIndex)">
                   <MonthCell @add="openMonthModal(user, month.month_start, 'indiscipline')">
                     <IndisciplineList
                       :auto-items="getAutoIndisciplineItems(getRecord(user, month.month_start))"
@@ -337,7 +416,7 @@ watch(
                     />
                   </MonthCell>
                 </td>
-                <td class="td min-w-[220px]">
+                <td class="td min-w-[100px]" :class="monthTone(monthIndex)">
                   <MonthCell @add="openMonthModal(user, month.month_start, 'action')">
                     <ActionList
                       :auto-items="getAutoActionItems(getRecord(user, month.month_start))"
@@ -347,7 +426,7 @@ watch(
                     />
                   </MonthCell>
                 </td>
-                <td class="td min-w-[200px]">
+                <td class="td min-w-[100px]" :class="monthTone(monthIndex)">
                   <MonthCell @add="openMonthModal(user, month.month_start, 'attachment')">
                     <AttachmentCell
                       :count="getAttachmentCount(getRecord(user, month.month_start))"
@@ -407,8 +486,14 @@ watch(
 .table-shell { @apply rounded-2xl border border-slate-100 bg-white/90 shadow-lg; }
 .table-scroll { @apply max-h-[70vh] overflow-auto; }
 .empty-state { @apply flex min-h-[160px] flex-col items-center justify-center gap-1 text-center; }
-.th { @apply border border-slate-200 px-3 py-2 text-[11px] font-semibold text-slate-600; }
-.td { @apply border border-slate-200 px-3 py-2 align-top text-xs; }
+.th { @apply border border-slate-200 px-2 py-2 text-[11px] font-semibold text-slate-600; }
+.td { @apply border border-slate-200 px-2 py-2 align-top text-[11px]; }
 .sticky-col { @apply sticky left-0 z-40 bg-white; }
 thead .sticky-col { @apply bg-slate-50; }
+.chip {
+  @apply rounded-full border border-slate-200 px-3 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50;
+}
+.chip.active {
+  @apply border-slate-900 bg-slate-900 text-white;
+}
 </style>

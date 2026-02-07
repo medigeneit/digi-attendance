@@ -32,6 +32,13 @@ const onSuccess = async () => {
   await notificationStore.fetchSpecificNotifications(route.params.type)
 }
 
+const getNotificationId = (notification) =>
+  notification?.application_id ||
+  notification?.id ||
+  notification?.attachment_id ||
+  notification?.attachment?.id ||
+  notification?.event_id
+
 const specifications = {
   leave_applications: 'LeaveApplicationShow',
   short_leave_applications: 'ShortLeaveShow',
@@ -39,7 +46,10 @@ const specifications = {
   offday_exchange_applications: 'ExchangeOffdayShow',
   manual_attendance_applications: 'ManualAttendanceShow',
   overtime_applications: 'OvertimeShow',
+  discipline_attachments: 'DisciplineAttachmentDetails',
 }
+
+// DisciplineAttachmentDetails
 
 const formattedType = computed(() => {
   if (!route.params.type) return ''
@@ -89,9 +99,10 @@ const formattedType = computed(() => {
               <i class="fad fa-link"></i>
             </a>
             <RouterLink
+              v-if="getNotificationId(notification)"
               :to="{
                 name: specifications[route.params.type],
-                params: { id: notification.application_id },
+                params: { id: getNotificationId(notification) },
               }"
               class="btn-1 px-3"
             >
@@ -134,7 +145,7 @@ const formattedType = computed(() => {
             {{ notification.last_approver_note }}
           </div>
         </div>
-        <div class="flex gap-3 items-center">
+        <!-- <div class="flex gap-3 items-center">
           <div class="flex items-center gap-8">
             <p
               v-if="notification.messages?.length"
@@ -153,7 +164,7 @@ const formattedType = computed(() => {
             :onSuccess="onSuccess"
             :variant="2"
           />
-        </div>
+        </div> -->
       </div>
     </div>
   </div>

@@ -75,6 +75,7 @@ const reportsMenu = [
   { label: 'Monthly Leave Report', routeName: 'MonthlyLeaveReport' },
   { label: 'Yearly Leave Report', routeName: 'YearlyLeaveReport' },
   { label: 'Weekly Leave Histories', routeName: 'WeekLeaveHistories' },
+  { label: 'Discipline Report', routeName: 'DisciplineReport' },
 ]
 const reportRouteNames = reportsMenu.map((i) => i.routeName)
 

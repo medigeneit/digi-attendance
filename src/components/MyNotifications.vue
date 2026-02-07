@@ -22,7 +22,7 @@ const emits = defineEmits(['close'])
         @click="emits('close')"
         class="w-full flex text-base font-bold text-gray-700"
       >
-        🔔 Notifications
+        🔔 Notifications 
         <span class="ml-auto px-2 py-1 bg-red-500 text-white text-xs rounded-full">
           {{ total_notifications }}
         </span>
@@ -115,6 +115,17 @@ const emits = defineEmits(['close'])
         <span class="text-sm text-gray-700"> {{ icons.overtime_applications }} Overtime </span>
         <span class="text-xs bg-sky-500 text-white rounded-full px-2 py-0.5 font-semibold">
           {{ count_notifications.overtime_applications }}
+        </span>
+      </RouterLink>
+      <RouterLink
+        v-if="count_notifications?.discipline_attachments"
+        :to="{ name: 'MySpecificNotificationList', params: { type: 'discipline_attachments' } }"
+        @click="emits('close')"
+        class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
+      >
+        <span class="text-sm text-gray-700"> {{ icons.discipline_attachments }} Discipline Attachments </span>
+        <span class="text-xs bg-sky-500 text-white rounded-full px-2 py-0.5 font-semibold">
+          {{ count_notifications.discipline_attachments }}
         </span>
       </RouterLink>
 
