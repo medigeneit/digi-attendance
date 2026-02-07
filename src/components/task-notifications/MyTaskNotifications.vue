@@ -27,7 +27,7 @@ const emits = defineEmits(['close'])
       <div
         class="w-full flex text-base font-bold text-gray-700"
       >
-        🔔 Task Notifications
+        🔔 Task Notifications 
         <span class="ml-auto px-2 py-1 bg-red-500 text-white text-xs rounded-full">
           {{ total_task_notifications }}
         </span>
