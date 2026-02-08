@@ -1,1 +1,0 @@
-import{_ as o,c as r,o as n,a as e,N as a}from"./index-nVG6ZtMO.js";const c={},l={class:"relative mb-3 text-center"},i={class:"inline-block bg-white"};function d(s,t){return n(),r("div",null,[e("h3",l,[e("div",i,[a(s.$slots,"default")]),t[0]||(t[0]=e("hr",{class:"bottom-0 border-gray-300 -mt-3"},null,-1))])])}const m=o(c,[["render",d]]);export{m as T};
