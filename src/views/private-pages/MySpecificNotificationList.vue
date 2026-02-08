@@ -145,7 +145,7 @@ const formattedType = computed(() => {
             {{ notification.last_approver_note }}
           </div>
         </div>
-        <!-- <div class="flex gap-3 items-center">
+        <div class="flex gap-3 items-center" v-if="route.params.type !== 'discipline_attachments'">
           <div class="flex items-center gap-8">
             <p
               v-if="notification.messages?.length"
@@ -164,7 +164,7 @@ const formattedType = computed(() => {
             :onSuccess="onSuccess"
             :variant="2"
           />
-        </div> -->
+        </div>
       </div>
     </div>
   </div>
