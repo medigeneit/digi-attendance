@@ -24,12 +24,14 @@ const manualForm = reactive({
   id: null,
   title: '',
   note: '',
+  type: 'others',
 })
 
 const attachmentMode = ref('file')
 const attachmentTitle = ref('')
 const attachmentFile = ref(null)
-const letterForm = reactive({ title: '', body_html: '' })
+const attachmentDocType = ref('other')
+const letterForm = reactive({ title: '', body_html: '', doc_type: 'other' })
 
 const userId = computed(() => props.user?.id || props.user?.user_id)
 const recordId = computed(() => props.record?.id || props.record?.month_record_id)
@@ -76,6 +78,7 @@ const resetManualForm = () => {
   manualForm.id = null
   manualForm.title = ''
   manualForm.note = ''
+  manualForm.type = 'others'
 }
 
 const startEdit = (type, item) => {
@@ -83,6 +86,7 @@ const startEdit = (type, item) => {
   manualForm.id = item?.id || null
   manualForm.title = item?.title || item?.reason || item?.label || ''
   manualForm.note = item?.note || item?.description || ''
+  manualForm.type = item?.type || 'others'
 }
 
 watch(
@@ -94,8 +98,10 @@ watch(
     attachmentMode.value = 'file'
     attachmentTitle.value = ''
     attachmentFile.value = null
+    attachmentDocType.value = 'other'
     letterForm.title = ''
     letterForm.body_html = ''
+    letterForm.doc_type = 'other'
     if (userId.value && props.monthStart) {
       await reportStore.ensureMonthRecord(userId.value, props.year, props.monthStart)
     }
@@ -131,6 +137,7 @@ const saveManual = async () => {
     user_id: userId.value,
     year: props.year,
     month_start: props.monthStart,
+    type: manualForm.type,
     title: manualForm.title,
     note: manualForm.note,
   }
@@ -141,7 +148,7 @@ const saveManual = async () => {
       if (manualForm.id) {
         await reportStore.updateManualIndiscipline(
           manualForm.id,
-          { title: manualForm.title, note: manualForm.note },
+          { title: manualForm.title, note: manualForm.note, type: manualForm.type },
           { user_id: userId.value, month_start: props.monthStart }
         )
       } else {
@@ -151,7 +158,7 @@ const saveManual = async () => {
       if (manualForm.id) {
         await reportStore.updateManualAction(
           manualForm.id,
-          { title: manualForm.title, note: manualForm.note },
+          { title: manualForm.title, note: manualForm.note, type: manualForm.type },
           { user_id: userId.value, month_start: props.monthStart }
         )
       } else {
@@ -188,12 +195,15 @@ const uploadAttachment = async () => {
     await reportStore.uploadAttachment({
       file: attachmentFile.value,
       title: attachmentTitle.value,
+      doc_type: attachmentDocType.value,
+      mode: 'file',
       user_id: userId.value,
       month_start: props.monthStart,
       year: props.year,
     })
     attachmentFile.value = null
     attachmentTitle.value = ''
+    attachmentDocType.value = 'other'
   } catch (err) {
     console.error('Failed to upload attachment:', err)
   } finally {
@@ -209,12 +219,15 @@ const saveLetter = async () => {
     await reportStore.createLetter({
       title: letterForm.title,
       body_html: letterForm.body_html,
+      doc_type: letterForm.doc_type,
+      mode: 'text',
       user_id: userId.value,
       month_start: props.monthStart,
       year: props.year,
     })
     letterForm.title = ''
     letterForm.body_html = ''
+    letterForm.doc_type = 'other'
   } catch (err) {
     console.error('Failed to save letter:', err)
   } finally {
@@ -281,6 +294,19 @@ const saveLetter = async () => {
                 placeholder="Title"
                 class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-200"
               />
+              <div>
+                <label class="text-[11px] font-semibold text-slate-500">Type</label>
+                <select
+                  v-model="manualForm.type"
+                  class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-200"
+                >
+                  <option value="absent">Absent</option>
+                  <option value="late">Late</option>
+                  <option value="misconduct">Misconduct</option>
+                  <option value="negligence">Negligence</option>
+                  <option value="others">Others</option>
+                </select>
+              </div>
               <textarea
                 v-model="manualForm.note"
                 rows="3"
@@ -359,6 +385,21 @@ const saveLetter = async () => {
                 placeholder="Title"
                 class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-200"
               />
+              <div>
+                <label class="text-[11px] font-semibold text-slate-500">Type</label>
+                <select
+                  v-model="manualForm.type"
+                  class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-200"
+                >
+                  <option value="warning">Warning</option>
+                  <option value="showcause">Show Cause</option>
+                  <option value="notice">Notice</option>
+                  <option value="training">Training</option>
+                  <option value="counselling">Counselling</option>
+                  <option value="suspension">Suspension</option>
+                  <option value="others">Others</option>
+                </select>
+              </div>
               <textarea
                 v-model="manualForm.note"
                 rows="3"
@@ -457,6 +498,19 @@ const saveLetter = async () => {
                 placeholder="Attachment title (optional)"
                 class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-200"
               />
+              <div>
+                <label class="text-[11px] font-semibold text-slate-500">Doc Type</label>
+                <select
+                  v-model="attachmentDocType"
+                  class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-200"
+                >
+                  <option value="warning_letter">Warning Letter</option>
+                  <option value="showcause">Show Cause</option>
+                  <option value="notice">Notice</option>
+                  <option value="proof">Proof</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
               <input
                 type="file"
                 class="w-full rounded-lg border border-dashed border-slate-300 px-3 py-2 text-sm"
@@ -466,7 +520,7 @@ const saveLetter = async () => {
             <button
               type="button"
               class="h-10 rounded-full bg-slate-900 px-4 text-xs font-semibold text-white"
-              :disabled="isSaving || !attachmentFile"
+              :disabled="isSaving || !attachmentFile || !attachmentDocType"
               @click="uploadAttachment"
             >
               Upload
@@ -480,12 +534,27 @@ const saveLetter = async () => {
               placeholder="Letter title"
               class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-200"
             />
+            <div>
+              <label class="text-[11px] font-semibold text-slate-500">Doc Type</label>
+              <select
+                v-model="letterForm.doc_type"
+                class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-200"
+              >
+                <option value="warning_letter">Warning Letter</option>
+                <option value="showcause">Show Cause</option>
+                <option value="notice">Notice</option>
+                <option value="proof">Proof</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
             <LetterEditor v-model="letterForm.body_html" />
             <div class="flex justify-end">
               <button
                 type="button"
                 class="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white"
-                :disabled="isSaving || !letterForm.title || !letterForm.body_html"
+                :disabled="
+                  isSaving || !letterForm.title || !letterForm.body_html || !letterForm.doc_type
+                "
                 @click="saveLetter"
               >
                 Save Letter
