@@ -319,82 +319,83 @@ const getApprovalData = (type) => {
     </div>
     <!-- Approval List -->
     <div v-if="options.withApprovals" class="mb-6">
-      <h3 class="text-lg font-bold uppercase mb-6 border-b pb-2">Approvals</h3>
+      <div class="break-inside-avoid">
+        DEPT. SUBMITTER
+        <h3 class="text-lg font-bold uppercase mb-6 border-b pb-2">Approvals</h3>
 
-      <!-- From Department Row -->
-      <div class="mb-8 break-inside-avoid">
-        <h4
-          class="text-xs font-bold text-gray-700 text-center uppercase tracking-widest border-b border-dashed pb-1 mb-4"
-        >
-          {{ requirement.from_department?.name }} Approvals
-        </h4>
-        <div class="grid grid-cols-2 gap-8">
-          <div
-            v-for="type in ['from_in_charge', 'from_coordinator']"
-            :key="type"
-            class="approval-box p-4 flex flex-col items-center text-center"
+        <!-- From Department Row -->
+        <div class="mb-8">
+          <h4
+            class="text-xs font-bold text-gray-700 text-center uppercase tracking-widest border-b border-dashed pb-1 mb-4"
           >
-            <div v-if="getApprovalData(type)" class="w-full">
-              <p class="text-[10px] text-gray-500 uppercase font-bold mb-3">
-                {{ getApprovalData(type).userType }}
-                <span v-if="type === 'from_in_charge'">(Dept. Submitter)</span>
-              </p>
+            {{ requirement.from_department?.name }} Approvals
+          </h4>
+          <div class="grid grid-cols-2 gap-8">
+            <div
+              v-for="type in ['from_in_charge', 'from_coordinator']"
+              :key="type"
+              class="approval-box p-4 flex flex-col items-center text-center"
+            >
+              <div v-if="getApprovalData(type)" class="w-full">
+                <p class="text-[10px] text-gray-500 uppercase font-bold mb-3">
+                  {{ getApprovalData(type).userType }}
+                </p>
 
-              <div v-if="getApprovalData(type).approval_user" class="space-y-2">
-                <div class="flex flex-col items-center gap-2">
-                  <UserAvatar :user="getApprovalData(type).approval_user" size="small" />
-                  <div class="relative inline-block">
-                    <span class="font-bold text-indigo-700">{{
-                      getApprovalData(type).approval_user.name
-                    }}</span>
-                    <hr class="border-t-2 border-indigo-100 mt-0.5" />
+                <div v-if="getApprovalData(type).approval_user" class="space-y-2">
+                  <div class="flex flex-col items-center gap-2">
+                    <UserAvatar :user="getApprovalData(type).approval_user" size="small" />
+                    <div class="relative inline-block">
+                      <span class="font-bold text-indigo-700">{{
+                        getApprovalData(type).approval_user.name
+                      }}</span>
+                      <hr class="border-t-2 border-indigo-100 mt-0.5" />
+                    </div>
                   </div>
-                </div>
 
-                <p
-                  v-if="getApprovalData(type).is_rejected && requirement.rejection_reason"
-                  class="text-xs text-red-600 font-semibold italic"
-                >
-                  {{ requirement.rejection_reason }}
-                </p>
-                <p
-                  v-else-if="getApprovalData(type).approval_note"
-                  class="text-xs text-gray-600 italic"
-                >
-                  {{ getApprovalData(type).approval_note }}
-                </p>
+                  <p
+                    v-if="getApprovalData(type).is_rejected && requirement.rejection_reason"
+                    class="text-xs text-red-600 font-semibold italic"
+                  >
+                    {{ requirement.rejection_reason }}
+                  </p>
+                  <p
+                    v-else-if="getApprovalData(type).approval_note"
+                    class="text-xs text-gray-600 italic"
+                  >
+                    {{ getApprovalData(type).approval_note }}
+                  </p>
 
-                <div
-                  v-if="getApprovalData(type).is_rejected"
-                  class="mt-1 text-[10px] text-red-600 font-bold px-2 py-0.5 rounded inline-block"
-                >
-                  <i class="fas fa-times-circle mr-1"></i> REJECTED
-                </div>
-                <div
-                  v-else-if="getApprovalData(type).approved"
-                  class="mt-1 text-[10px] text-green-600 font-bold px-2 py-0.5 rounded inline-block"
-                >
-                  <i class="fas fa-check-circle mr-1"></i>
-                  {{ type === 'from_in_charge' ? 'SUBMITTED' : 'APPROVED' }}
+                  <div
+                    v-if="getApprovalData(type).is_rejected"
+                    class="mt-1 text-[10px] text-red-600 font-bold px-2 py-0.5 rounded inline-block"
+                  >
+                    <i class="fas fa-times-circle mr-1"></i> REJECTED
+                  </div>
+                  <div
+                    v-else-if="getApprovalData(type).approved"
+                    class="mt-1 text-[10px] text-green-600 font-bold px-2 py-0.5 rounded inline-block"
+                  >
+                    <i class="fas fa-check-circle mr-1"></i>
+                    {{ type === 'from_in_charge' ? 'SUBMITTED' : 'APPROVED' }}
+                  </div>
+                  <div
+                    v-else
+                    class="mt-1 text-[10px] text-yellow-600 font-bold px-2 py-0.5 rounded inline-block"
+                  >
+                    <i class="fas fa-clock mr-1"></i> PENDING
+                  </div>
                 </div>
                 <div
                   v-else
-                  class="mt-1 text-[10px] text-yellow-600 font-bold px-2 py-0.5 rounded inline-block"
+                  class="h-12 flex items-center justify-center text-gray-300 italic text-xs"
                 >
-                  <i class="fas fa-clock mr-1"></i> PENDING
+                  N/A
                 </div>
-              </div>
-              <div
-                v-else
-                class="h-12 flex items-center justify-center text-gray-300 italic text-xs"
-              >
-                N/A
               </div>
             </div>
           </div>
         </div>
       </div>
-
       <!-- To Department Row -->
       <div
         v-if="requirement.from_department_id !== requirement.to_department_id"
