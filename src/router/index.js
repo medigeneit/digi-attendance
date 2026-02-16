@@ -770,6 +770,16 @@ const router = createRouter({
             title: 'Hrd View',
           },
         },
+        {
+          path: '/hrd/organogram',
+          name: 'HrdOrganogram',
+          component: () => import('@/views/admin-pages/OrganogramList.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Organogram',
+          },
+        },
 
         {
           path: '/hrd/em-attendance',

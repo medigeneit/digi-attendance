@@ -160,6 +160,14 @@ const hasAccessTo = (routeName) => {
       <i class="far fa-exclamation-circle text-3xl"></i>
       Blood Donor List
     </RouterLink>
+    <RouterLink
+      v-if="hasAccessTo('HrdOrganogram')"
+      :to="{ name: 'HrdOrganogram' }"
+      class="main-button"
+    >
+      <i class="far fa-exclamation-circle text-3xl"></i>
+       Organogram List
+    </RouterLink>
   </div>
 </template>
 
