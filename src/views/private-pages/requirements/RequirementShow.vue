@@ -9,8 +9,6 @@ import HTMLTextBody from '@/components/HTMLTextBody.vue'
 import RequirementAttachments from '@/components/requirements/RequirementAttachments.vue'
 import RequirementCloseInfo from '@/components/requirements/RequirementCloseInfo.vue'
 import RequirementClosingForm from '@/components/requirements/RequirementClosingForm.vue'
-import RequirementDetailDeleteForm from '@/components/requirements/RequirementDetailDeleteForm.vue'
-import RequirementDetailTableRow from '@/components/requirements/RequirementDetailTableRow.vue'
 import RequirementFeedbackEditForm from '@/components/requirements/RequirementFeedbackEditForm.vue'
 import RequirementPrintOptions from '@/components/requirements/RequirementPrintOptions.vue'
 import RequirementPrintPreview from '@/components/requirements/RequirementPrintPreview.vue'
@@ -37,6 +35,19 @@ const state = ref('')
 
 const auth = useAuthStore()
 const commentStore = useCommentStore()
+
+const mentionableTasks = computed(() => {
+  if (!requirement.value) return []
+
+  const tasksMap = new Map()
+
+  // Direct tasks
+  if (requirement.value.tasks) {
+    requirement.value.tasks.forEach((t) => tasksMap.set(t.id, t))
+  }
+
+  return Array.from(tasksMap.values())
+})
 
 const mentionableUsers = computed(() => {
   if (!requirement.value) return []
@@ -74,19 +85,6 @@ const mentionableUsers = computed(() => {
     })
   }
 
-  // Task assigned users (from details.tasks relation if exists)
-  if (requirement.value.details) {
-    requirement.value.details.forEach((detail) => {
-      if (detail.tasks) {
-        detail.tasks.forEach((task) => {
-          if (task.users) {
-            task.users.forEach((u) => addUserWithDept(u, u.department))
-          }
-        })
-      }
-    })
-  }
-
   return Array.from(usersMap.values())
 })
 
@@ -94,17 +92,7 @@ const sidebarTop = ref()
 const closingHistoryShown = ref(false)
 
 const requirement = ref(null)
-const detailEditForm = reactive({
-  detail: null,
-  open: false,
-})
-
 const feedbackEditForm = reactive({
-  detail: null,
-  open: false,
-})
-
-const detailDeleteForm = reactive({
   detail: null,
   open: false,
 })
@@ -216,16 +204,6 @@ function goToTaskAdd() {
   addFormData.requirement = requirement.value
 }
 
-function handleEditRequirementDetail(detail) {
-  detailEditForm.open = true
-  detailEditForm.detail = detail
-}
-
-function handleDeleteRequirementDetail(detail) {
-  detailDeleteForm.open = true
-  detailDeleteForm.detail = detail
-}
-
 const addFormData = reactive({
   modalShown: false,
   requirementId: 0,
@@ -255,25 +233,10 @@ const reqClosingModal = ref({
     <OverlyModal v-if="feedbackEditForm.open">
       <RequirementFeedbackEditForm
         :requirementId="requirement.id"
-        :detailId="feedbackEditForm.requirement.value?.id"
         @closeClick="feedbackEditForm.open = false"
         @update="
           async () => {
             feedbackEditForm.open = false
-            await fetchRequirement()
-          }
-        "
-      />
-    </OverlyModal>
-
-    <OverlyModal v-if="detailDeleteForm.open">
-      <RequirementDetailDeleteForm
-        :requirementId="requirement.id"
-        :detailId="detailDeleteForm.requirement.value?.id"
-        @closeClick="detailDeleteForm.open = false"
-        @delete="
-          async () => {
-            detailDeleteForm.open = false
             await fetchRequirement()
           }
         "
@@ -305,7 +268,6 @@ const reqClosingModal = ref({
 
       <TaskAddForm
         v-if="addFormData?.creating"
-        :requirementDetailId="addFormData?.requirement.value?.id"
         :requirementId="requirement.id"
         @close="handleTaskAddClose"
         @taskCreated="handleTaskUpdate"
@@ -412,7 +374,7 @@ const reqClosingModal = ref({
           <div class="text-center text-xl font-bold mb-2 flex items-center justify-between">
             <div class="flex items-center">
               <button class="btn-3 h-8 px-4" @click.prevent="() => router.back()">Back</button>
-              <div class="text-2xl ml-4">Requirement Form</div>
+              <div class="text-2xl ml-4">{{ requirement?.title || 'Requirement Form' }}</div>
             </div>
             <button
               class="btn-indigo-light text-xs font-bold btn-3 h-8 px-4"
@@ -544,6 +506,7 @@ const reqClosingModal = ref({
                 :commentable-id="requirement.id"
                 :current-user="auth.user"
                 :mentionable-users="mentionableUsers"
+                :mentionable-tasks="mentionableTasks"
               />
             </div>
 
@@ -593,58 +556,6 @@ const reqClosingModal = ref({
                   </div>
                 </div>
               </div>
-            </div>
-
-            <div class="overflow-x-auto print:overflow-visible" v-if="requirement && false">
-              <table class="w-full table-auto print:table-fixed">
-                <thead>
-                  <tr>
-                    <th
-                      rowspan="2"
-                      class="border-2 border-gray-800 text-center text-gray-800 print:text-black text-base font-semibold whitespace-nowrap print:whitespace-normal w-[65%]"
-                    >
-                      Requirement Details
-                    </th>
-                    <th
-                      rowspan="2"
-                      class="border-2 border-gray-800 text-center text-gray-800 print:text-black text-base px-3 font-semibold whitespace-nowrap print:whitespace-normal print:p-0 w-[15%]"
-                    >
-                      Better To Complete
-                    </th>
-                    <th
-                      colspan="2"
-                      class="w-[30%] border-2 border-gray-800 text-center text-gray-800 print:text-black text-base font-semibold whitespace-nowrap px-3 py-1 print:whitespace-normal"
-                    >
-                      For '{{
-                        requirement?.to_department?.short_name || requirement?.to_department?.name
-                      }}' Use
-                    </th>
-                  </tr>
-                  <tr>
-                    <td
-                      class="whitespace-nowrap border-2 border-gray-800 text-center text-gray-800 print:text-black text-sm font-semibold print:text-xs"
-                    >
-                      Task No
-                    </td>
-                    <td
-                      class="border-2 border-gray-800 text-center text-gray-800 print:text-black text-sm font-semibold whitespace-nowrap p-3 print:text-xs print:p-0"
-                    >
-                      Expected Date
-                    </td>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  <RequirementDetailTableRow
-                    :requirement="requirement"
-                    :serial="index + 1"
-                    @editClick="handleEditRequirementDetail"
-                    @deleteClick="handleDeleteRequirementDetail"
-                    @taskCreateClick="goToTaskAdd"
-                    :isPrinting="isPrinting"
-                  />
-                </tbody>
-              </table>
             </div>
 
             <!-- {{ requirement }} -->

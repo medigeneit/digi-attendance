@@ -4,6 +4,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 const props = defineProps({
   modelValue: { type: String, default: '' },
   mentionableUsers: { type: Array, default: () => [] },
+  mentionableTasks: { type: Array, default: () => [] },
   currentUser: { type: Object, default: () => ({}) },
 })
 
@@ -13,14 +14,26 @@ const editor = ref(null)
 
 // Mention system state
 const showMentionList = ref(false)
+const showTaskList = ref(false)
 const mentionSearch = ref('')
+const taskSearch = ref('')
 const mentionListIndex = ref(0)
+const taskListIndex = ref(0)
 const mentionPosition = ref({ top: 0, left: 0 })
 
 const filteredUsers = computed(() => {
   const users = props.mentionableUsers.filter((user) => user.id !== props.currentUser?.id)
   if (!mentionSearch.value) return users
   return users.filter((user) => user.name.toLowerCase().includes(mentionSearch.value.toLowerCase()))
+})
+
+const filteredTasks = computed(() => {
+  if (!taskSearch.value) return props.mentionableTasks
+  return props.mentionableTasks.filter(
+    (task) =>
+      task.title.toLowerCase().includes(taskSearch.value.toLowerCase()) ||
+      String(task.id).includes(taskSearch.value),
+  )
 })
 
 const activeCommands = ref({
@@ -112,7 +125,6 @@ const updateMentionPosition = () => {
   const rects = range.getClientRects()
   if (rects.length > 0) {
     const rect = rects[0]
-    const editorRect = editor.value.getBoundingClientRect()
     // Position relative to the editor container or absolute?
     // Absolute position relative to viewport might be easier with teleports or just fixed position
     mentionPosition.value = {
@@ -139,46 +151,84 @@ const handleEditorKeydown = (e) => {
     } else if (e.key === 'Escape') {
       showMentionList.value = false
     }
+  } else if (showTaskList.value) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      taskListIndex.value = (taskListIndex.value + 1) % filteredTasks.value.length
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      taskListIndex.value =
+        (taskListIndex.value - 1 + filteredTasks.value.length) % filteredTasks.value.length
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      if (filteredTasks.value[taskListIndex.value]) {
+        insertTaskMention(filteredTasks.value[taskListIndex.value])
+      }
+    } else if (e.key === 'Escape') {
+      showTaskList.value = false
+    }
   }
 }
 
-const onEditorKeyUp = (e) => {
+const onEditorKeyUp = () => {
   const selection = window.getSelection()
   if (!selection.rangeCount) return
 
   const range = selection.getRangeAt(0)
   if (range.startContainer.nodeType !== Node.TEXT_NODE) {
     showMentionList.value = false
+    showTaskList.value = false
     return
   }
 
   const textBefore = range.startContainer.textContent.substring(0, range.startOffset)
 
+  // Handle @ User Mention
   const lastAt = textBefore.lastIndexOf('@')
+  const lastHash = textBefore.lastIndexOf('#')
   const lastSpace = textBefore.lastIndexOf(' ')
   const lastNewline = textBefore.lastIndexOf('\n')
   const lastDelimiter = Math.max(lastSpace, lastNewline)
 
   if (lastAt !== -1 && lastAt >= lastDelimiter) {
-    // If there's something like "email@domain.com", we shouldn't trigger mention
-    // Check if @ is at start or preceded by a space
     if (lastAt > 0 && !/\s/.test(textBefore[lastAt - 1])) {
       showMentionList.value = false
-      return
+    } else {
+      const search = textBefore.substring(lastAt + 1)
+      if (search.includes(' ')) {
+        showMentionList.value = false
+      } else {
+        mentionSearch.value = search
+        showMentionList.value = true
+        showTaskList.value = false
+        mentionListIndex.value = 0
+        updateMentionPosition()
+        return
+      }
     }
-
-    const search = textBefore.substring(lastAt + 1)
-    if (search.includes(' ')) {
-      showMentionList.value = false
-      return
-    }
-
-    mentionSearch.value = search
-    showMentionList.value = true
-    mentionListIndex.value = 0
-    updateMentionPosition()
   } else {
     showMentionList.value = false
+  }
+
+  // Handle # Task Mention
+  if (lastHash !== -1 && lastHash >= lastDelimiter) {
+    if (lastHash > 0 && !/\s/.test(textBefore[lastHash - 1])) {
+      showTaskList.value = false
+    } else {
+      const search = textBefore.substring(lastHash + 1)
+      if (search.includes(' ')) {
+        showTaskList.value = false
+      } else {
+        taskSearch.value = search
+        showTaskList.value = true
+        showMentionList.value = false
+        taskListIndex.value = 0
+        updateMentionPosition()
+        return
+      }
+    }
+  } else {
+    showTaskList.value = false
   }
 }
 
@@ -216,6 +266,41 @@ const insertMention = (user) => {
   onDescriptionInput()
 }
 
+const insertTaskMention = (task) => {
+  const selection = window.getSelection()
+  if (!selection.rangeCount) return
+  const range = selection.getRangeAt(0)
+
+  const textNode = range.startContainer
+  const textBefore = textNode.textContent.substring(0, range.startOffset)
+  const lastHash = textBefore.lastIndexOf('#')
+
+  if (lastHash !== -1) {
+    range.setStart(textNode, lastHash)
+    range.deleteContents()
+
+    const taskSpan = document.createElement('span')
+    taskSpan.className = 'task-mention text-amber-600 font-semibold cursor-pointer underline'
+    taskSpan.dataset.taskId = task.id
+    taskSpan.textContent = `#${task.id}`
+    taskSpan.title = task.title
+    taskSpan.contentEditable = 'false'
+
+    range.insertNode(taskSpan)
+
+    const space = document.createTextNode('\u00A0')
+    taskSpan.after(space)
+
+    range.setStartAfter(space)
+    range.setEndAfter(space)
+    selection.removeAllRanges()
+    selection.addRange(range)
+  }
+
+  showTaskList.value = false
+  onDescriptionInput()
+}
+
 onMounted(() => {
   document.addEventListener('selectionchange', handleSelectionChange)
 
@@ -248,12 +333,14 @@ const handleClickOutside = (event) => {
   // Close mention list if clicking outside editor
   if (editor.value && !editor.value.contains(event.target)) {
     showMentionList.value = false
+    showTaskList.value = false
   }
 }
 
 const handleGlobalKeydown = (event) => {
   if (event.key === 'Escape') {
     showMentionList.value = false
+    showTaskList.value = false
     showAlignmentDropdown.value = false
     showColorDropdown.value = false
     showFontSizeDropdown.value = false
@@ -261,7 +348,7 @@ const handleGlobalKeydown = (event) => {
 }
 
 const handleScroll = () => {
-  if (showMentionList.value) {
+  if (showMentionList.value || showTaskList.value) {
     updateMentionPosition()
   }
 }
@@ -494,6 +581,38 @@ onBeforeUnmount(() => {
           </div>
         </div>
       </div>
+
+      <!-- Task List -->
+      <div
+        v-if="showTaskList && filteredTasks.length"
+        class="fixed z-[9999] bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto min-w-[250px]"
+        :style="{
+          top: `${mentionPosition.top}px`,
+          left: `${mentionPosition.left}px`,
+        }"
+      >
+        <div
+          v-for="(task, index) in filteredTasks"
+          :key="task.id"
+          @mousedown.prevent="insertTaskMention(task)"
+          :class="[
+            'px-4 py-2 cursor-pointer flex flex-col hover:bg-amber-50 border-b last:border-0',
+            { 'bg-amber-100': index === taskListIndex },
+          ]"
+        >
+          <div class="flex items-center justify-between gap-2 w-full">
+            <span class="text-sm font-medium text-gray-800 truncate">{{ task.title }}</span>
+            <span class="text-[10px] font-bold text-amber-600 shrink-0">#{{ task.id }}</span>
+          </div>
+          <div class="flex items-center gap-2 mt-0.5">
+            <span
+              class="text-[9px] uppercase font-bold px-1 rounded bg-gray-100 text-gray-500 border border-gray-200"
+            >
+              {{ task.status }}
+            </span>
+          </div>
+        </div>
+      </div>
     </Teleport>
   </div>
 </template>
@@ -528,6 +647,15 @@ onBeforeUnmount(() => {
   display: inline-block;
   background-color: #e0f2fe;
   color: #0284c7;
+  padding: 0 4px;
+  border-radius: 4px;
+  margin: 0 1px;
+}
+
+.task-mention {
+  display: inline-block;
+  background-color: #fef3c7;
+  color: #b45309;
   padding: 0 4px;
   border-radius: 4px;
   margin: 0 1px;

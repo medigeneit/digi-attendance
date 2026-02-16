@@ -10,10 +10,6 @@ const props = defineProps({
     type: [Number, String],
     required: true,
   },
-  requirementId: {
-    type: [Number, String],
-    required: true,
-  },
 })
 
 const emit = defineEmits(['update', 'closeClick', 'error'])

@@ -5,7 +5,6 @@ import apiClient from '../axios';
 
 export const useRequirementStore = defineStore('requirement', () => {
   const requirements = ref([]);
-  const requirementDetails = ref([]);
   const requirement = ref(null);
   const loading = ref(false);
   const error = ref(null);
@@ -29,7 +28,7 @@ export const useRequirementStore = defineStore('requirement', () => {
     error.value = null;
     try {
       const response = await getTasksWithRequirement({params});
-      requirementDetails.value = response.data?.requirement_details || [];
+      requirements.value = response.data;
       console.log({response})
     } catch (err) {
       error.value = err.response?.data?.message || 'রিকোয়ারমেন্ট লোড করতে ব্যর্থ হয়েছে।';

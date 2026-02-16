@@ -14,6 +14,7 @@ const props = defineProps({
   commentableId: { type: [Number, String], required: true },
   currentUser: { type: Object, required: true },
   mentionableUsers: { type: Array, default: () => [] },
+  mentionableTasks: { type: Array, default: () => [] },
   // currentUser: {id, name, ...} --> user_id পাঠাতে লাগবে
 })
 
@@ -336,6 +337,7 @@ const acknowledge = async (commentId) => {
       <TextEditor
         v-model="message"
         :mentionable-users="mentionableUsers"
+        :mentionable-tasks="mentionableTasks"
         :current-user="currentUser"
       />
 
