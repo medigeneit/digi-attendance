@@ -13,6 +13,8 @@ import RequirementClosingForm from '@/components/requirements/RequirementClosing
 import RequirementDetailDeleteForm from '@/components/requirements/RequirementDetailDeleteForm.vue'
 import RequirementDetailTableRow from '@/components/requirements/RequirementDetailTableRow.vue'
 import RequirementFeedbackEditForm from '@/components/requirements/RequirementFeedbackEditForm.vue'
+import RequirementPrintOptions from '@/components/requirements/RequirementPrintOptions.vue'
+import RequirementPrintPreview from '@/components/requirements/RequirementPrintPreview.vue'
 import RequirementSubmissionHandler from '@/components/requirements/RequirementSubmissionHandler.vue'
 import RequirementTaskCreateOrAssign from '@/components/requirements/RequirementTaskCreateOrAssign.vue'
 import TaskAddForm from '@/components/tasks/TaskAddForm.vue'
@@ -25,6 +27,7 @@ import { getDisplayDate, getDisplayDateTime } from '@/libs/datetime'
 import { createMutationObserver } from '@/libs/dom'
 import { findRequirement } from '@/services/requirement'
 import { useAuthStore } from '@/stores/auth'
+import { useCommentStore } from '@/stores/useCommentStore'
 import { nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import RequirementApprovalItem from './RequirementApprovalItem.vue'
@@ -34,6 +37,7 @@ const router = useRouter()
 const state = ref('')
 
 const auth = useAuthStore()
+const commentStore = useCommentStore()
 
 const sidebarTop = ref()
 const closingHistoryShown = ref(false)
@@ -55,8 +59,37 @@ const detailDeleteForm = reactive({
 })
 
 const isPrinting = ref(false)
+const printOptionsModal = ref(false)
+const printOptions = ref({
+  withTasks: true,
+  taskOption: 'list',
+  withMessages: true,
+  withApprovals: true,
+  withAttachments: true,
+})
+
 const beforePrint = () => (isPrinting.value = true)
 const afterPrint = () => (isPrinting.value = false)
+
+const handlePrintPreview = () => {
+  printOptionsModal.value = true
+}
+
+const startPrinting = async (options) => {
+  printOptions.value = options
+  printOptionsModal.value = false
+
+  if (options.withMessages) {
+    await commentStore.fetchComments({
+      commentable_type: 'requirement',
+      commentable_id: requirement.value.id,
+    })
+  }
+
+  isPrinting.value = true
+  await nextTick()
+  window.print()
+}
 
 const editingId = ref()
 
@@ -270,6 +303,14 @@ const reqClosingModal = ref({
       />
     </OverlyModal>
 
+    <OverlyModal v-if="printOptionsModal">
+      <RequirementPrintOptions
+        :initialOptions="printOptions"
+        @close="printOptionsModal = false"
+        @print="startPrinting"
+      />
+    </OverlyModal>
+
     <OverlyModal v-if="closingHistoryShown">
       <div class="border-b px-3 py-1 bg-gray-50 flex items-center justify-between rounded-t-md">
         <h3 class="text-xl font-semibold">Closing History</h3>
@@ -312,7 +353,7 @@ const reqClosingModal = ref({
       </div>
     </OverlyModal>
 
-    <div class="print:shadow-none print:p-0 relative min-h-[50vh] mx-4">
+    <div class="print:hidden relative min-h-[50vh] mx-4">
       <div class="grid grid-cols-12 gap-x-4 gap-y-3" v-if="requirement">
         <div
           class="col-span-full md:col-span-8 xl:col-span-8 2xl:col-span-9 row-span-10 bg-white shadow rounded-lg p-6"
@@ -731,18 +772,24 @@ const reqClosingModal = ref({
 
               <div
                 v-if="!requirement?.closed_at"
-                class="print:hidden flex gap-2 items-center justify-between w-full text-sm"
+                class="print:hidden flex flex-wrap gap-2 items-center justify-between w-full text-sm"
               >
-                <button
-                  class="btn-3 font-semibold h-8 !pl-2 !pr-4"
-                  @click.prevent="goToTaskAdd"
-                  v-if="requirement.status == 'approved'"
-                >
-                  <i class="fas fa-plus text-sm"></i> Add/Assign Task
-                </button>
-                <!-- <button class="btn-3 font-semibold !pl-2 !pr-4" @click.prevent="handlePrint">
-                <i class="fad fa-print text-xl"></i>Print
-              </button> -->
+                <div class="flex gap-2">
+                  <button
+                    class="btn-3 font-semibold h-8 !pl-2 !pr-4"
+                    @click.prevent="goToTaskAdd"
+                    v-if="requirement.status == 'approved'"
+                  >
+                    <i class="fas fa-plus text-sm"></i> Add/Assign Task
+                  </button>
+
+                  <button
+                    class="btn-3 font-semibold h-8 !pl-2 !pr-4"
+                    @click.prevent="handlePrintPreview"
+                  >
+                    <i class="fas fa-print text-sm"></i> Print
+                  </button>
+                </div>
 
                 <RouterLink class="btn-2 h-8" :to="`/requirements/edit/${requirement?.id}`">
                   Edit
@@ -770,5 +817,13 @@ const reqClosingModal = ref({
 
       <LoaderView class="absolute inset-0 bg-opacity-90" v-if="state === 'loading'" />
     </div>
+
+    <RequirementPrintPreview
+      v-if="requirement && isPrinting"
+      class="hidden print:block"
+      :requirement="requirement"
+      :options="printOptions"
+      :comments="commentStore.comments"
+    />
   </div>
 </template>
