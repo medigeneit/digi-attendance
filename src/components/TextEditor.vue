@@ -3,11 +3,25 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 const props = defineProps({
   modelValue: { type: String, default: '' },
+  mentionableUsers: { type: Array, default: () => [] },
 })
 
 const emit = defineEmits(['update:modelValue'])
 
 const editor = ref(null)
+
+// Mention system state
+const showMentionList = ref(false)
+const mentionSearch = ref('')
+const mentionListIndex = ref(0)
+const mentionPosition = ref({ top: 0, left: 0 })
+
+const filteredUsers = computed(() => {
+  if (!mentionSearch.value) return props.mentionableUsers
+  return props.mentionableUsers.filter((user) =>
+    user.name.toLowerCase().includes(mentionSearch.value.toLowerCase()),
+  )
+})
 
 const activeCommands = ref({
   bold: false,
@@ -86,6 +100,120 @@ const updateActiveCommands = () => {
 
 const handleSelectionChange = () => {
   updateActiveCommands()
+}
+
+// Mention system logic
+const updateMentionPosition = () => {
+  const selection = window.getSelection()
+  if (!selection.rangeCount) return
+  const range = selection.getRangeAt(0).cloneRange()
+  range.collapse(false)
+
+  const rects = range.getClientRects()
+  if (rects.length > 0) {
+    const rect = rects[0]
+    const editorRect = editor.value.getBoundingClientRect()
+    // Position relative to the editor container or absolute?
+    // Absolute position relative to viewport might be easier with teleports or just fixed position
+    mentionPosition.value = {
+      top: rect.bottom + 5,
+      left: rect.left,
+    }
+  }
+}
+
+const handleEditorKeydown = (e) => {
+  if (showMentionList.value) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      mentionListIndex.value = (mentionListIndex.value + 1) % filteredUsers.value.length
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      mentionListIndex.value =
+        (mentionListIndex.value - 1 + filteredUsers.value.length) % filteredUsers.value.length
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      if (filteredUsers.value[mentionListIndex.value]) {
+        insertMention(filteredUsers.value[mentionListIndex.value])
+      }
+    } else if (e.key === 'Escape') {
+      showMentionList.value = false
+    }
+  }
+}
+
+const onEditorKeyUp = (e) => {
+  const selection = window.getSelection()
+  if (!selection.rangeCount) return
+
+  const range = selection.getRangeAt(0)
+  if (range.startContainer.nodeType !== Node.TEXT_NODE) {
+    showMentionList.value = false
+    return
+  }
+
+  const textBefore = range.startContainer.textContent.substring(0, range.startOffset)
+
+  const lastAt = textBefore.lastIndexOf('@')
+  const lastSpace = textBefore.lastIndexOf(' ')
+  const lastNewline = textBefore.lastIndexOf('\n')
+  const lastDelimiter = Math.max(lastSpace, lastNewline)
+
+  if (lastAt !== -1 && lastAt >= lastDelimiter) {
+    // If there's something like "email@domain.com", we shouldn't trigger mention
+    // Check if @ is at start or preceded by a space
+    if (lastAt > 0 && !/\s/.test(textBefore[lastAt - 1])) {
+      showMentionList.value = false
+      return
+    }
+
+    const search = textBefore.substring(lastAt + 1)
+    if (search.includes(' ')) {
+      showMentionList.value = false
+      return
+    }
+
+    mentionSearch.value = search
+    showMentionList.value = true
+    mentionListIndex.value = 0
+    updateMentionPosition()
+  } else {
+    showMentionList.value = false
+  }
+}
+
+const insertMention = (user) => {
+  const selection = window.getSelection()
+  if (!selection.rangeCount) return
+  const range = selection.getRangeAt(0)
+
+  const textNode = range.startContainer
+  const textBefore = textNode.textContent.substring(0, range.startOffset)
+  const lastAt = textBefore.lastIndexOf('@')
+
+  if (lastAt !== -1) {
+    range.setStart(textNode, lastAt)
+    range.deleteContents()
+
+    const mentionSpan = document.createElement('span')
+    mentionSpan.className = 'mention-item text-blue-600 font-semibold'
+    mentionSpan.dataset.userId = user.id
+    mentionSpan.textContent = `@${user.name}`
+    mentionSpan.contentEditable = 'false'
+
+    range.insertNode(mentionSpan)
+
+    const space = document.createTextNode('\u00A0')
+    mentionSpan.after(space)
+
+    range.setStartAfter(space)
+    range.setEndAfter(space)
+    selection.removeAllRanges()
+    selection.addRange(range)
+  }
+
+  showMentionList.value = false
+  onDescriptionInput()
 }
 
 onMounted(() => {
@@ -297,9 +425,47 @@ onBeforeUnmount(() => {
       ref="editor"
       contenteditable="true"
       @input="onDescriptionInput"
+      @keyup="onEditorKeyUp"
+      @keydown="handleEditorKeydown"
       class="editable-div border border-gray-300 p-4 rounded-md min-h-[200px] focus:outline-sky-600 max-h-[1000px] bg-white overflow-auto resize-y whitespace-normal"
       placeholder="Description"
     ></div>
+
+    <!-- Mention List -->
+    <Teleport to="body">
+      <div
+        v-if="showMentionList && filteredUsers.length"
+        class="fixed z-[9999] bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto min-w-[200px]"
+        :style="{
+          top: `${mentionPosition.top}px`,
+          left: `${mentionPosition.left}px`,
+        }"
+      >
+        <div
+          v-for="(user, index) in filteredUsers"
+          :key="user.id"
+          @mousedown.prevent="insertMention(user)"
+          :class="[
+            'px-4 py-2 cursor-pointer flex items-center gap-2 hover:bg-blue-50 border-b last:border-0',
+            { 'bg-blue-100': index === mentionListIndex },
+          ]"
+        >
+          <img
+            v-if="user.photo"
+            :src="user.photo"
+            class="w-6 h-6 rounded-full object-cover"
+            alt=""
+          />
+          <div
+            v-else
+            class="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-[10px] uppercase text-gray-500 font-bold border border-gray-300"
+          >
+            {{ user.name.charAt(0) }}
+          </div>
+          <span class="text-sm font-medium">{{ user.name }}</span>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -327,5 +493,14 @@ onBeforeUnmount(() => {
 .editable-div {
   resize: vertical; /* allows vertical resizing */
   overflow: auto; /* scrolls when content exceeds max height */
+}
+
+.mention-item {
+  display: inline-block;
+  background-color: #e0f2fe;
+  color: #0284c7;
+  padding: 0 4px;
+  border-radius: 4px;
+  margin: 0 1px;
 }
 </style>

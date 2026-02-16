@@ -96,6 +96,27 @@ export const useCommentStore = defineStore('comment', () => {
     }
   };
 
+  // ✅ Acknowledge mention
+  const acknowledgeComment = async (id) => {
+    action.value = 'acknowledging'
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await apiClient.post(`/comments/${id}/acknowledge`);
+      const index = comments.value.findIndex((c) => c.id === id);
+      if (index !== -1) {
+        comments.value[index] = response.data.data;
+      }
+      return response.data.data;
+    } catch (err) {
+      error.value = err.response?.data?.message || `কমেন্ট (ID: ${id}) একনলেজ করতে ব্যর্থ হয়েছে।`;
+      throw err;
+    } finally {
+      loading.value = false;
+      action.value = ''
+    }
+  };
+
   return {
     comments: computed(() => comments.value),
     comment: computed(() => comment.value),
@@ -107,5 +128,6 @@ export const useCommentStore = defineStore('comment', () => {
     createComment,
     updateComment,    // ✅ added
     deleteComment,
+    acknowledgeComment,
   };
 });

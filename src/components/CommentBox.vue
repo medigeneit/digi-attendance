@@ -4,6 +4,7 @@ import UserAvatar from '@/components/UserAvatar.vue'
 import { stripTags } from '@/libs/string'
 import { useCommentStore } from '@/stores/useCommentStore' // path adjust as your project
 import { computed, onMounted, ref, watch } from 'vue'
+import { useToast } from 'vue-toastification'
 import OverlyModal from './common/OverlyModal.vue'
 import HTMLTextBody from './HTMLTextBody.vue'
 
@@ -12,6 +13,7 @@ const props = defineProps({
   commentableType: { type: String, required: true }, // e.g. "task", "bug", "meeting"
   commentableId: { type: [Number, String], required: true },
   currentUser: { type: Object, required: true },
+  mentionableUsers: { type: Array, default: () => [] },
   // currentUser: {id, name, ...} --> user_id পাঠাতে লাগবে
 })
 
@@ -70,6 +72,7 @@ const clearCommentErrors = (commentId) => {
 }
 
 const commentStore = useCommentStore()
+const toast = useToast()
 
 const comments = computed(() => commentStore.comments)
 const loading = computed(() => commentStore.loading)
@@ -138,6 +141,32 @@ const canDelete = (c) => {
 }
 
 const isMine = (c) => c?.user_id === props.currentUser.id
+
+const mentionedInComment = (c) => {
+  return c.mentions?.find((m) => m.user_id == props.currentUser.id)
+}
+
+const isAcknowledged = (c) => {
+  const mention = mentionedInComment(c)
+  return mention && mention.acknowledged_at
+}
+
+const acknowledgeProcessingId = ref(null)
+const acknowledge = async (commentId) => {
+  acknowledgeProcessingId.value = commentId
+
+  try {
+    await commentStore.acknowledgeComment(commentId)
+    toast.success('Acknowledge successful')
+  } catch (e) {
+    console.error('Acknowledge error:', e)
+    const errorMsg = e.response?.data?.message || 'Failed to acknowledge'
+    pushCommentError(commentId, errorMsg)
+    toast.error(errorMsg)
+  } finally {
+    acknowledgeProcessingId.value = null
+  }
+}
 </script>
 
 <template>
@@ -209,6 +238,55 @@ const isMine = (c) => c?.user_id === props.currentUser.id
             <!-- Message -->
             <HTMLTextBody :message="c.message" />
 
+            <!-- Mentions & Acknowledgments -->
+            <div v-if="c.mentions?.length" class="mt-3 pt-2 border-t border-dashed border-gray-200">
+              <div class="flex flex-wrap gap-2 items-center">
+                <span class="text-[10px] text-gray-400 uppercase font-semibold">Mentions:</span>
+                <div
+                  v-for="m in c.mentions"
+                  :key="m.id"
+                  class="flex items-center gap-1 group/mention"
+                >
+                  <div
+                    class="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs box-border border transition cursor-default"
+                    :class="
+                      m.acknowledged_at
+                        ? 'bg-green-50 border-green-200 text-green-700'
+                        : 'bg-gray-50 border-gray-200 text-gray-500'
+                    "
+                    :title="
+                      m.acknowledged_at
+                        ? `Acknowledged at ${formatDate(m.acknowledged_at)}`
+                        : 'Not acknowledged yet'
+                    "
+                  >
+                    <UserAvatar :user="m.user" size="xsmall" class="!size-4" />
+                    <span>{{ m.user?.name }}</span>
+                    <i v-if="m.acknowledged_at" class="fas fa-check-circle text-[10px]"></i>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Acknowledge Button for mentioned user -->
+              <div v-if="mentionedInComment(c) && !isAcknowledged(c)" class="mt-2">
+                <button
+                  @click="acknowledge(c.id)"
+                  :disabled="acknowledgeProcessingId === c.id"
+                  class="flex items-center gap-2 px-3 py-1.5 bg-sky-600 hover:bg-sky-700 disabled:opacity-70 text-white text-xs font-semibold rounded-lg transition shadow-sm"
+                >
+                  <i
+                    :class="[
+                      'fas',
+                      acknowledgeProcessingId === c.id ? 'fa-spinner fa-spin' : 'fa-check',
+                    ]"
+                  ></i>
+                  <span>{{
+                    acknowledgeProcessingId === c.id ? 'Acknowledging...' : 'Acknowledge'
+                  }}</span>
+                </button>
+              </div>
+            </div>
+
             <!-- Actions (visible on hover) -->
             <div
               v-if="canDelete(c)"
@@ -251,7 +329,7 @@ const isMine = (c) => c?.user_id === props.currentUser.id
         </div>
       </div>
 
-      <TextEditor v-model="message" />
+      <TextEditor v-model="message" :mentionable-users="mentionableUsers" />
 
       <div class="flex items-center justify-end gap-2">
         <button

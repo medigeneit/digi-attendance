@@ -1,4 +1,3 @@
-ii
 <script setup>
 import CommentBox from '@/components/CommentBox.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
@@ -28,7 +27,7 @@ import { createMutationObserver } from '@/libs/dom'
 import { findRequirement } from '@/services/requirement'
 import { useAuthStore } from '@/stores/auth'
 import { useCommentStore } from '@/stores/useCommentStore'
-import { nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import RequirementApprovalItem from './RequirementApprovalItem.vue'
 
@@ -38,6 +37,37 @@ const state = ref('')
 
 const auth = useAuthStore()
 const commentStore = useCommentStore()
+
+const mentionableUsers = computed(() => {
+  if (!requirement.value) return []
+
+  const usersMap = new Map()
+
+  // From department users
+  if (requirement.value.from_department?.users) {
+    requirement.value.from_department.users.forEach((u) => usersMap.set(u.id, u))
+  }
+
+  // To department users
+  if (requirement.value.to_department?.users) {
+    requirement.value.to_department.users.forEach((u) => usersMap.set(u.id, u))
+  }
+
+  // Task assigned users
+  if (requirement.value.details) {
+    requirement.value.details.forEach((detail) => {
+      if (detail.tasks) {
+        detail.tasks.forEach((task) => {
+          if (task.users) {
+            task.users.forEach((u) => usersMap.set(u.id, u))
+          }
+        })
+      }
+    })
+  }
+
+  return Array.from(usersMap.values())
+})
 
 const sidebarTop = ref()
 const closingHistoryShown = ref(false)
@@ -492,6 +522,7 @@ const reqClosingModal = ref({
                 commentable-type="requirement"
                 :commentable-id="requirement.id"
                 :current-user="auth.user"
+                :mentionable-users="mentionableUsers"
               />
             </div>
 
