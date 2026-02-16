@@ -118,7 +118,7 @@ const options = reactive({ ...props.initialOptions })
         @click="emit('print', options)"
         class="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition font-semibold"
       >
-        <i class="fas fa-print mr-2"></i> Print Preview
+        <i class="fas fa-print mr-2"></i> Print
       </button>
     </div>
   </div>

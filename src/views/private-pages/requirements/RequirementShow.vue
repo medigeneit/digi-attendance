@@ -358,9 +358,17 @@ const reqClosingModal = ref({
         <div
           class="col-span-full md:col-span-8 xl:col-span-8 2xl:col-span-9 row-span-10 bg-white shadow rounded-lg p-6"
         >
-          <div class="text-center text-xl font-bold mb-2 flex items-center">
-            <button class="btn-3 h-8 px-4" @click.prevent="() => router.back()">Back</button>
-            <div class="text-2xl ml-4">Requirement Form</div>
+          <div class="text-center text-xl font-bold mb-2 flex items-center justify-between">
+            <div class="flex items-center">
+              <button class="btn-3 h-8 px-4" @click.prevent="() => router.back()">Back</button>
+              <div class="text-2xl ml-4">Requirement Form</div>
+            </div>
+            <button
+              class="btn-indigo-light text-xs font-bold btn-3 h-8 px-4"
+              @click.prevent="handlePrintPreview"
+            >
+              <i class="fas fa-print mr-1"></i> PRINT
+            </button>
           </div>
 
           <hr class="mb-4" />
@@ -781,13 +789,6 @@ const reqClosingModal = ref({
                     v-if="requirement.status == 'approved'"
                   >
                     <i class="fas fa-plus text-sm"></i> Add/Assign Task
-                  </button>
-
-                  <button
-                    class="btn-3 font-semibold h-8 !pl-2 !pr-4"
-                    @click.prevent="handlePrintPreview"
-                  >
-                    <i class="fas fa-print text-sm"></i> Print
                   </button>
                 </div>
 

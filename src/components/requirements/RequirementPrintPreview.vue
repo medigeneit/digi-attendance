@@ -193,7 +193,7 @@ const getApprovalData = (type) => {
 
     <!-- Title & Description -->
     <div class="mb-10">
-      <h2 class="text-2xl font-bold mb-2 border-l-4 border-indigo-600 pl-4">
+      <h2 class="text-2xl font-bold mb-2">
         {{ requirement.title }}
       </h2>
       <div
