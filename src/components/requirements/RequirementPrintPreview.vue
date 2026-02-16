@@ -90,13 +90,13 @@ const getApprovalData = (type) => {
     <div class="border-b-2 border-gray-800 pb-4 mb-6">
       <div class="flex justify-between items-start">
         <div>
-          <h1 class="text-3xl font-bold uppercase tracking-wider">Requirement Report</h1>
+          <h1 class="text-xl font-bold uppercase tracking-wider">Requirement Report</h1>
           <p class="text-sm text-gray-600 mt-1">
-            Generated on {{ getDisplayDateTime(new Date()) }}
+            Generated on <span class="font-semibold"> {{ getDisplayDateTime(new Date()) }}</span>
           </p>
         </div>
         <div class="text-right">
-          <div class="text-xl font-bold text-indigo-700">#{{ requirement.id }}</div>
+          <div class="text-lg font-bold text-indigo-700">#{{ requirement.id }}</div>
           <div
             class="text-sm font-semibold uppercase px-2 py-0.5 rounded border inline-block mt-1"
             :class="
@@ -127,13 +127,13 @@ const getApprovalData = (type) => {
     <div class="grid grid-cols-2 gap-x-12 gap-y-4 mb-6 text-sm">
       <div class="space-y-2">
         <div class="flex justify-between border-b border-gray-100 pb-1">
-          <span class="text-gray-500 font-semibold">Website:</span>
+          <span class="text-gray-500 font-semibold whitespace-nowrap ml-1">Website:</span>
           <span class="font-medium text-right">
             {{ (requirement.website_tags || []).map((t) => t.name).join(', ') || 'N/A' }}
           </span>
         </div>
         <div class="flex justify-between border-b border-gray-100 pb-1">
-          <span class="text-gray-500 font-semibold">Submission Date:</span>
+          <span class="text-gray-500 font-semibold whitespace-nowrap ml-1">Submission Date:</span>
           <span class="font-medium text-right">
             {{
               requirement.submission_date ? getDisplayDateTime(requirement.submission_date) : 'N/A'
@@ -141,7 +141,9 @@ const getApprovalData = (type) => {
           </span>
         </div>
         <div class="flex justify-between border-b border-gray-100 pb-1">
-          <span class="text-gray-500 font-semibold">Better To Complete:</span>
+          <span class="text-gray-500 font-semibold whitespace-nowrap ml-1"
+            >Better To Complete:</span
+          >
           <span class="font-medium text-right">
             {{
               requirement.better_to_complete_on
@@ -153,7 +155,7 @@ const getApprovalData = (type) => {
       </div>
       <div class="space-y-2">
         <div class="flex justify-between border-b border-gray-100 pb-1">
-          <span class="text-gray-500 font-semibold">Priority:</span>
+          <span class="text-gray-500 font-semibold whitespace-nowrap ml-1">Priority:</span>
           <span
             class="font-bold uppercase"
             :class="
@@ -168,12 +170,12 @@ const getApprovalData = (type) => {
           </span>
         </div>
         <div class="flex justify-between border-b border-gray-100 pb-1">
-          <span class="text-gray-500 font-semibold">From Dept:</span>
-          <span class="font-medium">{{ requirement.from_department?.name }}</span>
+          <span class="text-gray-500 font-semibold whitespace-nowrap ml-1">From Dept:</span>
+          <span class="font-medium text-right">{{ requirement.from_department?.name }}</span>
         </div>
         <div class="flex justify-between border-b border-gray-100 pb-1">
-          <span class="text-gray-500 font-semibold">To Dept:</span>
-          <span class="font-medium">{{ requirement.to_department?.name }}</span>
+          <span class="text-gray-500 font-semibold whitespace-nowrap ml-1">To Dept:</span>
+          <span class="font-medium text-right">{{ requirement.to_department?.name }}</span>
         </div>
       </div>
     </div>
@@ -193,8 +195,8 @@ const getApprovalData = (type) => {
 
     <!-- Title & Description -->
     <div class="mb-6">
-      <h2 class="text-2xl font-bold mb-2">
-        {{ requirement.title }}
+      <h2 class="text-xl mb-2">
+        <span class="font-bold">{{ requirement.title }}</span>
       </h2>
       <div
         v-if="requirement.description"
@@ -207,7 +209,7 @@ const getApprovalData = (type) => {
     <!-- Tasks Section -->
     <div v-if="options.withTasks" class="mb-6 break-inside-avoid">
       <div class="flex justify-between items-center mb-4 border-b pb-2">
-        <h3 class="text-xl font-bold uppercase">Tasks</h3>
+        <h3 class="text-lg font-bold uppercase">Tasks</h3>
         <span class="font-semibold text-sm bg-gray-800 text-white px-3 py-1 rounded-full">
           {{ requirement.completed_tasks_count }} / {{ requirement.tasks_count }} Completed
         </span>
@@ -279,9 +281,9 @@ const getApprovalData = (type) => {
     </div>
 
     <!-- Messages Section -->
-    <div v-if="options.withMessages && comments.length" class="mb-6 break-inside-avoid">
-      <h3 class="text-xl font-bold uppercase mb-4 border-b pb-2">Message History</h3>
-      <div class="space-y-4">
+    <div v-if="options.withMessages && comments.length" class="mb-6">
+      <h3 class="text-lg font-bold uppercase mb-4 border-b pb-2">Message History</h3>
+      <div class="space-y-4 break-before-page">
         <div
           v-for="comment in comments"
           :key="comment.id"
@@ -299,35 +301,32 @@ const getApprovalData = (type) => {
       </div>
     </div>
 
-    <!-- Approval List -->
-    <div v-if="options.withApprovals" class="mb-6 break-inside-avoid">
-      <h3 class="text-xl font-bold uppercase mb-6 border-b pb-2">Approvals</h3>
-
-      <!-- Submitted By Section -->
-      <div
-        class="mb-8 p-4 bg-blue-50/50 rounded-lg flex items-center justify-between border-l-4 border-blue-400"
-      >
-        <div class="flex items-center gap-4">
-          <span class="text-xs font-bold text-blue-700 uppercase tracking-widest"
-            >Submitted By:</span
-          >
-          <div class="flex items-center gap-2">
-            <UserAvatar :user="requirement.created_by" size="xsmall" />
-            <span class="font-bold text-gray-800">{{ requirement.created_by?.name }}</span>
-          </div>
-        </div>
-        <div class="text-right">
-          <p class="text-[10px] text-gray-500 font-bold uppercase">Submission Date</p>
-          <p class="text-sm font-semibold">{{ getDisplayDateTime(requirement.created_at) }}</p>
+    <!-- Submitted By Section -->
+    <div
+      class="mb-8 p-4 bg-blue-50/50 rounded-lg flex items-center justify-between border-l-4 border-blue-400"
+    >
+      <div class="flex items-center gap-4">
+        <span class="text-xs font-bold text-blue-700 uppercase tracking-widest">Submitted By:</span>
+        <div class="flex items-center gap-2">
+          <UserAvatar :user="requirement.created_by" size="xsmall" />
+          <span class="font-bold text-gray-800">{{ requirement.created_by?.name }}</span>
         </div>
       </div>
+      <div class="text-right">
+        <p class="text-[10px] text-gray-500 font-bold uppercase">Submission Date</p>
+        <p class="text-sm font-semibold">{{ getDisplayDateTime(requirement.created_at) }}</p>
+      </div>
+    </div>
+    <!-- Approval List -->
+    <div v-if="options.withApprovals" class="mb-6">
+      <h3 class="text-lg font-bold uppercase mb-6 border-b pb-2">Approvals</h3>
 
       <!-- From Department Row -->
-      <div class="mb-8">
+      <div class="mb-8 break-inside-avoid">
         <h4
-          class="text-xs font-bold text-gray-400 uppercase tracking-widest border-b border-dashed pb-1 mb-4"
+          class="text-xs font-bold text-gray-700 text-center uppercase tracking-widest border-b border-dashed pb-1 mb-4"
         >
-          From Department: {{ requirement.from_department?.name }}
+          {{ requirement.from_department?.name }} Approvals
         </h4>
         <div class="grid grid-cols-2 gap-8">
           <div
@@ -397,11 +396,14 @@ const getApprovalData = (type) => {
       </div>
 
       <!-- To Department Row -->
-      <div v-if="requirement.from_department_id !== requirement.to_department_id">
+      <div
+        v-if="requirement.from_department_id !== requirement.to_department_id"
+        class="break-inside-avoid"
+      >
         <h4
-          class="text-xs font-bold text-gray-400 uppercase tracking-widest border-b border-dashed pb-1 mb-4"
+          class="text-xs font-bold text-center text-gray-700 uppercase tracking-widest border-b border-dashed pb-1 mb-4"
         >
-          To Department: {{ requirement.to_department?.name }}
+          {{ requirement.to_department?.name }} Approvals
         </h4>
         <div class="grid grid-cols-2 gap-8">
           <div
@@ -471,7 +473,7 @@ const getApprovalData = (type) => {
 
     <!-- Image Attachments on Separate Page -->
     <div v-if="options.withAttachments && imageAttachments.length" class="break-before-page mt-12">
-      <h3 class="text-xl font-bold uppercase mb-6 border-b pb-2">Image Attachments</h3>
+      <h3 class="text-lg font-bold uppercase mb-6 border-b pb-2">Image Attachments</h3>
       <div class="grid grid-cols-1 gap-8">
         <div
           v-for="(file, index) in imageAttachments"
@@ -499,7 +501,7 @@ const getApprovalData = (type) => {
 }
 
 .break-before-page {
-  break-before: page;
+  break-before: avoid;
 }
 
 .break-inside-avoid {
