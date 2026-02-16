@@ -124,7 +124,7 @@ const getApprovalData = (type) => {
     </div>
 
     <!-- Metadata Grid -->
-    <div class="grid grid-cols-2 gap-x-12 gap-y-4 mb-8 text-sm">
+    <div class="grid grid-cols-2 gap-x-12 gap-y-4 mb-6 text-sm">
       <div class="space-y-2">
         <div class="flex justify-between border-b border-gray-100 pb-1">
           <span class="text-gray-500 font-semibold">Website:</span>
@@ -179,7 +179,7 @@ const getApprovalData = (type) => {
     </div>
 
     <!-- Supervisor Section -->
-    <div class="mb-8 p-3 bg-gray-50 rounded border flex items-center gap-4">
+    <div class="mb-6 p-3 bg-gray-50 rounded border flex items-center gap-4">
       <span class="text-gray-500 font-bold uppercase text-xs">Supervisor:</span>
       <div v-if="requirement.supervisor" class="flex items-center gap-2">
         <UserAvatar :user="requirement.supervisor" size="xsmall" />
@@ -192,7 +192,7 @@ const getApprovalData = (type) => {
     </div>
 
     <!-- Title & Description -->
-    <div class="mb-10">
+    <div class="mb-6">
       <h2 class="text-2xl font-bold mb-2">
         {{ requirement.title }}
       </h2>
@@ -205,7 +205,7 @@ const getApprovalData = (type) => {
     </div>
 
     <!-- Tasks Section -->
-    <div v-if="options.withTasks" class="mb-10 break-inside-avoid">
+    <div v-if="options.withTasks" class="mb-6 break-inside-avoid">
       <div class="flex justify-between items-center mb-4 border-b pb-2">
         <h3 class="text-xl font-bold uppercase">Tasks</h3>
         <span class="font-semibold text-sm bg-gray-800 text-white px-3 py-1 rounded-full">
@@ -279,7 +279,7 @@ const getApprovalData = (type) => {
     </div>
 
     <!-- Messages Section -->
-    <div v-if="options.withMessages && comments.length" class="mb-10 break-inside-avoid">
+    <div v-if="options.withMessages && comments.length" class="mb-6 break-inside-avoid">
       <h3 class="text-xl font-bold uppercase mb-4 border-b pb-2">Message History</h3>
       <div class="space-y-4">
         <div
@@ -300,7 +300,7 @@ const getApprovalData = (type) => {
     </div>
 
     <!-- Approval List -->
-    <div v-if="options.withApprovals" class="mb-10 break-inside-avoid">
+    <div v-if="options.withApprovals" class="mb-6 break-inside-avoid">
       <h3 class="text-xl font-bold uppercase mb-6 border-b pb-2">Approvals</h3>
 
       <!-- Submitted By Section -->
