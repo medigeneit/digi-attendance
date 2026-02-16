@@ -281,7 +281,7 @@ const getApprovalData = (type) => {
     </div>
 
     <!-- Messages Section -->
-    <div v-if="options.withMessages && comments.length" class="mb-6">
+    <div v-if="options.withMessages && comments.length" class="mb-10">
       <h3 class="text-lg font-bold uppercase mb-4 border-b pb-2">Message History</h3>
       <div class="space-y-4 break-before-page">
         <div
@@ -303,7 +303,7 @@ const getApprovalData = (type) => {
 
     <!-- Submitted By Section -->
     <div
-      class="mb-8 p-4 bg-blue-50/50 rounded-lg flex items-center justify-between border-l-4 border-blue-400"
+      class="mb-10 p-4 bg-blue-50/50 rounded-lg flex items-center justify-between border-l-4 border-blue-400"
     >
       <div class="flex items-center gap-4">
         <span class="text-xs font-bold text-blue-700 uppercase tracking-widest">Submitted By:</span>
@@ -320,7 +320,6 @@ const getApprovalData = (type) => {
     <!-- Approval List -->
     <div v-if="options.withApprovals" class="mb-6">
       <div class="break-inside-avoid">
-        DEPT. SUBMITTER
         <h3 class="text-lg font-bold uppercase mb-6 border-b pb-2">Approvals</h3>
 
         <!-- From Department Row -->
