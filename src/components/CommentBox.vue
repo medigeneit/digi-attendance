@@ -248,7 +248,7 @@ const acknowledge = async (commentId) => {
                   class="flex items-center gap-1 group/mention"
                 >
                   <div
-                    class="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs box-border border transition cursor-default"
+                    class="flex items-center gap-1.5 px-1 py-0.5 rounded-full text-xs box-border border transition cursor-default"
                     :class="
                       m.acknowledged_at
                         ? 'bg-green-50 border-green-200 text-green-700'
@@ -260,7 +260,7 @@ const acknowledge = async (commentId) => {
                         : 'Not acknowledged yet'
                     "
                   >
-                    <UserAvatar :user="m.user" size="xsmall" class="!size-4" />
+                    <UserAvatar :user="m.user" size="2xsmall" />
                     <span>{{ m.user?.name }}</span>
                     <i v-if="m.acknowledged_at" class="fas fa-check-circle text-[10px]"></i>
                   </div>
@@ -268,7 +268,11 @@ const acknowledge = async (commentId) => {
               </div>
 
               <!-- Acknowledge Button for mentioned user -->
-              <div v-if="mentionedInComment(c) && !isAcknowledged(c)" class="mt-2">
+              <div
+                v-if="mentionedInComment(c) && !isAcknowledged(c)"
+                class="mt-2 border rounded border-dashed p-2 text-center flex flex-col items-center gap-2 bg-yellow-50"
+              >
+                <span class="text-sm text-gray-700 font-medium"> You Have been mentioned </span>
                 <button
                   @click="acknowledge(c.id)"
                   :disabled="acknowledgeProcessingId === c.id"
@@ -329,7 +333,11 @@ const acknowledge = async (commentId) => {
         </div>
       </div>
 
-      <TextEditor v-model="message" :mentionable-users="mentionableUsers" />
+      <TextEditor
+        v-model="message"
+        :mentionable-users="mentionableUsers"
+        :current-user="currentUser"
+      />
 
       <div class="flex items-center justify-end gap-2">
         <button

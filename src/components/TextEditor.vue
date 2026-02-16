@@ -4,6 +4,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 const props = defineProps({
   modelValue: { type: String, default: '' },
   mentionableUsers: { type: Array, default: () => [] },
+  currentUser: { type: Object, default: () => ({}) },
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -17,10 +18,9 @@ const mentionListIndex = ref(0)
 const mentionPosition = ref({ top: 0, left: 0 })
 
 const filteredUsers = computed(() => {
-  if (!mentionSearch.value) return props.mentionableUsers
-  return props.mentionableUsers.filter((user) =>
-    user.name.toLowerCase().includes(mentionSearch.value.toLowerCase()),
-  )
+  const users = props.mentionableUsers.filter((user) => user.id !== props.currentUser?.id)
+  if (!mentionSearch.value) return users
+  return users.filter((user) => user.name.toLowerCase().includes(mentionSearch.value.toLowerCase()))
 })
 
 const activeCommands = ref({
@@ -244,14 +244,38 @@ const handleClickOutside = (event) => {
     showColorDropdown.value = false
     showFontSizeDropdown.value = false
   }
+
+  // Close mention list if clicking outside editor
+  if (editor.value && !editor.value.contains(event.target)) {
+    showMentionList.value = false
+  }
+}
+
+const handleGlobalKeydown = (event) => {
+  if (event.key === 'Escape') {
+    showMentionList.value = false
+    showAlignmentDropdown.value = false
+    showColorDropdown.value = false
+    showFontSizeDropdown.value = false
+  }
+}
+
+const handleScroll = () => {
+  if (showMentionList.value) {
+    updateMentionPosition()
+  }
 }
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+  document.addEventListener('keydown', handleGlobalKeydown)
+  window.addEventListener('scroll', handleScroll, true) // Capture scroll events from any element
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
+  document.removeEventListener('keydown', handleGlobalKeydown)
+  window.removeEventListener('scroll', handleScroll, true)
 })
 </script>
 
@@ -462,7 +486,12 @@ onBeforeUnmount(() => {
           >
             {{ user.name.charAt(0) }}
           </div>
-          <span class="text-sm font-medium">{{ user.name }}</span>
+          <div class="flex flex-col">
+            <span class="text-sm font-medium">{{ user.name }}</span>
+            <span v-if="user.department" class="text-[10px] text-gray-500 leading-none">
+              {{ user.department.short_name || user.department.name }}
+            </span>
+          </div>
         </div>
       </div>
     </Teleport>

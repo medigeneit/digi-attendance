@@ -43,23 +43,44 @@ const mentionableUsers = computed(() => {
 
   const usersMap = new Map()
 
+  const addUserWithDept = (u, dept) => {
+    if (!u) return
+    if (!u.department && dept) {
+      u.department = { id: dept.id, name: dept.name, short_name: dept.short_name }
+    }
+    usersMap.set(u.id, u)
+  }
+
   // From department users
   if (requirement.value.from_department?.users) {
-    requirement.value.from_department.users.forEach((u) => usersMap.set(u.id, u))
+    requirement.value.from_department.users.forEach((u) => {
+      addUserWithDept(u, requirement.value.from_department)
+    })
   }
 
   // To department users
   if (requirement.value.to_department?.users) {
-    requirement.value.to_department.users.forEach((u) => usersMap.set(u.id, u))
+    requirement.value.to_department.users.forEach((u) => {
+      addUserWithDept(u, requirement.value.to_department)
+    })
   }
 
-  // Task assigned users
+  // Task assigned users (from direct tasks relation)
+  if (requirement.value.tasks) {
+    requirement.value.tasks.forEach((task) => {
+      if (task.users) {
+        task.users.forEach((u) => addUserWithDept(u, u.department))
+      }
+    })
+  }
+
+  // Task assigned users (from details.tasks relation if exists)
   if (requirement.value.details) {
     requirement.value.details.forEach((detail) => {
       if (detail.tasks) {
         detail.tasks.forEach((task) => {
           if (task.users) {
-            task.users.forEach((u) => usersMap.set(u.id, u))
+            task.users.forEach((u) => addUserWithDept(u, u.department))
           }
         })
       }

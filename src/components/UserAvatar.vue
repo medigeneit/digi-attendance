@@ -17,6 +17,7 @@ const userInitial = computed(() => (props.user ? getUserInitials(props.user) : '
     <div
       class="flex justify-center items-center text-[#24A1DE] bg-white rounded-full overflow-hidden border border-white"
       :class="{
+        'size-[16px] text-[8px]': size?.trim() == '2xsmall',
         'size-4 text-[9px]': size?.trim() == 'xsmall',
         'size-6 text-xs': size?.trim() == 'small',
         'size-9 text-base': size?.trim() == 'medium',
