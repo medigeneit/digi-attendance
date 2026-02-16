@@ -301,9 +301,13 @@ const getApprovalData = (type) => {
       <h3 class="text-xl font-bold uppercase mb-6 border-b pb-2">Approvals</h3>
 
       <!-- Submitted By Section -->
-      <div class="mb-8 p-4 bg-blue-50/50 rounded-lg flex items-center justify-between border-l-4 border-blue-400">
+      <div
+        class="mb-8 p-4 bg-blue-50/50 rounded-lg flex items-center justify-between border-l-4 border-blue-400"
+      >
         <div class="flex items-center gap-4">
-          <span class="text-xs font-bold text-blue-700 uppercase tracking-widest">Submitted By:</span>
+          <span class="text-xs font-bold text-blue-700 uppercase tracking-widest"
+            >Submitted By:</span
+          >
           <div class="flex items-center gap-2">
             <UserAvatar :user="requirement.created_by" size="xsmall" />
             <span class="font-bold text-gray-800">{{ requirement.created_by?.name }}</span>
