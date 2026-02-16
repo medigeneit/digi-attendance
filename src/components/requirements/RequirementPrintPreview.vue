@@ -196,7 +196,10 @@ const getApprovalData = (type) => {
       <h2 class="text-2xl font-bold mb-2 border-l-4 border-indigo-600 pl-4">
         {{ requirement.title }}
       </h2>
-      <div class="print-description prose prose-sm max-w-none text-gray-800 p-0">
+      <div
+        v-if="requirement.description"
+        class="print-description prose prose-sm max-w-none text-gray-800 p-0"
+      >
         <HTMLTextBody :message="requirement.description" />
       </div>
     </div>
@@ -289,7 +292,7 @@ const getApprovalData = (type) => {
             <span class="font-bold text-sm">{{ comment.user?.name }}</span>
             <span class="text-xs text-gray-400">{{ getDisplayDateTime(comment.created_at) }}</span>
           </div>
-          <div class="text-sm text-gray-700">
+          <div v-if="comment.message" class="text-sm text-gray-700">
             <HTMLTextBody :message="comment.message" />
           </div>
         </div>
@@ -350,7 +353,7 @@ const getApprovalData = (type) => {
                 </div>
 
                 <p
-                  v-if="getApprovalData(type).is_rejected"
+                  v-if="getApprovalData(type).is_rejected && requirement.rejection_reason"
                   class="text-xs text-red-600 font-semibold italic"
                 >
                   {{ requirement.rejection_reason }}
@@ -423,7 +426,7 @@ const getApprovalData = (type) => {
                 </div>
 
                 <p
-                  v-if="getApprovalData(type).is_rejected"
+                  v-if="getApprovalData(type).is_rejected && requirement.rejection_reason"
                   class="text-xs text-red-600 font-semibold italic"
                 >
                   {{ requirement.rejection_reason }}
