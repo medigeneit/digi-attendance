@@ -293,6 +293,9 @@ const getApprovalData = (type) => {
             <UserAvatar :user="comment.user" size="xsmall" />
             <span class="font-bold text-sm">{{ comment.user?.name }}</span>
             <span class="text-xs text-gray-400">{{ getDisplayDateTime(comment.created_at) }}</span>
+            <span v-if="comment.parent" class="text-[10px] text-gray-400 italic">
+              (In reply to {{ comment.parent.user?.name }})
+            </span>
           </div>
           <div v-if="comment.message" class="text-sm text-gray-700">
             <HTMLTextBody :message="comment.message" />

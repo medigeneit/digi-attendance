@@ -47,8 +47,9 @@ export const useCommentStore = defineStore('comment', () => {
     error.value = null;
     try {
       const response = await apiClient.post('/comments', data);
-      comments.value.push(response.data.data);
-      return response.data.data;
+      const newComment = response.data.data;
+      comments.value.push(newComment);
+      return newComment;
     } catch (err) {
       error.value = err.response?.data?.message || 'কমেন্ট তৈরি করতে ব্যর্থ হয়েছে।';
       throw err
@@ -89,10 +90,10 @@ export const useCommentStore = defineStore('comment', () => {
       comments.value = comments.value.filter((c) => c.id !== id);
     } catch (err) {
       error.value = err.response?.data?.message || `কমেন্ট (ID: ${id}) মুছতে ব্যর্থ হয়েছে।`;
-      throw err
+      throw err;
     } finally {
       loading.value = false;
-      action.value = ''
+      action.value = '';
     }
   };
 

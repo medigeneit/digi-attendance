@@ -12,6 +12,12 @@ const emit = defineEmits(['update:modelValue'])
 
 const editor = ref(null)
 
+const focus = () => {
+  editor.value?.focus()
+}
+
+defineExpose({ focus })
+
 // Mention system state
 const showMentionList = ref(false)
 const showTaskList = ref(false)

@@ -4,7 +4,6 @@ import UserAvatar from '@/components/UserAvatar.vue'
 import { stripTags } from '@/libs/string'
 import { useCommentStore } from '@/stores/useCommentStore' // path adjust as your project
 import { computed, onMounted, ref, watch } from 'vue'
-import { useToast } from 'vue-toastification'
 import OverlyModal from './common/OverlyModal.vue'
 import HTMLTextBody from './HTMLTextBody.vue'
 
@@ -52,7 +51,7 @@ const commentErrors = ref({}) // ✅ per-comment error map { [id]: [msg1,msg2] }
 const pushGlobalError = (msg) => {
   if (!msg) return
   globalErrors.value.push({
-    id: crypto.randomUUID(),
+    id: Date.now() + Math.random().toString(36).substr(2, 9),
     message: msg,
     time: new Date().toISOString(),
   })
@@ -73,7 +72,6 @@ const clearCommentErrors = (commentId) => {
 }
 
 const commentStore = useCommentStore()
-const toast = useToast()
 
 const comments = computed(() => commentStore.comments)
 const loading = computed(() => commentStore.loading)
@@ -82,6 +80,34 @@ const error = computed(() => commentStore.error)
 // ✅ New comment message (TextEditor v-model)
 const message = ref('')
 const isSubmitting = ref(false)
+const replyTo = ref(null)
+const commentBoxRef = ref(null)
+const textEditorRef = ref(null)
+
+const setReplyTo = (c) => {
+  replyTo.value = c
+  commentBoxRef.value?.scrollIntoView({ behavior: 'smooth' })
+  setTimeout(() => {
+    textEditorRef.value?.focus()
+  }, 100)
+}
+
+const cancelReply = () => {
+  replyTo.value = null
+}
+
+const scrollToComment = (commentId) => {
+  if (!commentId) return
+  const el = document.getElementById(`comment-${commentId}`)
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    // Optional: Brief highlight effect
+    el.classList.add('ring-2', 'ring-indigo-400', 'ring-offset-2')
+    setTimeout(() => {
+      el.classList.remove('ring-2', 'ring-indigo-400', 'ring-offset-2')
+    }, 2000)
+  }
+}
 
 // Fetch comments for this model
 const loadComments = async () => {
@@ -96,14 +122,26 @@ const submitComment = async () => {
 
   isSubmitting.value = true
   try {
+    const parentComment = replyTo.value
     await commentStore.createComment({
       commentable_type: props.commentableType,
       commentable_id: Number(props.commentableId),
       user_id: props.currentUser.id,
       message: message.value,
+      parent_id: parentComment?.id || null,
     })
 
+    // ✅ Auto-acknowledge if replying to a mention that isn't acknowledged yet
+    if (parentComment && mentionedInComment(parentComment) && !isAcknowledged(parentComment)) {
+      try {
+        await commentStore.acknowledgeComment(parentComment.id)
+      } catch (err) {
+        console.error('Auto-acknowledge error:', err)
+      }
+    }
+
     message.value = ''
+    replyTo.value = null
   } catch (e) {
     pushGlobalError(e.message)
   } finally {
@@ -151,23 +189,6 @@ const isAcknowledged = (c) => {
   const mention = mentionedInComment(c)
   return mention && mention.acknowledged_at
 }
-
-const acknowledgeProcessingId = ref(null)
-const acknowledge = async (commentId) => {
-  acknowledgeProcessingId.value = commentId
-
-  try {
-    await commentStore.acknowledgeComment(commentId)
-    toast.success('Acknowledge successful')
-  } catch (e) {
-    console.error('Acknowledge error:', e)
-    const errorMsg = e.response?.data?.message || 'Failed to acknowledge'
-    pushCommentError(commentId, errorMsg)
-    toast.error(errorMsg)
-  } finally {
-    acknowledgeProcessingId.value = null
-  }
-}
 </script>
 
 <template>
@@ -204,7 +225,8 @@ const acknowledge = async (commentId) => {
       <div
         v-for="c in comments"
         :key="c.id"
-        class="flex gap-3"
+        :id="`comment-${c.id}`"
+        class="flex gap-3 transition-all duration-500 rounded-lg"
         :class="isMine(c) ? 'justify-end' : 'justify-start'"
       >
         <!-- Left avatar for others -->
@@ -222,6 +244,20 @@ const acknowledge = async (commentId) => {
           "
         >
           <div class="bg-inherit bubble-inner px-4 py-3 rounded-md">
+            <!-- Parent Reference (Quote) -->
+            <div
+              v-if="c.parent"
+              class="mb-3 p-2 bg-black/5 rounded border-l-4 border-indigo-300 text-xs opacity-70 cursor-pointer hover:bg-black/10 transition-colors"
+              title="Click to see original message"
+              @click="scrollToComment(c.parent_id)"
+            >
+              <div class="flex items-center gap-1 mb-1 font-bold text-gray-600">
+                <i class="fas fa-reply scale-x-[-1] mr-1"></i>
+                Replying to {{ c.parent.user?.name || 'Deleted User' }}
+              </div>
+              <div class="line-clamp-2 italic" v-html="c.parent.message"></div>
+            </div>
+
             <!-- Header -->
             <div
               class="flex items-center gap-2 mb-2 pb-1 border-b border-dashed"
@@ -268,37 +304,37 @@ const acknowledge = async (commentId) => {
                 </div>
               </div>
 
-              <!-- Acknowledge Button for mentioned user -->
+              <!-- Acknowledge via Reply for mentioned user -->
               <div
                 v-if="mentionedInComment(c) && !isAcknowledged(c)"
                 class="mt-2 border rounded border-dashed p-2 text-center flex flex-col items-center gap-2 bg-yellow-50"
               >
-                <span class="text-sm text-gray-700 font-medium"> You Have been mentioned </span>
+                <div class="flex items-center gap-2 text-sm text-gray-700 font-medium font-bengali">
+                  <i class="fas fa-info-circle text-orange-400"></i>
+                  <span>আপনাকে মেনশন করা হয়েছে</span>
+                </div>
+
                 <button
-                  @click="acknowledge(c.id)"
-                  :disabled="acknowledgeProcessingId === c.id"
-                  class="flex items-center gap-2 px-3 py-1.5 bg-sky-600 hover:bg-sky-700 disabled:opacity-70 text-white text-xs font-semibold rounded-lg transition shadow-sm"
+                  @click="setReplyTo(c)"
+                  class="flex items-center gap-2 px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold rounded-lg transition shadow-sm"
                 >
-                  <i
-                    :class="[
-                      'fas',
-                      acknowledgeProcessingId === c.id ? 'fa-spinner fa-spin' : 'fa-check',
-                    ]"
-                  ></i>
-                  <span>{{
-                    acknowledgeProcessingId === c.id ? 'Acknowledging...' : 'Acknowledge'
-                  }}</span>
+                  <i class="fas fa-reply"></i>
+                  <span>Reply</span>
                 </button>
               </div>
             </div>
 
             <!-- Actions (visible on hover) -->
-            <div
-              v-if="canDelete(c)"
-              class="mt-2 flex"
-              :class="isMine(c) ? 'justify-end' : 'justify-start'"
-            >
+            <div class="mt-2 flex gap-3" :class="isMine(c) ? 'justify-end' : 'justify-start'">
               <button
+                v-if="!replyTo || replyTo.id !== c.id"
+                class="text-[11px] text-gray-400 hover:text-indigo-600 transition opacity-0 group-hover:opacity-100"
+                @click="setReplyTo(c)"
+              >
+                Reply
+              </button>
+              <button
+                v-if="canDelete(c)"
                 class="text-[11px] text-gray-400 hover:text-red-600 transition opacity-0 group-hover:opacity-100"
                 @click="openDeleteModal(c)"
               >
@@ -326,15 +362,31 @@ const acknowledge = async (commentId) => {
     </div>
 
     <!-- Add Comment Box -->
-    <div class="bg-white rounded-xl shadow-sm border p-4 space-y-3">
-      <div class="flex items-center gap-2">
-        <UserAvatar :user="currentUser" />
-        <div class="text-sm font-semibold text-gray-700">
-          {{ currentUser?.name || 'You' }}
+    <div ref="commentBoxRef" class="bg-white rounded-xl shadow-sm border p-4 space-y-3">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <UserAvatar :user="currentUser" />
+          <div class="text-sm font-semibold text-gray-700">
+            {{ currentUser?.name || 'You' }}
+          </div>
+        </div>
+
+        <div
+          v-if="replyTo"
+          class="flex items-center gap-2 px-3 py-1 bg-indigo-50 border border-indigo-100 rounded-full animate-pulse"
+        >
+          <span class="text-[11px] text-indigo-700 font-medium">
+            Replying to
+            <span class="font-bold underline">{{ replyTo.user?.name || 'Unknown' }}</span>
+          </span>
+          <button @click="cancelReply" class="text-indigo-400 hover:text-indigo-600 transition">
+            <i class="fas fa-times-circle text-xs"></i>
+          </button>
         </div>
       </div>
 
       <TextEditor
+        ref="textEditorRef"
         v-model="message"
         :mentionable-users="mentionableUsers"
         :mentionable-tasks="mentionableTasks"
@@ -347,7 +399,7 @@ const acknowledge = async (commentId) => {
           :disabled="isSubmitting || !stripTags(String(message)).trim()"
           @click="submitComment"
         >
-          {{ isSubmitting ? 'Posting...' : 'Post Comment' }}
+          {{ isSubmitting ? 'Posting...' : replyTo ? 'Post Reply' : 'Post Comment' }}
         </button>
       </div>
 
@@ -406,10 +458,13 @@ const acknowledge = async (commentId) => {
   background-color: inherit;
   border-color: inherit;
   box-shadow: inherit;
-  border-width: inherit;
   transform: rotate(-45deg);
   z-index: 1;
-  @apply border-b border-r;
+  border-width: 0;
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+  border-right-width: 1px;
+  border-right-style: solid;
 }
 
 .bubble-arrow.bubble-left::before {
@@ -422,9 +477,12 @@ const acknowledge = async (commentId) => {
   background-color: inherit;
   border-color: inherit;
   box-shadow: inherit;
-  border-width: inherit;
   transform: rotate(45deg);
   z-index: 1;
-  @apply border-b border-l;
+  border-width: 0;
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+  border-left-width: 1px;
+  border-left-style: solid;
 }
 </style>
