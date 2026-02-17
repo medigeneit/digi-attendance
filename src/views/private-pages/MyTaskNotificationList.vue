@@ -19,12 +19,6 @@ onMounted(async () => {
   }
 })
 
-async function onSuccess() {
-  loading.value = true
-  await notificationStore.fetchTaskNotification(route.params.type)
-  loading.value = false
-}
-
 watch(
   () => route.params.type,
   async (newType, oldType) => {
@@ -37,10 +31,18 @@ watch(
 )
 
 const showRoute = (notification) => {
-  if (route.params.type == 'pending-requirements') {
+  if (
+    route.params.type == 'pending-requirements' ||
+    notification.meta?.commentable_type === 'requirement'
+  ) {
+    const id =
+      notification.meta?.commentable_type === 'requirement'
+        ? notification.meta?.commentable_id
+        : notification.application_id
     return {
       name: 'RequirementShow',
-      params: { id: notification.application_id },
+      params: { id },
+      query: { comment_id: notification.meta?.comment_id },
     }
   }
 }
@@ -92,7 +94,10 @@ const formattedType = computed(() => {
               {{ notification?.user_name }}
             </div>
           </div>
-          <div class="ml-auto shrink-0 grow-0 flex gap-2 md:gap-3 items-center">
+          <div
+            v-if="showRoute(notification)"
+            class="ml-auto shrink-0 grow-0 flex gap-2 md:gap-3 items-center"
+          >
             <RouterLink :to="showRoute(notification)" class="btn-1 px-3">
               <i class="far fa-eye"></i>
             </RouterLink>
@@ -129,11 +134,19 @@ const formattedType = computed(() => {
 
           <ApproveAndReject
             class="ml-auto"
+            v-if="route.params.type == 'pending-requirements'"
             :notificationType="route.params.type"
             :applicationId="notification?.application_id"
             :onSuccess="onSuccess"
             :variant="2"
           />
+          <RouterLink
+            v-if="route.params.type == 'pending-comment-mentions' && showRoute(notification)"
+            :to="showRoute(notification)"
+            class="btn-1 px-3 ml-auto"
+          >
+            Re-play
+          </RouterLink>
         </div>
       </div>
     </div>

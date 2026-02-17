@@ -507,6 +507,7 @@ const reqClosingModal = ref({
                 :current-user="auth.user"
                 :mentionable-users="mentionableUsers"
                 :mentionable-tasks="mentionableTasks"
+                :reply-to-id="route.query.comment_id"
               />
             </div>
 

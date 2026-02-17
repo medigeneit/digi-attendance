@@ -3,7 +3,7 @@ import TextEditor from '@/components/TextEditor.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import { stripTags } from '@/libs/string'
 import { useCommentStore } from '@/stores/useCommentStore' // path adjust as your project
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import OverlyModal from './common/OverlyModal.vue'
 import HTMLTextBody from './HTMLTextBody.vue'
 
@@ -14,6 +14,7 @@ const props = defineProps({
   currentUser: { type: Object, required: true },
   mentionableUsers: { type: Array, default: () => [] },
   mentionableTasks: { type: Array, default: () => [] },
+  replyToId: { type: [Number, String], default: null },
   // currentUser: {id, name, ...} --> user_id পাঠাতে লাগবে
 })
 
@@ -84,6 +85,8 @@ const replyTo = ref(null)
 const commentBoxRef = ref(null)
 const textEditorRef = ref(null)
 
+const replyToIdHandled = ref(false)
+
 const setReplyTo = (c) => {
   replyTo.value = c
   commentBoxRef.value?.scrollIntoView({ behavior: 'smooth' })
@@ -98,15 +101,17 @@ const cancelReply = () => {
 
 const scrollToComment = (commentId) => {
   if (!commentId) return
-  const el = document.getElementById(`comment-${commentId}`)
-  if (el) {
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    // Optional: Brief highlight effect
-    el.classList.add('ring-2', 'ring-indigo-400', 'ring-offset-2')
-    setTimeout(() => {
-      el.classList.remove('ring-2', 'ring-indigo-400', 'ring-offset-2')
-    }, 2000)
-  }
+  nextTick(() => {
+    const el = document.getElementById(`comment-${commentId}`)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      // Optional: Brief highlight effect
+      el.classList.add('ring-2', 'ring-indigo-400', 'ring-offset-2')
+      setTimeout(() => {
+        el.classList.remove('ring-2', 'ring-indigo-400', 'ring-offset-2')
+      }, 2000)
+    }
+  })
 }
 
 // Fetch comments for this model
@@ -163,8 +168,26 @@ onMounted(loadComments)
 
 // commentable change হলে re-fetch
 watch(
-  () => [props.commentableType, props.commentableId],
-  () => loadComments(),
+  () => [props.commentableType, props.commentableId, props.replyToId],
+  () => {
+    replyToIdHandled.value = false
+    loadComments()
+  },
+)
+
+watch(
+  () => [comments.value, props.replyToId],
+  ([newComments, newReplyToId]) => {
+    if (newReplyToId && !replyToIdHandled.value && newComments.length > 0) {
+      const comment = newComments.find((c) => c.id == newReplyToId)
+      if (comment) {
+        setReplyTo(comment)
+        scrollToComment(newReplyToId)
+        replyToIdHandled.value = true
+      }
+    }
+  },
+  { immediate: true },
 )
 
 // helper for date
@@ -307,11 +330,11 @@ const isAcknowledged = (c) => {
               <!-- Acknowledge via Reply for mentioned user -->
               <div
                 v-if="mentionedInComment(c) && !isAcknowledged(c)"
-                class="mt-2 border rounded border-dashed p-2 text-center flex flex-col items-center gap-2 bg-yellow-50"
+                class="mt-2 border rounded border-dashed p-2 text-center flex flex-col items-center gap-2 bg-yellow-50 animate-pulse"
               >
                 <div class="flex items-center gap-2 text-sm text-gray-700 font-medium font-bengali">
                   <i class="fas fa-info-circle text-orange-400"></i>
-                  <span>আপনাকে মেনশন করা হয়েছে</span>
+                  <span>You have been mentioned</span>
                 </div>
 
                 <button

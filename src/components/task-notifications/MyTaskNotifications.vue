@@ -24,10 +24,8 @@ const emits = defineEmits(['close'])
     <div
       class="flex justify-between items-center p-4 bg-gradient-to-r from-teal-100 to-teal-200 rounded-t-lg"
     >
-      <div
-        class="w-full flex text-base font-bold text-gray-700"
-      >
-        🔔 Task Notifications 
+      <div class="w-full flex text-base font-bold text-gray-700">
+        🔔 Task Notifications
         <span class="ml-auto px-2 py-1 bg-red-500 text-white text-xs rounded-full">
           {{ total_task_notifications }}
         </span>
@@ -45,6 +43,17 @@ const emits = defineEmits(['close'])
         <span class="text-sm text-gray-700">Pending Requirements</span>
         <span class="text-xs bg-teal-500 text-white rounded-full px-2 py-0.5 font-semibold">
           {{ notification_count?.['pending-requirements'] }}
+        </span>
+      </RouterLink>
+      <RouterLink
+        v-if="notification_count?.['pending-comment-mentions']"
+        :to="{ name: 'MyTaskNotificationList', params: { type: 'pending-comment-mentions' } }"
+        @click="emits('close')"
+        class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
+      >
+        <span class="text-sm text-gray-700">Mentions</span>
+        <span class="text-xs bg-teal-500 text-white rounded-full px-2 py-0.5 font-semibold">
+          {{ notification_count?.['pending-comment-mentions'] }}
         </span>
       </RouterLink>
 
