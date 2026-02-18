@@ -45,6 +45,11 @@ const showRoute = (notification) => {
       query: { comment_id: notification.meta?.comment_id },
     }
   }
+
+  return {
+    name: 'RequirementTaskShow',
+    params: { id: notification.application_id },
+  }
 }
 
 const formattedType = computed(() => {
@@ -146,6 +151,13 @@ const formattedType = computed(() => {
             class="btn-1 px-3 ml-auto"
           >
             Re-play
+          </RouterLink>
+          <RouterLink
+            v-if="route.params.type == 'pending-tasks' && showRoute(notification)"
+            :to="showRoute(notification)"
+            class="btn-1 px-3 ml-auto"
+          >
+            Show
           </RouterLink>
         </div>
       </div>

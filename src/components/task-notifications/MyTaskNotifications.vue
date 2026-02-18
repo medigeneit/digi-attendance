@@ -56,6 +56,17 @@ const emits = defineEmits(['close'])
           {{ notification_count?.['pending-comment-mentions'] }}
         </span>
       </RouterLink>
+      <RouterLink
+        v-if="notification_count?.['pending-tasks']"
+        :to="{ name: 'MyTaskNotificationList', params: { type: 'pending-tasks' } }"
+        @click="emits('close')"
+        class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
+      >
+        <span class="text-sm text-gray-700">Tasks</span>
+        <span class="text-xs bg-teal-500 text-white rounded-full px-2 py-0.5 font-semibold">
+          {{ notification_count?.['pending-tasks'] }}
+        </span>
+      </RouterLink>
 
       <div
         v-if="total_task_notifications === 0"
