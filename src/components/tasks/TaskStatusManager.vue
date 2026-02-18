@@ -2,6 +2,7 @@
 import { getDisplayDate } from '@/libs/datetime'
 import { updateTaskStatus } from '@/services/task'
 import { useAuthStore } from '@/stores/auth'
+import { useTaskNotificationStore } from '@/stores/task-notification'
 import { computed, reactive, ref } from 'vue'
 import LoaderView from '../common/LoaderView.vue'
 import OverlyModal from '../common/OverlyModal.vue'
@@ -14,6 +15,8 @@ const props = defineProps({
     default: false,
   },
 })
+
+const notificationStore = useTaskNotificationStore()
 
 const emit = defineEmits(['updateStatus', 'error'])
 const auth = useAuthStore()
@@ -84,6 +87,7 @@ async function handleStatusSubmit() {
     await updateTaskStatus(props.task.id, { status: changingStatus.value })
     changingStatus.value = ''
     emit('updateStatus')
+    await notificationStore.fetchTaskNotificationCount()
   } catch (err) {
     error.value = err.response?.data?.message
     emit('error')
