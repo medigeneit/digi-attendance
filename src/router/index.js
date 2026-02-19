@@ -1495,8 +1495,8 @@ router.beforeEach((to, _from, next) => {
   }
 
   // Redirect authenticated users only from Home/Login to Dashboard.
-  const redirectToDashboardRoutes = ['Home', 'login']
-  const shouldRedirectToDashboard = redirectToDashboardRoutes.includes(to.name)
+  const redirectToDashboardPaths = ['/home', '/login']
+  const shouldRedirectToDashboard = redirectToDashboardPaths.includes(to.path)
   if (isAuthenticated && shouldRedirectToDashboard) {
     return next({ name: 'Dashboard' })
   }

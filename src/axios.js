@@ -15,21 +15,6 @@ const csrfClient = axios.create({
 let csrfTokenLoaded = false;
 let csrfPromise = null;
 
-const PUBLIC_PATH_PATTERNS = [
-  /^\/$/,
-  /^\/home$/,
-  /^\/login$/,
-  /^\/register$/,
-  /^\/about$/,
-  /^\/privacy-policy$/,
-  /^\/careers$/,
-  /^\/careers\/jobs\/[^/]+$/,
-  /^\/contact$/,
-  /^\/404$/,
-];
-
-const isPublicPath = (path = '') => PUBLIC_PATH_PATTERNS.some((pattern) => pattern.test(path));
-
 const loadCsrfToken = () => {
   if (!csrfPromise) {
     csrfPromise = (async () => {
@@ -74,14 +59,7 @@ apiClient.interceptors.response.use((response) => {
   return response;
 }, (error) => {
   if (error.response && error.response.status === 403) {
-    const currentPath = window.location?.pathname || '';
-    const allowPublicStay = isPublicPath(currentPath);
     console.log('403 Forbidden response received.');
-
-    if (!allowPublicStay) {
-      console.log('Redirecting to dashboard...');
-      window.location = '/dashboard';
-    }
     return Promise.reject(error);
   }
 
