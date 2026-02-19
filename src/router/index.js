@@ -1494,9 +1494,10 @@ router.beforeEach((to, _from, next) => {
     }
   }
 
-  // 1) Auth থাকলে public page বা '/' এ গেলে dashboard এ পাঠানো হবে
-  const guestOnly = to.meta.guestOnly || ['/', '/login', '/register', '/about', '/privacy-policy'].includes(to.path)
-  if (isAuthenticated && guestOnly) {
+  // Redirect authenticated users only from Home/Login to Dashboard.
+  const redirectToDashboardRoutes = ['home', 'login']
+  const shouldRedirectToDashboard = redirectToDashboardRoutes.includes(to.name)
+  if (isAuthenticated && shouldRedirectToDashboard) {
     return next({ name: 'Dashboard' })
   }
 
