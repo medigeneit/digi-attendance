@@ -1,0 +1,1 @@
+import{_ as t,c as s,o as a,a as c}from"./index-DGeHxSrc.js";const n={},o={class:"absolute inset-0 bg-gray-300 bg-opacity-40 flex items-center justify-center"};function r(i,e){return a(),s("div",o,e[0]||(e[0]=[c("i",{class:"fas fa-circle-notch fa-2x text-gray-400 animate-spin"},null,-1)]))}const l=t(n,[["render",r]]);export{l as S};
