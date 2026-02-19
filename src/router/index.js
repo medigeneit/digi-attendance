@@ -1495,7 +1495,7 @@ router.beforeEach((to, _from, next) => {
   }
 
   // Redirect authenticated users only from Home/Login to Dashboard.
-  const redirectToDashboardRoutes = ['home', 'login']
+  const redirectToDashboardRoutes = ['Home', 'login']
   const shouldRedirectToDashboard = redirectToDashboardRoutes.includes(to.name)
   if (isAuthenticated && shouldRedirectToDashboard) {
     return next({ name: 'Dashboard' })
@@ -1541,3 +1541,4 @@ router.onError((error, to) => {
 });
 
 export default router
+

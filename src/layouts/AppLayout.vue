@@ -32,6 +32,8 @@ watch(
   () => authStore.isAdminMood,
   (isAdminMood, wasAdminMood) => {
     if (isAdminMood === wasAdminMood) return
+    const isPrivateRoute = route.matched.some((record) => record.meta?.requiresAuth)
+    if (!isPrivateRoute) return
     if (route.name !== 'Dashboard') {
       router.push({ name: 'Dashboard' })
     }
