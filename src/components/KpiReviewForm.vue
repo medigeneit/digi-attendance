@@ -276,6 +276,24 @@ const myHrLaneKey = computed(() => myHrLane.value?.key || null)
 const canEditHR = computed(() => !!(myHrLane.value && myHrLane.value.can_current_user_review))
 const canHR = computed(() => !!(isHR.value || canEditHR.value))
 const canEditPersonal = computed(() => !!myEditablePersonalLaneKey.value)
+const canShowPersonalSubmit = computed(() => {
+  if (!canEditPersonal.value) return false
+  return !isHrLaneKey(myEditablePersonalLaneKey.value)
+})
+
+function toLaneButtonLabel(value) {
+  const text = String(value || '')
+    .trim()
+    .replace(/_/g, ' ')
+  if (!text) return 'Submit Personal'
+  const titled = text.replace(/\b\w/g, (ch) => ch.toUpperCase())
+  return `${titled} Submit`
+}
+
+const personalSubmitButtonText = computed(() => {
+  const laneLabel = myPersonalLane.value?.label || myEditablePersonalLaneKey.value
+  return toLaneButtonLabel(laneLabel)
+})
 
 const hasDualRolePersonalAndHR = computed(() => {
   if (staffMode.value) return false
@@ -1564,12 +1582,12 @@ function pct(got, max) {
         <div class="text-sm text-slate-600"></div>
         <div class="flex flex-wrap items-center gap-2">
           <button
-            v-if="canEditPersonal"
+            v-if="canShowPersonalSubmit"
             @click="submitPersonal"
             :disabled="!canSubmitPersonal"
             class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-medium text-white shadow hover:bg-slate-800 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-slate-300"
           >
-              {{ staffMode ? 'Submit & Review':'Submit Personal' }}
+              {{ personalSubmitButtonText }}
           </button>
           <button
             v-if="canHR && !staffMode"
