@@ -684,6 +684,17 @@ function pickMarksFromGroups(groups) {
   return pickMarksByItemIds(uniq)
 }
 
+function normalizeNoteText(value) {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => (typeof item === 'string' ? item.trim() : ''))
+      .filter(Boolean)
+      .join('\n')
+  }
+  if (typeof value === 'string') return value.trim()
+  return ''
+}
+
 const canSubmitPersonal = computed(() => {
   if (!myEditablePersonalLaneKey.value) return false
   if (!personalGroup.value) return false
@@ -813,6 +824,13 @@ const hydrateReviewData = (resp) => {
       })
     })
   }
+
+  // load note fields for the lane the current user is effectively reviewing as
+  const noteSourceLane = reviewerLaneKey.value || personalLane || hrLane || null
+  const noteSource = noteSourceLane ? laneLatestReview(noteSourceLane) : null
+  strengths.value = normalizeNoteText(noteSource?.strengths)
+  gaps.value = normalizeNoteText(noteSource?.gaps)
+  suggestions.value = normalizeNoteText(noteSource?.suggestions)
 }
 
 const loadReviewData = async (id) => {
@@ -868,9 +886,9 @@ async function submitPersonal() {
       employee_id: empId,
       reviewer_lane: personalLane,
       marks: pickMarksFromGroup(personalGroup.value),
-      strengths: '',
-      gaps: '',
-      suggestions: '',
+      strengths: strengths.value,
+      gaps: gaps.value,
+      suggestions: suggestions.value,
     })
     await refreshReviewData()
     alert('Personal review submitted')
