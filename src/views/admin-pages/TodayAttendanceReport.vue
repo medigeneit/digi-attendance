@@ -289,12 +289,12 @@ watch(status, () => {
                   <th class="th">Date</th>
                   <th class="th">Day</th>
                   <th class="th">Shift</th>
-                  <th class="th">Entry</th>
-                  <th class="th">Exit</th>
-                  <th class="th">Hours</th>
-                  <th class="th">Late</th>
-                  <th class="th">Early</th>
-                  <th class="th">Status</th>
+                  <th class="th !text-center">Entry</th>
+                  <th class="th !text-center">Exit</th>
+                  <th class="th !text-center">Hours</th>
+                  <th class="th !text-center">Late</th>
+                  <th class="th !text-center">Early</th>
+                  <th class="th !text-center">Status</th>
                 </tr>
               </thead>
               <tbody class="text-[11px] text-center">
@@ -305,9 +305,9 @@ watch(status, () => {
                     <p class="text-[11px] text-slate-400">ID: {{ log.user_id || '-' }}</p>
                   </td>
                   <td class="td text-left">{{ log.department }}</td>
-                  <td class="td">{{ log.date }}</td>
-                  <td class="td">{{ log.weekday }}</td>
-                  <td class="td" :title="`${log.shift_start_time} to ${log.shift_end_time}`">
+                  <td class="td text-left">{{ log.date }}</td>
+                  <td class="td text-left">{{ log.weekday }}</td>
+                  <td class="td text-left" :title="`${log.shift_start_time} to ${log.shift_end_time}`">
                     {{ log.shift_name }}
                   </td>
                   <td class="td td--alert" :class="{ 'td--danger': log.late_duration }" :title="`Device: ${log.entry_device}`">
