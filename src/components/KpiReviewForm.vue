@@ -1089,7 +1089,7 @@ function pct(got, max) {
 
     <template v-else>
       <!-- Header -->
-      <header class="border rounded-2xl bg-white/80 backdrop-blur px-4 py-3 shadow-sm">
+      <header class="sticky top-14 z-[99999] border rounded-2xl bg-white/80 backdrop-blur px-4 py-3 shadow-sm">
         <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div class="space-y-1">
             <div class="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1">
@@ -1120,6 +1120,15 @@ function pct(got, max) {
                   Department:
                   <span class="ml-1 font-medium text-slate-800">
                     {{ employee.department.name }}
+                  </span>
+                </span>
+                <span
+                  v-if="employee?.joining_date"
+                  class="inline-flex items-center rounded-full bg-slate-50 px-2 py-0.5 text-slate-600"
+                >
+                  Joining Date:
+                  <span class="ml-1 font-medium text-slate-800">
+                    {{ employee?.joining_date }}
                   </span>
                 </span>
 
