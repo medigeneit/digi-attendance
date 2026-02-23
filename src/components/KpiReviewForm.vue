@@ -1,7 +1,7 @@
 <script setup>
 import { useAuthStore } from '@/stores/auth'
 import { useKpiStore } from '@/stores/kpi'
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import KpiGroupTable from '@/components/kpi/KpiGroupTable.vue'
 import apiClient from '@/axios'
@@ -209,7 +209,7 @@ const isHR = ref(false)
 /* ---------- Cycle groups ---------- */
 const groupsAll = computed(() => store.cycle?.groups_json || [])
 
-const mode = computed(() => {
+const cycleReviewMode = computed(() => {
   const cycle = store.cycle || {}
   const groups = Array.isArray(cycle?.groups_json) ? cycle.groups_json : []
   const isStaff =
@@ -219,7 +219,7 @@ const mode = computed(() => {
   return isStaff ? 'staff' : 'executive'
 })
 
-const staffMode = computed(() => mode.value === 'staff')
+const staffMode = computed(() => cycleReviewMode.value === 'staff')
 
 const isPersonalGroup = (g) => {
   if (!g) return false
@@ -278,6 +278,7 @@ const canHR = computed(() => !!(isHR.value || canEditHR.value))
 const canEditPersonal = computed(() => !!myEditablePersonalLaneKey.value)
 const canShowPersonalSubmit = computed(() => {
   if (!canEditPersonal.value) return false
+  if (staffMode.value) return true
   return !isHrLaneKey(myEditablePersonalLaneKey.value)
 })
 
@@ -610,6 +611,19 @@ function closeReviewCommentModal() {
   reviewCommentModalItem.value = null
 }
 
+function onWindowKeydown(event) {
+  if (!reviewCommentModalOpen.value) return
+  if (event.key === 'Escape') closeReviewCommentModal()
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', onWindowKeydown)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onWindowKeydown)
+})
+
 const hintRefs = {
   strengths: selectedStrengthHints,
   gaps: selectedGapHints,
@@ -799,7 +813,7 @@ function normalizeReviewsByLane(raw) {
 }
 
 /* ---------- Init / Hydrate ---------- */
-const employeeId = computed(() => Number(route.params.employeeId))
+const routeEmployeeId = computed(() => Number(route.params.employeeId))
 
 const hydrateReviewData = (resp) => {
   employee.value = resp.employee || {}
@@ -867,11 +881,11 @@ const loadReviewData = async (id) => {
 }
 
 const refreshReviewData = async () => {
-  if (!employeeId.value || !store.cycle?.id) return
+  if (!routeEmployeeId.value || !store.cycle?.id) return
   fullLoading.value = true
   fullError.value = ''
   try {
-    const resp = await store.fetchLanes(store.cycle.id, employeeId.value)
+    const resp = await store.fetchLanes(store.cycle.id, routeEmployeeId.value)
     hydrateReviewData(resp)
   } catch (e) {
     fullError.value = e?.response?.data?.message || e?.message || 'Failed to refresh KPI review data.'
@@ -881,7 +895,7 @@ const refreshReviewData = async () => {
 }
 
 watch(
-  employeeId,
+  routeEmployeeId,
   async (id, prev) => {
     if (!id || (prev && id === prev)) return
     await loadReviewData(id)
@@ -1614,7 +1628,6 @@ function pct(got, max) {
         <div
           v-if="reviewCommentModalOpen && reviewCommentModalItem"
           class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
-          @keydown.escape.window="closeReviewCommentModal"
         >
           <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" aria-hidden="true" @click="closeReviewCommentModal"></div>
 
