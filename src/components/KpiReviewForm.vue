@@ -1258,6 +1258,7 @@ function pct(got, max) {
         :on-mark-change="setMark"
         :on-cap="cap"
         :on-quick-fill-item="quickFill"
+        :on-quick-fill-group="quickFillGroup"
       />
 
       <!-- OTHER GROUPS + RIGHT SIDEBAR -->
