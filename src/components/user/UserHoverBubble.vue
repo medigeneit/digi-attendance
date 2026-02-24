@@ -35,7 +35,7 @@ const lineTypeLabels = {
   academy_body: 'Academy Body',
 }
 
-const mergedUser = computed(() => ({ ...(props.user || {}), ...(hydratedUser.value || {}) }))
+const mergedUser = computed(() => ({ ...props.user, ...hydratedUser.value }))
 const resolvedLineType = computed(
   () => lineTypeLabels[mergedUser.value?.type] || mergedUser.value?.type || '',
 )

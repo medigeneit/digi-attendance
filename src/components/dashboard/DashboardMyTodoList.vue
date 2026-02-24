@@ -9,12 +9,11 @@ function handleTodoInputChange(changedSelected) {
   router.push({
     query: {
       ...route.query,
-      ...{
+      
         [`todos[type]`]: changedSelected.type,
         [`todos[year]`]: changedSelected.year,
         [`todos[month]`]: changedSelected.month,
         [`todos[day]`]: changedSelected.day,
-      },
     },
   })
 }

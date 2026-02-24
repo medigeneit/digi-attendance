@@ -1418,7 +1418,7 @@ const router = createRouter({
           path: '/settings/department-item-assignments',
           name: 'ctdi',
           component: () => import('@/views/admin-pages/DepartmentItemAssignments.vue'),
-           meta: {
+          meta: {
             requiresAuth: true,
             roles: ['admin', 'super_admin', 'developer'],
             title: 'Department Assign',
@@ -1431,11 +1431,10 @@ const router = createRouter({
            meta: {
             requiresAuth: true,
             roles: ['admin', 'super_admin', 'developer'],
-            title: 'Department Assign',
+            title: 'Kpi Review',
           },
         },
-
-         {
+        {
           path: '/admin/careers',
           name: 'CareerView',
           component: () => import('@/views/admin-pages/CareerView.vue'),
@@ -1487,6 +1486,12 @@ const router = createRouter({
 router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore()
   const isAuthenticated = !!authStore.token || localStorage.getItem('auth_token')
+
+  // Root URL should not render an empty AppLayout.
+  // Authenticated users -> Dashboard, guests -> Home.
+  if (to.path === '/') {
+    return next(isAuthenticated ? { name: 'Dashboard' } : { name: 'Home' })
+  }
 
   if( to.name == 'RequirementTaskList') {
     if( !authStore.isAdminMood ) {

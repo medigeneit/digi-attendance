@@ -212,7 +212,7 @@ onMounted(async () => {
 // ----- save/activate -----
 function sanitizeLanes(list) {
   return list.map((ln, i) => {
-    const out = { ...ln, rank: ln.rank ?? (i+1)*10, source: { ...(ln.source || {}) } }
+    const out = { ...ln, rank: ln.rank ?? (i+1)*10, source: { ...ln.source } }
     if (out.source.type === 'department_field') {
       out.source.field = out.source.field || laneDefaults[out.key] || ''
       if (!out.source.field) {

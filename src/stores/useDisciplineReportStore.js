@@ -393,7 +393,7 @@ export const useDisciplineReportStore = defineStore('discipline-report', () => {
       if (attachmentShow.value?.id === id) {
         attachmentShow.value = {
           ...attachmentShow.value,
-          ...(data?.data ?? data ?? {}),
+          ...data?.data ?? data,
           acknowledged_at: (data?.data?.acknowledged_at ?? data?.acknowledged_at) ?? attachmentShow.value.acknowledged_at,
           acknowledged_by: (data?.data?.acknowledged_by ?? data?.acknowledged_by) ?? attachmentShow.value.acknowledged_by,
         }

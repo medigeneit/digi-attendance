@@ -282,19 +282,51 @@ const canShowPersonalSubmit = computed(() => {
   return !isHrLaneKey(myEditablePersonalLaneKey.value)
 })
 
-function toLaneButtonLabel(value) {
+function toLaneButtonLabel(value, action = 'Submit') {
   const text = String(value || '')
     .trim()
     .replace(/_/g, ' ')
-  if (!text) return 'Submit Personal'
+  if (!text) return `${action} Personal`
   const titled = text.replace(/\b\w/g, (ch) => ch.toUpperCase())
-  return `${titled} Submit`
+  return `${titled} ${action}`
 }
+
+function reviewHasAnyInput(review) {
+  if (!review) return false
+  if (review.submitted_at) return true
+
+  const marksObj = review.marks && typeof review.marks === 'object' ? review.marks : {}
+  const hasMark = Object.values(marksObj).some((v) => Number(v ?? 0) > 0)
+  if (hasMark) return true
+
+  const noteFields = [review.strengths, review.gaps, review.suggestions]
+  return noteFields.some((v) => {
+    if (Array.isArray(v)) return v.some((s) => String(s ?? '').trim())
+    if (typeof v === 'string') return v.trim()
+    return false
+  })
+}
+
+const hasExistingHrReview = computed(() => {
+  const laneKey = myHrLaneKey.value
+  if (!laneKey) return false
+  return reviewHasAnyInput(laneLatestReview(laneKey))
+})
+
+const hasExistingPersonalReview = computed(() => {
+  const laneKey = myEditablePersonalLaneKey.value
+  if (!laneKey) return false
+  return reviewHasAnyInput(laneLatestReview(laneKey))
+})
+
+const personalSubmitVerb = computed(() => (hasExistingPersonalReview.value ? 'Update' : 'Submit'))
 
 const personalSubmitButtonText = computed(() => {
   const laneLabel = myPersonalLane.value?.label || myEditablePersonalLaneKey.value
-  return toLaneButtonLabel(laneLabel)
+  return toLaneButtonLabel(laneLabel, personalSubmitVerb.value)
 })
+
+const hrSubmitButtonText = computed(() => (hasExistingHrReview.value ? 'Update HR Review' : 'Submit HR Review'))
 
 const hasDualRolePersonalAndHR = computed(() => {
   if (staffMode.value) return false
@@ -1619,7 +1651,7 @@ function pct(got, max) {
             :disabled="!canSubmitHr"
             class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white shadow hover:bg-emerald-700 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-emerald-300"
           >
-            Submit HR Review
+            {{ hrSubmitButtonText }}
           </button>
         </div>
       </div>
