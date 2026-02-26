@@ -260,7 +260,7 @@ onUnmounted(() => {
                     <span class="text-gray-500">Coordinator</span>
                     <span class="text-gray-900">{{ a?.coordinator_user?.name || 'N/A' }}</span>
                   </div>
-                  <div v-if="approvalType === 'leave'" class="flex justify-between gap-2">
+                  <div class="flex justify-between gap-2">
                     <span class="text-gray-500">Operational Admin</span>
                     <span class="text-gray-900">{{ a?.operational_admin_user?.name || 'N/A' }}</span>
                   </div>
@@ -287,9 +287,7 @@ onUnmounted(() => {
                       <!-- <th class="py-3 px-4 text-left">Department</th> -->
                       <th class="py-3 px-4 text-left">In-Charge</th>
                       <th class="py-3 px-4 text-left">Coordinator</th>
-                      <th v-if="approvalType === 'leave'" class="py-3 px-4 text-left">
-                        Operational Admin
-                      </th>
+                      <th class="py-3 px-4 text-left">Operational Admin</th>
                       <th class="py-3 px-4 text-left">Recommend By</th>
                       <th class="py-3 px-4 text-left">Approved By</th>
                       <th class="py-3 px-4 text-center w-28">Actions</th>
@@ -315,7 +313,7 @@ onUnmounted(() => {
                       <td class="py-3 px-4 text-gray-700">
                         {{ leaveApproval?.coordinator_user?.name || 'N/A' }}
                       </td>
-                      <td v-if="approvalType === 'leave'" class="py-3 px-4 text-gray-700">
+                      <td class="py-3 px-4 text-gray-700">
                         {{ leaveApproval?.operational_admin_user?.name || 'N/A' }}
                       </td>
                       <td class="py-3 px-4 text-gray-700">
