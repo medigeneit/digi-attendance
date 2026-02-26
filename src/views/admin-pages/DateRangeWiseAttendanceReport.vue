@@ -18,6 +18,15 @@ const employees = ref([])
 
 const pad = (value) => String(value).padStart(2, '0')
 
+const normalizeISODate = (value) => {
+  const raw = Array.isArray(value) ? value[0] : value
+  if (!raw) return ''
+  const match = String(raw).match(/^(\d{4}-\d{2}-\d{2})/)
+  return match ? match[1] : ''
+}
+
+const todayIso = format(new Date(), 'yyyy-MM-dd')
+
 const buildPeriod = (value) => {
   if (!value) return null
   const [year, month, day] = value.split('-')
@@ -34,9 +43,12 @@ const fromPeriod = (period) => {
   return `${period.year}-${pad(period.month)}-${pad(period.day)}`
 }
 
+const queryStart = normalizeISODate(route.query.start_date) || normalizeISODate(route.query.start)
+const queryEnd = normalizeISODate(route.query.end_date) || normalizeISODate(route.query.end)
+
 const selectedDateRange = ref({
-  start: route.query.start_date || '',
-  end: route.query.end_date || '',
+  start: queryStart || queryEnd || todayIso,
+  end: queryEnd || queryStart || todayIso,
 })
 
 const startPeriod = ref(buildPeriod(selectedDateRange.value.start))
@@ -140,35 +152,31 @@ watch(
   },
 )
 
+// Attendance data should be fetched only when user clicks Search / Get Report.
+
 watch(
-  () => [
-    filters.value.company_id,
-    filters.value.employee_id,
-    filters.value.line_type,
-    selectedDateRange.value.start,
-    selectedDateRange.value.end,
-  ],
-  async () => {
-    await fetchDateRangeAttendance()
+  startPeriod,
+  (value) => {
+    if (!value) return
+    const normalized = fromPeriod(value)
+    if (selectedDateRange.value.start !== normalized) {
+      selectedDateRange.value.start = normalized
+    }
   },
   { deep: true },
 )
 
-watch(startPeriod, (value) => {
-  if (!value) return
-  const normalized = fromPeriod(value)
-  if (selectedDateRange.value.start !== normalized) {
-    selectedDateRange.value.start = normalized
-  }
-})
-
-watch(endPeriod, (value) => {
-  if (!value) return
-  const normalized = fromPeriod(value)
-  if (selectedDateRange.value.end !== normalized) {
-    selectedDateRange.value.end = normalized
-  }
-})
+watch(
+  endPeriod,
+  (value) => {
+    if (!value) return
+    const normalized = fromPeriod(value)
+    if (selectedDateRange.value.end !== normalized) {
+      selectedDateRange.value.end = normalized
+    }
+  },
+  { deep: true },
+)
 
 watch(
   () => selectedDateRange.value.start,
@@ -216,7 +224,11 @@ const handleFilterChange = () => {
       end_date: selectedDateRange.value.end,
     },
   })
-  fetchDateRangeAttendance()
+}
+
+const runSearch = async () => {
+  handleFilterChange()
+  await fetchDateRangeAttendance()
 }
 </script>
 <template>
@@ -266,13 +278,13 @@ const handleFilterChange = () => {
           />
         </div>
         <div class="flex flex-wrap items-center justify-end gap-2">
-          <button
-            type="button"
-            @click="fetchDateRangeAttendance"
-            class="btn-2 flex items-center gap-2 px-4 py-1"
-            title="Get Report"
-          >
-            <span class="hidden sm:inline">Get Report</span>
+           <button
+             type="button"
+             @click="runSearch"
+             class="btn-2 flex items-center gap-2 px-4 py-1"
+             title="Get Report"
+           >
+             <span class="hidden sm:inline">Get Report</span>
           </button>
           <button
             type="button"
@@ -299,7 +311,7 @@ const handleFilterChange = () => {
           <button
             type="button"
             class="btn-2 h-8 px-3 text-xs"
-            @click="handleFilterChange"
+            @click="runSearch"
           >
             Search
           </button>
