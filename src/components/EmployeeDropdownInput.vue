@@ -43,14 +43,15 @@ const searchByEmployee = (options, term) => {
     const name = String(opt.name || '').toLowerCase()
     const bnName = String(opt.bn_name || '').toLowerCase()
     const label = String(opt.label || '').toLowerCase()
+    const employeeId = String(opt.employee_id || '').toLowerCase()
 
-    return name.includes(needle) || bnName.includes(needle) || label.includes(needle)
+    return name.includes(needle) || bnName.includes(needle) || label.includes(needle) || employeeId.includes(needle)
   })
 }
 </script>
 
 <template>
-  
+
   <SelectDropdown
     v-model="selectedEmployeeId"
     :options="employees"
