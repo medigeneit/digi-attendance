@@ -80,7 +80,22 @@ const laneDefinitions = computed(() => {
   return [...arr].sort((a, b) => Number(a.rank || 0) - Number(b.rank || 0))
 })
 
+function normalizeLineType(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_')
+}
+
+const isSupportStaffCycle = computed(() => {
+  const fromApi = normalizeLineType(apiFilters.value?.line_type)
+  const fromUi = normalizeLineType(filters.line_type)
+  const fromCycle = normalizeLineType(cycle.value?.slug)
+  return fromApi === 'support_staff' || fromUi === 'support_staff' || fromCycle === 'support_staff'
+})
+
 const displayLaneDefinitions = computed(() => {
+  if (isSupportStaffCycle.value) return laneDefinitions.value
   return laneDefinitions.value.filter((ld) => {
     const key = String(ld?.key || '').toLowerCase()
     const label = String(ld?.label || '').toLowerCase()
@@ -101,14 +116,20 @@ const laneCount = computed(() => {
 })
 
 
-const computedCols = [
-  // { key: 'avg', label: 'Avg' },
-  { key: 'training', label: 'Training' },
-  { key: 'discipline', label: 'Dis' },
-  { key: 'execution', label: 'Exe' },
-  { key: 'target', label: 'Target' },
-  { key: 'final', label: 'Final' },
-]
+const computedCols = computed(() => {
+  if (isSupportStaffCycle.value) {
+    return [{ key: 'final', label: 'Final' }]
+  }
+
+  return [
+    // { key: 'avg', label: 'Avg' },
+    { key: 'training', label: 'Training' },
+    { key: 'discipline', label: 'Dis' },
+    { key: 'execution', label: 'Exe' },
+    { key: 'target', label: 'Target' },
+    { key: 'final', label: 'Final' },
+  ]
+})
 
 /* =========================
  * Helpers
@@ -210,27 +231,26 @@ function formatReviewSummary(review) {
  * If row.lanes is empty => "—"
  * ========================= */
 function laneCell(row, laneKey) {
-  const key = String(laneKey || '')
+  const key = String(laneKey || '').trim().toLowerCase()
 
   // ✅ Prefer backend-computed scores (fast + consistent)
-  const isHrLane = key === 'hr' || key === 'hr1'
-  const preferred = isHrLane
-    ? (row?.computed?.hr_total ?? null)
-    : (row?.computed?.personal_by_lane?.[key] ?? null)
-
-  const n = Number(preferred)
-  if (Number.isFinite(n)) {
-    return {
-      text: scoreText(n),
-      cls: n > 0
-        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-        : 'bg-amber-50 text-amber-700 border-amber-200',
+  const isHrLane = key === 'hr' || /^hr\d*$/.test(key)
+  const preferred = isHrLane ? row?.computed?.hr_total : row?.computed?.personal_by_lane?.[key]
+  if (preferred != null && preferred !== '') {
+    const n = Number(preferred)
+    if (Number.isFinite(n)) {
+      return {
+        text: scoreText(n),
+        cls: n > 0
+          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+          : 'bg-amber-50 text-amber-700 border-amber-200',
+      }
     }
   }
 
   // ✅ Backward compat: old shape (row.lanes[].average_marks)
   const lanes = Array.isArray(row?.lanes) ? row.lanes : []
-  const found = lanes.find((l) => l?.key === key) || null
+  const found = lanes.find((l) => String(l?.key || '').trim().toLowerCase() === key) || null
 
   if (!found) {
     return {
@@ -248,7 +268,41 @@ function laneCell(row, laneKey) {
     found.obtained ??
     null
 
-  const rn = Number(raw)
+  let derived = raw
+
+  // ✅ Some APIs only send score on latest reviewer (found.reviewers[].percent/obtained_total)
+  if (derived == null && Array.isArray(found.reviewers) && found.reviewers.length) {
+    const latestReviewer = [...found.reviewers].sort((a, b) => {
+      const ad = new Date(a?.submitted_at || a?.updated_at || 0).getTime()
+      const bd = new Date(b?.submitted_at || b?.updated_at || 0).getTime()
+      return bd - ad
+    })[0]
+
+    const percent = Number(latestReviewer?.percent)
+    if (Number.isFinite(percent)) {
+      derived = percent
+    } else {
+      const obtained = Number(latestReviewer?.obtained_total ?? latestReviewer?.obtained)
+      const maxTotal = Number(latestReviewer?.max_total)
+
+      if (Number.isFinite(obtained) && Number.isFinite(maxTotal) && maxTotal !== 0) {
+        derived = (obtained / maxTotal) * 100
+      } else if (Number.isFinite(obtained)) {
+        derived = obtained
+      }
+    }
+  }
+
+  if (derived == null || derived === '') {
+    return {
+      text: '-',
+      cls: completed
+        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+        : 'bg-amber-50 text-amber-700 border-amber-200',
+    }
+  }
+
+  const rn = Number(derived)
   if (!Number.isFinite(rn)) {
     return {
       text: '-',
