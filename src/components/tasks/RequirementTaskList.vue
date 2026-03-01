@@ -78,9 +78,9 @@ onMounted(() => {
 async function fetchTasks() {
   emit('loading', true)
   if (props.showOnlyMyTasks) {
-    await store.fetchAllMyTasks({ ...props.taskFilters, ...{ page: 1 } })
+    await store.fetchAllMyTasks({ ...props.taskFilters,  page: 1 })
   } else {
-    await store.fetchAllTasks({ ...props.taskFilters, ...{ page: 1 } })
+    await store.fetchAllTasks({ ...props.taskFilters,  page: 1 })
   }
   emit('loading', false)
   state.value = ''

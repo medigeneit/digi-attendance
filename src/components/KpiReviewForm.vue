@@ -1,7 +1,7 @@
 <script setup>
 import { useAuthStore } from '@/stores/auth'
 import { useKpiStore } from '@/stores/kpi'
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import KpiGroupTable from '@/components/kpi/KpiGroupTable.vue'
 import apiClient from '@/axios'
@@ -209,7 +209,7 @@ const isHR = ref(false)
 /* ---------- Cycle groups ---------- */
 const groupsAll = computed(() => store.cycle?.groups_json || [])
 
-const mode = computed(() => {
+const cycleReviewMode = computed(() => {
   const cycle = store.cycle || {}
   const groups = Array.isArray(cycle?.groups_json) ? cycle.groups_json : []
   const isStaff =
@@ -219,7 +219,7 @@ const mode = computed(() => {
   return isStaff ? 'staff' : 'executive'
 })
 
-const staffMode = computed(() => mode.value === 'staff')
+const staffMode = computed(() => cycleReviewMode.value === 'staff')
 
 const isPersonalGroup = (g) => {
   if (!g) return false
@@ -276,6 +276,57 @@ const myHrLaneKey = computed(() => myHrLane.value?.key || null)
 const canEditHR = computed(() => !!(myHrLane.value && myHrLane.value.can_current_user_review))
 const canHR = computed(() => !!(isHR.value || canEditHR.value))
 const canEditPersonal = computed(() => !!myEditablePersonalLaneKey.value)
+const canShowPersonalSubmit = computed(() => {
+  if (!canEditPersonal.value) return false
+  if (staffMode.value) return true
+  return !isHrLaneKey(myEditablePersonalLaneKey.value)
+})
+
+function toLaneButtonLabel(value, action = 'Submit') {
+  const text = String(value || '')
+    .trim()
+    .replace(/_/g, ' ')
+  if (!text) return `${action} Personal`
+  const titled = text.replace(/\b\w/g, (ch) => ch.toUpperCase())
+  return `${titled} ${action}`
+}
+
+function reviewHasAnyInput(review) {
+  if (!review) return false
+  if (review.submitted_at) return true
+
+  const marksObj = review.marks && typeof review.marks === 'object' ? review.marks : {}
+  const hasMark = Object.values(marksObj).some((v) => Number(v ?? 0) > 0)
+  if (hasMark) return true
+
+  const noteFields = [review.strengths, review.gaps, review.suggestions]
+  return noteFields.some((v) => {
+    if (Array.isArray(v)) return v.some((s) => String(s ?? '').trim())
+    if (typeof v === 'string') return v.trim()
+    return false
+  })
+}
+
+const hasExistingHrReview = computed(() => {
+  const laneKey = myHrLaneKey.value
+  if (!laneKey) return false
+  return reviewHasAnyInput(laneLatestReview(laneKey))
+})
+
+const hasExistingPersonalReview = computed(() => {
+  const laneKey = myEditablePersonalLaneKey.value
+  if (!laneKey) return false
+  return reviewHasAnyInput(laneLatestReview(laneKey))
+})
+
+const personalSubmitVerb = computed(() => (hasExistingPersonalReview.value ? 'Update' : 'Submit'))
+
+const personalSubmitButtonText = computed(() => {
+  const laneLabel = myPersonalLane.value?.label || myEditablePersonalLaneKey.value
+  return toLaneButtonLabel(laneLabel, personalSubmitVerb.value)
+})
+
+const hrSubmitButtonText = computed(() => (hasExistingHrReview.value ? 'Update HR Review' : 'Submit HR Review'))
 
 const hasDualRolePersonalAndHR = computed(() => {
   if (staffMode.value) return false
@@ -592,6 +643,19 @@ function closeReviewCommentModal() {
   reviewCommentModalItem.value = null
 }
 
+function onWindowKeydown(event) {
+  if (!reviewCommentModalOpen.value) return
+  if (event.key === 'Escape') closeReviewCommentModal()
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', onWindowKeydown)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onWindowKeydown)
+})
+
 const hintRefs = {
   strengths: selectedStrengthHints,
   gaps: selectedGapHints,
@@ -684,6 +748,17 @@ function pickMarksFromGroups(groups) {
   return pickMarksByItemIds(uniq)
 }
 
+function normalizeNoteText(value) {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => (typeof item === 'string' ? item.trim() : ''))
+      .filter(Boolean)
+      .join('\n')
+  }
+  if (typeof value === 'string') return value.trim()
+  return ''
+}
+
 const canSubmitPersonal = computed(() => {
   if (!myEditablePersonalLaneKey.value) return false
   if (!personalGroup.value) return false
@@ -770,7 +845,7 @@ function normalizeReviewsByLane(raw) {
 }
 
 /* ---------- Init / Hydrate ---------- */
-const employeeId = computed(() => Number(route.params.employeeId))
+const routeEmployeeId = computed(() => Number(route.params.employeeId))
 
 const hydrateReviewData = (resp) => {
   employee.value = resp.employee || {}
@@ -813,6 +888,13 @@ const hydrateReviewData = (resp) => {
       })
     })
   }
+
+  // load note fields for the lane the current user is effectively reviewing as
+  const noteSourceLane = reviewerLaneKey.value || personalLane || hrLane || null
+  const noteSource = noteSourceLane ? laneLatestReview(noteSourceLane) : null
+  strengths.value = normalizeNoteText(noteSource?.strengths)
+  gaps.value = normalizeNoteText(noteSource?.gaps)
+  suggestions.value = normalizeNoteText(noteSource?.suggestions)
 }
 
 const loadReviewData = async (id) => {
@@ -831,11 +913,11 @@ const loadReviewData = async (id) => {
 }
 
 const refreshReviewData = async () => {
-  if (!employeeId.value || !store.cycle?.id) return
+  if (!routeEmployeeId.value || !store.cycle?.id) return
   fullLoading.value = true
   fullError.value = ''
   try {
-    const resp = await store.fetchLanes(store.cycle.id, employeeId.value)
+    const resp = await store.fetchLanes(store.cycle.id, routeEmployeeId.value)
     hydrateReviewData(resp)
   } catch (e) {
     fullError.value = e?.response?.data?.message || e?.message || 'Failed to refresh KPI review data.'
@@ -845,7 +927,7 @@ const refreshReviewData = async () => {
 }
 
 watch(
-  employeeId,
+  routeEmployeeId,
   async (id, prev) => {
     if (!id || (prev && id === prev)) return
     await loadReviewData(id)
@@ -868,9 +950,9 @@ async function submitPersonal() {
       employee_id: empId,
       reviewer_lane: personalLane,
       marks: pickMarksFromGroup(personalGroup.value),
-      strengths: '',
-      gaps: '',
-      suggestions: '',
+      strengths: strengths.value,
+      gaps: gaps.value,
+      suggestions: suggestions.value,
     })
     await refreshReviewData()
     alert('Personal review submitted')
@@ -1053,7 +1135,7 @@ function pct(got, max) {
 
     <template v-else>
       <!-- Header -->
-      <header class="border rounded-2xl bg-white/80 backdrop-blur px-4 py-3 shadow-sm">
+      <header class="sticky top-14 z-[99999] border rounded-2xl bg-white/80 backdrop-blur px-4 py-3 shadow-sm">
         <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div class="space-y-1">
             <div class="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1">
@@ -1084,6 +1166,15 @@ function pct(got, max) {
                   Department:
                   <span class="ml-1 font-medium text-slate-800">
                     {{ employee.department.name }}
+                  </span>
+                </span>
+                <span
+                  v-if="employee?.joining_date"
+                  class="inline-flex items-center rounded-full bg-slate-50 px-2 py-0.5 text-slate-600"
+                >
+                  Joining Date:
+                  <span class="ml-1 font-medium text-slate-800">
+                    {{ employee?.joining_date }}
                   </span>
                 </span>
 
@@ -1199,6 +1290,7 @@ function pct(got, max) {
         :on-mark-change="setMark"
         :on-cap="cap"
         :on-quick-fill-item="quickFill"
+        :on-quick-fill-group="quickFillGroup"
       />
 
       <!-- OTHER GROUPS + RIGHT SIDEBAR -->
@@ -1546,12 +1638,12 @@ function pct(got, max) {
         <div class="text-sm text-slate-600"></div>
         <div class="flex flex-wrap items-center gap-2">
           <button
-            v-if="canEditPersonal"
+            v-if="canShowPersonalSubmit"
             @click="submitPersonal"
             :disabled="!canSubmitPersonal"
             class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-medium text-white shadow hover:bg-slate-800 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-slate-300"
           >
-              {{ staffMode ? 'Submit & Review':'Submit Personal' }}
+              {{ personalSubmitButtonText }}
           </button>
           <button
             v-if="canHR && !staffMode"
@@ -1559,7 +1651,7 @@ function pct(got, max) {
             :disabled="!canSubmitHr"
             class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white shadow hover:bg-emerald-700 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-emerald-300"
           >
-            Submit HR Review
+            {{ hrSubmitButtonText }}
           </button>
         </div>
       </div>
@@ -1569,7 +1661,6 @@ function pct(got, max) {
         <div
           v-if="reviewCommentModalOpen && reviewCommentModalItem"
           class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
-          @keydown.escape.window="closeReviewCommentModal"
         >
           <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" aria-hidden="true" @click="closeReviewCommentModal"></div>
 

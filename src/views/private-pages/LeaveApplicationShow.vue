@@ -4,7 +4,7 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import ShareComponent from '@/components/common/ShareComponent.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useLeaveApplicationStore } from '@/stores/leave-application'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 /* stores */
@@ -18,6 +18,7 @@ const appId = computed(() => route.params.id)
 
 /* ui state */
 const loading = ref(true)
+const loadError = ref('')
 
 /* attachment state */
 const isUploading = ref(false)
@@ -43,19 +44,47 @@ const canEditAttachment = computed(
 )
 
 /* lifecycle */
-onMounted(async () => {
+const errorMessage = computed(() => loadError.value || leaveApplicationStore.error || '')
+
+const loadApplication = async (id) => {
+  loading.value = true
+  loadError.value = ''
+
+  if (!id) {
+    loadError.value = 'Invalid leave application id'
+    loading.value = false
+    return
+  }
+
   try {
-    await leaveApplicationStore.fetchLeaveApplicationById(appId.value)
+    await leaveApplicationStore.fetchLeaveApplicationById(id)
+
+    if (leaveApplicationStore.error) {
+      loadError.value = leaveApplicationStore.error
+    } else if (!leaveApplication.value?.id) {
+      loadError.value = 'Leave Application not found'
+    }
   } catch (error) {
     console.error('Failed to load leave application:', error)
+    loadError.value = 'Failed to load leave application'
   } finally {
     loading.value = false
   }
-})
+}
+
+watch(
+  () => appId.value,
+  async (id) => {
+    await loadApplication(id)
+  },
+  { immediate: true },
+)
 
 /* navigation */
 const goBack = () => router.go(-1)
 const print = () => window.print()
+const goToLeaveApplications = () => router.push({ name: 'MyLeaveApplications' })
+const retryLoad = () => loadApplication(appId.value)
 
 /* utilities */
 const formatDateTime = (timestamp) => {
@@ -200,10 +229,24 @@ const removeAttachment = async () => {
         <i class="far fa-arrow-left"></i><span class="hidden md:flex">Back</span>
       </button>
       <h1 class="title-md md:title-xl flex-wrap text-center">Leave Application</h1>
-      <button class="btn-2" @click="print"><i class="far fa-print"></i> Print</button>
+      <button v-if="leaveApplication?.id" class="btn-2" @click="print"><i class="far fa-print"></i> Print</button>
+      <div v-else class="w-[88px]"></div>
     </div>
 
     <LoaderView v-if="loading" />
+
+    <div v-else-if="!leaveApplication?.id" class="card-bg p-4 md:p-8 print:text-black">
+      <div class="text-center space-y-3">
+        <h2 class="title-lg">Leave Application not found</h2>
+        <p class="text-sm text-slate-600">{{ errorMessage || 'Leave Application not found' }}</p>
+
+        <div class="flex items-center justify-center gap-2 print:hidden">
+          <button class="btn-3" @click="goBack">Back</button>
+          <button class="btn-2" @click="goToLeaveApplications">Leave Applications</button>
+          <button v-if="errorMessage" class="btn-3" @click="retryLoad">Retry</button>
+        </div>
+      </div>
+    </div>
 
     <div v-else class="card-bg p-4 md:p-8 print:text-black">
       <!-- company -->
@@ -519,6 +562,6 @@ const removeAttachment = async () => {
       <p v-if="uploadError" class="text-red-600 text-sm">{{ uploadError }}</p>
     </section>
 
-    <ShareComponent />
+    <ShareComponent v-if="leaveApplication?.id" />
   </div>
 </template>

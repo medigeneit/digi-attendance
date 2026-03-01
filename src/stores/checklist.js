@@ -110,7 +110,7 @@ export const useChecklistStore = defineStore('checklist', () => {
     try {
       const { data } = await apiClient.patch(`/checklist-items/${target.id}`, patch)
       // normalize merged server response to keep helpers correct
-      const merged = normalizeItem({ ...target, ...(data?.data || {}) })
+      const merged = normalizeItem({ ...target, ...data?.data })
       list[idx] = merged
     } catch (e) {
       // rollback
@@ -148,7 +148,7 @@ export const useChecklistStore = defineStore('checklist', () => {
         { delete_document: !!deleteDocument, force: !!force }
       )
 
-      const fresh = { ...(data?.data || {}) }
+      const fresh = { ...data?.data }
       if (idx >= 0) list[idx] = { ...list[idx], ...fresh }
 
       window?.notify?.success && window.notify.success('Attachment removed')

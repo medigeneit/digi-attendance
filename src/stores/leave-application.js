@@ -244,18 +244,41 @@ export const useLeaveApplicationStore = defineStore('leaveApplication', () => {
   async function fetchLeaveApplicationById(id) {
     loading.value = true
     error.value = null
+    leaveApplication.value = null
     try {
       const response = await apiClient.get(`/leave-applications/${id}`)
-      leaveApplication.value = response?.data?.data || response?.data
+      const data = response?.data?.data ?? response?.data
+
+      if (!data || typeof data !== 'object' || !data?.id) {
+        error.value = data?.message || 'Leave Application not found'
+        leaveApplication.value = null
+        return null
+      }
+
+      leaveApplication.value = data
 
       const notificationStore = useNotificationStore()
 
-      await notificationStore.fetchApprovalPermissions(
-        'leave_applications',
-        leaveApplication.value.id,
-      )
+      try {
+        await notificationStore.fetchApprovalPermissions(
+          'leave_applications',
+          leaveApplication.value.id,
+        )
+      } catch (permissionErr) {
+        console.error('Failed to fetch approval permissions:', permissionErr)
+      }
     } catch (err) {
-      error.value = err.response?.data?.message || 'Failed to fetch leave application'
+      const status = err?.response?.status
+      error.value =
+        err?.response?.data?.message ||
+        (status === 404
+          ? 'Leave Application not found'
+          : status === 403
+            ? "You don't have permission to view this Leave Application"
+            : status === 401
+              ? 'Session expired. Please login again.'
+              : 'Failed to fetch leave application')
+      leaveApplication.value = null
     } finally {
       loading.value = false
     }

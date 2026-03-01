@@ -76,12 +76,12 @@ async function fetchTasks() {
 
   if (route.name === 'MyTaskList') {
     data = await store.fetchMyTasks(
-      { ...route.query, ...{ page: 1 } },
+      { ...route.query,  page: 1 },
       { signal: taskAbortController.signal },
     )
   } else {
     data = await store.fetchTasks(
-      { ...route.query, ...{ page: 1 } },
+      { ...route.query,  page: 1 },
       { signal: taskAbortController.signal },
     )
   }

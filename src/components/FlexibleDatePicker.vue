@@ -287,7 +287,7 @@ function stepPeriod(delta) {
           type="button"
           @click="triggerMonthPicker"
           :disabled="disabled"
-          class="inline-flex h-7 items-center gap-2 rounded-md border border-slate-200 bg-white px-3
+          class="inline-flex h-7 items-center gap-2 rounded-md border border-transparent bg-white px-3
                  text-sm font-medium text-slate-700
                  transition hover:bg-slate-50
                  focus:outline-none focus:ring-2 focus:ring-blue-200
@@ -301,7 +301,7 @@ function stepPeriod(delta) {
         <input
           ref="monthPickerRef"
           type="month"
-          class="pointer-events-none absolute opacity-0"
+          class="pointer-events-none absolute opacity-0 !border-none"
           :value="monthInputValue"
           @change="onMonthInput"
         />
@@ -342,7 +342,7 @@ function stepPeriod(delta) {
           type="button"
           @click="triggerDatePicker"
           :disabled="disabled"
-          class="inline-flex h-7 items-center gap-2 rounded-md border border-slate-200 bg-white px-3
+          class="inline-flex h-7 items-center gap-2 rounded-md border border-transparent bg-white px-3
                  text-sm font-medium text-slate-700
                  transition hover:bg-slate-50
                  focus:outline-none focus:ring-2 focus:ring-blue-200
@@ -358,7 +358,7 @@ function stepPeriod(delta) {
         <input
           ref="datePickerRef"
           type="date"
-          class="pointer-events-none absolute opacity-0"
+          class="pointer-events-none absolute opacity-0 !border-none"
           :value="dateInputValue"
           @change="onDateInput"
         />
@@ -434,7 +434,7 @@ function stepPeriod(delta) {
           <input
             ref="monthPickerRef"
             type="month"
-            class="pointer-events-none absolute inset-0 opacity-0"
+            class="pointer-events-none absolute inset-0 opacity-0 border-none"
             :value="monthInputValue"
             @change="onMonthInput"
           />
@@ -460,7 +460,7 @@ function stepPeriod(delta) {
           <input
             ref="datePickerRef"
             type="date"
-            class="pointer-events-none absolute inset-0 opacity-0"
+            class="pointer-events-none absolute inset-0 opacity-0 border-none"
             :value="dateInputValue"
             @change="onDateInput"
           />

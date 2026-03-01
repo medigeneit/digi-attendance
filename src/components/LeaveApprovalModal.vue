@@ -217,8 +217,8 @@ onMounted(async () => {
           }"
           :key="field"
         >
-          <div v-if="approvalType === 'leave' || !['operational_admin_user_id'].includes(field)">
-            <label :for="field" class="block text-sm font-medium">{{ label }}</label>
+          <div>
+            <!-- <label :for="field" class="block text-sm font-medium">{{ label }}</label> -->
             <MultiselectDropdown
               v-model="selectedUsers[field]"
               :multiple="false"

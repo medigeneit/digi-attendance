@@ -239,6 +239,13 @@ const uploadAttachment = async () => {
           :onAction="onAction"
         />
 
+         <ApprovalItem
+            :application="exchange"
+            type="shift_exchange_applications"
+            item="operational_admin"
+            :onAction="onAction"
+          />
+
         <ApprovalItem
           :application="exchange"
           type="shift_exchange_applications"
