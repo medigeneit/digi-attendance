@@ -403,9 +403,9 @@ watch(
                 <div>
                   {{ row.user_name || '-' }}
                 </div>
-                <!-- <div class="text-xs">
-                  <b>{{ row.department_name || '-' }}</b>
-                </div> -->
+                <div class="!text-xs">
+                  <p class="text-[9px]">{{ row.department_name || '-' }}</p>
+                </div>
               </td>
               <template v-for="(month, monthIndex) in months" :key="month.key">
                 <td class="td text-center" :class="monthGroupClass(monthIndex)">
