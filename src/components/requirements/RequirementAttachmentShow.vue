@@ -102,9 +102,10 @@ watch(
           <div
             v-for="(file, index) in attachments"
             :key="index"
-            class="border p-1 rounded aspect-square flex items-center justify-center bg-gray-50 relative cursor-pointer"
+            class="border p-1 rounded aspect-square flex items-center justify-center bg-gray-50 relative cursor-pointer hover:bg-gray-100 hover:shadow-md hover:border-gray-300 hover:scale-[1.02] transition-transform"
             tabindex="0"
             @click.prevent="handleClickFile(file)"
+            @keydown.enter.prevent="handleClickFile(file)"
           >
             <!-- Image preview -->
             <img

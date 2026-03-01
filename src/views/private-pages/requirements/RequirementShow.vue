@@ -373,14 +373,16 @@ const reqClosingModal = ref({
         >
           <div class="text-center text-xl font-bold mb-2 flex items-center justify-between">
             <div class="flex items-center">
-              <button class="btn-3 h-8 px-4" @click.prevent="() => router.back()">Back</button>
-              <div class="text-2xl ml-4">{{ requirement?.title || 'Requirement Form' }}</div>
+              <button class="text-sm font-bold btn-3 h-8 px-4" @click.prevent="() => router.back()">
+                <i class="fa fa-arrow-left mr-1"></i>Back
+              </button>
+              <div class="text-xl ml-4">Requirement Form</div>
             </div>
             <button
-              class="btn-indigo-light text-xs font-bold btn-3 h-8 px-4"
+              class="btn-indigo-light text-sm font-bold btn-3 h-8 px-4"
               @click.prevent="handlePrintPreview"
             >
-              <i class="fas fa-print mr-1"></i> PRINT
+              <i class="fas fa-print mr-1"></i> Print
             </button>
           </div>
 

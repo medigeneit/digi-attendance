@@ -108,9 +108,16 @@ const formattedType = computed(() => {
             </RouterLink>
           </div>
         </div>
+        <!-- Don't remove these hidden paragraphs, they are used for tailwind line-clamp utilities -->
+        <p class="hidden line-clamp-1"></p>
+        <p class="hidden line-clamp-2"></p>
+        <p class="hidden line-clamp-3"></p>
+        <p class="hidden line-clamp-4"></p>
+        <p class="hidden line-clamp-5"></p>
+        <p class="hidden line-clamp-6"></p>
 
         <div
-          class="text-red-600 text-xs md:text-sm lg:text-base line-clamp-1 pr-12"
+          class="text-sky-800 text-xs md:text-sm lg:text-base pr-12"
           v-html="notification?.description"
         ></div>
 
