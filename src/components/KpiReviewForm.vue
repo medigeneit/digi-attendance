@@ -33,6 +33,7 @@ const suggestions = ref('')
 const getTargetMarks = ref(null)
 const getPerformanceMarks = ref(null)
 const showSummaryDetails = ref(false)
+const hydrationTick = ref(0)
 
 const fullLoading = ref(false)
 const fullError = ref('')
@@ -208,6 +209,95 @@ const isHR = ref(false)
 
 /* ---------- Cycle groups ---------- */
 const groupsAll = computed(() => store.cycle?.groups_json || [])
+const training = computed(
+  () =>
+    store?.training ??
+    employee.value?.training_marks ??
+    employee.value?.training_mark ??
+    employee.value?.training_score ??
+    employee.value?.training ??
+    null,
+)
+const discipline = computed(
+  () =>
+    store?.discipline ??
+    employee.value?.discipline_marks ??
+    employee.value?.discipline_mark ??
+    employee.value?.discipline_score ??
+    employee.value?.discipline ??
+    null,
+)
+
+const trainingBreakdown = computed(() => store?.training_breakdown)
+const disciplineBreakdown = computed(() => store?.discipline_breakdown)
+
+const toFiniteOrNull = (v) => {
+  if (v == null) return null
+  if (Array.isArray(v)) return toFiniteOrNull(v[0])
+  if (typeof v === 'object') {
+    const keys = [
+      'score',
+      'marks',
+      'mark',
+      'value',
+      'obtained',
+      'obtained_total',
+      'total_mark',
+      'total',
+      'final',
+      'avg',
+    ]
+    for (const k of keys) {
+      if (k in v) {
+        const picked = toFiniteOrNull(v[k])
+        if (picked != null) return picked
+      }
+    }
+    return null
+  }
+  const n = Number(v)
+  return Number.isFinite(n) ? n : null
+}
+
+const sumObjectNumbers = (obj, { excludeKeys = [] } = {}) => {
+  if (!obj || typeof obj !== 'object') return null
+  const exclude = new Set(excludeKeys.map((k) => String(k)))
+  let sum = 0
+  let hasAny = false
+  Object.keys(obj).forEach((k) => {
+    if (exclude.has(String(k))) return
+    const n = toFiniteOrNull(obj[k])
+    if (n == null) return
+    sum += n
+    hasAny = true
+  })
+  return hasAny ? sum : null
+}
+const fmtMaybe = (v, digits = 2) => {
+  const n = toFiniteOrNull(v)
+  return n == null ? '—' : n.toFixed(digits)
+}
+
+const fmtAuto = (v, digits = 2) => {
+  const n = toFiniteOrNull(v)
+  return n == null ? '-' : n.toFixed(digits)
+}
+
+const trainingScore = computed(() => {
+  const direct = toFiniteOrNull(training.value)
+  if (direct != null) return direct
+  return toFiniteOrNull(trainingBreakdown.value?.total_mark) ??
+    toFiniteOrNull(trainingBreakdown.value?.total) ??
+    sumObjectNumbers(trainingBreakdown.value, { excludeKeys: ['total_mark', 'total'] })
+})
+const disciplineScore = computed(() => {
+  const direct = toFiniteOrNull(discipline.value)
+  if (direct != null) return direct
+  return toFiniteOrNull(disciplineBreakdown.value?.total_mark) ??
+    toFiniteOrNull(disciplineBreakdown.value?.total) ??
+    sumObjectNumbers(disciplineBreakdown.value, { excludeKeys: ['total_mark', 'total'] })
+})
+
 
 const cycleReviewMode = computed(() => {
   const cycle = store.cycle || {}
@@ -241,6 +331,51 @@ const otherGroups = computed(() =>
 )
 
 const safeGroupLabel = (grp, idx) => grp?.label || `Group ${idx + 1}`
+
+const normalizeGroupText = (value) => String(value || '').toLowerCase()
+const isTrainingGroup = (g) => {
+  if (!g) return false
+  const id = normalizeGroupText(g.id)
+  const label = normalizeGroupText(g.label)
+  return id === 'training' || label.includes('training')
+}
+const isDisciplineGroup = (g) => {
+  if (!g) return false
+  const id = normalizeGroupText(g.id)
+  const label = normalizeGroupText(g.label)
+  return id === 'discipline' || label.includes('discipline') || label === 'dis'
+}
+
+const groupDisplayLabel = (grp, idx) => {
+  if (isTrainingGroup(grp)) return 'Training & Learning'
+  if (isDisciplineGroup(grp)) return 'Discipline'
+  return safeGroupLabel(grp, idx)
+}
+
+const otherGroupsDisplay = computed(() => {
+  const list = Array.isArray(otherGroups.value) ? [...otherGroups.value] : []
+  const priority = (g) => (isTrainingGroup(g) ? 1 : isDisciplineGroup(g) ? 2 : 99)
+  list.sort((a, b) => priority(a) - priority(b))
+  return list
+})
+
+const groupTotals = (grp) => {
+  if (!grp || !Array.isArray(grp.items)) return null
+  let max = 0
+  let got = 0
+  grp.items.forEach((it) => {
+    const itMax = Number(it?.max || 0)
+    max += itMax
+    const v = Number(marks.value?.[it.id] ?? 0)
+    if (Number.isFinite(v)) got += Math.min(Math.max(v, 0), itMax)
+  })
+  return { max: Number(max.toFixed(2)), got: Number(got.toFixed(2)) }
+}
+
+const trainingGroup = computed(() => otherGroups.value.find(isTrainingGroup) || null)
+const disciplineGroup = computed(() => otherGroups.value.find(isDisciplineGroup) || null)
+const trainingGroupTotals = computed(() => groupTotals(trainingGroup.value))
+const disciplineGroupTotals = computed(() => groupTotals(disciplineGroup.value))
 
 /* ---------- Lane helpers ---------- */
 const isHrLaneKey = (key) => /^hr\d*$/i.test(key) || key === 'hr'
@@ -281,6 +416,81 @@ const canShowPersonalSubmit = computed(() => {
   if (staffMode.value) return true
   return !isHrLaneKey(myEditablePersonalLaneKey.value)
 })
+
+const lastAutoApplied = ref({ training: null, discipline: null })
+
+const applyBreakdownToGroupByItemId = (grp, breakdown) => {
+  if (compactMode.value) return false
+  if (!canHR.value || staffMode.value) return false
+  if (!hydrationTick.value) return false
+  if (!grp || !Array.isArray(grp.items) || grp.items.length === 0) return false
+  if (!breakdown || typeof breakdown !== 'object') return false
+
+  const items = grp.items
+  const allEmpty = items.every((it) => Number(marks.value?.[it.id] ?? 0) === 0)
+  if (!allEmpty) return false
+
+  let applied = false
+  items.forEach((it) => {
+    const v = toFiniteOrNull(breakdown?.[it.id])
+    if (v == null) return
+    setMark(it.id, v)
+    cap(it.id, it.max)
+    applied = true
+  })
+
+  return applied
+}
+
+const applyAutoScoreToGroup = (key, score, grp) => {
+  if (compactMode.value) return
+  if (!canHR.value || staffMode.value) return
+  if (!hydrationTick.value) return
+  if (score == null || !grp || !Array.isArray(grp.items) || grp.items.length === 0) return
+
+  const items = grp.items
+  const groupMax = items.reduce((acc, item) => acc + Number(item?.max || 0), 0)
+  if (!groupMax) return
+
+  let normalizedScore = Number(score)
+  // If backend sends percent (0-100) instead of marks, convert to marks best-effort.
+  if (Number.isFinite(normalizedScore) && normalizedScore > groupMax && normalizedScore <= 100 && groupMax <= 50) {
+    normalizedScore = (normalizedScore / 100) * groupMax
+  }
+  const clampedScore = Math.min(Math.max(Number(normalizedScore), 0), Number(groupMax))
+
+  const allEmpty = items.every((it) => Number(marks.value?.[it.id] ?? 0) === 0)
+  const currentGot = groupTotals(grp)?.got ?? 0
+  const last = lastAutoApplied.value?.[key]
+  const isStillAuto = last != null && Math.abs(Number(last) - Number(currentGot)) < 0.01
+
+  if (!allEmpty && !isStillAuto) return
+
+  if (items.length === 1) {
+    const item = items[0]
+    setMark(item.id, Math.min(clampedScore, Number(item.max || 0)))
+    cap(item.id, item.max)
+    lastAutoApplied.value[key] = Number(marks.value?.[item.id] ?? 0)
+    return
+  }
+
+  items.forEach((item) => {
+    const portion = (Number(item.max || 0) / groupMax) * clampedScore
+    setMark(item.id, Number(portion.toFixed(1)))
+    cap(item.id, item.max)
+  })
+
+  lastAutoApplied.value[key] = groupTotals(grp)?.got ?? clampedScore
+}
+
+watch(
+  [trainingGroup, disciplineGroup, trainingBreakdown, disciplineBreakdown, canHR, staffMode, compactMode, hydrationTick],
+  ([tg, dg, tb, db]) => {
+    applyBreakdownToGroupByItemId(tg, tb)
+    applyBreakdownToGroupByItemId(dg, db)
+  },
+  { immediate: true },
+)
 
 function toLaneButtonLabel(value, action = 'Submit') {
   const text = String(value || '')
@@ -539,6 +749,118 @@ watch(
   activeSummaryTab,
   (tabKey) => {
     applySummaryToMappedGroup(tabKey, { overwrite: false })
+  },
+  { immediate: true },
+)
+
+/* ---------- Auto-fill (Training / Discipline) from summary or API ---------- */
+const activeSummaryRaw = computed(() =>
+  activeSummaryTab.value === 'target' ? getTargetMarks.value : getPerformanceMarks.value,
+)
+
+const deepFindNumberByKey = (root, matchKey, maxDepth = 4) => {
+  if (!root || typeof root !== 'object') return null
+  const queue = [{ value: root, depth: 0 }]
+  const seen = new Set()
+
+  while (queue.length) {
+    const { value, depth } = queue.shift()
+    if (!value || typeof value !== 'object') continue
+    if (seen.has(value)) continue
+    seen.add(value)
+
+    const entries = Array.isArray(value) ? value.entries() : Object.entries(value)
+    for (const [k, v] of entries) {
+      const key = Array.isArray(value) ? String(k) : String(k || '')
+      if (matchKey(key, v)) {
+        const n = toFiniteOrNull(v)
+        if (n != null) return n
+      }
+      if (depth < maxDepth && v && typeof v === 'object') {
+        queue.push({ value: v, depth: depth + 1 })
+      }
+    }
+  }
+
+  return null
+}
+
+const pickNamedScoreFromSummary = (rawObj, avgObj, key) => {
+  if (!key) return null
+  const direct = toFiniteOrNull(
+    rawObj?.[key] ??
+      rawObj?.[`${key}_marks`] ??
+      rawObj?.[`${key}_score`] ??
+      avgObj?.per_form_yearly?.[key] ??
+      avgObj?.per_form_yearly?.[`${key}_marks`] ??
+      avgObj?.per_form_yearly?.[`${key}_score`] ??
+      avgObj?.[key] ??
+      avgObj?.[`${key}_marks`] ??
+      avgObj?.[`${key}_score`] ??
+      null,
+  )
+  if (direct != null) return direct
+
+  const needle = String(key).toLowerCase()
+  const fuzzy = deepFindNumberByKey(
+    { rawObj, avgObj },
+    (k) => {
+      const kk = String(k || '').toLowerCase()
+      if (needle === 'training') return kk.includes('training') || kk.includes('train')
+      if (needle === 'discipline') return kk.includes('discipline') || kk === 'dis' || kk.startsWith('dis_')
+      return kk.includes(needle)
+    },
+    4,
+  )
+  return fuzzy
+}
+
+const summaryTrainingScore = computed(() =>
+  pickNamedScoreFromSummary(activeSummaryRaw.value, summaryData.value, 'training'),
+)
+const summaryDisciplineScore = computed(() =>
+  pickNamedScoreFromSummary(activeSummaryRaw.value, summaryData.value, 'discipline'),
+)
+
+const autoTrainingScore = computed(() => trainingScore.value ?? summaryTrainingScore.value)
+const autoDisciplineScore = computed(() => disciplineScore.value ?? summaryDisciplineScore.value)
+
+const normalizeScoreForGroup = (score, groupMax) => {
+  const s = toFiniteOrNull(score)
+  const max = toFiniteOrNull(groupMax)
+  if (s == null) return null
+  if (max == null || max <= 0) return s
+  // Percent -> marks best-effort (keep consistent with applyAutoScoreToGroup)
+  if (s > max && s <= 100 && max <= 50) return (s / 100) * max
+  return s
+}
+
+const autoTrainingScoreForGroup = computed(() =>
+  normalizeScoreForGroup(autoTrainingScore.value, trainingGroupTotals.value?.max),
+)
+const autoDisciplineScoreForGroup = computed(() =>
+  normalizeScoreForGroup(autoDisciplineScore.value, disciplineGroupTotals.value?.max),
+)
+
+const hasAutoGroupScores = computed(
+  () => autoTrainingScoreForGroup.value != null || autoDisciplineScoreForGroup.value != null,
+)
+
+watch(
+  [
+    autoTrainingScoreForGroup,
+    autoDisciplineScoreForGroup,
+    trainingGroup,
+    disciplineGroup,
+    canHR,
+    staffMode,
+    compactMode,
+    hydrationTick,
+    activeSummaryTab,
+  ],
+  ([t, d, tg, dg]) => {
+    applyAutoScoreToGroup('training', t, tg)
+    applyAutoScoreToGroup('discipline', d, dg)
   },
   { immediate: true },
 )
@@ -848,9 +1170,67 @@ function normalizeReviewsByLane(raw) {
 const routeEmployeeId = computed(() => Number(route.params.employeeId))
 
 const hydrateReviewData = (resp) => {
+  lastAutoApplied.value = { training: null, discipline: null }
+
   employee.value = resp.employee || {}
   getTargetMarks.value = resp?.annual_target_avg_marks || null
   getPerformanceMarks.value = resp?.annual_performance_avg_marks || null
+
+  // ✅ Some APIs send Training/Discipline breakdowns on the lanes response (not on summary)
+  const trainingObj = resp?.training
+  const disciplineObj = resp?.discipline_marks
+  if (trainingObj && typeof trainingObj === 'object') store.training_breakdown = trainingObj
+  if (disciplineObj && typeof disciplineObj === 'object') store.discipline_breakdown = disciplineObj
+
+  const tFromBreakdown =
+    toFiniteOrNull(trainingObj?.total_mark) ??
+    toFiniteOrNull(trainingObj?.total) ??
+    sumObjectNumbers(trainingObj, { excludeKeys: ['total_mark', 'total'] })
+  if (tFromBreakdown != null) store.training = tFromBreakdown
+
+  const dFromBreakdown =
+    toFiniteOrNull(disciplineObj?.total_mark) ??
+    toFiniteOrNull(disciplineObj?.total) ??
+    sumObjectNumbers(disciplineObj, { excludeKeys: ['total_mark', 'total'] })
+  if (dFromBreakdown != null) store.discipline = dFromBreakdown
+
+  const tRaw =
+    resp?.training_marks ??
+    resp?.training_mark ??
+    resp?.training_score ??
+    resp?.training ??
+    resp?.auto_group_marks?.training_marks ??
+    resp?.auto_group_marks?.training ??
+    resp?.meta?.auto_group_marks?.training_marks ??
+    resp?.meta?.auto_group_marks?.training ??
+    resp?.meta?.training_marks ??
+    resp?.meta?.training ??
+    resp?.employee?.training_marks ??
+    resp?.employee?.training_mark ??
+    resp?.employee?.training_score ??
+    resp?.employee?.training ??
+    null
+  const t = toFiniteOrNull(tRaw)
+  if (t != null) store.training = t
+
+  const dRaw =
+    resp?.discipline_marks ??
+    resp?.discipline_mark ??
+    resp?.discipline_score ??
+    resp?.discipline ??
+    resp?.auto_group_marks?.discipline_marks ??
+    resp?.auto_group_marks?.discipline ??
+    resp?.meta?.auto_group_marks?.discipline_marks ??
+    resp?.meta?.auto_group_marks?.discipline ??
+    resp?.meta?.discipline_marks ??
+    resp?.meta?.discipline ??
+    resp?.employee?.discipline_marks ??
+    resp?.employee?.discipline_mark ??
+    resp?.employee?.discipline_score ??
+    resp?.employee?.discipline ??
+    null
+  const d = toFiniteOrNull(dRaw)
+  if (d != null) store.discipline = d
 
   // ✅ normalize lanes + reviews
   lanes.value = Array.isArray(resp?.lanes) ? resp.lanes.map(normalizeLane) : []
@@ -863,7 +1243,19 @@ const hydrateReviewData = (resp) => {
   allGroups.forEach((g) => {
     const items = Array.isArray(g?.items) ? g.items : []
     items.forEach((it) => {
-      marks.value[it.id] = 0
+      const prefilled = toFiniteOrNull(
+        it?.score ??
+          it?.marks ??
+          it?.mark ??
+          it?.value ??
+          it?.obtained ??
+          it?.obtained_total ??
+          it?.auto_score ??
+          it?.auto_marks ??
+          it?.auto_value ??
+          null,
+      )
+      marks.value[it.id] = prefilled ?? 0
     })
   })
 
@@ -895,6 +1287,8 @@ const hydrateReviewData = (resp) => {
   strengths.value = normalizeNoteText(noteSource?.strengths)
   gaps.value = normalizeNoteText(noteSource?.gaps)
   suggestions.value = normalizeNoteText(noteSource?.suggestions)
+
+  hydrationTick.value += 1
 }
 
 const loadReviewData = async (id) => {
@@ -905,6 +1299,17 @@ const loadReviewData = async (id) => {
     await store.fetchActiveCycle(id)
     const resp = await store.fetchLanes(store.cycle.id, id)
     hydrateReviewData(resp)
+
+    // Best-effort: some backends expose Training/Discipline totals in /kpi/summary
+    try {
+      const summary = await store.fetchSummary(store.cycle.id, id)
+      const t = toFiniteOrNull(summary?.training ?? summary?.training_marks ?? summary?.training_score ?? null)
+      const d = toFiniteOrNull(summary?.discipline ?? summary?.discipline_marks ?? summary?.discipline_score ?? null)
+      if (t != null) store.training = t
+      if (d != null) store.discipline = d
+    } catch {
+      // ignore
+    }
   } catch (e) {
     fullError.value = e?.response?.data?.message || e?.message || 'Failed to load KPI review data.'
   } finally {
@@ -919,6 +1324,16 @@ const refreshReviewData = async () => {
   try {
     const resp = await store.fetchLanes(store.cycle.id, routeEmployeeId.value)
     hydrateReviewData(resp)
+
+    try {
+      const summary = await store.fetchSummary(store.cycle.id, routeEmployeeId.value)
+      const t = toFiniteOrNull(summary?.training ?? summary?.training_marks ?? summary?.training_score ?? null)
+      const d = toFiniteOrNull(summary?.discipline ?? summary?.discipline_marks ?? summary?.discipline_score ?? null)
+      if (t != null) store.training = t
+      if (d != null) store.discipline = d
+    } catch {
+      // ignore
+    }
   } catch (e) {
     fullError.value = e?.response?.data?.message || e?.message || 'Failed to refresh KPI review data.'
   } finally {
@@ -1297,15 +1712,15 @@ function pct(got, max) {
       <section class="mt-2">
         <div class="grid gap-4 lg:grid-cols-5">
           <!-- Main (groups tables) -->
-          <div class="space-y-4 lg:col-span-3" v-if="otherGroups.length">
+          <div class="space-y-4 lg:col-span-3" v-if="otherGroupsDisplay.length">
             <KpiGroupTable
-              v-for="(grp, gIdx) in otherGroups"
+              v-for="(grp, gIdx) in otherGroupsDisplay"
               :key="gIdx"
               :group="grp"
               :is-personal="false"
               :can-edit="canHR"
               :marks="marks"
-              :header-label="`Group ${gIdx + 1} - ${safeGroupLabel(grp, gIdx)}`"
+              :header-label="`Group ${gIdx + 1} - ${groupDisplayLabel(grp, gIdx)}`"
               :item-label="'Item'"
               :show-quick-fill-group="true"
               :auto-fill-visible="canAutoFillFromSummary && matchGroupForTab(grp, activeSummaryTab)"
@@ -1325,7 +1740,7 @@ function pct(got, max) {
           >
             <!-- Annual Summary -->
             <section
-              v-if="!staffMode && hasTargetSummary && canHR"
+              v-if="!staffMode && canHR && (hasTargetSummary || hasAutoGroupScores)"
               class="sticky top-6 border rounded-2xl bg-white shadow-sm"
             >
               <header class="flex flex-wrap items-center justify-between border-b px-4 py-3 text-sm font-semibold text-slate-800">
@@ -1344,24 +1759,60 @@ function pct(got, max) {
               </header>
 
               <div class="p-4 space-y-4 max-h-[360px] overflow-y-auto">
-                <div class="flex flex-wrap gap-2 border-b border-slate-100 pb-3">
-                  <button
-                    v-for="tab in summaryTabs"
-                    :key="tab.key"
-                    type="button"
-                    @click="activeSummaryTab = tab.key"
-                    :class="[
-                      'px-3 py-1 rounded-full text-xs font-semibold transition',
-                      activeSummaryTab === tab.key
-                        ? 'bg-slate-900 text-white shadow'
-                        : 'border border-slate-200 text-slate-700 bg-white hover:border-slate-400',
-                    ]"
-                  >
-                    {{ tab.label }}
-                  </button>
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <div class="text-xs font-semibold text-slate-700">Auto group marks</div>
+                  <div v-if="!hasAutoGroupScores" class="mt-1 text-[11px] text-slate-500">
+                    No Training/Discipline score found from Annual Summary or API breakdown.
+                  </div>
+                  <div class="mt-2 space-y-2 text-xs">
+                    <div class="flex items-start justify-between gap-3">
+                      <div class="text-slate-600">Group 1 - Training &amp; Learning</div>
+                      <div class="text-right">
+                        <div class="font-semibold text-slate-900">{{ fmtAuto(autoTrainingScoreForGroup) }}</div>
+                        <div class="text-[11px] text-slate-500">
+                          Form: {{ fmtAuto(trainingGroupTotals?.got) }} / {{ fmtAuto(trainingGroupTotals?.max) }}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="flex items-start justify-between gap-3">
+                      <div class="text-slate-600">Group 2 - Discipline</div>
+                      <div class="text-right">
+                        <div class="font-semibold text-slate-900">{{ fmtAuto(autoDisciplineScoreForGroup) }}</div>
+                        <div class="text-[11px] text-slate-500">
+                          Form: {{ fmtAuto(disciplineGroupTotals?.got) }} / {{ fmtAuto(disciplineGroupTotals?.max) }}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                <div class="space-y-4">
+                <div
+                  v-if="!hasTargetSummary"
+                  class="rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-600"
+                >
+                  Annual summary data not available yet.
+                </div>
+
+                <template v-else>
+                  <div class="flex flex-wrap gap-2 border-b border-slate-100 pb-3">
+                    <button
+                      v-for="tab in summaryTabs"
+                      :key="tab.key"
+                      type="button"
+                      @click="activeSummaryTab = tab.key"
+                      :class="[
+                        'px-3 py-1 rounded-full text-xs font-semibold transition',
+                        activeSummaryTab === tab.key
+                          ? 'bg-slate-900 text-white shadow'
+                          : 'border border-slate-200 text-slate-700 bg-white hover:border-slate-400',
+                      ]"
+                    >
+                      {{ tab.label }}
+                    </button>
+                  </div>
+
+                  <div class="space-y-4">
                   <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div class="rounded-xl border bg-slate-50 p-3">
                       <div class="flex items-center justify-between">
@@ -1450,6 +1901,7 @@ function pct(got, max) {
                     </div>
                   </div>
                 </div>
+                </template>
               </div>
             </section>
 
