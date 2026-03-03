@@ -171,9 +171,17 @@ const capMark = (id, max) => props.onCap?.(id, max)
 </script>
 
 <template>
-  <section class="border rounded-2xl bg-white shadow-sm overflow-hidden">
+  <section
+    :class="[
+      'rounded-2xl bg-white shadow-sm overflow-hidden border',
+      autoFillVisible ? 'border-indigo-300 ring-2 ring-indigo-100' : 'border-slate-200',
+    ]"
+  >
     <!-- Header -->
-    <div class="flex items-center justify-between border-b bg-slate-50 px-3 py-2 gap-2">
+    <div
+      class="flex items-center justify-between border-b px-3 py-2 gap-2"
+      :class="autoFillVisible ? 'bg-indigo-50 border-indigo-100' : 'bg-slate-50'"
+    >
       <div class="flex items-center gap-2 min-w-0">
         <div class="text-sm font-semibold text-slate-800 truncate">
           {{ headerLabel }}
@@ -194,7 +202,7 @@ const capMark = (id, max) => props.onCap?.(id, max)
       </div>
       <!-- Group quick fill -->
       <div v-if="showQuickFillGroupEffective && itemLabel !=='Personal Attributes' " class="flex items-center gap-2 shrink-0">
-        <div class="inline-flex items-center rounded-xl border bg-white p-1 shadow-sm">
+        <!-- <div class="inline-flex items-center rounded-xl border bg-white p-1 shadow-sm">
           <button
             type="button"
             class="px-3 py-1 text-[11px] font-semibold rounded-lg text-slate-700 hover:bg-slate-100 disabled:opacity-40"
@@ -221,12 +229,14 @@ const capMark = (id, max) => props.onCap?.(id, max)
           >
             All Full
           </button>
-        </div>
+        </div> -->
 
         <button
           v-if="autoFillVisible"
           type="button"
-          class="rounded-full border border-slate-300 bg-white px-2.5 py-1 text-[10px] font-semibold text-slate-600 hover:border-slate-400"
+          class="rounded-full border px-2.5 py-1 text-[10px] font-semibold shadow-sm transition disabled:opacity-40"
+          :class="canEdit ? 'border-indigo-200 bg-indigo-600 text-white hover:bg-indigo-700' : 'border-slate-200 bg-white text-slate-500'"
+          :disabled="!canEdit || !onAutoFill"
           @click="onAutoFill?.()"
         >
           {{ autoFillLabel }}

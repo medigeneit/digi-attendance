@@ -34,6 +34,7 @@ const getTargetMarks = ref(null)
 const getPerformanceMarks = ref(null)
 const showSummaryDetails = ref(false)
 const hydrationTick = ref(0)
+const lastSummaryAutoApplied = ref({ target: null, performance: null })
 
 const fullLoading = ref(false)
 const fullError = ref('')
@@ -667,7 +668,7 @@ const performanceYear = computed(() => getPerformanceMarks.value?.year ?? null)
 const activeSummaryTab = ref('target')
 const summaryTabs = [
   { key: 'target', label: 'Annual Target' },
-  { key: 'performance', label: 'Annual Performance' },
+  { key: 'performance', label: 'কার্যসম্পাদন' },
 ]
 
 const targetMonths = computed(() => getTargetMarks.value?.months_total_form ?? 0)
@@ -708,47 +709,74 @@ const matchGroupForTab = (group, tabKey) => {
   return false
 }
 
+const summaryFinalForTab = (tabKey) => {
+  const avg = tabKey === 'performance' ? performanceAvg.value : targetAvg.value
+  return toFiniteOrNull(avg?.per_form_yearly?.final) ?? 0
+}
+
 const mappedGroupForTab = (tabKey) => {
   return otherGroups.value.find((g) => matchGroupForTab(g, tabKey)) || null
 }
 
 const applySummaryToMappedGroup = (tabKey, { overwrite } = { overwrite: false }) => {
   if (!canAutoFillFromSummary.value) return
+  if (compactMode.value) return
+  if (!hydrationTick.value) return
+  if (tabKey === 'target' && !getTargetMarks.value) return
+  if (tabKey === 'performance' && !getPerformanceMarks.value) return
   const group = mappedGroupForTab(tabKey)
   if (!group || !Array.isArray(group.items) || group.items.length === 0) return
 
   const items = group.items
   const allEmpty = items.every((it) => Number(marks.value[it.id] || 0) === 0)
-  if (!overwrite && !allEmpty) return
+  const currentGot = groupTotals(group)?.got ?? 0
+  const last = lastSummaryAutoApplied.value?.[tabKey]
+  const isStillAuto = last != null && Math.abs(Number(last) - Number(currentGot)) < 0.01
+  if (!overwrite && !allEmpty && !isStillAuto) return
 
-  const finalScore = summaryFinal.value
+  const finalScore = summaryFinalForTab(tabKey)
   const groupMax = items.reduce((acc, item) => acc + Number(item.max || 0), 0)
   if (!groupMax) return
 
+  const clampedScore = Math.min(Math.max(Number(finalScore), 0), Number(groupMax))
+
   if (items.length === 1) {
     const item = items[0]
-    marks.value[item.id] = Math.min(finalScore, Number(item.max || 0))
+    setMark(item.id, Math.min(clampedScore, Number(item.max || 0)))
     cap(item.id, item.max)
+    lastSummaryAutoApplied.value[tabKey] = groupTotals(group)?.got ?? Number(marks.value?.[item.id] ?? 0)
     return
   }
 
   items.forEach((item) => {
-    const portion = (Number(item.max || 0) / groupMax) * finalScore
+    const portion = (Number(item.max || 0) / groupMax) * clampedScore
     const rounded = Number(portion.toFixed(1))
-    marks.value[item.id] = rounded
+    setMark(item.id, rounded)
     cap(item.id, item.max)
   })
+
+  lastSummaryAutoApplied.value[tabKey] = groupTotals(group)?.got ?? clampedScore
 }
 
 const autoFillLabel = computed(() => {
-  const label = activeSummaryTab.value === 'target' ? 'Annual Target' : 'Annual Performance'
+  const label = activeSummaryTab.value === 'target' ? 'Annual Target' : 'কার্যসম্পাদন'
   return `Auto: ${label} (${summaryPercent.value}%)`
 })
 
 watch(
-  activeSummaryTab,
-  (tabKey) => {
+  [activeSummaryTab, hydrationTick, canAutoFillFromSummary],
+  ([tabKey]) => {
     applySummaryToMappedGroup(tabKey, { overwrite: false })
+  },
+  { immediate: true },
+)
+
+// Auto-apply both mapped groups after hydration (no need to click the summary tabs).
+watch(
+  [hydrationTick, canAutoFillFromSummary, getTargetMarks, getPerformanceMarks],
+  () => {
+    applySummaryToMappedGroup('target', { overwrite: false })
+    applySummaryToMappedGroup('performance', { overwrite: false })
   },
   { immediate: true },
 )
@@ -1710,7 +1738,7 @@ function pct(got, max) {
 
       <!-- OTHER GROUPS + RIGHT SIDEBAR -->
       <section class="mt-2">
-        <div class="grid gap-4 lg:grid-cols-5">
+        <div class="grid items-start gap-4 lg:grid-cols-5">
           <!-- Main (groups tables) -->
           <div class="space-y-4 lg:col-span-3" v-if="otherGroupsDisplay.length">
             <KpiGroupTable
@@ -1735,13 +1763,15 @@ function pct(got, max) {
 
           <!-- Right sidebar -->
           <aside
-            class="space-y-4 sticky top-10 z-50"
-            :class="[otherGroups.length === 0 ? 'lg:col-span-full' : 'lg:col-span-2']"
+            :class="[
+              'flex flex-col gap-4 min-h-0',
+              otherGroups.length === 0 ? 'lg:col-span-full' : 'lg:col-span-2',
+            ]"
           >
             <!-- Annual Summary -->
             <section
               v-if="!staffMode && canHR && (hasTargetSummary || hasAutoGroupScores)"
-              class="sticky top-6 border rounded-2xl bg-white shadow-sm"
+              class="border rounded-2xl bg-white shadow-sm flex flex-col min-h-0 lg:sticky lg:top-10 lg:z-50 lg:max-h-[calc(100vh-3rem)] lg:overflow-hidden"
             >
               <header class="flex flex-wrap items-center justify-between border-b px-4 py-3 text-sm font-semibold text-slate-800">
                 <span>Annual Summary</span>
@@ -1758,7 +1788,7 @@ function pct(got, max) {
                 </div>
               </header>
 
-              <div class="p-4 space-y-4 max-h-[360px] overflow-y-auto">
+              <div class="p-4 space-y-4 min-h-0 lg:overflow-y-auto">
                 <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
                   <div class="text-xs font-semibold text-slate-700">Auto group marks</div>
                   <div v-if="!hasAutoGroupScores" class="mt-1 text-[11px] text-slate-500">
@@ -1905,50 +1935,6 @@ function pct(got, max) {
               </div>
             </section>
 
-            <!-- Review comments -->
-            <section v-if="reviewComments.length" class="border rounded-2xl bg-white shadow-sm">
-              <header class="flex items-center justify-between border-b px-4 py-3 text-sm font-semibold text-slate-800">
-                <span>Review Comments</span>
-                <span class="text-[11px] text-slate-500"> {{ reviewComments.length }} lane(s) </span>
-              </header>
-
-              <div class="p-4 space-y-3">
-                <div class="max-h-96 overflow-auto border rounded-xl">
-                  <table class="min-w-full text-xs text-left">
-                    <thead class="text-[11px] text-slate-600 uppercase tracking-wide bg-slate-50">
-                      <tr>
-                        <th class="px-2 py-2 w-[140px]">Lane</th>
-                        <th class="px-2 py-2 text-right">Details</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr
-                        v-for="item in reviewComments"
-                        :key="item.key"
-                        class="border-t hover:bg-slate-50/60 align-top"
-                      >
-                        <td class="px-2 py-2">
-                          <div class="font-semibold text-slate-700">{{ item.label }}</div>
-                          <div v-if="item.submitted_at" class="mt-0.5 text-[11px] text-slate-400">
-                            {{ new Date(item.submitted_at).toLocaleDateString() }}
-                          </div>
-                        </td>
-                        <td class="px-2 py-2 text-right">
-                          <button
-                            type="button"
-                            class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-800"
-                            @click="openReviewCommentModal(item)"
-                          >
-                            <span>View comments</span>
-                            <span class="text-[10px] text-slate-400">Strengths · Gaps · Suggestions</span>
-                          </button>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </section>
           </aside>
         </div>
       </section>
@@ -2085,6 +2071,35 @@ function pct(got, max) {
         </div>
       </section>
 
+      <!-- Review comments -->
+      <section v-if="reviewComments.length" class="border rounded-2xl bg-white shadow-sm px-4 py-4">
+        <header class="flex items-center justify-between border-b pb-3 text-sm font-semibold text-slate-800">
+          <span>Review Comments</span>
+          <span class="text-[11px] text-slate-500"> {{ reviewComments.length }} lane(s) </span>
+        </header>
+
+        <div class="pt-4">
+          <div class="max-h-96 overflow-auto rounded-xl border border-slate-200 bg-slate-50/40 p-3">
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="item in reviewComments"
+                :key="item.key"
+                type="button"
+                class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-xs font-semibold text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                @click="openReviewCommentModal(item)"
+                :title="item.label"
+              >
+                <span class="truncate max-w-[220px]">{{ item.label }}</span>
+                <span class="text-[10px] font-medium text-slate-400">({{ item.lane }})</span>
+                <span v-if="item.submitted_at" class="text-[10px] font-medium text-slate-400">
+                  {{ new Date(item.submitted_at).toLocaleDateString() }}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- Sticky action -->
       <div class="mt-2 flex flex-col gap-3 border-t pt-3 md:flex-row md:items-center md:justify-between">
         <div class="text-sm text-slate-600"></div>
@@ -2114,7 +2129,7 @@ function pct(got, max) {
           v-if="reviewCommentModalOpen && reviewCommentModalItem"
           class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
         >
-          <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" aria-hidden="true" @click="closeReviewCommentModal"></div>
+          <div class="absolute inset-0  backdrop-blur-sm" aria-hidden="true" @click="closeReviewCommentModal"></div>
 
           <div class="relative w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-5 shadow-xl" role="dialog" aria-modal="true">
             <div class="flex items-start justify-between gap-3">

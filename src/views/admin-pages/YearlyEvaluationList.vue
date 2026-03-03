@@ -60,14 +60,6 @@ function getProgress(row) {
   return { total, submitted, pending, stage, percent }
 }
 
-function stageRank(stage) {
-  // completed first
-  if (stage === 'completed') return 0
-  if (stage === 'in_progress') return 1
-  if (stage === 'not_started') return 2
-  return 3
-}
-
 function stageBadge(row) {
   const { stage, submitted, total } = getProgress(row)
 
@@ -133,34 +125,8 @@ const stat = computed(() => {
   return { total, completed, inProgress, notStarted, na }
 })
 
-/* sorted rows (client-side) */
-const sortedRows = computed(() => {
-  const arr = [...baseRows.value]
-  const d = sortDir.value === 'desc' ? -1 : 1
-  const key = sortBy.value
-
-  const progressRatio = (r) => {
-    const { total, submitted } = getProgress(r)
-    if (total <= 0) return -Infinity
-    return submitted / total
-  }
-
-  arr.sort((a, b) => {
-    if (key === 'progress') {
-      const av = progressRatio(a)
-      const bv = progressRatio(b)
-      return (av > bv ? 1 : av < bv ? -1 : 0) * d
-    }
-    if (key === 'stage') {
-      return (stageRank(getProgress(a).stage) - stageRank(getProgress(b).stage)) * d
-    }
-    // default name
-    const an = String(a?.name ?? '')
-    const bn = String(b?.name ?? '')
-    return an.localeCompare(bn) * d
-  })
-  return arr
-})
+/* rows are displayed in backend order (no client-side sorting) */
+const displayRows = computed(() => baseRows.value)
 
 /* ===== URL sync ===== */
 function syncUrl () {
@@ -212,6 +178,8 @@ function buildParams () {
     line_type:     filters.value.line_type || undefined,
     finalized:     filters.value.finalized, // keep
     q:             filters.value.q || undefined,
+    sortBy:        sortBy.value !== 'name' ? sortBy.value : undefined,
+    sortDir:       sortDir.value !== 'asc' ? sortDir.value : undefined,
   }
 }
 
@@ -257,13 +225,13 @@ function resetFilters() {
   syncUrl()
 }
 
-function toggleSort(nextBy) {
-  if (sortBy.value === nextBy) {
-    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
-  } else {
-    sortBy.value = nextBy
-    sortDir.value = 'asc'
-  }
+function onSortByChange() {
+  sortDir.value = 'asc'
+  syncUrl()
+}
+
+function toggleSortDir() {
+  sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
   syncUrl()
 }
 
@@ -274,9 +242,9 @@ function openReview(row) {
 
 /* export (visible rows) */
 function exportCsv() {
-  if (!sortedRows.value.length) return
+  if (!displayRows.value.length) return
   const headers = ['#','User','Cycle','Submitted','Total','Pending','Stage','Progress%']
-  const lines = sortedRows.value.map((r, i) => {
+  const lines = displayRows.value.map((r, i) => {
     const name = r?.name ?? `#${r?.id}`
     const cyc  = cycleLabel(r)
     const p    = getProgress(r)
@@ -334,7 +302,7 @@ onMounted(async () => {
 
           <button
             class="h-9 rounded-md border border-slate-300 px-3 text-xs md:text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-            :disabled="!sortedRows.length"
+            :disabled="!displayRows.length"
             @click="exportCsv"
           >
             Export CSV
@@ -379,7 +347,7 @@ onMounted(async () => {
           <select
             class="h-9 w-full rounded-md border border-slate-300 px-2 text-sm"
             v-model="sortBy"
-            @change="toggleSort(sortBy)"
+            @change="onSortByChange"
           >
             <option value="name">Name</option>
             <option value="progress">Progress</option>
@@ -391,7 +359,7 @@ onMounted(async () => {
           <label class="top-label">Order</label>
           <button
             class="h-9 w-full rounded-md border border-slate-300 text-sm hover:bg-slate-50"
-            @click="toggleSort(sortBy)"
+            @click="toggleSortDir"
           >
             {{ sortDir === 'asc' ? 'Asc' : 'Desc' }}
           </button>
@@ -442,7 +410,7 @@ onMounted(async () => {
         </thead>
 
         <tbody>
-          <tr v-for="(row, i) in sortedRows" :key="row.id" class="border-t hover:bg-slate-50/50">
+          <tr v-for="(row, i) in displayRows" :key="row.id" class="border-t hover:bg-slate-50/50">
             <td class="px-3 py-2">{{ i + 1 }}</td>
 
             <td class="px-3 py-2">
@@ -455,7 +423,7 @@ onMounted(async () => {
                   <div class="text-[11px] text-slate-500">
                     {{ row?.department?.name || '—' }}
                     <span v-if="row?.type" class="mx-1">•</span>
-                    <span v-if="row?.type">{{ row.type }}</span>
+                    <span v-if="row?.type">{{ row?.designation?.title }}</span>
                   </div>
                 </div>
               </div>
@@ -521,7 +489,7 @@ onMounted(async () => {
             </td>
           </tr>
 
-          <tr v-if="!sortedRows.length">
+          <tr v-if="!displayRows.length">
             <td colspan="6" class="px-3 py-6 text-center text-gray-600">
               {{ hasOrg ? 'No users found for this scope.' : 'Select company & department to see users.' }}
             </td>
