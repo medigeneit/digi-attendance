@@ -212,8 +212,8 @@ const uploadAttachment = async () => {
       <!-- Approvals -->
       <hr class="my-4" />
 
-      <div class="text-center space-y-1">
-        <h3 class="text-lg font-bold">Approvals</h3>
+      <div class="text-center space-y-3">
+        <h3 class="text-lg font-bold mb-6">Approvals</h3>
 
         <div
           v-if="exchange?.status === 'Rejected'"
