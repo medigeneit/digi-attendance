@@ -142,7 +142,7 @@ function pct(n) {
 
 function scoreText(v, digits = 2) {
   const n = Number(v)
-  if (!Number.isFinite(n)) return '—'
+  if (!Number.isFinite(n)) return 0
   const fixed = Number(n.toFixed(digits))
   return Number.isInteger(fixed) ? String(fixed) : String(fixed)
 }
@@ -828,7 +828,7 @@ const modalLaneGroups = computed(() => {
             >
               <div class="text-[10px] font-medium text-slate-600">{{ cc.label }}</div>
               <div class="mt-1 text-[11px] font-semibold text-slate-900">
-                {{ (r?.computed?.[cc.key] == null || r?.computed?.[cc.key] === '') ? '—' : scoreText(r.computed[cc.key]) }}
+                {{ (r?.computed?.[cc.key] == null || r?.computed?.[cc.key] === '') ? '0' : scoreText(r.computed[cc.key]) }}
               </div>
             </div>
           </div>
@@ -993,7 +993,7 @@ const modalLaneGroups = computed(() => {
                     ? 'border-sky-200 bg-sky-50 text-sky-700'
                     : 'border-slate-200 bg-slate-50 text-slate-700'"
                 >
-                  {{ (r?.computed?.[cc.key] == null || r?.computed?.[cc.key] === '') ? '—' : scoreText(r.computed[cc.key]) }}
+                  {{ (r?.computed?.[cc.key] == null || r?.computed?.[cc.key] === '') ? 0 : scoreText(r.computed[cc.key]) }}
                 </span>
               </td>
 
@@ -1212,7 +1212,7 @@ const modalLaneGroups = computed(() => {
 
                 <div class="flex flex-wrap gap-2">
                   <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
-                    {{ rv.percent == null ? '—' : pct(rv.percent) }}
+                    {{ rv.percent == null ? 0 : pct(rv.percent) }}
                   </span>
                   <span
                     v-if="rv.obtained_total != null && rv.max_total != null"
