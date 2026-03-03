@@ -12,6 +12,7 @@ const exchangeStore = useExchangeStore()
 const userStore = useUserStore()
 const authStore = useAuthStore()
 const selectUser = ref('')
+const currentShift = ref('')
 const form = ref({
   shift_id: '',
   exchange_type: 'shift', // Fixed to "shift"
@@ -21,11 +22,42 @@ const form = ref({
   reason: '',
 })
 
-const loading = ref(false)
+const submitLoading = ref(false)
+const shiftLoading = ref(false)
 const error = ref(null)
 
+const latestShiftRequestId = ref(0)
+const dateWiseShift = async (date) => {
+  if (!date) {
+    latestShiftRequestId.value++
+    shiftLoading.value = false
+    currentShift.value = ''
+    error.value = null
+    return
+  }
+
+  const requestId = ++latestShiftRequestId.value
+  try {
+    shiftLoading.value = true
+    error.value = null
+    const res = await userStore.fetchUserDateWiseShift(date)
+    if (requestId !== latestShiftRequestId.value) return
+
+    if (res) {
+      currentShift.value = res
+    } else {
+      currentShift.value = ''
+      error.value = 'No shifts found for the selected date'
+    }
+  } catch (err) {
+    error.value = err.message || 'Failed to fetch shifts for the selected date'
+  } finally {
+    if (requestId === latestShiftRequestId.value) shiftLoading.value = false
+  }
+}
+
 const submitShiftExchange = async () => {
-  loading.value = true
+  submitLoading.value = true
   error.value = null
 
   try {
@@ -45,7 +77,7 @@ const submitShiftExchange = async () => {
   } catch (err) {
     error.value = err.message || 'Failed to submit shift exchange request'
   } finally {
-    loading.value = false
+    submitLoading.value = false
   }
 }
 
@@ -53,6 +85,13 @@ watch(
   () => selectUser.value,
   (newValue) => {
     form.value.handover_user_id = newValue?.id
+  },
+)
+
+watch(
+  () => form.value.selected_date,
+  (newDate) => {
+    dateWiseShift(newDate)
   },
 )
 
@@ -80,17 +119,17 @@ const goBack = () => {
       </div>
     </div>
 
-    <div v-if="loading" class="text-center">
+    <div v-if="submitLoading" class="text-center">
       <LoaderView />
     </div>
 
     <form v-else @submit.prevent="submitShiftExchange" class="space-y-4 card-bg md:p-8 p-4">
-      <div>
-        <h4 class="title-lg text-center">{{ authStore?.user?.company?.name }}</h4>
-        <p class="text-center">Shift Change Application</p>
-      </div>
       <p class="block text-sm font-medium">
-        Current Shift: {{ authStore?.user?.current_shift?.shift?.name }}
+        Current Shift:
+        <span v-if="shiftLoading">Loading...</span>
+        <span v-else>
+          {{ currentShift?.name || authStore?.user?.current_shift?.shift?.name }}
+        </span>
       </p>
 
       <div>
@@ -141,13 +180,13 @@ const goBack = () => {
       </div>
 
       <div>
-        <label for="handover-user" class="block text-sm font-medium">Handover User</label>
         <MultiselectDropdown
           v-model="selectUser"
           :options="userStore.users"
           :multiple="false"
           :required="false"
           label="label"
+          top-label="Handover User"
           placeholder="Select user"
         />
       </div>

@@ -142,6 +142,15 @@ export const useUserStore = defineStore('user', () => {
     } 
   }
 
+  const fetchUserDateWiseShift = async (date) => {
+    try {
+      const res = await apiClient.get(`user/schedule-shift/${date}`)
+      return res?.data ?? res
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Something went wrong'
+    } 
+  }
+
   const fetchUserDashboardData = async () => {
     try {
       isLoading.value = true
@@ -303,6 +312,7 @@ export const useUserStore = defineStore('user', () => {
     fetchUserLeaveTypes,
     updateOrCreateWeekend,
     fetchUserWeekends,
-    fetchUserShifts
+    fetchUserShifts,
+    fetchUserDateWiseShift
   }
 })
