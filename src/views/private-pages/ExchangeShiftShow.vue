@@ -190,7 +190,7 @@ const uploadAttachment = async () => {
           
           <div class="flex">
             <span class="w-32 text-slate-500">To Shift</span>
-            <span class="font-medium">{{ exchange.shift_on_exchange_date?.name || exchange?.shift?.name }}</span>
+            <span class="font-medium">{{ exchange?.shift?.name }}</span>
           </div>
 
           <div class="md:col-span-2 flex items-start">
