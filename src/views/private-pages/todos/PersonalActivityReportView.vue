@@ -386,7 +386,7 @@ function handleClickAddTodoDate(todoId, date) {
 </script>
 
 <template>
-  <div class="container mx-auto print:w-full print:px-0 print:py-0">
+  <div class="container mx-auto print:w-full print:px-0 print:mx-0 print:py-0">
     <div
       class="flex flex-wrap items-center gap-3 mb-4 bg-white border rounded-md px-4 py-3 print:border-0 print:rounded-none print:px-0 print:py-0"
     >
@@ -484,7 +484,7 @@ function handleClickAddTodoDate(todoId, date) {
       </div>
     </div>
 
-    <div class="space-y-4" v-if="reportReady">
+    <div class="space-y-4 w-full" v-if="reportReady">
       <div
         v-if="!props.selfOnly"
         class="bg-white border rounded-md shadow-sm print:shadow-none print:border-0 print:rounded-none px-4 py-3 flex flex-wrap gap-4"
@@ -589,14 +589,16 @@ function handleClickAddTodoDate(todoId, date) {
           </div>
         </div>
 
-        <div class="overflow-x-auto">
-          <table class="min-w-full text-left text-sm border-separate border-spacing-0">
+        <div class="overflow-x-auto print:overflow-x-visible">
+          <table
+            class="min-w-full text-left text-sm border-separate border-spacing-0 print:min-w-full print:border-collapse"
+          >
             <thead class="bg-gray-50 text-gray-600 uppercase tracking-wide text-xs">
               <tr class="border-b">
-                <th class="px-4 py-3 border text-center w-12">sl</th>
-                <th class="px-4 py-3 border text-left">Todo</th>
-                <th class="px-4 py-3 border text-left">Last Activity</th>
-                <th class="px-4 py-3 border text-center">Status</th>
+                <th class="px-4 py-3 border text-center w-[2%] print:w-[5%]">sl</th>
+                <th class="px-4 py-3 border text-left w-[80%] print:w-[65%]">Todo</th>
+                <th class="px-4 py-3 border text-center w-[10%] print:w-[15%]">Last Activity</th>
+                <th class="px-4 py-3 border text-center w-[8%] print:w-[15%]">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -645,7 +647,7 @@ function handleClickAddTodoDate(todoId, date) {
                   <!-- <pre>{{ concurrentCount(todo) }}</pre> -->
                 </td>
 
-                <td class="px-4 py-3 border text-xs text-gray-700">
+                <td class="px-4 py-3 border text-xs text-gray-700 text-center">
                   {{ getDisplayDate(todo.date) || todo.date }}
                 </td>
                 <td class="px-4 py-3 border text-center">
@@ -692,6 +694,54 @@ function handleClickAddTodoDate(todoId, date) {
 @media print {
   .print-hide {
     display: none !important;
+  }
+
+  .container {
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .bg-white,
+  .bg-gray-50,
+  .bg-gray-100\/50,
+  .bg-slate-100 {
+    background-color: transparent !important;
+  }
+
+  .shadow-sm {
+    box-shadow: none !important;
+  }
+
+  .border,
+  .border-b,
+  .border-t,
+  .border-l,
+  .border-r {
+    border-color: #e5e7eb !important;
+  }
+
+  .rounded-md,
+  .rounded-full {
+    border-radius: 0 !important;
+  }
+
+  /* .px-4,
+  .p-4 {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  } */
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    table-layout: fixed !important;
+  }
+
+  th,
+  td {
+    padding: 8px !important;
   }
 }
 </style>
