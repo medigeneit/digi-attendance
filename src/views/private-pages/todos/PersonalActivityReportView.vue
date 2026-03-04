@@ -390,7 +390,7 @@ function handleClickAddTodoDate(todoId, date) {
     <div
       class="flex flex-wrap items-center gap-3 mb-4 bg-white border rounded-md px-4 py-3 print:border-0 print:rounded-none print:px-0 print:py-0"
     >
-      <div>
+      <div class="">
         <h1 class="text-xl font-semibold text-gray-800">Personal Activity Report</h1>
         <p class="text-sm text-gray-500">Monthwise summary from todo dates</p>
       </div>
@@ -440,7 +440,7 @@ function handleClickAddTodoDate(todoId, date) {
       v-if="!props.selfOnly"
       class="bg-white border rounded-md p-4 mb-4 print:border-0 print:rounded-none print:p-0 shadow-sm"
     >
-      <div class="flex flex-wrap items-center gap-3">
+      <div class="flex flex-wrap items-center gap-3 print:hidden">
         <EmployeeFilter
           ref="employeeFilterRef"
           v-model:company_id="filterState.companyId"
@@ -521,7 +521,7 @@ function handleClickAddTodoDate(todoId, date) {
       <div
         v-for="(row, index) in monthlyRows"
         :key="row.user?.id || index"
-        class="bg-white border rounded-md shadow-sm print:shadow-none print:border-0 print:rounded-none"
+        class="bg-white border rounded-md shadow-sm print:shadow-none print:border-0 print:rounded-none break-before-page"
       >
         <div class="flex flex-wrap items-center gap-4 px-4 py-3 border-b bg-gray-50">
           <div v-if="!props.selfOnly" class="flex items-center gap-3">
