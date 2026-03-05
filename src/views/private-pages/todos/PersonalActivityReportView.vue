@@ -259,8 +259,13 @@ function syncQuery() {
   })
 }
 
+const todoLoading = ref(false)
+const dateCountLoading = ref(false)
+
 async function fetchTodos() {
-  if (!reportReady.value) return
+  if (!reportReady.value || !effectiveCompanyId.value) return
+
+  todoLoading.value = true
 
   await todoDateStore.fetchTodoDates({
     'company-id': effectiveCompanyId.value || undefined,
@@ -270,15 +275,21 @@ async function fetchTodos() {
     'start-date': startDate.value,
     'end-date': endDate.value,
   })
+
+  todoLoading.value = false
+
   try {
     const ids = Array.from(
       new Set((todoDates.value || []).map((td) => getBaseTodoId(td)).filter((v) => v)),
     )
     if (ids.length) {
+      dateCountLoading.value = true
       await todoDateStore.fetchTodoDateCounts(ids, { companyId: effectiveCompanyId.value || '' })
     }
   } catch (e) {
     console.error('fetchTodoDateCounts failed', e)
+  } finally {
+    dateCountLoading.value = false
   }
 }
 
@@ -386,7 +397,7 @@ function handleClickAddTodoDate(todoId, date) {
 </script>
 
 <template>
-  <div class="container mx-auto print:w-full print:px-0 print:mx-0 print:py-0">
+  <div class="container mx-auto print:w-full print:px-0 print:mx-0 print:py-0 relative">
     <div
       class="flex flex-wrap items-center gap-3 mb-4 bg-white border rounded-md px-4 py-3 print:border-0 print:rounded-none print:px-0 print:py-0"
     >
@@ -449,13 +460,15 @@ function handleClickAddTodoDate(todoId, date) {
           v-model:line_type="filterState.lineType"
           :initial-value="route.query"
           @filter-change="handleFilterChange"
-          class="flex-1 min-w-[240px]"
+          class="!flex justify-stretch w-full flex-col md:flex-row md:items-center gap-3"
+          slot-class="md:ml-auto"
         >
-          <div class="relative h-[32px] flex gap-1 ml-auto justify-end">
-            <button class="btn-3 h-[32px] px-3" @click.prevent="handlePrevMonth">
-              <i class="fas fa-arrow-left mr-1"></i>
+          <div class="relative h-[32px] flex gap-2 w-full justify-between md:justify-end">
+            <button class="btn-3 size-[32px] px-3" @click.prevent="handlePrevMonth">
+              <i class="fas fa-arrow-left"></i>
             </button>
-            <div class="relative h-[32px] flex">
+
+            <div class="relative h-[32px] flex flex-grow md:flex-grow-0 gap-1">
               <label
                 for="month"
                 class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30"
@@ -468,8 +481,9 @@ function handleClickAddTodoDate(todoId, date) {
                 class="border-2 border-gray-300 rounded px-3 h-[32px] text-sm w-full bg-white"
               />
             </div>
-            <button class="btn-3 h-[32px] px-3" @click.prevent="handleNextMonth">
-              <i class="fas fa-arrow-right ml-1"></i>
+
+            <button class="btn-3 size-[32px] px-3" @click.prevent="handleNextMonth">
+              <i class="fas fa-arrow-right"></i>
             </button>
           </div>
         </EmployeeFilter>
@@ -484,7 +498,13 @@ function handleClickAddTodoDate(todoId, date) {
       </div>
     </div>
 
-    <div class="space-y-4 w-full" v-if="reportReady">
+    <div class="space-y-4 w-full relative" v-if="reportReady">
+      <LoaderView
+        v-if="todoLoading"
+        class="absolute inset-0 z-10 bg-white bg-opacity-75 flex items-center justify-center"
+      >
+        Loading report...
+      </LoaderView>
       <div
         v-if="!props.selfOnly"
         class="bg-white border rounded-md shadow-sm print:shadow-none print:border-0 print:rounded-none px-4 py-3 flex flex-wrap gap-4"
@@ -601,6 +621,7 @@ function handleClickAddTodoDate(todoId, date) {
                 <th class="px-4 py-3 border text-center w-[8%] print:w-[15%]">Status</th>
               </tr>
             </thead>
+
             <tbody>
               <tr v-if="row.projects.length === 0">
                 <td colspan="4" class="px-4 py-6 text-center text-gray-400 border rounded-b">
@@ -677,7 +698,6 @@ function handleClickAddTodoDate(todoId, date) {
       </div>
     </div>
 
-    <LoaderView v-else-if="todoDateStore.loading">Loading report...</LoaderView>
     <TodoCreateEditShow
       :todoModal="todoModal"
       userRole="employee"

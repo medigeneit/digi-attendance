@@ -11,6 +11,7 @@ const props = defineProps({
   department_id: { type: [String, Number], default: '' }, // '' means all/none
   employee_id: { type: [String, Number], default: '' },
   line_type: { type: String, default: 'all' }, // 'all'|'executive'|'support_staff'|'doctor'|'academy_body'
+  slotClass: { type: String, default: '' },
   withType: { type: Boolean, default: true },
   initialValue: { type: Object, default: () => ({}) },
 })
@@ -348,7 +349,7 @@ defineExpose({
       </div>
     </div>
 
-    <div class="relative">
+    <div class="relative" :class="slotClass">
       <slot></slot>
     </div>
   </div>
