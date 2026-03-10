@@ -5,6 +5,7 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import SelectedEmployeeCard from '@/components/user/SelectedEmployeeCard.vue'
 import { useManualAttendanceStore } from '@/stores/manual-attendance'
 import { useUserStore } from '@/stores/user'
+import Swal from 'sweetalert2'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -164,11 +165,26 @@ const normalizeDateValue = (value) => {
 const normalizeTimeValue = (value) => {
   if (!value) return ''
   if (typeof value === 'string') {
+    const trimmed = value.trim()
+    const amPmMatch = trimmed.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)$/i)
+    if (amPmMatch) {
+      let [, hours, minutes, period] = amPmMatch
+      hours = Number(hours)
+      if (period.toUpperCase() === 'PM' && hours < 12) hours += 12
+      if (period.toUpperCase() === 'AM' && hours === 12) hours = 0
+      return `${String(hours).padStart(2, '0')}:${minutes}`
+    }
+
+    const timeMatch = trimmed.match(/^(\d{1,2}):(\d{2})/)
+    if (timeMatch) {
+      const [, hours, minutes] = timeMatch
+      return `${String(Number(hours)).padStart(2, '0')}:${minutes}`
+    }
+
     const tIndex = value.indexOf('T')
     if (tIndex > -1 && value.length >= tIndex + 9) {
       return value.slice(tIndex + 1, tIndex + 6)
     }
-    return value.slice(0, 5)
   }
   try {
     const date = new Date(value)
@@ -187,6 +203,56 @@ const sortAttendancesByDate = (items) => {
     const db = new Date(b?.date || b?.created_at || null)
     return (da.getTime() || 0) - (db.getTime() || 0)
   })
+}
+
+const displayDate = (value) => {
+  if (!value) return 'Unknown date'
+  const [year, month, day] = value.split('-')
+  if (!year || !month || !day) return value
+  return `${month}/${day}/${year}`
+}
+
+const toMinutes = (hhmm) => {
+  if (!hhmm) return null
+  const [hours, minutes] = hhmm.split(':').map(Number)
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null
+  return hours * 60 + minutes
+}
+
+const validateSelectedForms = () => {
+  const issues = []
+
+  forms.value.forEach((form) => {
+    if (!form.is_check) return
+
+    const label = displayDate(form.date)
+    const hasCheckIn = !!form.check_in
+    const hasCheckOut = !!form.check_out
+
+    if (!form.date) {
+      issues.push(`Row ${label}: Date is required.`)
+      return
+    }
+
+    if (!form.type) {
+      issues.push(`Row ${label}: Type is required.`)
+    }
+
+    if (!hasCheckIn && !hasCheckOut) {
+      issues.push(`Row ${label}: Check-In or Check-Out is required.`)
+      return
+    }
+
+    if (hasCheckIn && hasCheckOut) {
+      const checkInMinutes = toMinutes(form.check_in)
+      const checkOutMinutes = toMinutes(form.check_out)
+      if (checkInMinutes !== null && checkOutMinutes !== null && checkOutMinutes <= checkInMinutes) {
+        issues.push(`Row ${label}: Check-Out must be after Check-In.`)
+      }
+    }
+  })
+
+  return issues
 }
 
 watch(
@@ -218,21 +284,59 @@ function toggleRowSelection(row) {
   row.is_check = !row.is_check
 }
 
+async function confirmSubmission(selectedCount) {
+  const actionText = directApprove.value ? 'submit and approve' : 'submit'
+  const result = await Swal.fire({
+    icon: 'question',
+    title: 'Confirm submission',
+    text: `Do you want to ${actionText} ${selectedCount} selected row(s)?`,
+    showCancelButton: true,
+    confirmButtonText: 'Yes, continue',
+    cancelButtonText: 'Cancel',
+    confirmButtonColor: '#059669',
+  })
+
+  return result.isConfirmed
+}
+
+async function showSubmissionSuccess(submittedCount) {
+  await Swal.fire({
+    icon: 'success',
+    title: 'Submitted successfully',
+    text: `${submittedCount} row(s) submitted successfully.`,
+    timer: 1800,
+    timerProgressBar: true,
+    showConfirmButton: false,
+  })
+}
+
 async function submitManualAttendance() {
-  loading.value = true
   error.value = null
 
   if (!filters.value.employee_id) {
     error.value = 'Please select an employee.'
-    loading.value = false
     return
   }
+
+  const selectedForms = forms.value.filter((f) => f.is_check)
+  if (!selectedForms.length) {
+    error.value = 'Please select at least one row.'
+    return
+  }
+
+  const validationIssues = validateSelectedForms()
+  if (validationIssues.length) {
+    error.value = validationIssues[0]
+    return
+  }
+
+  const isConfirmed = await confirmSubmission(selectedForms.length)
+  if (!isConfirmed) return
+
+  loading.value = true
+
   try {
-    const selectedForms = forms.value.filter((f) => f.is_check && (f.check_in || f.check_out))
-    if (!selectedForms.length) {
-      error.value = 'Please select at least one row and fill Check-In/Check-Out time.'
-      return
-    }
+    const submittedCount = selectedForms.length
     const payload = selectedForms.map((f) => ({
       user_id: filters.value.employee_id,
       type: f.type,
@@ -245,7 +349,13 @@ async function submitManualAttendance() {
       records: payload,
       direct_approve: directApprove.value,
     })
-    if (res?.data?.length) await fetchManualAttendancesByUser()
+
+    try {
+      if (res) await fetchManualAttendancesByUser()
+    } catch (_refreshErr) {}
+
+    loading.value = false
+    await showSubmissionSuccess(submittedCount)
   } catch (err) {
     error.value = err?.message || 'Failed to submit manual attendance requests.'
   } finally {
@@ -569,41 +679,43 @@ async function submitManualAttendance() {
           </div>
         </div>
 
-        <!-- Footer actions -->
-        <footer
-          class="flex flex-col md:flex-row items-center justify-between gap-3 border-t border-slate-100 px-4 py-3 bg-slate-50/60"
-        >
-          <div class="text-xs md:text-sm text-slate-600">
-            Selected
-            <span class="font-semibold text-slate-900">{{ selectedFormsCount }}</span>
-            of
-            <span class="font-semibold text-slate-900">{{ totalRows }}</span> row(s)
-            <span class="text-slate-400"> · Only selected rows with time will be submitted</span>
-          </div>
+        <div class="sticky bottom-4 z-30 px-4 py-3">
+          <div
+            class="flex flex-col md:flex-row items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 shadow-lg backdrop-blur"
+          >
+            <div class="text-xs md:text-sm text-slate-600">
+              Selected
+              <span class="font-semibold text-slate-900">{{ selectedFormsCount }}</span>
+              of
+              <span class="font-semibold text-slate-900">{{ totalRows }}</span> row(s)
+              <span class="text-slate-400"> Only selected rows with time will be submitted</span>
+            </div>
 
-          <div class="flex items-center gap-3">
-            <p
-              v-if="!hasEmployeeSelected"
-              class="text-xs text-red-500"
-            >
-              Select an employee to enable submission.
-            </p>
+            <div class="flex items-center gap-3">
+              <p
+                v-if="!hasEmployeeSelected"
+                class="text-xs text-red-500"
+              >
+                Select an employee to enable submission.
+              </p>
 
-            <button
-              type="button"
-              class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-emerald-300"
-              :disabled="loading || !canSubmitForms"
-              @click="submitManualAttendance"
-            >
-              <span v-if="loading">
-                <i class="fas fa-spinner fa-spin mr-2"></i> Submitting...
-              </span>
-              <span v-else>
-                Submit {{ selectedFormsCount || 0 }} row(s)
-              </span>
-            </button>
+              <button
+                type="button"
+                class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                :disabled="loading || !canSubmitForms"
+                @click="submitManualAttendance"
+              >
+                <span v-if="loading">
+                  <i class="fas fa-spinner fa-spin mr-2"></i> Submitting...
+                </span>
+                <span v-else>
+                  Submit {{ selectedFormsCount || 0 }} row(s)
+                </span>
+              </button>
+            </div>
           </div>
-        </footer>
+        </div>
+
       </section>
     </div>
   </div>
