@@ -157,7 +157,7 @@ const formattedType = computed(() => {
             :to="showRoute(notification)"
             class="btn-1 px-3 ml-auto"
           >
-            Re-play
+            Replay
           </RouterLink>
           <RouterLink
             v-if="route.params.type == 'pending-tasks' && showRoute(notification)"
