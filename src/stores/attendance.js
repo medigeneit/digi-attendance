@@ -91,19 +91,40 @@ export const useAttendanceStore = defineStore('attendance', () => {
       return
     }
 
-    // Get baseURL from apiClient config
-    const baseURL = apiClient.defaults.baseURL?.replace(/\/$/, '') // remove trailing slash if exists
+    isLoading.value = true
 
-    let query = `flag=excel&company_id=${companyId}&start_date=${startDate}&end_date=${endDate}`
+    try {
+      const response = await apiClient.get('/attendance/date-range-summary?flag=excel', {
+        params: {
+          company_id: companyId,
+          start_date: startDate,
+          end_date: endDate,
+          employee_id: userId || undefined,
+          line_type: line_type || 'all',
+        },
+        responseType: 'blob',
+      })
 
-    if (userId) query += `&employee_id=${userId}`
-    if (line_type) query += `&line_type=${line_type}`
-
-    const fullUrl = `${baseURL}/attendance/date-range-summary?${query}`
-
-    console.log('📁 Opening Excel Download URL:', fullUrl)
-
-    window.open(fullUrl, '_blank')
+      const blob = new Blob([response.data], {
+        type:
+          response.headers['content-type'] ||
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `attendance-summary-${startDate}-to-${endDate}.xlsx`)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+      error.value = null
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Something went wrong'
+      console.error(error.value)
+    } finally {
+      isLoading.value = false
+    }
   }
 
   // 👉 PDF DOWNLOAD

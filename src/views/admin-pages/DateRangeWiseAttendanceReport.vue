@@ -121,7 +121,7 @@ const fetchDateRangeAttendance = async () => {
 }
 
 const downloadDateRangeExcel = async () => {
-  attendanceStore.downloadDateRangeExcel(
+  await attendanceStore.downloadDateRangeExcel(
     selectedDateRange.value.start,
     selectedDateRange.value.end,
     filters.value.company_id,
