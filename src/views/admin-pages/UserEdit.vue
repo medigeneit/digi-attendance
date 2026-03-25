@@ -42,6 +42,7 @@ const BLOOD_GROUPS = Object.freeze(['A+','A-','B+','B-','AB+','AB-','O+','O-'])
 const EMPLOYMENT_TYPES = Object.freeze([
   'Probationary', 'Permanent', 'Part_Time', 'Remote', 'Contract', 'Freelance', 'Intern'
 ])
+const PAYMENT_METHODS = Object.freeze(['Cash', 'Bank Transfer', 'bKash', 'Nagad', 'Rocket', 'Cheque', 'Other'])
 
 /* -------------------------------- FORM ----------------------------------- */
 const form = reactive({
@@ -72,6 +73,10 @@ const form = reactive({
   leave_approval_id: '',
   other_approval_id: '',
   blood: '',
+  bank_name: '',
+  bank_account_no: '',
+  account_holder_name: '',
+  default_payment_method: '',
 })
 
 // Weekend picker payload (kept separate to avoid polluting core form)
@@ -172,6 +177,10 @@ async function loadUser() {
   form.device_user_id = user.device_user_id ?? ''
   form.leave_approval_id = user.leave_approval_id || ''
   form.other_approval_id = user.other_approval_id || ''
+  form.bank_name = user.bank_name || ''
+  form.bank_account_no = user.bank_account_no || ''
+  form.account_holder_name = user.account_holder_name || ''
+  form.default_payment_method = user.default_payment_method || ''
 }
 
 /* ----------------------------- LIFECYCLE --------------------------------- */
@@ -541,6 +550,53 @@ function clearWeekend() {
                 placeholder="Reason / context…"
                 :required="!form.is_active"
               />
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- Bank & Payment Info -->
+        <fieldset class="border p-4 rounded-md bg-gray-50">
+          <legend class="title-md px-2">Bank &amp; Payment Info</legend>
+          <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <label for="bankName">Bank Name</label>
+              <input
+                id="bankName"
+                v-model.trim="form.bank_name"
+                type="text"
+                class="input-light"
+                placeholder="e.g. Dutch Bangla Bank"
+              />
+            </div>
+
+            <div>
+              <label for="bankAccountNo">Bank Account No</label>
+              <input
+                id="bankAccountNo"
+                v-model.trim="form.bank_account_no"
+                type="text"
+                class="input-light"
+                placeholder="Account number"
+              />
+            </div>
+
+            <div>
+              <label for="accountHolderName">Account Holder Name</label>
+              <input
+                id="accountHolderName"
+                v-model.trim="form.account_holder_name"
+                type="text"
+                class="input-light"
+                placeholder="Name on bank account"
+              />
+            </div>
+
+            <div>
+              <label for="defaultPaymentMethod">Default Payment Method</label>
+              <select id="defaultPaymentMethod" v-model="form.default_payment_method" class="input-light">
+                <option value="">— Select —</option>
+                <option v-for="m in PAYMENT_METHODS" :key="m" :value="m">{{ m }}</option>
+              </select>
             </div>
           </div>
         </fieldset>

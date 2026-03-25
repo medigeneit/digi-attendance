@@ -174,7 +174,7 @@ function handleDescriptionCopy(){
     <form @submit.prevent="submit" class="z-0">
 
 
-      <p class="mt-2 mb-6" v-if="requirementIsLinked" :title="requirement.title">
+      <div class="mt-2 mb-6" v-if="requirementIsLinked" :title="requirement.title">
         <div class="text-sm">
           Requirement
         </div>
@@ -183,7 +183,7 @@ function handleDescriptionCopy(){
             {{ requirement.title }}
           </p>
         </div>
-      </p>
+      </div>
 
       <p class="mt-2 mb-6" v-if="parentTaskId && task?.title">
         Sub task under <span class="text-sky-600">{{ task.title }}</span>

@@ -156,6 +156,20 @@ const careerMenu = [
 ]
 const careerRouteNames = careerMenu.map((i) => i.routeName)
 
+const payrollMenu = [
+  { label: 'Salary Structures', routeName: 'PayrollSalaryStructureList' },
+  { label: 'Salary Revisions', routeName: 'PayrollSalaryRevisionCreate' },
+  { label: 'Meal Entries', routeName: 'PayrollMealEntryList' },
+  { label: 'Employee Loans', routeName: 'PayrollEmployeeLoanList' },
+  { label: 'Payroll Batches', routeName: 'PayrollBatchList' },
+  { label: 'Generate Payroll', routeName: 'PayrollBatchGenerate' },
+  { label: 'Payrolls', routeName: 'PayrollList' },
+]
+const payrollRouteNames = payrollMenu.map((i) => i.routeName)
+const filteredPayrollMenu = computed(() =>
+  normalizedQuery.value ? payrollMenu.filter((i) => matchesQuery(i.label)) : payrollMenu,
+)
+
 const filteredReportsMenu = computed(() =>
   normalizedQuery.value ? reportsMenu.filter((i) => matchesQuery(i.label)) : reportsMenu,
 )
@@ -191,6 +205,7 @@ const hasSearchHit = computed(() => {
     filteredEmpManageMenu.value.length ||
     filteredSettingsMenu.value.length ||
     filteredCareerMenu.value.length
+  || filteredPayrollMenu.value.length
 
   return coreHits || (isAdmin.value && authStore.isAdminMood && (adminTopHits || anySubmenuHit))
 })
@@ -210,6 +225,8 @@ onMounted(() => {
   else if (groupActive(empRouteNames, '/employee-management')) expandedMenuKey.value = 'emp'
   else if (groupActive(settingsRouteNames, '/settings')) expandedMenuKey.value = 'settings'
   else if (groupActive(careerRouteNames, '/admin/careers')) expandedMenuKey.value = 'careers'
+  else if (groupActive(payrollRouteNames, '/payroll') || groupActive(payrollRouteNames, '/payrolls'))
+    expandedMenuKey.value = 'payroll'
 })
 
 // close submenus when sidebar collapsed
@@ -251,7 +268,7 @@ watch(
               :class="{ '!bg-blue-600': authStore.isAdminMood }"
             >
               <div
-                class="dot absolute left-1 top-1 bg-white size-3 md:size-4 rounded-full transition"
+                class="absolute top-[2px] left-[2px] w-4 md:w-5 h-4 md:h-5 bg-white rounded-full transition-transform duration-200"
                 :class="{ 'translate-x-3 md:translate-x-5': authStore.isAdminMood }"
               ></div>
             </div>
@@ -801,6 +818,76 @@ watch(
               ></span>
               <RouterLink
                 v-for="item in filteredCareerMenu"
+                :key="item.routeName"
+                :to="{ name: item.routeName }"
+                class="group relative flex items-center gap-2 rounded-lg py-2 pl-7 pr-3 text-[13px] text-slate-600 transition duration-200 ease-out hover:bg-slate-100 hover:text-slate-900 hover:translate-x-0.5"
+                :class="{
+                  'bg-blue-50/80 text-blue-700 font-semibold shadow-sm':
+                    currentName === item.routeName,
+                }"
+              >
+                <span
+                  class="absolute left-3 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-slate-300 transition group-hover:bg-blue-400"
+                  :class="currentName === item.routeName ? 'bg-blue-500' : ''"
+                ></span>
+                <span class="flex-1">{{ item.label }}</span>
+                <span
+                  class="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-blue-600 opacity-0 transition"
+                  :class="currentName === item.routeName ? 'opacity-100' : 'group-hover:opacity-60'"
+                ></span>
+              </RouterLink>
+            </nav>
+          </transition>
+        </template>
+
+        <template v-if="!isSearching || filteredPayrollMenu.length">
+          <RouterLink to="/payroll/salary-structures" custom v-slot="{ navigate }">
+            <div
+              class="side-menu"
+              :class="{
+                'flex justify-center': !open,
+                'side-menu-active':
+                  groupActive(payrollRouteNames, '/payroll') ||
+                  groupActive(payrollRouteNames, '/payrolls'),
+              }"
+              @click="navigate"
+            >
+              <div class="flex items-center justify-between w-full">
+                <div class="flex items-center gap-2">
+                  <i class="fas fa-file-invoice-dollar py-2"></i>
+                  <h4 v-if="open">Payroll</h4>
+                </div>
+
+                <button
+                  v-if="open"
+                  class="p-1 rounded hover:bg-gray-100 hover:text-black"
+                  @click.stop="toggleSubmenu('payroll')"
+                  :aria-expanded="submenuOpen('payroll', filteredPayrollMenu)"
+                >
+                  <i
+                    class="fas text-xs"
+                    :class="
+                      submenuOpen('payroll', filteredPayrollMenu)
+                        ? 'fa-chevron-up'
+                        : 'fa-chevron-down'
+                    "
+                  ></i>
+                </button>
+              </div>
+            </div>
+          </RouterLink>
+
+          <transition name="submenu">
+            <nav
+              v-if="open && submenuOpen('payroll', filteredPayrollMenu)"
+              class="submenu-accordion relative mt-2 ml-3 space-y-1 rounded-xl bg-slate-50/70 px-2 py-2 shadow-sm"
+            >
+              <span
+                aria-hidden="true"
+                class="absolute left-3 top-2 bottom-2 w-px bg-slate-200"
+              ></span>
+              <RouterLink
+                v-for="item in filteredPayrollMenu"
                 :key="item.routeName"
                 :to="{ name: item.routeName }"
                 class="group relative flex items-center gap-2 rounded-lg py-2 pl-7 pr-3 text-[13px] text-slate-600 transition duration-200 ease-out hover:bg-slate-100 hover:text-slate-900 hover:translate-x-0.5"

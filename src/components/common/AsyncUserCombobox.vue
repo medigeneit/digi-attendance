@@ -133,7 +133,7 @@ onBeforeUnmount(() => document.removeEventListener('click', onClickOutside))
                 :class="['flex w-full items-center justify-between gap-3 px-3 py-2 text-left hover:bg-slate-50', i===active ? 'bg-slate-50' : '']">
           <div class="min-w-0">
             <div class="truncate text-sm font-medium text-slate-800" v-html="highlight(u.name, q)"></div>
-            <div class="truncate text-[11px] text-slate-500">{{ u.department_name || 'Unknown department' }}</div>
+            <div class="truncate text-[11px] text-slate-500">{{ u.department?.name || 'Unknown department' }}</div>
           </div>
           <span class="text-[11px] text-slate-400">#{{ u.id || 'N/A' }}</span>
         </button>
