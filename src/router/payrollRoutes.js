@@ -1,0 +1,80 @@
+const PAYROLL_ROLES = ['admin', 'super_admin', 'developer']
+
+export const payrollRoutes = [
+  {
+    path: '/payroll/salary-structures',
+    name: 'PayrollSalaryStructureList',
+    component: () => import('@/views/admin-pages/payroll/SalaryStructureList.vue'),
+    meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Salary Structures' },
+  },
+  {
+    path: '/payroll/salary-structures/create',
+    name: 'PayrollSalaryStructureCreate',
+    component: () => import('@/views/admin-pages/payroll/SalaryStructureForm.vue'),
+    meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Create Salary Structure' },
+  },
+  {
+    path: '/payroll/salary-structures/:id/edit',
+    name: 'PayrollSalaryStructureEdit',
+    component: () => import('@/views/admin-pages/payroll/SalaryStructureForm.vue'),
+    props: true,
+    meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Edit Salary Structure' },
+  },
+  {
+    path: '/payroll/salary-revisions/create',
+    name: 'PayrollSalaryRevisionCreate',
+    component: () => import('@/views/admin-pages/payroll/SalaryRevisionForm.vue'),
+    meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Salary Revision' },
+  },
+  {
+    path: '/payroll/meal-entries',
+    name: 'PayrollMealEntryList',
+    component: () => import('@/views/admin-pages/payroll/MealEntryList.vue'),
+    meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Meal Entries' },
+  },
+  {
+    path: '/payroll/employee-loans',
+    name: 'PayrollEmployeeLoanList',
+    component: () => import('@/views/admin-pages/payroll/EmployeeLoanList.vue'),
+    meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Employee Loans' },
+  },
+  {
+    path: '/payroll/employee-loans/:id',
+    name: 'PayrollEmployeeLoanShow',
+    component: () => import('@/views/admin-pages/payroll/EmployeeLoanShow.vue'),
+    props: true,
+    meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Loan Details' },
+  },
+  {
+    path: '/payroll/batches',
+    name: 'PayrollBatchList',
+    component: () => import('@/views/admin-pages/payroll/PayrollBatchList.vue'),
+    meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Payroll Batches' },
+  },
+  {
+    path: '/payroll/batches/generate',
+    name: 'PayrollBatchGenerate',
+    component: () => import('@/views/admin-pages/payroll/GeneratePayrollForm.vue'),
+    meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Generate Payroll' },
+  },
+  {
+    path: '/payroll/batches/:id',
+    name: 'PayrollBatchShow',
+    component: () => import('@/views/admin-pages/payroll/PayrollBatchShow.vue'),
+    props: true,
+    meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Batch Details' },
+  },
+  {
+    path: '/payrolls',
+    name: 'PayrollList',
+    component: () => import('@/views/admin-pages/payroll/PayrollList.vue'),
+    meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Payrolls' },
+  },
+  {
+    path: '/payrolls/:id',
+    name: 'PayrollShow',
+    component: () => import('@/views/admin-pages/payroll/PayrollShow.vue'),
+    props: true,
+    meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Payroll Details' },
+  },
+]
