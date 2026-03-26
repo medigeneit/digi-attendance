@@ -29,15 +29,13 @@ watch(
 </script>
 
 <template>
-  <div class="w-full px-6 py-4">
-    <div class="grid lg:grid-cols-4 gap-6 items-start">
-      <div
-        class="gap-0 rounded-md bg-white shadow-md border border-gray-300 col-span-full lg:col-span-3 lg:row-span-2"
-      >
-        <div class="flex items-center justify-center gap-4 py-2 border-b bg-gray-50 rounded-t-md">
+  <div class="w-full px-4 py-4 sm:px-6">
+    <div class="grid items-start gap-6 xl:grid-cols-[minmax(0,2.2fr)_minmax(350px,0.95fr)]">
+      <div class="min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-md">
+        <div class="flex flex-wrap items-center justify-center gap-3 border-b border-gray-200 bg-gradient-to-r from-slate-50 to-white px-4 py-3">
           <button
             @click.prevent="mainSection = 'todos'"
-            class="!py-0.5 text-sm"
+            class="min-w-[96px] !py-0.5 text-sm"
             :class="{
               'btn-2': mainSection == 'todos',
               'btn-3 hover:bg-gray-200 hover:text-blue-500': mainSection != 'todos',
@@ -47,7 +45,7 @@ watch(
           </button>
           <button
             @click.prevent="mainSection = 'tasks'"
-            class="!py-0.5 text-sm"
+            class="min-w-[96px] !py-0.5 text-sm"
             :class="{
               'btn-2': mainSection == 'tasks',
               'btn-3 hover:bg-gray-200 hover:text-blue-500': mainSection != 'tasks',
@@ -61,9 +59,7 @@ watch(
         <DailyTask v-if="mainSection == 'tasks'" />
       </div>
 
-      <div
-        class="col-span-full lg:col-span-1 grid sm:grid-cols-2 lg:grid-cols-1 gap-6 sticky top-[80px]"
-      >
+      <div class="grid items-start gap-6 md:grid-cols-2 xl:sticky xl:top-[88px] xl:grid-cols-1">
         <div class="card-bg gap-0 shadow-md border border-gray-300">
           <DashboardRecentApplications />
         </div>
