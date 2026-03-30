@@ -1,33 +1,73 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useSalaryRevisionStore } from '@/stores/salaryRevision'
-import AllowanceTable from '@/components/payroll/AllowanceTable.vue'
-import GrossSalaryPreview from '@/components/payroll/GrossSalaryPreview.vue'
+import { useUserStore } from '@/stores/user'
 import AsyncUserCombobox from '@/components/common/AsyncUserCombobox.vue'
 import apiClient from '@/axios'
-import { toNum, formatCurrency } from '@/utils/currency'
+import { formatCurrency, toNum } from '@/utils/currency'
+import {
+  PROVIDENT_FUND_RATE,
+  calculateAllowanceTotal,
+  calculateBonusAmount,
+  calculateCoreGross,
+  calculatePfDeduction,
+  getSalaryComponentPolicy,
+  isPfAllowedForEmploymentType,
+  normalizeAllowances,
+  normalizeEmploymentType,
+  resolvePfDeduction,
+  splitGrossByPolicy,
+} from '@/utils/salaryPolicy'
 
 const router = useRouter()
 const toast = useToast()
 const revisionStore = useSalaryRevisionStore()
+const userStore = useUserStore()
 
 const submitting = ref(false)
 const fieldErrors = ref({})
 const currentStructure = ref(null)
 const loadingStructure = ref(false)
+const selectedEmploymentType = ref('')
 
 const userDisplay = ref({ name: null, dept: null })
 
+const formatEmploymentTypeLabel = (value) => {
+  const normalized = normalizeEmploymentType(value)
+  if (!normalized) return 'Not Set'
+  if (normalized === 'probationary') return 'Probationary'
+  if (normalized === 'part_time') return 'Part Time'
+  return normalized
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
+
+const formatLocalDate = (value = new Date()) => {
+  const year = value.getFullYear()
+  const month = `${value.getMonth() + 1}`.padStart(2, '0')
+  const day = `${value.getDate()}`.padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+const formatLocalMonth = (value = new Date()) => {
+  const year = value.getFullYear()
+  const month = `${value.getMonth() + 1}`.padStart(2, '0')
+  return `${year}-${month}`
+}
+
 const form = ref({
   user_id: null,
-  review_date: '',
-  effective_month: '',
+  review_date: formatLocalDate(),
+  effective_month: formatLocalMonth(),
+  gross_salary: '',
   basic_salary: '',
   house_rent: '',
   medical_allowance: '',
   conveyance_allowance: '',
+  pf_deduction: '',
   increment_type: 'fixed',
   increment_value: '',
   remarks: '',
@@ -39,305 +79,547 @@ const fetchUsersFn = (params) =>
     .get('/users', { params })
     .then((r) => (Array.isArray(r.data) ? r.data : r.data?.data || r.data?.users || []))
 
-// Load current structure when user changes
+const activePolicy = computed(() => getSalaryComponentPolicy(selectedEmploymentType.value))
+const activePolicySummary = computed(() =>
+  activePolicy.value.map((item) => `${Math.round(item.ratio * 100)}% ${item.shortLabel}`).join(', '),
+)
+const activePolicyCompact = computed(() =>
+  activePolicy.value.map((item) => Math.round(item.ratio * 100)).join(' / '),
+)
+const pfAllowedForCurrentEmploymentType = computed(() =>
+  isPfAllowedForEmploymentType(selectedEmploymentType.value),
+)
+
+const employmentTypeBadgeClass = computed(() => {
+  const type = normalizeEmploymentType(selectedEmploymentType.value)
+  if (type === 'permanent') return 'bg-emerald-50 text-emerald-700 ring-emerald-200'
+  if (type === 'contract') return 'bg-sky-50 text-sky-700 ring-sky-200'
+  if (type === 'intern') return 'bg-violet-50 text-violet-700 ring-violet-200'
+  if (type === 'probationary') return 'bg-amber-50 text-amber-700 ring-amber-200'
+  return 'bg-slate-100 text-slate-600 ring-slate-200'
+})
+
+const employmentTypeLabel = computed(() => formatEmploymentTypeLabel(selectedEmploymentType.value))
+
+const currentPolicyGross = computed(() => {
+  if (!currentStructure.value) return null
+  return calculateCoreGross(currentStructure.value)
+})
+
+const currentGross = computed(() => {
+  if (!currentStructure.value) return null
+  return toNum(currentStructure.value.gross_salary || calculateCoreGross(currentStructure.value))
+})
+
+const currentAllowanceTotal = computed(() =>
+  currentStructure.value ? calculateAllowanceTotal(currentStructure.value.allowances) : 0,
+)
+
+const currentBonus = computed(() => {
+  if (!currentStructure.value) return 0
+  return calculateBonusAmount(selectedEmploymentType.value, currentStructure.value.basic_salary)
+})
+
+const currentPfDeduction = computed(() => {
+  if (!currentStructure.value) return null
+  return resolvePfDeduction(currentStructure.value)
+})
+
+const incrementAmount = computed(() => {
+  const value = toNum(form.value.increment_value)
+  if (!currentGross.value || value <= 0) return 0
+
+  if (form.value.increment_type === 'percentage') {
+    return Number.parseFloat(((currentGross.value * value) / 100).toFixed(2))
+  }
+
+  return value
+})
+
+const revisedGross = computed(() =>
+  Number.parseFloat(((currentGross.value || 0) + incrementAmount.value).toFixed(2)),
+)
+
+const revisedBonus = computed(() =>
+  calculateBonusAmount(selectedEmploymentType.value, form.value.basic_salary),
+)
+
+const revisedNetPayable = computed(() =>
+  Math.max(0, revisedGross.value - toNum(form.value.pf_deduction)),
+)
+
+const componentCards = computed(() =>
+  activePolicy.value.map((item) => ({
+    ...item,
+    currentAmount: currentStructure.value ? toNum(currentStructure.value[item.key]) : 0,
+    revisedAmount: toNum(form.value[item.key]),
+  })),
+)
+
+const assignEmploymentType = (value) => {
+  selectedEmploymentType.value = value || ''
+}
+
+const fetchEmploymentType = async (userId) => {
+  if (!userId) {
+    assignEmploymentType('')
+    return
+  }
+
+  try {
+    const user = await userStore.fetchUser(userId)
+    assignEmploymentType(user?.employment_type)
+  } catch (_) {
+    assignEmploymentType('')
+  }
+}
+
+const applyRevisionBreakdown = () => {
+  if (!currentStructure.value) {
+    form.value.gross_salary = ''
+    form.value.basic_salary = ''
+    form.value.house_rent = ''
+    form.value.medical_allowance = ''
+    form.value.conveyance_allowance = ''
+    form.value.pf_deduction = ''
+    form.value.allowances = []
+    return
+  }
+
+  form.value.gross_salary = revisedGross.value
+
+  const breakdown = splitGrossByPolicy(revisedGross.value, selectedEmploymentType.value)
+  form.value.basic_salary = breakdown.basic_salary || ''
+  form.value.house_rent = breakdown.house_rent || ''
+  form.value.medical_allowance = breakdown.medical_allowance || ''
+  form.value.conveyance_allowance = breakdown.conveyance_allowance || ''
+  form.value.pf_deduction =
+    pfAllowedForCurrentEmploymentType.value && revisedGross.value
+    ? calculatePfDeduction(breakdown.basic_salary)
+    : ''
+  form.value.allowances = normalizeAllowances(currentStructure.value.allowances)
+}
+
 watch(
   () => form.value.user_id,
   async (userId) => {
     currentStructure.value = null
+    assignEmploymentType('')
+    applyRevisionBreakdown()
+
     if (!userId) return
+
     loadingStructure.value = true
+
     try {
-      const res = await apiClient.get('/salary-structures', {
+      const response = await apiClient.get('/salary-structures', {
         params: { user_id: userId, is_active: 1, per_page: 1 },
       })
-      const d = res.data
-      const list = Array.isArray(d) ? d : d?.data || []
+      const data = response.data
+      const list = Array.isArray(data) ? data : data?.data || []
+
       if (list.length) {
         currentStructure.value = list[0]
-        // Pre-fill form with current values
-        form.value.basic_salary = currentStructure.value.basic_salary ?? ''
-        form.value.house_rent = currentStructure.value.house_rent ?? ''
-        form.value.medical_allowance = currentStructure.value.medical_allowance ?? ''
-        form.value.conveyance_allowance = currentStructure.value.conveyance_allowance ?? ''
-        form.value.allowances = Array.isArray(currentStructure.value.allowances)
-          ? currentStructure.value.allowances.map((a) => ({ ...a }))
-          : []
+        assignEmploymentType(list[0]?.user?.employment_type)
+        if (!selectedEmploymentType.value) {
+          await fetchEmploymentType(userId)
+        }
+        applyRevisionBreakdown()
       }
     } catch (_) {
-      // no current structure is fine
+      currentStructure.value = null
+      applyRevisionBreakdown()
     } finally {
       loadingStructure.value = false
     }
   },
 )
 
-const newGross = computed(() => {
-  const base =
-    toNum(form.value.basic_salary) +
-    toNum(form.value.house_rent) +
-    toNum(form.value.medical_allowance) +
-    toNum(form.value.conveyance_allowance)
-  const addons = form.value.allowances
-    .filter((a) => a.is_active)
-    .reduce((sum, a) => sum + toNum(a.amount), 0)
-  return base + addons
-})
-
-const currentGross = computed(() => {
-  if (!currentStructure.value) return null
-  return (
-    toNum(currentStructure.value.basic_salary) +
-    toNum(currentStructure.value.house_rent) +
-    toNum(currentStructure.value.medical_allowance) +
-    toNum(currentStructure.value.conveyance_allowance) +
-    (Array.isArray(currentStructure.value.allowances)
-      ? currentStructure.value.allowances
-          .filter((a) => a.is_active)
-          .reduce((s, a) => s + toNum(a.amount), 0)
-      : 0)
-  )
-})
+watch(
+  [
+    currentGross,
+    () => form.value.increment_type,
+    () => form.value.increment_value,
+    selectedEmploymentType,
+  ],
+  () => {
+    applyRevisionBreakdown()
+  },
+)
 
 const validate = () => {
   const errors = {}
+
   if (!form.value.user_id) errors.user_id = 'Employee is required.'
+  if (!currentStructure.value) {
+    errors.user_id = 'An active salary structure is required before revision.'
+  }
   if (!form.value.review_date) errors.review_date = 'Review date is required.'
   if (!form.value.effective_month) errors.effective_month = 'Effective month is required.'
-  if (!form.value.basic_salary && form.value.basic_salary !== 0)
-    errors.basic_salary = 'Basic salary is required.'
+  if (!form.value.increment_value && form.value.increment_value !== 0) {
+    errors.increment_value = 'Increment value is required.'
+  }
+  if (toNum(form.value.increment_value) <= 0) {
+    errors.increment_value = 'Increment value must be greater than zero.'
+  }
+
   fieldErrors.value = errors
   return !Object.keys(errors).length
 }
 
 const handleSubmit = async () => {
   if (!validate()) return
+
   submitting.value = true
+
   try {
-    await revisionStore.createRevision(form.value)
+    const payload = {
+      ...form.value,
+      gross_salary: toNum(form.value.gross_salary),
+      basic_salary: toNum(form.value.basic_salary),
+      house_rent: toNum(form.value.house_rent),
+      medical_allowance: toNum(form.value.medical_allowance),
+      conveyance_allowance: toNum(form.value.conveyance_allowance),
+      pf_deduction: toNum(form.value.pf_deduction),
+      increment_value: toNum(form.value.increment_value),
+      allowances: normalizeAllowances(form.value.allowances),
+    }
+
+    await revisionStore.createRevision(payload)
     toast.success('Salary revision created. New structure has been applied.')
     router.push({ name: 'PayrollSalaryStructureList' })
-  } catch (e) {
-    if (e.errors) fieldErrors.value = e.errors
-    toast.error(e.message)
+  } catch (error) {
+    if (error.errors) fieldErrors.value = error.errors
+    toast.error(error.message)
   } finally {
     submitting.value = false
   }
 }
 
 const inputClass =
-  'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400'
+  'w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-700 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100'
 </script>
 
 <template>
-  <div class="p-4 md:p-6 max-w-3xl mx-auto space-y-5">
-    <!-- Header -->
-    <div class="flex items-center justify-between gap-2">
-      <button class="btn-3" @click="router.push({ name: 'PayrollSalaryStructureList' })">
-        <i class="far fa-arrow-left"></i>
-        <span class="hidden md:flex">Back</span>
-      </button>
-      <h1 class="title-md md:title-lg text-center">Salary Revision</h1>
-      <button class="btn-2" @click="handleSubmit" :disabled="submitting">
-        <i class="far" :class="submitting ? 'fa-spinner fa-spin' : 'fa-save'"></i>
-        <span class="hidden md:flex">{{ submitting ? 'Saving...' : 'Apply Revision' }}</span>
-      </button>
-    </div>
-
-    <!-- Info banner -->
-    <div
-      class="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-5 py-4 flex items-start gap-3 text-sm"
-    >
-      <i class="fas fa-info-circle mt-0.5 text-amber-500"></i>
+  <div class="mx-auto max-w-5xl space-y-4 p-4 md:p-6">
+    <div class="flex flex-wrap items-start justify-between gap-3">
       <div>
-        <p class="font-semibold">How salary revision works</p>
-        <p class="text-xs mt-1 text-amber-700">
-          A revision creates a new active salary structure for the employee starting from the
-          effective month, while preserving history. The previous structure will be marked inactive.
+        <p class="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-700">Salary Revision</p>
+        <h1 class="mt-1 text-2xl font-semibold text-slate-900">Create Salary Revision</h1>
+        <p class="mt-1 text-sm text-slate-500">
+          Revise current gross salary directly. Policy breakdown: {{ activePolicySummary }}. PF is 5% of basic.
         </p>
+      </div>
+
+      <div class="flex gap-2">
+        <button class="btn-3" @click="router.push({ name: 'PayrollSalaryStructureList' })">
+          <i class="far fa-arrow-left"></i>
+          <span class="hidden sm:flex">Back</span>
+        </button>
+        <button class="btn-2" @click="handleSubmit" :disabled="submitting">
+          <i class="far" :class="submitting ? 'fa-spinner fa-spin' : 'fa-check'"></i>
+          <span>{{ submitting ? 'Applying...' : 'Apply Revision' }}</span>
+        </button>
       </div>
     </div>
 
-    <form @submit.prevent="handleSubmit" class="space-y-5">
-      <!-- Employee -->
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <h3 class="font-semibold text-blue-900 mb-4 flex items-center gap-2">
-          <i class="fas fa-user text-blue-400"></i> Employee
-        </h3>
-        <AsyncUserCombobox
-          v-model="form.user_id"
-          v-model:display="userDisplay"
-          :fetcher="fetchUsersFn"
-          placeholder="Search employee..."
-        />
-        <p v-if="fieldErrors.user_id" class="text-red-500 text-xs mt-1">
-          {{ fieldErrors.user_id }}
-        </p>
-
-        <!-- Current structure summary -->
-        <div v-if="loadingStructure" class="mt-4 text-sm text-gray-400 flex items-center gap-2">
-          <i class="fas fa-spinner fa-spin"></i> Loading current structure...
-        </div>
-        <div
-          v-else-if="currentStructure"
-          class="mt-4 bg-blue-50 border border-blue-100 rounded-lg p-4 text-sm"
-        >
-          <p class="font-semibold text-blue-800 mb-2">
-            Current Active Structure (effective {{ currentStructure.effective_from }})
-          </p>
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div>
-              <p class="text-xs text-blue-500">Basic</p>
-              <p class="font-mono font-medium">{{ formatCurrency(currentStructure.basic_salary) }}</p>
-            </div>
-            <div>
-              <p class="text-xs text-blue-500">House Rent</p>
-              <p class="font-mono font-medium">{{ formatCurrency(currentStructure.house_rent) }}</p>
-            </div>
-            <div>
-              <p class="text-xs text-blue-500">Medical</p>
-              <p class="font-mono font-medium">
-                {{ formatCurrency(currentStructure.medical_allowance) }}
-              </p>
-            </div>
-            <div>
-              <p class="text-xs text-blue-500">Gross</p>
-              <p class="font-mono font-semibold text-blue-700">
-                {{ formatCurrency(currentGross) }}
-              </p>
-            </div>
-          </div>
-        </div>
-        <div
-          v-else-if="form.user_id && !loadingStructure"
-          class="mt-3 text-xs text-gray-400 italic"
-        >
-          No active salary structure found for this employee.
-        </div>
+    <section class="grid gap-3 md:grid-cols-4">
+      <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Current Gross</p>
+        <p class="mt-1 font-mono text-xl font-semibold text-slate-900">{{ formatCurrency(currentGross) }}</p>
+        <p class="mt-1 text-xs text-slate-500">Active saved gross salary.</p>
       </div>
 
-      <!-- Revision Details -->
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <h3 class="font-semibold text-blue-900 mb-4 flex items-center gap-2">
-          <i class="fas fa-calendar-alt text-blue-400"></i> Revision Details
-        </h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">
-              Review Date <span class="text-red-500">*</span>
-            </label>
-            <input v-model="form.review_date" type="date" :class="inputClass" />
-            <p v-if="fieldErrors.review_date" class="text-red-500 text-xs mt-1">
-              {{ fieldErrors.review_date }}
-            </p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">
-              Effective Month <span class="text-red-500">*</span>
-            </label>
-            <input v-model="form.effective_month" type="month" :class="inputClass" />
-            <p v-if="fieldErrors.effective_month" class="text-red-500 text-xs mt-1">
-              {{ fieldErrors.effective_month }}
-            </p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Increment Type</label>
-            <select v-model="form.increment_type" :class="inputClass">
-              <option value="fixed">Fixed Amount</option>
-              <option value="percentage">Percentage (%)</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Increment Value</label>
-            <input
-              v-model="form.increment_value"
-              type="number"
-              min="0"
-              step="0.01"
-              :class="inputClass"
-              :placeholder="form.increment_type === 'percentage' ? 'e.g. 10 (%)' : '0.00'"
-            />
-          </div>
-          <div class="col-span-full">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
-            <textarea
-              v-model="form.remarks"
-              rows="2"
-              :class="inputClass + ' resize-none'"
-              placeholder="Optional notes about this revision..."
-            ></textarea>
-          </div>
-        </div>
+      <div class="rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-3 shadow-sm">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-700">Increment</p>
+        <p class="mt-1 font-mono text-xl font-semibold text-cyan-900">{{ formatCurrency(incrementAmount) }}</p>
+        <p class="mt-1 text-xs text-cyan-700">Applied on current gross.</p>
       </div>
 
-      <!-- New Salary Components -->
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <h3 class="font-semibold text-blue-900 mb-4 flex items-center gap-2">
-          <i class="fas fa-money-bill-wave text-blue-400"></i> New Salary Components
-        </h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">
-              Basic Salary <span class="text-red-500">*</span>
-            </label>
-            <input
-              v-model="form.basic_salary"
-              type="number"
-              min="0"
-              step="0.01"
-              :class="inputClass"
-              placeholder="0.00"
-            />
-            <p v-if="fieldErrors.basic_salary" class="text-red-500 text-xs mt-1">
-              {{ fieldErrors.basic_salary }}
-            </p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">House Rent</label>
-            <input
-              v-model="form.house_rent"
-              type="number"
-              min="0"
-              step="0.01"
-              :class="inputClass"
-              placeholder="0.00"
-            />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Medical Allowance</label>
-            <input
-              v-model="form.medical_allowance"
-              type="number"
-              min="0"
-              step="0.01"
-              :class="inputClass"
-              placeholder="0.00"
-            />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1"
-              >Conveyance Allowance</label
+      <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Revised Gross</p>
+        <p class="mt-1 font-mono text-xl font-semibold text-slate-900">{{ formatCurrency(revisedGross) }}</p>
+        <p class="mt-1 text-xs text-slate-500">This gross salary is saved directly.</p>
+      </div>
+
+      <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Net After PF</p>
+        <p class="mt-1 font-mono text-xl font-semibold text-emerald-700">{{ formatCurrency(revisedNetPayable) }}</p>
+        <p class="mt-1 text-xs text-slate-500">Revised gross minus PF deduction.</p>
+      </div>
+    </section>
+
+    <form @submit.prevent="handleSubmit" class="space-y-4">
+      <div class="grid gap-4 xl:grid-cols-[0.92fr_0.88fr]">
+        <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div class="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 class="text-sm font-semibold text-slate-900">Employee Setup</h2>
+              <p class="text-xs text-slate-500">Select employee and review the active structure.</p>
+            </div>
+            <span
+              class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1"
+              :class="employmentTypeBadgeClass"
             >
-            <input
-              v-model="form.conveyance_allowance"
-              type="number"
-              min="0"
-              step="0.01"
-              :class="inputClass"
-              placeholder="0.00"
-            />
+              {{ employmentTypeLabel }}
+            </span>
+          </div>
+
+          <div class="space-y-4">
+            <div>
+              <label class="mb-1 block text-sm font-medium text-slate-700">
+                Employee <span class="text-red-500">*</span>
+              </label>
+              <AsyncUserCombobox
+                v-model="form.user_id"
+                v-model:display="userDisplay"
+                :fetcher="fetchUsersFn"
+                placeholder="Search by name or employee ID..."
+              />
+              <p v-if="fieldErrors.user_id" class="mt-1 text-xs text-red-500">
+                {{ fieldErrors.user_id }}
+              </p>
+            </div>
+
+            <div class="grid gap-3">
+              <div class="rounded-xl bg-slate-50 px-3 py-2">
+                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Department</p>
+                <p class="mt-1 text-sm font-medium text-slate-800">{{ userDisplay.dept || 'Not selected' }}</p>
+              </div>
+
+              <div class="rounded-xl bg-slate-50 px-3 py-2">
+                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Revision Rule</p>
+                <p class="mt-1 text-xs font-medium text-slate-800">
+                  Increment changes the saved gross salary. Component split and PF are recalculated automatically.
+                </p>
+              </div>
+
+              <div v-if="loadingStructure" class="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-500">
+                Loading current structure...
+              </div>
+
+              <div
+                v-else-if="currentStructure"
+                class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3"
+              >
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Current Structure</p>
+                    <p class="mt-1 text-sm font-medium text-slate-800">
+                      Effective from {{ currentStructure.effective_from || 'N/A' }}
+                    </p>
+                  </div>
+                  <div class="text-right">
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Current Gross</p>
+                    <p class="mt-1 font-mono text-sm font-semibold text-slate-900">
+                      {{ formatCurrency(currentGross) }}
+                    </p>
+                  </div>
+                </div>
+
+                <div class="mt-3 grid gap-2 sm:grid-cols-2">
+                  <div class="rounded-lg bg-white px-3 py-2 ring-1 ring-slate-200">
+                    <p class="text-[11px] text-slate-400">Policy Breakdown</p>
+                    <p class="mt-1 font-mono text-sm font-semibold text-slate-900">{{ formatCurrency(currentPolicyGross) }}</p>
+                  </div>
+                  <div class="rounded-lg bg-white px-3 py-2 ring-1 ring-slate-200">
+                    <p class="text-[11px] text-slate-400">Current PF</p>
+                    <p class="mt-1 font-mono text-sm font-semibold text-slate-900">{{ formatCurrency(currentPfDeduction) }}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                v-else-if="form.user_id"
+                class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-3 py-3 text-sm text-slate-500"
+              >
+                No active salary structure found for this employee. Create a salary structure first.
+              </div>
+            </div>
+
+            <div class="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label class="mb-1 block text-sm font-medium text-slate-700">
+                  Review Date <span class="text-red-500">*</span>
+                </label>
+                <input v-model="form.review_date" type="date" :class="inputClass" />
+                <p v-if="fieldErrors.review_date" class="mt-1 text-xs text-red-500">
+                  {{ fieldErrors.review_date }}
+                </p>
+              </div>
+
+              <div>
+                <label class="mb-1 block text-sm font-medium text-slate-700">
+                  Effective Month <span class="text-red-500">*</span>
+                </label>
+                <input v-model="form.effective_month" type="month" :class="inputClass" />
+                <p v-if="fieldErrors.effective_month" class="mt-1 text-xs text-red-500">
+                  {{ fieldErrors.effective_month }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div class="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 class="text-sm font-semibold text-slate-900">Revision Calculator</h2>
+              <p class="text-xs text-slate-500">Compact inputs with real-time revised breakdown.</p>
+            </div>
+            <div class="rounded-full bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-700">
+              {{ activePolicyCompact }}
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <div class="grid gap-3 sm:grid-cols-[1fr_1.1fr]">
+              <div>
+                <label class="mb-2 block text-sm font-medium text-slate-700">Increment Type</label>
+                <div class="grid grid-cols-2 gap-1 rounded-xl bg-slate-50 p-1">
+                  <button
+                    type="button"
+                    class="rounded-lg px-3 py-2 text-sm font-medium transition"
+                    :class="form.increment_type === 'fixed' ? 'bg-white text-cyan-700 shadow-sm ring-1 ring-cyan-100' : 'text-slate-600'"
+                    @click="form.increment_type = 'fixed'"
+                  >
+                    Fixed
+                  </button>
+                  <button
+                    type="button"
+                    class="rounded-lg px-3 py-2 text-sm font-medium transition"
+                    :class="form.increment_type === 'percentage' ? 'bg-white text-cyan-700 shadow-sm ring-1 ring-cyan-100' : 'text-slate-600'"
+                    @click="form.increment_type = 'percentage'"
+                  >
+                    Percent
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label class="mb-1 block text-sm font-medium text-slate-700">
+                  Increment Value <span class="text-red-500">*</span>
+                </label>
+                <input
+                  v-model="form.increment_value"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  :class="inputClass"
+                  :placeholder="form.increment_type === 'percentage' ? 'e.g. 10 (%)' : '0.00'"
+                  :disabled="!currentStructure"
+                />
+                <p v-if="fieldErrors.increment_value" class="mt-1 text-xs text-red-500">
+                  {{ fieldErrors.increment_value }}
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <label class="mb-1 block text-sm font-medium text-slate-700">Remarks</label>
+              <textarea
+                v-model="form.remarks"
+                rows="2"
+                :class="inputClass + ' resize-none'"
+                placeholder="Optional notes about this revision..."
+              ></textarea>
+            </div>
+
+            <div class="grid gap-2 sm:grid-cols-2">
+              <div
+                v-for="item in componentCards"
+                :key="item.key"
+                class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5"
+              >
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <p class="text-sm font-medium text-slate-700">{{ item.shortLabel }}</p>
+                    <p class="text-[11px] text-slate-400">{{ Math.round(item.ratio * 100) }}% of revised gross</p>
+                  </div>
+                  <div class="text-right">
+                    <p class="font-mono text-sm font-semibold text-slate-900">{{ formatCurrency(item.revisedAmount) }}</p>
+                    <p class="mt-1 text-[11px] text-slate-400">Prev {{ formatCurrency(item.currentAmount) }}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <p class="text-sm font-medium text-amber-800">Bonus</p>
+                    <p class="text-[11px] text-amber-600">Reference only</p>
+                  </div>
+                  <p class="font-mono text-sm font-semibold text-amber-900">{{ formatCurrency(revisedBonus) }}</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <p class="text-sm font-semibold text-slate-900">PF Deduction</p>
+                  <p class="mt-1 text-xs text-slate-500">
+                    {{ (PROVIDENT_FUND_RATE * 100).toFixed(0) }}% of revised basic salary.
+                  </p>
+                </div>
+                <div class="text-right">
+                  <p
+                    class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold"
+                    :class="pfAllowedForCurrentEmploymentType ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'"
+                  >
+                    {{ pfAllowedForCurrentEmploymentType ? 'Applicable' : 'Not Applicable' }}
+                  </p>
+                  <p class="mt-2 font-mono text-sm font-semibold text-slate-900">{{ formatCurrency(form.pf_deduction) }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div class="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h2 class="text-sm font-semibold text-slate-900">Preserved Additional Allowances</h2>
+            <p class="text-xs text-slate-500">Existing additional allowances carry forward unchanged.</p>
+          </div>
+          <div class="rounded-xl bg-slate-50 px-3 py-2 text-right">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Allowance Total</p>
+            <p class="mt-1 font-mono text-sm font-semibold text-slate-900">{{ formatCurrency(currentAllowanceTotal) }}</p>
           </div>
         </div>
-      </div>
 
-      <!-- Additional Allowances -->
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <AllowanceTable v-model="form.allowances" />
-      </div>
+        <div v-if="form.allowances.length" class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div
+            v-for="(allowance, index) in form.allowances"
+            :key="`${allowance.allowance_code || allowance.allowance_name || 'allowance'}-${index}`"
+            class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-sm font-semibold text-slate-900">{{ allowance.allowance_name || 'Additional Allowance' }}</p>
+                <p class="mt-1 text-xs text-slate-500">{{ allowance.allowance_code || 'No code' }}</p>
+              </div>
+              <span
+                class="rounded-full px-2.5 py-1 text-xs font-medium"
+                :class="allowance.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'"
+              >
+                {{ allowance.is_active ? 'Active' : 'Inactive' }}
+              </span>
+            </div>
+            <p class="mt-3 font-mono text-lg font-semibold text-slate-900">{{ formatCurrency(allowance.amount) }}</p>
+            <p v-if="allowance.remarks" class="mt-1 text-xs text-slate-500">{{ allowance.remarks }}</p>
+          </div>
+        </div>
 
-      <!-- New Gross Preview -->
-      <GrossSalaryPreview :gross="newGross" label="New Gross Salary After Revision" />
+        <div
+          v-else
+          class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-sm italic text-slate-500"
+        >
+          No additional allowances will be carried forward.
+        </div>
+      </section>
 
-      <!-- Actions -->
       <div class="flex justify-end gap-3">
         <button
           type="button"
