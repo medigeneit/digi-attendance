@@ -188,7 +188,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
   }
 
 
-  const getAttendanceLateReport = async (
+  const getMonthlyAttendanceLateReport = async (
     company_id,
     department_id = null,
     category = null,
@@ -207,7 +207,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
         ...(type === 'daily' ? { date: value } : { month: value }),
       }
 
-      const response = await apiClient.get('/monthly/attendance/late-reports', { params })
+      const response = await apiClient.get('/monthly/attendance/late-report', { params })
 
       if (type === 'daily') {
         dailyLateLogs.value = response.data
@@ -562,7 +562,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
 
       const endpoint = normalizedType === 'daily'
         ? '/attendance/late-reports?flag=excel'
-        : '/monthly/attendance/late-reports?flag=excel'
+        : '/monthly/attendance/late-report?flag=excel'
 
       const response = await apiClient.get(endpoint, {
         params,
@@ -602,7 +602,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     getUserDailyLogsByDate,
     getMonthlyAttendanceByShift,
     getTodayAttendanceReport,
-    getAttendanceLateReport,
+    getMonthlyAttendanceLateReport,
     getMonthlyAttendanceSummaryReport,
     postPayrollPeriods,
     updatePayrollPeriod,

@@ -5,7 +5,6 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { storeToRefs } from 'pinia'
 import Swal from 'sweetalert2'
-import { computed } from 'vue'
 import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -38,11 +37,13 @@ const selectedDate = ref(route.query.date || storeSelectedMonth.value || '')
 const period = ref(parsePeriod(selectedDate.value))
 
 const filters = ref({
-  company_id: '',
-  department_id: 'all',
-  line_type: 'all',
-  employee_id: '',
+  company_id: String(route.query.company_id || ''),
+  department_id: String(route.query.department_id || 'all'),
+  line_type: String(route.query.line_type || 'all'),
+  employee_id: String(route.query.employee_id || ''),
 })
+
+const hasRequiredFilters = () => Boolean(filters.value.company_id && filters.value.employee_id && selectedDate.value)
 
 const applySelectedDate = () => {
   if (!selectedDate.value) return
@@ -53,7 +54,7 @@ const applySelectedDate = () => {
     },
   })
 
-  if (filters.value?.company_id && filters.value?.department_id && filters.value?.line_type && filters.value?.employee_id) {
+  if (hasRequiredFilters()) {
     fetchApplicationsByUser(filters.value)
   }
 }
@@ -67,22 +68,22 @@ watch(
       selectedDate.value = formatted
     }
   },
-  { deep: true }
+  { deep: true, immediate: true }
 )
 
 watch(
   selectedDate,
   () => {
     applySelectedDate()
-    lateAttendanceStore.selectedMonth = selectedDate.value
+    storeSelectedMonth.value = selectedDate.value
   },
   { immediate: true }
 )
 
 
 const fetchApplicationsByUser = async (params) => {
-  if (params.company_id && params?.department_id && params?.line_type && params?.line_type && params?.employee_id && selectedDate.value) {
-     await lateAttendanceStore.getAttendanceLateReport(
+  if (params?.company_id && params?.employee_id && selectedDate.value) {
+     await lateAttendanceStore.getMonthlyAttendanceLateReport(
       params?.company_id, 
        params?.department_id , 
        params?.line_type, 
@@ -97,6 +98,8 @@ const getExportExcel = async () => {
   if (filters.value.company_id && filters.value.employee_id && selectedDate.value) {
     await lateAttendanceStore.lateReportDownloadExcel(
       filters.value.company_id,
+      filters.value.department_id,
+      filters.value.line_type,
       filters.value.employee_id,
       selectedDate.value,
       'monthly',
@@ -137,24 +140,18 @@ const handleFilterChange = async() => {
   })
   // fetchApplicationsByUser()
 
-  if (filters.value?.company_id && filters.value?.department_id && filters.value?.line_type && filters.value?.employee_id) {
+  if (hasRequiredFilters()) {
     fetchApplicationsByUser(filters.value)
   
   }
 }
 
-const initialFilter = computed(() => ({
-  company_id: route.query.company_id || '',
-  department_id: route.query.department_id || 'all',
-  line_type: route.query.line_type || 'all',
-  employee_id: route.query.employee_id || '',
-}))
-
 </script>
 
 <template>
-  <div class="space-y-4 px-4">
-    <div class="flex items-center justify-between gap-2">
+  <div class="space-y-5 px-4 pb-6">
+    <div class="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50 p-4 shadow-sm">
+      <div class="flex items-center justify-between gap-2">
       <button class="btn-3" @click="goBack">
         <i class="far fa-arrow-left"></i>
         <span class="hidden md:flex">Back</span>
@@ -162,18 +159,24 @@ const initialFilter = computed(() => ({
 
       <h1 class="title-md md:title-lg flex-wrap text-center">Monthly Late Reports</h1>
       <div class="flex gap-4">
-        <button type="button" @click="getExportExcel" class="btn-3">
+        <button type="button" @click="getExportExcel" class="btn-3" :disabled="!hasRequiredFilters()">
           <i class="far fa-file-excel text-2xl text-green-500"></i>
         </button>
       </div>
     </div>
+    </div>
     
-    <div class="flex flex-wrap gap-2 bg-white p-2 rounded-md shadow-md items-center">
+    <div class="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+      <div class="flex flex-wrap gap-2 items-center">
        <EmployeeFilter
-          v-model:company_id="filters.company_id"
-          v-model:department_id="filters.department_id"
-          v-model:employee_id="filters.employee_id"
-          v-model:line_type="filters.line_type"
+          :company_id="filters.company_id"
+          :department_id="filters.department_id"
+          :employee_id="filters.employee_id"
+          :line_type="filters.line_type"
+          @update:company_id="filters.company_id = $event"
+          @update:department_id="filters.department_id = $event"
+          @update:employee_id="filters.employee_id = $event"
+          @update:line_type="filters.line_type = $event"
           :with-type="true"
           :initial-value="$route.query"
          @filter-change="handleFilterChange"
@@ -186,6 +189,7 @@ const initialFilter = computed(() => ({
         label="Month"
       />
       </EmployeeFilter>
+      </div>
     </div>
 
     <div v-if="isLoading" class="text-center py-4">
@@ -193,7 +197,7 @@ const initialFilter = computed(() => ({
     </div>
 
     <div v-else class="space-y-4">
-      <div v-if="filters.company_id && filters.employee_id && filters.department_id" class="rounded-2xl border border-slate-200 bg-white shadow overflow-hidden">
+      <div v-if="hasRequiredFilters()" class="rounded-2xl border border-slate-200 bg-white shadow overflow-hidden">
         <div class="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
           <span>Monthly late attendance</span>
           <span class="text-xs text-slate-500">Updated after each filter change</span>
@@ -254,8 +258,11 @@ const initialFilter = computed(() => ({
           </table>
         </div>
       </div>
-      <div v-else class="text-center text-red-500 text-xl italic mt-10">
-        Please select company, department and employee
+      <div v-else class="rounded-2xl border border-dashed border-slate-300 bg-white/70 px-6 py-10 text-center text-slate-500">
+        <div class="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+          <i class="far fa-user"></i>
+        </div>
+        Please select company and employee to view monthly late reports.
       </div>
     </div>
   </div>
