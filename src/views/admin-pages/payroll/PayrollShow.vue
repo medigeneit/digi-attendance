@@ -39,6 +39,15 @@ const formatKeyLabel = (key) =>
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (ch) => ch.toUpperCase())
 
+const deductionLabelMap = {
+  pf_deduction: 'PF Deduction',
+  meal_deduction: 'Meal Deduction',
+  tax_deduction: 'Tax Deduction',
+  loan_deduction: 'Loan Deduction',
+  other_deduction: 'Other Deduction',
+  paycut_deduction: 'Paycut Deduction',
+}
+
 const normalizedDeductions = computed(() => {
   const rows = Array.isArray(item.value?.deductions) ? item.value.deductions : []
 
@@ -65,7 +74,7 @@ const deductionFieldRows = computed(() => {
     })
     .map(([key, value]) => ({
       key,
-      label: formatKeyLabel(key),
+      label: deductionLabelMap[key] || formatKeyLabel(key),
       amount: toNum(value),
     }))
 })
@@ -230,8 +239,12 @@ const accountNumberDisplay = computed(() => {
                 :key="row.key"
                 class="flex justify-between py-1.5 border-b border-dashed"
               >
-                <span class="text-gray-600">{{ row.label }}</span>
-                <span class="font-mono font-medium text-red-600">{{ formatCurrency(row.amount) }}</span>
+                <span class="text-gray-600" :class="{ 'font-semibold text-rose-700': row.key === 'paycut_deduction' }">
+                  {{ row.label }}
+                </span>
+                <span class="font-mono font-medium text-red-600" :class="{ 'font-bold': row.key === 'paycut_deduction' }">
+                  {{ formatCurrency(row.amount) }}
+                </span>
               </div>
             </template>
 

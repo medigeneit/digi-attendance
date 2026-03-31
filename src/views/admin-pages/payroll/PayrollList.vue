@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { storeToRefs } from 'pinia'
@@ -9,7 +9,6 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import PaginationBar from '@/components/PaginationBar.vue'
 import PayrollStatusBadge from '@/components/payroll/PayrollStatusBadge.vue'
 import PaymentStatusModal from '@/components/payroll/PaymentStatusModal.vue'
-import { formatCurrency } from '@/utils/currency'
 
 const router = useRouter()
 const toast = useToast()
@@ -31,10 +30,73 @@ const filters = ref({
 const showPaymentModal = ref(false)
 const selectedPayroll = ref(null)
 
+const typeOptions = ['Monthly', 'Bonus', 'Final']
+
+const statusOptions = ['Pending', 'Paid', 'Partial']
+
+const summaryCards = computed(() => {
+  const rows = list.value || []
+  const totalGross = rows.reduce((sum, row) => sum + Number(row.gross_salary || 0), 0)
+  const totalDeduction = rows.reduce((sum, row) => sum + Number(row.total_deduction || 0), 0)
+  const totalNet = rows.reduce((sum, row) => sum + Number(row.net_salary || 0), 0)
+
+  return [
+    {
+      label: 'Payrolls',
+      value: rows.length,
+      tone: 'border-blue-200 bg-blue-50 text-blue-800',
+      formatter: (value) => value,
+    },
+    {
+      label: 'Gross Total',
+      value: totalGross,
+      tone: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+      formatter: (value) => formatCompactCurrency(value),
+    },
+    {
+      label: 'Deduction Total',
+      value: totalDeduction,
+      tone: 'border-rose-200 bg-rose-50 text-rose-800',
+      formatter: (value) => formatCompactCurrency(value),
+    },
+    {
+      label: 'Net Payable',
+      value: totalNet,
+      tone: 'border-indigo-200 bg-indigo-50 text-indigo-800',
+      formatter: (value) => formatCompactCurrency(value),
+    },
+  ]
+})
+
+const resetFilters = () => {
+  filters.value = {
+    company_id: '',
+    salary_month: '',
+    salary_type: '',
+    payment_status: '',
+    page: 1,
+    per_page: 15,
+  }
+  load()
+}
+
 async function load() {
   const params = { ...filters.value }
   Object.keys(params).forEach((k) => { if (!params[k]) delete params[k] })
   await payrollStore.fetchList(params)
+}
+
+async function handleDownloadExcel() {
+  try {
+    const params = { ...filters.value }
+    delete params.page
+    delete params.per_page
+    Object.keys(params).forEach((k) => { if (!params[k]) delete params[k] })
+    await payrollStore.downloadExcel(params)
+    toast.success('Payroll report downloaded.')
+  } catch (e) {
+    toast.error(e.message || 'Download failed.')
+  }
 }
 
 onMounted(async () => {
@@ -56,20 +118,50 @@ const handlePaymentSubmit = async ({ id, payload }) => {
     toast.error(e.message || 'Update failed.')
   }
 }
+
+const formatCompactCurrency = (value) => {
+  if (value === null || value === undefined || value === '') return '—'
+  const num = parseFloat(value)
+  if (isNaN(num)) return '—'
+
+  return new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(num)
+}
+
+const formatMonth = (value) => {
+  if (!value) return '—'
+  return String(value).slice(0, 7)
+}
 </script>
 
 <template>
-  <div class="p-4 md:p-6 space-y-4">
-    <div class="flex items-center justify-between gap-2">
-      <h1 class="title-md md:title-lg">Payrolls</h1>
+  <div class="space-y-4 p-4 md:p-6">
+    <div class="rounded-3xl border border-slate-200 bg-gradient-to-r from-slate-50 via-white to-blue-50 p-5 shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 class="title-md md:title-lg">Payroll Report List</h1>
+          <p class="mt-1 text-sm text-slate-500">Detailed earnings, deductions and payable amounts in one report view.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button class="btn-3" @click="handleDownloadExcel" :disabled="loading || !list.length">
+            <i class="far fa-file-excel"></i> Excel
+          </button>
+          <button class="btn-2" @click="router.push({ name: 'PayrollBatchGenerate' })">
+            <i class="far fa-plus"></i> Generate
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Filters -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-wrap gap-3 items-end">
+    <div class="rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
+      <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.4fr_1fr_1fr_1fr_auto] items-end">
       <div>
         <label class="block text-xs font-medium text-gray-600 mb-1">Company</label>
         <select v-model="filters.company_id" @change="() => { filters.page = 1; load() }"
-          class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
           <option value="">All Companies</option>
           <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
         </select>
@@ -77,35 +169,40 @@ const handlePaymentSubmit = async ({ id, payload }) => {
       <div>
         <label class="block text-xs font-medium text-gray-600 mb-1">Salary Month</label>
         <input v-model="filters.salary_month" type="month" @change="() => { filters.page = 1; load() }"
-          class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
       </div>
       <div>
         <label class="block text-xs font-medium text-gray-600 mb-1">Salary Type</label>
         <select v-model="filters.salary_type" @change="() => { filters.page = 1; load() }"
-          class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
           <option value="">All Types</option>
-          <option value="Monthly">Monthly</option>
-          <option value="Weekly">Weekly</option>
-          <option value="Bi-Weekly">Bi-Weekly</option>
-          <option value="Hourly">Hourly</option>
+          <option v-for="type in typeOptions" :key="type" :value="type">{{ type }}</option>
         </select>
       </div>
       <div>
         <label class="block text-xs font-medium text-gray-600 mb-1">Payment Status</label>
         <select v-model="filters.payment_status" @change="() => { filters.page = 1; load() }"
-          class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
           <option value="">All Statuses</option>
-          <option value="generated">Generated</option>
-          <option value="unpaid">Unpaid</option>
-          <option value="partial">Partial</option>
-          <option value="paid">Paid</option>
-          <option value="hold">On Hold</option>
-          <option value="cancelled">Cancelled</option>
+          <option v-for="status in statusOptions" :key="status" :value="status">{{ status }}</option>
         </select>
       </div>
-      <button class="btn-3" @click="() => { filters = { company_id: '', salary_month: '', salary_type: '', payment_status: '', page: 1, per_page: 15 }; load() }">
+      <button class="btn-3 h-[42px]" @click="resetFilters">
         <i class="far fa-undo"></i> Reset
       </button>
+      </div>
+    </div>
+
+    <div class="grid gap-2.5 md:grid-cols-2 xl:grid-cols-4">
+      <div
+        v-for="card in summaryCards"
+        :key="card.label"
+        class="rounded-2xl border p-3 shadow-sm"
+        :class="card.tone"
+      >
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] opacity-80">{{ card.label }}</p>
+        <p class="mt-1 text-lg font-bold">{{ card.formatter(card.value) }}</p>
+      </div>
     </div>
 
     <LoaderView v-if="loading" />
@@ -121,39 +218,79 @@ const handlePaymentSubmit = async ({ id, payload }) => {
       <p class="text-sm text-gray-400 mt-1">Generate a payroll batch to create payroll records.</p>
     </div>
 
-    <div v-else class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead class="bg-blue-50 text-blue-900 text-xs uppercase">
+    <div v-else class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <div class="border-b border-slate-100 px-4 py-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 class="text-base font-semibold text-slate-800">Detailed Payroll Report</h2>
+            <p class="text-sm text-slate-500">Reference-style breakdown for each employee.</p>
+          </div>
+          <p class="text-xs text-slate-400">Rows: {{ pagination.total || list.length }}</p>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+      <table class="min-w-[1760px] w-full border-collapse text-[12px] leading-tight">
+        <thead class="bg-slate-50 text-slate-700 text-[10px] uppercase">
           <tr>
-            <th class="px-3 py-3 text-left">#</th>
-            <th class="px-3 py-3 text-left">Employee</th>
-            <th class="px-3 py-3 text-left">Dept.</th>
-            <th class="px-3 py-3 text-center">Month</th>
-            <th class="px-3 py-3 text-center">Type</th>
-            <th class="px-3 py-3 text-right">Gross</th>
-            <th class="px-3 py-3 text-right">Deductions</th>
-            <th class="px-3 py-3 text-right">Net</th>
-            <th class="px-3 py-3 text-center">Status</th>
-            <th class="px-3 py-3 text-center">Actions</th>
+            <th class="border border-slate-200 px-2 py-2 text-left" rowspan="2">#</th>
+            <th class="border border-slate-200 px-2 py-2 text-left" rowspan="2">Employee</th>
+            <th class="border border-slate-200 px-2 py-2 text-left" rowspan="2">ID Number</th>
+            <th class="border border-slate-200 px-2 py-2 text-left" rowspan="2">Department</th>
+            <!-- <th class="border border-slate-200 px-2 py-2 text-left" rowspan="2">Department</th> -->
+            <th class="border border-slate-200 px-2 py-2 text-center" rowspan="2">Month</th>
+            <!-- <th class="border border-slate-200 px-2 py-2 text-center" rowspan="2">Type</th> -->
+            <th class="border border-slate-200 px-2 py-2 text-center" colspan="6">Addition / Earnings</th>
+            <th class="border border-slate-200 px-2 py-2 text-center" colspan="6">Deduction</th>
+            <th class="border border-slate-200 px-2 py-2 text-right" rowspan="2">Payable</th>
+            <th class="border border-slate-200 px-2 py-2 text-center" rowspan="2">Status</th>
+            <th class="border border-slate-200 px-2 py-2 text-center" rowspan="2">Actions</th>
+          </tr>
+          <tr>
+            <th class="border border-slate-200 px-2 py-1.5 text-right">Basic</th>
+            <th class="border border-slate-200 px-2 py-1.5 text-right">House Rent</th>
+            <th class="border border-slate-200 px-2 py-1.5 text-right">Medical</th>
+            <th class="border border-slate-200 px-2 py-1.5 text-right">Conveyance</th>
+            <th class="border border-slate-200 px-2 py-1.5 text-right">Others</th>
+            <th class="border border-slate-200 px-2 py-1.5 text-right">Total</th>
+            <th class="border border-slate-200 px-2 py-1.5 text-right">PF</th>
+            <th class="border border-slate-200 px-2 py-1.5 text-right">Meal</th>
+            <th class="border border-slate-200 px-2 py-1.5 text-right">Tax</th>
+            <th class="border border-slate-200 px-2 py-1.5 text-right">Loan</th>
+            <th class="border border-slate-200 px-2 py-1.5 text-right">Other</th>
+            <th class="border border-slate-200 px-2 py-1.5 text-right">Paycut</th>
+            <th class="border border-slate-200 px-2 py-1.5 text-right">Total Deduct</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-50">
-          <tr v-for="(p, i) in list" :key="p.id" class="hover:bg-gray-50 transition-colors">
-            <td class="px-3 py-3 text-gray-400 text-xs">{{ (filters.page - 1) * filters.per_page + i + 1 }}</td>
-            <td class="px-3 py-3">
-              <div class="font-medium text-blue-900">{{ p.user?.name || '—' }}</div>
-              <div class="text-xs text-gray-400">{{ p.user?.employee_id }}</div>
+        <tbody>
+          <tr v-for="(p, i) in list" :key="p.id" class="hover:bg-slate-50/70 transition-colors">
+            <td class="border border-slate-200 px-2 py-2 text-gray-400 text-[11px]">{{ (filters.page - 1) * filters.per_page + i + 1 }}</td>
+            <td class="border border-slate-200 px-2 py-2 align-top">
+              <div class="font-medium text-slate-900">{{ p.user?.name || p.employee_name || '—' }}</div>
+              <div class="text-xs text-slate-400">{{ p.user?.designation?.title || p.company_name || '—' }}</div>
             </td>
-            <td class="px-3 py-3 text-xs text-gray-500">{{ p.user?.department?.name || '—' }}</td>
-            <td class="px-3 py-3 text-center text-gray-600">{{ p.salary_month || '—' }}</td>
-            <td class="px-3 py-3 text-center">
-              <span class="px-1.5 py-0.5 bg-indigo-50 text-indigo-700 rounded text-xs">{{ p.salary_type || '—' }}</span>
-            </td>
-            <td class="px-3 py-3 text-right font-mono">{{ formatCurrency(p.gross_salary) }}</td>
-            <td class="px-3 py-3 text-right font-mono text-red-600">{{ formatCurrency(p.total_deduction) }}</td>
-            <td class="px-3 py-3 text-right font-mono font-bold text-emerald-700">{{ formatCurrency(p.net_salary) }}</td>
-            <td class="px-3 py-3 text-center"><PayrollStatusBadge :status="p.payment_status" /></td>
-            <td class="px-3 py-3 text-center">
+            <td class="border border-slate-200 px-2 py-2 text-xs text-slate-500">{{ p.user?.employee_id || p.employee_code || '—' }}</td>
+            <td class="border border-slate-200 px-2 py-2 text-xs text-slate-500">{{ p.department || p.user?.department?.name || '—' }}</td>
+            <!-- <td class="border border-slate-200 px-2 py-2 text-xs text-slate-500">{{ p.department_name || p.user?.department?.name || '—' }}</td> -->
+            <td class="border border-slate-200 px-2 py-2 text-center text-slate-600">{{ formatMonth(p.salary_month) }}</td>
+            <!-- <td class="border border-slate-200 px-2 py-2 text-center">
+              <span class="rounded-full bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700">{{ p.salary_type || '—' }}</span>
+            </td> -->
+            <td class="border border-slate-200 px-2 py-2 text-right font-mono">{{ formatCompactCurrency(p.basic_salary) }}</td>
+            <td class="border border-slate-200 px-2 py-2 text-right font-mono">{{ formatCompactCurrency(p.house_rent) }}</td>
+            <td class="border border-slate-200 px-2 py-2 text-right font-mono">{{ formatCompactCurrency(p.medical_allowance) }}</td>
+            <td class="border border-slate-200 px-2 py-2 text-right font-mono">{{ formatCompactCurrency(p.conveyance_allowance) }}</td>
+            <td class="border border-slate-200 px-2 py-2 text-right font-mono">{{ formatCompactCurrency(Number(p.other_allowance_total || 0) + Number(p.manual_addition || 0)) }}</td>
+            <td class="border border-slate-200 px-2 py-2 text-right font-mono font-semibold text-emerald-700">{{ formatCompactCurrency(p.gross_salary) }}</td>
+            <td class="border border-slate-200 px-2 py-2 text-right font-mono text-rose-600">{{ formatCompactCurrency(p.pf_deduction) }}</td>
+            <td class="border border-slate-200 px-2 py-2 text-right font-mono text-rose-600">{{ formatCompactCurrency(p.meal_deduction) }}</td>
+            <td class="border border-slate-200 px-2 py-2 text-right font-mono text-rose-600">{{ formatCompactCurrency(p.tax_deduction) }}</td>
+            <td class="border border-slate-200 px-2 py-2 text-right font-mono text-rose-600">{{ formatCompactCurrency(p.loan_deduction) }}</td>
+            <td class="border border-slate-200 px-2 py-2 text-right font-mono text-rose-600">{{ formatCompactCurrency(p.other_deduction) }}</td>
+            <td class="border border-slate-200 px-2 py-2 text-right font-mono text-rose-600">{{ formatCompactCurrency(p.paycut_deduction) }}</td>
+            <td class="border border-slate-200 px-2 py-2 text-right font-mono font-semibold text-rose-700">{{ formatCompactCurrency(p.total_deduction) }}</td>
+            <td class="border border-slate-200 px-2 py-2 text-right font-mono font-bold text-blue-800">{{ formatCompactCurrency(p.net_salary) }}</td>
+            <td class="border border-slate-200 px-2 py-2 text-center"><PayrollStatusBadge :status="p.payment_status" /></td>
+            <td class="border border-slate-200 px-2 py-2 text-center">
               <div class="flex items-center justify-center gap-1">
                 <button @click="router.push({ name: 'PayrollShow', params: { id: p.id } })"
                   class="p-1.5 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg" title="View">
@@ -168,6 +305,7 @@ const handlePaymentSubmit = async ({ id, payload }) => {
           </tr>
         </tbody>
       </table>
+      </div>
     </div>
 
     <PaginationBar v-if="pagination.total > 0" :page="pagination.current_page || filters.page"
