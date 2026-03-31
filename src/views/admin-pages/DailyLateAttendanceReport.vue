@@ -325,6 +325,7 @@ function goBack() {
             :show-year="false"
             :show-month="false"
             :show-date="true"
+            
           />
         </div>
         </EmployeeFilter>

@@ -524,23 +524,47 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   }
 
-  const lateReportDownloadExcel = async (company_id, employee_id, value, type) => {
+  const lateReportDownloadExcel = async (
+    company_id,
+    department_id_or_employee_id,
+    line_type_or_value,
+    employee_id_or_type,
+    value,
+    type,
+  ) => {
     if (!company_id) {
       error.value = 'Invalid company ID or date/month'
       return
     }
+
+    // Backward compatible parsing:
+    // old call: (company_id, employee_id, value, type)
+    // new call: (company_id, department_id, line_type, employee_id, value, type)
+    const isOldSignature = typeof value === 'undefined' && typeof type === 'undefined'
+
+    const department_id = isOldSignature ? '' : department_id_or_employee_id
+    const line_type = isOldSignature ? 'all' : line_type_or_value
+    const employee_id = isOldSignature ? department_id_or_employee_id : employee_id_or_type
+    const normalizedType = isOldSignature ? employee_id_or_type : type
+    const normalizedValue = isOldSignature ? line_type_or_value : value
 
     isLoading.value = true
 
     try {
       const params = {
         company_id,
-        ...(employee_id ? { employee_id } : {}), // only include if present
-        type,
-        ...(type === 'daily' ? { date: value } : { month: value }),
+        department_id: department_id || undefined,
+        line_type: line_type || 'all',
+        employee_id: employee_id || undefined,
+        type: normalizedType || 'daily',
+        ...(normalizedType === 'daily' ? { date: normalizedValue } : { month: normalizedValue }),
       }
 
-      const response = await apiClient.get(`/monthly/attendance/late-reports?flag=excel`, {
+      const endpoint = normalizedType === 'daily'
+        ? '/attendance/late-reports?flag=excel'
+        : '/monthly/attendance/late-reports?flag=excel'
+
+      const response = await apiClient.get(endpoint, {
         params,
         responseType: 'blob',
       })
@@ -549,8 +573,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
       const link = document.createElement('a')
       link.href = url
 
-      // File name should reflect type
-      const filename = `${type === 'daily' ? value : value}-late-attendance.xlsx`
+      const filename = `${normalizedValue}-late-attendance.xlsx`
       link.setAttribute('download', filename)
       document.body.appendChild(link)
       link.click()
