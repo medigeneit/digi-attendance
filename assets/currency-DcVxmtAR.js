@@ -1,0 +1,1 @@
+const r=t=>parseFloat(t)||0,i=t=>{if(t==null||t==="")return"—";const n=parseFloat(t);return isNaN(n)?"—":new Intl.NumberFormat("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}).format(n)};export{i as f,r as t};
