@@ -72,6 +72,30 @@ export const useMealEntryStore = defineStore('mealEntry', () => {
     }
   }
 
+  const createBulk = async (payload) => {
+    loading.value = true
+    error.value = null
+    try {
+      try {
+        const res = await apiClient.post('/meal-entries/bulk-store', payload)
+        return res.data
+      } catch (bulkErr) {
+        const status = bulkErr?.response?.status
+        if (status !== 404 && status !== 405) throw bulkErr
+
+        // Backward compatibility for APIs that still accept bulk payload on /meal-entries.
+        const fallbackRes = await apiClient.post('/meal-entries', payload)
+        return fallbackRes.data
+      }
+    } catch (err) {
+      const e = toError(err, 'Failed to save bulk meal entries')
+      error.value = e.message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
   const updateItem = async (id, payload) => {
     loading.value = true
     error.value = null
@@ -102,5 +126,17 @@ export const useMealEntryStore = defineStore('mealEntry', () => {
     }
   }
 
-  return { list, item, loading, error, pagination, fetchList, fetchItem, createItem, updateItem, deleteItem }
+  return {
+    list,
+    item,
+    loading,
+    error,
+    pagination,
+    fetchList,
+    fetchItem,
+    createItem,
+    createBulk,
+    updateItem,
+    deleteItem,
+  }
 })
