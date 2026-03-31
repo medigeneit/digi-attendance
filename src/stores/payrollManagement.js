@@ -79,5 +79,33 @@ export const usePayrollManagementStore = defineStore('payrollManagement', () => 
     }
   }
 
-  return { list, item, loading, error, pagination, fetchList, fetchItem, updatePaymentStatus }
+  const downloadExcel = async (params = {}) => {
+    loading.value = true
+    error.value = null
+    try {
+      const res = await apiClient.get('/payrolls?flag=excel', {
+        params,
+        responseType: 'blob',
+      })
+
+      const url = window.URL.createObjectURL(new Blob([res.data]))
+      const link = document.createElement('a')
+      link.href = url
+      const month = params.salary_month ? String(params.salary_month).slice(0, 7) : 'all-months'
+      link.setAttribute('download', `payroll-report-${month}.xlsx`)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+      return true
+    } catch (err) {
+      const e = toError(err, 'Failed to download payroll report')
+      error.value = e.message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  return { list, item, loading, error, pagination, fetchList, fetchItem, updatePaymentStatus, downloadExcel }
 })
