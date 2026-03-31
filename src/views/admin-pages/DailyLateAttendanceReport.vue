@@ -311,10 +311,14 @@ function goBack() {
     <div class="rounded-xl border border-zinc-200 bg-white shadow-sm">
       <div class="flex flex-wrap gap-3 p-4">
         <EmployeeFilter
-          v-model:company_id="filters.company_id"
-          v-model:department_id="filters.department_id"
-          v-model:employee_id="filters.employee_id"
-          v-model:line_type="filters.line_type"
+          :company_id="filters.company_id"
+          :department_id="filters.department_id"
+          :employee_id="filters.employee_id"
+          :line_type="filters.line_type"
+          @update:company_id="filters.company_id = $event"
+          @update:department_id="filters.department_id = $event"
+          @update:employee_id="filters.employee_id = $event"
+          @update:line_type="filters.line_type = $event"
           :initial-value="$route.query"
           @filter-change="handleFilterChange"
         >
@@ -325,6 +329,7 @@ function goBack() {
             :show-year="false"
             :show-month="false"
             :show-date="true"
+            label="Da"
           />
         </div>
         </EmployeeFilter>
