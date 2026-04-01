@@ -447,10 +447,10 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   }
 
-  const attendanceDownloadPdf = async (companyId, employee_id, category, month, status) => {
+  const attendanceDownloadPdf = async (companyId, departmentId, employee_id, line_type, month, status) => {
     isLoading.value = true
     try {
-      const params = { companyId, employee_id, category, month, status }
+      const params = { companyId, departmentId, employee_id, line_type, month, status }
       const response = await apiClient.get(`/attendance/today?flag=pdf`, {
         params,
         responseType: 'blob', // Important for file downloads
@@ -500,10 +500,10 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   }
 
-  const attendanceDownloadExcel = async (companyId, employee_id, line_type, month, status) => {
+  const attendanceDownloadExcel = async (companyId, departmentId, employee_id, line_type, month, status) => {
     isLoading.value = true
     try {
-      const params = { companyId, employee_id, line_type, month, status }
+      const params = { companyId, departmentId, employee_id, line_type, month, status }
       const response = await apiClient.get(`/attendance/today?flag=excel`, {
         params,
         responseType: 'blob', // Important for file downloads

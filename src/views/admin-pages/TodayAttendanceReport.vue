@@ -121,7 +121,8 @@ const handleFilterChange = () => {
 const getExportExcel = () =>
   attendanceStore.attendanceDownloadExcel(
     filters.value.company_id,
-    selectedEmployeeId.value?.id,
+    filters.value.department_id,
+    filters.value.employee_id,
     filters.value.line_type,
     selectedDate.value,
     status.value
@@ -130,7 +131,8 @@ const getExportExcel = () =>
 const getDownloadPDF = () =>
   attendanceStore.attendanceDownloadPdf(
     filters.value.company_id,
-    selectedEmployeeId.value?.id,
+    filters.value.department_id,
+    filters.value.employee_id,
     filters.value.line_type,
     selectedDate.value,
     status.value
