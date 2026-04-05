@@ -381,6 +381,50 @@ const loanStatusClass = (status) => {
   return 'bg-slate-100 text-slate-600 border-slate-200'
 }
 
+const formatJoiningDate = (value) => {
+  if (!value) return '-'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '-'
+
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(date)
+}
+
+const formatStartMonth = (value) => {
+  if (!value) return '-'
+
+  if (/^\d{4}-\d{2}$/.test(value)) {
+    const [year, month] = value.split('-').map(Number)
+    const date = new Date(Date.UTC(year, month - 1, 1))
+    return new Intl.DateTimeFormat('en-GB', {
+      month: 'short',
+      year: 'numeric',
+    }).format(date)
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number)
+    const date = new Date(Date.UTC(year, month - 1, day))
+    return new Intl.DateTimeFormat('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    }).format(date)
+  }
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '-'
+
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(date)
+}
+
 const inputClass =
   'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400'
 </script>
@@ -455,54 +499,105 @@ const inputClass =
     </div>
 
     <div v-else class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead class="bg-blue-50 text-blue-900 text-xs uppercase">
+      <table class="w-full min-w-[860px] text-sm">
+        <thead class="bg-slate-50 text-slate-700 text-xs uppercase">
           <tr>
-            <th class="px-4 py-3 text-left">#</th>
-            <th class="px-4 py-3 text-left">Employee</th>
-            <th class="px-4 py-3 text-left">Title</th>
-            <th class="px-4 py-3 text-right">Loan Amount</th>
-            <th class="px-4 py-3 text-right">Installment</th>
-            <th class="px-4 py-3 text-center">Total</th>
-            <th class="px-4 py-3 text-center">Start Month</th>
-            <th class="px-4 py-3 text-center">Status</th>
-            <th class="px-4 py-3 text-center">Actions</th>
+            <th class="px-3 py-2 text-left">#</th>
+            <th class="px-3 py-2 text-left">Employee</th>
+            <th class="px-3 py-2 text-left">Department</th>
+            <th class="px-3 py-2 text-left">
+              <span class="inline-flex items-center gap-1.5">
+                <i class="far fa-file-alt text-[10px] text-slate-500"></i>
+                Title / Note
+              </span>
+            </th>
+            <th class="px-3 py-2 text-right">Loan Amount</th>
+            <th class="px-3 py-2 text-right">Installment</th>
+            <th class="px-3 py-2 text-center">Total</th>
+            <th class="px-3 py-2 text-center">
+              <span class="inline-flex items-center gap-1.5">
+                <i class="far fa-calendar-alt text-[10px] text-slate-500"></i>
+                Start / Remain
+              </span>
+            </th>
+            <th class="px-3 py-2 text-center">Status</th>
+            <th class="px-3 py-2 text-center">Actions</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-50">
-          <tr v-for="(item, i) in list" :key="item.id" class="hover:bg-gray-50 transition-colors">
-            <td class="px-4 py-3 text-gray-400 text-xs">
+          <tr
+            v-for="(item, i) in list"
+            :key="item.id"
+            class="hover:bg-slate-50/80 transition-colors align-top"
+          >
+            <td class="px-3 py-2 text-gray-400 text-xs align-top">
               {{ (filters.page - 1) * filters.per_page + i + 1 }}
             </td>
-            <td class="px-4 py-3">
+            <td class="px-3 py-2 min-w-[210px]">
               <div class="font-medium text-blue-900">{{ item.user?.name || '—' }}</div>
-              <div class="text-xs text-gray-400">{{ item.user?.employee_id }}</div>
-            </td>
-            <td class="px-4 py-3">
-              <div class="font-medium text-slate-800">{{ item.loan_title }}</div>
-              <div
-                v-if="item.has_previous_loan"
-                class="mt-1 inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-700"
-              >
-                Previous loan history
+              <div class="mt-1 flex flex-wrap items-center gap-1.5">
+                <span
+                  class="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[11px] font-medium text-slate-600"
+                >
+                  ID: {{ item.user?.employee_id || '-' }}
+                </span>
+                <span class="h-1 w-1 rounded-full bg-slate-300"></span>
+                <span class="text-[11px] text-slate-500">
+                  Join: {{ formatJoiningDate(item.user?.joining_date) }}
+                </span>
               </div>
             </td>
-            <td class="px-4 py-3 text-right font-mono">{{ formatCurrency(item.loan_amount) }}</td>
-            <td class="px-4 py-3 text-right font-mono">
+            <td class="px-3 py-2 min-w-[145px]">
+              <div class="font-medium text-blue-900">{{ item.user?.department?.name || '—' }}</div>
+              <div class="text-xs text-gray-400">{{ item.user?.designation?.title || '—' }}</div>
+            </td>
+            <td class="px-3 py-2 min-w-[150px]">
+              <div class="text-[13px] font-semibold text-slate-800 leading-tight truncate">
+                {{ item.loan_title || '-' }}
+                <span
+                  v-if="item.has_previous_loan"
+                  class="ml-1 inline-flex items-center rounded border border-amber-200 bg-amber-50 px-1 py-0 text-[10px] font-medium text-amber-700"
+                >
+                  Prev
+                </span>
+              </div>
+              <p class="text-[11px] text-slate-500 mt-0.5 truncate leading-4">
+                {{ item.remarks || 'No reason provided.' }}
+              </p>
+            </td>
+            <td class="px-3 py-2 text-right font-mono font-semibold text-slate-800">
+              {{ formatCurrency(item.loan_amount) }}
+            </td>
+            <td class="px-3 py-2 text-right font-mono text-indigo-700 font-medium">
               {{ formatCurrency(item.installment_amount) }}
             </td>
-            <td class="px-4 py-3 text-center text-gray-600">{{ item.total_installments }}</td>
-            <td class="px-4 py-3 text-center text-gray-600">{{ item.start_month }}</td>
-            <td class="px-4 py-3 text-center">
+            <td class="px-3 py-2 text-center text-gray-600">
               <span
-                class="px-2 py-0.5 rounded-full text-xs border font-medium"
+                class="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium"
+              >
+                {{ item.total_installments || 0 }}
+              </span>
+            </td>
+            <td class="px-3 py-2 text-center text-xs min-w-[108px]">
+              <div class="text-[10px] text-slate-500 uppercase tracking-wide">
+                S: {{ formatStartMonth(item.start_month) }}
+              </div>
+              <div class="font-mono text-[11px] font-semibold text-emerald-700 leading-tight mt-0.5">
+                R: {{ formatCurrency(item.remaining_balance || 0) }}
+              </div>
+            </td>
+            <td class="px-3 py-2 text-center align-middle">
+              <span
+                class="px-2 py-0.5 rounded-full text-xs border font-medium capitalize"
                 :class="loanStatusClass(item.status)"
               >
                 {{ item.status || '—' }}
               </span>
             </td>
-            <td class="px-4 py-3 text-center">
-              <div class="flex items-center justify-center gap-1">
+            <td class="px-3 py-2 text-center align-middle">
+              <div
+                class="inline-flex items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-1 py-0.5"
+              >
                 <button
                   @click="router.push({ name: 'PayrollEmployeeLoanShow', params: { id: item.id } })"
                   class="p-1.5 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors"

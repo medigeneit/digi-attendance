@@ -126,7 +126,7 @@ const formatCompactCurrency = (value) => {
 
   return new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
+    maximumFractionDigits: 0,
   }).format(num)
 }
 
@@ -134,10 +134,51 @@ const formatMonth = (value) => {
   if (!value) return '—'
   return String(value).slice(0, 7)
 }
+const formatDate = (value) => {
+  if (!value) return '-'
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number)
+    const date = new Date(Date.UTC(year, month - 1, day))
+    return new Intl.DateTimeFormat('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'UTC',
+    }).format(date)
+  }
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '-'
+
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(date)
+}
+
+const getPayrollGrade = (payroll) =>
+  payroll?.grade ||
+  payroll?.grade_name ||
+  payroll?.designation_grade ||
+  payroll?.user?.designation?.grade ||
+  payroll?.user?.department?.grade ||
+  '-'
+
+const toNumber = (value) => {
+  const num = Number(value)
+  return Number.isFinite(num) ? num : 0
+}
+
+const getTotalEarnings = (payroll) =>
+  toNumber(payroll?.gross_salary) +
+  toNumber(payroll?.other_allowance_total) +
+  toNumber(payroll?.manual_addition)
 </script>
 
 <template>
-  <div class="space-y-4 p-4 md:p-6">
+  <div class="space-y-4 p-4 md:p-6 min-w-0 w-full max-w-full overflow-x-hidden">
     <div class="rounded-3xl border border-slate-200 bg-gradient-to-r from-slate-50 via-white to-blue-50 p-5 shadow-sm">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -218,7 +259,10 @@ const formatMonth = (value) => {
       <p class="text-sm text-gray-400 mt-1">Generate a payroll batch to create payroll records.</p>
     </div>
 
-    <div v-else class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+    <div
+      v-else
+      class="min-w-0 w-full max-w-full overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm"
+    >
       <div class="border-b border-slate-100 px-4 py-3">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div>
@@ -228,49 +272,57 @@ const formatMonth = (value) => {
           <p class="text-xs text-slate-400">Rows: {{ pagination.total || list.length }}</p>
         </div>
       </div>
-      <div class="overflow-x-auto">
-      <table class="min-w-[1760px] w-full border-collapse text-[12px] leading-tight">
-        <thead class="bg-slate-50 text-slate-700 text-[10px] uppercase">
+      <div class="w-full overflow-x-auto overscroll-x-contain [scrollbar-width:thin]">
+      <table class="min-w-[1700px] w-full border-collapse text-[11px] leading-tight">
+        <thead class="sticky top-0 z-10 bg-slate-50 text-slate-700 text-[10px] uppercase">
           <tr>
             <th class="border border-slate-200 px-2 py-2 text-left" rowspan="2">#</th>
             <th class="border border-slate-200 px-2 py-2 text-left" rowspan="2">Employee</th>
-            <th class="border border-slate-200 px-2 py-2 text-left" rowspan="2">ID Number</th>
+            <th class="border border-slate-200 px-2 py-2 text-left" rowspan="2">Emp ID</th>
+            <th class="border border-slate-200 px-2 py-2 text-left" rowspan="2">Joining</th>
             <th class="border border-slate-200 px-2 py-2 text-left" rowspan="2">Department</th>
-            <!-- <th class="border border-slate-200 px-2 py-2 text-left" rowspan="2">Department</th> -->
+            <th class="border border-slate-200 px-2 py-2 text-left" rowspan="2">Grade</th>
             <th class="border border-slate-200 px-2 py-2 text-center" rowspan="2">Month</th>
             <!-- <th class="border border-slate-200 px-2 py-2 text-center" rowspan="2">Type</th> -->
-            <th class="border border-slate-200 px-2 py-2 text-center" colspan="6">Addition / Earnings</th>
-            <th class="border border-slate-200 px-2 py-2 text-center" colspan="6">Deduction</th>
+            <th class="border border-slate-200 bg-emerald-50 px-2 py-2 text-center" colspan="8">Earnings</th>
+            <th class="border border-slate-200 bg-rose-50 px-2 py-2 text-center" colspan="7">Deductions</th>
             <th class="border border-slate-200 px-2 py-2 text-right" rowspan="2">Payable</th>
             <th class="border border-slate-200 px-2 py-2 text-center" rowspan="2">Status</th>
             <th class="border border-slate-200 px-2 py-2 text-center" rowspan="2">Actions</th>
           </tr>
           <tr>
             <th class="border border-slate-200 px-2 py-1.5 text-right">Basic</th>
-            <th class="border border-slate-200 px-2 py-1.5 text-right">House Rent</th>
+            <th class="border border-slate-200 px-2 py-1.5 text-right">House</th>
             <th class="border border-slate-200 px-2 py-1.5 text-right">Medical</th>
-            <th class="border border-slate-200 px-2 py-1.5 text-right">Conveyance</th>
+            <th class="border border-slate-200 px-2 py-1.5 text-right">Conv.</th>
+            <th class="border border-slate-200 px-2 py-1.5 text-right">Gross</th>
             <th class="border border-slate-200 px-2 py-1.5 text-right">Others</th>
-            <th class="border border-slate-200 px-2 py-1.5 text-right">Total</th>
+            <th class="border border-slate-200 px-2 py-1.5 text-right">OT/Add</th>
+            <th class="border border-slate-200 px-2 py-1.5 text-right">E.Total</th>
             <th class="border border-slate-200 px-2 py-1.5 text-right">PF</th>
             <th class="border border-slate-200 px-2 py-1.5 text-right">Meal</th>
             <th class="border border-slate-200 px-2 py-1.5 text-right">Tax</th>
             <th class="border border-slate-200 px-2 py-1.5 text-right">Loan</th>
             <th class="border border-slate-200 px-2 py-1.5 text-right">Other</th>
             <th class="border border-slate-200 px-2 py-1.5 text-right">Paycut</th>
-            <th class="border border-slate-200 px-2 py-1.5 text-right">Total Deduct</th>
+            <th class="border border-slate-200 px-2 py-1.5 text-right">D.Total</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(p, i) in list" :key="p.id" class="hover:bg-slate-50/70 transition-colors">
-            <td class="border border-slate-200 px-2 py-2 text-gray-400 text-[11px]">{{ (filters.page - 1) * filters.per_page + i + 1 }}</td>
-            <td class="border border-slate-200 px-2 py-2 align-top">
-              <div class="font-medium text-slate-900">{{ p.user?.name || p.employee_name || '—' }}</div>
-              <div class="text-xs text-slate-400">{{ p.user?.designation?.title || p.company_name || '—' }}</div>
+          <tr v-for="(p, i) in list" :key="p.id" class="odd:bg-white even:bg-slate-50/40 hover:bg-blue-50/40 transition-colors">
+            <td class="border border-slate-200 px-2 py-2 text-gray-400 text-[11px] whitespace-nowrap">{{ (filters.page - 1) * filters.per_page + i + 1 }}</td>
+            <td class="border border-slate-200 px-2 py-2 align-top min-w-[220px]">
+              <div class="font-semibold text-slate-900 leading-tight">{{ p.user?.name || p.employee_name || '-' }}</div>
+              <div class="mt-0.5 text-[11px] text-slate-500">{{ p.user?.designation?.title || p.company_name || '-' }}</div>
             </td>
-            <td class="border border-slate-200 px-2 py-2 text-xs text-slate-500">{{ p.user?.employee_id || p.employee_code || '—' }}</td>
-            <td class="border border-slate-200 px-2 py-2 text-xs text-slate-500">{{ p.department || p.user?.department?.name || '—' }}</td>
-            <!-- <td class="border border-slate-200 px-2 py-2 text-xs text-slate-500">{{ p.department_name || p.user?.department?.name || '—' }}</td> -->
+            <td class="border border-slate-200 px-2 py-2 text-[11px] text-slate-600 whitespace-nowrap">
+              <span class="rounded-md bg-slate-100 px-1.5 py-0.5">{{ p.user?.employee_id || p.employee_code || '-' }}</span>
+            </td>
+            <td class="border border-slate-200 px-2 py-2 text-xs text-slate-500">{{ formatDate(p.user?.joining_date || p.joining_date) }}</td>
+            <td class="border border-slate-200 px-2 py-2 text-xs text-slate-700">{{ p.department_name || p.department || p.user?.department?.name || '-' }}</td>
+            <td class="border border-slate-200 px-2 py-2 text-xs text-slate-700">
+              <span class="rounded-md border border-slate-200 bg-white px-1.5 py-0.5">{{ getPayrollGrade(p) }}</span>
+            </td>
             <td class="border border-slate-200 px-2 py-2 text-center text-slate-600">{{ formatMonth(p.salary_month) }}</td>
             <!-- <td class="border border-slate-200 px-2 py-2 text-center">
               <span class="rounded-full bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700">{{ p.salary_type || '—' }}</span>
@@ -279,8 +331,16 @@ const formatMonth = (value) => {
             <td class="border border-slate-200 px-2 py-2 text-right font-mono">{{ formatCompactCurrency(p.house_rent) }}</td>
             <td class="border border-slate-200 px-2 py-2 text-right font-mono">{{ formatCompactCurrency(p.medical_allowance) }}</td>
             <td class="border border-slate-200 px-2 py-2 text-right font-mono">{{ formatCompactCurrency(p.conveyance_allowance) }}</td>
-            <td class="border border-slate-200 px-2 py-2 text-right font-mono">{{ formatCompactCurrency(Number(p.other_allowance_total || 0) + Number(p.manual_addition || 0)) }}</td>
-            <td class="border border-slate-200 px-2 py-2 text-right font-mono font-semibold text-emerald-700">{{ formatCompactCurrency(p.gross_salary) }}</td>
+            <td class="border border-slate-200 px-2 py-2 text-right">
+              <div class="font-mono font-semibold text-emerald-700">{{ formatCompactCurrency(p.gross_salary) }}</div>
+            </td>
+            <td class="border border-slate-200 px-2 py-2 text-right font-mono">{{ formatCompactCurrency(p.other_allowance_total) }}</td>
+            <td class="border border-slate-200 px-2 py-2 text-right font-mono">
+              {{ formatCompactCurrency(p.manual_addition) }}
+            </td>
+            <td class="border border-slate-200 px-2 py-2 text-right font-mono font-semibold text-emerald-800">
+              {{ formatCompactCurrency(getTotalEarnings(p)) }}
+            </td>
             <td class="border border-slate-200 px-2 py-2 text-right font-mono text-rose-600">{{ formatCompactCurrency(p.pf_deduction) }}</td>
             <td class="border border-slate-200 px-2 py-2 text-right font-mono text-rose-600">{{ formatCompactCurrency(p.meal_deduction) }}</td>
             <td class="border border-slate-200 px-2 py-2 text-right font-mono text-rose-600">{{ formatCompactCurrency(p.tax_deduction) }}</td>
@@ -293,11 +353,11 @@ const formatMonth = (value) => {
             <td class="border border-slate-200 px-2 py-2 text-center">
               <div class="flex items-center justify-center gap-1">
                 <button @click="router.push({ name: 'PayrollShow', params: { id: p.id } })"
-                  class="p-1.5 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg" title="View">
+                  class="p-1.5 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 rounded-md" title="View">
                   <i class="far fa-eye text-xs"></i>
                 </button>
                 <button @click="openPaymentModal(p)"
-                  class="p-1.5 text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg" title="Update Payment">
+                  class="p-1.5 text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-md" title="Update Payment">
                   <i class="far fa-credit-card text-xs"></i>
                 </button>
               </div>

@@ -46,7 +46,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="md:flex relative">
+  <div class="relative md:flex min-w-0 max-w-full overflow-x-hidden">
     <div
       :class="{
         'invisible md:visible opacity-0 md:opacity-100': !sidebarVisible,
@@ -81,7 +81,7 @@ onUnmounted(() => {
     </div>
 
     <!-- Main Content -->
-    <div class="flex-1 flex min-h-screen flex-col justify-between">
+    <div class="flex min-h-screen min-w-0 flex-1 flex-col justify-between overflow-x-hidden">
       <header class="sticky top-0 print:hidden z-[999]">
         <div class="relative">
           <button
@@ -95,7 +95,7 @@ onUnmounted(() => {
         </div>
       </header>
 
-      <main class="flex-grow p-4 print:py-0 flex-none">
+      <main class="flex-grow min-w-0 w-full max-w-full overflow-x-hidden p-4 print:py-0">
         <RouterView />
       </main>
 
