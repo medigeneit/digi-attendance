@@ -30,6 +30,10 @@ const modalErrors = ref({})
 const isAutoSettingInstallment = ref(false)
 const isInstallmentManuallyCustomized = ref(false)
 const lastAutoInstallmentAmount = ref(null)
+const previousLoanHistory = ref([])
+const previousLoanHistoryLoading = ref(false)
+const previousLoanHistoryError = ref('')
+const selectedPreviousLoanId = ref(null)
 
 const blankForm = () => ({
   user_id: null,
@@ -40,6 +44,12 @@ const blankForm = () => ({
   start_month: '',
   status: 'active',
   remarks: '',
+  has_previous_loan: false,
+  previous_loan_amount: '',
+  previous_total_installments: '',
+  previous_settled_at: '',
+  previous_reason: '',
+  previous_note: '',
 })
 
 const modalForm = ref(blankForm())
@@ -52,6 +62,18 @@ const previewLoan = computed(() => ({
   total_installments: modalForm.value.total_installments,
   start_month: modalForm.value.start_month,
 }))
+
+const previousLoanSummary = computed(() => {
+  if (!modalForm.value.has_previous_loan) return ''
+  const amount = modalForm.value.previous_loan_amount
+    ? formatCurrency(modalForm.value.previous_loan_amount)
+    : '-'
+  const installments = modalForm.value.previous_total_installments || '-'
+  const settledAt = modalForm.value.previous_settled_at || '-'
+  return `${amount} | Installments: ${installments} | Settled: ${settledAt}`
+})
+
+const hasPreviousHistory = computed(() => previousLoanHistory.value.length > 0)
 
 const calculateInstallmentAmount = (loanAmount, totalInstallments) => {
   const loan = toNum(loanAmount)
@@ -88,9 +110,15 @@ onMounted(async () => {
   await Promise.all([companyStore.fetchCompanies(), load()])
 })
 
+const resetFilters = () => {
+  filters.value = { company_id: '', user_id: '', status: '', page: 1, per_page: 15 }
+  load()
+}
+
 const openCreate = () => {
   selectedItem.value = null
   modalForm.value = blankForm()
+  resetPreviousLoanHistoryState()
   isInstallmentManuallyCustomized.value = false
   lastAutoInstallmentAmount.value = null
   modalUserDisplay.value = { name: null, dept: null }
@@ -109,6 +137,12 @@ const openEdit = (item) => {
     start_month: item.start_month || '',
     status: item.status || 'active',
     remarks: item.remarks || '',
+    has_previous_loan: Boolean(item.has_previous_loan),
+    previous_loan_amount: item.previous_loan_amount ?? '',
+    previous_total_installments: item.previous_total_installments ?? '',
+    previous_settled_at: item.previous_settled_at || '',
+    previous_reason: item.previous_reason || '',
+    previous_note: item.previous_note || '',
   }
   lastAutoInstallmentAmount.value = calculateInstallmentAmount(
     modalForm.value.loan_amount,
@@ -122,7 +156,91 @@ const openEdit = (item) => {
     ? { name: item.user.name, dept: item.user.department?.name || null }
     : { name: null, dept: null }
   modalErrors.value = {}
+  resetPreviousLoanHistoryState()
   showModal.value = true
+
+  if (modalForm.value.has_previous_loan && modalForm.value.user_id) {
+    fetchPreviousLoanHistory()
+  }
+}
+
+const clearPreviousLoanFields = () => {
+  modalForm.value.previous_loan_amount = ''
+  modalForm.value.previous_total_installments = ''
+  modalForm.value.previous_settled_at = ''
+  modalForm.value.previous_reason = ''
+  modalForm.value.previous_note = ''
+}
+
+const resetPreviousLoanHistoryState = () => {
+  previousLoanHistory.value = []
+  previousLoanHistoryLoading.value = false
+  previousLoanHistoryError.value = ''
+  selectedPreviousLoanId.value = null
+}
+
+const applyPreviousLoanFromHistory = (historyItem) => {
+  if (!historyItem) return
+
+  selectedPreviousLoanId.value = historyItem.id
+  modalForm.value.previous_loan_amount = historyItem.loan_amount ?? ''
+  modalForm.value.previous_total_installments = historyItem.total_installments ?? ''
+  modalForm.value.previous_settled_at = historyItem.settled_at || ''
+  modalForm.value.previous_reason = historyItem.loan_title || historyItem.remarks || ''
+  modalForm.value.previous_note = historyItem.remarks || ''
+}
+
+const fetchPreviousLoanHistory = async () => {
+  if (!modalForm.value.user_id) return
+
+  previousLoanHistoryLoading.value = true
+  previousLoanHistoryError.value = ''
+
+  try {
+    const params = {
+      user_id: modalForm.value.user_id,
+      limit: 5,
+    }
+
+    if (selectedItem.value?.id) {
+      params.exclude_loan_id = selectedItem.value.id
+    }
+
+    const response = await apiClient.get('/employee-loans/previous-history', { params })
+    const payload = response?.data || {}
+    previousLoanHistory.value = Array.isArray(payload.histories) ? payload.histories : []
+
+    if (!previousLoanHistory.value.length) {
+      previousLoanHistoryError.value = 'No previous loan found in system for this employee.'
+      return
+    }
+
+    const latest = payload.latest || previousLoanHistory.value[0]
+    applyPreviousLoanFromHistory(latest)
+  } catch (error) {
+    previousLoanHistory.value = []
+    previousLoanHistoryError.value =
+      error?.response?.data?.message || 'Failed to load previous loan history.'
+  } finally {
+    previousLoanHistoryLoading.value = false
+  }
+}
+
+const handlePreviousLoanToggle = async () => {
+  modalForm.value.has_previous_loan = !modalForm.value.has_previous_loan
+
+  if (!modalForm.value.has_previous_loan) {
+    clearPreviousLoanFields()
+    resetPreviousLoanHistoryState()
+    return
+  }
+
+  if (!modalForm.value.user_id) {
+    previousLoanHistoryError.value = 'Select employee first to load previous history.'
+    return
+  }
+
+  await fetchPreviousLoanHistory()
 }
 
 watch(
@@ -133,7 +251,7 @@ watch(
     if (isBlank || !isInstallmentManuallyCustomized.value) {
       applyAutoInstallmentAmount()
     }
-  }
+  },
 )
 
 watch(
@@ -146,7 +264,41 @@ watch(
     }
     isInstallmentManuallyCustomized.value =
       Number(newVal) !== Number(lastAutoInstallmentAmount.value)
-  }
+  },
+)
+
+watch(
+  () => modalForm.value.has_previous_loan,
+  (hasPreviousLoan) => {
+    if (!hasPreviousLoan) {
+      clearPreviousLoanFields()
+      resetPreviousLoanHistoryState()
+      if (modalErrors.value.previous_loan_amount) delete modalErrors.value.previous_loan_amount
+      if (modalErrors.value.previous_total_installments)
+        delete modalErrors.value.previous_total_installments
+      if (modalErrors.value.previous_settled_at) delete modalErrors.value.previous_settled_at
+      if (modalErrors.value.previous_reason) delete modalErrors.value.previous_reason
+      if (modalErrors.value.previous_note) delete modalErrors.value.previous_note
+    }
+  },
+)
+
+watch(
+  () => modalForm.value.user_id,
+  async (userId, oldUserId) => {
+    if (userId === oldUserId) return
+    if (!modalForm.value.has_previous_loan) return
+
+    clearPreviousLoanFields()
+    resetPreviousLoanHistoryState()
+
+    if (!userId) {
+      previousLoanHistoryError.value = 'Select employee first to load previous history.'
+      return
+    }
+
+    await fetchPreviousLoanHistory()
+  },
 )
 
 const closeModal = () => {
@@ -164,6 +316,26 @@ const validateModal = () => {
   if (!modalForm.value.total_installments)
     errors.total_installments = 'Total installments required.'
   if (!modalForm.value.start_month) errors.start_month = 'Start month is required.'
+  if (!modalForm.value.remarks) errors.remarks = 'Reason is required.'
+
+  if (modalForm.value.has_previous_loan) {
+    if (!modalForm.value.previous_loan_amount || toNum(modalForm.value.previous_loan_amount) <= 0) {
+      errors.previous_loan_amount = 'Previous loan amount is required.'
+    }
+    if (
+      !modalForm.value.previous_total_installments ||
+      Math.trunc(toNum(modalForm.value.previous_total_installments)) <= 0
+    ) {
+      errors.previous_total_installments = 'Previous total installments is required.'
+    }
+    if (!modalForm.value.previous_settled_at) {
+      errors.previous_settled_at = 'Paid/settled date is required.'
+    }
+    if (!modalForm.value.previous_reason) {
+      errors.previous_reason = 'Previous loan reason is required.'
+    }
+  }
+
   modalErrors.value = errors
   return !Object.keys(errors).length
 }
@@ -224,12 +396,19 @@ const inputClass =
     </div>
 
     <!-- Filters -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-wrap gap-3 items-end">
+    <div
+      class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-wrap gap-3 items-end"
+    >
       <div>
         <label class="block text-xs font-medium text-gray-600 mb-1">Company</label>
         <select
           v-model="filters.company_id"
-          @change="() => { filters.page = 1; load() }"
+          @change="
+            () => {
+              filters.page = 1
+              load()
+            }
+          "
           class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
         >
           <option value="">All Companies</option>
@@ -240,7 +419,12 @@ const inputClass =
         <label class="block text-xs font-medium text-gray-600 mb-1">Status</label>
         <select
           v-model="filters.status"
-          @change="() => { filters.page = 1; load() }"
+          @change="
+            () => {
+              filters.page = 1
+              load()
+            }
+          "
           class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
         >
           <option value="">All Status</option>
@@ -249,23 +433,25 @@ const inputClass =
           <option value="pending">Pending</option>
         </select>
       </div>
-      <button class="btn-3" @click="() => { filters = { company_id: '', user_id: '', status: '', page: 1, per_page: 15 }; load() }">
-        <i class="far fa-undo"></i> Reset
-      </button>
+      <button class="btn-3" @click="resetFilters"><i class="far fa-undo"></i> Reset</button>
     </div>
 
     <LoaderView v-if="loading" />
 
-    <div v-else-if="error" class="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm flex items-center gap-2">
+    <div
+      v-else-if="error"
+      class="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm flex items-center gap-2"
+    >
       <i class="fas fa-exclamation-circle"></i> {{ error }}
     </div>
 
-    <div v-else-if="!list.length" class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+    <div
+      v-else-if="!list.length"
+      class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center"
+    >
       <i class="fas fa-hand-holding-usd text-4xl text-gray-300 mb-3"></i>
       <p class="text-lg font-medium text-gray-500">No loans found</p>
-      <button class="btn-2 mt-4" @click="openCreate">
-        <i class="far fa-plus"></i> Add Loan 
-      </button>
+      <button class="btn-2 mt-4" @click="openCreate"><i class="far fa-plus"></i> Add Loan</button>
     </div>
 
     <div v-else class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
@@ -285,30 +471,62 @@ const inputClass =
         </thead>
         <tbody class="divide-y divide-gray-50">
           <tr v-for="(item, i) in list" :key="item.id" class="hover:bg-gray-50 transition-colors">
-            <td class="px-4 py-3 text-gray-400 text-xs">{{ (filters.page - 1) * filters.per_page + i + 1 }}</td>
+            <td class="px-4 py-3 text-gray-400 text-xs">
+              {{ (filters.page - 1) * filters.per_page + i + 1 }}
+            </td>
             <td class="px-4 py-3">
               <div class="font-medium text-blue-900">{{ item.user?.name || '—' }}</div>
               <div class="text-xs text-gray-400">{{ item.user?.employee_id }}</div>
             </td>
-            <td class="px-4 py-3 font-medium">{{ item.loan_title }}</td>
+            <td class="px-4 py-3">
+              <div class="font-medium text-slate-800">{{ item.loan_title }}</div>
+              <div
+                v-if="item.has_previous_loan"
+                class="mt-1 inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-700"
+              >
+                Previous loan history
+              </div>
+            </td>
             <td class="px-4 py-3 text-right font-mono">{{ formatCurrency(item.loan_amount) }}</td>
-            <td class="px-4 py-3 text-right font-mono">{{ formatCurrency(item.installment_amount) }}</td>
+            <td class="px-4 py-3 text-right font-mono">
+              {{ formatCurrency(item.installment_amount) }}
+            </td>
             <td class="px-4 py-3 text-center text-gray-600">{{ item.total_installments }}</td>
             <td class="px-4 py-3 text-center text-gray-600">{{ item.start_month }}</td>
             <td class="px-4 py-3 text-center">
-              <span class="px-2 py-0.5 rounded-full text-xs border font-medium" :class="loanStatusClass(item.status)">
+              <span
+                class="px-2 py-0.5 rounded-full text-xs border font-medium"
+                :class="loanStatusClass(item.status)"
+              >
                 {{ item.status || '—' }}
               </span>
             </td>
             <td class="px-4 py-3 text-center">
               <div class="flex items-center justify-center gap-1">
-                <button @click="router.push({ name: 'PayrollEmployeeLoanShow', params: { id: item.id } })" class="p-1.5 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors" title="Details">
+                <button
+                  @click="router.push({ name: 'PayrollEmployeeLoanShow', params: { id: item.id } })"
+                  class="p-1.5 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors"
+                  title="Details"
+                >
                   <i class="far fa-eye text-xs"></i>
                 </button>
-                <button @click="openEdit(item)" class="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
+                <button
+                  @click="openEdit(item)"
+                  class="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                  title="Edit"
+                >
                   <i class="far fa-edit text-xs"></i>
                 </button>
-                <button @click="() => { selectedItem = item; showDeleteModal = true }" class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+                <button
+                  @click="
+                    () => {
+                      selectedItem = item
+                      showDeleteModal = true
+                    }
+                  "
+                  class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Delete"
+                >
                   <i class="far fa-trash-alt text-xs"></i>
                 </button>
               </div>
@@ -318,55 +536,314 @@ const inputClass =
       </table>
     </div>
 
-    <PaginationBar v-if="pagination.total > 0" :page="pagination.current_page || filters.page" :per-page="pagination.per_page || filters.per_page" :total="pagination.total || list.length" :last-page="pagination.last_page || 1" @page-change="(p) => { filters.page = p; load() }" />
+    <PaginationBar
+      v-if="pagination.total > 0"
+      :page="pagination.current_page || filters.page"
+      :per-page="pagination.per_page || filters.per_page"
+      :total="pagination.total || list.length"
+      :last-page="pagination.last_page || 1"
+      @page-change="
+        (p) => {
+          filters.page = p
+          load()
+        }
+      "
+    />
 
     <!-- Create/Edit Modal -->
     <teleport to="body">
-      <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 overflow-hidden max-h-[90vh] flex flex-col">
+      <div
+        v-if="showModal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      >
+        <div
+          class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 overflow-hidden max-h-[90vh] flex flex-col"
+        >
           <div class="flex items-center justify-between px-6 py-4 border-b flex-shrink-0">
-            <h3 class="font-bold text-blue-900 text-lg">{{ isEditMode ? 'Edit Loan' : 'Add Loan' }}</h3>
-            <button @click="closeModal" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+            <h3 class="font-bold text-blue-900 text-lg">
+              {{ isEditMode ? 'Edit Loan' : 'Add Loan' }}
+            </h3>
+            <button @click="closeModal" class="text-gray-400 hover:text-gray-600">
+              <i class="fas fa-times"></i>
+            </button>
           </div>
           <div class="overflow-y-auto flex-1">
             <form @submit.prevent="handleModalSubmit" class="p-6 space-y-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Employee <span class="text-red-500">*</span></label>
-                <AsyncUserCombobox v-model="modalForm.user_id" v-model:display="modalUserDisplay" :fetcher="fetchUsersFn" placeholder="Search employee..." />
-                <p v-if="modalErrors.user_id" class="text-red-500 text-xs mt-1">{{ modalErrors.user_id }}</p>
+                <label class="block text-sm font-medium text-gray-700 mb-1"
+                  >Employee <span class="text-red-500">*</span></label
+                >
+                <AsyncUserCombobox
+                  v-model="modalForm.user_id"
+                  v-model:display="modalUserDisplay"
+                  :fetcher="fetchUsersFn"
+                  placeholder="Search employee..."
+                />
+                <p v-if="modalErrors.user_id" class="text-red-500 text-xs mt-1">
+                  {{ modalErrors.user_id }}
+                </p>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Loan Title <span class="text-red-500">*</span></label>
-                <input v-model="modalForm.loan_title" type="text" :class="inputClass" placeholder="e.g. Personal Loan" />
-                <p v-if="modalErrors.loan_title" class="text-red-500 text-xs mt-1">{{ modalErrors.loan_title }}</p>
+                <label class="block text-sm font-medium text-gray-700 mb-1"
+                  >Loan Title <span class="text-red-500">*</span></label
+                >
+                <input
+                  v-model="modalForm.loan_title"
+                  type="text"
+                  :class="inputClass"
+                  placeholder="e.g. Personal Loan"
+                />
+                <p v-if="modalErrors.loan_title" class="text-red-500 text-xs mt-1">
+                  {{ modalErrors.loan_title }}
+                </p>
               </div>
               <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Reason</label>
-                  <textarea v-model="modalForm.remarks" :class="inputClass" placeholder="Loan reason..."></textarea>
-                  <p v-if="modalErrors.remarks" class="text-red-500 text-xs mt-1">{{ modalErrors.remarks }}</p>
+                <label class="block text-sm font-medium text-gray-700 mb-1"
+                  >Reason <span class="text-red-500">*</span></label
+                >
+                <textarea
+                  v-model="modalForm.remarks"
+                  :class="inputClass"
+                  placeholder="Loan reason..."
+                ></textarea>
+                <p v-if="modalErrors.remarks" class="text-red-500 text-xs mt-1">
+                  {{ modalErrors.remarks }}
+                </p>
               </div>
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Loan Amount <span class="text-red-500">*</span></label>
-                  <input v-model="modalForm.loan_amount" type="number" min="0" step="0.01" :class="inputClass" placeholder="0.00" />
-                  <p v-if="modalErrors.loan_amount" class="text-red-500 text-xs mt-1">{{ modalErrors.loan_amount }}</p>
+
+              <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 space-y-3">
+                <div class="flex items-center justify-between gap-3">
+                  <div>
+                    <p class="text-sm font-semibold text-slate-800">Previous Loan?</p>
+                    <p class="text-xs text-slate-500">
+                      Employee system-er age loan niye thakle toggle on korun.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                    :class="modalForm.has_previous_loan ? 'bg-blue-600' : 'bg-gray-300'"
+                    @click="handlePreviousLoanToggle"
+                  >
+                    <span
+                      class="inline-block h-5 w-5 transform rounded-full bg-white transition-transform"
+                      :class="modalForm.has_previous_loan ? 'translate-x-5' : 'translate-x-1'"
+                    ></span>
+                  </button>
                 </div>
-                
+
+                <div
+                  v-if="modalForm.has_previous_loan && previousLoanHistoryLoading"
+                  class="rounded-lg border border-blue-100 bg-white px-3 py-2 text-xs text-blue-600"
+                >
+                  Loading previous loan history...
+                </div>
+
+                <div
+                  v-if="modalForm.has_previous_loan && previousLoanHistoryError"
+                  class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700"
+                >
+                  {{ previousLoanHistoryError }}
+                </div>
+
+                <div
+                  v-if="modalForm.has_previous_loan && hasPreviousHistory"
+                  class="rounded-lg border border-blue-100 bg-white p-3 space-y-2"
+                >
+                  <div class="flex items-center justify-between gap-2">
+                    <p class="text-xs font-semibold text-blue-700">
+                      Previous Loan Records (System)
+                    </p>
+                    <button
+                      type="button"
+                      class="text-xs font-medium text-blue-600 hover:text-blue-700"
+                      @click="fetchPreviousLoanHistory"
+                    >
+                      Refresh
+                    </button>
+                  </div>
+
+                  <div class="space-y-1.5 max-h-32 overflow-y-auto">
+                    <button
+                      v-for="history in previousLoanHistory"
+                      :key="history.id"
+                      type="button"
+                      class="w-full rounded-md border px-2 py-1.5 text-left transition-colors"
+                      :class="
+                        selectedPreviousLoanId === history.id
+                          ? 'border-blue-300 bg-blue-50'
+                          : 'border-slate-200 bg-white hover:bg-slate-50'
+                      "
+                      @click="applyPreviousLoanFromHistory(history)"
+                    >
+                      <div class="flex items-center justify-between gap-2">
+                        <span class="text-xs font-medium text-slate-700 truncate">
+                          {{ history.loan_title || 'Previous Loan' }}
+                        </span>
+                        <span class="text-xs font-semibold text-slate-800">
+                          {{ formatCurrency(history.loan_amount || 0) }}
+                        </span>
+                      </div>
+                      <div class="mt-0.5 text-[11px] text-slate-500">
+                        {{ history.total_installments || 0 }} installments • Settled:
+                        {{ history.settled_at || '-' }} • Status: {{ history.status || '-' }}
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                <div
+                  v-if="modalForm.has_previous_loan"
+                  class="rounded-lg border border-blue-100 bg-white px-3 py-2 text-xs text-blue-700 font-medium"
+                >
+                  {{ previousLoanSummary }}
+                </div>
+
+                <div
+                  v-if="modalForm.has_previous_loan"
+                  class="grid grid-cols-1 md:grid-cols-2 gap-4"
+                >
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                      Previous Loan Amount <span class="text-red-500">*</span>
+                    </label>
+                    <input
+                      v-model="modalForm.previous_loan_amount"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      :class="inputClass"
+                      placeholder="0.00"
+                    />
+                    <p v-if="modalErrors.previous_loan_amount" class="text-red-500 text-xs mt-1">
+                      {{ modalErrors.previous_loan_amount }}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                      Previous Total Installments <span class="text-red-500">*</span>
+                    </label>
+                    <input
+                      v-model="modalForm.previous_total_installments"
+                      type="number"
+                      min="1"
+                      step="1"
+                      :class="inputClass"
+                      placeholder="e.g. 24"
+                    />
+                    <p
+                      v-if="modalErrors.previous_total_installments"
+                      class="text-red-500 text-xs mt-1"
+                    >
+                      {{ modalErrors.previous_total_installments }}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                      Paid/Settled Date <span class="text-red-500">*</span>
+                    </label>
+                    <input
+                      v-model="modalForm.previous_settled_at"
+                      type="date"
+                      :class="inputClass"
+                    />
+                    <p v-if="modalErrors.previous_settled_at" class="text-red-500 text-xs mt-1">
+                      {{ modalErrors.previous_settled_at }}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                      Previous Loan Reason <span class="text-red-500">*</span>
+                    </label>
+                    <input
+                      v-model="modalForm.previous_reason"
+                      type="text"
+                      :class="inputClass"
+                      placeholder="Why was that previous loan taken?"
+                    />
+                    <p v-if="modalErrors.previous_reason" class="text-red-500 text-xs mt-1">
+                      {{ modalErrors.previous_reason }}
+                    </p>
+                  </div>
+
+                  <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1"
+                      >Previous Note</label
+                    >
+                    <textarea
+                      v-model="modalForm.previous_note"
+                      :class="inputClass"
+                      placeholder="Optional note about previous loan history..."
+                    ></textarea>
+                    <p v-if="modalErrors.previous_note" class="text-red-500 text-xs mt-1">
+                      {{ modalErrors.previous_note }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Total Installments <span class="text-red-500">*</span></label>
-                  <input v-model="modalForm.total_installments" type="number" min="1" step="1" :class="inputClass" placeholder="12" />
-                  <p v-if="modalErrors.total_installments" class="text-red-500 text-xs mt-1">{{ modalErrors.total_installments }}</p>
+                  <label class="block text-sm font-medium text-gray-700 mb-1"
+                    >Loan Amount <span class="text-red-500">*</span></label
+                  >
+                  <input
+                    v-model="modalForm.loan_amount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    :class="inputClass"
+                    placeholder="0.00"
+                  />
+                  <p v-if="modalErrors.loan_amount" class="text-red-500 text-xs mt-1">
+                    {{ modalErrors.loan_amount }}
+                  </p>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1"
+                    >Total Installments <span class="text-red-500">*</span></label
+                  >
+                  <input
+                    v-model="modalForm.total_installments"
+                    type="number"
+                    min="1"
+                    step="1"
+                    :class="inputClass"
+                    placeholder="12"
+                  />
+                  <p v-if="modalErrors.total_installments" class="text-red-500 text-xs mt-1">
+                    {{ modalErrors.total_installments }}
+                  </p>
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Installment Amount <span class="text-red-500">*</span></label>
-                  <input v-model="modalForm.installment_amount" type="number" min="0" step="0.01" :class="inputClass" placeholder="0.00" />
-                  <p v-if="modalErrors.installment_amount" class="text-red-500 text-xs mt-1">{{ modalErrors.installment_amount }}</p>
+                  <label class="block text-sm font-medium text-gray-700 mb-1"
+                    >Installment Amount <span class="text-red-500">*</span></label
+                  >
+                  <input
+                    v-model="modalForm.installment_amount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    :class="inputClass"
+                    placeholder="0.00"
+                  />
+                  <p v-if="modalErrors.installment_amount" class="text-red-500 text-xs mt-1">
+                    {{ modalErrors.installment_amount }}
+                  </p>
                 </div>
-                
+
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Start Month <span class="text-red-500">*</span></label>
+                  <label class="block text-sm font-medium text-gray-700 mb-1"
+                    >Start Month <span class="text-red-500">*</span></label
+                  >
                   <input v-model="modalForm.start_month" type="month" :class="inputClass" />
-                  <p v-if="modalErrors.start_month" class="text-red-500 text-xs mt-1">{{ modalErrors.start_month }}</p>
+                  <p v-if="modalErrors.start_month" class="text-red-500 text-xs mt-1">
+                    {{ modalErrors.start_month }}
+                  </p>
                 </div>
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
@@ -376,7 +853,6 @@ const inputClass =
                     <option value="closed">Closed</option>
                   </select>
                 </div>
-                
               </div>
 
               <!-- Installment Preview -->
@@ -387,7 +863,12 @@ const inputClass =
               <div class="flex justify-end gap-3 pt-2">
                 <button type="button" class="btn-3" @click="closeModal">Cancel</button>
                 <button type="submit" class="btn-2" :disabled="modalSubmitting">
-                  <i class="far" :class="modalSubmitting ? 'fa-spinner fa-spin' : isEditMode ? 'fa-save' : 'fa-plus'"></i>
+                  <i
+                    class="far"
+                    :class="
+                      modalSubmitting ? 'fa-spinner fa-spin' : isEditMode ? 'fa-save' : 'fa-plus'
+                    "
+                  ></i>
                   {{ modalSubmitting ? 'Saving...' : isEditMode ? 'Save Changes' : 'Create Loan' }}
                 </button>
               </div>
@@ -397,6 +878,17 @@ const inputClass =
       </div>
     </teleport>
 
-    <DeleteModal :show="showDeleteModal" title="Delete Loan" :message="`Delete loan '${selectedItem?.loan_title}' for ${selectedItem?.user?.name}?`" @close="() => { showDeleteModal = false; selectedItem = null }" @confirm="handleDelete" />
+    <DeleteModal
+      :show="showDeleteModal"
+      title="Delete Loan"
+      :message="`Delete loan '${selectedItem?.loan_title}' for ${selectedItem?.user?.name}?`"
+      @close="
+        () => {
+          showDeleteModal = false
+          selectedItem = null
+        }
+      "
+      @confirm="handleDelete"
+    />
   </div>
 </template>

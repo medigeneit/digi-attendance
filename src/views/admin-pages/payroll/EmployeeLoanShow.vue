@@ -19,8 +19,8 @@ onMounted(() => loanStore.fetchItem(props.id))
 const paidInstallments = computed(() => {
   if (!item.value) return 0
   if (Array.isArray(item.value.installments)) {
-    return item.value.installments.filter(
-      (i) => (i.status || '').toLowerCase() === 'paid',
+    return item.value.installments.filter((i) =>
+      ['paid', 'deducted'].includes((i.status || '').toLowerCase()),
     ).length
   }
   return 0
@@ -53,7 +53,10 @@ const statusClass = (status) => {
 
     <LoaderView v-if="loading" />
 
-    <div v-else-if="error" class="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm flex items-center gap-2">
+    <div
+      v-else-if="error"
+      class="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm flex items-center gap-2"
+    >
       <i class="fas fa-exclamation-circle"></i> {{ error }}
     </div>
 
@@ -67,7 +70,10 @@ const statusClass = (status) => {
               {{ item.user?.name }} &middot; {{ item.user?.employee_id }}
             </p>
           </div>
-          <span class="px-3 py-1 rounded-full text-sm font-semibold" :class="statusClass(item.status)">
+          <span
+            class="px-3 py-1 rounded-full text-sm font-semibold"
+            :class="statusClass(item.status)"
+          >
             {{ item.status }}
           </span>
         </div>
@@ -75,26 +81,74 @@ const statusClass = (status) => {
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div class="bg-blue-50 rounded-xl p-4 text-center">
             <div class="text-xs text-blue-600 font-medium mb-1">Loan Amount</div>
-            <div class="text-lg font-bold text-blue-900 font-mono">{{ formatCurrency(item.loan_amount) }}</div>
+            <div class="text-lg font-bold text-blue-900 font-mono">
+              {{ formatCurrency(item.loan_amount) }}
+            </div>
           </div>
           <div class="bg-emerald-50 rounded-xl p-4 text-center">
             <div class="text-xs text-emerald-600 font-medium mb-1">Installment</div>
-            <div class="text-lg font-bold text-emerald-800 font-mono">{{ formatCurrency(item.installment_amount) }}</div>
+            <div class="text-lg font-bold text-emerald-800 font-mono">
+              {{ formatCurrency(item.installment_amount) }}
+            </div>
           </div>
           <div class="bg-amber-50 rounded-xl p-4 text-center">
             <div class="text-xs text-amber-600 font-medium mb-1">Remaining Balance</div>
-            <div class="text-lg font-bold text-amber-800 font-mono">{{ formatCurrency(remainingBalance) }}</div>
+            <div class="text-lg font-bold text-amber-800 font-mono">
+              {{ formatCurrency(remainingBalance) }}
+            </div>
           </div>
           <div class="bg-indigo-50 rounded-xl p-4 text-center">
             <div class="text-xs text-indigo-600 font-medium mb-1">Progress</div>
-            <div class="text-lg font-bold text-indigo-800">{{ paidInstallments }} / {{ item.total_installments }}</div>
+            <div class="text-lg font-bold text-indigo-800">
+              {{ paidInstallments }} / {{ item.total_installments }}
+            </div>
           </div>
         </div>
 
         <div class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-          <div><span class="text-gray-500">Start Month:</span> <span class="font-medium ml-1">{{ item.start_month || '—' }}</span></div>
-          <div><span class="text-gray-500">Remarks:</span> <span class="font-medium ml-1">{{ item.remarks || '—' }}</span></div>
-          <div><span class="text-gray-500">Created At:</span> <span class="font-medium ml-1">{{ item.created_at?.slice(0, 10) || '—' }}</span></div>
+          <div>
+            <span class="text-gray-500">Start Month:</span>
+            <span class="font-medium ml-1">{{ item.start_month || '—' }}</span>
+          </div>
+          <div>
+            <span class="text-gray-500">Remarks:</span>
+            <span class="font-medium ml-1">{{ item.remarks || '—' }}</span>
+          </div>
+          <div>
+            <span class="text-gray-500">Created At:</span>
+            <span class="font-medium ml-1">{{ item.created_at?.slice(0, 10) || '—' }}</span>
+          </div>
+        </div>
+
+        <div
+          v-if="item.has_previous_loan"
+          class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4"
+        >
+          <h4 class="text-sm font-semibold text-amber-800 mb-2">Previous Loan History</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+            <div>
+              <span class="text-amber-700">Previous Amount:</span>
+              <span class="font-medium ml-1">{{
+                formatCurrency(item.previous_loan_amount || 0)
+              }}</span>
+            </div>
+            <div>
+              <span class="text-amber-700">Previous Installments:</span>
+              <span class="font-medium ml-1">{{ item.previous_total_installments || 'N/A' }}</span>
+            </div>
+            <div>
+              <span class="text-amber-700">Settled Date:</span>
+              <span class="font-medium ml-1">{{ item.previous_settled_at || 'N/A' }}</span>
+            </div>
+            <div>
+              <span class="text-amber-700">Reason:</span>
+              <span class="font-medium ml-1">{{ item.previous_reason || 'N/A' }}</span>
+            </div>
+            <div class="md:col-span-2">
+              <span class="text-amber-700">Note:</span>
+              <span class="font-medium ml-1">{{ item.previous_note || 'N/A' }}</span>
+            </div>
+          </div>
         </div>
       </div>
 
