@@ -15,6 +15,16 @@ export const useUserMonthlyKpiStore = defineStore('userMonthlyKpi', () => {
   const error = ref(null)
 
   const msg = (e) => e?.response?.data?.message || e?.message || 'Something went wrong'
+  const normalizeCurrent = (res, prev = {}) => {
+    const payload = res?.data?.data || res?.data || {}
+    const topLevelPermission = res?.data?.marking_permission
+    const payloadPermission = payload?.marking_permission
+
+    return {
+      ...payload,
+      marking_permission: payloadPermission ?? topLevelPermission ?? prev?.marking_permission ?? null,
+    }
+  }
 
   async function fetchList(params = {}) {
     isLoading.value = true; error.value = null
@@ -28,7 +38,7 @@ export const useUserMonthlyKpiStore = defineStore('userMonthlyKpi', () => {
     isSaving.value = true; error.value = null
     try {
       const res = await apiClient.post('/user-monthly-kpi', { user_id, monthly_kpi_form_id })
-      current.value = res?.data?.data || res?.data
+      current.value = normalizeCurrent(res, current.value)
       return current.value
     } catch (e) { error.value = msg(e); throw e } finally { isSaving.value = false }
   }
@@ -37,10 +47,8 @@ export const useUserMonthlyKpiStore = defineStore('userMonthlyKpi', () => {
     isLoading.value = true; 
     error.value = null
     try {
-      console.log({id});
-      
       const res = await apiClient.get(`/user-monthly-kpi/${id}`)
-      current.value = res?.data?.data || res?.data
+      current.value = normalizeCurrent(res, current.value)
       return current.value
     } catch (e) { error.value = msg(e); throw e } finally { isLoading.value = false }
   }
@@ -49,7 +57,7 @@ export const useUserMonthlyKpiStore = defineStore('userMonthlyKpi', () => {
     isSaving.value = true; error.value = null
     try {
       const res = await apiClient.put(`/user-monthly-kpi/${id}`, { monthly_target })
-      current.value = res?.data?.data || res?.data
+      current.value = normalizeCurrent(res, current.value)
       return current.value
     } catch (e) { error.value = msg(e); throw e } finally { isSaving.value = false }
   }
@@ -58,7 +66,7 @@ export const useUserMonthlyKpiStore = defineStore('userMonthlyKpi', () => {
     isSaving.value = true; error.value = null
     try {
       const res = await apiClient.post(`/user-monthly-kpi/${id}/finalize`)
-      current.value = res?.data?.data || res?.data
+      current.value = normalizeCurrent(res, current.value)
       return current.value
     } catch (e) { error.value = msg(e); throw e } finally { isSaving.value = false }
   }
@@ -89,7 +97,7 @@ export const useUserMonthlyKpiStore = defineStore('userMonthlyKpi', () => {
     isSaving.value = true; error.value = null
     try {
       const res = await apiClient.put(`/user-monthly-kpi/${id}/target/rate`, { role, score, comment })
-      current.value = res?.data?.data || res?.data
+      current.value = normalizeCurrent(res, current.value)
       return current.value
     } catch (e) { error.value = msg(e); throw e } finally { isSaving.value = false }
   }

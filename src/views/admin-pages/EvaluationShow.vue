@@ -38,6 +38,72 @@ const coordinatorObs = ref('')
 
 const finalized = computed(() => !!current.value?.finalized_at)
 const formMeta = computed(() => current.value?.form ?? {})
+const markingPermission = computed(() => current.value?.marking_permission ?? {})
+const isSuperAdmin = computed(() => !!markingPermission.value?.is_super_admin)
+const canMarkInCharge = computed(() => !!markingPermission.value?.can_mark_in_charge)
+const canMarkCoordinator = computed(() => !!markingPermission.value?.can_mark_coordinator)
+const coordinatorStageOpen = computed(() => !!markingPermission.value?.coordinator_stage_open)
+const isInChargeViewer = computed(() => canMarkInCharge.value && !canMarkCoordinator.value)
+
+const hasInChargeData = computed(() => {
+  const t = current.value?.target
+  const p = current.value?.performance
+  return (
+    t?.incharge_score !== null && t?.incharge_score !== undefined
+  ) || (
+    p?.incharge_score !== null && p?.incharge_score !== undefined
+  ) || !!String(inchargeObs.value || '').trim()
+})
+
+const hasCoordinatorData = computed(() => {
+  const t = current.value?.target
+  const p = current.value?.performance
+  return (
+    t?.coordinator_score !== null && t?.coordinator_score !== undefined
+  ) || (
+    p?.coordinator_score !== null && p?.coordinator_score !== undefined
+  ) || !!String(coordinatorObs.value || '').trim()
+})
+
+const showInChargeField = computed(() =>
+  !!markingPermission.value?.in_charge_user_id || canMarkInCharge.value || finalized.value || hasInChargeData.value
+)
+
+const showCoordinatorField = computed(() => {
+  if (isInChargeViewer.value) return false
+
+  const hasCoordinatorAssignee = !!markingPermission.value?.coordinator_user_id || canMarkCoordinator.value || hasCoordinatorData.value
+  const hierarchyVisible = coordinatorStageOpen.value || finalized.value || hasCoordinatorData.value
+  return hasCoordinatorAssignee && hierarchyVisible
+})
+
+const showCoordinatorLockedHint = computed(() =>
+  !!markingPermission.value?.coordinator_user_id && !showCoordinatorField.value && !isInChargeViewer.value
+)
+const canFinalize = computed(() => canMarkCoordinator.value)
+const canShowFinalizeButton = computed(() =>
+  finalized.value ? isSuperAdmin.value : canFinalize.value,
+)
+const finalizeButtonLabel = computed(() =>
+  finalized.value && isSuperAdmin.value ? 'Unfinalize' : 'Finalize',
+)
+const inchargeObsCount = computed(() => String(inchargeObs.value || '').length)
+const coordinatorObsCount = computed(() => String(coordinatorObs.value || '').length)
+const observations = computed(() => current.value?.observations ?? [])
+const inchargeObservation = computed(() => observations.value.find((o) => o.role === 'incharge') ?? null)
+const coordinatorObservation = computed(() => observations.value.find((o) => o.role === 'coordinator') ?? null)
+const inchargeEvaluatorName = computed(
+  () =>
+    String(
+      markingPermission.value?.in_charge_user_name || inchargeObservation.value?.rater_name || '',
+    ).trim(),
+)
+const coordinatorEvaluatorName = computed(
+  () =>
+    String(
+      markingPermission.value?.coordinator_user_name || coordinatorObservation.value?.rater_name || '',
+    ).trim(),
+)
 
 const perfMax = computed(() =>
   Number(perf.value.max_score || formMeta.value?.performance_mark || 0),
@@ -61,11 +127,41 @@ const coordinatorTotal = computed(
 const finalTotal = computed(
   () => Number(perf.value.final_score || 0) + Number(target.value.final_score || 0),
 )
+const inchargeMarkingStatusText = computed(() => {
+  if (finalized.value) return 'Finalized'
+  return canMarkInCharge.value ? 'Editable' : 'Read only'
+})
+const coordinatorMarkingStatusText = computed(() => {
+  if (finalized.value) return 'Finalized'
+  if (!canMarkCoordinator.value) {
+    return coordinatorStageOpen.value ? 'Read only' : 'Locked by hierarchy'
+  }
+  return 'Editable'
+})
 
 function clamp(n, min, max) {
   let v = Number(n ?? 0)
   if (!Number.isFinite(v)) v = 0
   return v < min ? min : v > max ? max : v
+}
+function scoreMax(kind) {
+  return kind === 'target' ? targetMax.value : perfMax.value
+}
+function scoreState(kind) {
+  return kind === 'target' ? target.value : perf.value
+}
+function scoreKey(role) {
+  return role === 'incharge' ? 'incharge_score' : 'coordinator_score'
+}
+function getLocalScore(kind, role) {
+  return Number(scoreState(kind)[scoreKey(role)] || 0)
+}
+function getServerScore(kind, role) {
+  return Number(current.value?.[kind]?.[scoreKey(role)] || 0)
+}
+function isScoreDirty(kind, role) {
+  const max = scoreMax(kind)
+  return clamp(getLocalScore(kind, role), 0, max) !== clamp(getServerScore(kind, role), 0, max)
 }
 function hydrateBlocks(c) {
   const t = c?.target ?? {}
@@ -140,6 +236,19 @@ async function saveTargetText() {
   }
 }
 async function saveScore(kind, role) {
+  if (role === 'incharge' && !canMarkInCharge.value) {
+    toast.error('You do not have permission to mark In-charge score')
+    return
+  }
+  if (role === 'coordinator' && !canMarkCoordinator.value) {
+    toast.error('You do not have permission to mark Coordinator score')
+    return
+  }
+  if (!isScoreDirty(kind, role)) {
+    toast.info('No score changes to save')
+    return
+  }
+
   const state = kind === 'target' ? target.value : perf.value
   const max = kind === 'target' ? targetMax.value : perfMax.value
   const score =
@@ -157,6 +266,15 @@ async function saveScore(kind, role) {
   }
 }
 async function saveObs(role) {
+  if (role === 'incharge' && !canMarkInCharge.value) {
+    toast.error('You do not have permission to save In-charge observation')
+    return
+  }
+  if (role === 'coordinator' && !canMarkCoordinator.value) {
+    toast.error('You do not have permission to save Coordinator observation')
+    return
+  }
+
   try {
     const text = role === 'incharge' ? inchargeObs.value : coordinatorObs.value
     await store.saveObservation(id, role, text)
@@ -166,13 +284,24 @@ async function saveObs(role) {
   }
 }
 async function finalize() {
-  if (!confirm('Finalize this evaluation?')) return
+  if (!canShowFinalizeButton.value) {
+    toast.error('You do not have permission for this action')
+    return
+  }
+  const confirmText =
+    finalized.value && isSuperAdmin.value
+      ? 'Unfinalize this evaluation?'
+      : 'Finalize this evaluation?'
+  if (!confirm(confirmText)) return
+
   try {
     await store.finalize(id)
-    toast.success('Finalized')
+    toast.success(
+      finalized.value && isSuperAdmin.value ? 'Finalization removed' : 'Finalized',
+    )
     await store.show(id)
   } catch (e) {
-    toast.error(e?.response?.data?.message || 'Failed to finalize')
+    toast.error(e?.response?.data?.message || 'Failed to update finalization')
   }
 }
 
@@ -201,8 +330,13 @@ function printPage() {
         <h1 class="title-md md:title-lg">KPI Sheet</h1>
       </div>
       <div class="flex gap-2">
-        <button class="btn-2" :disabled="isSaving || finalized || !current" @click="finalize">
-          {{ finalized ? 'Finalized' : 'Finalize' }}
+        <button
+          v-if="canShowFinalizeButton"
+          class="btn-2"
+          :disabled="isSaving || !current"
+          @click="finalize"
+        >
+          {{ finalizeButtonLabel }}
         </button>
         <button class="btn-3" @click="printPage"><i class="far fa-print mr-1"></i>Print</button>
       </div>
@@ -242,11 +376,11 @@ function printPage() {
 
       <!-- Live totals -->
       <div class="grid grid-cols-1 print:grid-cols-3 md:grid-cols-3 gap-2 text-sm">
-        <div class="rounded-lg border p-2 text-center">
+        <div v-if="showInChargeField" class="rounded-lg border p-2 text-center">
           <div class="text-gray-500">In-charge total</div>
           <div class="font-semibold">{{ inchargeTotal }} / {{ grandMax }}</div>
         </div>
-        <div class="rounded-lg border p-2 text-center">
+        <div v-if="showCoordinatorField" class="rounded-lg border p-2 text-center">
           <div class="text-gray-500">Coordinator total</div>
           <div class="font-semibold">{{ coordinatorTotal }} / {{ grandMax }}</div>
         </div>
@@ -257,6 +391,9 @@ function printPage() {
       </div>
 
       <!-- Main table -->
+      <div class="rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-800 print:hidden">
+        Score input range follows each row max mark. Save button activates only when score is changed.
+      </div>
       <div class="overflow-x-auto">
         <table class="min-w-full border text-sm">
           <thead>
@@ -264,8 +401,44 @@ function printPage() {
               <th class="border px-2 py-2 w-10">ক্রম</th>
               <th class="border px-2 py-2">কার্যসম্পাদন বিষয়</th>
               <th class="border px-2 py-2 w-32 text-right">সর্বোচ্চ</th>
-              <th class="border px-2 py-2 w-32 text-right">In-charge</th>
-              <th class="border px-2 py-2 w-36 text-right">Coordinator/AD/DD</th>
+              <th v-if="showInChargeField" class="border px-2 py-2 w-40 text-right">
+                <div class="font-semibold">In-charge</div>
+                <div class="text-xs text-slate-500 truncate">
+                  {{ inchargeEvaluatorName || 'Not assigned' }}
+                </div>
+                <div class="mt-1">
+                  <span
+                    class="rounded-full px-2 py-0.5 text-xs font-medium"
+                    :class="
+                      inchargeMarkingStatusText === 'Editable'
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-slate-100 text-slate-600'
+                    "
+                  >
+                    {{ inchargeMarkingStatusText }}
+                  </span>
+                </div>
+              </th>
+              <th v-if="showCoordinatorField" class="border px-2 py-2 w-44 text-right">
+                <div class="font-semibold">Coordinator/AD/DD</div>
+                <div class="text-xs text-slate-500 truncate">
+                  {{ coordinatorEvaluatorName || 'Not assigned' }}
+                </div>
+                <div class="mt-1">
+                  <span
+                    class="rounded-full px-2 py-0.5 text-xs font-medium"
+                    :class="
+                      coordinatorMarkingStatusText === 'Editable'
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : coordinatorMarkingStatusText === 'Locked by hierarchy'
+                          ? 'bg-amber-100 text-amber-700'
+                          : 'bg-slate-100 text-slate-600'
+                    "
+                  >
+                    {{ coordinatorMarkingStatusText }}
+                  </span>
+                </div>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -335,42 +508,52 @@ function printPage() {
               </td>
 
               <td class="border px-2 py-2 align-top text-right">{{ perfMax }}</td>
-              <td class="border px-2 py-2 align-top">
-                <div class="flex items-center justify-end gap-2">
-                  <input
-                    type="number"
-                    min="0"
-                    :max="perfMax"
-                    :readonly="finalized"
-                    v-model.number="perf.incharge_score"
-                    class="w-20 rounded-md border px-2 py-1 text-right focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200"
-                  />
-                  <button
-                    class="btn-4 print:hidden"
-                    :disabled="isSaving || finalized || !perfMax"
-                    @click="saveScore('performance', 'incharge')"
-                  >
-                    Save
-                  </button>
+              <td v-if="showInChargeField" class="border px-2 py-2 align-top">
+                <div class="rounded-md border border-slate-200 bg-slate-50/70 p-2">
+                  <div class="flex items-center justify-end gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      :max="perfMax"
+                      :readonly="finalized || !canMarkInCharge"
+                      v-model.number="perf.incharge_score"
+                      class="w-20 rounded-md border px-2 py-1 text-right focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200"
+                    />
+                    <button
+                      class="btn-4 print:hidden"
+                      :disabled="isSaving || finalized || !perfMax || !canMarkInCharge || !isScoreDirty('performance', 'incharge')"
+                      @click="saveScore('performance', 'incharge')"
+                    >
+                      {{ isScoreDirty('performance', 'incharge') ? 'Save' : 'Saved' }}
+                    </button>
+                  </div>
+                  <div class="mt-1 text-right text-xs text-slate-500">
+                    Range: 0-{{ perfMax }}
+                  </div>
                 </div>
               </td>
-              <td class="border px-2 py-2 align-top">
-                <div class="flex items-center justify-end gap-2">
-                  <input
-                    type="number"
-                    min="0"
-                    :max="perfMax"
-                    :readonly="finalized"
-                    v-model.number="perf.coordinator_score"
-                    class="w-20 rounded-md border px-2 py-1 text-right focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200"
-                  />
-                  <button
-                    class="btn-4 print:hidden"
-                    :disabled="isSaving || finalized || !perfMax"
-                    @click="saveScore('performance', 'coordinator')"
-                  >
-                    Save
-                  </button>
+              <td v-if="showCoordinatorField" class="border px-2 py-2 align-top">
+                <div class="rounded-md border border-slate-200 bg-slate-50/70 p-2">
+                  <div class="flex items-center justify-end gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      :max="perfMax"
+                      :readonly="finalized || !canMarkCoordinator"
+                      v-model.number="perf.coordinator_score"
+                      class="w-20 rounded-md border px-2 py-1 text-right focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200"
+                    />
+                    <button
+                      class="btn-4 print:hidden"
+                      :disabled="isSaving || finalized || !perfMax || !canMarkCoordinator || !isScoreDirty('performance', 'coordinator')"
+                      @click="saveScore('performance', 'coordinator')"
+                    >
+                      {{ isScoreDirty('performance', 'coordinator') ? 'Save' : 'Saved' }}
+                    </button>
+                  </div>
+                  <div class="mt-1 text-right text-xs text-slate-500">
+                    Range: 0-{{ perfMax }}
+                  </div>
                 </div>
               </td>
             </tr>
@@ -394,42 +577,52 @@ function printPage() {
                 </div>
               </td>
               <td class="border px-2 py-2 align-top text-right">{{ targetMax }}</td>
-              <td class="border px-2 py-2 align-top">
-                <div class="flex items-center justify-end gap-2">
-                  <input
-                    type="number"
-                    min="0"
-                    :max="targetMax"
-                    :readonly="finalized"
-                    v-model.number="target.incharge_score"
-                    class="w-20 rounded-md border px-2 py-1 text-right focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200"
-                  />
-                  <button
-                    class="btn-4 print:hidden"
-                    :disabled="isSaving || finalized || !targetMax"
-                    @click="saveScore('target', 'incharge')"
-                  >
-                    Save
-                  </button>
+              <td v-if="showInChargeField" class="border px-2 py-2 align-top">
+                <div class="rounded-md border border-slate-200 bg-slate-50/70 p-2">
+                  <div class="flex items-center justify-end gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      :max="targetMax"
+                      :readonly="finalized || !canMarkInCharge"
+                      v-model.number="target.incharge_score"
+                      class="w-20 rounded-md border px-2 py-1 text-right focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200"
+                    />
+                    <button
+                      class="btn-4 print:hidden"
+                      :disabled="isSaving || finalized || !targetMax || !canMarkInCharge || !isScoreDirty('target', 'incharge')"
+                      @click="saveScore('target', 'incharge')"
+                    >
+                      {{ isScoreDirty('target', 'incharge') ? 'Save' : 'Saved' }}
+                    </button>
+                  </div>
+                  <div class="mt-1 text-right text-xs text-slate-500">
+                    Range: 0-{{ targetMax }}
+                  </div>
                 </div>
               </td>
-              <td class="border px-2 py-2 align-top">
-                <div class="flex items-center justify-end gap-2">
-                  <input
-                    type="number"
-                    min="0"
-                    :max="targetMax"
-                    :readonly="finalized"
-                    v-model.number="target.coordinator_score"
-                    class="w-20 rounded-md border px-2 py-1 text-right focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200"
-                  />
-                  <button
-                    class="btn-4 print:hidden"
-                    :disabled="isSaving || finalized || !targetMax"
-                    @click="saveScore('target', 'coordinator')"
-                  >
-                    Save
-                  </button>
+              <td v-if="showCoordinatorField" class="border px-2 py-2 align-top">
+                <div class="rounded-md border border-slate-200 bg-slate-50/70 p-2">
+                  <div class="flex items-center justify-end gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      :max="targetMax"
+                      :readonly="finalized || !canMarkCoordinator"
+                      v-model.number="target.coordinator_score"
+                      class="w-20 rounded-md border px-2 py-1 text-right focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200"
+                    />
+                    <button
+                      class="btn-4 print:hidden"
+                      :disabled="isSaving || finalized || !targetMax || !canMarkCoordinator || !isScoreDirty('target', 'coordinator')"
+                      @click="saveScore('target', 'coordinator')"
+                    >
+                      {{ isScoreDirty('target', 'coordinator') ? 'Save' : 'Saved' }}
+                    </button>
+                  </div>
+                  <div class="mt-1 text-right text-xs text-slate-500">
+                    Range: 0-{{ targetMax }}
+                  </div>
                 </div>
               </td>
             </tr>
@@ -438,55 +631,134 @@ function printPage() {
             <tr class="bg-gray-50 font-medium">
               <td class="border px-2 py-2 text-right" colspan="2">সর্বমোট</td>
               <td class="border px-2 py-2 text-right">{{ grandMax }}</td>
-              <td class="border px-2 py-2 text-right">{{ inchargeTotal }}</td>
-              <td class="border px-2 py-2 text-right">{{ coordinatorTotal }}</td>
+              <td v-if="showInChargeField" class="border px-2 py-2 text-right">{{ inchargeTotal }}</td>
+              <td v-if="showCoordinatorField" class="border px-2 py-2 text-right">{{ coordinatorTotal }}</td>
             </tr>
           </tbody>
         </table>
       </div>
 
+      <div
+        v-if="showCoordinatorLockedHint"
+        class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800"
+      >
+        Coordinator marking will show after In-charge completes both Performance and Target marking.
+      </div>
       <!-- Observation -->
-      <div class="mt-4">
-        <div class="text-sm font-semibold mb-2">Observation:</div>
-        <div class="grid grid-cols-12 gap-2 text-sm">
-          <div class="col-span-2 border p-2 bg-gray-50 rounded">ইনচার্জ</div>
-          <div class="col-span-10 border p-2 rounded">
+      <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50/60 p-3 md:p-4">
+        <div class="mb-3 flex items-center justify-between gap-2">
+          <div class="text-sm font-semibold text-slate-800">Observation</div>
+          <div class="text-xs text-slate-500">Role-wise comment panel</div>
+        </div>
+        <div class="observation-panel space-y-3 text-sm">
+          <div v-if="showInChargeField" class="col-span-2 border p-2 bg-gray-50 rounded">ইনচার্জ</div>
+          <div v-if="showInChargeField" class="rounded-lg border border-slate-200 bg-white p-3">
+            <div class="mb-2 flex items-center justify-between gap-2">
+              <div>
+                <div class="font-medium text-slate-800">In-charge</div>
+                <div class="text-xs text-slate-500">
+                  Evaluator: {{ inchargeEvaluatorName || 'Not assigned' }}
+                </div>
+              </div>
+              <span
+                class="rounded-full px-2 py-0.5 text-xs font-medium"
+                :class="
+                  !finalized && canMarkInCharge
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : 'bg-slate-100 text-slate-600'
+                "
+              >
+                {{ !finalized && canMarkInCharge ? 'Editable' : 'Read only' }}
+              </span>
+            </div>
             <textarea
               rows="3"
               v-model="inchargeObs"
-              :readonly="finalized"
-              class="w-full rounded-md border px-2 py-1 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200"
+              :readonly="finalized || !canMarkInCharge"
+              class="w-full rounded-md border px-2 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200"
+              placeholder="Write in-charge observation"
             ></textarea>
-            <div class="mt-2 flex justify-end print:hidden">
-              <button class="btn-4" :disabled="isSaving || finalized" @click="saveObs('incharge')">
+            <div class="mt-2 flex items-center justify-between text-xs">
+              <span class="text-slate-500">{{ inchargeObsCount }} chars</span>
+              <button
+                v-if="!finalized && canMarkInCharge"
+                class="btn-4 print:hidden"
+                :disabled="isSaving"
+                @click="saveObs('incharge')"
+              >
                 Save
               </button>
+              <span v-else class="text-slate-400">{{ finalized ? 'Finalized' : 'View only' }}</span>
             </div>
           </div>
 
-          <div class="col-span-2 border p-2 bg-gray-50 rounded">বিভাগীয় কো-অর্ডিনেটর</div>
-          <div class="col-span-10 border p-2 rounded">
+          <div v-if="showCoordinatorField" class="col-span-2 border p-2 bg-gray-50 rounded">বিভাগীয় কো-অর্ডিনেটর</div>
+          <div v-if="showCoordinatorField" class="rounded-lg border border-slate-200 bg-white p-3">
+            <div class="mb-2 flex items-center justify-between gap-2">
+              <div>
+                <div class="font-medium text-slate-800">Coordinator/AD/DD</div>
+                <div class="text-xs text-slate-500">
+                  Evaluator: {{ coordinatorEvaluatorName || 'Not assigned' }}
+                </div>
+              </div>
+              <span
+                class="rounded-full px-2 py-0.5 text-xs font-medium"
+                :class="
+                  !finalized && canMarkCoordinator
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : 'bg-slate-100 text-slate-600'
+                "
+              >
+                {{ !finalized && canMarkCoordinator ? 'Editable' : 'Read only' }}
+              </span>
+            </div>
             <textarea
               rows="3"
               v-model="coordinatorObs"
-              :readonly="finalized"
-              class="w-full rounded-md border px-2 py-1 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200"
+              :readonly="finalized || !canMarkCoordinator"
+              class="w-full rounded-md border px-2 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200"
+              placeholder="Write coordinator observation"
             ></textarea>
-            <div class="mt-2 flex justify-end print:hidden">
+            <div class="mt-2 flex items-center justify-between text-xs">
+              <span class="text-slate-500">{{ coordinatorObsCount }} chars</span>
               <button
-                class="btn-4"
-                :disabled="isSaving || finalized"
+                v-if="!finalized && canMarkCoordinator"
+                class="btn-4 print:hidden"
+                :disabled="isSaving"
                 @click="saveObs('coordinator')"
               >
                 Save
               </button>
+              <span v-else class="text-slate-400">{{ finalized ? 'Finalized' : 'View only' }}</span>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Signature -->
-      <div class="grid grid-cols-12 gap-2 pt-4 text-sm">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2 pt-4 text-sm">
+        <div v-if="showInChargeField" class="rounded-lg border border-slate-200 bg-white p-3">
+          <div class="text-xs font-medium uppercase tracking-wide text-slate-500">
+            In-charge evaluator
+          </div>
+          <div class="mt-1 text-sm font-semibold text-slate-800">
+            {{ inchargeEvaluatorName || 'Not assigned' }}
+          </div>
+          <div class="mt-3 text-xs text-slate-500">Signature</div>
+          <div class="mt-2 h-6 border-b border-slate-300"></div>
+        </div>
+        <div v-if="showCoordinatorField" class="rounded-lg border border-slate-200 bg-white p-3">
+          <div class="text-xs font-medium uppercase tracking-wide text-slate-500">
+            Coordinator/AD/DD evaluator
+          </div>
+          <div class="mt-1 text-sm font-semibold text-slate-800">
+            {{ coordinatorEvaluatorName || 'Not assigned' }}
+          </div>
+          <div class="mt-3 text-xs text-slate-500">Signature</div>
+          <div class="mt-2 h-6 border-b border-slate-300"></div>
+        </div>
+      </div>
+      <div class="hidden grid-cols-12 gap-2 pt-4 text-sm">
         <div class="col-span-6 border p-3 rounded">মূল্যায়নকারীর নাম:</div>
         <div class="col-span-6 border p-3 rounded">স্বাক্ষর:</div>
       </div>
@@ -517,6 +789,9 @@ function printPage() {
 }
 .richtext :deep(p) {
   @apply my-1;
+}
+.observation-panel > .col-span-2 {
+  display: none;
 }
 /* ===== Print-only cleanup (inside this component) ===== */
 @media print {
