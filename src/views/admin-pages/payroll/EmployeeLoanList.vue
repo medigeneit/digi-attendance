@@ -264,7 +264,7 @@ const inputClass =
       <i class="fas fa-hand-holding-usd text-4xl text-gray-300 mb-3"></i>
       <p class="text-lg font-medium text-gray-500">No loans found</p>
       <button class="btn-2 mt-4" @click="openCreate">
-        <i class="far fa-plus"></i> Add Loan
+        <i class="far fa-plus"></i> Add Loan 
       </button>
     </div>
 
@@ -340,6 +340,11 @@ const inputClass =
                 <input v-model="modalForm.loan_title" type="text" :class="inputClass" placeholder="e.g. Personal Loan" />
                 <p v-if="modalErrors.loan_title" class="text-red-500 text-xs mt-1">{{ modalErrors.loan_title }}</p>
               </div>
+              <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Reason</label>
+                  <textarea v-model="modalForm.remarks" :class="inputClass" placeholder="Loan reason..."></textarea>
+                  <p v-if="modalErrors.remarks" class="text-red-500 text-xs mt-1">{{ modalErrors.remarks }}</p>
+              </div>
               <div class="grid grid-cols-2 gap-4">
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-1">Loan Amount <span class="text-red-500">*</span></label>
@@ -371,10 +376,7 @@ const inputClass =
                     <option value="closed">Closed</option>
                   </select>
                 </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
-                  <input v-model="modalForm.remarks" type="text" :class="inputClass" placeholder="Optional..." />
-                </div>
+                
               </div>
 
               <!-- Installment Preview -->
