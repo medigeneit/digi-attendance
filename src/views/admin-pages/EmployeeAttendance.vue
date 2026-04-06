@@ -273,11 +273,24 @@ const fmtHours = (v) => {
             <div class="px-1 pt-1 pb-0.5 overflow-hidden">
               <div class="-mx-1 flex items-center gap-2 overflow-x-auto px-1">
                 <span
+                  class="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-2.5 py-0.5 text-[11px] font-medium text-sky-700 whitespace-nowrap"
+                >
+                  <i class="far fa-bolt text-[11px]"></i>
+                  Total Working Days <strong>{{ attendanceStore?.summary?.total_working_days || 0 }}d</strong>
+                </span>
+
+                <span
                   v-if="presentRate !== null"
                   class="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700 whitespace-nowrap"
                 >
                   <i class="far fa-check-circle text-[11px]"></i>
                  Present  <strong>{{ attendanceStore?.summary?.total_present_days || 0 }}d</strong>
+                </span>
+                <span
+                  class="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-2.5 py-0.5 text-[11px] font-medium text-sky-700 whitespace-nowrap"
+                >
+                  <i class="far fa-bolt text-[11px]"></i>
+                  Total Weekends <strong>{{attendanceStore?.summary?.total_weekend_days}}d</strong>
                 </span>
                 <span  class="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-medium text-amber-700 whitespace-nowrap"
                 >
@@ -290,23 +303,13 @@ const fmtHours = (v) => {
                   <i class="far fa-user-times text-[11px]"></i>
                   Absent <strong>{{ attendanceStore?.summary?.total_absent_days || 0 }}d</strong>
                 </span>
-                <span
-                  class="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-2.5 py-0.5 text-[11px] font-medium text-sky-700 whitespace-nowrap"
-                >
-                  <i class="far fa-bolt text-[11px]"></i>
-                  Total Weekends <strong>{{attendanceStore?.summary?.total_weekend_days}}d</strong>
-                </span>
+                
+                
               </div>
             </div>
 
             <!-- Compact stats grid -->
-            <div class="grid md:grid-cols-3 gap-2 mt-1">
-              <div class="flex items-center justify-between rounded-lg border border-zinc-100 bg-zinc-50 px-3 py-2">
-                <span class="flex items-center gap-2 text-[12px] text-zinc-600">
-                  <i class="far fa-briefcase text-[12px]"></i> Total Working Days
-                </span>
-                <strong class="text-sm text-zinc-900">{{ attendanceStore?.summary?.total_working_days || 0 }}</strong>
-              </div>
+            <div class="grid md:grid-cols-2 gap-2 mt-1">
               <div class="flex items-center justify-between rounded-lg border border-zinc-100 bg-zinc-50 px-3 py-2">
                 <span class="flex items-center gap-2 text-[12px] text-zinc-600">
                   <i class="far fa-hourglass-half text-[12px]"></i> Working/Shift

@@ -1,6 +1,7 @@
 <script setup>
 import ApplicationMenu from '@/components/ApplicationMenu.vue'
 import AttendanceTable from '@/components/AttendanceTable.vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useAuthStore } from '@/stores/auth'
@@ -25,6 +26,23 @@ const formattedMonthName = computed(() => {
   const [year, month] = selectedMonth.value.split('-')
   const date = new Date(year, month - 1)
   return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+})
+
+const monthPickerValue = computed({
+  get() {
+    const fallback = selectedMonth.value || attendanceStore.selectedMonth || new Date().toISOString().slice(0, 7)
+    const [year, month] = fallback.split('-')
+
+    return {
+      year: Number(year),
+      month: Number(month),
+      day: 1,
+    }
+  },
+  set(value) {
+    if (!value?.year || !value?.month) return
+    selectedMonth.value = `${value.year}-${String(value.month).padStart(2, '0')}`
+  },
 })
 
 const fetchAttendance = async () => {
@@ -61,7 +79,7 @@ const goBack = () => router.go(-1)
 
 <template>
   <div class="space-y-4">
-    <div class="md:flex items-center justify-between gap-2">
+    <div class="md:flex items-center justify-between gap-2 p-2 md:p-4 rounded-lg bg-white shadow">
       <button class="btn-3" @click="goBack">
         <i class="far fa-arrow-left"></i>
         <span class="hidden md:flex">Back</span>
@@ -71,12 +89,12 @@ const goBack = () => router.go(-1)
       </h1>
       <div class="flex gap-4">
         <div>
-          <input
-            id="monthSelect"
-            type="month"
-            v-model="selectedMonth"
-            @change="fetchAttendance"
-            class="input-1"
+          <FlexibleDatePicker
+            v-model="monthPickerValue"
+            :show-year="false"
+            :show-month="true"
+            :show-date="false"
+            label="Month"
           />
         </div>
       </div>
