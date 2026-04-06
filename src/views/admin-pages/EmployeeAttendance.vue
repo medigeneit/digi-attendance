@@ -205,14 +205,22 @@ const handleFilterChange = () => {
 
 const hasSelection = computed(() => !!filters.value.employee_id)
 
+const presentRate = computed(() => {
+  const workingDays = Number(attendanceStore?.summary?.total_working_days || 0)
+  const presentDays = Number(attendanceStore?.summary?.total_present_days || 0)
+
+  if (!workingDays) return 0
+  return Math.round((presentDays / workingDays) * 100)
+})
+
 const fmtHours = (v) => {
-  const n = Number(v ?? 0);
-  if (!Number.isFinite(n) || n <= 0) return '0h';
-  const totalMins = Math.round(n * 60);      // assume value is in HOURS (decimal)
-  const h = Math.floor(totalMins / 60);
-  const m = totalMins % 60;
-  return m ? `${h}h ${m}m` : `${h}h`;
-};
+  const n = Number(v ?? 0)
+  if (!Number.isFinite(n) || n <= 0) return '0h'
+  const totalMins = Math.round(n * 60)      // assume value is in HOURS (decimal)
+  const h = Math.floor(totalMins / 60)
+  const m = totalMins % 60
+  return m ? `${h}h ${m}m` : `${h}h`
+}
 </script>
 
 <template>
@@ -228,12 +236,16 @@ const fmtHours = (v) => {
 
     <div class="sticky top-14 z-40 bg-white p-4 rounded">
       <EmployeeFilter
-        v-model:company_id="filters.company_id"
-        v-model:department_id="filters.department_id"
-        v-model:employee_id="filters.employee_id"
-        v-model:line_type="filters.line_type"
+        :company_id="filters.company_id"
+        :department_id="filters.department_id"
+        :employee_id="filters.employee_id"
+        :line_type="filters.line_type"
         :with-type="true"
         :initial-value="$route.query"
+        @update:company_id="filters.company_id = $event"
+        @update:department_id="filters.department_id = $event"
+        @update:employee_id="filters.employee_id = $event"
+        @update:line_type="filters.line_type = $event"
         @filter-change="handleFilterChange"
         class="w-full"
       >
@@ -247,92 +259,73 @@ const fmtHours = (v) => {
       </EmployeeFilter>
     </div>
     <div class="text-gray-700 bg-gradient-to-tl">
-      <div class="grid md:grid-cols-2 gap-4 text-sm mt-2">
+      <div class="mt-2 grid items-start gap-3 text-sm md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.1fr)]">
         <SelectedEmployeeCard v-if="hasSelection" :user="selectedUser" />
         
-        <div class="card-bg p-4 gap-1" v-if="hasSelection">
-            <!-- Header: tighter -->
-            <div class="flex justify-between items-center">
-              <h2 class="text-sm md:text-base font-semibold text-zinc-900">Attendance Summary</h2>
+        <div v-if="hasSelection" class="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+          <div class="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <h2 class="text-sm md:text-base font-semibold text-slate-900">Attendance Summary</h2>
+              <p class="text-[11px] text-slate-500">
+                Weekend {{ attendanceStore?.summary?.total_weekend_days || 0 }}d •
+                Holiday {{ attendanceStore?.summary?.total_holiday_days || 0 }}d
+              </p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+              <!-- <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+                {{ presentRate }}% Present Rate
+              </span> -->
               <router-link
                 :to="{ name: 'MonthWiseApplicationLog', query: { ...$route.query } }"
-                class="inline-flex items-center gap-1 rounded-md border border-zinc-200 bg-white px-2.5 py-1 text-[12px] font-medium text-zinc-700 hover:bg-zinc-50 active:scale-[.99]"
+                class="inline-flex items-center gap-1 rounded-md border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-medium text-zinc-700 hover:bg-zinc-50"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <i class="far fa-clock text-[12px]"></i>
-                <span class="hidden sm:inline">Application History</span>
-                <span class="sm:hidden">History</span>
+                <i class="far fa-clock text-[11px]"></i>
+                <span>Application History</span>
               </router-link>
             </div>
+          </div>
 
-            <!-- Slim gradient divider, <hr> বাদ -->
-            <div class="h-px w-full bg-gradient-to-r from-indigo-500/70 via-sky-400/70 to-cyan-400/70"></div>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <span class="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-medium text-sky-700">
+              <i class="far fa-briefcase"></i>
+              Working <strong>{{ attendanceStore?.summary?.total_working_days || 0 }}d</strong>
+            </span>
+            <span class="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700">
+              <i class="far fa-check-circle"></i>
+              Present <strong>{{ attendanceStore?.summary?.total_present_days || 0 }}d</strong>
+            </span>
+            <span class="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-700">
+              <i class="far fa-clock"></i>
+              Late <strong>{{ attendanceStore?.summary?.actual_late_day || 0 }}d</strong>
+            </span>
+            <span class="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-medium text-red-700">
+              <i class="far fa-user-times"></i>
+              Absent <strong>{{ attendanceStore?.summary?.total_absent_days || 0 }}d</strong>
+            </span>
+          </div>
 
-            <!-- KPI chips: compact, mobile-scrollable -->
-            <div class="px-1 pt-1 pb-0.5 overflow-hidden">
-              <div class="-mx-1 flex items-center gap-2 overflow-x-auto px-1">
-                <span
-                  class="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-2.5 py-0.5 text-[11px] font-medium text-sky-700 whitespace-nowrap"
-                >
-                  <i class="far fa-bolt text-[11px]"></i>
-                  Total Working Days <strong>{{ attendanceStore?.summary?.total_working_days || 0 }}d</strong>
-                </span>
-
-                <span
-                  v-if="presentRate !== null"
-                  class="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700 whitespace-nowrap"
-                >
-                  <i class="far fa-check-circle text-[11px]"></i>
-                 Present  <strong>{{ attendanceStore?.summary?.total_present_days || 0 }}d</strong>
-                </span>
-                <span
-                  class="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-2.5 py-0.5 text-[11px] font-medium text-sky-700 whitespace-nowrap"
-                >
-                  <i class="far fa-bolt text-[11px]"></i>
-                  Total Weekends <strong>{{attendanceStore?.summary?.total_weekend_days}}d</strong>
-                </span>
-                <span  class="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-medium text-amber-700 whitespace-nowrap"
-                >
-                  <i class="far fa-clock text-[11px]"></i>
-                  Late <strong>{{ attendanceStore?.summary?.actual_late_day }}d</strong>
-                </span>
-                <span
-                  class="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-[11px] font-medium text-red-700 whitespace-nowrap"
-                >
-                  <i class="far fa-user-times text-[11px]"></i>
-                  Absent <strong>{{ attendanceStore?.summary?.total_absent_days || 0 }}d</strong>
-                </span>
-                
-                
-              </div>
+          <div class="mt-3 grid gap-2 sm:grid-cols-2">
+            <div class="rounded-xl border flex justify-between border-zinc-100 bg-zinc-50 px-3 py-2">
+              <p class="text-[11px] text-zinc-500">Working / Shift</p>
+              <p class="text-sm font-semibold text-zinc-900">
+                {{ (attendanceStore?.summary?.total_working_hours ?? '').toString().trim() || '—' }} /
+                {{ (attendanceStore?.summary?.total_shift_hours ?? '').toString().trim() || '—' }}
+              </p>
             </div>
 
-            <!-- Compact stats grid -->
-            <div class="grid md:grid-cols-2 gap-2 mt-1">
-              <div class="flex items-center justify-between rounded-lg border border-zinc-100 bg-zinc-50 px-3 py-2">
-                <span class="flex items-center gap-2 text-[12px] text-zinc-600">
-                  <i class="far fa-hourglass-half text-[12px]"></i> Working/Shift
-                </span>
-                <strong class="text-sm text-zinc-900">
-                  {{ (attendanceStore?.summary?.total_working_hours ?? '').toString().trim() || '—' }} /
-                  {{ (attendanceStore?.summary?.total_shift_hours ?? '').toString().trim() || '—' }}
-                </strong>
-              </div>
-
-              <div class="flex items-center justify-between rounded-lg border border-zinc-100 bg-zinc-50 px-3 py-2">
-                <span class="flex items-center gap-2 text-[12px] text-zinc-600">
-                  <i class="far fa-bolt text-[12px]"></i> Overtime Hours
-                </span>
-                <strong v-if="!attendanceStore?.loading" class="text-sm text-zinc-900">
-                  {{ fmtHours(attendanceStore?.summary?.approved_overtimes) }}
-                  of
-                  {{ attendanceStore?.summary?.total_overtime_hours }}
-                </strong>
-                <span v-else class="inline-block h-4 w-28 rounded bg-zinc-200 animate-pulse" />
-              </div>
+            <div class="rounded-xl border flex justify-between border-zinc-100 bg-zinc-50 px-3 py-2">
+              <p class="text-[11px] text-zinc-500">Approved OT / Total OT</p>
+              <p v-if="!attendanceStore?.loading" class="text-sm font-semibold text-zinc-900">
+                {{ fmtHours(attendanceStore?.summary?.approved_overtimes) }} /
+                {{ attendanceStore?.summary?.total_overtime_hours || '0h' }}
+              </p>
+              <span v-else class="mt-1 inline-block h-4 w-28 rounded bg-zinc-200 animate-pulse" />
             </div>
           </div>
+        </div>
       </div>
     </div>
 
