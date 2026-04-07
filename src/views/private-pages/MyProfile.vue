@@ -1,6 +1,7 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
 import DonorMeModal from '@/components/DonorMeModal.vue'
+import ProfileCompensationOverview from '@/components/profile/ProfileCompensationOverview.vue'
 import ChangePasswordModal from '@/components/user/ChangePasswordModal.vue'
 import UserClearanceModal from '@/components/UserClearanceModal.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -55,13 +56,14 @@ const openMyDonorProfile = async () => {
 </script>
 
 <template>
-  <ChangePasswordModal
+  <div>
+    <ChangePasswordModal
     v-if="changePasswordModal"
     :user="user"
     @close="() => (changePasswordModal = false)"
   />
 
-  <div class="my-container space-y-6">
+    <div class="my-container space-y-6">
     <!-- Header Card -->
     <section
       class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"
@@ -211,7 +213,7 @@ const openMyDonorProfile = async () => {
                 {{ user?.blood || '-' }}
               </dd>
             </div>
-            <div class="sm:col-span-2">
+            <div>
               <dt class="text-slate-500">Address</dt>
               <dd class="mt-1 font-medium text-slate-900 dark:text-slate-100">
                 {{ user?.address || '-' }}
@@ -221,6 +223,12 @@ const openMyDonorProfile = async () => {
               <dt class="text-slate-500">Employee ID</dt>
               <dd class="mt-1 font-medium text-slate-900 dark:text-slate-100">
                 {{ user?.employee_id || '-' }}
+              </dd>
+            </div>
+            <div>
+              <dt class="text-slate-500">Current Shift</dt>
+              <dd class="mt-1 font-medium text-slate-900 dark:text-slate-100">
+                {{ user?.current_shift?.shift?.name || '-' }}
               </dd>
             </div>
           </dl>
@@ -260,6 +268,18 @@ const openMyDonorProfile = async () => {
                 {{ formatDate(user?.joining_date) }}
               </dd>
             </div>
+            <div>
+              <dt class="text-slate-500">Bank Name</dt>
+              <dd class="mt-1 font-medium text-slate-900 dark:text-slate-100">
+                {{ user?.bank_name || '-' }}
+              </dd>
+            </div>
+            <div>
+              <dt class="text-slate-500">Bank Account No</dt>
+              <dd class="mt-1 font-medium text-slate-900 dark:text-slate-100">
+                {{ user?.bank_account_no || '-' }}
+              </dd>
+            </div>
           </dl>
 
           <!-- Quick Links -->
@@ -291,8 +311,11 @@ const openMyDonorProfile = async () => {
       </div>
     </section>
 
+    <ProfileCompensationOverview :user="user" />
+
     <!-- Clearance Modal -->
     <UserClearanceModal v-model:open="clearanceOpen" :user="user" :hide-trigger="true" />
     <DonorMeModal />
+    </div>
   </div>
 </template>
