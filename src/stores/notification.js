@@ -6,9 +6,12 @@ export const useNotificationStore = defineStore('notification', () => {
   const notifications = ref([])
   const loading = ref(false)
   const error = ref(null)
+  const applicationFeedbackLoading = ref(false)
+  const applicationFeedbackError = ref(null)
   const totalUnreadNotifications = ref(0)
   const grouped_counts = ref(null)
   const count_notifications = ref({})
+  const applicationFeedbackNotifications = ref([])
 
   const approvalPermissions = ref({})
   const applicationApprovalPermissions = ref([])
@@ -20,6 +23,7 @@ export const useNotificationStore = defineStore('notification', () => {
     offday_exchange_applications: '🔄',
     manual_attendance_applications: '🕒',
     overtime_applications: '⏱️',
+    application_feedback: '💬',
   })
 
   const total_notifications = computed(() => {
@@ -142,6 +146,31 @@ export const useNotificationStore = defineStore('notification', () => {
     }
   }
 
+  async function fetchApplicationFeedbackNotifications() {
+    applicationFeedbackLoading.value = true
+    applicationFeedbackError.value = null
+
+    try {
+      const response = await apiClient.get('/application-feedback-notifications')
+      applicationFeedbackNotifications.value = response?.data?.notifications || []
+    } catch (err) {
+      applicationFeedbackError.value =
+        err.response?.data?.message || 'Failed to fetch application feedback notifications'
+    } finally {
+      applicationFeedbackLoading.value = false
+    }
+  }
+
+  async function markFeedbackNotificationAsRead(notificationId) {
+    try {
+      await apiClient.post(`/notifications/${notificationId}/read`)
+      await fetchApplicationFeedbackNotifications()
+      await fetchCountNotifications()
+    } catch (err) {
+      console.error('Failed to mark application feedback notification as read:', err)
+    }
+  }
+
   return {
     icons,
     notifications,
@@ -160,5 +189,10 @@ export const useNotificationStore = defineStore('notification', () => {
     total_notifications,
     approvalPermissions,
     applicationApprovalPermissions,
+    applicationFeedbackNotifications,
+    applicationFeedbackLoading,
+    applicationFeedbackError,
+    fetchApplicationFeedbackNotifications,
+    markFeedbackNotificationAsRead,
   }
 })
