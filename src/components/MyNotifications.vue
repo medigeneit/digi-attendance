@@ -1,10 +1,14 @@
 <script setup>
+import { computed } from 'vue'
 import { useNotificationStore } from '@/stores/notification'
 import { storeToRefs } from 'pinia'
 
 const notificationStore = useNotificationStore()
 
 const { icons, count_notifications, total_notifications } = storeToRefs(notificationStore)
+const applicationFeedbackCount = computed(
+  () => count_notifications.value?.application_feedback || 0,
+)
 
 const emits = defineEmits(['close'])
 </script>
@@ -126,6 +130,18 @@ const emits = defineEmits(['close'])
         <span class="text-sm text-gray-700"> {{ icons.discipline_attachments }} Discipline Attachments </span>
         <span class="text-xs bg-sky-500 text-white rounded-full px-2 py-0.5 font-semibold">
           {{ count_notifications.discipline_attachments }}
+        </span>
+      </RouterLink>
+
+      <RouterLink
+        v-if="applicationFeedbackCount"
+        :to="{ name: 'MyApplicationFeedbackNotifications' }"
+        @click="emits('close')"
+        class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
+      >
+        <span class="text-sm text-gray-700"> {{ icons.application_feedback }} Application Feedback </span>
+        <span class="text-xs bg-violet-500 text-white rounded-full px-2 py-0.5 font-semibold">
+          {{ applicationFeedbackCount }}
         </span>
       </RouterLink>
 

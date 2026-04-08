@@ -1016,6 +1016,13 @@ const router = createRouter({
           meta: { requiresAuth: true, title: 'Notification List' },
         },
         {
+          path: '/notifications/application-feedback',
+          name: 'MyApplicationFeedbackNotifications',
+          component: () =>
+            import('@/views/private-pages/MyApplicationFeedbackNotifications.vue'),
+          meta: { requiresAuth: true, title: 'Application Feedback Notifications' },
+        },
+        {
           path: '/task-notifications/:type',
           name: 'MyTaskNotificationList',
           component: () => import('@/views/private-pages/MyTaskNotificationList.vue'),

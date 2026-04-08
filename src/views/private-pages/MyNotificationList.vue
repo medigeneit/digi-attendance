@@ -13,6 +13,10 @@ onMounted(() => {
 
 const loading = computed(() => notificationStore.loading)
 const error = computed(() => notificationStore.error)
+const applicationFeedbackCount = computed(
+  () => count_notifications.value?.application_feedback || 0,
+)
+
 const totalUnread = computed(
   () =>
     (count_notifications.value?.leave_applications || 0) +
@@ -20,7 +24,8 @@ const totalUnread = computed(
     (count_notifications.value?.shift_exchange_applications || 0) +
     (count_notifications.value?.offday_exchange_applications || 0) +
     (count_notifications.value?.manual_attendance_applications || 0) +
-    (count_notifications.value?.overtime_applications || 0)
+    (count_notifications.value?.overtime_applications || 0) +
+    applicationFeedbackCount.value,
 )
 
 const notificationCards = computed(() => [
@@ -72,6 +77,15 @@ const notificationCards = computed(() => [
     count: count_notifications.value?.overtime_applications || 0,
     icon: icons.value?.overtime_applications,
   },
+  {
+    type: 'application_feedback',
+    label: 'Application Feedback',
+    accent: 'bg-violet-100 text-violet-700',
+    badge: 'bg-violet-600',
+    count: applicationFeedbackCount.value,
+    icon: icons.value?.application_feedback,
+    routeName: 'MyApplicationFeedbackNotifications',
+  },
 ])
 </script>
 
@@ -80,9 +94,18 @@ const notificationCards = computed(() => [
     <div class="relative mx-auto max-w-5xl">
       <div class="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <p class="text-xs uppercase tracking-[0.3em] text-slate-500 font-semibold">
-            Notifications
-          </p>
+          <div class="flex items-center gap-2">
+            <p class="text-xs uppercase tracking-[0.3em] text-slate-500 font-semibold">
+              Notifications
+            </p>
+            <span
+              v-if="applicationFeedbackCount > 0"
+              class="flex h-5 w-5 items-center justify-center rounded-full bg-rose-600 text-[10px] font-semibold text-white"
+              :title="`${applicationFeedbackCount} application feedback notification(s)`"
+            >
+              {{ applicationFeedbackCount }}
+            </span>
+          </div>
           <h1 class="text-2xl md:text-3xl font-serif font-semibold text-slate-900">
             Track approvals and requests
           </h1>
@@ -123,7 +146,11 @@ const notificationCards = computed(() => [
         <RouterLink
           v-for="card in notificationCards"
           :key="card.type"
-          :to="{ name: 'MySpecificNotificationList', params: { type: card.type } }"
+          :to="
+            card.routeName
+              ? { name: card.routeName }
+              : { name: 'MySpecificNotificationList', params: { type: card.type } }
+          "
           class="group relative overflow-hidden rounded-2xl bg-white/80 p-4 shadow-lg ring-1 ring-slate-200 transition duration-300 hover:-translate-y-1 hover:shadow-xl"
         >
           <div class="flex items-start justify-between gap-3">
