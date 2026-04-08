@@ -327,7 +327,7 @@ const bankDetails = computed(() => {
             {{ currentMeal.total_meal || 0 }} meal(s) x {{ formatMoney(currentMeal.meal_rate) }}
           </p>
           <p class="mt-1 text-xs text-stone-500 dark:text-slate-400">
-            Additional {{ formatMoney(currentMeal.additional_amount) }} | Total {{ formatMoney(currentMeal.total_amount) }}
+            Special {{ formatMoney(currentMeal.additional_amount) }} | Total {{ formatMoney(currentMeal.total_amount) }}
           </p>
         </div>
 
