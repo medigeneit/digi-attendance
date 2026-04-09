@@ -58,7 +58,7 @@ export const useChecklistStore = defineStore('checklist', () => {
   const completion = computed(() => {
     const total = requiredItems.value.length
     if (!total) return 100
-    const done = requiredItems.value.filter(i => i.status === 'done').length
+    const done = requiredItems.value.filter(i => i.status === 'done' || i.status === 'waived').length
     return Math.round((done / total) * 100)
   })
 

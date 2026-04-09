@@ -1406,6 +1406,26 @@ const router = createRouter({
             title: 'Checklists',
           },
         },
+        {
+          path: '/lifecycle/:flowType/board',
+          name: 'lifecycle.board',
+          component: () => import('@/views/admin-pages/LifecycleBoardPage.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Lifecycle Board',
+          },
+        },
+        {
+          path: '/lifecycle/:flowType/users/:userId',
+          name: 'lifecycle.detail',
+          component: () => import('@/views/admin-pages/LifecycleDetailPage.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Lifecycle Detail',
+          },
+        },
 
         {
           path: '/users/:userId/checklists/:checklistId',
