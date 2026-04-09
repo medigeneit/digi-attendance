@@ -21,6 +21,36 @@ const template = computed(() => lifecycleStore.currentRecord?.template || null)
 const stages = computed(() => lifecycleStore.currentRecord?.stages || [])
 const activeStageCode = ref(null)
 
+function formatDateLabel(value) {
+  if (!value) return ''
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+
+  return date.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
+function addMonthsToIsoDate(value, monthsToAdd) {
+  if (!value) return ''
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+
+  const months = Number(monthsToAdd) || 0
+  const target = new Date(date)
+  target.setMonth(target.getMonth() + months)
+
+  if (target.getDate() !== date.getDate()) {
+    target.setDate(0)
+  }
+
+  return target.toISOString().slice(0, 10)
+}
+
 const STAGE_DEFINITIONS = {
   onboarding: {
     pre_boarding: {
@@ -64,10 +94,10 @@ const STAGE_DEFINITIONS = {
     },
     probation: {
       title: 'Probation Tracking',
-      description: 'Store probation milestones, review checkpoints, and recommendation details in one stage record.',
+      description: 'Track probation reviews against the employee master setup without duplicating the base configuration.',
       fields: [
-        { key: 'probation_start_date', label: 'Probation Start Date', type: 'date' },
-        { key: 'probation_end_date', label: 'Probation End Date', type: 'date' },
+        { key: 'probation_start_date', label: 'Probation Start Date', type: 'date', readonly: true },
+        { key: 'probation_end_date', label: 'Probation End Date', type: 'date', readonly: true },
         { key: 'review_30_status', label: '30 Day Review', type: 'select', options: [
           { value: 'pending', label: 'Pending' },
           { value: 'completed', label: 'Completed' },
@@ -210,6 +240,32 @@ const activeStage = computed(() => stages.value.find((item) => item.code === act
 const activeDefinition = computed(() => STAGE_DEFINITIONS[flowType.value]?.[activeStageCode.value] || null)
 const isChecklistStage = computed(() => activeStageCode.value === 'joining' || activeStageCode.value === 'clearance_in_progress')
 const isStageEditorVisible = computed(() => !!activeStage.value && !isChecklistStage.value && !!activeDefinition.value)
+const probationSummaryItems = computed(() => {
+  const currentEmployee = employee.value || {}
+  const baseMonths = Number(currentEmployee.provisional_month) || 0
+  const extendedMonths = Number(currentEmployee.extended_provisional_month) || 0
+  const totalMonths = Number(currentEmployee.probation_months_total) || (baseMonths + extendedMonths)
+  const calculatedEndDate = addMonthsToIsoDate(currentEmployee.joining_date, totalMonths)
+
+  return [
+    { label: 'Employment Type', value: currentEmployee.employment_type || 'N/A' },
+    { label: 'Joining Date', value: formatDateLabel(currentEmployee.joining_date) || 'N/A' },
+    { label: 'Base Probation', value: `${baseMonths} month${baseMonths === 1 ? '' : 's'}` },
+    { label: 'Extended Probation', value: `${extendedMonths} month${extendedMonths === 1 ? '' : 's'}` },
+    { label: 'Total Probation', value: `${totalMonths} month${totalMonths === 1 ? '' : 's'}` },
+    { label: 'Calculated End Date', value: formatDateLabel(calculatedEndDate) || 'N/A' },
+  ]
+})
+const probationDefaultPayload = computed(() => {
+  const currentEmployee = employee.value || {}
+  const totalMonths = Number(currentEmployee.probation_months_total)
+    || (Number(currentEmployee.provisional_month) || 0) + (Number(currentEmployee.extended_provisional_month) || 0)
+
+  return {
+    probation_start_date: currentEmployee.joining_date || '',
+    probation_end_date: addMonthsToIsoDate(currentEmployee.joining_date, totalMonths),
+  }
+})
 
 function openChecklistPage() {
   if (checklist.value?.id) {
@@ -349,6 +405,8 @@ const checklistSectionTitle = computed(() =>
             :lifecycle-id="lifecycle?.id"
             :stage="activeStage"
             :definition="activeDefinition"
+            :summary-items="activeStageCode === 'probation' ? probationSummaryItems : []"
+            :default-payload="activeStageCode === 'probation' ? probationDefaultPayload : {}"
           />
 
           <div v-else class="rounded-xl border border-dashed bg-gray-50 p-6 text-sm text-gray-600">

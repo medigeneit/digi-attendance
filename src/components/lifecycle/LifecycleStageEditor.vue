@@ -9,6 +9,8 @@ const props = defineProps({
   lifecycleId: { type: Number, required: true },
   stage: { type: Object, required: true },
   definition: { type: Object, required: true },
+  summaryItems: { type: Array, default: () => [] },
+  defaultPayload: { type: Object, default: () => ({}) },
 })
 
 const store = useLifecycleStore()
@@ -36,11 +38,14 @@ onMounted(() => {
 })
 
 watch(
-  () => props.stage,
-  (stage) => {
+  () => [props.stage, props.defaultPayload],
+  ([stage, defaultPayload]) => {
     form.status = stage?.record?.status || stage?.data_status || 'not_started'
     form.remarks = stage?.record?.remarks || ''
-    form.payload = { ...(stage?.record?.payload || {}) }
+    form.payload = {
+      ...(defaultPayload || {}),
+      ...(stage?.record?.payload || {}),
+    }
   },
   { immediate: true, deep: true },
 )
@@ -123,15 +128,33 @@ async function save() {
     </div>
 
     <div class="space-y-6 px-6 py-5">
+      <div
+        v-if="summaryItems.length"
+        class="grid gap-4 rounded-2xl border border-blue-100 bg-blue-50/60 px-4 py-4 md:grid-cols-2 xl:grid-cols-4"
+      >
+        <div v-for="item in summaryItems" :key="item.label" class="min-w-0">
+          <div class="text-xs font-medium uppercase tracking-wide text-blue-700">{{ item.label }}</div>
+          <div class="mt-1 truncate text-sm font-semibold text-slate-800" :title="item.value || 'N/A'">
+            {{ item.value || 'N/A' }}
+          </div>
+        </div>
+      </div>
+
       <div class="grid gap-4 md:grid-cols-2">
         <template v-for="field in definition.fields" :key="field.key">
-          <label v-if="field.type === 'text' || field.type === 'date' || field.type === 'number'" class="block">
+          <label
+            v-if="field.type === 'text' || field.type === 'date' || field.type === 'number'"
+            class="block"
+          >
             <span class="mb-1 block text-sm font-medium text-gray-700">{{ field.label }}</span>
             <input
               v-model="form.payload[field.key]"
               :type="field.type"
               class="w-full rounded-lg border px-3 py-2 text-sm"
+              :class="{ 'bg-gray-50 text-gray-500': field.readonly }"
               :placeholder="field.placeholder || ''"
+              :readonly="field.readonly"
+              :disabled="field.readonly"
             />
           </label>
 

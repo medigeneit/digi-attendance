@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import BoardFilters from '@/components/BoardFilters.vue'
 import LifecycleBoardTable from '@/components/LifecycleBoardTable.vue'
@@ -85,8 +85,13 @@ async function load() {
   await store.fetchBoard()
 }
 
-onMounted(load)
-watch(() => route.params.flowType, load)
+watch(
+  () => route.fullPath,
+  () => {
+    load()
+  },
+  { immediate: true },
+)
 
 const title = computed(() => `${store.flowLabel} Lifecycle Board`)
 </script>
@@ -112,3 +117,4 @@ const title = computed(() => `${store.flowLabel} Lifecycle Board`)
     <LifecycleBoardTable v-else />
   </div>
 </template>
+
