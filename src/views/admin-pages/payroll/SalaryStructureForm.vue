@@ -58,6 +58,8 @@ const form = ref({
 })
 
 const userDisplay = ref({ name: null, dept: null })
+const PF_ALLOWANCE_CODE = 'PF'
+const PF_ALLOWANCE_NAME = 'Provident Fund'
 
 const formatEmploymentTypeLabel = (value) => {
   const normalized = normalizeEmploymentType(value)
@@ -73,6 +75,11 @@ const formatEmploymentTypeLabel = (value) => {
 const pfDefaultByEmploymentType = (employmentType) => normalizeEmploymentType(employmentType) === 'permanent'
 const pfAllowedForCurrentEmploymentType = computed(() =>
   isPfAllowedForEmploymentType(selectedEmploymentType.value),
+)
+const pfAllowanceAmount = computed(() =>
+  pfAllowedForCurrentEmploymentType.value && pfApplicable.value && toNum(form.value.basic_salary) > 0
+    ? calculatePfDeduction(form.value.basic_salary)
+    : 0,
 )
 
 const employmentTypeBadgeClass = computed(() => {
@@ -129,6 +136,44 @@ const applyPfDeduction = () => {
     toNum(form.value.basic_salary) > 0
       ? calculatePfDeduction(form.value.basic_salary)
       : null
+
+  syncPfAllowanceRow()
+}
+
+const isPfAllowanceRow = (allowance = {}) => {
+  const code = String(allowance?.allowance_code || '').trim().toUpperCase()
+  const name = String(allowance?.allowance_name || '').trim().toLowerCase()
+  return code === PF_ALLOWANCE_CODE || name === PF_ALLOWANCE_NAME.toLowerCase()
+}
+
+const syncPfAllowanceRow = () => {
+  const amount = pfAllowanceAmount.value
+  const allowances = Array.isArray(form.value.allowances) ? [...form.value.allowances] : []
+  const existingIndex = allowances.findIndex((allowance) => isPfAllowanceRow(allowance))
+
+  if (!amount) {
+    if (existingIndex !== -1) {
+      allowances.splice(existingIndex, 1)
+      form.value.allowances = allowances
+    }
+    return
+  }
+
+  const pfRow = {
+    allowance_code: PF_ALLOWANCE_CODE,
+    allowance_name: PF_ALLOWANCE_NAME,
+    amount,
+    is_active: true,
+    remarks: 'Auto-added from PF setting',
+  }
+
+  if (existingIndex !== -1) {
+    allowances[existingIndex] = { ...allowances[existingIndex], ...pfRow }
+  } else {
+    allowances.unshift(pfRow)
+  }
+
+  form.value.allowances = allowances
 }
 
 const syncPolicyBreakdown = (grossValue) => {
@@ -236,6 +281,8 @@ const loadForEdit = async () => {
     } else if (data.user_id) {
       await fetchUserMeta(data.user_id, { applyPfDefault: false })
     }
+
+    syncPfAllowanceRow()
   } catch (error) {
     toast.error(error.message)
     router.push({ name: 'PayrollSalaryStructureList' })
@@ -340,6 +387,7 @@ const validate = () => {
 const handleSubmit = async () => {
   if (!validate()) return
 
+  syncPfAllowanceRow()
   submitting.value = true
 
   try {
@@ -568,6 +616,9 @@ const inputClass =
                   :disabled="!pfAllowedForCurrentEmploymentType"
                 />
               </label>
+              <p class="text-xs text-slate-500">
+                When enabled, the PF amount is also added to Additional Allowances as a locked PF row.
+              </p>
             </div>
           </div>
         </section>

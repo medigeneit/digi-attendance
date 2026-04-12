@@ -8,6 +8,7 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import PayrollStatusBadge from '@/components/payroll/PayrollStatusBadge.vue'
 import PaymentStatusModal from '@/components/payroll/PaymentStatusModal.vue'
 import { formatCurrency } from '@/utils/currency'
+import { isPfAllowanceRow } from '@/utils/salaryPolicy'
 
 const props = defineProps({ id: { type: [String, Number], required: true } })
 const router = useRouter()
@@ -118,11 +119,13 @@ const baseEarningRows = computed(() => [
 
 const dynamicAllowances = computed(() => {
   const rows = Array.isArray(item.value?.allowances) ? item.value.allowances : []
-  return rows.map((a, index) => ({
-    key: a.allowance_code || a.allowance_name || `allowance-${index}`,
-    label: a.allowance_name || `Allowance ${index + 1}`,
-    amount: toNum(a.amount),
-  }))
+  return rows
+    .filter((a) => !isPfAllowanceRow(a))
+    .map((a, index) => ({
+      key: a.allowance_code || a.allowance_name || `allowance-${index}`,
+      label: a.allowance_name || `Allowance ${index + 1}`,
+      amount: toNum(a.amount),
+    }))
 })
 
 const totalDeductionAmount = computed(() => toNum(item.value?.total_deduction))

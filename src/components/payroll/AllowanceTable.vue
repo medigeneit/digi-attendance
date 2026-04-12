@@ -5,6 +5,12 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue'])
 
+const isPfRow = (row = {}) => {
+  const code = String(row?.allowance_code || '').trim().toUpperCase()
+  const name = String(row?.allowance_name || '').trim().toLowerCase()
+  return code === 'PF' || name === 'provident fund'
+}
+
 const addRow = () => {
   emit('update:modelValue', [
     ...props.modelValue,
@@ -13,6 +19,7 @@ const addRow = () => {
 }
 
 const removeRow = (index) => {
+  if (isPfRow(props.modelValue?.[index])) return
   const updated = [...props.modelValue]
   updated.splice(index, 1)
   emit('update:modelValue', updated)
@@ -62,6 +69,7 @@ const updateRow = (index, field, value) => {
                 :value="row.allowance_code"
                 @input="updateRow(index, 'allowance_code', $event.target.value)"
                 placeholder="e.g. TA"
+                :disabled="isPfRow(row)"
               />
             </td>
             <td class="px-2 py-1.5">
@@ -70,6 +78,7 @@ const updateRow = (index, field, value) => {
                 :value="row.allowance_name"
                 @input="updateRow(index, 'allowance_name', $event.target.value)"
                 placeholder="Allowance name"
+                :disabled="isPfRow(row)"
               />
             </td>
             <td class="px-2 py-1.5">
@@ -81,6 +90,7 @@ const updateRow = (index, field, value) => {
                 :value="row.amount"
                 @input="updateRow(index, 'amount', $event.target.value)"
                 placeholder="0.00"
+                :disabled="isPfRow(row)"
               />
             </td>
             <td class="px-2 py-1.5 text-center">
@@ -89,6 +99,7 @@ const updateRow = (index, field, value) => {
                 :checked="row.is_active"
                 @change="updateRow(index, 'is_active', $event.target.checked)"
                 class="w-4 h-4 accent-blue-600"
+                :disabled="isPfRow(row)"
               />
             </td>
             <td class="px-2 py-1.5">
@@ -97,16 +108,21 @@ const updateRow = (index, field, value) => {
                 :value="row.remarks"
                 @input="updateRow(index, 'remarks', $event.target.value)"
                 placeholder="Optional"
+                :disabled="isPfRow(row)"
               />
             </td>
             <td class="px-2 py-1.5 text-center">
               <button
+                v-if="!isPfRow(row)"
                 type="button"
                 @click="removeRow(index)"
                 class="text-red-400 hover:text-red-600 transition-colors"
               >
                 <i class="far fa-trash-alt text-xs"></i>
               </button>
+              <span v-else class="inline-flex rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-500">
+                Locked
+              </span>
             </td>
           </tr>
         </tbody>
