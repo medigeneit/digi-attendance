@@ -426,7 +426,7 @@ const inputClass =
 </script>
 
 <template>
-  <div class="mx-auto max-w-5xl space-y-4 p-4 md:p-6">
+  <div class="mx-auto max-w-7xl space-y-4 p-4 md:p-6">
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div>
         <p class="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-700">Salary Policy</p>
