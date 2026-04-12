@@ -98,19 +98,26 @@ const title = computed(() => `${store.flowLabel} Lifecycle Board`)
 
 <template>
   <div class="space-y-6 p-6">
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-semibold">{{ title }}</h1>
-      <div class="text-gray-500">Existing checklist flow remains available.</div>
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <h1 class="text-2xl font-semibold text-slate-900">{{ title }}</h1>
+        <p class="mt-1 text-sm text-slate-500">
+          Use the board below to monitor stage-wise movement, progress, and checklist completion.
+        </p>
+      </div>
+      <div class="text-sm text-slate-500">Existing checklist flow remains available.</div>
     </div>
 
-    <BoardFilters
-      v-model="filterModel"
-      :companies="companies"
-      :departments="departments"
-      :show-lifecycle-status="true"
-      :lifecycle-statuses="store.lifecycleStatusOptions"
-      @submit="applyFilters"
-    />
+    <div class="rounded-[28px] border border-slate-200 bg-white/95 p-4 shadow-sm">
+      <BoardFilters
+        v-model="filterModel"
+        :companies="companies"
+        :departments="departments"
+        :show-lifecycle-status="false"
+        :lifecycle-statuses="store.lifecycleStatusOptions"
+        @submit="applyFilters"
+      />
+    </div>
 
     <div v-if="store.loading" class="text-gray-600">Loading...</div>
     <div v-else-if="store.error" class="text-red-600">Failed to load lifecycle board.</div>
