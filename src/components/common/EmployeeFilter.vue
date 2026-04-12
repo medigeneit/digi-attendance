@@ -235,17 +235,17 @@ defineExpose({
 </script>
 
 <template>
-  <div class="grid grid-cols-1 md:grid-cols-5 gap-2">
+  <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
     <!-- Company -->
-    <div class="relative">
+    <div class="relative min-w-0">
       <SelectDropdown
         v-model="selectedCompanyId"
         :options="companyOptions"
-        class="border-2 border-gray-300 rounded h-[32px] w-full bg-white"
+        class="h-10 w-full rounded-lg border border-slate-300 bg-white"
         clearable
       >
         <template #selected-option="{ option }">
-          <div class="line-clamp-1 text-sm text-gray-900 md:max-w-[120px]" :title="option?.label">
+          <div class="line-clamp-1 text-sm text-gray-900" :title="option?.label">
             <span v-if="option?.label">{{ option?.label }}</span>
             <span v-else class="text-gray-500 whitespace-nowrap">--Select Company--</span>
           </div>
@@ -258,21 +258,21 @@ defineExpose({
           </div>
         </template>
       </SelectDropdown>
-      <div class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30">
+      <div class="absolute left-3 -top-2 z-30 bg-white px-1 text-[11px] leading-none text-blue-500">
         Company
       </div>
     </div>
 
     <!-- Department -->
-    <div class="relative">
+    <div class="relative min-w-0">
       <SelectDropdown
         v-model="selectedDepartmentId"
         :options="departmentOptions"
-        class="border-2 border-gray-300 rounded h-[32px] w-full bg-white"
+        class="h-10 w-full rounded-lg border border-slate-300 bg-white"
         clearable
       >
         <template #selected-option="{ option }">
-          <div class="line-clamp-1 text-sm text-gray-900 md:max-w-[120px]" :title="option?.label">
+          <div class="line-clamp-1 text-sm text-gray-900" :title="option?.label">
             <span v-if="option?.label">{{ option?.label }}</span>
             <span v-else class="text-gray-500 whitespace-nowrap">--Select Department--</span>
           </div>
@@ -286,7 +286,7 @@ defineExpose({
         </template>
       </SelectDropdown>
 
-      <div class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30">
+      <div class="absolute left-3 -top-2 z-30 bg-white px-1 text-[11px] leading-none text-blue-500">
         Department
       </div>
 
@@ -298,12 +298,12 @@ defineExpose({
     </div>
 
     <!-- Type (optional) -->
-    <div v-if="withType" class="relative">
+    <div v-if="withType" class="relative min-w-0">
       <SelectDropdown
         v-model="selectedTypeId"
         :options="typeOptions"
         placeholder="Select Type"
-        class="border-2 border-gray-300 rounded h-[32px] w-full bg-white"
+        class="h-10 w-full rounded-lg border border-slate-300 bg-white"
       >
         <template #selected-option="{ option }">
           <div v-if="option" class="relative w-full pr-6">
@@ -332,24 +332,24 @@ defineExpose({
           </div>
         </template>
       </SelectDropdown>
-      <div class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30">
+      <div class="absolute left-3 -top-2 z-30 bg-white px-1 text-[11px] leading-none text-blue-500">
         Line Type
       </div>
     </div>
 
     <!-- Employee -->
-    <div class="relative">
+    <div class="relative min-w-0">
       <EmployeeDropdownInput
         :employees="filterEmployees"
         v-model="selectedEmployeeId"
-        class="border-2 border-gray-300 rounded h-[32px] w-full bg-white"
+        class="h-10 w-full rounded-lg border border-slate-300 bg-white"
       />
-      <div class="absolute text-xs left-3 -top-1.5 bg-slate-100 text-blue-500 leading-none z-30">
+      <div class="absolute left-3 -top-2 z-30 bg-white px-1 text-[11px] leading-none text-blue-500">
         Employee
       </div>
     </div>
 
-    <div class="relative" :class="slotClass">
+    <div class="relative min-w-0 sm:col-span-2 xl:col-span-1" :class="slotClass">
       <slot></slot>
     </div>
   </div>

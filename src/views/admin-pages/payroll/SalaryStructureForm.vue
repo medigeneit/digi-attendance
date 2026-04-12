@@ -4,13 +4,9 @@ import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useSalaryStructureStore } from '@/stores/salaryStructure'
 import { useUserStore } from '@/stores/user'
-import { useCompanyStore } from '@/stores/company'
-import { useDepartmentStore } from '@/stores/department'
 import AllowanceTable from '@/components/payroll/AllowanceTable.vue'
-import AsyncUserCombobox from '@/components/common/AsyncUserCombobox.vue'
+import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
-import SelectDropdown from '@/components/SelectDropdown.vue'
-import apiClient from '@/axios'
 import { formatCurrency, toNum } from '@/utils/currency'
 import {
   PROVIDENT_FUND_RATE,
@@ -34,8 +30,6 @@ const router = useRouter()
 const toast = useToast()
 const structureStore = useSalaryStructureStore()
 const userStore = useUserStore()
-const companyStore = useCompanyStore()
-const departmentStore = useDepartmentStore()
 
 const isEdit = computed(() => !!props.id)
 const pageLoading = ref(false)
@@ -64,28 +58,6 @@ const form = ref({
 })
 
 const userDisplay = ref({ name: null, dept: null })
-
-const companyOptions = computed(() =>
-  (companyStore.companies || []).map((company) => ({
-    id: String(company.id),
-    label: company.name,
-  })),
-)
-
-const departmentOptions = computed(() =>
-  (departmentStore.departments || []).map((department) => ({
-    id: String(department.id),
-    label: department.name,
-  })),
-)
-
-const lineTypeOptions = [
-  { id: 'all', label: 'All Types' },
-  { id: 'executive', label: 'Executive' },
-  { id: 'support_staff', label: 'Support Staff' },
-  { id: 'doctor', label: 'Doctor' },
-  { id: 'academy_body', label: 'Academy Body' },
-]
 
 const formatEmploymentTypeLabel = (value) => {
   const normalized = normalizeEmploymentType(value)
@@ -149,18 +121,6 @@ const bonusAmount = computed(() =>
 const allowanceTotal = computed(() => calculateAllowanceTotal(form.value.allowances))
 const totalGross = computed(() => toNum(form.value.gross_salary) + allowanceTotal.value)
 const netPayable = computed(() => Math.max(0, totalGross.value - toNum(form.value.pf_deduction)))
-
-const fetchUsersFn = (params) =>
-  apiClient
-    .get('/users', {
-      params: {
-        ...params,
-        company_id: selectedCompanyId.value || undefined,
-        department_id: selectedDepartmentId.value || undefined,
-        line_type: selectedLineType.value !== 'all' ? selectedLineType.value : undefined,
-      },
-    })
-    .then((response) => (Array.isArray(response.data) ? response.data : response.data?.data || response.data?.users || []))
 
 const applyPfDeduction = () => {
   form.value.pf_deduction =
@@ -270,9 +230,6 @@ const loadForEdit = async () => {
 
     if (data.user) {
       selectedCompanyId.value = data.user.company_id ? String(data.user.company_id) : ''
-      if (selectedCompanyId.value) {
-        await departmentStore.fetchDepartments(selectedCompanyId.value)
-      }
       selectedDepartmentId.value = data.user.department_id ? String(data.user.department_id) : ''
       selectedLineType.value = data.user.type || 'all'
       assignUserMeta(data.user)
@@ -286,6 +243,30 @@ const loadForEdit = async () => {
     isHydrating.value = false
     pageLoading.value = false
   }
+}
+
+const handleEmployeeFilterChange = (payload = {}) => {
+  const nextCompanyId = payload.company_id || ''
+  const nextDepartmentId = payload.department_id || ''
+  const nextLineType = payload.line_type || 'all'
+  const nextEmployeeId = payload.employee_id || null
+
+  const hasChanged =
+    nextCompanyId !== selectedCompanyId.value ||
+    nextDepartmentId !== selectedDepartmentId.value ||
+    nextLineType !== selectedLineType.value ||
+    String(nextEmployeeId || '') !== String(form.value.user_id || '')
+
+  selectedCompanyId.value = nextCompanyId
+  selectedDepartmentId.value = nextDepartmentId
+  selectedLineType.value = nextLineType
+  form.value.user_id = nextEmployeeId
+
+  if (!hasChanged || isHydrating.value) return
+
+  userDisplay.value = { name: null, dept: null }
+  selectedEmploymentType.value = ''
+  pfApplicable.value = false
 }
 
 watch(
@@ -328,39 +309,8 @@ watch(
 )
 
 onMounted(() => {
-  companyStore.fetchCompanies({ ignore_permission: false })
   if (isEdit.value) {
     loadForEdit()
-  }
-})
-
-watch(selectedCompanyId, async (newCompanyId, oldCompanyId) => {
-  if (newCompanyId === oldCompanyId) return
-
-  selectedDepartmentId.value = ''
-
-  if (newCompanyId) {
-    await departmentStore.fetchDepartments(newCompanyId)
-  } else {
-    await departmentStore.fetchDepartments()
-  }
-
-  if (!isHydrating.value) {
-    form.value.user_id = null
-    userDisplay.value = { name: null, dept: null }
-    selectedEmploymentType.value = ''
-    pfApplicable.value = false
-  }
-})
-
-watch([selectedDepartmentId, selectedLineType], ([newDepartmentId, newLineType], [oldDepartmentId, oldLineType]) => {
-  if (newDepartmentId === oldDepartmentId && newLineType === oldLineType) return
-
-  if (!isHydrating.value) {
-    form.value.user_id = null
-    userDisplay.value = { name: null, dept: null }
-    selectedEmploymentType.value = ''
-    pfApplicable.value = false
   }
 })
 
@@ -453,101 +403,35 @@ const inputClass =
     <LoaderView v-if="pageLoading" />
 
     <form v-else @submit.prevent="handleSubmit" class="space-y-4">
-      <div class="grid gap-4 xl:grid-cols-[0.9fr_0.85fr]">
-        <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div class="mb-4 flex items-center justify-between gap-3">
-            <div>
-              <h2 class="text-sm font-semibold text-slate-900">Employee Setup</h2>
-              <p class="text-xs text-slate-500">Select employee, employment type, and effective dates.</p>
-            </div>
-            <span
-              class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1"
-              :class="employmentTypeBadgeClass"
-            >
-              {{ employmentTypeLabel }}
-            </span>
+      <div class="bg-white px-4 py-3 rounded-md space-y-4">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                  <h2 class="text-sm font-semibold text-slate-900">Employee Setup</h2>
+                </div>
+                <span
+                  class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1"
+                  :class="employmentTypeBadgeClass"
+                >
+                  {{ employmentTypeLabel }}
+                </span>
           </div>
 
+          <EmployeeFilter
+            :company_id="selectedCompanyId"
+            :department_id="selectedDepartmentId"
+            :line_type="selectedLineType"
+            :employee_id="form.user_id"
+            @filter-change="handleEmployeeFilterChange"
+            class="w-full"
+          />
+      </div>
+      <div class="grid gap-4 xl:grid-cols-[0.9fr_0.85fr]">
+        <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div class="space-y-4">
-            <div class="grid gap-3 md:grid-cols-3">
-              <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700">Company</label>
-                <SelectDropdown
-                  v-model="selectedCompanyId"
-                  :options="companyOptions"
-                  class="border border-slate-200 rounded-xl h-[42px] w-full bg-white"
-                  clearable
-                >
-                  <template #selected-option="{ option }">
-                    <div class="line-clamp-1 text-sm text-slate-700">
-                      <span v-if="option?.label">{{ option.label }}</span>
-                      <span v-else class="text-slate-400">Select company</span>
-                    </div>
-                  </template>
-                  <template #option="{ option }">
-                    <div class="text-sm text-slate-700">{{ option.label }}</div>
-                  </template>
-                </SelectDropdown>
-              </div>
-
-              <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700">Department</label>
-                <SelectDropdown
-                  v-model="selectedDepartmentId"
-                  :options="departmentOptions"
-                  class="border border-slate-200 rounded-xl h-[42px] w-full bg-white"
-                  clearable
-                  :disabled="!selectedCompanyId"
-                >
-                  <template #selected-option="{ option }">
-                    <div class="line-clamp-1 text-sm text-slate-700">
-                      <span v-if="option?.label">{{ option.label }}</span>
-                      <span v-else class="text-slate-400">Select department</span>
-                    </div>
-                  </template>
-                  <template #option="{ option }">
-                    <div class="text-sm text-slate-700">{{ option.label }}</div>
-                  </template>
-                </SelectDropdown>
-              </div>
-
-              <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700">Line Type</label>
-                <SelectDropdown
-                  v-model="selectedLineType"
-                  :options="lineTypeOptions"
-                  class="border border-slate-200 rounded-xl h-[42px] w-full bg-white"
-                >
-                  <template #selected-option="{ option }">
-                    <div class="line-clamp-1 text-sm text-slate-700">
-                      <span v-if="option?.label">{{ option.label }}</span>
-                      <span v-else class="text-slate-400">All types</span>
-                    </div>
-                  </template>
-                  <template #option="{ option }">
-                    <div class="text-sm text-slate-700">{{ option.label }}</div>
-                  </template>
-                </SelectDropdown>
-              </div>
-            </div>
-
-            <div>
-              <label class="mb-1 block text-sm font-medium text-slate-700">
-                Employee <span class="text-red-500">*</span>
-              </label>
-              <AsyncUserCombobox
-                v-model="form.user_id"
-                v-model:display="userDisplay"
-                :fetcher="fetchUsersFn"
-                placeholder="Search by name or employee ID..."
-              />
-              <p class="mt-1 text-[11px] text-slate-500">
-                Employee search respects selected company, department, and line type.
-              </p>
-              <p v-if="fieldErrors.user_id" class="mt-1 text-xs text-red-500">
-                {{ fieldErrors.user_id }}
-              </p>
-            </div>
+  
+            <p v-if="fieldErrors.user_id" class="mt-1 text-xs text-red-500">
+              {{ fieldErrors.user_id }}
+            </p>
 
             <div class="grid gap-3">
               <div class="rounded-xl bg-slate-50 px-3 py-2">

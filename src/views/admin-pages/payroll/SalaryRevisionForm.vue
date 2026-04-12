@@ -1,13 +1,10 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useSalaryRevisionStore } from '@/stores/salaryRevision'
 import { useUserStore } from '@/stores/user'
-import { useCompanyStore } from '@/stores/company'
-import { useDepartmentStore } from '@/stores/department'
-import AsyncUserCombobox from '@/components/common/AsyncUserCombobox.vue'
-import SelectDropdown from '@/components/SelectDropdown.vue'
+import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import apiClient from '@/axios'
 import { formatCurrency, toNum } from '@/utils/currency'
 import {
@@ -28,8 +25,6 @@ const router = useRouter()
 const toast = useToast()
 const revisionStore = useSalaryRevisionStore()
 const userStore = useUserStore()
-const companyStore = useCompanyStore()
-const departmentStore = useDepartmentStore()
 
 const submitting = ref(false)
 const fieldErrors = ref({})
@@ -81,44 +76,6 @@ const form = ref({
   remarks: '',
   allowances: [],
 })
-
-const updateUserDisplay = (value) => {
-  userDisplay.value = value || { name: null, dept: null }
-}
-
-const companyOptions = computed(() =>
-  (companyStore.companies || []).map((company) => ({
-    id: String(company.id),
-    label: company.name,
-  })),
-)
-
-const departmentOptions = computed(() =>
-  (departmentStore.departments || []).map((department) => ({
-    id: String(department.id),
-    label: department.name,
-  })),
-)
-
-const lineTypeOptions = [
-  { id: 'all', label: 'All Types' },
-  { id: 'executive', label: 'Executive' },
-  { id: 'support_staff', label: 'Support Staff' },
-  { id: 'doctor', label: 'Doctor' },
-  { id: 'academy_body', label: 'Academy Body' },
-]
-
-const fetchUsersFn = (params) =>
-  apiClient
-    .get('/users', {
-      params: {
-        ...params,
-        company_id: selectedCompanyId.value || undefined,
-        department_id: selectedDepartmentId.value || undefined,
-        line_type: selectedLineType.value !== 'all' ? selectedLineType.value : undefined,
-      },
-    })
-    .then((r) => (Array.isArray(r.data) ? r.data : r.data?.data || r.data?.users || []))
 
 const activePolicy = computed(() => getSalaryComponentPolicy(selectedEmploymentType.value))
 const activePolicySummary = computed(() =>
@@ -241,6 +198,31 @@ const applyRevisionBreakdown = () => {
   form.value.allowances = normalizeAllowances(currentStructure.value.allowances)
 }
 
+const handleEmployeeFilterChange = (payload = {}) => {
+  const nextCompanyId = payload.company_id || ''
+  const nextDepartmentId = payload.department_id || ''
+  const nextLineType = payload.line_type || 'all'
+  const nextEmployeeId = payload.employee_id || null
+
+  const hasChanged =
+    nextCompanyId !== selectedCompanyId.value ||
+    nextDepartmentId !== selectedDepartmentId.value ||
+    nextLineType !== selectedLineType.value ||
+    String(nextEmployeeId || '') !== String(form.value.user_id || '')
+
+  selectedCompanyId.value = nextCompanyId
+  selectedDepartmentId.value = nextDepartmentId
+  selectedLineType.value = nextLineType
+  form.value.user_id = nextEmployeeId
+
+  if (!hasChanged) return
+
+  userDisplay.value = { name: null, dept: null }
+  currentStructure.value = null
+  assignEmploymentType('')
+  applyRevisionBreakdown()
+}
+
 watch(
   () => form.value.user_id,
   async (userId) => {
@@ -275,38 +257,6 @@ watch(
     }
   },
 )
-
-onMounted(() => {
-  companyStore.fetchCompanies({ ignore_permission: false })
-})
-
-watch(selectedCompanyId, async (newCompanyId, oldCompanyId) => {
-  if (newCompanyId === oldCompanyId) return
-
-  selectedDepartmentId.value = ''
-
-  if (newCompanyId) {
-    await departmentStore.fetchDepartments(newCompanyId)
-  } else {
-    await departmentStore.fetchDepartments()
-  }
-
-  form.value.user_id = null
-  userDisplay.value = { name: null, dept: null }
-  currentStructure.value = null
-  assignEmploymentType('')
-  applyRevisionBreakdown()
-})
-
-watch([selectedDepartmentId, selectedLineType], ([newDepartmentId, newLineType], [oldDepartmentId, oldLineType]) => {
-  if (newDepartmentId === oldDepartmentId && newLineType === oldLineType) return
-
-  form.value.user_id = null
-  userDisplay.value = { name: null, dept: null }
-  currentStructure.value = null
-  assignEmploymentType('')
-  applyRevisionBreakdown()
-})
 
 watch(
   [
@@ -374,7 +324,7 @@ const inputClass =
 </script>
 
 <template>
-  <div class="mx-auto max-w-7xl space-y-4 p-4 md:p-6">
+  <div class="mx-auto max-w-7xl space-y-3 p-3 md:p-4">
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div>
         <p class="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-700">Salary Revision</p>
@@ -396,135 +346,41 @@ const inputClass =
       </div>
     </div>
 
-    <section class="grid gap-3 md:grid-cols-4">
-      <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Current Gross</p>
-        <p class="mt-1 font-mono text-xl font-semibold text-slate-900">{{ formatCurrency(currentGross) }}</p>
-        <p class="mt-1 text-xs text-slate-500">Active saved gross salary.</p>
-      </div>
-
-      <div class="rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-3 shadow-sm">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-700">Increment</p>
-        <p class="mt-1 font-mono text-xl font-semibold text-cyan-900">{{ formatCurrency(incrementAmount) }}</p>
-        <p class="mt-1 text-xs text-cyan-700">Applied on current gross.</p>
-      </div>
-
-      <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Revised Gross</p>
-        <p class="mt-1 font-mono text-xl font-semibold text-slate-900">{{ formatCurrency(revisedGross) }}</p>
-        <p class="mt-1 text-xs text-slate-500">This gross salary is saved directly.</p>
-      </div>
-
-      <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Net After PF</p>
-        <p class="mt-1 font-mono text-xl font-semibold text-emerald-700">{{ formatCurrency(revisedNetPayable) }}</p>
-        <p class="mt-1 text-xs text-slate-500">Revised gross minus PF deduction.</p>
-      </div>
-    </section>
-
-    <form @submit.prevent="handleSubmit" class="space-y-4">
-      <div class="grid gap-4 xl:grid-cols-[0.92fr_0.88fr]">
-        <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div class="mb-4 flex items-center justify-between gap-3">
-            <div>
-              <h2 class="text-sm font-semibold text-slate-900">Employee Setup</h2>
-              <p class="text-xs text-slate-500">Select employee and review the active structure.</p>
-            </div>
-            <span
-              class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1"
-              :class="employmentTypeBadgeClass"
-            >
-              {{ employmentTypeLabel }}
-            </span>
+    <form @submit.prevent="handleSubmit" class="space-y-3">
+      <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm space-y-3">
+        <div class="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h2 class="text-sm font-semibold text-slate-900">Employee Setup</h2>
           </div>
+          <span
+            class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1"
+            :class="employmentTypeBadgeClass"
+          >
+            {{ employmentTypeLabel }}
+          </span>
+        </div>
+         <EmployeeFilter
+              :company_id="selectedCompanyId"
+              :department_id="selectedDepartmentId"
+              :line_type="selectedLineType"
+              :employee_id="form.user_id"
+              @filter-change="handleEmployeeFilterChange"
+            />
+      </div>
+      <div class="grid items-start gap-3 xl:grid-cols-[0.92fr_0.88fr]">
+        <section class="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm">
 
           <div class="space-y-4">
-            <div class="grid gap-3 md:grid-cols-3">
-              <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700">Company</label>
-                <SelectDropdown
-                  v-model="selectedCompanyId"
-                  :options="companyOptions"
-                  class="border border-slate-200 rounded-xl h-[42px] w-full bg-white"
-                  clearable
-                >
-                  <template #selected-option="{ option }">
-                    <div class="line-clamp-1 text-sm text-slate-700">
-                      <span v-if="option?.label">{{ option.label }}</span>
-                      <span v-else class="text-slate-400">Select company</span>
-                    </div>
-                  </template>
-                  <template #option="{ option }">
-                    <div class="text-sm text-slate-700">{{ option.label }}</div>
-                  </template>
-                </SelectDropdown>
-              </div>
-
-              <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700">Department</label>
-                <SelectDropdown
-                  v-model="selectedDepartmentId"
-                  :options="departmentOptions"
-                  class="border border-slate-200 rounded-xl h-[42px] w-full bg-white"
-                  clearable
-                  :disabled="!selectedCompanyId"
-                >
-                  <template #selected-option="{ option }">
-                    <div class="line-clamp-1 text-sm text-slate-700">
-                      <span v-if="option?.label">{{ option.label }}</span>
-                      <span v-else class="text-slate-400">Select department</span>
-                    </div>
-                  </template>
-                  <template #option="{ option }">
-                    <div class="text-sm text-slate-700">{{ option.label }}</div>
-                  </template>
-                </SelectDropdown>
-              </div>
-
-              <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700">Line Type</label>
-                <SelectDropdown
-                  v-model="selectedLineType"
-                  :options="lineTypeOptions"
-                  class="border border-slate-200 rounded-xl h-[42px] w-full bg-white"
-                >
-                  <template #selected-option="{ option }">
-                    <div class="line-clamp-1 text-sm text-slate-700">
-                      <span v-if="option?.label">{{ option.label }}</span>
-                      <span v-else class="text-slate-400">All types</span>
-                    </div>
-                  </template>
-                  <template #option="{ option }">
-                    <div class="text-sm text-slate-700">{{ option.label }}</div>
-                  </template>
-                </SelectDropdown>
-              </div>
-            </div>
-
-            <div>
-              <label class="mb-1 block text-sm font-medium text-slate-700">
-                Employee <span class="text-red-500">*</span>
-              </label>
-              <AsyncUserCombobox
-                v-model="form.user_id"
-                :display="userDisplay"
-                :fetcher="fetchUsersFn"
-                placeholder="Search by name or employee ID..."
-                @update:display="updateUserDisplay"
-              />
-              <p class="mt-1 text-[11px] text-slate-500">
-                Employee search respects selected company, department, and line type.
-              </p>
-              <p v-if="fieldErrors.user_id" class="mt-1 text-xs text-red-500">
-                {{ fieldErrors.user_id }}
-              </p>
-            </div>
+           
+            <p v-if="fieldErrors.user_id" class="mt-1 text-xs text-red-500">
+              {{ fieldErrors.user_id }}
+            </p>
 
             <div class="grid gap-3">
-              <div class="rounded-xl bg-slate-50 px-3 py-2">
+              <!-- <div class="rounded-xl bg-slate-50 px-3 py-2">
                 <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Department</p>
                 <p class="mt-1 text-sm font-medium text-slate-800">{{ userDisplay.dept || 'Not selected' }}</p>
-              </div>
+              </div> -->
 
               <div class="rounded-xl bg-slate-50 px-3 py-2">
                 <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Revision Rule</p>
@@ -597,10 +453,36 @@ const inputClass =
                 </p>
               </div>
             </div>
+
+            <section class="grid gap-2 sm:grid-cols-1 xl:grid-cols-2">
+              <div class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
+                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Current Gross</p>
+                <p class="mt-1 font-mono text-lg font-semibold text-slate-900">{{ formatCurrency(currentGross) }}</p>
+                <p class="mt-1 text-xs text-slate-500">Active saved gross salary.</p>
+              </div>
+
+              <div class="rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2.5 shadow-sm">
+                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-700">Increment</p>
+                <p class="mt-1 font-mono text-lg font-semibold text-cyan-900">{{ formatCurrency(incrementAmount) }}</p>
+                <p class="mt-1 text-xs text-cyan-700">Applied on current gross.</p>
+              </div>
+
+              <div class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
+                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Revised Gross</p>
+                <p class="mt-1 font-mono text-lg font-semibold text-slate-900">{{ formatCurrency(revisedGross) }}</p>
+                <p class="mt-1 text-xs text-slate-500">This gross salary is saved directly.</p>
+              </div>
+
+              <div class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
+                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Net After PF</p>
+                <p class="mt-1 font-mono text-lg font-semibold text-emerald-700">{{ formatCurrency(revisedNetPayable) }}</p>
+                <p class="mt-1 text-xs text-slate-500">Revised gross minus PF deduction.</p>
+              </div>
+            </section>
           </div>
         </section>
 
-        <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <section class="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm">
           <div class="mb-4 flex items-center justify-between gap-3">
             <div>
               <h2 class="text-sm font-semibold text-slate-900">Revision Calculator</h2>
@@ -611,7 +493,7 @@ const inputClass =
             </div>
           </div>
 
-          <div class="space-y-4">
+          <div class="space-y-3.5">
             <div class="grid gap-3 sm:grid-cols-[1fr_1.1fr]">
               <div>
                 <label class="mb-2 block text-sm font-medium text-slate-700">Increment Type</label>
