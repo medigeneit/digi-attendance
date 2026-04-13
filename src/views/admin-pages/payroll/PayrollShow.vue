@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { storeToRefs } from 'pinia'
@@ -17,8 +17,18 @@ const payrollStore = usePayrollManagementStore()
 const { item, loading, error } = storeToRefs(payrollStore)
 
 const showPaymentModal = ref(false)
+const advanceDeduction = ref(0)
+const advanceSaving = ref(false)
 
 onMounted(() => payrollStore.fetchItem(props.id))
+
+watch(
+  item,
+  (value) => {
+    advanceDeduction.value = Number(value?.advance_deduction ?? 0)
+  },
+  { immediate: true }
+)
 
 const handlePaymentSubmit = async ({ id, payload }) => {
   try {
@@ -27,6 +37,20 @@ const handlePaymentSubmit = async ({ id, payload }) => {
     showPaymentModal.value = false
   } catch (e) {
     toast.error(e.message || 'Update failed.')
+  }
+}
+
+const saveAdvanceDeduction = async () => {
+  try {
+    advanceSaving.value = true
+    await payrollStore.updateAdvanceDeduction(props.id, {
+      advance_deduction: toNum(advanceDeduction.value),
+    })
+    toast.success('Advance deduction updated.')
+  } catch (e) {
+    toast.error(e.message || 'Advance update failed.')
+  } finally {
+    advanceSaving.value = false
   }
 }
 
@@ -46,6 +70,7 @@ const deductionLabelMap = {
   tax_deduction: 'Tax Deduction',
   loan_deduction: 'Loan Deduction',
   other_deduction: 'Other Deduction',
+  advance_deduction: 'Advance Deduction',
   paycut_deduction: 'Paycut Deduction',
 }
 
@@ -277,10 +302,10 @@ const deductionItemCount = computed(
                 :key="row.key"
                 class="flex items-center justify-between py-1.5 px-2 rounded-lg bg-slate-50"
               >
-                <span class="text-gray-600" :class="{ 'font-semibold text-rose-700': row.key === 'paycut_deduction' }">
+                <span class="text-gray-600" :class="{ 'font-semibold text-rose-700': row.key === 'paycut_deduction' || row.key === 'advance_deduction' }">
                   {{ row.label }}
                 </span>
-                <span class="font-mono font-medium text-red-600" :class="{ 'font-bold': row.key === 'paycut_deduction' }">
+                <span class="font-mono font-medium text-red-600" :class="{ 'font-bold': row.key === 'paycut_deduction' || row.key === 'advance_deduction' }">
                   {{ formatCurrency(row.amount) }}
                 </span>
               </div>
@@ -303,6 +328,34 @@ const deductionItemCount = computed(
                 <div class="font-mono font-bold text-blue-800">{{ formatCurrency(netSalaryAmount) }}</div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div class="flex flex-wrap items-end gap-3">
+          <div class="min-w-[220px] flex-1">
+            <label class="mb-1 block text-sm font-medium text-slate-700">Advance Deduction</label>
+            <input
+              v-model="advanceDeduction"
+              type="number"
+              min="0"
+              step="0.01"
+              class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 shadow-sm transition focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-100"
+              placeholder="0.00"
+            />
+          </div>
+          <button
+            type="button"
+            class="btn-2 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold shadow-sm disabled:opacity-50"
+            :disabled="advanceSaving || loading"
+            @click="saveAdvanceDeduction"
+          >
+            <i class="far fa-save"></i>
+            {{ advanceSaving ? 'Saving...' : 'Save Advance' }}
+          </button>
+          <div class="text-sm text-slate-500">
+            Updates total deduction and net salary immediately.
           </div>
         </div>
       </div>

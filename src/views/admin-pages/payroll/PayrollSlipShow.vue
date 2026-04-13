@@ -130,6 +130,8 @@ const deductionRows = computed(() => {
     { key: 'tax', label: 'Tax', amount: toNum(raw.tds) },
     { key: 'loan', label: 'Loan', amount: toNum(raw.loan) },
     { key: 'other', label: 'Others', amount: toNum(raw.other) },
+    { key: 'advance', label: 'Advance', amount: toNum(raw.advance) },
+    { key: 'paycut', label: 'Paycut', amount: toNum(raw.paycut) },
   ]
 })
 
@@ -140,6 +142,7 @@ const paymentMethod = computed(() => item.value?.payment_method || item.value?.u
 const bankName = computed(() => item.value?.bank_name || item.value?.user?.bank_name || '-')
 const accountNumber = computed(() => item.value?.bank_account_no || item.value?.user?.bank_account_no || '-')
 const amountWords = computed(() => numberToWords(netPayment.value))
+const slipRowCount = computed(() => Math.max(earningsRows.value.length, deductionRows.value.length))
 
 const printPage = () => window.print()
 
@@ -217,14 +220,14 @@ onMounted(fetchSlip)
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(row, index) in 5" :key="index">
-                    <td class="border border-slate-700 px-3 py-2">{{ earningsRows[index]?.label || '' }}</td>
+                  <tr v-for="index in slipRowCount" :key="index">
+                    <td class="border border-slate-700 px-3 py-2">{{ earningsRows[index - 1]?.label || '' }}</td>
                     <td class="border border-slate-700 px-3 py-2 text-right font-mono font-semibold">
-                      {{ earningsRows[index] ? formatMoney(earningsRows[index].amount) : '' }}
+                      {{ earningsRows[index - 1] ? formatMoney(earningsRows[index - 1].amount) : '' }}
                     </td>
-                    <td class="border border-slate-700 px-3 py-2">{{ deductionRows[index]?.label || '' }}</td>
+                    <td class="border border-slate-700 px-3 py-2">{{ deductionRows[index - 1]?.label || '' }}</td>
                     <td class="border border-slate-700 px-3 py-2 text-right font-mono font-semibold">
-                      {{ deductionRows[index] ? formatMoney(deductionRows[index].amount) : '' }}
+                      {{ deductionRows[index - 1] ? formatMoney(deductionRows[index - 1].amount) : '' }}
                     </td>
                   </tr>
                   <tr class="font-semibold">
