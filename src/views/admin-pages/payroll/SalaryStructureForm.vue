@@ -37,11 +37,22 @@ const submitting = ref(false)
 const fieldErrors = ref({})
 const pfApplicable = ref(false)
 const selectedEmploymentType = ref('')
+const selectedPaymentMethod = ref('Cash')
 const isHydrating = ref(false)
 const userLookupToken = ref(0)
 const selectedCompanyId = ref('')
 const selectedDepartmentId = ref('')
 const selectedLineType = ref('all')
+const selectedUserProfile = ref(null)
+const showBankModal = ref(false)
+const bankSaving = ref(false)
+const bankFieldErrors = ref({})
+const bankUpdateDraft = ref({
+  bank_name: '',
+  bank_account_no: '',
+  account_holder_name: '',
+  default_payment_method: 'Cash',
+})
 
 const form = ref({
   user_id: null,
@@ -60,6 +71,10 @@ const form = ref({
 const userDisplay = ref({ name: null, dept: null })
 const PF_ALLOWANCE_CODE = 'PF'
 const PF_ALLOWANCE_NAME = 'Provident Fund'
+const paymentMethodOptions = [
+  { label: 'Cash', value: 'Cash' },
+  { label: 'Bank', value: 'Bank Transfer' },
+]
 
 const formatEmploymentTypeLabel = (value) => {
   const normalized = normalizeEmploymentType(value)
@@ -121,6 +136,24 @@ const componentCards = computed(() =>
   })),
 )
 
+const selectedPaymentMethodLabel = computed(() => {
+  const found = paymentMethodOptions.find((item) => item.value === selectedPaymentMethod.value)
+  return found?.label || selectedPaymentMethod.value || 'Cash'
+})
+
+const isBankTransfer = computed(() => selectedPaymentMethod.value === 'Bank Transfer')
+
+const bankPreviewRows = computed(() => {
+  const user = selectedUserProfile.value || {}
+
+  return [
+    { label: 'Bank Name', value: user.bank_name || '-' },
+    { label: 'Account No.', value: user.bank_account_no || '-' },
+    { label: 'Account Holder', value: user.account_holder_name || '-' },
+    { label: 'Default Method', value: user.default_payment_method || 'Cash' },
+  ]
+})
+
 const policyGross = computed(() => calculateCoreGross(form.value))
 const bonusAmount = computed(() =>
   calculateBonusAmount(selectedEmploymentType.value, form.value.basic_salary),
@@ -176,6 +209,26 @@ const syncPfAllowanceRow = () => {
   form.value.allowances = allowances
 }
 
+const normalizePaymentMethod = (value) => {
+  const raw = String(value || '').trim()
+  if (!raw) return 'Cash'
+
+  const normalized = raw.toLowerCase().replace(/[\s_]+/g, ' ')
+  if (normalized === 'bank' || normalized === 'bank transfer') return 'Bank Transfer'
+  if (normalized === 'cash') return 'Cash'
+  return raw
+}
+
+const assignUserMeta = (user) => {
+  selectedUserProfile.value = user || null
+  userDisplay.value = {
+    name: user?.name || userDisplay.value.name,
+    dept: user?.department?.name || user?.department_name || userDisplay.value.dept,
+  }
+  selectedEmploymentType.value = user?.employment_type || ''
+  selectedPaymentMethod.value = normalizePaymentMethod(user?.default_payment_method || 'Cash')
+}
+
 const syncPolicyBreakdown = (grossValue) => {
   const gross = toNum(grossValue)
   
@@ -208,17 +261,11 @@ const syncPolicyBreakdown = (grossValue) => {
   applyPfDeduction()
 }
 
-const assignUserMeta = (user) => {
-  userDisplay.value = {
-    name: user?.name || userDisplay.value.name,
-    dept: user?.department?.name || user?.department_name || userDisplay.value.dept,
-  }
-  selectedEmploymentType.value = user?.employment_type || ''
-}
-
 const fetchUserMeta = async (userId, { applyPfDefault = true } = {}) => {
   if (!userId) {
     selectedEmploymentType.value = ''
+    selectedPaymentMethod.value = 'Cash'
+    selectedUserProfile.value = null
     if (applyPfDefault) {
       pfApplicable.value = false
     }
@@ -241,6 +288,8 @@ const fetchUserMeta = async (userId, { applyPfDefault = true } = {}) => {
   } catch (_) {
     if (token !== userLookupToken.value) return
     selectedEmploymentType.value = ''
+    selectedPaymentMethod.value = 'Cash'
+    selectedUserProfile.value = null
     if (applyPfDefault) {
       pfApplicable.value = false
     }
@@ -278,7 +327,9 @@ const loadForEdit = async () => {
       selectedDepartmentId.value = data.user.department_id ? String(data.user.department_id) : ''
       selectedLineType.value = data.user.type || 'all'
       assignUserMeta(data.user)
-    } else if (data.user_id) {
+    }
+
+    if (data.user_id) {
       await fetchUserMeta(data.user_id, { applyPfDefault: false })
     }
 
@@ -313,6 +364,8 @@ const handleEmployeeFilterChange = (payload = {}) => {
 
   userDisplay.value = { name: null, dept: null }
   selectedEmploymentType.value = ''
+  selectedPaymentMethod.value = 'Cash'
+  selectedUserProfile.value = null
   pfApplicable.value = false
 }
 
@@ -344,6 +397,8 @@ watch(
 
     if (!newUserId) {
       selectedEmploymentType.value = ''
+      selectedPaymentMethod.value = 'Cash'
+      selectedUserProfile.value = null
       pfApplicable.value = false
       userDisplay.value = { name: null, dept: null }
       return
@@ -384,8 +439,128 @@ const validate = () => {
   return !Object.keys(errors).length
 }
 
+const openBankModal = () => {
+  const user = selectedUserProfile.value
+
+  if (!user?.id) {
+    toast.info('Please select an employee first.')
+    return
+  }
+
+  bankUpdateDraft.value = {
+    bank_name: user.bank_name || '',
+    bank_account_no: user.bank_account_no || '',
+    account_holder_name: user.account_holder_name || user.name || '',
+    default_payment_method: normalizePaymentMethod(selectedPaymentMethod.value),
+  }
+  bankFieldErrors.value = {}
+  showBankModal.value = true
+}
+
+const closeBankModal = () => {
+  showBankModal.value = false
+  bankFieldErrors.value = {}
+}
+
+const buildUserUpdatePayload = (user, draft) => ({
+  name: user.name || '',
+  bn_name: user.bn_name || '',
+  phone: user.phone || '',
+  email: user.email || null,
+  role: user.role || 'employee',
+  type: user.type || 'executive',
+  device_user_id: user.device_user_id ?? null,
+  company_id: user.company_id ?? null,
+  department_id: user.department_id ?? null,
+  designation_id: user.designation_id ?? null,
+  blood: user.blood ?? null,
+  nid: user.nid ?? null,
+  date_of_birth: user.date_of_birth ?? null,
+  joining_date: user.joining_date ?? null,
+  employment_type: user.employment_type || 'Permanent',
+  employee_id: user.employee_id ?? null,
+  provisional_month: user.provisional_month ?? null,
+  extended_provisional_month: user.extended_provisional_month ?? null,
+  contract_month: user.contract_month ?? null,
+  address: user.address ?? null,
+  note: user.note ?? null,
+  leave_approval_id: user.leave_approval_id ?? null,
+  other_approval_id: user.other_approval_id ?? null,
+  is_active: user.is_active,
+  bank_name: draft.bank_name || null,
+  bank_account_no: draft.bank_account_no || null,
+  account_holder_name: draft.account_holder_name || null,
+  default_payment_method: draft.default_payment_method || 'Cash',
+})
+
+const saveBankInfo = async () => {
+  const user = selectedUserProfile.value
+
+  if (!user?.id) {
+    bankFieldErrors.value = { user_id: 'Please select an employee first.' }
+    return
+  }
+
+  const defaultPaymentMethod = normalizePaymentMethod(bankUpdateDraft.value.default_payment_method)
+  const errors = {}
+
+  if (defaultPaymentMethod === 'Bank Transfer') {
+    if (!bankUpdateDraft.value.bank_name?.trim()) {
+      errors.bank_name = 'Bank name is required for Bank Transfer.'
+    }
+    if (!bankUpdateDraft.value.bank_account_no?.trim()) {
+      errors.bank_account_no = 'Bank account number is required for Bank Transfer.'
+    }
+  }
+
+  if (Object.keys(errors).length) {
+    bankFieldErrors.value = errors
+    return
+  }
+
+  bankSaving.value = true
+  bankFieldErrors.value = {}
+
+  try {
+    const payload = buildUserUpdatePayload(user, {
+      ...bankUpdateDraft.value,
+      default_payment_method: defaultPaymentMethod,
+    })
+
+    const updatedUser = await userStore.updateUser(user.id, payload)
+    selectedUserProfile.value = { ...user, ...(updatedUser || {}), ...payload }
+    selectedPaymentMethod.value = normalizePaymentMethod(
+      updatedUser?.default_payment_method || defaultPaymentMethod,
+    )
+    userDisplay.value = {
+      name: selectedUserProfile.value?.name || userDisplay.value.name,
+      dept:
+        selectedUserProfile.value?.department?.name ||
+        selectedUserProfile.value?.department_name ||
+        userDisplay.value.dept,
+    }
+    toast.success('User bank information updated successfully.')
+    closeBankModal()
+  } catch (error) {
+    if (error?.errors) {
+      bankFieldErrors.value = error.errors
+    }
+    toast.error(error.message || 'Failed to update user bank information.')
+  } finally {
+    bankSaving.value = false
+  }
+}
+
 const handleSubmit = async () => {
   if (!validate()) return
+
+  if (isBankTransfer.value) {
+    const user = selectedUserProfile.value || {}
+    if (!user.bank_name || !user.bank_account_no) {
+      toast.error('Bank information is required for Bank Transfer. Please update user bank data first.')
+      return
+    }
+  }
 
   syncPfAllowanceRow()
   submitting.value = true
@@ -485,6 +660,68 @@ const inputClass =
               <div class="rounded-xl bg-slate-50 px-3 py-2">
                 <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Department</p>
                 <p class="mt-1 text-xs font-medium text-slate-800">{{ userDisplay.dept || 'Not selected' }}</p>
+              </div>
+              <div class="rounded-xl bg-slate-50 px-3 py-3 space-y-2">
+                <div class="flex items-center justify-between gap-2">
+                  <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                    Salary Receive Method
+                  </p>
+                  <span
+                    class="rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                    :class="
+                      isBankTransfer
+                        ? 'bg-sky-100 text-sky-700'
+                        : 'bg-slate-200 text-slate-600'
+                    "
+                  >
+                    {{ selectedPaymentMethodLabel }}
+                  </span>
+                </div>
+
+                <select
+                  v-model="selectedPaymentMethod"
+                  :class="inputClass"
+                  class="!py-2"
+                >
+                  <option
+                    v-for="option in paymentMethodOptions"
+                    :key="option.value"
+                    :value="option.value"
+                  >
+                    {{ option.label }}
+                  </option>
+                </select>
+
+                <div v-if="isBankTransfer" class="rounded-lg border border-sky-100 bg-white px-3 py-2">
+                  <div class="flex items-center justify-between gap-2">
+                    <div>
+                      <p class="text-xs font-semibold text-sky-800">Bank data from users table</p>
+                      <p class="text-[11px] text-slate-500">
+                        {{ selectedUserProfile?.bank_name ? 'Loaded from user profile.' : 'No bank info saved yet.' }}
+                      </p>
+                    </div>
+                    <button type="button" class="btn-3 text-xs" @click="openBankModal">
+                      <i class="far fa-pen"></i> Edit Bank Data
+                    </button>
+                  </div>
+
+                  <div class="mt-3 grid gap-2 sm:grid-cols-2">
+                    <div
+                      v-for="row in bankPreviewRows"
+                      :key="row.label"
+                      class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+                    >
+                      <p class="text-[11px] uppercase tracking-[0.16em] text-slate-400">
+                        {{ row.label }}
+                      </p>
+                      <p class="mt-1 text-xs font-medium text-slate-800">{{ row.value }}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <p v-else class="text-xs text-slate-500">
+                  Cash payment does not require bank details.
+                </p>
               </div>
               <div class="rounded-xl bg-slate-50 px-3 py-2">
                 <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">PF Rule</p>
@@ -684,5 +921,87 @@ const inputClass =
         </button>
       </div>
     </form>
+
+    <div
+      v-if="showBankModal"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      @click.self="closeBankModal"
+    >
+      <div class="w-full max-w-xl rounded-2xl bg-white shadow-xl border border-slate-200">
+        <div class="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
+          <div>
+            <h3 class="text-base font-semibold text-slate-900">Update User Bank Info</h3>
+            <p class="mt-0.5 text-xs text-slate-500">
+              {{ selectedUserProfile?.name || 'Selected employee' }} ({{
+                selectedUserProfile?.employee_id || '-'
+              }})
+            </p>
+          </div>
+          <button type="button" class="text-slate-400 hover:text-slate-700" @click="closeBankModal">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <div class="px-5 py-4 space-y-4">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">
+              Salary Receive Method
+            </label>
+            <select v-model="bankUpdateDraft.default_payment_method" :class="inputClass">
+              <option value="Cash">Cash</option>
+              <option value="Bank Transfer">Bank</option>
+            </select>
+            <p class="mt-1 text-xs text-slate-500">
+              This saves to the user profile and will be used by payroll generation.
+            </p>
+          </div>
+
+          <div
+            v-if="normalizePaymentMethod(bankUpdateDraft.default_payment_method) === 'Bank Transfer'"
+            class="grid gap-4 sm:grid-cols-2"
+          >
+            <div>
+              <label class="mb-1 block text-sm font-medium text-slate-700">Bank Name</label>
+              <input v-model.trim="bankUpdateDraft.bank_name" type="text" :class="inputClass" />
+              <p v-if="bankFieldErrors.bank_name" class="mt-1 text-xs text-red-500">
+                {{ bankFieldErrors.bank_name }}
+              </p>
+            </div>
+
+            <div>
+              <label class="mb-1 block text-sm font-medium text-slate-700">Account Number</label>
+              <input v-model.trim="bankUpdateDraft.bank_account_no" type="text" :class="inputClass" />
+              <p v-if="bankFieldErrors.bank_account_no" class="mt-1 text-xs text-red-500">
+                {{ bankFieldErrors.bank_account_no }}
+              </p>
+            </div>
+
+            <div class="sm:col-span-2">
+              <label class="mb-1 block text-sm font-medium text-slate-700">Account Holder Name</label>
+              <input
+                v-model.trim="bankUpdateDraft.account_holder_name"
+                type="text"
+                :class="inputClass"
+              />
+            </div>
+          </div>
+
+          <div
+            v-else
+            class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600"
+          >
+            Cash selected. Bank fields are optional.
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 border-t border-slate-100 px-5 py-4">
+          <button type="button" class="btn-3" @click="closeBankModal">Cancel</button>
+          <button type="button" class="btn-2" :disabled="bankSaving" @click="saveBankInfo">
+            <i class="far" :class="bankSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+            {{ bankSaving ? 'Saving...' : 'Save Bank Data' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>

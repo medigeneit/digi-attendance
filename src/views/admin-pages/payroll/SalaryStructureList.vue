@@ -11,7 +11,7 @@ import DeleteModal from '@/components/common/DeleteModal.vue'
 import PaginationBar from '@/components/PaginationBar.vue'
 import apiClient from '@/axios'
 import { formatCurrency } from '@/utils/currency'
-import { calculateAllowanceTotal, normalizeAllowances } from '@/utils/salaryPolicy'
+import { normalizeAllowances } from '@/utils/salaryPolicy'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 const router = useRouter()
 const toast = useToast()
@@ -155,6 +155,19 @@ const EMPTY_ALLOWANCE_SUMMARY = {
   total: 0,
 }
 
+const toNum = (value) => {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+const calculateAllowanceDisplayTotal = (allowances = []) =>
+  Array.isArray(allowances)
+    ? allowances.reduce((sum, allowance) => {
+        if (!allowance?.is_active) return sum
+        return sum + toNum(allowance?.amount)
+      }, 0)
+    : 0
+
 const allowanceSummaryMap = computed(() => {
   const map = {}
 
@@ -166,7 +179,7 @@ const allowanceSummaryMap = computed(() => {
     map[item.id] = {
       allowances,
       activeCount: allowances.filter((a) => a.is_active).length,
-      total: calculateAllowanceTotal(allowances),
+      total: calculateAllowanceDisplayTotal(allowances),
     }
   }
 
@@ -272,7 +285,7 @@ const exportExcel = async () => {
         (a) => a.allowance_name || a.allowance_code || Number(a.amount) > 0,
       )
       const activeAllowances = allowances.filter((a) => a.is_active)
-      const allowanceTotal = calculateAllowanceTotal(allowances)
+      const allowanceTotal = calculateAllowanceDisplayTotal(allowances)
 
       mainSheetRows.push({
         ID: item.id,

@@ -163,6 +163,7 @@ const payrollMenu = [
   { label: 'Employee Loans', routeName: 'PayrollEmployeeLoanList' },
   { label: 'Payroll Batches', routeName: 'PayrollBatchList' },
   { label: 'Generate Payroll', routeName: 'PayrollBatchGenerate' },
+  { label: 'Bank Adviser List', routeName: 'PayrollBankAdviserList' },
   { label: 'Payrolls', routeName: 'PayrollList' },
 ]
 const payrollRouteNames = payrollMenu.map((i) => i.routeName)

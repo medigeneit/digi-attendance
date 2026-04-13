@@ -965,9 +965,9 @@ watch(
     <div class="flex items-center justify-between gap-2">
       <h1 class="title-md md:title-lg">Meal Entries</h1>
       <div class="flex items-center gap-2">
-        <button class="btn-3" @click="toggleBulkPanel">
-          <i class="far" :class="showBulkPanel ? 'fa-times' : 'fa-layer-group'"></i>
-          <span class="hidden md:flex">{{ showBulkPanel ? 'Close Bulk' : 'Bulk Entry' }}</span>
+        <button class="btn-3" @click="router.push({ name: 'PayrollMealEntryCreate' })">
+          <i class="far fa-layer-group"></i>
+          <span class="hidden md:flex">Bulk Entry</span>
         </button>
         <button class="btn-2" @click="openCreate">
           <i class="far fa-plus"></i>

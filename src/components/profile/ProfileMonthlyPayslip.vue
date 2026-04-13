@@ -124,6 +124,7 @@ const deductionRows = computed(() => {
 
   const payroll = currentPayroll.value
   const rows = [
+    { label: 'PF Allowance', value: payroll.pf_allowance_deduction_total },
     { label: 'PF', value: payroll.pf_deduction },
     { label: 'Tax', value: payroll.tax_deduction },
     {

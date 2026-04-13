@@ -33,6 +33,12 @@ export const payrollRoutes = [
     meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Meal Entries' },
   },
   {
+    path: '/payroll/meal-entries/create',
+    name: 'PayrollMealEntryCreate',
+    component: () => import('@/views/admin-pages/payroll/MealEntryCreate.vue'),
+    meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Bulk Meal Entry' },
+  },
+  {
     path: '/payroll/employee-loans',
     name: 'PayrollEmployeeLoanList',
     component: () => import('@/views/admin-pages/payroll/EmployeeLoanList.vue'),
@@ -69,6 +75,12 @@ export const payrollRoutes = [
     name: 'PayrollList',
     component: () => import('@/views/admin-pages/payroll/PayrollList.vue'),
     meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Payrolls' },
+  },
+  {
+    path: '/payrolls/bank-advisers',
+    name: 'PayrollBankAdviserList',
+    component: () => import('@/views/admin-pages/payroll/BankAdviserList.vue'),
+    meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Bank Adviser List' },
   },
   {
     path: '/payrolls/:id',
