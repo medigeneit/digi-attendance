@@ -15,13 +15,14 @@ const filters = ref({
   employee_id: '',
   line_type: 'all',
   salary_month: currentMonth(),
-  bank_name: '',
+  payment_status: '',
 })
 
 const rows = ref([])
 const loading = ref(false)
 const exporting = ref(false)
 const error = ref('')
+const pdfExporting = ref(false)
 
 const toArray = (data) => {
   if (Array.isArray(data)) return data
@@ -52,14 +53,6 @@ const fetchAllPages = async (url, params = {}) => {
   return items
 }
 
-const bankNameOptions = computed(() => {
-  const names = rows.value
-    .map((row) => row.payable_account || '')
-    .filter(Boolean)
-
-  return [...new Set(names)].sort((a, b) => a.localeCompare(b))
-})
-
 const activeFilterChips = computed(() => {
   const chips = []
 
@@ -69,21 +62,33 @@ const activeFilterChips = computed(() => {
   if (filters.value.line_type && filters.value.line_type !== 'all') {
     chips.push({ label: 'Line Type', value: filters.value.line_type })
   }
-  if (filters.value.bank_name) chips.push({ label: 'Bank', value: filters.value.bank_name })
+  if (filters.value.payment_status) chips.push({ label: 'Status', value: filters.value.payment_status })
   if (filters.value.salary_month) chips.push({ label: 'Month', value: formatMonth(filters.value.salary_month) })
 
   return chips
 })
 
 function formatMonth(value) {
-  if (!value) return '—'
+  if (!value) return '-'
   return String(value).slice(0, 7)
 }
 
+function formatDate(value) {
+  if (!value) return '-'
+  const date = new Date(`${String(value).slice(0, 10)}T00:00:00`)
+  if (Number.isNaN(date.getTime())) return String(value)
+
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(date)
+}
+
 function formatCompactCurrency(value) {
-  if (value === null || value === undefined || value === '') return '—'
+  if (value === null || value === undefined || value === '') return '-'
   const num = Number(value)
-  if (!Number.isFinite(num)) return '—'
+  if (!Number.isFinite(num)) return '-'
 
   return new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 0,
@@ -91,22 +96,22 @@ function formatCompactCurrency(value) {
   }).format(num)
 }
 
-const buildParams = () => {
-  const params = {
-    salary_month: filters.value.salary_month,
-    ...(filters.value.company_id ? { company_id: filters.value.company_id } : {}),
-    ...(filters.value.department_id ? { department_id: filters.value.department_id } : {}),
-    ...(filters.value.line_type && filters.value.line_type !== 'all'
-      ? { line_type: filters.value.line_type }
-      : {}),
-    ...(filters.value.employee_id ? { user_id: filters.value.employee_id } : {}),
-    ...(filters.value.bank_name ? { bank_name: filters.value.bank_name } : {}),
-  }
-
-  return params
+function viewSlip(id) {
+  router.push({ name: 'PayrollSlipShow', params: { id } })
 }
 
-async function loadBankAdviserList() {
+const buildParams = () => ({
+  salary_month: filters.value.salary_month,
+  ...(filters.value.company_id ? { company_id: filters.value.company_id } : {}),
+  ...(filters.value.department_id ? { department_id: filters.value.department_id } : {}),
+  ...(filters.value.line_type && filters.value.line_type !== 'all'
+    ? { line_type: filters.value.line_type }
+    : {}),
+  ...(filters.value.employee_id ? { user_id: filters.value.employee_id } : {}),
+  ...(filters.value.payment_status ? { payment_status: filters.value.payment_status } : {}),
+})
+
+async function loadSlipList() {
   error.value = ''
 
   if (!filters.value.salary_month) {
@@ -117,9 +122,9 @@ async function loadBankAdviserList() {
 
   loading.value = true
   try {
-    rows.value = await fetchAllPages('/payroll-bank-advisers', buildParams())
+    rows.value = await fetchAllPages('/payroll-cash-slips', buildParams())
   } catch (e) {
-    error.value = e.message || 'Failed to load bank adviser list.'
+    error.value = e.message || 'Failed to load payroll slip list.'
     rows.value = []
   } finally {
     loading.value = false
@@ -136,13 +141,8 @@ async function downloadExcel() {
 
   exporting.value = true
   try {
-    const params = {
-      ...buildParams(),
-      flag: 'excel',
-    }
-
-    const response = await apiClient.get('/payroll-bank-advisers', {
-      params,
+    const response = await apiClient.get('/payroll-cash-slips', {
+      params: { ...buildParams(), flag: 'excel' },
       responseType: 'blob',
     })
 
@@ -151,7 +151,7 @@ async function downloadExcel() {
     link.href = url
     link.setAttribute(
       'download',
-      `bank-adviser-list-${String(filters.value.salary_month).slice(0, 7)}.xlsx`,
+      `cash-slip-list-${String(filters.value.salary_month).slice(0, 7)}.xlsx`,
     )
     document.body.appendChild(link)
     link.click()
@@ -164,6 +164,39 @@ async function downloadExcel() {
   }
 }
 
+async function downloadPdf() {
+  error.value = ''
+
+  if (!filters.value.salary_month) {
+    error.value = 'Month is required.'
+    return
+  }
+
+  pdfExporting.value = true
+  try {
+    const response = await apiClient.get('/payroll-cash-slips', {
+      params: { ...buildParams(), flag: 'pdf' },
+      responseType: 'blob',
+    })
+
+    const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute(
+      'download',
+      `cash-slip-list-${String(filters.value.salary_month).slice(0, 7)}.pdf`,
+    )
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  } catch (e) {
+    error.value = e.message || 'PDF download failed.'
+  } finally {
+    pdfExporting.value = false
+  }
+}
+
 function resetFilters() {
   filters.value = {
     company_id: '',
@@ -171,33 +204,47 @@ function resetFilters() {
     employee_id: '',
     line_type: 'all',
     salary_month: currentMonth(),
-    bank_name: '',
+    payment_status: '',
   }
-  loadBankAdviserList()
+  loadSlipList()
 }
 
-onMounted(loadBankAdviserList)
+onMounted(loadSlipList)
 </script>
 
 <template>
   <div class="space-y-4 p-4 md:p-6 min-w-0 w-full max-w-full overflow-x-hidden">
-    <div class="rounded-3xl border border-slate-200 bg-gradient-to-r from-slate-50 via-white to-blue-50 px-4 py-4 shadow-sm md:px-5">
+    <div
+      class="rounded-3xl border border-slate-200 bg-gradient-to-r from-slate-50 via-white to-amber-50 px-4 py-4 shadow-sm md:px-5"
+    >
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 class="title-md md:title-lg">Bank Adviser List</h1>
+          <h1 class="title-md md:title-lg">Payroll Slip List</h1>
           <p class="mt-1 text-sm text-slate-500">
-            Payroll report data filtered by bank name, month and employee.
+            Cash payroll slips filtered by month and employee.
           </p>
         </div>
         <div class="flex flex-wrap gap-2">
           <button class="btn-3" @click="router.push({ name: 'PayrollList' })">
             <i class="far fa-arrow-left"></i> Back
           </button>
-          <button class="btn-3" @click="downloadExcel" :disabled="loading || exporting || !rows.length">
+          <button
+            class="btn-3"
+            @click="downloadExcel"
+            :disabled="loading || exporting || pdfExporting || !rows.length"
+          >
             <i class="far" :class="exporting ? 'fa-spinner fa-spin' : 'fa-file-excel'"></i>
-            Excel
+            Export Excel
           </button>
-          <button class="btn-2" @click="loadBankAdviserList" :disabled="loading || exporting">
+          <button
+            class="btn-3"
+            @click="downloadPdf"
+            :disabled="loading || exporting || pdfExporting || !rows.length"
+          >
+            <i class="far" :class="pdfExporting ? 'fa-spinner fa-spin' : 'fa-file-pdf'"></i>
+            Export PDF
+          </button>
+          <button class="btn-2" @click="loadSlipList" :disabled="loading || exporting || pdfExporting">
             <i class="far" :class="loading ? 'fa-spinner fa-spin' : 'fa-filter'"></i>
             Filter
           </button>
@@ -206,7 +253,7 @@ onMounted(loadBankAdviserList)
     </div>
 
     <div class="rounded-3xl border border-slate-200 bg-white p-3 shadow-sm md:p-4">
-      <div class="mt-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-3 space-y-3">
+      <div class="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 space-y-3">
         <EmployeeFilter
           :company_id="filters.company_id"
           :department_id="filters.department_id"
@@ -218,7 +265,8 @@ onMounted(loadBankAdviserList)
           @update:employee_id="(value) => (filters.employee_id = value)"
           @update:line_type="(value) => (filters.line_type = value)"
         />
-        <div class="flex gap-4">
+
+        <div class="flex flex-wrap gap-3">
           <div class="flex flex-col gap-1">
             <label class="block text-[11px] font-medium text-gray-600">Month</label>
             <input
@@ -228,36 +276,36 @@ onMounted(loadBankAdviserList)
             />
           </div>
           <div class="flex flex-col gap-1">
-            <label class="block text-[11px] font-medium text-gray-600">Bank Name</label>
+            <label class="block text-[11px] font-medium text-gray-600">Status</label>
             <select
-              v-model="filters.bank_name"
+              v-model="filters.payment_status"
               class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm"
             >
-              <option value="">All Banks</option>
-              <option v-for="bank in bankNameOptions" :key="bank" :value="bank">
-                {{ bank }}
-              </option>
+              <option value="">All Status</option>
+              <option value="Pending">Pending</option>
+              <option value="Partial">Partial</option>
+              <option value="Paid">Paid</option>
             </select>
           </div>
           <div class="flex items-end gap-2">
             <button class="btn-3 h-[38px]" @click="resetFilters">Reset</button>
-            <button class="btn-2 h-[38px]" @click="loadBankAdviserList" :disabled="loading || exporting">
+            <button class="btn-2 h-[38px]" @click="loadSlipList" :disabled="loading || exporting || pdfExporting">
               <i class="far" :class="loading ? 'fa-spinner fa-spin' : 'fa-search'"></i>
               Load
             </button>
           </div>
         </div>
 
-      <div v-if="activeFilterChips.length" class="mt-3 flex flex-wrap gap-2">
-        <span
-          v-for="chip in activeFilterChips"
-          :key="`${chip.label}-${chip.value}`"
-          class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700 shadow-sm"
-        >
-          <span class="font-medium text-slate-500">{{ chip.label }}:</span>
-          <span class="font-semibold">{{ chip.value }}</span>
-        </span>
-      </div>
+        <div v-if="activeFilterChips.length" class="flex flex-wrap gap-2">
+          <span
+            v-for="chip in activeFilterChips"
+            :key="`${chip.label}-${chip.value}`"
+            class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700 shadow-sm"
+          >
+            <span class="font-medium text-slate-500">{{ chip.label }}:</span>
+            <span class="font-semibold">{{ chip.value }}</span>
+          </span>
+        </div>
       </div>
     </div>
 
@@ -271,33 +319,36 @@ onMounted(loadBankAdviserList)
       v-else-if="!rows.length"
       class="rounded-3xl border border-dashed border-slate-200 bg-white p-10 text-center shadow-sm"
     >
-      <i class="far fa-building-columns text-3xl text-slate-300"></i>
-      <p class="mt-2 text-sm font-medium text-slate-500">No bank adviser records found</p>
+      <i class="far fa-receipt text-3xl text-slate-300"></i>
+      <p class="mt-2 text-sm font-medium text-slate-500">No payroll slip records found</p>
     </div>
 
     <div v-else class="overflow-x-auto rounded-3xl border border-slate-200 bg-white shadow-sm">
       <div class="border-b border-slate-100 px-4 py-3">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 class="text-base font-semibold text-slate-800">Bank Adviser Table</h2>
-            <p class="text-sm text-slate-500">Employee name, ID and bank account details only.</p>
+            <h2 class="text-base font-semibold text-slate-800">Payroll Slip Table</h2>
+            <p class="text-sm text-slate-500">Cash employees only. Open a row for the full payslip.</p>
           </div>
           <div class="flex items-center gap-2 text-xs text-slate-400">
-            <span class="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600">Rows: {{ rows.length }}</span>
+            <span class="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600">
+              Rows: {{ rows.length }}
+            </span>
           </div>
         </div>
       </div>
 
       <div class="w-full overflow-x-auto overscroll-x-contain [scrollbar-width:thin]">
-        <table class="min-w-[1100px] w-full border-collapse text-[11px] leading-tight">
+        <table class="min-w-[1120px] w-full border-collapse text-[11px] leading-tight">
           <thead class="sticky top-0 z-10 bg-slate-50 text-slate-700 text-[10px] uppercase">
             <tr>
-              <th class="border border-slate-200 px-2 py-2 text-left">Employee Name</th>
-              <th class="border border-slate-200 px-2 py-2 text-left">ID</th>
-              <th class="border border-slate-200 px-2 py-2 text-left">Payable A/C</th>
-              <th class="border border-slate-200 px-2 py-2 text-left">A/C Name</th>
-              <th class="border border-slate-200 px-2 py-2 text-left">A/C Number</th>
-              <th class="border border-slate-200 px-2 py-2 text-right">Payable Amount</th>
+              <th rowspan="2" class="border border-slate-200 px-2 py-2 text-left align-middle">Employee Name</th>
+              <th rowspan="2" class="border border-slate-200 px-2 py-2 text-left align-middle">ID</th>
+              <th rowspan="2" class="border border-slate-200 px-2 py-2 text-left align-middle">Joining Date</th>
+              <th rowspan="2" class="border border-slate-200 px-2 py-2 text-right align-middle">Earnings Total</th>
+              <th rowspan="2" class="border border-slate-200 px-2 py-2 text-right align-middle">Deductions Total</th>
+              <th rowspan="2" class="border border-slate-200 px-2 py-2 text-right align-middle">Net Payment</th>
+              <th rowspan="2" class="border border-slate-200 px-2 py-2 text-center align-middle">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -316,17 +367,23 @@ onMounted(loadBankAdviserList)
                   {{ p.employee_code || '-' }}
                 </span>
               </td>
-              <td class="border border-slate-200 px-2 py-2 text-xs text-slate-700">
-                {{ p.payable_account || '-' }}
+              <td class="border border-slate-200 px-2 py-2 text-xs text-slate-700 whitespace-nowrap">
+                {{ formatDate(p.joining_date) }}
               </td>
-              <td class="border border-slate-200 px-2 py-2 text-xs text-slate-700">
-                {{ p.account_name || '-' }}
+              <td class="border border-slate-200 px-2 py-2 text-right font-mono font-semibold text-slate-800">
+                {{ formatCompactCurrency(p.earnings?.total) }}
               </td>
-              <td class="border border-slate-200 px-2 py-2 text-xs text-slate-700">
-                {{ p.account_number || '-' }}
+              <td class="border border-slate-200 px-2 py-2 text-right font-mono font-semibold text-slate-800">
+                {{ formatCompactCurrency(p.deductions?.total) }}
               </td>
-              <td class="border border-slate-200 px-4 py-2 text-right font-mono font-semibold text-slate-800">
-                {{ formatCompactCurrency(p.payable_amount) }}
+              <td class="border border-slate-200 px-4 py-2 text-right font-mono font-bold text-emerald-700">
+                {{ formatCompactCurrency(p.net_payment) }}
+              </td>
+              <td class="border border-slate-200 px-2 py-2 text-center">
+                <button class="btn-3 h-8 text-[11px]" @click="viewSlip(p.id)">
+                  <i class="far fa-eye"></i>
+                  View Slip
+                </button>
               </td>
             </tr>
           </tbody>

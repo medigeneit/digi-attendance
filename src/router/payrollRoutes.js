@@ -83,6 +83,19 @@ export const payrollRoutes = [
     meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Bank Adviser List' },
   },
   {
+    path: '/payrolls/cash-slips',
+    name: 'PayrollSlipList',
+    component: () => import('@/views/admin-pages/payroll/PayrollSlipList.vue'),
+    meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Payroll Slip List' },
+  },
+  {
+    path: '/payrolls/cash-slips/:id',
+    name: 'PayrollSlipShow',
+    component: () => import('@/views/admin-pages/payroll/PayrollSlipShow.vue'),
+    props: true,
+    meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Payroll Slip' },
+  },
+  {
     path: '/payrolls/:id',
     name: 'PayrollShow',
     component: () => import('@/views/admin-pages/payroll/PayrollShow.vue'),
