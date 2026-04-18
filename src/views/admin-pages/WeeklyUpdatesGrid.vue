@@ -141,6 +141,27 @@ const itemTooltip = (item) => {
   return parts.join(' - ')
 }
 
+const formatHistoryDate = (value) => {
+  if (!value) return ''
+  const date = new Date(value)
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(date)
+}
+
+const getMessageHistory = (context) => {
+  return context?.user?.message_history || context?.message_history || []
+}
+
+const latestMessages = (context, limit = 3) => {
+  return getMessageHistory(context).slice(0, limit)
+}
+
+const messageHistoryCount = (context) => getMessageHistory(context).length
+
 const isExchangeItem = (item) => String(item?.kind || '').toLowerCase() === 'exchange'
 
 /* ---------------- toast ---------------- */
@@ -379,7 +400,7 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- Filters (sticky) -->
-    <div ref="stickyBarRef" class="sticky top-14 z-50">
+    <div ref="stickyBarRef" class="sticky top-0 z-50">
       <div class="rounded-2xl border border-slate-200 bg-white/95 backdrop-blur p-3 shadow-sm">
         <EmployeeFilter
           v-model:company_id="filters.company_id"
@@ -540,7 +561,7 @@ onBeforeUnmount(() => {
               </th>
 
               <th class="sticky z-20 bg-slate-50 px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide">
-                SMS
+                Message
               </th>
             </tr>
           </thead>
@@ -583,36 +604,53 @@ onBeforeUnmount(() => {
                 :class="tdClass(date)"
               >
                 <div v-if="dayItems(row, date).length" class="flex flex-wrap items-center justify-center gap-1">
-                  <template v-for="item in dayItems(row, date)" :key="`${item.kind}-${item.ref_id}-${item.code}`">
-                    <!-- MARKER (P/WK/HD): no button -->
-                    <span
-                      v-if="isDayMarker(item)"
-                      class="text-[11px] font-semibold text-gray-400"
-                      :class="{ '!text-red-500':itemBadgeText(item) === 'A'}"
-                      :title="itemTooltip(item)"
-                    >
-                      {{ itemBadgeText(item) }}
-                    </span>
-
-                    <!-- ACTIONABLE: clickable pill (still no button element) -->
-                    <span
-                      v-else
-                      class="inline-flex items-center rounded-full px-2 py-1 text-[11px] font-semibold ring-1 ring-inset cursor-pointer select-none hover:opacity-90"
-                      :class="itemBadgeClass(item)"
-                      :title="itemTooltip(item)"
-                      @click="openDetails(item)"
-                    >
-                      {{ itemBadgeText(item) }}
-                    </span>
-                  </template>
+                  <span
+                    v-for="item in dayItems(row, date)"
+                    :key="`${item.kind}-${item.ref_id}-${item.code}`"
+                    class="inline-flex items-center rounded-full px-2 py-1 text-[11px] font-semibold ring-1 ring-inset select-none"
+                    :class="[
+                      isDayMarker(item)
+                        ? 'text-gray-400 ring-transparent'
+                        : itemBadgeClass(item) + ' cursor-pointer hover:opacity-90',
+                      itemBadgeText(item) === 'A' ? '!text-red-500' : ''
+                    ]"
+                    :title="itemTooltip(item)"
+                    @click="!isDayMarker(item) && openDetails(item)"
+                  >
+                    {{ itemBadgeText(item) }}
+                  </span>
                 </div>
 
                 <span v-else class="text-slate-300 text-sm">&mdash;</span>
               </td>
 
               <!-- SMS -->
-              <td class="px-2">
-                <div class="flex justify-end">
+              <td class="px-2 py-2 align-top">
+                <div class="flex flex-col gap-2">
+                  <div class="flex items-center justify-between gap-2 text-xs text-slate-600">
+                    <span class="truncate font-medium">{{ row.user.phone || 'No phone' }}</span>
+                    <span
+                      v-if="messageHistoryCount(row)"
+                      class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700"
+                    >
+                      {{ messageHistoryCount(row) }} recent
+                    </span>
+                  </div>
+
+                  <!-- <div v-if="latestMessages(row).length" class="space-y-1 text-[11px]">
+                    <div
+                      v-for="message in latestMessages(row)"
+                      :key="message.id"
+                      class="overflow-hidden rounded-2xl bg-slate-50 px-2 py-2 text-slate-700"
+                    >
+                      <div class="truncate font-semibold">{{ message.message }}</div>
+                      <div class="mt-0.5 flex items-center justify-between text-[10px] text-slate-500">
+                        <span>{{ message.kind }} #{{ message.ref_id || '—' }}</span>
+                        <span>{{ formatHistoryDate(message.created_at) }}</span>
+                      </div>
+                    </div>
+                  </div> -->
+
                   <button
                     type="button"
                     class="btn-4"
@@ -621,7 +659,7 @@ onBeforeUnmount(() => {
                   >
                     <span v-if="ui.busyKey">Sending...</span>
                     <span v-else>
-                      Send SMS
+                      Send
                       <span class="font-bold" v-if="(row.user?.yearly_messages_count ?? row.user?.yearly_message_count)">
                         ({{ row.user?.yearly_messages_count ?? row.user?.yearly_message_count }})
                       </span>
@@ -671,6 +709,29 @@ onBeforeUnmount(() => {
           <div class="mt-1 flex items-center justify-between text-[11px] text-slate-400">
             <span>{{ (ui.smsMessage || '').length }} characters</span>
             <span>Message will be sent to the employee.</span>
+          </div>
+        </div>
+
+        <div class="mt-4 rounded-2xl bg-slate-50 p-3 text-sm">
+          <div class="mb-3 flex items-center justify-between text-xs font-semibold text-slate-600">
+            <span>Recent message history</span>
+            <span class="text-slate-500">Last {{ messageHistoryCount(ui.smsTarget) }} entries</span>
+          </div>
+          <div v-if="latestMessages(ui.smsTarget, 5).length" class="space-y-2 max-h-44 overflow-y-auto pr-1">
+            <div
+              v-for="message in latestMessages(ui.smsTarget, 5)"
+              :key="message.id"
+              class="rounded-2xl border border-slate-200 bg-white p-3 text-[11px] text-slate-700"
+            >
+              <div class="truncate font-semibold">{{ message.message }}</div>
+              <div class="mt-1 flex items-center justify-between text-[10px] text-slate-500">
+                <span>{{ message.kind }} #{{ message.ref_id || '—' }}</span>
+                <span>{{ formatHistoryDate(message.created_at) }}</span>
+              </div>
+            </div>
+          </div>
+          <div v-else class="rounded-2xl border border-dashed border-slate-200 bg-white px-3 py-6 text-center text-xs text-slate-500">
+            No recent message history found.
           </div>
         </div>
 
