@@ -229,12 +229,16 @@ const sendForItem = async (item, message = '') => {
   ui.value.busyKey = key
 
   try {
-    await store.sendWeeklyMessage({
+    const payload = {
       kind: String(item.kind).toLowerCase(),
       ref_id: item.ref_id,
-      status: item.status,
       message,
-    })
+    }
+    // Only include status if it exists
+    if (item.status) {
+      payload.status = item.status
+    }
+    await store.sendWeeklyMessage(payload)
     showToast('success', `SMS sent (${item.code || item.kind} #${item.ref_id})`)
     return true
   } catch (e) {
@@ -528,8 +532,14 @@ onBeforeUnmount(() => {
       Loading weekly updates...
     </div>
 
+    <!-- Info note -->
+    <div v-if="!loading && !error && rows.length" class="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800">
+      <span class="font-semibold flex-shrink-0 mt-0.5">ℹ️</span>
+      <span>This list shows only employees with <strong>active leave applications or offday exchanges</strong> within the selected date range. To send messages to other employees, please check their application history.</span>
+    </div>
+
     <!-- Table -->
-    <div v-else class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div v-if="!loading && !error" class="rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div>
         <table class="min-w-max w-full text-sm">
           <thead class="text-slate-600">
@@ -717,17 +727,18 @@ onBeforeUnmount(() => {
             <span>Recent message history</span>
             <span class="text-slate-500">Last {{ messageHistoryCount(ui.smsTarget) }} entries</span>
           </div>
-          <div v-if="latestMessages(ui.smsTarget, 5).length" class="space-y-2 max-h-44 overflow-y-auto pr-1">
+          <div v-if="latestMessages(ui.smsTarget, 5).length" class="space-y-2 max-h-60 overflow-y-auto pr-1">
             <div
               v-for="message in latestMessages(ui.smsTarget, 5)"
               :key="message.id"
               class="rounded-2xl border border-slate-200 bg-white p-3 text-[11px] text-slate-700"
             >
-              <div class="truncate font-semibold">{{ message.message }}</div>
-              <div class="mt-1 flex items-center justify-between text-[10px] text-slate-500">
-                <span>{{ message.kind }} #{{ message.ref_id || '—' }}</span>
+              <div class="font-semibold text-slate-800 whitespace-normal break-words mb-2">{{ message.message }}</div>
+              <div class="flex items-center justify-between text-[10px] text-slate-500 border-t border-slate-100 pt-2">
+                <span class="font-medium">{{ message.kind }} #{{ message.ref_id || '—' }}</span>
                 <span>{{ formatHistoryDate(message.created_at) }}</span>
               </div>
+              <div v-if="message.send_status" class="mt-2 text-[10px] font-semibold" :class="message.send_status === 'SENT' ? 'text-emerald-600' : 'text-amber-600'">{{ message.send_status }}</div>
             </div>
           </div>
           <div v-else class="rounded-2xl border border-dashed border-slate-200 bg-white px-3 py-6 text-center text-xs text-slate-500">
