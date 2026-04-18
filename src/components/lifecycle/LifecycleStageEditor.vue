@@ -264,6 +264,26 @@ function normalizeComplexPayload() {
       continue
     }
 
+    if (field.type === 'review_list') {
+      const current = getNestedValue(form.payload, path, null)
+      if (!Array.isArray(current)) {
+        setReviewListFieldValue(field, reviewListFieldValue(field))
+      } else {
+        setReviewListFieldValue(field, current)
+      }
+      continue
+    }
+
+    if (field.type === 'reviewer_matrix') {
+      const current = getNestedValue(form.payload, path, null)
+      if (!Array.isArray(current)) {
+        setReviewerMatrixFieldValue(field, reviewerMatrixFieldValue(field))
+      } else {
+        setReviewerMatrixFieldValue(field, current)
+      }
+      continue
+    }
+
     if (path.includes('.')) {
       const parentPath = splitPath(path).slice(0, -1).join('.')
       const current = getNestedValue(form.payload, parentPath, null)
@@ -335,6 +355,400 @@ function formatMonthLabel(value, fallback = 'Duration not set') {
   const months = Number(value)
   if (!Number.isFinite(months) || months <= 0) return fallback
   return `${months} ${months === 1 ? 'month' : 'months'}`
+}
+
+function emptyReviewItem(defaults = {}) {
+  return {
+    key: defaults.key || '',
+    label: defaults.label || '',
+    due_date: defaults.due_date || '',
+    status: defaults.status || 'pending',
+    note: defaults.note || '',
+  }
+}
+
+function emptyReviewerMatrixRow(defaults = {}) {
+  return {
+    role: String(defaults.role || '').trim().toLowerCase(),
+    label: String(defaults.label || '').trim(),
+    assigned: defaults.assigned === true,
+    status: String(defaults.status || 'pending').toLowerCase(),
+    note: String(defaults.note || ''),
+    special_note: String(defaults.special_note || ''),
+  }
+}
+
+function fallbackText(...values) {
+  for (const value of values) {
+    const text = String(value ?? '').trim()
+    if (text) return text
+  }
+
+  return ''
+}
+
+function normalizeReviewerMatrixItem(item = {}, defaults = {}) {
+  return {
+    ...emptyReviewerMatrixRow(defaults),
+    ...item,
+    role: String(item?.role ?? defaults.role ?? '').trim().toLowerCase(),
+    label: fallbackText(item?.label, defaults.label, defaults.role),
+    assigned: item?.assigned === true || String(item?.assigned || '').toLowerCase() === 'true',
+    status: String(item?.status ?? defaults.status ?? 'pending').toLowerCase(),
+    note: String(item?.note ?? defaults.note ?? ''),
+    special_note: String(item?.special_note ?? defaults.special_note ?? ''),
+  }
+}
+
+function reviewerMatrixFieldValue(field) {
+  const path = fieldPath(field)
+  const current = getNestedValue(form.payload, path, [])
+  const sourcePath = field?.rowSourcePath || ''
+  const sourceRows = sourcePath ? getNestedValue(form.payload, sourcePath, []) : []
+  const rows = Array.isArray(sourceRows) && sourceRows.length
+    ? sourceRows.map((item) => ({
+        role: String(item?.role || '').trim().toLowerCase(),
+        label: String(item?.user_name || item?.role_label || item?.label || item?.role || '').trim(),
+        assigned: item?.user_id != null || item?.assigned === true,
+        user_id: item?.user_id ?? null,
+        user_name: String(item?.user_name || '').trim(),
+      }))
+    : Array.isArray(field.rows)
+      ? field.rows
+      : []
+
+  if (Array.isArray(current) && current.length) {
+    return rows.map((row) => {
+      const existing = current.find(
+        (item) => String(item?.role || '').toLowerCase() === String(row.role || '').toLowerCase(),
+      )
+      return normalizeReviewerMatrixItem(existing || {}, {
+        role: row.role,
+        label: row.label,
+      })
+    })
+  }
+
+  return rows.map((row) => normalizeReviewerMatrixItem({}, { role: row.role, label: row.label }))
+}
+
+function normalizeSlabKey(value) {
+  return String(value || '').trim().toLowerCase()
+}
+
+function reviewerMatrixSlabs(field) {
+  const slabs = Array.isArray(field?.slabs) ? field.slabs : []
+  if (slabs.length) {
+    return slabs.map((slab, index) => ({
+      key: normalizeSlabKey(slab.key || String(index + 1)),
+      label: String(slab.label || `Slab ${index + 1}`).trim(),
+      subtitle: String(slab.subtitle || '').trim(),
+    }))
+  }
+
+  return [
+    { key: '30', label: '30 Day Review', subtitle: '1st slab' },
+    { key: '60', label: '60 Day Review', subtitle: '2nd slab' },
+  ]
+}
+
+function reviewerMatrixSlabStatusPath(slabKey) {
+  const key = normalizeSlabKey(slabKey)
+  return `slab_${key}_status`
+}
+
+function reviewerMatrixSlabNotePath(slabKey) {
+  const key = normalizeSlabKey(slabKey)
+  return `slab_${key}_note`
+}
+
+function reviewerMatrixSlabLabel(slab, index) {
+  const suffix = slab.subtitle ? ` ${slab.subtitle}` : ` ${index + 1}${index === 0 ? 'st' : index === 1 ? 'nd' : 'th'} slab`
+  return `${slab.label}${suffix}`
+}
+
+function reviewerMatrixActiveSlabKey(field) {
+  const slabs = reviewerMatrixSlabs(field)
+  const rows = reviewerMatrixFieldValue(field)
+
+  for (const slab of slabs) {
+    const key = normalizeSlabKey(slab.key)
+    const hasPendingRow = rows.some(
+      (row) => String(row?.[`slab_${key}_status`] || '').toLowerCase() !== 'completed',
+    )
+
+    if (hasPendingRow) {
+      return key
+    }
+  }
+
+  return normalizeSlabKey(slabs[0]?.key || '')
+}
+
+const reviewerMatrixExpandedKeys = reactive({})
+
+function reviewerMatrixExpandedKey(field) {
+  const current = normalizeSlabKey(reviewerMatrixExpandedKeys[field.key])
+  return current || reviewerMatrixActiveSlabKey(field)
+}
+
+function isReviewerMatrixSlabExpanded(field, slabKey) {
+  return reviewerMatrixExpandedKey(field) === normalizeSlabKey(slabKey)
+}
+
+function toggleReviewerMatrixSlab(field, slabKey) {
+  const normalized = normalizeSlabKey(slabKey)
+  reviewerMatrixExpandedKeys[field.key] =
+    reviewerMatrixExpandedKey(field) === normalized ? '' : normalized
+}
+
+function reviewerMatrixSlabRowValue(row, slabKey, key) {
+  const normalized = normalizeSlabKey(slabKey)
+  return row?.[`slab_${normalized}_${key}`] ?? (key === 'status' ? 'pending' : '')
+}
+
+function updateReviewerMatrixSlabItem(field, index, slabKey, key, value) {
+  const normalized = normalizeSlabKey(slabKey)
+  const next = reviewerMatrixFieldValue(field).map((item, itemIndex) =>
+    itemIndex === index ? { ...item, [`slab_${normalized}_${key}`]: value } : item,
+  )
+  setReviewerMatrixFieldValue(field, next)
+}
+
+function reviewerMatrixSlabSummary(field, slabKey) {
+  const rows = reviewerMatrixFieldValue(field)
+  const normalized = normalizeSlabKey(slabKey)
+  const total = rows.length
+  const assigned = rows.filter((row) => row.assigned !== false).length
+  const completed = rows.filter((row) => String(row?.[`slab_${normalized}_status`] || '').toLowerCase() === 'completed').length
+  const pending = Math.max(0, total - completed)
+
+  return { total, assigned, completed, pending }
+}
+
+function setReviewerMatrixFieldValue(field, items) {
+  updateFieldValue(
+    field,
+    Array.isArray(items)
+      ? items.map((item) =>
+          normalizeReviewerMatrixItem(item, {
+            role: item?.role,
+            label: item?.label,
+          }),
+        )
+      : [],
+  )
+}
+
+function updateReviewerMatrixItem(field, index, key, value) {
+  const next = reviewerMatrixFieldValue(field).map((item, itemIndex) =>
+    itemIndex === index ? { ...item, [key]: value } : item,
+  )
+  setReviewerMatrixFieldValue(field, next)
+}
+
+function emptyReviewerAssignment(defaults = {}) {
+  return {
+    role: String(defaults.role || '').trim().toLowerCase(),
+    role_label: String(defaults.role_label || '').trim(),
+    user_id: defaults.user_id || null,
+    user_name: String(defaults.user_name || '').trim(),
+  }
+}
+
+function normalizeReviewerAssignment(item = {}, defaults = {}) {
+  return {
+    ...emptyReviewerAssignment(defaults),
+    ...item,
+    role: String(item?.role ?? defaults.role ?? '').trim().toLowerCase(),
+    role_label: String(item?.role_label ?? defaults.role_label ?? '').trim(),
+    user_id: item?.user_id ?? defaults.user_id ?? null,
+    user_name: String(item?.user_name ?? defaults.user_name ?? '').trim(),
+  }
+}
+
+function reviewerAssignmentFieldValue(field) {
+  const path = fieldPath(field)
+  const current = getNestedValue(form.payload, path, [])
+  
+  if (Array.isArray(current)) {
+    return current.map((item) => normalizeReviewerAssignment(item))
+  }
+  
+  return []
+}
+
+function setReviewerAssignmentFieldValue(field, items) {
+  updateFieldValue(
+    field,
+    Array.isArray(items)
+      ? items.map((item) => normalizeReviewerAssignment(item))
+      : [],
+  )
+}
+
+function addReviewerAssignment(field, role, roleLabel) {
+  const current = reviewerAssignmentFieldValue(field)
+  
+  // Check if role already exists
+  if (current.some((item) => String(item.role || '').toLowerCase() === String(role || '').toLowerCase())) {
+    return
+  }
+  
+  const next = [
+    ...current,
+    normalizeReviewerAssignment({}, {
+      role: role,
+      role_label: roleLabel,
+      user_id: null,
+      user_name: '',
+    }),
+  ]
+  setReviewerAssignmentFieldValue(field, next)
+}
+
+function removeReviewerAssignment(field, role) {
+  const current = reviewerAssignmentFieldValue(field)
+  const next = current.filter((item) => String(item.role || '').toLowerCase() !== String(role || '').toLowerCase())
+  setReviewerAssignmentFieldValue(field, next)
+}
+
+function updateReviewerAssignment(field, role, key, value) {
+  const current = reviewerAssignmentFieldValue(field)
+  const next = current.map((item) =>
+    String(item.role || '').toLowerCase() === String(role || '').toLowerCase()
+      ? { ...item, [key]: value }
+      : item,
+  )
+  setReviewerAssignmentFieldValue(field, next)
+}
+
+
+function normalizeReviewItem(item = {}, defaults = {}) {
+  return {
+    ...emptyReviewItem(defaults),
+    ...item,
+    key: String(item?.key ?? defaults.key ?? '').trim(),
+    label: String(item?.label ?? defaults.label ?? '').trim(),
+    due_date: item?.due_date ?? defaults.due_date ?? '',
+    status: item?.status ?? defaults.status ?? 'pending',
+    note: item?.note ?? defaults.note ?? '',
+  }
+}
+
+function reviewListFieldValue(field) {
+  const path = fieldPath(field)
+  const current = getNestedValue(form.payload, path, [])
+
+  if (Array.isArray(current)) {
+    return current.map((item, index) =>
+      normalizeReviewItem(item, {
+        key: `review-${index + 1}`,
+        label: `Review ${index + 1}`,
+      }),
+    )
+  }
+
+  const normalized = []
+  for (const legacy of field?.legacyReviews || []) {
+    const status = getNestedValue(form.payload, legacy.statusPath || '', '')
+    const note = getNestedValue(form.payload, legacy.notePath || '', '')
+    const dueDate =
+      getNestedValue(form.payload, legacy.dueDatePath || '', '') ||
+      getNestedValue(form.payload, legacy.dueDateField || '', '')
+
+    if (!status && !note && !dueDate) continue
+
+    const startDate = getNestedValue(form.payload, field?.startDatePath || 'probation_start_date', '')
+    const endDate = getNestedValue(form.payload, field?.endDatePath || 'probation_end_date', '')
+    let fallbackDueDate = dueDate
+
+    if (!fallbackDueDate && Number.isFinite(Number(legacy.dueDateMonths))) {
+      const date = new Date(startDate)
+      if (!Number.isNaN(date.getTime())) {
+        const target = new Date(date)
+        target.setMonth(target.getMonth() + Number(legacy.dueDateMonths))
+        if (target.getDate() !== date.getDate()) {
+          target.setDate(0)
+        }
+        fallbackDueDate = target.toISOString().slice(0, 10)
+      }
+    }
+
+    if (!fallbackDueDate && legacy.key === 'final_review') {
+      fallbackDueDate = endDate
+    }
+
+    normalized.push(
+      normalizeReviewItem(
+        {
+          key: legacy.key,
+          label: legacy.label,
+          due_date: fallbackDueDate,
+          status: status || 'pending',
+          note: note || '',
+        },
+        {
+          key: legacy.key,
+          label: legacy.label,
+        },
+      ),
+    )
+  }
+
+  return normalized
+}
+
+function setReviewListFieldValue(field, items) {
+  updateFieldValue(
+    field,
+    items.map((item, index) =>
+      normalizeReviewItem(item, {
+        key: `review-${index + 1}`,
+        label: `Review ${index + 1}`,
+      }),
+    ),
+  )
+}
+
+function addReviewListItem(field, defaults = {}) {
+  setReviewListFieldValue(field, [...reviewListFieldValue(field), emptyReviewItem(defaults)])
+}
+
+function updateReviewListItem(field, index, key, value) {
+  const next = reviewListFieldValue(field).map((item, itemIndex) =>
+    itemIndex === index ? { ...item, [key]: value } : item,
+  )
+  setReviewListFieldValue(field, next)
+}
+
+function removeReviewListItem(field, index) {
+  setReviewListFieldValue(
+    field,
+    reviewListFieldValue(field).filter((_, itemIndex) => itemIndex !== index),
+  )
+}
+
+function addExtensionReview(field) {
+  const extensionMonthsPath = field?.extensionMonthsPath || 'extended_months'
+  const extensionMonths = Number(getNestedValue(form.payload, extensionMonthsPath, 0)) || 0
+  const probationEndDate = getNestedValue(form.payload, field?.endDatePath || 'probation_end_date', '')
+  const key = field?.extensionReviewKey || 'extension_review'
+  const label = extensionMonths > 0 ? `${extensionMonths}-Month Extension Review` : 'Extension Review'
+
+  if (!extensionMonths && !probationEndDate) return
+
+  const current = reviewListFieldValue(field)
+  if (current.some((item) => String(item.key || '').toLowerCase() === String(key).toLowerCase())) {
+    return
+  }
+
+  addReviewListItem(field, {
+    key,
+    label,
+    due_date: probationEndDate,
+    status: 'pending',
+  })
 }
 
 function salarySteps(field) {
@@ -606,9 +1020,327 @@ async function save() {
                 :rows="field.rows || 2"
                 class="min-h-[56px] w-full rounded-lg border bg-white px-2.5 py-1.5 text-sm"
                 :placeholder="field.placeholder || ''"
-                @input="setNestedValue(trainingBlockNotePath(field), $event.target.value)"
+              @input="setNestedValue(trainingBlockNotePath(field), $event.target.value)"
               />
             </label>
+          </div>
+
+          <div
+            v-else-if="field.type === 'review_list'"
+            :key="`${field.key}-review-list`"
+            :class="[
+              'space-y-3 rounded-xl border border-slate-200 bg-slate-50/50 p-3',
+              fieldColumnClass(field, 2),
+            ]"
+          >
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <div class="text-sm font-semibold text-slate-800">{{ field.label }}</div>
+                <div v-if="field.help" class="mt-1 text-xs text-slate-500">{{ field.help }}</div>
+              </div>
+
+              <div class="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  @click="addReviewListItem(field)"
+                >
+                  Add Review
+                </button>
+
+                <button
+                  v-if="
+                    getNestedValue(form.payload, field.recommendationPath || 'recommendation', '') ===
+                    'extend_probation'
+                  "
+                  type="button"
+                  class="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+                  @click="addExtensionReview(field)"
+                >
+                  Add Extension Checkpoint
+                </button>
+              </div>
+            </div>
+
+            <div v-if="reviewListFieldValue(field).length" class="space-y-2.5">
+              <div
+                v-for="(item, index) in reviewListFieldValue(field)"
+                :key="`${field.key}-${item.key || index}`"
+                class="rounded-xl border bg-white p-2.5 shadow-sm"
+              >
+                <div class="mb-2 flex items-center justify-between gap-3">
+                  <div class="text-sm font-medium text-slate-700">
+                    {{ item.label || `Review ${index + 1}` }}
+                  </div>
+                  <button
+                    type="button"
+                    class="rounded-md border border-rose-200 px-2.5 py-1 text-xs font-medium text-rose-600 hover:bg-rose-50"
+                    @click="removeReviewListItem(field, index)"
+                  >
+                    Remove
+                  </button>
+                </div>
+
+                <div class="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+                  <label class="block">
+                    <span class="mb-1 block text-sm font-medium text-gray-700">Key</span>
+                    <input
+                      :value="item.key"
+                      type="text"
+                      class="w-full rounded-lg border px-2.5 py-1.5 text-sm"
+                      placeholder="30"
+                      @input="updateReviewListItem(field, index, 'key', $event.target.value)"
+                    />
+                  </label>
+
+                  <label class="block">
+                    <span class="mb-1 block text-sm font-medium text-gray-700">Label</span>
+                    <input
+                      :value="item.label"
+                      type="text"
+                      class="w-full rounded-lg border px-2.5 py-1.5 text-sm"
+                      placeholder="30 Day Review"
+                      @input="updateReviewListItem(field, index, 'label', $event.target.value)"
+                    />
+                  </label>
+
+                  <label class="block">
+                    <span class="mb-1 block text-sm font-medium text-gray-700">Due Date</span>
+                    <input
+                      :value="item.due_date"
+                      type="date"
+                      class="w-full rounded-lg border px-2.5 py-1.5 text-sm"
+                      @input="updateReviewListItem(field, index, 'due_date', $event.target.value)"
+                    />
+                  </label>
+
+                  <label class="block">
+                    <span class="mb-1 block text-sm font-medium text-gray-700">Status</span>
+                    <select
+                      :value="item.status"
+                      class="w-full rounded-lg border px-2.5 py-1.5 text-sm"
+                      @change="updateReviewListItem(field, index, 'status', $event.target.value)"
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="completed">Completed</option>
+                    </select>
+                  </label>
+                </div>
+
+                <label class="mt-2 block">
+                  <span class="mb-1 block text-sm font-medium text-gray-700">Note</span>
+                  <textarea
+                    :value="item.note"
+                    class="min-h-[56px] w-full rounded-lg border px-2.5 py-1.5 text-sm"
+                    placeholder="Add review feedback or concerns"
+                    @input="updateReviewListItem(field, index, 'note', $event.target.value)"
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div
+              v-else
+              class="rounded-lg border border-dashed border-slate-300 bg-white px-3 py-3 text-sm text-slate-500"
+            >
+              No review checkpoint added yet.
+            </div>
+          </div>
+
+          <div
+            v-else-if="field.type === 'reviewer_assignment'"
+            :key="`${field.key}-reviewer-assignment`"
+            :class="['rounded-xl border border-slate-200 bg-slate-50/50 p-2.5', fieldColumnClass(field, 2)]"
+          >
+            <div class="mb-2.5 flex items-center justify-between gap-3">
+              <div>
+                <div class="text-sm font-semibold text-slate-800">{{ field.label }}</div>
+                <div v-if="field.help" class="mt-1 text-xs text-slate-500">{{ field.help }}</div>
+              </div>
+              <div class="relative inline-block" v-if="field.reviewerTypes">
+                <select
+                  class="appearance-none rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 hover:bg-indigo-100 pr-8"
+                  @change="
+                    (e) => {
+                      const [role, label] = (e.target.value || '').split('|')
+                      if (role) addReviewerAssignment(field, role, label)
+                      e.target.value = ''
+                    }
+                  "
+                >
+                  <option value="">+ Add Reviewer</option>
+                  <option
+                    v-for="type in field.reviewerTypes"
+                    :key="type.value"
+                    :value="`${type.value}|${type.label}`"
+                    :disabled="reviewerAssignmentFieldValue(field).some((a) => a.role === type.value)"
+                  >
+                    {{ type.label }}
+                  </option>
+                </select>
+                <span class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-indigo-600">
+                  ▼
+                </span>
+              </div>
+            </div>
+
+            <div v-if="reviewerAssignmentFieldValue(field).length > 0" class="grid gap-2 md:grid-cols-2">
+              <div
+                v-for="assignment in reviewerAssignmentFieldValue(field)"
+                :key="assignment.role"
+                class="grid gap-2 rounded-lg border border-slate-200 bg-white p-2.5"
+              >
+                <div class="flex-1">
+                  <div class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                    {{ assignment.role_label }}
+                  </div>
+                  <div class="mt-1 flex flex-col gap-2">
+                    <select
+                      :value="assignment.user_id || ''"
+                      class="w-full rounded-lg border px-2.5 py-1.5 text-sm"
+                      @change="updateReviewerAssignment(field, assignment.role, 'user_id', $event.target.value ? Number($event.target.value) : null)"
+                    >
+                      <option value="">Select User</option>
+                      <option
+                        v-for="user in usersStore.items"
+                        :key="user.id"
+                        :value="user.id"
+                      >
+                        {{ user.name }} ({{ user.designation?.title || 'N/A' }})
+                      </option>
+                    </select>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  class="justify-self-end rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100"
+                  @click="removeReviewerAssignment(field, assignment.role)"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+
+            <div
+              v-else
+              class="rounded-lg border border-dashed border-slate-300 bg-white px-3 py-3 text-sm text-slate-500"
+            >
+              No reviewers assigned. Click "Add Reviewer" to assign reviewers.
+            </div>
+          </div>
+
+          <div
+            v-else-if="field.type === 'reviewer_matrix'"
+            :key="`${field.key}-reviewer-matrix`"
+            :class="[
+              'rounded-xl border border-slate-200 bg-slate-50/50 p-2.5',
+              fieldColumnClass(field, 2),
+            ]"
+          >
+            <div class="mb-2.5 flex items-start justify-between gap-3">
+              <div>
+                <div class="text-sm font-semibold text-slate-800">{{ field.label }}</div>
+                <div v-if="field.help" class="mt-1 text-xs text-slate-500">{{ field.help }}</div>
+              </div>
+            </div>
+            <div class="space-y-2.5">
+              <div
+                v-for="(slab, slabIndex) in reviewerMatrixSlabs(field)"
+                :key="`${field.key}-${slab.key}`"
+                class="overflow-hidden rounded-xl border bg-white shadow-sm"
+              >
+                <button
+                  type="button"
+                  class="flex w-full items-start justify-between gap-3 px-3 py-2 text-left"
+                  :class="isReviewerMatrixSlabExpanded(field, slab.key) ? 'bg-blue-50/60' : 'bg-white'"
+                  @click="toggleReviewerMatrixSlab(field, slab.key)"
+                >
+                  <div class="min-w-0">
+                    <div class="text-sm font-semibold text-slate-800">
+                      {{ reviewerMatrixSlabLabel(slab, slabIndex) }}
+                    </div>
+                    <div class="mt-0.5 text-xs text-slate-500">
+                      {{ reviewerMatrixSlabSummary(field, slab.key).assigned }} assigned reviewers,
+                      {{ reviewerMatrixSlabSummary(field, slab.key).completed }} completed,
+                      {{ reviewerMatrixSlabSummary(field, slab.key).pending }} pending
+                    </div>
+                  </div>
+                  <div class="rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]" :class="isReviewerMatrixSlabExpanded(field, slab.key) ? 'border-blue-200 bg-blue-100 text-blue-700' : 'border-slate-200 bg-slate-50 text-slate-500'">
+                    {{ isReviewerMatrixSlabExpanded(field, slab.key) ? 'Open' : 'Minimized' }}
+                  </div>
+                </button>
+
+                <div v-if="isReviewerMatrixSlabExpanded(field, slab.key)" class="border-t">
+                  <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200 text-xs">
+                      <thead class="bg-slate-100 text-slate-600">
+                        <tr>
+                          <th class="px-2.5 py-2 text-left font-semibold uppercase tracking-[0.08em]">Reviewer</th>
+                          <th class="px-2.5 py-2 text-left font-semibold uppercase tracking-[0.08em]">Status</th>
+                          <th class="px-2.5 py-2 text-left font-semibold uppercase tracking-[0.08em]">Note</th>
+                          <th class="px-2.5 py-2 text-left font-semibold uppercase tracking-[0.08em]">Special Comment</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-slate-200 bg-white">
+                        <tr
+                          v-for="(row, index) in reviewerMatrixFieldValue(field)"
+                          :key="`${slab.key}-${row.role}`"
+                          class="hover:bg-slate-50"
+                        >
+                          <td class="px-2.5 py-2 font-medium text-slate-800">
+                            <div>{{ row.label }}</div>
+                            <div v-if="row.assigned && row.user_name" class="mt-0.5 text-xs text-slate-500">
+                              {{ row.user_name }}
+                            </div>
+                          </td>
+                          <td class="px-2.5 py-2">
+                            <select
+                              :value="reviewerMatrixSlabRowValue(row, slab.key, 'status')"
+                              class="w-full rounded-lg border px-2 py-1.5 text-xs"
+                              @change="updateReviewerMatrixSlabItem(field, index, slab.key, 'status', $event.target.value)"
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="completed">Completed</option>
+                            </select>
+                          </td>
+                          <td class="px-2.5 py-2">
+                            <textarea
+                              :value="reviewerMatrixSlabRowValue(row, slab.key, 'note')"
+                              class="min-h-[48px] w-full rounded-lg border px-2.5 py-1.5 text-xs"
+                              placeholder="Reviewer note"
+                              @input="updateReviewerMatrixSlabItem(field, index, slab.key, 'note', $event.target.value)"
+                            />
+                          </td>
+                          <td class="px-2.5 py-2">
+                            <textarea
+                              :value="row.special_note"
+                              class="min-h-[48px] w-full rounded-lg border px-2.5 py-1.5 text-xs"
+                              placeholder="Special comments"
+                              @input="updateReviewerMatrixItem(field, index, 'special_note', $event.target.value)"
+                            />
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div v-else class="space-y-2 border-t px-3 py-2.5">
+                  <div class="flex flex-wrap gap-1.5">
+                    <span
+                      v-for="row in reviewerMatrixFieldValue(field)"
+                      :key="`${slab.key}-${row.role}-chip`"
+                      class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600"
+                    >
+                      {{ row.user_name || row.label }}
+                    </span>
+                    <span v-if="!reviewerMatrixFieldValue(field).length" class="text-xs text-slate-500">
+                      No reviewers assigned in this slab yet.
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <label
@@ -658,8 +1390,9 @@ async function save() {
               :model-value="getFieldValue(field)"
               :options="usersStore.items"
               label="name"
+              :multiple="Boolean(field.multiple)"
               :searchBy="searchLifecycleUsers"
-              placeholder="-- SELECT USER --"
+              :placeholder="field.multiple ? '-- SELECT USERS --' : '-- SELECT USER --'"
               class="h-10 w-full"
               clearable
               searchable

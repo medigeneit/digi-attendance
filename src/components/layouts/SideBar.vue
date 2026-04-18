@@ -45,7 +45,6 @@ const matchesQuery = (label) => {
 // Core (visible for everyone)
 const coreMenu = [
   { label: 'Dashboard', to: { path: '/dashboard' }, icon: 'fad fa-table' },
-  { label: 'Lifecycle', to: { name: 'lifecycle.board', params: { flowType: 'onboarding' } }, icon: 'fad fa-route' },
   { label: 'Task List', to: { path: '/my-requirement-tasks' }, icon: 'fad fa-tasks' },
   { label: 'Profile', to: { path: '/profile' }, icon: 'fad fa-user' },
   { label: 'Notifications', to: { path: '/notifications' }, icon: 'fad fa-bells' },
@@ -425,19 +424,6 @@ watch(
       </RouterLink>
 
       <template v-if="!authStore.isAdminMood || !isAdmin">
-      <RouterLink
-        v-if="matchesQuery('Lifecycle')"
-        :to="{ name: 'lifecycle.board', params: { flowType: 'onboarding' } }"
-        class="side-menu"
-        :class="{
-          'flex justify-center': !open,
-          'side-menu-active': currentPath.includes('/lifecycle'),
-        }"
-      >
-        <i class="fad fa-route py-2"></i>
-        <h4 v-if="open">Lifecycle</h4>
-      </RouterLink>
-
       <RouterLink
         v-if="matchesQuery('Task List')"
         :to="`/my-requirement-tasks`"

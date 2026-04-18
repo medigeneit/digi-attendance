@@ -1,4 +1,4 @@
-import apiClient from '@/axios'
+﻿import apiClient from '@/axios'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
@@ -17,13 +17,15 @@ export const useNotificationStore = defineStore('notification', () => {
   const applicationApprovalPermissions = ref([])
 
   const icons = ref({
-    leave_applications: '📜',
-    short_leave_applications: '📋',
-    shift_exchange_applications: '🔄',
-    offday_exchange_applications: '🔄',
-    manual_attendance_applications: '🕒',
-    overtime_applications: '⏱️',
-    application_feedback: '💬',
+    leave_applications: 'fas fa-file-alt',
+    short_leave_applications: 'fas fa-clock',
+    shift_exchange_applications: 'fas fa-random',
+    offday_exchange_applications: 'fas fa-random',
+    manual_attendance_applications: 'fas fa-user-clock',
+    overtime_applications: 'fas fa-hourglass-half',
+    probation: 'fas fa-flask',
+    application_feedback: 'fas fa-comments',
+    discipline_attachments: 'fas fa-file-signature',
   })
 
   const total_notifications = computed(() => {
@@ -41,6 +43,24 @@ export const useNotificationStore = defineStore('notification', () => {
     try {
       const response = await apiClient.get('/notifications')
       notifications.value = response?.data?.notifications
+      totalUnreadNotifications.value = response?.data?.total_unread
+      grouped_counts.value = response?.data?.grouped_counts
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to fetch notifications'
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function fetchNotificationsByType(type) {
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await apiClient.get('/notifications', {
+        params: { type },
+      })
+      notifications.value = response?.data?.notifications?.[type] || []
       totalUnreadNotifications.value = response?.data?.total_unread
       grouped_counts.value = response?.data?.grouped_counts
     } catch (err) {
@@ -177,6 +197,7 @@ export const useNotificationStore = defineStore('notification', () => {
     loading,
     error,
     fetchNotifications,
+    fetchNotificationsByType,
     markAsRead,
     totalUnreadNotifications,
     grouped_counts,
@@ -196,3 +217,4 @@ export const useNotificationStore = defineStore('notification', () => {
     markFeedbackNotificationAsRead,
   }
 })
+
