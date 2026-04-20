@@ -6,6 +6,7 @@ import { storeToRefs } from 'pinia'
 import { usePayrollBatchStore } from '@/stores/payrollBatch'
 import { useCompanyStore } from '@/stores/company'
 import PayrollStatusBadge from '@/components/payroll/PayrollStatusBadge.vue'
+import PayrollAdjustmentPreviewModal from '@/components/payroll/PayrollAdjustmentPreviewModal.vue'
 import { formatCurrency } from '@/utils/currency'
 
 const router = useRouter()
@@ -25,6 +26,9 @@ const form = ref({
 })
 const formErrors = ref({})
 const submitted = ref(false)
+const adjustmentModalOpen = ref(false)
+const adjustmentModalRef = ref(null)
+const pendingGeneratePayload = ref(null)
 
 onMounted(() => companyStore.fetchCompanies())
 
@@ -62,13 +66,29 @@ const validate = () => {
 
 const handleSubmit = async () => {
   if (!validate()) return
-  const payload = { ...form.value }
+  
+  // Save the payload and open the adjustment preview modal
+  const [year, month] = form.value.salary_month.split('-')
+  pendingGeneratePayload.value = { ...form.value }
+  adjustmentModalOpen.value = true
+  
+  // Trigger the modal to load preview data
+  await new Promise(resolve => setTimeout(resolve, 100))
+  adjustmentModalRef.value?.handleOpen()
+}
+
+const handleConfirmAdjustments = async () => {
+  if (!pendingGeneratePayload.value) return
+  
+  const payload = pendingGeneratePayload.value
   if (!payload.employee_ids?.length) delete payload.employee_ids
   if (!payload.remarks) delete payload.remarks
+  
   try {
     await batchStore.generatePayroll(payload)
     submitted.value = true
     toast.success('Payroll batch generated successfully!')
+    pendingGeneratePayload.value = null
   } catch (e) {
     if (e.errors) formErrors.value = e.errors
     toast.error(e.message || 'Generation failed.')
@@ -324,5 +344,14 @@ const inputCls =
         </div>
       </div>
     </template>
+
+    <!-- Adjustment Preview Modal -->
+    <PayrollAdjustmentPreviewModal
+      ref="adjustmentModalRef"
+      v-model="adjustmentModalOpen"
+      :year="form.salary_month ? parseInt(form.salary_month.split('-')[0]) : new Date().getFullYear()"
+      :month="form.salary_month ? parseInt(form.salary_month.split('-')[1]) : new Date().getMonth() + 1"
+      @confirmed="handleConfirmAdjustments"
+    />
   </div>
 </template>

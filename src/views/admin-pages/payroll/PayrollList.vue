@@ -26,6 +26,7 @@ const filters = ref({
   salary_month: getCurrentMonth(),
   salary_type: '',
   payment_status: '',
+  default_payment_method: 'Cash',
   page: 1,
   per_page: 15,
 })
@@ -77,6 +78,7 @@ const resetFilters = () => {
     salary_month: getCurrentMonth(),
     salary_type: '',
     payment_status: '',
+    default_payment_method: 'Cash',
     page: 1,
     per_page: 15,
   }
@@ -90,6 +92,7 @@ const applyRouteQueryToFilters = () => {
     salary_month: String(q.salary_month || getCurrentMonth()),
     salary_type: String(q.salary_type || ''),
     payment_status: String(q.payment_status || ''),
+    default_payment_method: String(q.default_payment_method || 'Cash'),
     page: Number(q.page) > 0 ? Number(q.page) : 1,
     per_page: Number(q.per_page) > 0 ? Number(q.per_page) : 15,
   }

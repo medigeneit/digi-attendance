@@ -166,6 +166,8 @@ const payrollMenu = [
   { label: 'Bank Adviser List', routeName: 'PayrollBankAdviserList' },
   { label: 'Payroll Slip List', routeName: 'PayrollSlipList' },
   { label: 'Payrolls', routeName: 'PayrollList' },
+  { label: 'Payroll Adjustments', routeName: 'PayrollAdjustmentList' },
+
 ]
 const payrollRouteNames = payrollMenu.map((i) => i.routeName)
 const filteredPayrollMenu = computed(() =>

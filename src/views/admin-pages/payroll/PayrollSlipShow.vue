@@ -114,19 +114,20 @@ const joiningDate = computed(() => item.value?.joining_date || item.value?.user?
 const earningsRows = computed(() => {
   const raw = item.value?.earnings || {}
   return [
-    { key: 'basic', label: 'Basic', amount: toNum(raw.basic) },
-    { key: 'house_rent', label: 'House Rent Allowance', amount: toNum(raw.house_rent) },
+    { key: 'basic', label: 'Basic Salary', amount: toNum(raw.basic) },
+    { key: 'house_rent', label: 'House Rent', amount: toNum(raw.house_rent) },
     { key: 'medical', label: 'Medical', amount: toNum(raw.medical) },
     { key: 'conveyance', label: 'Conveyance', amount: toNum(raw.conveyance) },
-    { key: 'others', label: 'Others', amount: toNum(raw.others) },
+    { key: 'others', label: 'Other Allowance', amount: toNum(raw.others) },
   ]
 })
 
 const deductionRows = computed(() => {
   const raw = item.value?.deductions || {}
+  const pfAllowance = toNum(item.value?.deductions?.pf_allowance)
   return [
-    { key: 'pf', label: 'Provident Fund (PF)', amount: toNum(raw.provident_fund) },
-    { key: 'meal', label: 'Meal', amount: toNum(raw.meal) },
+    { key: 'pf', label: 'PF Both', amount: toNum(raw.provident_fund) + pfAllowance },
+    { key: 'meal', label: 'Meal Deduction', amount: toNum(raw.meal) },
     { key: 'tax', label: 'Tax', amount: toNum(raw.tds) },
     { key: 'loan', label: 'Loan', amount: toNum(raw.loan) },
     { key: 'other', label: 'Others', amount: toNum(raw.other) },
@@ -142,7 +143,144 @@ const paymentMethod = computed(() => item.value?.payment_method || item.value?.u
 const bankName = computed(() => item.value?.bank_name || item.value?.user?.bank_name || '-')
 const accountNumber = computed(() => item.value?.bank_account_no || item.value?.user?.bank_account_no || '-')
 const amountWords = computed(() => numberToWords(netPayment.value))
-const slipRowCount = computed(() => Math.max(earningsRows.value.length, deductionRows.value.length))
+const appliedAdjustments = computed(() => Array.isArray(item.value?.adjustments_applied) ? item.value.adjustments_applied : [])
+const contraEntries = computed(() => (Array.isArray(item.value?.contra_entries) ? item.value.contra_entries : []))
+
+const normalizeSettlementType = (value) => (value === 'manual_settled' ? 'manual_settled' : 'carry_forward')
+
+const refMonthShortLabel = (adj) => {
+  const year = Number(adj?.ref_year)
+  const month = Number(adj?.ref_month)
+
+  if (Number.isFinite(year) && Number.isFinite(month) && month >= 1 && month <= 12) {
+    return new Intl.DateTimeFormat('en-GB', { month: 'short' }).format(new Date(year, month - 1, 1))
+  }
+
+  const refLabel = String(adj?.ref_month_label || '').trim()
+  if (/^\d{4}-\d{2}$/.test(refLabel)) {
+    const [y, m] = refLabel.split('-').map(Number)
+    if (Number.isFinite(y) && Number.isFinite(m) && m >= 1 && m <= 12) {
+      return new Intl.DateTimeFormat('en-GB', { month: 'short' }).format(new Date(y, m - 1, 1))
+    }
+  }
+
+  return ''
+}
+
+const titleize = (value) =>
+  String(value || '')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+
+const labelWithMonth = (base, adj) => {
+  const month = refMonthShortLabel(adj) || adj?.ref_month_label
+  return month ? `${base} (${month})` : base
+}
+
+const earningContraRows = computed(() =>
+  contraEntries.value
+    .filter((row) => row?.side === 'earning')
+    .map((row) => ({ key: `contra_earning_${row.ref || row.label}`, label: row.label, amount: toNum(row.amount), is_delta: true })),
+)
+
+const deductionContraRows = computed(() =>
+  contraEntries.value
+    .filter((row) => row?.side === 'deduction')
+    .map((row) => ({ key: `contra_deduction_${row.ref || row.label}`, label: row.label, amount: toNum(row.amount), is_delta: true })),
+)
+
+const manualSettledFallback = computed(() =>
+  appliedAdjustments.value.filter(
+    (adj) => normalizeSettlementType(adj?.settlement_type) === 'manual_settled' && !adj?.contra_injected,
+  ),
+)
+
+const manualSettledFallbackEarningRows = computed(() =>
+  manualSettledFallback.value.map((adj) => ({
+    key: `manual_settled_earning_${adj.id}`,
+    label: labelWithMonth('Manual Adj', adj),
+    amount: Math.abs(toNum(adj.amount)),
+    is_delta: true,
+  })),
+)
+
+const manualSettledFallbackDeductionRows = computed(() =>
+  manualSettledFallback.value.map((adj) => ({
+    key: `manual_settled_deduction_${adj.id}`,
+    label: labelWithMonth('Adj Recovery', adj),
+    amount: Math.abs(toNum(adj.amount)),
+    is_delta: true,
+  })),
+)
+
+const carryForwardAdjustments = computed(() =>
+  appliedAdjustments.value.filter((adj) => normalizeSettlementType(adj?.settlement_type) === 'carry_forward'),
+)
+
+const carryForwardEarningRows = computed(() =>
+  carryForwardAdjustments.value
+    .filter((adj) => {
+      const type = String(adj?.adjustment_type || '')
+      const amount = toNum(adj?.amount)
+      if (type === 'deduction') return false
+      if (['overtime', 'paycut_reversal', 'bonus'].includes(type)) return true
+      if (type === 'other') return amount >= 0
+      return amount >= 0
+    })
+    .map((adj) => ({
+      key: `carry_forward_earning_${adj.id}`,
+      label: labelWithMonth(`${titleize(adj.adjustment_type)} Adj`, adj),
+      amount: toNum(adj.amount),
+      is_delta: true,
+    })),
+)
+
+const carryForwardDeductionRows = computed(() =>
+  carryForwardAdjustments.value
+    .filter((adj) => {
+      const type = String(adj?.adjustment_type || '')
+      const amount = toNum(adj?.amount)
+      if (type === 'deduction') return true
+      if (['overtime', 'paycut_reversal', 'bonus'].includes(type)) return false
+      if (type === 'other') return amount < 0
+      return amount < 0
+    })
+    .map((adj) => ({
+      key: `carry_forward_deduction_${adj.id}`,
+      label: labelWithMonth(`${titleize(adj.adjustment_type)} Adj`, adj),
+      amount: Math.abs(toNum(adj.amount)),
+      is_delta: true,
+    })),
+)
+
+const earningsRowsFinal = computed(() => [
+  ...earningsRows.value,
+  ...earningContraRows.value,
+  ...manualSettledFallbackEarningRows.value,
+  ...carryForwardEarningRows.value,
+])
+
+const deductionRowsFinal = computed(() => [
+  ...deductionRows.value,
+  ...deductionContraRows.value,
+  ...manualSettledFallbackDeductionRows.value,
+  ...carryForwardDeductionRows.value,
+])
+
+// CashSlipResource now returns totals already adjusted by adjustments_applied.
+const totalEarningsDisplay = computed(() => totalEarnings.value)
+const totalDeductionsDisplay = computed(() => totalDeductions.value)
+
+const slipRowCount = computed(() => Math.max(earningsRowsFinal.value.length, deductionRowsFinal.value.length))
+
+const formatRowAmount = (row) => {
+  if (!row) return ''
+  const amount = toNum(row.amount)
+  if (row.is_delta) {
+    return `${formatMoney(Math.abs(amount))}`
+  }
+  return formatMoney(amount)
+}
 
 const printPage = () => window.print()
 
@@ -171,9 +309,7 @@ onMounted(fetchSlip)
         <div class="p-8 print:p-0">
           <div class="paper mx-auto">
             <div class="text-center">
-              <div class="text-[22px] font-semibold tracking-wide text-slate-900">Payslip</div>
               <div class="mt-1 text-[15px] font-medium text-slate-700">{{ companyName }}</div>
-              <div class="mt-1 text-[13px] text-slate-600">Payroll Slip</div>
               <div class="mt-1 text-[13px] text-slate-600">System generated payslip</div>
             </div>
 
@@ -221,23 +357,23 @@ onMounted(fetchSlip)
                 </thead>
                 <tbody>
                   <tr v-for="index in slipRowCount" :key="index">
-                    <td class="border border-slate-700 px-3 py-2">{{ earningsRows[index - 1]?.label || '' }}</td>
-                    <td class="border border-slate-700 px-3 py-2 text-right font-mono font-semibold">
-                      {{ earningsRows[index - 1] ? formatMoney(earningsRows[index - 1].amount) : '' }}
-                    </td>
-                    <td class="border border-slate-700 px-3 py-2">{{ deductionRows[index - 1]?.label || '' }}</td>
-                    <td class="border border-slate-700 px-3 py-2 text-right font-mono font-semibold">
-                      {{ deductionRows[index - 1] ? formatMoney(deductionRows[index - 1].amount) : '' }}
-                    </td>
-                  </tr>
+	                    <td class="border border-slate-700 px-3 py-2">{{ earningsRowsFinal[index - 1]?.label || '' }}</td>
+	                    <td class="border border-slate-700 px-3 py-2 text-right font-mono font-semibold">
+	                      {{ formatRowAmount(earningsRowsFinal[index - 1]) }}
+	                    </td>
+	                    <td class="border border-slate-700 px-3 py-2">{{ deductionRowsFinal[index - 1]?.label || '' }}</td>
+	                    <td class="border border-slate-700 px-3 py-2 text-right font-mono font-semibold">
+	                      {{ formatRowAmount(deductionRowsFinal[index - 1]) }}
+	                    </td>
+	                  </tr>
                   <tr class="font-semibold">
                     <td class="border border-slate-700 px-3 py-2 text-right">Total Earnings</td>
                     <td class="border border-slate-700 px-3 py-2 text-right font-mono">
-                      {{ formatMoney(totalEarnings) }}
+                      {{ formatMoney(totalEarningsDisplay) }}
                     </td>
                     <td class="border border-slate-700 px-3 py-2 text-right">Total Deductions</td>
                     <td class="border border-slate-700 px-3 py-2 text-right font-mono">
-                      {{ formatMoney(totalDeductions) }}
+                      {{ formatMoney(totalDeductionsDisplay) }}
                     </td>
                   </tr>
                   <tr class="font-semibold">

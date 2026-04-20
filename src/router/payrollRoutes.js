@@ -1,4 +1,5 @@
 const PAYROLL_ROLES = ['admin', 'super_admin', 'developer']
+const PAYROLL_ADJUSTMENT_ROLES = ['hr', 'accounts', 'admin', 'super_admin', 'developer']
 
 export const payrollRoutes = [
   {
@@ -101,5 +102,30 @@ export const payrollRoutes = [
     component: () => import('@/views/admin-pages/payroll/PayrollShow.vue'),
     props: true,
     meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Payroll Details' },
+  },
+  {
+    path: '/payroll/adjustments',
+    name: 'PayrollAdjustmentList',
+    component: () => import('@/pages/payroll/adjustments/index.vue'),
+    meta: { requiresAuth: true, roles: PAYROLL_ADJUSTMENT_ROLES, title: 'Payroll Adjustments' },
+  },
+  {
+    path: '/payroll/adjustments/create',
+    name: 'PayrollAdjustmentCreate',
+    component: () => import('@/pages/payroll/adjustments/create.vue'),
+    meta: { requiresAuth: true, roles: PAYROLL_ADJUSTMENT_ROLES, title: 'Create Adjustment' },
+  },
+  {
+    path: '/payroll/adjustments/carry-forward/preview',
+    name: 'PayrollAdjustmentCarryPreview',
+    component: () => import('@/pages/payroll/adjustments/carry-forward/preview.vue'),
+    meta: { requiresAuth: true, roles: PAYROLL_ADJUSTMENT_ROLES, title: 'Carry Forward Preview' },
+  },
+  {
+    path: '/payroll/adjustments/:id',
+    name: 'PayrollAdjustmentShow',
+    component: () => import('@/pages/payroll/adjustments/[id].vue'),
+    props: true,
+    meta: { requiresAuth: true, roles: PAYROLL_ADJUSTMENT_ROLES, title: 'Adjustment Details' },
   },
 ]

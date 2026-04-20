@@ -298,6 +298,7 @@ onMounted(loadBankAdviserList)
               <th class="border border-slate-200 px-2 py-2 text-left">A/C Name</th>
               <th class="border border-slate-200 px-2 py-2 text-left">A/C Number</th>
               <th class="border border-slate-200 px-2 py-2 text-right">Payable Amount</th>
+              <th class="border border-slate-200 px-2 py-2 text-center">Slip</th>
             </tr>
           </thead>
           <tbody>
@@ -327,6 +328,16 @@ onMounted(loadBankAdviserList)
               </td>
               <td class="border border-slate-200 px-4 py-2 text-right font-mono font-semibold text-slate-800">
                 {{ formatCompactCurrency(p.payable_amount) }}
+              </td>
+              <td class="border border-slate-200 px-2 py-2 text-center whitespace-nowrap">
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1 rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-[11px] font-semibold text-indigo-700 hover:bg-indigo-100"
+                  @click="router.push({ name: 'PayrollSlipShow', params: { id: p.id } })"
+                >
+                  <i class="far fa-file-alt text-[10px]"></i>
+                  View Slip
+                </button>
               </td>
             </tr>
           </tbody>
