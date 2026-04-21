@@ -138,6 +138,7 @@ const settingsMenu = [
   { label: 'Designation List', routeName: 'DesignationList' },
   { label: 'Department List', routeName: 'DepartmentList' },
   { label: 'Company List', routeName: 'CompanyList' },
+  { label: 'Company Bank Accounts', routeName: 'CompanyBankAccountList' },
   { label: 'Device List', routeName: 'DeviceList' },
   { label: 'ZK User Management', routeName: 'ZKUsers' },
   { label: 'Permission List', routeName: 'PermissionList' },

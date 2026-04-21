@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useSalaryStructureStore } from '@/stores/salaryStructure'
 import { useUserStore } from '@/stores/user'
+import { useCompanyBankAccountStore } from '@/stores/companyBankAccount'
 import AllowanceTable from '@/components/payroll/AllowanceTable.vue'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
@@ -30,6 +31,7 @@ const router = useRouter()
 const toast = useToast()
 const structureStore = useSalaryStructureStore()
 const userStore = useUserStore()
+const companyBankAccountStore = useCompanyBankAccountStore()
 
 const isEdit = computed(() => !!props.id)
 const pageLoading = ref(false)
@@ -48,7 +50,7 @@ const showBankModal = ref(false)
 const bankSaving = ref(false)
 const bankFieldErrors = ref({})
 const bankUpdateDraft = ref({
-  bank_name: '',
+  bank_account_id: '',
   bank_account_no: '',
   account_holder_name: '',
   default_payment_method: 'Cash',
@@ -56,6 +58,7 @@ const bankUpdateDraft = ref({
 
 const form = ref({
   user_id: null,
+  bank_account_id: null,
   gross_salary: '',
   basic_salary: '',
   house_rent: '',
@@ -142,12 +145,17 @@ const selectedPaymentMethodLabel = computed(() => {
 })
 
 const isBankTransfer = computed(() => selectedPaymentMethod.value === 'Bank Transfer')
+const companyBankAccounts = computed(() => companyBankAccountStore.items || [])
 
 const bankPreviewRows = computed(() => {
   const user = selectedUserProfile.value || {}
+  const bankAccount = user.bank_account || user.bankAccount || {}
 
   return [
-    { label: 'Bank Name', value: user.bank_name || '-' },
+    {
+      label: 'Company Bank A/C',
+      value: [bankAccount.bank_name, bankAccount.account_number].filter(Boolean).join(' - ') || '-',
+    },
     { label: 'Account No.', value: user.bank_account_no || '-' },
     { label: 'Account Holder', value: user.account_holder_name || '-' },
     { label: 'Default Method', value: user.default_payment_method || 'Cash' },
@@ -227,6 +235,7 @@ const assignUserMeta = (user) => {
   }
   selectedEmploymentType.value = user?.employment_type || ''
   selectedPaymentMethod.value = normalizePaymentMethod(user?.default_payment_method || 'Cash')
+  form.value.bank_account_id = user?.bank_account_id || form.value.bank_account_id || null
 }
 
 const syncPolicyBreakdown = (grossValue) => {
@@ -306,6 +315,7 @@ const loadForEdit = async () => {
 
     form.value = {
       user_id: data.user_id,
+      bank_account_id: data.bank_account_id || data.user?.bank_account_id || null,
       gross_salary: data.gross_salary ?? calculateCoreGross(data) ?? '',
       basic_salary: data.basic_salary ?? '',
       house_rent: data.house_rent ?? '',
@@ -410,6 +420,14 @@ watch(
   },
 )
 
+watch(
+  selectedCompanyId,
+  async (companyId) => {
+    if (!companyId) return
+    await companyBankAccountStore.fetchCompanyBankAccounts({ company_id: companyId, status: 'Active' })
+  },
+)
+
 onMounted(() => {
   if (isEdit.value) {
     loadForEdit()
@@ -448,7 +466,7 @@ const openBankModal = () => {
   }
 
   bankUpdateDraft.value = {
-    bank_name: user.bank_name || '',
+    bank_account_id: user.bank_account_id || '',
     bank_account_no: user.bank_account_no || '',
     account_holder_name: user.account_holder_name || user.name || '',
     default_payment_method: normalizePaymentMethod(selectedPaymentMethod.value),
@@ -487,7 +505,7 @@ const buildUserUpdatePayload = (user, draft) => ({
   leave_approval_id: user.leave_approval_id ?? null,
   other_approval_id: user.other_approval_id ?? null,
   is_active: user.is_active,
-  bank_name: draft.bank_name || null,
+  bank_account_id: draft.bank_account_id || null,
   bank_account_no: draft.bank_account_no || null,
   account_holder_name: draft.account_holder_name || null,
   default_payment_method: draft.default_payment_method || 'Cash',
@@ -505,8 +523,8 @@ const saveBankInfo = async () => {
   const errors = {}
 
   if (defaultPaymentMethod === 'Bank Transfer') {
-    if (!bankUpdateDraft.value.bank_name?.trim()) {
-      errors.bank_name = 'Bank name is required for Bank Transfer.'
+    if (!bankUpdateDraft.value.bank_account_id) {
+      errors.bank_account_id = 'Company bank account is required for Bank Transfer.'
     }
     if (!bankUpdateDraft.value.bank_account_no?.trim()) {
       errors.bank_account_no = 'Bank account number is required for Bank Transfer.'
@@ -529,6 +547,7 @@ const saveBankInfo = async () => {
 
     const updatedUser = await userStore.updateUser(user.id, payload)
     selectedUserProfile.value = { ...user, ...(updatedUser || {}), ...payload }
+    form.value.bank_account_id = updatedUser?.bank_account_id || payload.bank_account_id || null
     selectedPaymentMethod.value = normalizePaymentMethod(
       updatedUser?.default_payment_method || defaultPaymentMethod,
     )
@@ -556,7 +575,11 @@ const handleSubmit = async () => {
 
   if (isBankTransfer.value) {
     const user = selectedUserProfile.value || {}
-    if (!user.bank_name || !user.bank_account_no) {
+    if (!form.value.bank_account_id && !user.bank_account_id) {
+      toast.error('Company bank account is required for Bank Transfer. Please update user bank data first.')
+      return
+    }
+    if (!user.bank_account_no) {
       toast.error('Bank information is required for Bank Transfer. Please update user bank data first.')
       return
     }
@@ -568,6 +591,7 @@ const handleSubmit = async () => {
   try {
     const payload = {
       ...form.value,
+      bank_account_id: form.value.bank_account_id || selectedUserProfile.value?.bank_account_id || null,
       gross_salary: toNum(form.value.gross_salary),
       basic_salary: toNum(form.value.basic_salary),
       house_rent: toNum(form.value.house_rent),
@@ -697,7 +721,7 @@ const inputClass =
                     <div>
                       <p class="text-xs font-semibold text-sky-800">Bank data from users table</p>
                       <p class="text-[11px] text-slate-500">
-                        {{ selectedUserProfile?.bank_name ? 'Loaded from user profile.' : 'No bank info saved yet.' }}
+                        {{ selectedUserProfile?.bank_account_id ? 'Loaded from user profile.' : 'No bank info saved yet.' }}
                       </p>
                     </div>
                     <button type="button" class="btn-3 text-xs" @click="openBankModal">
@@ -960,11 +984,16 @@ const inputClass =
             v-if="normalizePaymentMethod(bankUpdateDraft.default_payment_method) === 'Bank Transfer'"
             class="grid gap-4 sm:grid-cols-2"
           >
-            <div>
-              <label class="mb-1 block text-sm font-medium text-slate-700">Bank Name</label>
-              <input v-model.trim="bankUpdateDraft.bank_name" type="text" :class="inputClass" />
-              <p v-if="bankFieldErrors.bank_name" class="mt-1 text-xs text-red-500">
-                {{ bankFieldErrors.bank_name }}
+            <div class="sm:col-span-2">
+              <label class="mb-1 block text-sm font-medium text-slate-700">Company Bank Account</label>
+              <select v-model="bankUpdateDraft.bank_account_id" :class="inputClass">
+                <option value="">Select bank account</option>
+                <option v-for="account in companyBankAccounts" :key="account.id" :value="account.id">
+                  {{ account.bank_name }} - {{ account.account_number }}
+                </option>
+              </select>
+              <p v-if="bankFieldErrors.bank_account_id" class="mt-1 text-xs text-red-500">
+                {{ bankFieldErrors.bank_account_id }}
               </p>
             </div>
 

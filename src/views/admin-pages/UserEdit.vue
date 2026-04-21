@@ -3,6 +3,7 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import ShiftWeekendModal from '@/components/common/WeekendAssignModal.vue'
 
 import { useCompanyStore } from '@/stores/company'
+import { useCompanyBankAccountStore } from '@/stores/companyBankAccount'
 import { useDepartmentStore } from '@/stores/department'
 import { useDesignationStore } from '@/stores/designation'
 import { useLeaveApprovalStore } from '@/stores/leave-approval'
@@ -17,6 +18,7 @@ import { useToast } from 'vue-toastification'
 
 /* ----------------------------- STORES & SETUP ----------------------------- */
 const companyStore = useCompanyStore()
+const companyBankAccountStore = useCompanyBankAccountStore()
 const departmentStore = useDepartmentStore()
 const designationStore = useDesignationStore()
 const leaveApprovalStore = useLeaveApprovalStore()
@@ -73,7 +75,7 @@ const form = reactive({
   leave_approval_id: '',
   other_approval_id: '',
   blood: '',
-  bank_name: '',
+  bank_account_id: '',
   bank_account_no: '',
   account_holder_name: '',
   default_payment_method: '',
@@ -85,6 +87,7 @@ const handleShiftUpdate = (data) => { selectedWeekend.value = data }
 
 /* ------------------------------ COMPUTEDS -------------------------------- */
 const currentCompany = computed(() => companyStore.companies.find(c => c.id === form.company_id))
+const companyBankAccounts = computed(() => companyBankAccountStore.items || [])
 
 // Support both id-keyed and name-keyed maps (defensive until store normalized)
 const computedDesignations = computed(() => {
@@ -177,7 +180,7 @@ async function loadUser() {
   form.device_user_id = user.device_user_id ?? ''
   form.leave_approval_id = user.leave_approval_id || ''
   form.other_approval_id = user.other_approval_id || ''
-  form.bank_name = user.bank_name || ''
+  form.bank_account_id = user.bank_account_id || ''
   form.bank_account_no = user.bank_account_no || ''
   form.account_holder_name = user.account_holder_name || ''
   form.default_payment_method = user.default_payment_method || ''
@@ -213,6 +216,7 @@ watch(
         departmentStore.fetchDepartments(newId),
         designationStore.fetchDesignations(newId),
         shiftStore.fetchShifts(newId),
+        companyBankAccountStore.fetchCompanyBankAccounts({ company_id: null, status: 'Active' }),
       ])
     } finally {
       isDepsLoading.value = false
@@ -559,14 +563,13 @@ function clearWeekend() {
           <legend class="title-md px-2">Bank &amp; Payment Info</legend>
           <div class="grid md:grid-cols-2 gap-4">
             <div>
-              <label for="bankName">Bank Name</label>
-              <input
-                id="bankName"
-                v-model.trim="form.bank_name"
-                type="text"
-                class="input-light"
-                placeholder="e.g. Dutch Bangla Bank"
-              />
+              <label for="bankAccountId">Company Bank Account</label>
+              <select id="bankAccountId" v-model="form.bank_account_id" class="input-light">
+                <option value="">— Select —</option>
+                <option v-for="account in companyBankAccounts" :key="account.id" :value="account.id">
+                  {{ account.bank_name }} - {{ account.account_number }}
+                </option>
+              </select>
             </div>
 
             <div>

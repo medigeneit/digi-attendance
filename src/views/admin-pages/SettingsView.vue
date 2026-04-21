@@ -37,6 +37,10 @@
       <i class="fas fa-building text-3xl"></i>
       Company List
     </RouterLink>
+    <RouterLink :to="{ name: 'CompanyBankAccountList' }" class="main-button">
+      <i class="fas fa-university text-3xl"></i>
+      Company Bank Accounts
+    </RouterLink>
     <RouterLink :to="{ name: 'DeviceList' }" class="main-button">
       <i class="fas fa-cash-register text-3xl"></i>
       Device List

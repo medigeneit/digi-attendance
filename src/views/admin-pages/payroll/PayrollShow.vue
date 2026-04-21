@@ -270,6 +270,12 @@ const bankNameDisplay = computed(() => {
   return item.value?.bank_name || item.value?.user?.bank_name || null
 })
 
+const companyBankAccountDisplay = computed(() => {
+  const account = item.value?.bank_account || item.value?.user?.bank_account
+  if (!account) return null
+  return [account.bank_name, account.account_number].filter(Boolean).join(' - ')
+})
+
 const accountNumberDisplay = computed(() => {
   return (
     item.value?.account_number ||
@@ -497,6 +503,10 @@ const formatRowAmount = (row) => {
           <div class="rounded-lg bg-slate-50 border border-slate-200 p-2">
             <span class="text-gray-500 block mb-0.5">Bank Name</span>
             <span class="font-medium">{{ bankNameDisplay || '-' }}</span>
+          </div>
+          <div class="rounded-lg bg-slate-50 border border-slate-200 p-2">
+            <span class="text-gray-500 block mb-0.5">Company Bank A/C</span>
+            <span class="font-medium">{{ companyBankAccountDisplay || '-' }}</span>
           </div>
           <div class="rounded-lg bg-slate-50 border border-slate-200 p-2">
             <span class="text-gray-500 block mb-0.5">Account No.</span>
