@@ -27,8 +27,7 @@ const employeeDisplay = ref({ name: null, dept: null })
 
 const canCreate = computed(() => ['hr', 'super_admin', 'developer'].includes(String(authStore.user?.role || '').toLowerCase()))
 const canVerify = computed(() => ['accounts', 'super_admin', 'developer'].includes(String(authStore.user?.role || '').toLowerCase()))
-const canApprove = computed(() => ['admin', 'super_admin', 'developer'].includes(String(authStore.user?.role || '').toLowerCase()))
-const canReject = canApprove
+const canReject = computed(() => ['admin', 'super_admin', 'developer'].includes(String(authStore.user?.role || '').toLowerCase()))
 
 const employeeFilter = async ({ q, limit }) => {
   const res = await apiClient.get('/employees', {
@@ -103,16 +102,16 @@ const setEmployee = (id, display) => {
   employeeDisplay.value = display || { name: null, dept: null }
 }
 
-const verifyRow = async (row) => {
-  const note = window.prompt('Verification note (optional):', '')
+const approveRow = async (row) => {
+  const note = window.prompt('Approval note (optional):', '')
   if (note === null) return
 
   try {
     await adjustmentStore.verify(row.id, note)
-    toast.success('Adjustment verified.')
+    toast.success('Adjustment approved.')
     await load()
   } catch (e) {
-    toast.error(e.message || 'Verify failed.')
+    toast.error(e.message || 'Approval failed.')
   }
 }
 
@@ -137,7 +136,7 @@ onMounted(load)
         <div>
           <h1 class="text-2xl font-bold text-slate-900">Post-Payroll Adjustments</h1>
           <p class="mt-1 text-sm text-slate-500">
-            Manage verified carry-forward adjustments for {{ activeMonthLabel }}.
+            Manage approved carry-forward adjustments for {{ activeMonthLabel }}.
           </p>
         </div>
         <div class="flex flex-wrap gap-2">
@@ -256,18 +255,11 @@ onMounted(load)
                     <i class="far fa-eye"></i> View
                   </button>
                   <button
-                    v-if="canVerify && row.status === 'pending'"
+                    v-if="canVerify && ['pending', 'verified'].includes(row.status)"
                     class="btn-3 h-8 text-xs"
-                    @click="verifyRow(row)"
+                    @click="approveRow(row)"
                   >
-                    <i class="far fa-check-circle"></i> Verify
-                  </button>
-                  <button
-                    v-else-if="canApprove && row.status === 'verified'"
-                    class="btn-3 h-8 text-xs"
-                    @click="openDetail(row)"
-                  >
-                    <i class="far fa-clipboard"></i> Review
+                    <i class="far fa-check-circle"></i> Approve
                   </button>
                   <button
                     v-else-if="canReject && ['pending', 'verified'].includes(row.status)"

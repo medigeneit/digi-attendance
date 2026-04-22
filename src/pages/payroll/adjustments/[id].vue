@@ -22,13 +22,20 @@ const { item, loading, error } = storeToRefs(store)
 
 const approveNote = ref('')
 const rejectReason = ref('')
-const approveBusy = ref(false)
 const rejectBusy = ref(false)
 const showRejectModal = ref(false)
 
-const canVerify = computed(() => ['accounts', 'super_admin', 'developer'].includes(String(authStore.user?.role || '').toLowerCase()))
-const canApprove = computed(() => ['admin', 'super_admin', 'developer'].includes(String(authStore.user?.role || '').toLowerCase()))
-const canReject = canApprove
+const canVerify = computed(() => Boolean(item.value?.can_verify))
+const canReject = computed(() => ['admin', 'super_admin', 'developer'].includes(String(authStore.user?.role || '').toLowerCase()))
+
+const userName = (user) => {
+  if (!user) return ''
+  if (typeof user === 'string') return user
+  return user.name || user.full_name || user.employee?.name || ''
+}
+
+const preparedByName = computed(() => userName(item.value?.raised_by) || item.value?.raised_by_name || '-')
+const authorizedByName = computed(() => userName(item.value?.approved_by) || item.value?.approved_by_name || '-')
 
 const formatDate = (value) => {
   if (!value) return '-'
@@ -56,25 +63,12 @@ const load = async () => {
 
 const verify = async () => {
   try {
-    await store.verify(props.id, '')
-    toast.success('Adjustment verified.')
-    await load()
-  } catch (e) {
-    toast.error(e.message || 'Verify failed.')
-  }
-}
-
-const approve = async () => {
-  approveBusy.value = true
-  try {
-    await store.approve(props.id, approveNote.value)
+    await store.verify(props.id, approveNote.value)
     toast.success('Adjustment approved.')
     approveNote.value = ''
     await load()
   } catch (e) {
-    toast.error(e.message || 'Approve failed.')
-  } finally {
-    approveBusy.value = false
+    toast.error(e.message || 'Approval failed.')
   }
 }
 
@@ -153,7 +147,7 @@ onMounted(load)
               </tr>
               <tr>
                 <th>Department</th>
-                <td> {{ item.employee?.department?.name || item.department?.name || '-' }}</td>
+                <td> {{ item.department_name || '-' }}</td>
                 <th>Date</th>
                 <td>{{ formatDate(item.created_at) }}</td>
               </tr>
@@ -194,15 +188,15 @@ onMounted(load)
         </div>
 
         <div class="no-print mt-4 flex flex-wrap gap-2">
-          <button v-if="canVerify && item.status === 'pending'" class="btn-2" @click="verify">
-            <i class="far fa-check-circle"></i> Verify
+          <button v-if="canVerify && ['pending', 'verified'].includes(item.status)" class="btn-2" @click="verify">
+            <i class="far fa-check-circle"></i> Approve
           </button>
           <button v-if="canReject && ['pending', 'verified'].includes(item.status)" class="btn-3" @click="showRejectModal = true">
             <i class="far fa-times-circle"></i> Reject
           </button>
         </div>
 
-        <div v-if="canApprove && item.status === 'verified'" class="no-print mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <div v-if="canVerify && ['pending', 'verified'].includes(item.status)" class="no-print mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
           <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Approval Note</label>
           <textarea
             v-model="approveNote"
@@ -211,19 +205,21 @@ onMounted(load)
             placeholder="Optional note for approval"
           />
           <div class="mt-3 flex justify-end">
-            <button class="btn-2" :disabled="approveBusy" @click="approve">
-              <i class="far" :class="approveBusy ? 'fa-spinner fa-spin' : 'fa-check'"></i>
-              {{ approveBusy ? 'Approving...' : 'Approve with Note' }}
+            <button class="btn-2" @click="verify">
+              <i class="far fa-check"></i>
+              Approve with Note
             </button>
           </div>
         </div>
 
         <div class="mt-10 grid grid-cols-2 gap-8">
           <div class="text-center">
+            <div class="mt-2 text-sm font-semibold text-slate-900">{{ preparedByName }}</div>
             <div class="signature-line mx-auto"></div>
             <div class="mt-2 text-sm font-semibold text-slate-700">Prepared By</div>
           </div>
           <div class="text-center">
+            <div class="mt-2 text-sm font-semibold text-slate-900">{{ authorizedByName }}</div>
             <div class="signature-line mx-auto"></div>
             <div class="mt-2 text-sm font-semibold text-slate-700">Authorized By</div>
           </div>

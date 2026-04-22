@@ -66,7 +66,14 @@ export const useAdjustmentStore = defineStore('adjustment', () => {
     error.value = null
     try {
       const res = await apiClient.get(`/payroll-adjustments/${id}`)
-      item.value = res.data?.data || res.data || null
+      const data = res.data?.data || res.data || null
+      item.value = data
+        ? {
+            ...data,
+            approval_access: res.data?.approval_access || data.approval_access || [],
+            can_verify: Boolean(res.data?.can_verify ?? data.can_verify),
+          }
+        : null
       return item.value
     } catch (err) {
       setError(err, 'Failed to fetch payroll adjustment')
@@ -103,21 +110,6 @@ export const useAdjustmentStore = defineStore('adjustment', () => {
       return updated
     } catch (err) {
       setError(err, 'Failed to verify payroll adjustment')
-    } finally {
-      loading.value = false
-    }
-  }
-
-  const approve = async (id, note = '') => {
-    loading.value = true
-    error.value = null
-    try {
-      const res = await apiClient.patch(`/payroll-adjustments/${id}/approve`, { note })
-      const updated = res.data?.data || res.data || null
-      syncItem(updated)
-      return updated
-    } catch (err) {
-      setError(err, 'Failed to approve payroll adjustment')
     } finally {
       loading.value = false
     }
@@ -183,7 +175,6 @@ export const useAdjustmentStore = defineStore('adjustment', () => {
     fetchOne,
     create,
     verify,
-    approve,
     reject,
     loadCarryPreview,
     applyCarryForward,
