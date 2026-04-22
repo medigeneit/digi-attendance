@@ -5,9 +5,15 @@ import { useRoute, useRouter } from 'vue-router'
 
 const props = defineProps({
   user: Object,
+  visible: {
+    type: Boolean,
+    default: true,
+  },
 })
 
-const open = ref(true)
+const emit = defineEmits(['update:visible'])
+
+const open = ref(props.visible)
 const expandedMenuKey = ref(null)
 
 const route = useRoute()
@@ -24,6 +30,11 @@ const isSuperAdminOrDev = computed(() => ['super_admin', 'developer'].includes(p
 const logout = () => {
   authStore.logout()
   router.push('/login')
+}
+
+const toggleOpen = () => {
+  open.value = !open.value
+  emit('update:visible', open.value)
 }
 
 const toggleSubmenu = (key) => {
@@ -240,6 +251,13 @@ watch(open, (val) => {
 })
 
 watch(
+  () => props.visible,
+  (visible) => {
+    open.value = visible
+  },
+)
+
+watch(
   () => route.fullPath,
   () => {
     searchQuery.value = ''
@@ -282,7 +300,7 @@ watch(
 
         <!-- Menu Toggle Button -->
         <button
-          @click="open = !open"
+          @click="toggleOpen"
           class="text-gray-500 hover:text-blue-600 transition justify-center items-center rounded-full"
           :title="open ? 'Minimize Menu' : 'Expand Menu'"
           :class="[open ? 'flex' : ' md:flex']"

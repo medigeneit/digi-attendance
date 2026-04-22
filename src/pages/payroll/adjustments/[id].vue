@@ -214,14 +214,14 @@ onMounted(load)
 
         <div class="mt-10 grid grid-cols-2 gap-8">
           <div class="text-center">
-            <div class="mt-2 text-sm font-semibold text-slate-900">{{ preparedByName }}</div>
+            <div class="mt-1 text-sm font-semibold text-slate-900">{{ preparedByName }}</div>
             <div class="signature-line mx-auto"></div>
-            <div class="mt-2 text-sm font-semibold text-slate-700">Prepared By</div>
+            <div class="mt-1 text-sm font-semibold text-slate-700">Prepared By</div>
           </div>
           <div class="text-center">
-            <div class="mt-2 text-sm font-semibold text-slate-900">{{ authorizedByName }}</div>
+            <div class="mt-1 text-sm font-semibold text-slate-900">{{ authorizedByName }}</div>
             <div class="signature-line mx-auto"></div>
-            <div class="mt-2 text-sm font-semibold text-slate-700">Authorized By</div>
+            <div class="mt-1 text-sm font-semibold text-slate-700">Authorized By</div>
           </div>
         </div>
       </div>

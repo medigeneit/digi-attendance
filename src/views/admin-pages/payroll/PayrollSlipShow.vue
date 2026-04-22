@@ -391,7 +391,7 @@ onMounted(fetchSlip)
                 <div class="text-[15px] font-semibold text-slate-800">
                   {{ amountWords }}
                 </div>
-                <div class="mt-1 text-[13px] text-slate-600">
+                <div class="mt-1 text-[16px] font-bold text-slate-600">
                   {{ formatMoney(netPayment) }}
                 </div>
               </div>
