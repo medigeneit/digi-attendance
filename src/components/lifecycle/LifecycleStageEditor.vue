@@ -393,7 +393,12 @@ function normalizeReviewerMatrixItem(item = {}, defaults = {}) {
     ...item,
     role: String(item?.role ?? defaults.role ?? '').trim().toLowerCase(),
     label: fallbackText(item?.label, defaults.label, defaults.role),
-    assigned: item?.assigned === true || String(item?.assigned || '').toLowerCase() === 'true',
+    assigned:
+      item?.assigned === true ||
+      String(item?.assigned || '').toLowerCase() === 'true' ||
+      defaults.assigned === true,
+    user_id: item?.user_id ?? defaults.user_id ?? null,
+    user_name: fallbackText(item?.user_name, defaults.user_name),
     status: String(item?.status ?? defaults.status ?? 'pending').toLowerCase(),
     note: String(item?.note ?? defaults.note ?? ''),
     special_note: String(item?.special_note ?? defaults.special_note ?? ''),
@@ -425,6 +430,9 @@ function reviewerMatrixFieldValue(field) {
       return normalizeReviewerMatrixItem(existing || {}, {
         role: row.role,
         label: row.label,
+        assigned: row.assigned,
+        user_id: row.user_id,
+        user_name: row.user_name,
       })
     })
   }
@@ -623,6 +631,21 @@ function updateReviewerAssignment(field, role, key, value) {
   setReviewerAssignmentFieldValue(field, next)
 }
 
+function updateReviewerAssignmentUser(field, role, userId) {
+  const selected = usersStore.items.find((item) => Number(item.id) === Number(userId))
+  const current = reviewerAssignmentFieldValue(field)
+  const next = current.map((item) =>
+    String(item.role || '').toLowerCase() === String(role || '').toLowerCase()
+      ? {
+          ...item,
+          user_id: userId ? Number(userId) : null,
+          user_name: selected?.name || '',
+        }
+      : item,
+  )
+  setReviewerAssignmentFieldValue(field, next)
+}
+
 
 function normalizeReviewItem(item = {}, defaults = {}) {
   return {
@@ -760,6 +783,14 @@ function stageSalaryPlan(field) {
   return mergeStageSalaryPlan(getFieldValue(field, {}))
 }
 
+function stageSalaryTypes(field) {
+  if (!field?.singleOnly) return STAGE_SALARY_TYPES
+
+  const selectedType = normalizeEmploymentType(getNestedValue(form.payload, 'recommendation.employment_type', ''))
+  const match = STAGE_SALARY_TYPES.find((item) => item.key === selectedType)
+  return match ? [match] : STAGE_SALARY_TYPES
+}
+
 function salaryStepTimeline(field) {
   let currentMonth = 0
 
@@ -789,7 +820,7 @@ function salaryStepTimeline(field) {
 function stageSalaryPreview(field) {
   const plan = stageSalaryPlan(field)
 
-  return STAGE_SALARY_TYPES.map((item) => ({
+  return stageSalaryTypes(field).map((item) => ({
     key: item.key,
     label: item.label,
     amount: formatAmount(plan[item.key]?.amount),
@@ -860,6 +891,36 @@ function removeSalaryStep(field, index) {
   )
 }
 
+function validateBeforeSave() {
+  for (const field of props.definition?.fields || []) {
+    if (!isFieldVisible(field)) continue
+
+    if (field.type === 'salary_steps') {
+      for (const [index, item] of salarySteps(field).entries()) {
+        const hasAny = ['label', 'duration_months', 'amount', 'notes'].some((key) =>
+          String(item?.[key] ?? '').trim() !== '',
+        )
+        if (!hasAny) continue
+        if (!(Number(item.duration_months) > 0)) {
+          return `Condition ${index + 1}: duration must be greater than 0 months.`
+        }
+        if (!(Number(item.amount) >= 0)) {
+          return `Condition ${index + 1}: amount must be 0 or greater.`
+        }
+      }
+    }
+
+    if (field.type === 'reviewer_assignment') {
+      const missing = reviewerAssignmentFieldValue(field).find((item) => !item.user_id)
+      if (missing) {
+        return `Select a user for ${missing.role_label || missing.role}.`
+      }
+    }
+  }
+
+  return ''
+}
+
 function updateStageSalary(field, stageKey, key, value) {
   const next = stageSalaryPlan(field)
   next[stageKey] = { ...next[stageKey], [key]: value }
@@ -907,6 +968,13 @@ function searchLifecycleUsers(options, term) {
 
 async function save() {
   if (!hasUnsavedChanges.value) return
+
+  const validationError = validateBeforeSave()
+  if (validationError) {
+    saveState.value = 'error'
+    window?.notify?.error && window.notify.error(validationError)
+    return
+  }
 
   saving.value = true
   saveState.value = 'saving'
@@ -1198,7 +1266,7 @@ async function save() {
                     <select
                       :value="assignment.user_id || ''"
                       class="w-full rounded-lg border px-2.5 py-1.5 text-sm"
-                      @change="updateReviewerAssignment(field, assignment.role, 'user_id', $event.target.value ? Number($event.target.value) : null)"
+                      @change="updateReviewerAssignmentUser(field, assignment.role, $event.target.value)"
                     >
                       <option value="">Select User</option>
                       <option
@@ -1556,7 +1624,7 @@ async function save() {
 
             <div class="mt-2.5 grid gap-2 xl:grid-cols-3">
               <div
-                v-for="item in STAGE_SALARY_TYPES"
+                v-for="item in stageSalaryTypes(field)"
                 :key="`${field.key}-${item.key}`"
                 class="rounded-xl border bg-white p-2.5 shadow-sm"
               >

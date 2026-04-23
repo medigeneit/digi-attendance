@@ -125,6 +125,15 @@ export const useLifecycleStore = defineStore('lifecycle', () => {
     }
   }
 
+  async function remindProbationReview(lifecycleId, payload = {}) {
+    const { data } = await apiClient.post(
+      `/lifecycles/${Number(lifecycleId)}/stages/probation/remind`,
+      payload,
+    )
+
+    return data
+  }
+
   async function uploadDocument(file) {
     const form = new FormData()
     form.append('file', file)
@@ -163,6 +172,7 @@ export const useLifecycleStore = defineStore('lifecycle', () => {
     fetchBoard,
     fetchDetail,
     saveStageRecord,
+    remindProbationReview,
     uploadDocument,
     resetDetail,
   }

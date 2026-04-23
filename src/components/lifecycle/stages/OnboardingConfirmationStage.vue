@@ -24,6 +24,15 @@ const definition = {
     },
     { key: 'effective_date', label: 'Effective Date', type: 'date' },
     {
+      key: 'extended_months',
+      label: 'Extension Months',
+      type: 'number',
+      visibleWhen: {
+        path: 'decision',
+        equals: 'extend_probation',
+      },
+    },
+    {
       key: 'decision_attachment',
       label: 'Confirmation / Regularization Form',
       type: 'file',
@@ -33,6 +42,12 @@ const definition = {
       label: 'Decision Notes',
       type: 'textarea',
       placeholder: 'Approval or decision summary',
+    },
+    {
+      key: 'remarks',
+      label: 'Remarks',
+      type: 'textarea',
+      placeholder: 'Optional confirmation or regularization remarks',
     },
   ],
 }

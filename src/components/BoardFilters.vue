@@ -86,10 +86,28 @@ function buildNextQuery(partial = {}) {
 }
 
 let qTimer = null
+function sameQuery(a = {}, b = {}) {
+  const clean = (source) => {
+    const next = {}
+    for (const [key, value] of Object.entries(source || {})) {
+      if (value === '' || value === null || value === undefined) continue
+      next[key] = String(Array.isArray(value) ? value.join(',') : value)
+    }
+    return next
+  }
+
+  const left = clean(a)
+  const right = clean(b)
+  const keys = Array.from(new Set([...Object.keys(left), ...Object.keys(right)])).sort()
+
+  return keys.every((key) => left[key] === right[key])
+}
+
 function syncRouteQuery({ replace = true, partial = {}, debounce = 150 } = {}) {
   if (qTimer) clearTimeout(qTimer)
   qTimer = setTimeout(() => {
     const next = buildNextQuery(partial)
+    if (sameQuery(route.query, next)) return
     const nav = () => (replace ? router.replace({ query: next }) : router.push({ query: next }))
     nav().catch(() => {})
   }, debounce)

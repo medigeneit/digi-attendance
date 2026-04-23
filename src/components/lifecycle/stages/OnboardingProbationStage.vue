@@ -207,6 +207,11 @@ function normalizeProbationPayload(payload = {}, employee = {}) {
     extended_months: extendedMonths,
     reviews: normalizedReviews,
     reviewer_matrix: normalizeReviewerMatrix(payload.reviewer_matrix ?? reviewerAssignments ?? []),
+    role_notes: {
+      reviewer_note: payload?.role_notes?.reviewer_note ?? payload?.supervisor_remarks ?? '',
+      hr_internal_note: payload?.role_notes?.hr_internal_note ?? payload?.hr_remarks ?? '',
+      final_summary: payload?.role_notes?.final_summary ?? payload?.final_summary ?? '',
+    },
   }
 
   normalizedReviews.forEach((item) => {
@@ -327,16 +332,25 @@ const definition = {
       ],
     },
     {
-      key: 'supervisor_remarks',
-      label: 'Supervisor Remarks',
+      key: 'role_notes.reviewer_note',
+      path: 'role_notes.reviewer_note',
+      label: 'Reviewer Note',
       type: 'textarea',
-      placeholder: 'Supervisor observation',
+      placeholder: 'Reviewer observation or consolidated reviewer note',
     },
     {
-      key: 'hr_remarks',
-      label: 'HR Remarks',
+      key: 'role_notes.hr_internal_note',
+      path: 'role_notes.hr_internal_note',
+      label: 'HR Internal Note',
       type: 'textarea',
-      placeholder: 'HR observation',
+      placeholder: 'Internal HR observation or follow-up note',
+    },
+    {
+      key: 'role_notes.final_summary',
+      path: 'role_notes.final_summary',
+      label: 'Final Summary / Decision Note',
+      type: 'textarea',
+      placeholder: 'Final decision summary, handoff note, or confirmation context',
     },
   ],
 }
@@ -356,6 +370,11 @@ const defaultPayload = computed(() => {
     extended_months: extendedMonths || 0,
     reviews: buildDefaultReviews(startDate, totalMonths),
     reviewer_matrix: normalizeReviewerMatrix([]),
+    role_notes: {
+      reviewer_note: '',
+      hr_internal_note: '',
+      final_summary: '',
+    },
   }
 })
 

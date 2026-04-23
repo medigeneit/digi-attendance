@@ -1,13 +1,12 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import BoardFilters from '@/components/BoardFilters.vue'
 import LifecycleBoardTable from '@/components/LifecycleBoardTable.vue'
 import { useLifecycleStore } from '@/stores/lifecycle'
 
 const store = useLifecycleStore()
 const route = useRoute()
-const router = useRouter()
 
 const companies = ref([])
 const departments = ref([])
@@ -24,24 +23,6 @@ const fromQuery = (query = {}) => ({
   lifecycleStatus: query.lifecycle_status ?? null,
 })
 
-const toQuery = (model = {}) => {
-  const query = {
-    company_id: model.companyId || undefined,
-    department_id: model.departmentId || undefined,
-    employee_id: model.employeeId || undefined,
-    line_type: model.lineType || undefined,
-    user_type: model.user_type || undefined,
-    search: model.search || undefined,
-    lifecycle_status: model.lifecycleStatus || undefined,
-  }
-
-  Object.keys(query).forEach((key) => {
-    if (query[key] == null || query[key] === '') delete query[key]
-  })
-
-  return query
-}
-
 const filterModel = ref({
   companyId: null,
   departmentId: null,
@@ -51,6 +32,16 @@ const filterModel = ref({
   search: '',
   lifecycleStatus: null,
 })
+
+function syncStoreFromModel(value = filterModel.value) {
+  store.companyId = value.companyId ?? null
+  store.departmentId = value.departmentId ?? null
+  store.employeeId = value.employeeId ?? null
+  store.lineType = value.lineType ?? null
+  store.userType = value.user_type ?? 'Probationary'
+  store.search = value.search ?? ''
+  store.lifecycleStatus = value.lifecycleStatus ?? null
+}
 
 watch(
   flowType,
@@ -63,15 +54,7 @@ watch(
 watch(
   filterModel,
   (value) => {
-    store.companyId = value.companyId ?? null
-    store.departmentId = value.departmentId ?? null
-    store.employeeId = value.employeeId ?? null
-    store.lineType = value.lineType ?? null
-    store.userType = value.user_type ?? 'Probationary'
-    store.search = value.search ?? ''
-    store.lifecycleStatus = value.lifecycleStatus ?? null
-
-    router.replace({ query: toQuery(value) })
+    syncStoreFromModel(value)
   },
   { deep: true, immediate: true },
 )
@@ -81,7 +64,9 @@ async function applyFilters() {
 }
 
 async function load() {
-  Object.assign(filterModel.value, fromQuery(route.query))
+  const nextModel = fromQuery(route.query)
+  Object.assign(filterModel.value, nextModel)
+  syncStoreFromModel(nextModel)
   await store.fetchBoard()
 }
 
@@ -97,8 +82,8 @@ const title = computed(() => `${store.flowLabel} Lifecycle Board`)
 </script>
 
 <template>
-  <div class="space-y-6 p-6">
-    <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+  <div class="min-h-screen bg-slate-50/70 px-4 py-5 md:px-6">
+    <div class="mb-5 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
       <div>
         <h1 class="text-2xl font-semibold text-slate-900">{{ title }}</h1>
         <p class="mt-1 text-sm text-slate-500">
@@ -108,7 +93,7 @@ const title = computed(() => `${store.flowLabel} Lifecycle Board`)
       <div class="text-sm text-slate-500">Existing checklist flow remains available.</div>
     </div>
 
-    <div class="rounded-[28px] border border-slate-200 bg-white/95 p-4 shadow-sm">
+    <div class="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <BoardFilters
         v-model="filterModel"
         :companies="companies"
@@ -119,8 +104,9 @@ const title = computed(() => `${store.flowLabel} Lifecycle Board`)
       />
     </div>
 
-    <div v-if="store.loading" class="text-gray-600">Loading...</div>
-    <div v-else-if="store.error" class="text-red-600">Failed to load lifecycle board.</div>
+    <div v-if="store.error" class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+      Failed to load lifecycle board.
+    </div>
     <LifecycleBoardTable v-else />
   </div>
 </template>

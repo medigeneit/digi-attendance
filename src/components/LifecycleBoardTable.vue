@@ -168,56 +168,72 @@ function openDetail(row) {
 </script>
 
 <template>
-  <div class="space-y-5">
+  <div class="space-y-4">
 
     <div class="grid gap-5">
       
 
       <div class="space-y-4">
-        <div class="flex gap-3 overflow-x-auto pb-1">
+        <div class="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+          <div class="flex gap-2 overflow-x-auto">
           <button
             v-for="item in stageItems"
             :key="`${item.value}-card`"
             type="button"
-            class="min-w-[240px] flex-1 rounded-[24px] border px-4 py-4 text-left transition"
+            class="min-w-[210px] flex-1 rounded-xl border px-3 py-3 text-left transition"
             :class="
               item.isActive
-                ? 'border-blue-200 bg-blue-50/80 shadow-sm'
-                : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
+                ? 'border-blue-200 bg-blue-50 text-blue-900 shadow-sm'
+                : 'border-transparent bg-white text-slate-700 hover:border-slate-200 hover:bg-slate-50'
             "
             @click="setStageFilter(item.value)"
           >
             <div
-              class="text-[11px] font-semibold uppercase"
-              :class="item.isActive ? 'text-blue-500' : 'text-slate-400'"
+              class="flex items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-wide"
+              :class="item.isActive ? 'text-blue-600' : 'text-slate-400'"
             >
-              {{ item.isActive ? 'Current Filter' : 'Stage' }}  
-              <span v-if="item.count">{{ item.count }} employees</span>
+              <span>{{ item.isActive ? 'Current Filter' : 'Stage' }}</span>
+              <span
+                class="rounded-full px-2 py-0.5 text-[10px]"
+                :class="item.isActive ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'"
+              >
+                {{ item.count }} employees
+              </span>
             </div>
-            <div class="mt-2 text-md font-semibold text-slate-900">{{ item.label }}</div>
+            <div class="mt-2 text-sm font-semibold">{{ item.label }}</div>
            
           </button>
+          </div>
         </div>
 
         
         <div
-          v-if="filteredRows.length"
-          class="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm"
+          class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
         >
+          <div
+            v-if="store.loading"
+            class="absolute inset-0 z-20 flex items-start justify-center bg-white/70 pt-12 backdrop-blur-[1px]"
+          >
+            <div class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm">
+              <span class="h-4 w-4 animate-spin rounded-full border-2 border-blue-200 border-t-blue-600"></span>
+              Loading {{ activeStageMeta?.label || flowLabel }}...
+            </div>
+          </div>
+
           <div class="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
             <div>
-              <div class="text-sm font-semibold text-slate-900">Employee Lifecycle Snapshot</div>
+              <div class="text-sm font-semibold text-slate-900">{{ boardHeadline }}</div>
               <div class="text-xs text-slate-500">
-                {{ activeStageMeta ? activeStageMeta.description : 'Full lifecycle board overview.' }}
+                {{ boardSubline }}
               </div>
             </div>
 
             <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-              {{ activeStageMeta?.label || flowLabel }}
+              {{ visibleCount }} / {{ totalCount }} employees
             </span>
           </div>
 
-          <div class="overflow-x-auto">
+          <div v-if="filteredRows.length" class="overflow-x-auto">
             <table class="min-w-full text-[13px] text-slate-700">
               <thead class="sticky top-0 z-10 bg-slate-50/95 backdrop-blur">
                 <tr class="border-b border-slate-200 text-left">
@@ -319,17 +335,17 @@ function openDetail(row) {
               </tbody>
             </table>
           </div>
-        </div>
 
-        <div
-          v-else-if="!store.loading"
-          class="rounded-[28px] border border-dashed border-slate-300 bg-white/80 px-6 py-16 text-center shadow-sm"
-        >
-          <div class="mx-auto max-w-md">
-            <div class="text-sm font-semibold text-slate-700">No lifecycle records found</div>
-            <p class="mt-2 text-sm text-slate-500">
-              Try another stage, clear the search box, or broaden the employee filters from the top panel.
-            </p>
+          <div
+            v-else-if="!store.loading"
+            class="px-6 py-16 text-center"
+          >
+            <div class="mx-auto max-w-md">
+              <div class="text-sm font-semibold text-slate-700">No lifecycle records found</div>
+              <p class="mt-2 text-sm text-slate-500">
+                Try another stage or broaden the employee filters from the top panel.
+              </p>
+            </div>
           </div>
         </div>
       </div>
