@@ -1,12 +1,12 @@
 <template>
-  <div class="w-full overflow-x-auto md:overflow-x-visible">
+  <div class="w-full max-h-[90vh] overflow-auto md:max-h-none md:overflow-x-visible md:overflow-y-visible">
     <table
       class="min-w-[900px] md:min-w-full table-auto border-collapse border border-gray-300 bg-white"
     >
       <thead>
         <tr
-          class="bg-gray-200 text-xs md:sticky z-20"
-          :class="authStore.isAdminMood ? 'md:top-28' : 'md:top-14'"
+          class="bg-gray-200 text-xs sticky z-20"
+          :class="authStore.isAdminMood ? 'md:top-28 top-0' : 'md:top-14 top-0'"
         >
           <th class="border p-1">Date</th>
           <th class="border p-1">Day</th>
