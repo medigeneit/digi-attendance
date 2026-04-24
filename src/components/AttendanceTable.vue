@@ -1,31 +1,37 @@
 <template>
-  <table class="min-w-full table-auto border-collapse border border-gray-300 bg-white">
-    <thead>
-      <tr class="bg-gray-200 text-xs sticky top-14 z-20"  :class="{'top-28': authStore.isAdminMood}">
-        <th class="border p-1">Date</th>
-        <th class="border p-1">Day</th>
-        <th class="border p-1">Shift</th>
-        <th class="border p-1">Entry Time</th>
-        <th class="border p-1">Exit Time</th>
-        <th class="border p-1">Working Hours</th>
-        <th class="border p-1">Over Time</th>
-        <th class="border p-1">Approved OT</th>
-        <th class="border p-1">Late Entry</th>
-        <th class="border p-1">Early Leave</th>
-        <th class="border p-1">Status</th>
-      </tr>
-    </thead>
+  <div class="w-full max-h-[90vh] overflow-auto md:max-h-none md:overflow-x-visible md:overflow-y-visible">
+    <table
+      class="min-w-[900px] md:min-w-full table-auto border-collapse border border-gray-300 bg-white"
+    >
+      <thead>
+        <tr
+          class="bg-gray-200 text-xs sticky z-20"
+          :class="authStore.isAdminMood ? 'md:top-28 top-0' : 'md:top-14 top-0'"
+        >
+          <th class="border p-1">Date</th>
+          <th class="border p-1">Day</th>
+          <th class="border p-1">Shift</th>
+          <th class="border p-1">Entry Time</th>
+          <th class="border p-1">Exit Time</th>
+          <th class="border p-1">Working Hours</th>
+          <th class="border p-1">Over Time</th>
+          <th class="border p-1">Approved OT</th>
+          <th class="border p-1">Late Entry</th>
+          <th class="border p-1">Early Leave</th>
+          <th class="border p-1">Status</th>
+        </tr>
+      </thead>
 
-    <tbody class="text-center text-xs">
-      <tr
-        v-for="log in logs"
-        :key="log.date"
-        class="hover:z-50 hover:bg-blue-200"
-        :class="{
-          'bg-blue-50 border-y-2 border-violet-200': isToday(log.date),
-          'hover:border-b-2 hover:border-gray-200': !isToday(log.date),
-        }"
-      >
+      <tbody class="text-center text-xs">
+        <tr
+          v-for="log in logs"
+          :key="log.date"
+          class="hover:z-50 hover:bg-blue-200"
+          :class="{
+            'bg-blue-50 border-y-2 border-violet-200': isToday(log.date),
+            'hover:border-b-2 hover:border-gray-200': !isToday(log.date),
+          }"
+        >
         <!-- Date & Day -->
         <td class="border px-1 py-0.5">{{ log.date }}</td>
         <td class="border px-1 py-0.5">{{ log.weekday }}</td>
@@ -294,9 +300,10 @@
             </div>
           </div>
         </td>
-      </tr>
-    </tbody>
-  </table>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 </template>
 
 <script setup>
