@@ -27,13 +27,8 @@ const filters = ref({
   page: 1,
   per_page: 15,
 })
-const showDeleteModal = ref(false)
-const selectedItem = ref(null)
-const showAllowanceModal = ref(false)
-const selectedAllowanceItem = ref(null)
-const exportLoading = ref(false)
 
-async function load() {
+const buildCleanParams = () => {
   const params = { ...filters.value }
 
   if (params.employee_id) {
@@ -46,10 +41,43 @@ async function load() {
   if (!params.user_id) delete params.user_id
   if (!params.line_type || params.line_type === 'all') delete params.line_type
 
+  return params
+}
+
+const syncQueryParams = (params) => {
+  router.replace({
+    query: {
+      ...params,
+    },
+  })
+}
+
+
+const showDeleteModal = ref(false)
+const selectedItem = ref(null)
+const showAllowanceModal = ref(false)
+const selectedAllowanceItem = ref(null)
+const exportLoading = ref(false)
+
+async function load() {
+ const params = buildCleanParams()
+
+  syncQueryParams(params)
+
   await structureStore.fetchList(params)
 }
 
 onMounted(async () => {
+  filters.value = {
+    ...filters.value,
+    company_id: router.currentRoute.value.query.company_id || '',
+    department_id: router.currentRoute.value.query.department_id || '',
+    line_type: router.currentRoute.value.query.line_type || 'all',
+    employee_id: router.currentRoute.value.query.employee_id || '',
+    page: Number(router.currentRoute.value.query.page || 1),
+    per_page: Number(router.currentRoute.value.query.per_page || 15),
+  }
+
   await load()
 })
 
@@ -114,40 +142,39 @@ const resetFilters = () => {
 }
 
 const normalizeLineType = (value) => String(value || '').trim().toLowerCase().replace(/\s+/g, '_')
+const filteredList = computed(() => list.value || [])
 
-const filteredList = computed(() => {
-  const companyId = String(filters.value.company_id || '')
-  const departmentId = String(filters.value.department_id || '')
-  const employeeId = String(filters.value.employee_id || '')
-  const lineType = normalizeLineType(filters.value.line_type)
+// const filteredList = computed(() => {
+//   const companyId = String(filters.value.company_id || '')
+//   const departmentId = String(filters.value.department_id || '')
+//   const employeeId = String(filters.value.employee_id || '')
+//   const lineType = normalizeLineType(filters.value.line_type)
 
-  return (list.value || []).filter((item) => {
-    const user = item?.user || {}
+//   return (list.value || []).filter((item) => {
+//     const user = item?.user || {}
 
-    if (companyId && String(user.company_id || user.company?.id || '') !== companyId) {
-      return false
-    }
+//     if (companyId && String(user.company_id || user.company?.id || '') !== companyId) {
+//       return false
+//     }
 
-    if (departmentId && String(user.department_id || user.department?.id || '') !== departmentId) {
-      return false
-    }
+//     if (departmentId && String(user.department_id || user.department?.id || '') !== departmentId) {
+//       return false
+//     }
 
-    if (employeeId && String(item?.user_id || user.id || '') !== employeeId) {
-      return false
-    }
+//     if (employeeId && String(item?.user_id || user.id || '') !== employeeId) {
+//       return false
+//     }
 
-    if (lineType && lineType !== 'all') {
-      const userType = normalizeLineType(user.type || user.employment_type)
-      if (userType !== lineType) return false
-    }
+//     // if (lineType && lineType !== 'all') {
+//     //   const userType = normalizeLineType(user.type || user.employment_type)
+//     //   if (userType !== lineType) return false
+//     // }
 
-    return true
-  })
-})
+//     return true
+//   })
+// })
 
-const hasClientSideRefinement = computed(
-  () => Boolean(filters.value.department_id) || filters.value.line_type !== 'all',
-)
+const hasClientSideRefinement = computed(() => false)
 
 const EMPTY_ALLOWANCE_SUMMARY = {
   allowances: [],
@@ -426,12 +453,13 @@ const exportExcel = async () => {
             <th class="px-4 py-3 text-left">Employee</th>
             <th class="px-4 py-3 text-left">Department</th>
             <th class="px-4 py-3 text-right">Basic</th>
-            <th class="px-4 py-3 text-right">House Rent</th>
+            <th class="px-4 py-3 text-right">H.Rent</th>
             <th class="px-4 py-3 text-right">Medical</th>
             <th class="px-4 py-3 text-right">Conveyance</th>
-            <th class="px-4 py-3 text-right">Allowances (Total)</th>
-            <th class="px-4 py-3 text-right">PF Deduction</th>
-            <th class="px-4 py-3 text-right">Gross Salary</th>
+            <th class="px-4 py-3 text-right">Allowances</th>
+            <th class="px-4 py-3 text-right">Revisions</th>
+            <th class="px-4 py-3 text-right">PF</th>
+            <th class="px-4 py-3 text-right">Gross</th>
             <th class="px-4 py-3 text-center">Effective From</th>
             <th class="px-4 py-3 text-center">Status</th>
             <th class="px-4 py-3 text-center">Actions</th>
@@ -473,7 +501,7 @@ const exportExcel = async () => {
               {{ formatCurrency(item.conveyance_allowance) }}
             </td>
             <td class="px-4 py-3 text-right">
-              <div class="inline-flex min-w-[150px] flex-col items-end gap-1.5">
+              <div class="inline-flex  flex-col items-end gap-1.5">
                 <button
                   type="button"
                   class="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 transition-colors"
@@ -496,6 +524,12 @@ const exportExcel = async () => {
                 >
                   No allowance
                 </div>
+              </div>
+            </td>
+            <td class="px-4 py-3 text-right font-mono text-gray-700 ">
+              <div class="min-w-[66px] flex flex-col items-end gap-1.5">
+                  <span class="text-xs"> {{ item.latest_revision?.effective_month }}</span>
+                  <span class="text-green-500">{{ item.latest_revision?.increment_value}}</span>
               </div>
             </td>
             <td class="px-4 py-3 text-right font-mono text-gray-700">
@@ -527,6 +561,25 @@ const exportExcel = async () => {
             </td>
             <td class="px-4 py-3 text-center">
               <div class="flex items-center justify-center gap-1">
+                <button
+                  @click="
+                    router.push({
+                      name: 'PayrollSalaryRevisionCreate',
+                      query: {
+                        company_id: item.user?.company_id,
+                        department_id: item.user?.department_id,
+                        line_type: item.user?.type || 'executive',
+                        employee_id: item.user?.id,
+                        user_id: item.user?.id,
+                      },
+                    })
+                  "
+                  class="inline-flex items-center gap-1.5 rounded-lg border border-cyan-200 bg-cyan-50 px-2.5 py-1.5 text-xs font-semibold text-cyan-700 transition hover:border-cyan-300 hover:bg-cyan-100 hover:text-cyan-800"
+                  title="Create Salary Revision"
+                >
+                  <i class="far fa-sync-alt text-[11px]"></i>
+                  <span class="text-[11px]">Revision</span>
+                </button>
                 <button
                   @click="
                     router.push({

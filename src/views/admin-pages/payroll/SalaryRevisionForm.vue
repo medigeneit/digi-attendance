@@ -1,12 +1,11 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref, watch, onMounted, nextTick } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useSalaryRevisionStore } from '@/stores/salaryRevision'
 import { useUserStore } from '@/stores/user'
-import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import apiClient from '@/axios'
-import { formatCurrency, toNum } from '@/utils/currency'
+
 import {
   PROVIDENT_FUND_RATE,
   calculateAllowanceTotal,
@@ -18,309 +17,462 @@ import {
   normalizeAllowances,
   normalizeEmploymentType,
   resolvePfDeduction,
-  splitGrossByPolicy,
+  splitGrossByPolicy
 } from '@/utils/salaryPolicy'
 
-const router = useRouter()
-const toast = useToast()
-const revisionStore = useSalaryRevisionStore()
-const userStore = useUserStore()
+import { formatCurrency, toNum } from '@/utils/currency'
+import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 
-const submitting = ref(false)
-const fieldErrors = ref({})
-const currentStructure = ref(null)
-const loadingStructure = ref(false)
-const selectedEmploymentType = ref('')
-const selectedCompanyId = ref('')
-const selectedDepartmentId = ref('')
-const selectedLineType = ref('all')
+const router=useRouter()
+const route=useRoute()
+const toast=useToast()
 
-const userDisplay = ref({ name: null, dept: null })
+const revisionStore=useSalaryRevisionStore()
+const userStore=useUserStore()
 
-const formatEmploymentTypeLabel = (value) => {
-  const normalized = normalizeEmploymentType(value)
-  if (!normalized) return 'Not Set'
-  if (normalized === 'probationary') return 'Probationary'
-  if (normalized === 'part_time') return 'Part Time'
-  return normalized
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ')
+/* ---------------- state ---------------- */
+
+const submitting=ref(false)
+const loadingStructure=ref(false)
+const fieldErrors=ref({})
+const currentStructure=ref(null)
+
+const selectedCompanyId=ref('')
+const selectedDepartmentId=ref('')
+const selectedLineType=ref('all')
+const selectedEmploymentType=ref('')
+
+const employeeFilterKey=ref(1)
+const queryHydrated=ref(false)
+
+/* ---------------- form ---------------- */
+
+const now=new Date()
+
+const form=ref({
+ user_id:null,
+
+ review_date:
+ `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`,
+
+ effective_month:
+ `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`,
+
+ gross_salary:'',
+ basic_salary:'',
+ house_rent:'',
+ medical_allowance:'',
+ conveyance_allowance:'',
+ pf_deduction:'',
+
+ increment_type:'fixed',
+ increment_value:'',
+ remarks:'',
+
+ allowances:[]
+})
+
+/* ---------------- init from query ---------------- */
+
+async function hydrateFromQuery(){
+
+ const q=route.query
+
+ selectedCompanyId.value=q.company_id
+   ? String(q.company_id)
+   : ''
+
+ selectedDepartmentId.value=q.department_id
+   ? String(q.department_id)
+   : ''
+
+ selectedLineType.value=q.line_type
+   ? String(q.line_type)
+   : 'all'
+
+ form.value.user_id=
+   q.user_id || q.employee_id
+     ? Number(q.user_id || q.employee_id)
+     : null
+
+ await nextTick()
+
+ /* force EmployeeFilter re-render after props ready */
+ employeeFilterKey.value++
+
+ queryHydrated.value=true
 }
 
-const formatLocalDate = (value = new Date()) => {
-  const year = value.getFullYear()
-  const month = `${value.getMonth() + 1}`.padStart(2, '0')
-  const day = `${value.getDate()}`.padStart(2, '0')
-  return `${year}-${month}-${day}`
+onMounted(async()=>{
+ await hydrateFromQuery()
+})
+
+/* ---------------- helpers ---------------- */
+
+function assignEmploymentType(v){
+ selectedEmploymentType.value=v || ''
 }
 
-const formatLocalMonth = (value = new Date()) => {
-  const year = value.getFullYear()
-  const month = `${value.getMonth() + 1}`.padStart(2, '0')
-  return `${year}-${month}`
+async function fetchEmploymentType(id){
+ if(!id){
+   assignEmploymentType('')
+   return
+ }
+
+ try{
+   const user=await userStore.fetchUser(id)
+   assignEmploymentType(user?.employment_type)
+ }catch{
+   assignEmploymentType('')
+ }
 }
 
-const form = ref({
-  user_id: null,
-  review_date: formatLocalDate(),
-  effective_month: formatLocalMonth(),
-  gross_salary: '',
-  basic_salary: '',
-  house_rent: '',
-  medical_allowance: '',
-  conveyance_allowance: '',
-  pf_deduction: '',
-  increment_type: 'fixed',
-  increment_value: '',
-  remarks: '',
-  allowances: [],
+const employmentTypeLabel=computed(()=>{
+ const n=normalizeEmploymentType(
+   selectedEmploymentType.value
+ )
+
+ if(!n) return 'Not Set'
+
+ return n
+   .split('_')
+   .map(i=>i.charAt(0).toUpperCase()+i.slice(1))
+   .join(' ')
 })
 
-const activePolicy = computed(() => getSalaryComponentPolicy(selectedEmploymentType.value))
-const activePolicySummary = computed(() =>
-  activePolicy.value.map((item) => `${Math.round(item.ratio * 100)}% ${item.shortLabel}`).join(', '),
+const employmentTypeBadgeClass=computed(()=>{
+ const type=normalizeEmploymentType(
+   selectedEmploymentType.value
+ )
+
+ if(type==='permanent')
+   return 'bg-emerald-50 text-emerald-700 ring-emerald-200'
+
+ if(type==='contract')
+   return 'bg-sky-50 text-sky-700 ring-sky-200'
+
+ if(type==='probationary')
+   return 'bg-amber-50 text-amber-700 ring-amber-200'
+
+ return 'bg-slate-100 text-slate-600 ring-slate-200'
+})
+
+/* ---------------- policy ---------------- */
+
+const activePolicy=computed(
+()=>getSalaryComponentPolicy(
+ selectedEmploymentType.value
 )
-const activePolicyCompact = computed(() =>
-  activePolicy.value.map((item) => Math.round(item.ratio * 100)).join(' / '),
-)
-const pfAllowedForCurrentEmploymentType = computed(() =>
-  isPfAllowedForEmploymentType(selectedEmploymentType.value),
-)
-
-const employmentTypeBadgeClass = computed(() => {
-  const type = normalizeEmploymentType(selectedEmploymentType.value)
-  if (type === 'permanent') return 'bg-emerald-50 text-emerald-700 ring-emerald-200'
-  if (type === 'contract') return 'bg-sky-50 text-sky-700 ring-sky-200'
-  if (type === 'intern') return 'bg-violet-50 text-violet-700 ring-violet-200'
-  if (type === 'probationary') return 'bg-amber-50 text-amber-700 ring-amber-200'
-  return 'bg-slate-100 text-slate-600 ring-slate-200'
-})
-
-const employmentTypeLabel = computed(() => formatEmploymentTypeLabel(selectedEmploymentType.value))
-
-const currentPolicyGross = computed(() => {
-  if (!currentStructure.value) return null
-  return calculateCoreGross(currentStructure.value)
-})
-
-const currentGross = computed(() => {
-  if (!currentStructure.value) return null
-  return toNum(currentStructure.value.gross_salary || calculateCoreGross(currentStructure.value))
-})
-
-const currentAllowanceTotal = computed(() =>
-  currentStructure.value ? calculateAllowanceTotal(currentStructure.value.allowances) : 0,
 )
 
-const currentBonus = computed(() => {
-  if (!currentStructure.value) return 0
-  return calculateBonusAmount(selectedEmploymentType.value, currentStructure.value.basic_salary)
+const activePolicySummary=computed(
+()=>activePolicy.value
+ .map(i=>`${Math.round(i.ratio*100)}% ${i.shortLabel}`)
+ .join(', ')
+)
+
+const activePolicyCompact=computed(
+()=>activePolicy.value
+ .map(i=>Math.round(i.ratio*100))
+ .join(' / ')
+)
+
+const pfAllowedForCurrentEmploymentType=computed(
+()=>isPfAllowedForEmploymentType(
+ selectedEmploymentType.value
+)
+)
+
+const currentGross=computed(()=>{
+ if(!currentStructure.value) return 0
+
+ return toNum(
+   currentStructure.value.gross_salary ||
+   calculateCoreGross(
+     currentStructure.value
+   )
+ )
 })
 
-const currentPfDeduction = computed(() => {
-  if (!currentStructure.value) return null
-  return resolvePfDeduction(currentStructure.value)
+const currentPolicyGross=computed(()=>{
+ if(!currentStructure.value) return 0
+ return calculateCoreGross(
+   currentStructure.value
+ )
 })
 
-const incrementAmount = computed(() => {
-  const value = toNum(form.value.increment_value)
-  if (!currentGross.value || value <= 0) return 0
+const currentPfDeduction=computed(()=>{
+ if(!currentStructure.value) return 0
+ return resolvePfDeduction(
+   currentStructure.value
+ )
+})
 
-  if (form.value.increment_type === 'percentage') {
-    return Number.parseFloat(((currentGross.value * value) / 100).toFixed(2))
+const currentAllowanceTotal=computed(()=>{
+ if(!currentStructure.value) return 0
+ return calculateAllowanceTotal(
+  currentStructure.value.allowances
+ )
+})
+
+/* ---------------- increment ---------------- */
+
+const incrementAmount=computed(()=>{
+ const val=toNum(form.value.increment_value)
+
+ if(!currentGross.value || val<=0)
+   return 0
+
+ if(form.value.increment_type==='percentage'){
+   return Number(
+     ((currentGross.value*val)/100)
+      .toFixed(2)
+   )
+ }
+
+ return val
+})
+
+const revisedGross=computed(
+()=>Number(
+((currentGross.value||0)+incrementAmount.value)
+.toFixed(2)
+)
+)
+
+const revisedBonus=computed(
+()=>calculateBonusAmount(
+ selectedEmploymentType.value,
+ form.value.basic_salary
+)
+)
+
+const revisedNetPayable=computed(
+()=>Math.max(
+0,
+revisedGross.value-
+toNum(form.value.pf_deduction)
+)
+)
+
+const componentCards=computed(
+()=>activePolicy.value.map(item=>({
+ ...item,
+ currentAmount:currentStructure.value
+   ? toNum(currentStructure.value[item.key])
+   :0,
+ revisedAmount:toNum(
+   form.value[item.key]
+ )
+}))
+)
+
+/* ---------------- breakdown ---------------- */
+
+function applyRevisionBreakdown(){
+
+ if(!currentStructure.value){
+   form.value.basic_salary=''
+   form.value.house_rent=''
+   form.value.medical_allowance=''
+   form.value.conveyance_allowance=''
+   form.value.pf_deduction=''
+   form.value.gross_salary=''
+   return
+ }
+
+ form.value.gross_salary=revisedGross.value
+
+ const breakdown=
+ splitGrossByPolicy(
+   revisedGross.value,
+   selectedEmploymentType.value
+ )
+
+ form.value.basic_salary=
+ breakdown.basic_salary || ''
+
+ form.value.house_rent=
+ breakdown.house_rent || ''
+
+ form.value.medical_allowance=
+ breakdown.medical_allowance || ''
+
+ form.value.conveyance_allowance=
+ breakdown.conveyance_allowance || ''
+
+ form.value.pf_deduction=
+ pfAllowedForCurrentEmploymentType.value
+ ? calculatePfDeduction(
+     breakdown.basic_salary
+   )
+ :''
+
+ form.value.allowances=
+ normalizeAllowances(
+   currentStructure.value.allowances
+ )
+}
+
+/* ---------------- employee filter sync ---------------- */
+
+function syncQuery(){
+
+ router.replace({
+  query:{
+   company_id:selectedCompanyId.value||undefined,
+   department_id:selectedDepartmentId.value||undefined,
+   line_type:selectedLineType.value||undefined,
+   employee_id:form.value.user_id||undefined,
+   user_id:form.value.user_id||undefined
+  }
+ })
+}
+
+function handleEmployeeFilterChange(payload={}){
+
+ selectedCompanyId.value=
+ payload.company_id || ''
+
+ selectedDepartmentId.value=
+ payload.department_id || ''
+
+ selectedLineType.value=
+ payload.line_type || 'all'
+
+ form.value.user_id=
+ payload.employee_id || null
+
+ syncQuery()
+}
+
+/* ---------------- load structure ---------------- */
+
+watch(
+()=>form.value.user_id,
+async(id)=>{
+
+ if(!queryHydrated.value && !id) return
+
+ currentStructure.value=null
+
+ if(!id) return
+
+ loadingStructure.value=true
+
+ try{
+
+ const res=await apiClient.get(
+ '/salary-structures',
+ {
+  params:{
+   user_id:id,
+   is_active:1,
+   per_page:1
+  }
+ })
+
+ const rows=res.data?.data || []
+
+ if(rows.length){
+
+  currentStructure.value=rows[0]
+
+  assignEmploymentType(
+   rows[0]?.user?.employment_type
+  )
+
+  if(!selectedEmploymentType.value){
+   await fetchEmploymentType(id)
   }
 
-  return value
-})
-
-const revisedGross = computed(() =>
-  Number.parseFloat(((currentGross.value || 0) + incrementAmount.value).toFixed(2)),
-)
-
-const revisedBonus = computed(() =>
-  calculateBonusAmount(selectedEmploymentType.value, form.value.basic_salary),
-)
-
-const revisedNetPayable = computed(() =>
-  Math.max(0, revisedGross.value - toNum(form.value.pf_deduction)),
-)
-
-const componentCards = computed(() =>
-  activePolicy.value.map((item) => ({
-    ...item,
-    currentAmount: currentStructure.value ? toNum(currentStructure.value[item.key]) : 0,
-    revisedAmount: toNum(form.value[item.key]),
-  })),
-)
-
-const assignEmploymentType = (value) => {
-  selectedEmploymentType.value = value || ''
-}
-
-const fetchEmploymentType = async (userId) => {
-  if (!userId) {
-    assignEmploymentType('')
-    return
-  }
-
-  try {
-    const user = await userStore.fetchUser(userId)
-    assignEmploymentType(user?.employment_type)
-  } catch (_) {
-    assignEmploymentType('')
-  }
-}
-
-const applyRevisionBreakdown = () => {
-  if (!currentStructure.value) {
-    form.value.gross_salary = ''
-    form.value.basic_salary = ''
-    form.value.house_rent = ''
-    form.value.medical_allowance = ''
-    form.value.conveyance_allowance = ''
-    form.value.pf_deduction = ''
-    form.value.allowances = []
-    return
-  }
-
-  form.value.gross_salary = revisedGross.value
-
-  const breakdown = splitGrossByPolicy(revisedGross.value, selectedEmploymentType.value)
-  form.value.basic_salary = breakdown.basic_salary || ''
-  form.value.house_rent = breakdown.house_rent || ''
-  form.value.medical_allowance = breakdown.medical_allowance || ''
-  form.value.conveyance_allowance = breakdown.conveyance_allowance || ''
-  form.value.pf_deduction =
-    pfAllowedForCurrentEmploymentType.value && revisedGross.value
-    ? calculatePfDeduction(breakdown.basic_salary)
-    : ''
-  form.value.allowances = normalizeAllowances(currentStructure.value.allowances)
-}
-
-const handleEmployeeFilterChange = (payload = {}) => {
-  const nextCompanyId = payload.company_id || ''
-  const nextDepartmentId = payload.department_id || ''
-  const nextLineType = payload.line_type || 'all'
-  const nextEmployeeId = payload.employee_id || null
-
-  const hasChanged =
-    nextCompanyId !== selectedCompanyId.value ||
-    nextDepartmentId !== selectedDepartmentId.value ||
-    nextLineType !== selectedLineType.value ||
-    String(nextEmployeeId || '') !== String(form.value.user_id || '')
-
-  selectedCompanyId.value = nextCompanyId
-  selectedDepartmentId.value = nextDepartmentId
-  selectedLineType.value = nextLineType
-  form.value.user_id = nextEmployeeId
-
-  if (!hasChanged) return
-
-  userDisplay.value = { name: null, dept: null }
-  currentStructure.value = null
-  assignEmploymentType('')
   applyRevisionBreakdown()
+ }
+
+ }finally{
+  loadingStructure.value=false
 }
 
-watch(
-  () => form.value.user_id,
-  async (userId) => {
-    currentStructure.value = null
-    assignEmploymentType('')
-    applyRevisionBreakdown()
-
-    if (!userId) return
-
-    loadingStructure.value = true
-
-    try {
-      const response = await apiClient.get('/salary-structures', {
-        params: { user_id: userId, is_active: 1, per_page: 1 },
-      })
-      const data = response.data
-      const list = Array.isArray(data) ? data : data?.data || []
-
-      if (list.length) {
-        currentStructure.value = list[0]
-        assignEmploymentType(list[0]?.user?.employment_type)
-        if (!selectedEmploymentType.value) {
-          await fetchEmploymentType(userId)
-        }
-        applyRevisionBreakdown()
-      }
-    } catch (_) {
-      currentStructure.value = null
-      applyRevisionBreakdown()
-    } finally {
-      loadingStructure.value = false
-    }
-  },
+},
+{ immediate:true }
 )
 
 watch(
-  [
-    currentGross,
-    () => form.value.increment_type,
-    () => form.value.increment_value,
-    selectedEmploymentType,
-  ],
-  () => {
-    applyRevisionBreakdown()
-  },
+[
+currentGross,
+()=>form.value.increment_type,
+()=>form.value.increment_value,
+selectedEmploymentType
+],
+()=>{
+applyRevisionBreakdown()
+}
 )
 
-const validate = () => {
-  const errors = {}
+/* ---------------- submit ---------------- */
 
-  if (!form.value.user_id) errors.user_id = 'Employee is required.'
-  if (!currentStructure.value) {
-    errors.user_id = 'An active salary structure is required before revision.'
-  }
-  if (!form.value.review_date) errors.review_date = 'Review date is required.'
-  if (!form.value.effective_month) errors.effective_month = 'Effective month is required.'
-  if (!form.value.increment_value && form.value.increment_value !== 0) {
-    errors.increment_value = 'Increment value is required.'
-  }
-  if (toNum(form.value.increment_value) <= 0) {
-    errors.increment_value = 'Increment value must be greater than zero.'
-  }
+function validate(){
 
-  fieldErrors.value = errors
-  return !Object.keys(errors).length
+ const errors={}
+
+ if(!form.value.user_id){
+  errors.user_id='Employee required'
+ }
+
+ if(
+ toNum(form.value.increment_value)<=0
+ ){
+  errors.increment_value=
+  'Increment must be greater than zero'
+ }
+
+ fieldErrors.value=errors
+
+ return !Object.keys(errors).length
 }
 
-const handleSubmit = async () => {
-  if (!validate()) return
+async function handleSubmit(){
 
-  submitting.value = true
+ if(!validate()) return
 
-  try {
-    const payload = {
-      ...form.value,
-      gross_salary: toNum(form.value.gross_salary),
-      basic_salary: toNum(form.value.basic_salary),
-      house_rent: toNum(form.value.house_rent),
-      medical_allowance: toNum(form.value.medical_allowance),
-      conveyance_allowance: toNum(form.value.conveyance_allowance),
-      pf_deduction: toNum(form.value.pf_deduction),
-      increment_value: toNum(form.value.increment_value),
-      allowances: normalizeAllowances(form.value.allowances),
-    }
+ submitting.value=true
 
-    await revisionStore.createRevision(payload)
-    toast.success('Salary revision created. New structure has been applied.')
-    router.push({ name: 'PayrollSalaryStructureList' })
-  } catch (error) {
-    if (error.errors) fieldErrors.value = error.errors
-    toast.error(error.message)
-  } finally {
-    submitting.value = false
-  }
+ try{
+
+ await revisionStore.createRevision({
+   ...form.value,
+   gross_salary:toNum(form.value.gross_salary),
+   basic_salary:toNum(form.value.basic_salary),
+   house_rent:toNum(form.value.house_rent),
+   medical_allowance:toNum(form.value.medical_allowance),
+   conveyance_allowance:toNum(form.value.conveyance_allowance),
+   pf_deduction:toNum(form.value.pf_deduction),
+   increment_value:toNum(form.value.increment_value),
+   allowances:normalizeAllowances(
+      form.value.allowances
+   )
+ })
+
+ toast.success(
+ 'Salary revision created successfully'
+ )
+
+ router.push({
+  name:'PayrollSalaryStructureList'
+ })
+
+ }catch(e){
+ toast.error(
+ e.message || 'Failed'
+ )
+ }finally{
+ submitting.value=false
+ }
+
 }
 
-const inputClass =
-  'w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-700 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100'
+const inputClass=
+'w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm'
 </script>
 
 <template>
@@ -359,13 +511,14 @@ const inputClass =
             {{ employmentTypeLabel }}
           </span>
         </div>
-         <EmployeeFilter
-              :company_id="selectedCompanyId"
-              :department_id="selectedDepartmentId"
-              :line_type="selectedLineType"
-              :employee_id="form.user_id"
-              @filter-change="handleEmployeeFilterChange"
-            />
+        <EmployeeFilter
+          :key="employeeFilterKey"
+          :company_id="selectedCompanyId"
+          :department_id="selectedDepartmentId"
+          :line_type="selectedLineType"
+          :employee_id="form.user_id"
+          @filter-change="handleEmployeeFilterChange"
+          />
       </div>
       <div class="grid items-start gap-3 xl:grid-cols-[0.92fr_0.88fr]">
         <section class="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm">
