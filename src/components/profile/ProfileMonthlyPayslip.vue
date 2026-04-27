@@ -145,10 +145,54 @@ const monthInstallments = computed(() => {
   )
 })
 
+const contraEntries = computed(() => {
+  const preferred = currentPayroll.value?.contra_entries
+  if (Array.isArray(preferred)) return preferred
+
+  const rows = Array.isArray(currentPayroll.value?.other_allowance_breakdown)
+    ? currentPayroll.value.other_allowance_breakdown
+    : []
+
+  return rows.filter((row) => row?.type === 'contra_entry')
+})
+
+const contraEarningTotal = computed(() =>
+  contraEntries.value
+    .filter((row) => row?.side === 'earning')
+    .reduce((sum, row) => sum + toNumber(row?.amount), 0),
+)
+
+const contraDeductionTotal = computed(() =>
+  contraEntries.value
+    .filter((row) => row?.side === 'deduction')
+    .reduce((sum, row) => sum + toNumber(row?.amount), 0),
+)
+
+const contraEarningRows = computed(() =>
+  contraEntries.value
+    .filter((row) => row?.side === 'earning')
+    .map((row, index) => ({
+      label: row.label || 'Manual Adj',
+      value: row.amount,
+      key: `contra-earning-${row.ref || row.label || index}`,
+    })),
+)
+
+const contraDeductionRows = computed(() =>
+  contraEntries.value
+    .filter((row) => row?.side === 'deduction')
+    .map((row, index) => ({
+      label: row.label || 'Adj Recovery',
+      value: row.amount,
+      key: `contra-deduction-${row.ref || row.label || index}`,
+    })),
+)
+
 const earningRows = computed(() => {
   if (!currentPayroll.value) return []
 
   const payroll = currentPayroll.value
+  const manualAdditionBase = Math.max(0, toNumber(payroll.manual_addition) - contraEarningTotal.value)
   const rows = [
     { label: 'Basic Salary', value: payroll.basic_salary },
     { label: 'House Rent', value: payroll.house_rent },
@@ -159,7 +203,9 @@ const earningRows = computed(() => {
   const allowanceTotal = toNumber(payroll.other_allowance_total)
   rows.push({ label: 'Other Allowance', value: allowanceTotal })
 
-  if (toNumber(payroll.manual_addition) > 0) rows.push({ label: 'Manual Addition', value: payroll.manual_addition })
+  if (manualAdditionBase > 0) rows.push({ label: 'Manual Addition', value: manualAdditionBase })
+
+  rows.push(...contraEarningRows.value)
 
   return rows
 })
@@ -168,6 +214,7 @@ const deductionRows = computed(() => {
   if (!currentPayroll.value) return []
 
   const payroll = currentPayroll.value
+  const otherDeductionBase = Math.max(0, toNumber(payroll.other_deduction) - contraDeductionTotal.value)
   const rows = [
     {
       label: 'PF Both',
@@ -176,10 +223,12 @@ const deductionRows = computed(() => {
     { label: 'Meal Deduction', value: payroll.meal_deduction },
     { label: 'Tax', value: payroll.tax_deduction },
     { label: 'Loan', value: payroll.loan_deduction },
-    { label: 'Others', value: payroll.other_deduction },
+    { label: 'Others', value: otherDeductionBase },
     { label: 'Advance', value: payroll.advance_deduction },
     { label: 'Paycut', value: payroll.paycut_deduction },
   ]
+
+  rows.push(...contraDeductionRows.value)
 
   return rows
 })
@@ -213,7 +262,7 @@ const designation = computed(() =>
   currentPayroll.value?.designation_name || props.user?.designation?.title || props.user?.post || '-',
 )
 const department = computed(() =>
-  currentPayroll.value?.department_name || props.user?.department?.name || '-',
+  currentPayroll.value?.departm32t_name || props.user?.department?.name || '-',
 )
 const companyName = computed(() =>
   currentPayroll.value?.company?.name || currentPayroll.value?.company_name || props.user?.company?.name || 'DigitGate IT',
@@ -236,7 +285,7 @@ const bankDetails = computed(() => {
   <section
     class="bg-slate-100 px-2 py-3 print:bg-white print:p-0 dark:bg-slate-950"
   >
-    <div v-if="currentPayroll" class="mx-auto max-w-[760px] bg-white shadow-xl ring-1 ring-slate-300 print:max-w-none print:shadow-none print:ring-0">
+    <div v-if="currentPayroll" class="mx-auto max-w-[760px] bg-white ring-1 ring-slate-300 print:max-w-none print:shadow-none print:ring-0">
       <div class="p-4 print:p-0">
         <div class="salary-paper mx-auto">
           <div class="text-center">
@@ -247,29 +296,29 @@ const bankDetails = computed(() => {
           <div class="salary-info-grid mt-6 text-[13px] text-slate-800">
             <div class="space-y-1">
               <div class="flex gap-2">
-                <span class="w-32 text-slate-600">Employee name</span>
+                <span class="w-28 text-slate-600">Employee name</span>
                 <span>: {{ employeeName }}</span>
               </div>
               <div class="flex gap-2">
-                <span class="w-32 text-slate-600">Designation</span>
+                <span class="w-28 text-slate-600">Designation</span>
                 <span>: {{ designation }}</span>
               </div>
               <div class="flex gap-2">
-                <span class="w-32 text-slate-600">Department</span>
+                <span class="w-28 text-slate-600">Department</span>
                 <span>: {{ department }}</span>
               </div>
             </div>
             <div class="space-y-1">
               <div class="flex gap-2">
-                <span class="w-32 text-slate-600">Date of Joining</span>
+                <span class="w-28 text-slate-600">Date of Joining</span>
                 <span>: {{ formatDate(joiningDate) }}</span>
               </div>
               <div class="flex gap-2">
-                <span class="w-32 text-slate-600">Pay Period</span>
+                <span class="w-28 text-slate-600">Pay Period</span>
                 <span>: {{ slipTitle }}</span>
               </div>
               <div class="flex gap-2">
-                <span class="w-32 text-slate-600">Employee ID</span>
+                <span class="w-28 text-slate-600">Employee ID</span>
                 <span>: {{ employeeId }}</span>
               </div>
             </div>
@@ -341,7 +390,7 @@ const bankDetails = computed(() => {
 <style scoped>
 .salary-paper {
   width: 172mm;
-  min-height: 240mm;
+  min-height: 190mm;
   padding: 5mm;
   color: #111827;
 }
