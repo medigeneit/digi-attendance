@@ -44,6 +44,23 @@ const loanStatusClass = (status) => {
   return 'border-slate-200 bg-slate-100 text-slate-600'
 }
 
+const toNumber = (value) => {
+  const number = Number(value)
+  return Number.isFinite(number) ? number : 0
+}
+
+const specialMealAmount = (item) => toNumber(item?.special_meal_amount ?? item?.additional_amount)
+
+const specialMealRate = (item) => {
+  const explicitRate = item?.special_meal_rate ?? item?.additional_rate ?? item?.common_additional
+  if (explicitRate !== undefined && explicitRate !== null && explicitRate !== '') return toNumber(explicitRate)
+
+  const specialMealCount = toNumber(item?.total_additional_meal ?? item?.special_meal_count)
+  if (specialMealCount > 0) return specialMealAmount(item) / specialMealCount
+
+  return specialMealAmount(item)
+}
+
 const openLoanModal = (loan) => {
   if (!loan || String(loan.status || '').toLowerCase() === 'completed') return
   activeLoanForModal.value = loan
@@ -187,6 +204,7 @@ const isLoanCompleted = (loan) => String(loan.status || '').toLowerCase() === 'c
                 <h4 class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ formatMonth(item.salary_month) }}</h4>
                 <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                   {{ item.total_meal || 0 }} meal(s) x {{ formatCurrency(item.meal_rate) }}
+                  <span v-if="specialMealAmount(item)"> + Special {{ formatCurrency(specialMealAmount(item)) }}</span>
                 </p>
               </div>
               <div class="text-right">
@@ -195,18 +213,26 @@ const isLoanCompleted = (loan) => String(loan.status || '').toLowerCase() === 'c
               </div>
             </div>
 
-            <div class="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3">
+            <div class="mt-4 grid grid-cols-2 gap-3 md:grid-cols-5">
               <div>
                 <p class="text-xs text-slate-500 dark:text-slate-400">Meal Rate</p>
                 <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ formatCurrency(item.meal_rate) }}</p>
               </div>
               <div>
-                <p class="text-xs text-slate-500 dark:text-slate-400">Total Meals</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Total Meal</p>
                 <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ item.total_meal || 0 }}</p>
               </div>
               <div>
-                <p class="text-xs text-slate-500 dark:text-slate-400">Additional</p>
-                <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ formatCurrency(item.additional_amount) }}</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Special Meal</p>
+                <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ formatCurrency(specialMealAmount(item)) }}</p>
+              </div>
+              <div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Special Meal Rate</p>
+                <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ formatCurrency(specialMealRate(item)) }}</p>
+              </div>
+              <div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Total</p>
+                <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ formatCurrency(item.total_amount) }}</p>
               </div>
             </div>
           </div>

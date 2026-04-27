@@ -3,7 +3,6 @@ import apiClient from '@/axios'
 import LoaderView from '@/components/common/LoaderView.vue'
 import ProfileCompensationHistory from '@/components/profile/ProfileCompensationHistory.vue'
 import ProfileSalarySheetModal from '@/components/profile/ProfileSalarySheetModal.vue'
-import ProfileSalaryStructureCard from '@/components/profile/ProfileSalaryStructureCard.vue'
 import { computed, onMounted, ref, watch } from 'vue'
 
 const props = defineProps({
@@ -307,8 +306,7 @@ onMounted(load)
     <LoaderView v-else-if="loading" class="shadow-none" />
 
     <div v-else class="space-y-6">
-      <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.15fr)]">
-        <ProfileSalaryStructureCard :structure="overview.salary_structure" :summary="overview.summary" />
+      <div class="grid grid-cols-1 gap-6">
         <ProfileCompensationHistory
           :loans="filteredLoans"
           :meals="filteredMeals"

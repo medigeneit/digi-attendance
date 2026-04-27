@@ -41,6 +41,8 @@ const blankForm = () => ({
   loan_amount: '',
   installment_amount: '',
   total_installments: '',
+  opening_paid_installments: 0,
+  opening_paid_amount: 0,
   start_month: '',
   status: 'active',
   remarks: '',
@@ -60,6 +62,7 @@ const previewLoan = computed(() => ({
   loan_amount: modalForm.value.loan_amount,
   installment_amount: modalForm.value.installment_amount,
   total_installments: modalForm.value.total_installments,
+  opening_paid_installments: modalForm.value.opening_paid_installments,
   start_month: modalForm.value.start_month,
 }))
 
@@ -81,6 +84,18 @@ const calculateInstallmentAmount = (loanAmount, totalInstallments) => {
   if (loan <= 0 || total <= 0) return null
   return parseFloat((loan / total).toFixed(2))
 }
+
+const openingPaidAmountPreview = computed(() => {
+  const count = Math.max(0, Math.trunc(toNum(modalForm.value.opening_paid_installments)))
+  const amount = toNum(modalForm.value.installment_amount)
+  const loan = toNum(modalForm.value.loan_amount)
+  if (count <= 0 || amount <= 0 || loan <= 0) return 0
+  return Math.min(loan, count * amount)
+})
+
+const openingRemainingPreview = computed(() =>
+  Math.max(0, toNum(modalForm.value.loan_amount) - openingPaidAmountPreview.value),
+)
 
 const applyAutoInstallmentAmount = () => {
   const autoAmount = calculateInstallmentAmount(
@@ -134,6 +149,8 @@ const openEdit = (item) => {
     loan_amount: item.loan_amount ?? '',
     installment_amount: item.installment_amount ?? '',
     total_installments: item.total_installments ?? '',
+    opening_paid_installments: item.opening_paid_installments ?? 0,
+    opening_paid_amount: item.opening_paid_amount ?? 0,
     start_month: item.start_month || '',
     status: item.status || 'active',
     remarks: item.remarks || '',
@@ -315,6 +332,16 @@ const validateModal = () => {
     errors.installment_amount = 'Installment amount is required.'
   if (!modalForm.value.total_installments)
     errors.total_installments = 'Total installments required.'
+  if (Math.trunc(toNum(modalForm.value.opening_paid_installments)) < 0) {
+    errors.opening_paid_installments = 'Already paid installments cannot be negative.'
+  }
+  if (
+    modalForm.value.total_installments &&
+    Math.trunc(toNum(modalForm.value.opening_paid_installments)) >
+      Math.trunc(toNum(modalForm.value.total_installments))
+  ) {
+    errors.opening_paid_installments = 'Already paid installments cannot exceed total installments.'
+  }
   if (!modalForm.value.start_month) errors.start_month = 'Start month is required.'
   if (!modalForm.value.remarks) errors.remarks = 'Reason is required.'
 
@@ -343,6 +370,7 @@ const validateModal = () => {
 const handleModalSubmit = async () => {
   if (!validateModal()) return
   modalSubmitting.value = true
+  modalForm.value.opening_paid_amount = openingPaidAmountPreview.value
   try {
     if (isEditMode.value) {
       await loanStore.updateItem(selectedItem.value.id, modalForm.value)
@@ -577,6 +605,12 @@ const inputClass =
               >
                 {{ item.total_installments || 0 }}
               </span>
+              <div
+                v-if="Number(item.opening_paid_installments || 0) > 0"
+                class="mt-1 text-[11px] font-medium text-emerald-700"
+              >
+                Paid before: {{ item.opening_paid_installments }}
+              </div>
             </td>
             <td class="px-3 py-2 text-center text-xs min-w-[108px]">
               <div class="text-[10px] text-slate-500 uppercase tracking-wide">
@@ -929,6 +963,49 @@ const inputClass =
                   <p v-if="modalErrors.installment_amount" class="text-red-500 text-xs mt-1">
                     {{ modalErrors.installment_amount }}
                   </p>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">
+                    Already Paid Installments
+                  </label>
+                  <input
+                    v-model="modalForm.opening_paid_installments"
+                    type="number"
+                    min="0"
+                    step="1"
+                    :class="inputClass"
+                    placeholder="0"
+                  />
+                  <p class="text-xs text-gray-500 mt-1">
+                    Paid before this software started. Example: 5 installments already paid.
+                  </p>
+                  <p
+                    v-if="modalErrors.opening_paid_installments"
+                    class="text-red-500 text-xs mt-1"
+                  >
+                    {{ modalErrors.opening_paid_installments }}
+                  </p>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">
+                    Opening Balance Preview
+                  </label>
+                  <div class="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2">
+                    <div class="flex items-center justify-between text-xs text-emerald-800">
+                      <span>Paid before system</span>
+                      <span class="font-mono font-semibold">
+                        {{ formatCurrency(openingPaidAmountPreview) }}
+                      </span>
+                    </div>
+                    <div class="mt-1 flex items-center justify-between text-xs text-slate-600">
+                      <span>Remaining for payroll</span>
+                      <span class="font-mono font-semibold">
+                        {{ formatCurrency(openingRemainingPreview) }}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
                 <div>

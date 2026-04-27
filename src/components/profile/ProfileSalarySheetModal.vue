@@ -46,16 +46,16 @@ const printSheet = () => window.print()
     <transition name="fade">
       <div
         v-if="open"
-        class="fixed inset-0 z-[1050] flex items-start justify-center overflow-y-auto bg-black/60 px-4 py-6 print:hidden"
+        class="fixed inset-0 z-[1050] flex items-start justify-center overflow-y-auto bg-black/60 px-4 py-6 print:static print:block print:overflow-visible print:bg-white print:p-0"
         @click="close"
       >
         <div
-          class="relative w-full max-w-5xl rounded-[32px] border border-stone-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950 print:border print:border-black print:shadow-none print:rounded-none salary-sheet-printable"
+          class="salary-sheet-printable relative w-full max-w-4xl rounded-2xl border border-stone-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950 print:rounded-none print:border-0 print:shadow-none"
           role="dialog"
           aria-modal="true"
           @click.stop="stop"
         >
-          <div class="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 bg-white px-5 py-4 dark:border-slate-800 dark:bg-slate-950 print:hidden">
+          <div class="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950 print:hidden">
             <div>
               <p class="text-xs font-semibold uppercase tracking-[0.3em] text-stone-500 dark:text-slate-400">Salary Sheet</p>
               <h2 class="text-lg font-semibold text-stone-900 dark:text-white">Monthly Salary Sheet</h2>
@@ -114,6 +114,11 @@ const printSheet = () => window.print()
 
 <style>
 @media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
   body * {
     visibility: hidden !important;
   }
@@ -124,10 +129,13 @@ const printSheet = () => window.print()
   }
 
   .salary-sheet-printable {
-    position: static !important;
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
     margin: 0 !important;
     width: 100% !important;
+    max-width: none !important;
     box-shadow: none !important;
+    background: #fff !important;
   }
 }
 </style>
