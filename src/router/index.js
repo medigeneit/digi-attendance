@@ -1425,6 +1425,26 @@ const router = createRouter({
             title: 'Checklists',
           },
         },
+        {
+          path: '/lifecycle/:flowType/board',
+          name: 'lifecycle.board',
+          component: () => import('@/views/admin-pages/LifecycleBoardPage.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Lifecycle Board',
+          },
+        },
+        {
+          path: '/lifecycle/:flowType/users/:userId',
+          name: 'lifecycle.detail',
+          component: () => import('@/views/admin-pages/LifecycleDetailPage.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Lifecycle Detail',
+          },
+        },
 
         {
           path: '/users/:userId/checklists/:checklistId',
@@ -1504,6 +1524,14 @@ const router = createRouter({
 router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore()
   const isAuthenticated = !!authStore.token || localStorage.getItem('auth_token')
+  const storedUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('user') || 'null')
+    } catch {
+      return null
+    }
+  })()
+  const currentRole = authStore.user?.role || storedUser?.role || null
 
   // Root URL should not render an empty AppLayout.
   // Authenticated users -> Dashboard, guests -> Home.
@@ -1522,6 +1550,13 @@ router.beforeEach((to, _from, next) => {
   const shouldRedirectToDashboard = redirectToDashboardPaths.includes(to.path)
   if (isAuthenticated && shouldRedirectToDashboard) {
     return next({ name: 'Dashboard' })
+  }
+
+  const requiredRoles = [...new Set(to.matched.flatMap((record) => record.meta?.roles || []))]
+  if (requiredRoles.length > 0) {
+    if (!currentRole || !requiredRoles.includes(currentRole)) {
+      return next({ name: 'Dashboard' })
+    }
   }
 
   if (to.matched.some((record) => record.meta.requiresAuth) && !isAuthenticated) {

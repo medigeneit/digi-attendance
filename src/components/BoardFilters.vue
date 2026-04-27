@@ -7,13 +7,15 @@ const props = defineProps({
   modelValue: { type: Object, required: true }, // { type, companyId, departmentId, employeeId, lineType, user_type }
   companies: { type: Array, default: () => [] },
   departments: { type: Array, default: () => [] },
+  showLifecycleStatus: { type: Boolean, default: false },
+  lifecycleStatuses: { type: Array, default: () => [] },
 })
 const emit = defineEmits(['update:modelValue', 'submit'])
 
 const route = useRoute()
 const router = useRouter()
 
-const DEFAULTS = { type: null, user_type: 'Probationary' }
+const DEFAULTS = { type: null, user_type: 'Probationary', lifecycle_status: null }
 
 const toLocal = (v = {}) => ({
   type: v.type ?? DEFAULTS.type,
@@ -22,6 +24,7 @@ const toLocal = (v = {}) => ({
   employee_id: v.employeeId ?? null,
   line_type: v.lineType ?? null,
   user_type: v.user_type ?? DEFAULTS.user_type,
+  lifecycle_status: v.lifecycleStatus ?? DEFAULTS.lifecycle_status,
 })
 const toModel = (l = {}) => ({
   type: l.type ?? DEFAULTS.type,
@@ -30,6 +33,7 @@ const toModel = (l = {}) => ({
   employeeId: l.employee_id ?? null,
   lineType: l.line_type ?? null,
   user_type: l.user_type ?? DEFAULTS.user_type,
+  lifecycleStatus: l.lifecycle_status ?? DEFAULTS.lifecycle_status,
 })
 
 // one local copy for the UI
@@ -43,7 +47,7 @@ function emitUpdate() {
 
 // ======== Route query sync (debounced) ========
 // ⬇️ user_type এখানে যোগ করা হলো
-const FILTER_KEYS = ['type', 'company_id', 'department_id', 'employee_id', 'line_type', 'user_type']
+const FILTER_KEYS = ['type', 'company_id', 'department_id', 'employee_id', 'line_type', 'user_type', 'lifecycle_status']
 // '' | null | undefined | 'all' => treat as blank for URL
 const isBlank = (v) => v === '' || v === null || v === undefined || v === 'all'
 
@@ -62,6 +66,7 @@ function pickFiltersFromLocal() {
   if (!isBlank(local.user_type) && String(local.user_type) !== DEFAULTS.user_type) {
     q.user_type = String(local.user_type)
   }
+  if (!isBlank(local.lifecycle_status)) q.lifecycle_status = String(local.lifecycle_status)
   return q
 }
 
@@ -81,10 +86,28 @@ function buildNextQuery(partial = {}) {
 }
 
 let qTimer = null
+function sameQuery(a = {}, b = {}) {
+  const clean = (source) => {
+    const next = {}
+    for (const [key, value] of Object.entries(source || {})) {
+      if (value === '' || value === null || value === undefined) continue
+      next[key] = String(Array.isArray(value) ? value.join(',') : value)
+    }
+    return next
+  }
+
+  const left = clean(a)
+  const right = clean(b)
+  const keys = Array.from(new Set([...Object.keys(left), ...Object.keys(right)])).sort()
+
+  return keys.every((key) => left[key] === right[key])
+}
+
 function syncRouteQuery({ replace = true, partial = {}, debounce = 150 } = {}) {
   if (qTimer) clearTimeout(qTimer)
   qTimer = setTimeout(() => {
     const next = buildNextQuery(partial)
+    if (sameQuery(route.query, next)) return
     const nav = () => (replace ? router.replace({ query: next }) : router.push({ query: next }))
     nav().catch(() => {})
   }, debounce)
@@ -118,7 +141,7 @@ watch(
 
 // local changes -> parent model + URL (debounced)
 watch(
-  () => [local.type, local.company_id, local.department_id, local.employee_id, local.line_type, local.user_type],
+  () => [local.type, local.company_id, local.department_id, local.employee_id, local.line_type, local.user_type, local.lifecycle_status],
   () => {
     emitUpdate()
     syncRouteQuery({ replace: true, debounce: 150 })
@@ -147,6 +170,20 @@ watch(() => route.query.user_type, (v) => {
         <option value="Probationary">Probationary</option>
         <option value="Permanent">Permanent</option>
         <option value="Contract">Contract</option>
+      </select>
+    </div>
+
+    <div v-if="showLifecycleStatus">
+      <label class="block text-xs text-gray-500 mb-1">Lifecycle Stage</label>
+      <select v-model="local.lifecycle_status" class="border rounded px-2 py-1">
+        <option :value="null">All</option>
+        <option
+          v-for="item in lifecycleStatuses"
+          :key="item.value"
+          :value="item.value"
+        >
+          {{ item.label }}
+        </option>
       </select>
     </div>
 

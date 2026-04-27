@@ -4,17 +4,23 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import { useNotificationStore } from '@/stores/notification'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
+const router = useRouter()
 
 const notificationStore = useNotificationStore()
 const { icons, loading, notifications, count_notifications } = storeToRefs(notificationStore)
+const isProbationType = computed(() => route.params.type === 'probation')
 
-onMounted(() => {
+onMounted(async () => {
   if (route.params.type) {
     notificationStore.fetchCountNotifications()
-    notificationStore.fetchSpecificNotifications(route.params.type)
+    if (isProbationType.value) {
+      notificationStore.fetchNotificationsByType(route.params.type)
+    } else {
+      notificationStore.fetchSpecificNotifications(route.params.type)
+    }
   }
 })
 
@@ -23,12 +29,21 @@ watch(
   (newType, oldType) => {
     if (newType && newType !== oldType) {
       notificationStore.fetchCountNotifications()
-      notificationStore.fetchSpecificNotifications(newType)
+      if (newType === 'probation') {
+        notificationStore.fetchNotificationsByType(newType)
+      } else {
+        notificationStore.fetchSpecificNotifications(newType)
+      }
     }
   },
 )
 
 const onSuccess = async () => {
+  if (isProbationType.value) {
+    await notificationStore.fetchNotificationsByType(route.params.type)
+    return
+  }
+
   await notificationStore.fetchSpecificNotifications(route.params.type)
 }
 
@@ -38,6 +53,23 @@ const getNotificationId = (notification) =>
   notification?.attachment_id ||
   notification?.attachment?.id ||
   notification?.event_id
+
+const probationLink = (notification) => {
+  const userId = notification?.metadata?.employee_id || notification?.event_model?.user?.id
+  if (!userId) return null
+
+  return {
+    name: 'lifecycle.detail',
+    params: { flowType: 'onboarding', userId },
+    query: { stage: 'probation' },
+  }
+}
+
+const probationAssignedLabel = (notification) =>
+  (notification?.metadata?.reviewer_assignments || [])
+    .map((item) => item?.user_name || item?.role_label || item?.role)
+    .filter(Boolean)
+    .join(', ')
 
 const specifications = {
   leave_applications: 'LeaveApplicationShow',
@@ -81,39 +113,67 @@ const formattedType = computed(() => {
     <div v-else-if="notifications.length" class="space-y-4">
       <div
         v-for="notification in notifications"
-        :key="notification.application_id"
+        :key="getNotificationId(notification)"
         class="bg-white p-3 md:p-4 rounded-xl shadow border grid gap-2"
       >
         <div class="flex gap-2 md:gap-3 items-center">
-          <div class="shrink-0 grow-0 btn-1 size-8 p-0">{{ icons[route.params.type] }}</div>
+          <div class="shrink-0 grow-0 btn-1 size-8 p-0 flex items-center justify-center">
+            <i :class="icons[route.params.type]"></i>
+          </div>
           <div class="shrink grow font-semibold text-sm md:text-base">
-            {{ notification.user_name }}
+            {{ isProbationType ? (notification.metadata?.employee_name || notification.event_model?.user?.name || 'Probation Review') : notification.user_name }}
           </div>
           <div class="ml-auto shrink-0 grow-0 flex gap-2 md:gap-3 items-center">
-            <a
-              v-if="notification?.attachment"
-              :href="notification.attachment"
-              target="_blank"
-              class="btn-4 px-2"
-            >
-              <i class="fad fa-link"></i>
-            </a>
             <RouterLink
-              v-if="getNotificationId(notification)"
-              :to="{
-                name: specifications[route.params.type],
-                params: { id: getNotificationId(notification) },
-              }"
+              v-if="isProbationType && probationLink(notification)"
+              :to="probationLink(notification)"
               class="btn-1 px-3"
             >
               <i class="far fa-eye"></i>
             </RouterLink>
+            <template v-else>
+              <a
+                v-if="notification?.attachment"
+                :href="notification.attachment"
+                target="_blank"
+                class="btn-4 px-2"
+              >
+                <i class="fad fa-link"></i>
+              </a>
+              <RouterLink
+                v-if="getNotificationId(notification)"
+                :to="{
+                  name: specifications[route.params.type],
+                  params: { id: getNotificationId(notification) },
+                }"
+                class="btn-1 px-3"
+              >
+                <i class="far fa-eye"></i>
+              </RouterLink>
+            </template>
           </div>
         </div>
         <div
           class="flex items-center text-red-600 text-xs md:text-sm lg:text-base"
           v-html="notification.message"
         ></div>
+        <div
+          v-if="isProbationType"
+          class="flex flex-wrap gap-y-1 gap-x-3 items-center text-xs md:text-sm lg:text-base"
+        >
+          <div v-if="notification.metadata?.stage_label">
+            <span class="text-gray-400">Stage:</span>
+            {{ notification.metadata.stage_label }}
+          </div>
+          <div v-if="notification.metadata?.review_stage">
+            <span class="text-gray-400">Review:</span>
+            {{ notification.metadata.review_stage }}
+          </div>
+          <div v-if="probationAssignedLabel(notification)">
+            <span class="text-gray-400">Assigned:</span>
+            {{ probationAssignedLabel(notification) }}
+          </div>
+        </div>
         <div
           v-if="notification.type || notification.duration"
           class="flex flex-wrap gap-y-1 gap-x-3 items-center text-xs md:text-sm lg:text-base"
@@ -145,7 +205,10 @@ const formattedType = computed(() => {
             {{ notification.last_approver_note }}
           </div>
         </div>
-        <div class="flex gap-3 items-center" v-if="route.params.type !== 'discipline_attachments'">
+        <div
+          class="flex gap-3 items-center"
+          v-if="route.params.type !== 'discipline_attachments' && !isProbationType"
+        >
           <div class="flex items-center gap-8">
             <p
               v-if="notification.messages?.length"

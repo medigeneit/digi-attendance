@@ -34,7 +34,7 @@ export const useUsersLookupStore = defineStore('usersLookup', () => {
     error.value = ''
 
     try {
-      const res = await apiClient.get('/users', { params: { search: q }, signal: ctrl.signal })
+      const res = await apiClient.get('/users-lookup', { params: { q }, signal: ctrl.signal })
       const payload = res?.data || {}
       const list = payload.users || payload.data || payload || []
 

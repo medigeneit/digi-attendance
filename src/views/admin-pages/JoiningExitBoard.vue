@@ -83,7 +83,7 @@ onMounted(async () => {
 <template>
   <div class="p-6 space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-semibold"><b>{{ store.templateByType?.name || '—' }}</b> Board</h1>
+      <h1 class="text-2xl font-semibold capitalize"><b>{{ store.templateByType?.type || '—' }}</b> Progress Board</h1>
       <div class="text-gray-500">
         Template: <b>{{ store.templateByType?.name || '—' }}</b>
       </div>

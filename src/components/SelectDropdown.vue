@@ -83,7 +83,7 @@
         <!-- Indicator -->
         <button
           v-if="props.modelValue && clearable && !props.disabled"
-          @click.prevent="() => emit('update:modelValue', '')"
+          @click.prevent="() => emit('update:modelValue', isMultiSelection ? [] : '')"
           class="text-gray-600 font-semibold hover:text-red-700 text-xl"
           title="Clear selection"
         >

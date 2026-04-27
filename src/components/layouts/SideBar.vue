@@ -126,17 +126,71 @@ const hrdRouteNames = hrdMenu.map((i) => i.routeName)
 // EmpManage
 const empManageMenu = [
   {
-    label: 'Joining Checklist',
-    to: { name: 'checklists.board', query: { type: 'joining' } },
-    key: 'joining',
+    key: 'onboarding',
+    label: 'Onboarding',
+    to: { name: 'lifecycle.board', params: { flowType: 'onboarding' } },
+    items: [
+      {
+        key: 'pre_boarding',
+        label: 'Pre-Boarding',
+        to: { name: 'lifecycle.board', params: { flowType: 'onboarding' }, query: { lifecycle_status: 'pre_boarding' } },
+      },
+      {
+        key: 'joining',
+        label: 'Joining Checklist',
+        to: { name: 'lifecycle.board', params: { flowType: 'onboarding' }, query: { lifecycle_status: 'joining' } },
+      },
+      {
+        key: 'training',
+        label: 'Training',
+        to: { name: 'lifecycle.board', params: { flowType: 'onboarding' }, query: { lifecycle_status: 'training' } },
+      },
+      {
+        key: 'probation',
+        label: 'Probation Tracking',
+        to: { name: 'lifecycle.board', params: { flowType: 'onboarding' }, query: { lifecycle_status: 'probation' } },
+      },
+      {
+        key: 'confirmation',
+        label: 'Confirmation',
+        to: { name: 'lifecycle.board', params: { flowType: 'onboarding' }, query: { lifecycle_status: 'confirmation' } },
+      },
+    ],
   },
   {
-    label: 'Exit Checklist',
-    to: { name: 'checklists.board', query: { type: 'exit' } },
-    key: 'exit',
+    key: 'offboarding',
+    label: 'Offboarding',
+    to: { name: 'lifecycle.board', params: { flowType: 'offboarding' } },
+    items: [
+      {
+        key: 'exit_request',
+        label: 'Exit Request',
+        to: { name: 'lifecycle.board', params: { flowType: 'offboarding' }, query: { lifecycle_status: 'exit_request' } },
+      },
+      {
+        key: 'clearance_in_progress',
+        label: 'Exit Checklist',
+        to: { name: 'lifecycle.board', params: { flowType: 'offboarding' }, query: { lifecycle_status: 'clearance_in_progress' } },
+      },
+      {
+        key: 'handover_in_progress',
+        label: 'Handover',
+        to: { name: 'lifecycle.board', params: { flowType: 'offboarding' }, query: { lifecycle_status: 'handover_in_progress' } },
+      },
+      {
+        key: 'exit_interview',
+        label: 'Exit Interview',
+        to: { name: 'lifecycle.board', params: { flowType: 'offboarding' }, query: { lifecycle_status: 'exit_interview' } },
+      },
+      {
+        key: 'settlement_pending',
+        label: 'Final Settlement',
+        to: { name: 'lifecycle.board', params: { flowType: 'offboarding' }, query: { lifecycle_status: 'settlement_pending' } },
+      },
+    ],
   },
 ]
-const empRouteNames = ['checklists.board']
+const empRouteNames = ['checklists.board', 'lifecycle.board', 'lifecycle.detail']
 
 // Settings
 const settingsMenu = [
@@ -195,9 +249,20 @@ const filteredKpiMenu = computed(() =>
 const filteredHrdMenu = computed(() =>
   normalizedQuery.value ? hrdMenu.filter((i) => matchesQuery(i.label)) : hrdMenu,
 )
-const filteredEmpManageMenu = computed(() =>
-  normalizedQuery.value ? empManageMenu.filter((i) => matchesQuery(i.label)) : empManageMenu,
-)
+const filteredEmpManageMenu = computed(() => {
+  if (!normalizedQuery.value) return empManageMenu
+
+  return empManageMenu
+    .map((group) => {
+      const groupMatched = matchesQuery(group.label)
+      const items = groupMatched
+        ? group.items
+        : group.items.filter((item) => matchesQuery(item.label))
+
+      return { ...group, items }
+    })
+    .filter((group) => group.items.length > 0)
+})
 const filteredSettingsMenu = computed(() =>
   normalizedQuery.value ? settingsMenu.filter((i) => matchesQuery(i.label)) : settingsMenu,
 )
@@ -207,6 +272,38 @@ const filteredCareerMenu = computed(() =>
 
 const submenuOpen = (key, filteredList) =>
   normalizedQuery.value ? filteredList.length > 0 : isSubmenuOpen(key)
+
+const isEmpItemActive = (item) => {
+  if (!item?.to) return false
+
+  if (item.to.name === 'lifecycle.board') {
+    const sameFlow = currentName.value === 'lifecycle.board' || currentName.value === 'lifecycle.detail'
+    const flowMatches = route.params.flowType === item.to.params?.flowType
+    if (!sameFlow || !flowMatches) return false
+
+    const wantedStage = item.to.query?.lifecycle_status
+    if (!wantedStage) return true
+
+    return route.query.lifecycle_status === wantedStage || route.query.stage === wantedStage
+  }
+
+  if (item.to.name === 'checklists.board') {
+    return currentName.value === 'checklists.board' && route.query.type === item.to.query?.type
+  }
+
+  return currentName.value === item.to.name
+}
+
+const isEmpGroupActive = (group) => {
+  if (!group?.to) return false
+
+  if (group.to.name === 'lifecycle.board') {
+    return ['lifecycle.board', 'lifecycle.detail'].includes(currentName.value) &&
+      route.params.flowType === group.to.params?.flowType
+  }
+
+  return group.items?.some((item) => isEmpItemActive(item))
+}
 
 const hasSearchHit = computed(() => {
   if (!normalizedQuery.value) return true
@@ -350,10 +447,10 @@ watch(
       </RouterLink>
 
       <template v-if="!authStore.isAdminMood || !isAdmin">
-        <RouterLink
-          v-if="matchesQuery('Task List')"
-          :to="`/my-requirement-tasks`"
-          class="side-menu"
+      <RouterLink
+        v-if="matchesQuery('Task List')"
+        :to="`/my-requirement-tasks`"
+        class="side-menu"
           :class="{
             'flex justify-center': !open,
             'side-menu-active': currentPath.includes('/my-requirement-tasks'),
@@ -702,28 +799,38 @@ watch(
                 aria-hidden="true"
                 class="absolute left-3 top-2 bottom-2 w-px bg-slate-200"
               ></span>
-              <RouterLink
-                v-for="item in filteredEmpManageMenu"
-                :key="item.key"
-                :to="item.to"
-                class="group relative flex items-center gap-2 rounded-lg py-2 pl-7 pr-3 text-[13px] text-slate-600 transition duration-200 ease-out hover:bg-slate-100 hover:text-slate-900 hover:translate-x-0.5"
-                :class="{
-                  'bg-blue-50/80 text-blue-700 font-semibold shadow-sm':
-                    currentName === 'checklists.board',
-                }"
-              >
-                <span
-                  class="absolute left-3 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-slate-300 transition group-hover:bg-blue-400"
-                  :class="currentName === 'checklists.board' ? 'bg-blue-500' : ''"
-                ></span>
-                <span class="flex-1">{{ item.label }}</span>
-                <span
-                  class="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-blue-600 opacity-0 transition"
-                  :class="
-                    currentName === 'checklists.board' ? 'opacity-100' : 'group-hover:opacity-60'
-                  "
-                ></span>
-              </RouterLink>
+              <div v-for="group in filteredEmpManageMenu" :key="group.key" class="space-y-1">
+                <RouterLink
+                  :to="group.to"
+                  class="group relative flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-semibold text-slate-700 transition duration-200 ease-out hover:bg-slate-100 hover:text-slate-900"
+                  :class="{
+                    'bg-blue-50/80 text-blue-700 shadow-sm': isEmpGroupActive(group),
+                  }"
+                >
+                  <span class="flex-1">{{ group.label }}</span>
+                  <span class="text-[11px] text-slate-400">/</span>
+                </RouterLink>
+
+                <RouterLink
+                  v-for="item in group.items"
+                  :key="item.key"
+                  :to="item.to"
+                  class="group relative flex items-center gap-2 rounded-lg py-2 pl-7 pr-3 text-[13px] text-slate-600 transition duration-200 ease-out hover:bg-slate-100 hover:text-slate-900 hover:translate-x-0.5"
+                  :class="{
+                    'bg-blue-50/80 text-blue-700 font-semibold shadow-sm': isEmpItemActive(item),
+                  }"
+                >
+                  <span
+                    class="absolute left-3 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-slate-300 transition group-hover:bg-blue-400"
+                    :class="isEmpItemActive(item) ? 'bg-blue-500' : ''"
+                  ></span>
+                  <span class="flex-1">{{ item.label }}</span>
+                  <span
+                    class="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-blue-600 opacity-0 transition"
+                    :class="isEmpItemActive(item) ? 'opacity-100' : 'group-hover:opacity-60'"
+                  ></span>
+                </RouterLink>
+              </div>
             </nav>
           </transition>
         </template>

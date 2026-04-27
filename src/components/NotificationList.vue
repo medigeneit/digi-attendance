@@ -93,9 +93,19 @@ const getEventTitle = (eventModel, eventType) => {
 
       return `${eventModel?.reason} No check-in or check-out data`
 
+    case 'probation':
+      return `${eventModel.user_name || 'Employee'} - ${itemSlabLabel(eventModel) || 'Probation review'}`
+
     default:
       return 'Unknown Event'
   }
+}
+
+const itemSlabLabel = (eventModel) => {
+  const probation = eventModel?.probation || {}
+  const reviews = Array.isArray(probation.reviews) ? probation.reviews : []
+  const active = reviews.find((review) => String(review.status || 'pending').toLowerCase() !== 'completed')
+  return active?.label || ''
 }
 
 const getEventIcon = (eventType) => {
@@ -110,6 +120,8 @@ const getEventIcon = (eventType) => {
       return 'fas fa-random'
     case 'offday':
       return 'fas fa-random'
+    case 'probation':
+      return 'fas fa-user-check'
     default:
       return 'fas fa-bell'
   }
@@ -273,10 +285,25 @@ const formatTime = (timeString) => {
               >
                 <i class="far fa-eye"></i>
               </RouterLink>
+              <RouterLink
+                v-if="route.query.type === 'probation'"
+                :to="{
+                  name: 'lifecycle.detail',
+                  params: { flowType: 'onboarding', userId: item?.event_model?.user_id },
+                  query: { stage: 'probation', notifyId: item?.id },
+                }"
+                class="btn-4"
+              >
+                <i class="far fa-eye"></i>
+              </RouterLink>
             </div>
             <div class="grow-0 w-full">
               <p class="text-xs font-semibold" v-if="item?.event_model?.type">
                 Type : {{ item?.event_model?.type }}
+              </p>
+              <p class="text-xs font-semibold" v-if="item?.event_type === 'probation'">
+                {{ item?.event_model?.department_name || 'No department' }}
+                <span v-if="item?.metadata?.slab_label"> | {{ item.metadata.slab_label }}</span>
               </p>
               <p class="text-xs text-gray-400">{{ formatDate(item.created_at) }}</p>
             </div>

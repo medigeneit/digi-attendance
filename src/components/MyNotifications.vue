@@ -9,6 +9,7 @@ const { icons, count_notifications, total_notifications } = storeToRefs(notifica
 const applicationFeedbackCount = computed(
   () => count_notifications.value?.application_feedback || 0,
 )
+const probationCount = computed(() => count_notifications.value?.probation || 0)
 
 const emits = defineEmits(['close'])
 </script>
@@ -26,7 +27,8 @@ const emits = defineEmits(['close'])
         @click="emits('close')"
         class="w-full flex text-base font-bold text-gray-700"
       >
-        🔔 Notifications 
+        <i class="fas fa-bell mr-2 mt-1 text-teal-600"></i>
+        Notifications
         <span class="ml-auto px-2 py-1 bg-red-500 text-white text-xs rounded-full">
           {{ total_notifications }}
         </span>
@@ -41,7 +43,10 @@ const emits = defineEmits(['close'])
         @click="emits('close')"
         class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
       >
-        <span class="text-sm text-gray-700">{{ icons.leave_applications }} Leave Applications</span>
+        <span class="text-sm text-gray-700">
+          <i :class="[icons.leave_applications, 'mr-2 text-emerald-600']"></i>
+          Leave Applications
+        </span>
         <span class="text-xs bg-teal-500 text-white rounded-full px-2 py-0.5 font-semibold">
           {{ count_notifications.leave_applications }}
         </span>
@@ -53,7 +58,10 @@ const emits = defineEmits(['close'])
         @click="emits('close')"
         class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
       >
-        <span class="text-sm text-gray-700">{{ icons.short_leave_applications }} Short Leave</span>
+        <span class="text-sm text-gray-700">
+          <i :class="[icons.short_leave_applications, 'mr-2 text-amber-600']"></i>
+          Short Leave
+        </span>
         <span class="text-xs bg-yellow-500 text-white rounded-full px-2 py-0.5 font-semibold">
           {{ count_notifications.short_leave_applications }}
         </span>
@@ -69,7 +77,8 @@ const emits = defineEmits(['close'])
         class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
       >
         <span class="text-sm text-gray-700">
-          {{ icons.shift_exchange_applications }} Shift Exchange
+          <i :class="[icons.shift_exchange_applications, 'mr-2 text-sky-600']"></i>
+          Shift Exchange
         </span>
         <span class="text-xs bg-purple-500 text-white rounded-full px-2 py-0.5 font-semibold">
           {{ count_notifications.shift_exchange_applications }}
@@ -86,7 +95,8 @@ const emits = defineEmits(['close'])
         class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
       >
         <span class="text-sm text-gray-700">
-          {{ icons.offday_exchange_applications }} Offday Exchange
+          <i :class="[icons.offday_exchange_applications, 'mr-2 text-indigo-600']"></i>
+          Offday Exchange
         </span>
         <span class="text-xs bg-purple-500 text-white rounded-full px-2 py-0.5 font-semibold">
           {{ count_notifications.offday_exchange_applications }}
@@ -103,7 +113,8 @@ const emits = defineEmits(['close'])
         class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
       >
         <span class="text-sm text-gray-700">
-          {{ icons.manual_attendance_applications }} Manual Attendance
+          <i :class="[icons.manual_attendance_applications, 'mr-2 text-rose-600']"></i>
+          Manual Attendance
         </span>
         <span class="text-xs bg-sky-500 text-white rounded-full px-2 py-0.5 font-semibold">
           {{ count_notifications.manual_attendance_applications }}
@@ -116,9 +127,26 @@ const emits = defineEmits(['close'])
         @click="emits('close')"
         class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
       >
-        <span class="text-sm text-gray-700"> {{ icons.overtime_applications }} Overtime </span>
+        <span class="text-sm text-gray-700">
+          <i :class="[icons.overtime_applications, 'mr-2 text-slate-600']"></i>
+          Overtime
+        </span>
         <span class="text-xs bg-sky-500 text-white rounded-full px-2 py-0.5 font-semibold">
           {{ count_notifications.overtime_applications }}
+        </span>
+      </RouterLink>
+      <RouterLink
+        v-if="probationCount"
+        :to="{ name: 'MySpecificNotificationList', params: { type: 'probation' } }"
+        @click="emits('close')"
+        class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
+      >
+        <span class="text-sm text-gray-700">
+          <i :class="[icons.probation, 'mr-2 text-amber-600']"></i>
+          Probation Review
+        </span>
+        <span class="text-xs bg-amber-500 text-white rounded-full px-2 py-0.5 font-semibold">
+          {{ probationCount }}
         </span>
       </RouterLink>
       <RouterLink
@@ -127,7 +155,10 @@ const emits = defineEmits(['close'])
         @click="emits('close')"
         class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
       >
-        <span class="text-sm text-gray-700"> {{ icons.discipline_attachments }} Discipline Attachments </span>
+        <span class="text-sm text-gray-700">
+          <i :class="[icons.discipline_attachments, 'mr-2 text-cyan-600']"></i>
+          Discipline Attachments
+        </span>
         <span class="text-xs bg-sky-500 text-white rounded-full px-2 py-0.5 font-semibold">
           {{ count_notifications.discipline_attachments }}
         </span>
@@ -139,7 +170,10 @@ const emits = defineEmits(['close'])
         @click="emits('close')"
         class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
       >
-        <span class="text-sm text-gray-700"> {{ icons.application_feedback }} Application Feedback </span>
+        <span class="text-sm text-gray-700">
+          <i :class="[icons.application_feedback, 'mr-2 text-violet-600']"></i>
+          Application Feedback
+        </span>
         <span class="text-xs bg-violet-500 text-white rounded-full px-2 py-0.5 font-semibold">
           {{ applicationFeedbackCount }}
         </span>
