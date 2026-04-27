@@ -11,9 +11,13 @@ const router = useRouter()
 const route = useRoute()
 const sidebarVisible = ref(JSON.parse(localStorage.getItem('sidebarVisible')) ?? true)
 
+const setSidebarVisible = (value) => {
+  sidebarVisible.value = value
+  localStorage.setItem('sidebarVisible', JSON.stringify(value))
+}
+
 const toggleSidebar = () => {
-  sidebarVisible.value = !sidebarVisible.value
-  localStorage.setItem('sidebarVisible', JSON.stringify(sidebarVisible.value))
+  setSidebarVisible(!sidebarVisible.value)
 }
 
 const user = ref(null)
@@ -46,13 +50,15 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="relative md:flex min-w-0 max-w-full overflow-x-hidden">
+  <div class="relative min-h-screen min-w-0 max-w-full md:flex">
     <div
       :class="{
         'invisible md:visible opacity-0 md:opacity-100': !sidebarVisible,
         sidebarVisible: ' opacity-100',
+        'md:w-[240px]': sidebarVisible,
+        'md:w-[70px]': !sidebarVisible,
       }"
-      class="max-w-[240px] bg-white md:shadow-md shadow-2xl absolute md:static transition-transform duration-300 print:hidden z-[998]"
+      class="absolute z-[998] bg-white shadow-2xl transition-all duration-300 print:hidden md:relative md:shrink-0 md:shadow-md"
     >
       <div
         @click="toggleSidebar"
@@ -68,20 +74,24 @@ onUnmounted(() => {
       </div>
 
       <div
-        class="fixed md:sticky top-0 bottom-0 transition duration-150 print:hidden"
+        class="fixed bottom-0 top-0 transition duration-150 print:hidden md:left-0"
         :class="{
           'translate-x-0 ': sidebarVisible,
           '-translate-x-20 md:translate-x-0': !sidebarVisible,
         }"
       >
         <div class="w-full">
-          <SideBar :visible="sidebarVisible" :user="user" />
+          <SideBar
+            :visible="sidebarVisible"
+            :user="user"
+            @update:visible="setSidebarVisible"
+          />
         </div>
       </div>
     </div>
 
     <!-- Main Content -->
-    <div class="flex min-h-screen min-w-0 flex-1 flex-col justify-between overflow-x-hidden">
+    <div class="flex min-h-screen min-w-0 flex-1 flex-col justify-between">
       <header class="sticky top-0 print:hidden z-[999]">
         <div class="relative">
           <button
@@ -95,7 +105,7 @@ onUnmounted(() => {
         </div>
       </header>
 
-      <main class="flex-grow min-w-0 w-full max-w-full overflow-x-hidden p-4 print:py-0">
+      <main class="flex-grow min-w-0 w-full max-w-full overflow-x-clip p-4 print:py-0">
         <RouterView />
       </main>
 

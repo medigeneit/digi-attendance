@@ -30,6 +30,12 @@ export const PROBATIONARY_SALARY_COMPONENT_POLICY = [
 
 export const PROVIDENT_FUND_RATE = 0.05
 
+export const isPfAllowanceRow = (allowance = {}) => {
+  const code = String(allowance?.allowance_code || '').trim().toUpperCase()
+  const name = String(allowance?.allowance_name || '').trim().toLowerCase()
+  return code === 'PF' || name === 'provident fund'
+}
+
 export const normalizeEmploymentType = (value) =>
   String(value || '')
     .trim()
@@ -52,7 +58,7 @@ export const calculateAllowanceTotal = (allowances = []) =>
   Array.isArray(allowances)
     ? roundCurrency(
         allowances
-          .filter((allowance) => allowance?.is_active)
+          .filter((allowance) => allowance?.is_active && !isPfAllowanceRow(allowance))
           .reduce((sum, allowance) => sum + toNum(allowance?.amount), 0),
       )
     : 0

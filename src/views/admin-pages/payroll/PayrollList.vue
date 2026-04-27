@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { storeToRefs } from 'pinia'
 import { usePayrollManagementStore } from '@/stores/payrollManagement'
@@ -11,6 +11,7 @@ import PayrollStatusBadge from '@/components/payroll/PayrollStatusBadge.vue'
 import PaymentStatusModal from '@/components/payroll/PaymentStatusModal.vue'
 
 const router = useRouter()
+const route = useRoute()
 const toast = useToast()
 const payrollStore = usePayrollManagementStore()
 const companyStore = useCompanyStore()
@@ -18,11 +19,14 @@ const companyStore = useCompanyStore()
 const { list, loading, error, pagination } = storeToRefs(payrollStore)
 const { companies } = storeToRefs(companyStore)
 
+const getCurrentMonth = () => new Date().toISOString().slice(0, 7)
+
 const filters = ref({
   company_id: '',
-  salary_month: '',
+  salary_month: getCurrentMonth(),
   salary_type: '',
   payment_status: '',
+  default_payment_method: 'Cash',
   page: 1,
   per_page: 15,
 })
@@ -71,18 +75,33 @@ const summaryCards = computed(() => {
 const resetFilters = () => {
   filters.value = {
     company_id: '',
-    salary_month: '',
+    salary_month: getCurrentMonth(),
     salary_type: '',
     payment_status: '',
+    default_payment_method: 'Cash',
     page: 1,
     per_page: 15,
   }
   load()
 }
 
+const applyRouteQueryToFilters = () => {
+  const q = route.query
+  filters.value = {
+    company_id: String(q.company_id || ''),
+    salary_month: String(q.salary_month || getCurrentMonth()),
+    salary_type: String(q.salary_type || ''),
+    payment_status: String(q.payment_status || ''),
+    default_payment_method: String(q.default_payment_method || 'Cash'),
+    page: Number(q.page) > 0 ? Number(q.page) : 1,
+    per_page: Number(q.per_page) > 0 ? Number(q.per_page) : 15,
+  }
+}
+
 async function load() {
   const params = { ...filters.value }
   Object.keys(params).forEach((k) => { if (!params[k]) delete params[k] })
+  await router.replace({ query: params })
   await payrollStore.fetchList(params)
 }
 
@@ -100,6 +119,7 @@ async function handleDownloadExcel() {
 }
 
 onMounted(async () => {
+  applyRouteQueryToFilters()
   await Promise.all([companyStore.fetchCompanies(), load()])
 })
 
@@ -158,14 +178,6 @@ const formatDate = (value) => {
   }).format(date)
 }
 
-const getPayrollGrade = (payroll) =>
-  payroll?.grade ||
-  payroll?.grade_name ||
-  payroll?.designation_grade ||
-  payroll?.user?.designation?.grade ||
-  payroll?.user?.department?.grade ||
-  '-'
-
 const toNumber = (value) => {
   const num = Number(value)
   return Number.isFinite(num) ? num : 0
@@ -186,6 +198,9 @@ const getTotalEarnings = (payroll) =>
           <p class="mt-1 text-sm text-slate-500">Detailed earnings, deductions and payable amounts in one report view.</p>
         </div>
         <div class="flex flex-wrap gap-2">
+          <button class="btn-3" @click="router.push({ name: 'DoctorPayrollList' })">
+            <i class="far fa-user-md"></i> Doctor Payroll
+          </button>
           <button class="btn-3" @click="handleDownloadExcel" :disabled="loading || !list.length">
             <i class="far fa-file-excel"></i> Excel
           </button>
@@ -273,91 +288,113 @@ const getTotalEarnings = (payroll) =>
         </div>
       </div>
       <div class="w-full overflow-x-auto overscroll-x-contain [scrollbar-width:thin]">
-      <table class="min-w-[1700px] w-full border-collapse text-[11px] leading-tight">
+      <table class="payroll-list-table min-w-[1420px] w-full table-fixed border-collapse text-[10px] leading-tight">
+        <colgroup>
+          <col class="w-[34px]" />
+          <col class="w-[112px]" />
+          <col class="w-[92px]" />
+          <col class="w-[74px]" />
+          <col class="w-[52px]" />
+          <col class="w-[56px]" />
+          <col class="w-[56px]" />
+          <col class="w-[56px]" />
+          <col class="w-[56px]" />
+          <col class="w-[56px]" />
+          <col class="w-[56px]" />
+          <col class="w-[56px]" />
+          <col class="w-[56px]" />
+          <col class="w-[56px]" />
+          <col class="w-[56px]" />
+          <col class="w-[56px]" />
+          <col class="w-[56px]" />
+          <col class="w-[56px]" />
+          <col class="w-[56px]" />
+          <col class="w-[56px]" />
+          <col class="w-[56px]" />
+          <col class="w-[72px]" />
+          <col class="w-[62px]" />
+          <col class="w-[56px]" />
+        </colgroup>
         <thead class="sticky top-0 z-10 bg-slate-50 text-slate-700 text-[10px] uppercase">
           <tr>
-            <th class="border border-slate-200 px-2 py-2 text-left" rowspan="2">#</th>
-            <th class="border border-slate-200 px-2 py-2 text-left" rowspan="2">Employee</th>
-            <th class="border border-slate-200 px-2 py-2 text-left" rowspan="2">Emp ID</th>
-            <th class="border border-slate-200 px-2 py-2 text-left" rowspan="2">Joining</th>
-            <th class="border border-slate-200 px-2 py-2 text-left" rowspan="2">Department</th>
-            <th class="border border-slate-200 px-2 py-2 text-left" rowspan="2">Grade</th>
-            <th class="border border-slate-200 px-2 py-2 text-center" rowspan="2">Month</th>
+            <th class="border border-slate-200 px-1 py-2 text-left" rowspan="2">#</th>
+            <th class="border border-slate-200 px-1 py-2 text-left" rowspan="2">Employee</th>
+            <th class="border border-slate-200 px-1 py-2 text-left" rowspan="2">Emp ID</th>
+            <th class="border border-slate-200 px-1 py-2 text-left" rowspan="2">Joining</th>
+            <th class="border border-slate-200 px-1 py-2 text-center" rowspan="2">Month</th>
             <!-- <th class="border border-slate-200 px-2 py-2 text-center" rowspan="2">Type</th> -->
-            <th class="border border-slate-200 bg-emerald-50 px-2 py-2 text-center" colspan="8">Earnings</th>
-            <th class="border border-slate-200 bg-rose-50 px-2 py-2 text-center" colspan="7">Deductions</th>
-            <th class="border border-slate-200 px-2 py-2 text-right" rowspan="2">Payable</th>
-            <th class="border border-slate-200 px-2 py-2 text-center" rowspan="2">Status</th>
-            <th class="border border-slate-200 px-2 py-2 text-center" rowspan="2">Actions</th>
+            <th class="border border-slate-200 bg-emerald-50 px-1 py-2 text-center" colspan="8">Earnings</th>
+            <th class="border border-slate-200 bg-rose-50 px-1 py-2 text-center" colspan="8">Deductions</th>
+            <th class="border border-slate-200 px-1 py-2 text-right" rowspan="2">Payable</th>
+            <th class="border border-slate-200 px-1 py-2 text-center" rowspan="2">Status</th>
+            <th class="border border-slate-200 px-1 py-2 text-center" rowspan="2">Actions</th>
           </tr>
           <tr>
-            <th class="border border-slate-200 px-2 py-1.5 text-right">Basic</th>
-            <th class="border border-slate-200 px-2 py-1.5 text-right">House</th>
-            <th class="border border-slate-200 px-2 py-1.5 text-right">Medical</th>
-            <th class="border border-slate-200 px-2 py-1.5 text-right">Conv.</th>
-            <th class="border border-slate-200 px-2 py-1.5 text-right">Gross</th>
-            <th class="border border-slate-200 px-2 py-1.5 text-right">Others</th>
-            <th class="border border-slate-200 px-2 py-1.5 text-right">OT/Add</th>
-            <th class="border border-slate-200 px-2 py-1.5 text-right">E.Total</th>
-            <th class="border border-slate-200 px-2 py-1.5 text-right">PF</th>
-            <th class="border border-slate-200 px-2 py-1.5 text-right">Meal</th>
-            <th class="border border-slate-200 px-2 py-1.5 text-right">Tax</th>
-            <th class="border border-slate-200 px-2 py-1.5 text-right">Loan</th>
-            <th class="border border-slate-200 px-2 py-1.5 text-right">Other</th>
-            <th class="border border-slate-200 px-2 py-1.5 text-right">Paycut</th>
-            <th class="border border-slate-200 px-2 py-1.5 text-right">D.Total</th>
+            <th class="border border-slate-200 px-1 py-1.5 text-right">Basic</th>
+            <th class="border border-slate-200 px-1 py-1.5 text-right">House</th>
+            <th class="border border-slate-200 px-1 py-1.5 text-right">Medical</th>
+            <th class="border border-slate-200 px-1 py-1.5 text-right">Conv.</th>
+            <th class="border border-slate-200 px-1 py-1.5 text-right">Gross</th>
+            <th class="border border-slate-200 px-1 py-1.5 text-right">Others</th>
+            <th class="border border-slate-200 px-1 py-1.5 text-right">OT/Add</th>
+            <th class="border border-slate-200 px-1 py-1.5 text-right">E.Total</th>
+            <th class="border border-slate-200 px-1 py-1.5 text-right">PF</th>
+            <th class="border border-slate-200 px-1 py-1.5 text-right">Meal</th>
+            <th class="border border-slate-200 px-1 py-1.5 text-right">Tax</th>
+            <th class="border border-slate-200 px-1 py-1.5 text-right">Loan</th>
+            <th class="border border-slate-200 px-1 py-1.5 text-right">Other</th>
+            <th class="border border-slate-200 px-1 py-1.5 text-right">Advance</th>
+            <th class="border border-slate-200 px-1 py-1.5 text-right">Paycut</th>
+            <th class="border border-slate-200 px-1 py-1.5 text-right">D.Total</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="(p, i) in list" :key="p.id" class="odd:bg-white even:bg-slate-50/40 hover:bg-blue-50/40 transition-colors">
-            <td class="border border-slate-200 px-2 py-2 text-gray-400 text-[11px] whitespace-nowrap">{{ (filters.page - 1) * filters.per_page + i + 1 }}</td>
-            <td class="border border-slate-200 px-2 py-2 align-top min-w-[220px]">
-              <div class="font-semibold text-slate-900 leading-tight">{{ p.user?.name || p.employee_name || '-' }}</div>
-              <div class="mt-0.5 text-[11px] text-slate-500">{{ p.user?.designation?.title || p.company_name || '-' }}</div>
+            <td class="border border-slate-200 px-1 py-1.5 text-gray-400 text-[10px] whitespace-nowrap">{{ (filters.page - 1) * filters.per_page + i + 1 }}</td>
+            <td class="border border-slate-200 px-1 py-1.5 align-top w-[112px] max-w-[112px]">
+              <div class="truncate font-semibold text-slate-900 leading-tight" :title="p.user?.name || p.employee_name || '-'">{{ p.user?.name || p.employee_name || '-' }}</div>
+              <div class="mt-0.5 truncate text-[10px] text-slate-500" :title="p.user?.designation?.title || p.company_name || '-'">{{ p.user?.designation?.title || p.company_name || '-' }}</div>
             </td>
-            <td class="border border-slate-200 px-2 py-2 text-[11px] text-slate-600 whitespace-nowrap">
-              <span class="rounded-md bg-slate-100 px-1.5 py-0.5">{{ p.user?.employee_id || p.employee_code || '-' }}</span>
+            <td class="emp-id-cell border border-slate-200 px-1 py-1.5 text-[10px] text-slate-700 whitespace-nowrap">
+              <span class="inline-flex rounded-md bg-slate-100 px-1.5 py-0.5 leading-none whitespace-nowrap">{{ p.user?.employee_id || p.employee_code || '-' }}</span>
             </td>
-            <td class="border border-slate-200 px-2 py-2 text-xs text-slate-500">{{ formatDate(p.user?.joining_date || p.joining_date) }}</td>
-            <td class="border border-slate-200 px-2 py-2 text-xs text-slate-700">{{ p.department_name || p.department || p.user?.department?.name || '-' }}</td>
-            <td class="border border-slate-200 px-2 py-2 text-xs text-slate-700">
-              <span class="rounded-md border border-slate-200 bg-white px-1.5 py-0.5">{{ getPayrollGrade(p) }}</span>
-            </td>
-            <td class="border border-slate-200 px-2 py-2 text-center text-slate-600">{{ formatMonth(p.salary_month) }}</td>
+            <td class="border border-slate-200 px-1 py-1.5 text-[10px] text-slate-500 whitespace-nowrap">{{ formatDate(p.user?.joining_date || p.joining_date) }}</td>
+            <td class="border border-slate-200 px-1 py-1.5 text-center text-slate-600 whitespace-nowrap">{{ formatMonth(p.salary_month) }}</td>
             <!-- <td class="border border-slate-200 px-2 py-2 text-center">
               <span class="rounded-full bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700">{{ p.salary_type || '—' }}</span>
             </td> -->
-            <td class="border border-slate-200 px-2 py-2 text-right font-mono">{{ formatCompactCurrency(p.basic_salary) }}</td>
-            <td class="border border-slate-200 px-2 py-2 text-right font-mono">{{ formatCompactCurrency(p.house_rent) }}</td>
-            <td class="border border-slate-200 px-2 py-2 text-right font-mono">{{ formatCompactCurrency(p.medical_allowance) }}</td>
-            <td class="border border-slate-200 px-2 py-2 text-right font-mono">{{ formatCompactCurrency(p.conveyance_allowance) }}</td>
-            <td class="border border-slate-200 px-2 py-2 text-right">
+            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono whitespace-nowrap">{{ formatCompactCurrency(p.basic_salary) }}</td>
+            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono whitespace-nowrap">{{ formatCompactCurrency(p.house_rent) }}</td>
+            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono whitespace-nowrap">{{ formatCompactCurrency(p.medical_allowance) }}</td>
+            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono whitespace-nowrap">{{ formatCompactCurrency(p.conveyance_allowance) }}</td>
+            <td class="border border-slate-200 px-1 py-1.5 text-right whitespace-nowrap">
               <div class="font-mono font-semibold text-emerald-700">{{ formatCompactCurrency(p.gross_salary) }}</div>
             </td>
-            <td class="border border-slate-200 px-2 py-2 text-right font-mono">{{ formatCompactCurrency(p.other_allowance_total) }}</td>
-            <td class="border border-slate-200 px-2 py-2 text-right font-mono">
+            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono whitespace-nowrap">{{ formatCompactCurrency(p.other_allowance_total) }}</td>
+            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono whitespace-nowrap">
               {{ formatCompactCurrency(p.manual_addition) }}
             </td>
-            <td class="border border-slate-200 px-2 py-2 text-right font-mono font-semibold text-emerald-800">
+            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono font-semibold text-emerald-800 whitespace-nowrap">
               {{ formatCompactCurrency(getTotalEarnings(p)) }}
             </td>
-            <td class="border border-slate-200 px-2 py-2 text-right font-mono text-rose-600">{{ formatCompactCurrency(p.pf_deduction) }}</td>
-            <td class="border border-slate-200 px-2 py-2 text-right font-mono text-rose-600">{{ formatCompactCurrency(p.meal_deduction) }}</td>
-            <td class="border border-slate-200 px-2 py-2 text-right font-mono text-rose-600">{{ formatCompactCurrency(p.tax_deduction) }}</td>
-            <td class="border border-slate-200 px-2 py-2 text-right font-mono text-rose-600">{{ formatCompactCurrency(p.loan_deduction) }}</td>
-            <td class="border border-slate-200 px-2 py-2 text-right font-mono text-rose-600">{{ formatCompactCurrency(p.other_deduction) }}</td>
-            <td class="border border-slate-200 px-2 py-2 text-right font-mono text-rose-600">{{ formatCompactCurrency(p.paycut_deduction) }}</td>
-            <td class="border border-slate-200 px-2 py-2 text-right font-mono font-semibold text-rose-700">{{ formatCompactCurrency(p.total_deduction) }}</td>
-            <td class="border border-slate-200 px-2 py-2 text-right font-mono font-bold text-blue-800">{{ formatCompactCurrency(p.net_salary) }}</td>
-            <td class="border border-slate-200 px-2 py-2 text-center"><PayrollStatusBadge :status="p.payment_status" /></td>
-            <td class="border border-slate-200 px-2 py-2 text-center">
-              <div class="flex items-center justify-center gap-1">
+            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-rose-600 whitespace-nowrap">{{ formatCompactCurrency(p.pf_deduction) }}</td>
+            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-rose-600 whitespace-nowrap">{{ formatCompactCurrency(p.meal_deduction) }}</td>
+            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-rose-600 whitespace-nowrap">{{ formatCompactCurrency(p.tax_deduction) }}</td>
+            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-rose-600 whitespace-nowrap">{{ formatCompactCurrency(p.loan_deduction) }}</td>
+            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-rose-600 whitespace-nowrap">{{ formatCompactCurrency(p.other_deduction) }}</td>
+            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-rose-600 whitespace-nowrap">{{ formatCompactCurrency(p.advance_deduction) }}</td>
+            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-rose-600 whitespace-nowrap">{{ formatCompactCurrency(p.paycut_deduction) }}</td>
+            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono font-semibold text-rose-700 whitespace-nowrap">{{ formatCompactCurrency(p.total_deduction) }}</td>
+            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono font-bold text-blue-800 whitespace-nowrap">{{ formatCompactCurrency(p.net_salary) }}</td>
+            <td class="border border-slate-200 px-1 py-1.5 text-center whitespace-nowrap"><PayrollStatusBadge :status="p.payment_status" /></td>
+            <td class="border border-slate-200 px-1 py-1.5 text-center whitespace-nowrap">
+              <div class="flex items-center justify-center gap-0.5">
                 <button @click="router.push({ name: 'PayrollShow', params: { id: p.id } })"
-                  class="p-1.5 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 rounded-md" title="View">
+                  class="p-0.5 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 rounded-md" title="View">
                   <i class="far fa-eye text-xs"></i>
                 </button>
                 <button @click="openPaymentModal(p)"
-                  class="p-1.5 text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-md" title="Update Payment">
+                  class="p-0.5 text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-md" title="Update Payment">
                   <i class="far fa-credit-card text-xs"></i>
                 </button>
               </div>
@@ -382,3 +419,34 @@ const getTotalEarnings = (payroll) =>
     />
   </div>
 </template>
+
+<style scoped>
+.payroll-list-table {
+  table-layout: fixed;
+}
+
+.payroll-list-table th,
+.payroll-list-table td {
+  padding: 0.22rem 0.28rem !important;
+  line-height: 1 !important;
+}
+
+.payroll-list-table thead th,
+.payroll-list-table tbody td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.payroll-list-table tbody td {
+  white-space: nowrap;
+}
+
+.payroll-list-table td.emp-id-cell {
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
+.payroll-list-table .truncate {
+  min-width: 0;
+}
+</style>

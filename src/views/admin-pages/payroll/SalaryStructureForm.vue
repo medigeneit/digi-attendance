@@ -4,13 +4,10 @@ import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useSalaryStructureStore } from '@/stores/salaryStructure'
 import { useUserStore } from '@/stores/user'
-import { useCompanyStore } from '@/stores/company'
-import { useDepartmentStore } from '@/stores/department'
+import { useCompanyBankAccountStore } from '@/stores/companyBankAccount'
 import AllowanceTable from '@/components/payroll/AllowanceTable.vue'
-import AsyncUserCombobox from '@/components/common/AsyncUserCombobox.vue'
+import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
-import SelectDropdown from '@/components/SelectDropdown.vue'
-import apiClient from '@/axios'
 import { formatCurrency, toNum } from '@/utils/currency'
 import {
   PROVIDENT_FUND_RATE,
@@ -34,8 +31,7 @@ const router = useRouter()
 const toast = useToast()
 const structureStore = useSalaryStructureStore()
 const userStore = useUserStore()
-const companyStore = useCompanyStore()
-const departmentStore = useDepartmentStore()
+const companyBankAccountStore = useCompanyBankAccountStore()
 
 const isEdit = computed(() => !!props.id)
 const pageLoading = ref(false)
@@ -43,14 +39,26 @@ const submitting = ref(false)
 const fieldErrors = ref({})
 const pfApplicable = ref(false)
 const selectedEmploymentType = ref('')
+const selectedPaymentMethod = ref('Cash')
 const isHydrating = ref(false)
 const userLookupToken = ref(0)
 const selectedCompanyId = ref('')
 const selectedDepartmentId = ref('')
 const selectedLineType = ref('all')
+const selectedUserProfile = ref(null)
+const showBankModal = ref(false)
+const bankSaving = ref(false)
+const bankFieldErrors = ref({})
+const bankUpdateDraft = ref({
+  bank_account_id: '',
+  bank_account_no: '',
+  account_holder_name: '',
+  default_payment_method: 'Cash',
+})
 
 const form = ref({
   user_id: null,
+  bank_account_id: null,
   gross_salary: '',
   basic_salary: '',
   house_rent: '',
@@ -64,28 +72,22 @@ const form = ref({
 })
 
 const userDisplay = ref({ name: null, dept: null })
-
-const companyOptions = computed(() =>
-  (companyStore.companies || []).map((company) => ({
-    id: String(company.id),
-    label: company.name,
-  })),
-)
-
-const departmentOptions = computed(() =>
-  (departmentStore.departments || []).map((department) => ({
-    id: String(department.id),
-    label: department.name,
-  })),
-)
-
-const lineTypeOptions = [
-  { id: 'all', label: 'All Types' },
-  { id: 'executive', label: 'Executive' },
-  { id: 'support_staff', label: 'Support Staff' },
-  { id: 'doctor', label: 'Doctor' },
-  { id: 'academy_body', label: 'Academy Body' },
+const PF_ALLOWANCE_CODE = 'PF'
+const PF_ALLOWANCE_NAME = 'Provident Fund'
+const DAY_HONORIUM_ALLOWANCE_CODE = 'DAY_HONORIUM'
+const DAY_HONORIUM_ALLOWANCE_NAME = 'Day Honorium'
+const DEFAULT_DAY_HONORIUM_AMOUNT = 1000
+const BASIC_ONLY_LINE_TYPES = ['doctor', 'academy_body', 'academic_body']
+const paymentMethodOptions = [
+  { label: 'Cash', value: 'Cash' },
+  { label: 'Bank', value: 'Bank Transfer' },
 ]
+
+const normalizeLineType = (value) =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_')
 
 const formatEmploymentTypeLabel = (value) => {
   const normalized = normalizeEmploymentType(value)
@@ -99,8 +101,23 @@ const formatEmploymentTypeLabel = (value) => {
 }
 
 const pfDefaultByEmploymentType = (employmentType) => normalizeEmploymentType(employmentType) === 'permanent'
+const selectedPayrollLineType = computed(() =>
+  normalizeLineType(selectedUserProfile.value?.type || selectedLineType.value),
+)
+const usesBasicOnlySalaryPolicy = computed(() =>
+  BASIC_ONLY_LINE_TYPES.includes(selectedPayrollLineType.value),
+)
+const usesDayHonoriumAllowance = computed(() => selectedPayrollLineType.value === 'doctor')
 const pfAllowedForCurrentEmploymentType = computed(() =>
-  isPfAllowedForEmploymentType(selectedEmploymentType.value),
+  usesBasicOnlySalaryPolicy.value || isPfAllowedForEmploymentType(selectedEmploymentType.value),
+)
+const pfAllowanceAmount = computed(() =>
+  !usesBasicOnlySalaryPolicy.value &&
+  pfAllowedForCurrentEmploymentType.value &&
+  pfApplicable.value &&
+  toNum(form.value.basic_salary) > 0
+    ? calculatePfDeduction(form.value.basic_salary)
+    : 0,
 )
 
 const employmentTypeBadgeClass = computed(() => {
@@ -115,8 +132,35 @@ const employmentTypeBadgeClass = computed(() => {
 const employmentTypeLabel = computed(() => formatEmploymentTypeLabel(selectedEmploymentType.value))
 
 const pfStatusLabel = computed(() => (pfApplicable.value ? 'Applicable' : 'Not Applicable'))
+const deductionTitle = computed(() =>
+  usesBasicOnlySalaryPolicy.value ? 'Somiti Deduction' : 'PF Deduction',
+)
+const deductionToggleLabel = computed(() =>
+  usesBasicOnlySalaryPolicy.value ? 'Apply Somiti deduction for this employee' : 'Apply PF for this employee',
+)
+const deductionSupportText = computed(() =>
+  usesBasicOnlySalaryPolicy.value
+    ? 'Enter Somiti deduction manually for doctor or academy body salary.'
+    : `${(PROVIDENT_FUND_RATE * 100).toFixed(0)}% of basic salary when applicable.`,
+)
+const deductionSummaryTitle = computed(() =>
+  usesBasicOnlySalaryPolicy.value ? 'Net After Somiti' : 'Net After PF',
+)
+const deductionSummaryText = computed(() =>
+  usesBasicOnlySalaryPolicy.value
+    ? 'Gross salary plus active allowances minus Somiti deduction.'
+    : 'Total gross minus PF deduction (5% of basic).',
+)
+const pageIntroText = computed(() =>
+  usesBasicOnlySalaryPolicy.value
+    ? 'Gross salary is saved as basic salary for doctor and academy body employees.'
+    : `Gross salary is the total payable. Basic breakdown: ${activePolicySummary.value}. PF is 5% of basic.`,
+)
 
 const pfSupportCopy = computed(() => {
+  if (usesBasicOnlySalaryPolicy.value) {
+    return 'Doctor and academy body salary uses gross salary as basic. PF auto allowance is not applied.'
+  }
   if (!selectedEmploymentType.value) return 'Select an employee to auto-suggest PF applicability.'
   if (!pfAllowedForCurrentEmploymentType.value) {
     return 'Probationary employees receive 60% of gross as basic salary. PF is not applicable.'
@@ -127,7 +171,11 @@ const pfSupportCopy = computed(() => {
   return 'This employment type defaults to PF off. Enable it manually if this employee is eligible.'
 })
 
-const activePolicy = computed(() => getSalaryComponentPolicy(selectedEmploymentType.value))
+const activePolicy = computed(() =>
+  usesBasicOnlySalaryPolicy.value
+    ? [{ key: 'basic_salary', label: 'Basic Salary', ratio: 1, shortLabel: 'Basic' }]
+    : getSalaryComponentPolicy(selectedEmploymentType.value),
+)
 const activePolicySummary = computed(() =>
   activePolicy.value.map((item) => `${Math.round(item.ratio * 100)}% ${item.shortLabel}`).join(', '),
 )
@@ -142,33 +190,165 @@ const componentCards = computed(() =>
   })),
 )
 
+const selectedPaymentMethodLabel = computed(() => {
+  const found = paymentMethodOptions.find((item) => item.value === selectedPaymentMethod.value)
+  return found?.label || selectedPaymentMethod.value || 'Cash'
+})
+
+const isBankTransfer = computed(() => selectedPaymentMethod.value === 'Bank Transfer')
+const companyBankAccounts = computed(() => companyBankAccountStore.items || [])
+
+const bankPreviewRows = computed(() => {
+  const user = selectedUserProfile.value || {}
+  const bankAccount = user.bank_account || user.bankAccount || {}
+
+  return [
+    {
+      label: 'Company Bank A/C',
+      value: [bankAccount.bank_name, bankAccount.account_number].filter(Boolean).join(' - ') || '-',
+    },
+    { label: 'Account No.', value: user.bank_account_no || '-' },
+    { label: 'Account Holder', value: user.account_holder_name || '-' },
+    { label: 'Default Method', value: user.default_payment_method || 'Cash' },
+  ]
+})
+
 const policyGross = computed(() => calculateCoreGross(form.value))
 const bonusAmount = computed(() =>
-  calculateBonusAmount(selectedEmploymentType.value, form.value.basic_salary),
+  usesBasicOnlySalaryPolicy.value
+    ? 0
+    : calculateBonusAmount(selectedEmploymentType.value, form.value.basic_salary),
 )
 const allowanceTotal = computed(() => calculateAllowanceTotal(form.value.allowances))
-const totalGross = computed(() => toNum(form.value.gross_salary) + allowanceTotal.value)
-const netPayable = computed(() => Math.max(0, totalGross.value - toNum(form.value.pf_deduction)))
-
-const fetchUsersFn = (params) =>
-  apiClient
-    .get('/users', {
-      params: {
-        ...params,
-        company_id: selectedCompanyId.value || undefined,
-        department_id: selectedDepartmentId.value || undefined,
-        line_type: selectedLineType.value !== 'all' ? selectedLineType.value : undefined,
-      },
-    })
-    .then((response) => (Array.isArray(response.data) ? response.data : response.data?.data || response.data?.users || []))
+const totalGross = computed(() =>
+  usesBasicOnlySalaryPolicy.value
+    ? toNum(form.value.gross_salary)
+    : toNum(form.value.gross_salary) + allowanceTotal.value,
+)
+const netPayableBase = computed(() => toNum(form.value.gross_salary) + allowanceTotal.value)
+const netPayable = computed(() =>
+  Math.max(0, netPayableBase.value - toNum(form.value.pf_deduction)),
+)
 
 const applyPfDeduction = () => {
+  if (usesBasicOnlySalaryPolicy.value) {
+    form.value.pf_deduction = pfApplicable.value ? form.value.pf_deduction : null
+    syncPfAllowanceRow()
+    return
+  }
+
   form.value.pf_deduction =
     pfAllowedForCurrentEmploymentType.value &&
     pfApplicable.value &&
     toNum(form.value.basic_salary) > 0
       ? calculatePfDeduction(form.value.basic_salary)
       : null
+
+  syncPfAllowanceRow()
+}
+
+const isPfAllowanceRow = (allowance = {}) => {
+  const code = String(allowance?.allowance_code || '').trim().toUpperCase()
+  const name = String(allowance?.allowance_name || '').trim().toLowerCase()
+  return code === PF_ALLOWANCE_CODE || name === PF_ALLOWANCE_NAME.toLowerCase()
+}
+
+const isDayHonoriumAllowanceRow = (allowance = {}) => {
+  const code = String(allowance?.allowance_code || '').trim().toUpperCase()
+  const name = String(allowance?.allowance_name || '').trim().toLowerCase()
+  return (
+    code === DAY_HONORIUM_ALLOWANCE_CODE ||
+    name === DAY_HONORIUM_ALLOWANCE_NAME.toLowerCase()
+  )
+}
+
+const syncPfAllowanceRow = () => {
+  const allowances = Array.isArray(form.value.allowances) ? [...form.value.allowances] : []
+  const existingIndex = allowances.findIndex((allowance) => isPfAllowanceRow(allowance))
+
+  if (usesBasicOnlySalaryPolicy.value) {
+    if (existingIndex !== -1) {
+      allowances.splice(existingIndex, 1)
+      form.value.allowances = allowances
+    }
+    return
+  }
+
+  const amount = pfAllowanceAmount.value
+
+  if (!amount) {
+    if (existingIndex !== -1) {
+      allowances.splice(existingIndex, 1)
+      form.value.allowances = allowances
+    }
+    return
+  }
+
+  const pfRow = {
+    allowance_code: PF_ALLOWANCE_CODE,
+    allowance_name: PF_ALLOWANCE_NAME,
+    amount,
+    is_active: true,
+    remarks: 'Auto-added from PF setting',
+  }
+
+  if (existingIndex !== -1) {
+    allowances[existingIndex] = { ...allowances[existingIndex], ...pfRow }
+  } else {
+    allowances.unshift(pfRow)
+  }
+
+  form.value.allowances = allowances
+}
+
+const syncDayHonoriumAllowanceRow = () => {
+  const allowances = Array.isArray(form.value.allowances) ? [...form.value.allowances] : []
+  const existingIndex = allowances.findIndex((allowance) => isDayHonoriumAllowanceRow(allowance))
+
+  if (!usesDayHonoriumAllowance.value) {
+    if (existingIndex !== -1) {
+      allowances.splice(existingIndex, 1)
+      form.value.allowances = allowances
+    }
+    return
+  }
+
+  const dayHonoriumRow = {
+    allowance_code: DAY_HONORIUM_ALLOWANCE_CODE,
+    allowance_name: DAY_HONORIUM_ALLOWANCE_NAME,
+    amount: existingIndex !== -1 ? allowances[existingIndex].amount || DEFAULT_DAY_HONORIUM_AMOUNT : DEFAULT_DAY_HONORIUM_AMOUNT,
+    is_active: true,
+    remarks: 'Doctor day honorium rate',
+  }
+
+  if (existingIndex !== -1) {
+    allowances[existingIndex] = { ...allowances[existingIndex], ...dayHonoriumRow }
+  } else {
+    allowances.unshift(dayHonoriumRow)
+  }
+
+  form.value.allowances = allowances
+}
+
+const normalizePaymentMethod = (value) => {
+  const raw = String(value || '').trim()
+  if (!raw) return 'Cash'
+
+  const normalized = raw.toLowerCase().replace(/[\s_]+/g, ' ')
+  if (normalized === 'bank' || normalized === 'bank transfer') return 'Bank Transfer'
+  if (normalized === 'cash') return 'Cash'
+  return raw
+}
+
+const assignUserMeta = (user) => {
+  selectedUserProfile.value = user || null
+  userDisplay.value = {
+    name: user?.name || userDisplay.value.name,
+    dept: user?.department?.name || user?.department_name || userDisplay.value.dept,
+  }
+  selectedEmploymentType.value = user?.employment_type || ''
+  selectedPaymentMethod.value = normalizePaymentMethod(user?.default_payment_method || 'Cash')
+  form.value.bank_account_id = user?.bank_account_id || form.value.bank_account_id || null
 }
 
 const syncPolicyBreakdown = (grossValue) => {
@@ -185,7 +365,12 @@ const syncPolicyBreakdown = (grossValue) => {
 
   const policy = getSalaryComponentPolicy(selectedEmploymentType.value)
   
-  if (policy.length === 1 && policy[0].key === 'basic_salary') {
+  if (usesBasicOnlySalaryPolicy.value) {
+    form.value.basic_salary = gross
+    form.value.house_rent = ''
+    form.value.medical_allowance = ''
+    form.value.conveyance_allowance = ''
+  } else if (policy.length === 1 && policy[0].key === 'basic_salary') {
     // Probationary: only calculate basic as reference
     form.value.basic_salary = Math.round(gross * 0.6 * 100) / 100
     form.value.house_rent = ''
@@ -203,17 +388,11 @@ const syncPolicyBreakdown = (grossValue) => {
   applyPfDeduction()
 }
 
-const assignUserMeta = (user) => {
-  userDisplay.value = {
-    name: user?.name || userDisplay.value.name,
-    dept: user?.department?.name || user?.department_name || userDisplay.value.dept,
-  }
-  selectedEmploymentType.value = user?.employment_type || ''
-}
-
 const fetchUserMeta = async (userId, { applyPfDefault = true } = {}) => {
   if (!userId) {
     selectedEmploymentType.value = ''
+    selectedPaymentMethod.value = 'Cash'
+    selectedUserProfile.value = null
     if (applyPfDefault) {
       pfApplicable.value = false
     }
@@ -229,13 +408,17 @@ const fetchUserMeta = async (userId, { applyPfDefault = true } = {}) => {
     assignUserMeta(user)
 
     if (applyPfDefault) {
+      const usesBasicOnlyPolicy = BASIC_ONLY_LINE_TYPES.includes(normalizeLineType(user.type))
       pfApplicable.value =
+        !usesBasicOnlyPolicy &&
         isPfAllowedForEmploymentType(user.employment_type) &&
         pfDefaultByEmploymentType(user.employment_type)
     }
   } catch (_) {
     if (token !== userLookupToken.value) return
     selectedEmploymentType.value = ''
+    selectedPaymentMethod.value = 'Cash'
+    selectedUserProfile.value = null
     if (applyPfDefault) {
       pfApplicable.value = false
     }
@@ -252,6 +435,7 @@ const loadForEdit = async () => {
 
     form.value = {
       user_id: data.user_id,
+      bank_account_id: data.bank_account_id || data.user?.bank_account_id || null,
       gross_salary: data.gross_salary ?? calculateCoreGross(data) ?? '',
       basic_salary: data.basic_salary ?? '',
       house_rent: data.house_rent ?? '',
@@ -265,20 +449,23 @@ const loadForEdit = async () => {
     }
 
     pfApplicable.value =
-      isPfAllowedForEmploymentType(data.user?.employment_type) &&
-      hasStoredPf
+      hasStoredPf &&
+      (BASIC_ONLY_LINE_TYPES.includes(normalizeLineType(data.user?.type)) ||
+        isPfAllowedForEmploymentType(data.user?.employment_type))
 
     if (data.user) {
       selectedCompanyId.value = data.user.company_id ? String(data.user.company_id) : ''
-      if (selectedCompanyId.value) {
-        await departmentStore.fetchDepartments(selectedCompanyId.value)
-      }
       selectedDepartmentId.value = data.user.department_id ? String(data.user.department_id) : ''
       selectedLineType.value = data.user.type || 'all'
       assignUserMeta(data.user)
-    } else if (data.user_id) {
+    }
+
+    if (data.user_id) {
       await fetchUserMeta(data.user_id, { applyPfDefault: false })
     }
+
+    syncPfAllowanceRow()
+    syncDayHonoriumAllowanceRow()
   } catch (error) {
     toast.error(error.message)
     router.push({ name: 'PayrollSalaryStructureList' })
@@ -286,6 +473,32 @@ const loadForEdit = async () => {
     isHydrating.value = false
     pageLoading.value = false
   }
+}
+
+const handleEmployeeFilterChange = (payload = {}) => {
+  const nextCompanyId = payload.company_id || ''
+  const nextDepartmentId = payload.department_id || ''
+  const nextLineType = payload.line_type || 'all'
+  const nextEmployeeId = payload.employee_id || null
+
+  const hasChanged =
+    nextCompanyId !== selectedCompanyId.value ||
+    nextDepartmentId !== selectedDepartmentId.value ||
+    nextLineType !== selectedLineType.value ||
+    String(nextEmployeeId || '') !== String(form.value.user_id || '')
+
+  selectedCompanyId.value = nextCompanyId
+  selectedDepartmentId.value = nextDepartmentId
+  selectedLineType.value = nextLineType
+  form.value.user_id = nextEmployeeId
+
+  if (!hasChanged || isHydrating.value) return
+
+  userDisplay.value = { name: null, dept: null }
+  selectedEmploymentType.value = ''
+  selectedPaymentMethod.value = 'Cash'
+  selectedUserProfile.value = null
+  pfApplicable.value = false
 }
 
 watch(
@@ -309,6 +522,15 @@ watch(selectedEmploymentType, () => {
   syncPolicyBreakdown(form.value.gross_salary)
 })
 
+watch(selectedPayrollLineType, () => {
+  if (isHydrating.value) return
+  if (usesBasicOnlySalaryPolicy.value) {
+    syncPolicyBreakdown(form.value.gross_salary)
+    syncPfAllowanceRow()
+  }
+  syncDayHonoriumAllowanceRow()
+})
+
 watch(
   () => form.value.user_id,
   async (newUserId, oldUserId) => {
@@ -316,6 +538,8 @@ watch(
 
     if (!newUserId) {
       selectedEmploymentType.value = ''
+      selectedPaymentMethod.value = 'Cash'
+      selectedUserProfile.value = null
       pfApplicable.value = false
       userDisplay.value = { name: null, dept: null }
       return
@@ -327,40 +551,17 @@ watch(
   },
 )
 
+watch(
+  selectedCompanyId,
+  async (companyId) => {
+    if (!companyId) return
+    await companyBankAccountStore.fetchCompanyBankAccounts({ company_id: companyId, status: 'Active' })
+  },
+)
+
 onMounted(() => {
-  companyStore.fetchCompanies({ ignore_permission: false })
   if (isEdit.value) {
     loadForEdit()
-  }
-})
-
-watch(selectedCompanyId, async (newCompanyId, oldCompanyId) => {
-  if (newCompanyId === oldCompanyId) return
-
-  selectedDepartmentId.value = ''
-
-  if (newCompanyId) {
-    await departmentStore.fetchDepartments(newCompanyId)
-  } else {
-    await departmentStore.fetchDepartments()
-  }
-
-  if (!isHydrating.value) {
-    form.value.user_id = null
-    userDisplay.value = { name: null, dept: null }
-    selectedEmploymentType.value = ''
-    pfApplicable.value = false
-  }
-})
-
-watch([selectedDepartmentId, selectedLineType], ([newDepartmentId, newLineType], [oldDepartmentId, oldLineType]) => {
-  if (newDepartmentId === oldDepartmentId && newLineType === oldLineType) return
-
-  if (!isHydrating.value) {
-    form.value.user_id = null
-    userDisplay.value = { name: null, dept: null }
-    selectedEmploymentType.value = ''
-    pfApplicable.value = false
   }
 })
 
@@ -387,14 +588,142 @@ const validate = () => {
   return !Object.keys(errors).length
 }
 
+const openBankModal = () => {
+  const user = selectedUserProfile.value
+
+  if (!user?.id) {
+    toast.info('Please select an employee first.')
+    return
+  }
+
+  bankUpdateDraft.value = {
+    bank_account_id: user.bank_account_id || '',
+    bank_account_no: user.bank_account_no || '',
+    account_holder_name: user.account_holder_name || user.name || '',
+    default_payment_method: normalizePaymentMethod(selectedPaymentMethod.value),
+  }
+  bankFieldErrors.value = {}
+  showBankModal.value = true
+}
+
+const closeBankModal = () => {
+  showBankModal.value = false
+  bankFieldErrors.value = {}
+}
+
+const buildUserUpdatePayload = (user, draft) => ({
+  name: user.name || '',
+  bn_name: user.bn_name || '',
+  phone: user.phone || '',
+  email: user.email || null,
+  role: user.role || 'employee',
+  type: user.type || 'executive',
+  device_user_id: user.device_user_id ?? null,
+  company_id: user.company_id ?? null,
+  department_id: user.department_id ?? null,
+  designation_id: user.designation_id ?? null,
+  blood: user.blood ?? null,
+  nid: user.nid ?? null,
+  date_of_birth: user.date_of_birth ?? null,
+  joining_date: user.joining_date ?? null,
+  employment_type: user.employment_type || 'Permanent',
+  employee_id: user.employee_id ?? null,
+  provisional_month: user.provisional_month ?? null,
+  extended_provisional_month: user.extended_provisional_month ?? null,
+  contract_month: user.contract_month ?? null,
+  address: user.address ?? null,
+  note: user.note ?? null,
+  leave_approval_id: user.leave_approval_id ?? null,
+  other_approval_id: user.other_approval_id ?? null,
+  is_active: user.is_active,
+  bank_account_id: draft.bank_account_id || null,
+  bank_account_no: draft.bank_account_no || null,
+  account_holder_name: draft.account_holder_name || null,
+  default_payment_method: draft.default_payment_method || 'Cash',
+})
+
+const saveBankInfo = async () => {
+  const user = selectedUserProfile.value
+
+  if (!user?.id) {
+    bankFieldErrors.value = { user_id: 'Please select an employee first.' }
+    return
+  }
+
+  const defaultPaymentMethod = normalizePaymentMethod(bankUpdateDraft.value.default_payment_method)
+  const errors = {}
+
+  if (defaultPaymentMethod === 'Bank Transfer') {
+    if (!bankUpdateDraft.value.bank_account_id) {
+      errors.bank_account_id = 'Company bank account is required for Bank Transfer.'
+    }
+    if (!bankUpdateDraft.value.bank_account_no?.trim()) {
+      errors.bank_account_no = 'Bank account number is required for Bank Transfer.'
+    }
+  }
+
+  if (Object.keys(errors).length) {
+    bankFieldErrors.value = errors
+    return
+  }
+
+  bankSaving.value = true
+  bankFieldErrors.value = {}
+
+  try {
+    const payload = buildUserUpdatePayload(user, {
+      ...bankUpdateDraft.value,
+      default_payment_method: defaultPaymentMethod,
+    })
+
+    const updatedUser = await userStore.updateUser(user.id, payload)
+    selectedUserProfile.value = { ...user, ...(updatedUser || {}), ...payload }
+    form.value.bank_account_id = updatedUser?.bank_account_id || payload.bank_account_id || null
+    selectedPaymentMethod.value = normalizePaymentMethod(
+      updatedUser?.default_payment_method || defaultPaymentMethod,
+    )
+    userDisplay.value = {
+      name: selectedUserProfile.value?.name || userDisplay.value.name,
+      dept:
+        selectedUserProfile.value?.department?.name ||
+        selectedUserProfile.value?.department_name ||
+        userDisplay.value.dept,
+    }
+    toast.success('User bank information updated successfully.')
+    closeBankModal()
+  } catch (error) {
+    if (error?.errors) {
+      bankFieldErrors.value = error.errors
+    }
+    toast.error(error.message || 'Failed to update user bank information.')
+  } finally {
+    bankSaving.value = false
+  }
+}
+
 const handleSubmit = async () => {
   if (!validate()) return
 
+  if (isBankTransfer.value) {
+    const user = selectedUserProfile.value || {}
+    if (!form.value.bank_account_id && !user.bank_account_id) {
+      toast.error('Company bank account is required for Bank Transfer. Please update user bank data first.')
+      return
+    }
+    if (!user.bank_account_no) {
+      toast.error('Bank information is required for Bank Transfer. Please update user bank data first.')
+      return
+    }
+  }
+
+  syncPfAllowanceRow()
+  syncDayHonoriumAllowanceRow()
   submitting.value = true
 
   try {
     const payload = {
       ...form.value,
+      bank_account_id: form.value.bank_account_id || selectedUserProfile.value?.bank_account_id || null,
       gross_salary: toNum(form.value.gross_salary),
       basic_salary: toNum(form.value.basic_salary),
       house_rent: toNum(form.value.house_rent),
@@ -426,7 +755,7 @@ const inputClass =
 </script>
 
 <template>
-  <div class="mx-auto max-w-5xl space-y-4 p-4 md:p-6">
+  <div class="mx-auto max-w-7xl space-y-4 p-4 md:p-6">
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div>
         <p class="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-700">Salary Policy</p>
@@ -434,7 +763,7 @@ const inputClass =
           {{ isEdit ? 'Edit Salary Structure' : 'Create Salary Structure' }}
         </h1>
         <p class="mt-1 text-sm text-slate-500">
-          Gross salary is the total payable. Basic breakdown: {{ activePolicySummary }}. PF is 5% of basic.
+          {{ pageIntroText }}
         </p>
       </div>
 
@@ -453,106 +782,102 @@ const inputClass =
     <LoaderView v-if="pageLoading" />
 
     <form v-else @submit.prevent="handleSubmit" class="space-y-4">
-      <div class="grid gap-4 xl:grid-cols-[0.9fr_0.85fr]">
-        <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div class="mb-4 flex items-center justify-between gap-3">
-            <div>
-              <h2 class="text-sm font-semibold text-slate-900">Employee Setup</h2>
-              <p class="text-xs text-slate-500">Select employee, employment type, and effective dates.</p>
-            </div>
-            <span
-              class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1"
-              :class="employmentTypeBadgeClass"
-            >
-              {{ employmentTypeLabel }}
-            </span>
+      <div class="bg-white px-4 py-3 rounded-md space-y-4">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                  <h2 class="text-sm font-semibold text-slate-900">Employee Setup</h2>
+                </div>
+                <span
+                  class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1"
+                  :class="employmentTypeBadgeClass"
+                >
+                  {{ employmentTypeLabel }}
+                </span>
           </div>
 
+          <EmployeeFilter
+            :company_id="selectedCompanyId"
+            :department_id="selectedDepartmentId"
+            :line_type="selectedLineType"
+            :employee_id="form.user_id"
+            @filter-change="handleEmployeeFilterChange"
+            class="w-full"
+          />
+      </div>
+      <div class="grid gap-4 xl:grid-cols-[0.9fr_0.85fr]">
+        <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div class="space-y-4">
-            <div class="grid gap-3 md:grid-cols-3">
-              <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700">Company</label>
-                <SelectDropdown
-                  v-model="selectedCompanyId"
-                  :options="companyOptions"
-                  class="border border-slate-200 rounded-xl h-[42px] w-full bg-white"
-                  clearable
-                >
-                  <template #selected-option="{ option }">
-                    <div class="line-clamp-1 text-sm text-slate-700">
-                      <span v-if="option?.label">{{ option.label }}</span>
-                      <span v-else class="text-slate-400">Select company</span>
-                    </div>
-                  </template>
-                  <template #option="{ option }">
-                    <div class="text-sm text-slate-700">{{ option.label }}</div>
-                  </template>
-                </SelectDropdown>
-              </div>
-
-              <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700">Department</label>
-                <SelectDropdown
-                  v-model="selectedDepartmentId"
-                  :options="departmentOptions"
-                  class="border border-slate-200 rounded-xl h-[42px] w-full bg-white"
-                  clearable
-                  :disabled="!selectedCompanyId"
-                >
-                  <template #selected-option="{ option }">
-                    <div class="line-clamp-1 text-sm text-slate-700">
-                      <span v-if="option?.label">{{ option.label }}</span>
-                      <span v-else class="text-slate-400">Select department</span>
-                    </div>
-                  </template>
-                  <template #option="{ option }">
-                    <div class="text-sm text-slate-700">{{ option.label }}</div>
-                  </template>
-                </SelectDropdown>
-              </div>
-
-              <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700">Line Type</label>
-                <SelectDropdown
-                  v-model="selectedLineType"
-                  :options="lineTypeOptions"
-                  class="border border-slate-200 rounded-xl h-[42px] w-full bg-white"
-                >
-                  <template #selected-option="{ option }">
-                    <div class="line-clamp-1 text-sm text-slate-700">
-                      <span v-if="option?.label">{{ option.label }}</span>
-                      <span v-else class="text-slate-400">All types</span>
-                    </div>
-                  </template>
-                  <template #option="{ option }">
-                    <div class="text-sm text-slate-700">{{ option.label }}</div>
-                  </template>
-                </SelectDropdown>
-              </div>
-            </div>
-
-            <div>
-              <label class="mb-1 block text-sm font-medium text-slate-700">
-                Employee <span class="text-red-500">*</span>
-              </label>
-              <AsyncUserCombobox
-                v-model="form.user_id"
-                v-model:display="userDisplay"
-                :fetcher="fetchUsersFn"
-                placeholder="Search by name or employee ID..."
-              />
-              <p class="mt-1 text-[11px] text-slate-500">
-                Employee search respects selected company, department, and line type.
-              </p>
-              <p v-if="fieldErrors.user_id" class="mt-1 text-xs text-red-500">
-                {{ fieldErrors.user_id }}
-              </p>
-            </div>
+  
+            <p v-if="fieldErrors.user_id" class="mt-1 text-xs text-red-500">
+              {{ fieldErrors.user_id }}
+            </p>
 
             <div class="grid gap-3">
               <div class="rounded-xl bg-slate-50 px-3 py-2">
                 <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Department</p>
                 <p class="mt-1 text-xs font-medium text-slate-800">{{ userDisplay.dept || 'Not selected' }}</p>
+              </div>
+              <div class="rounded-xl bg-slate-50 px-3 py-3 space-y-2">
+                <div class="flex items-center justify-between gap-2">
+                  <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                    Salary Receive Method
+                  </p>
+                  <span
+                    class="rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                    :class="
+                      isBankTransfer
+                        ? 'bg-sky-100 text-sky-700'
+                        : 'bg-slate-200 text-slate-600'
+                    "
+                  >
+                    {{ selectedPaymentMethodLabel }}
+                  </span>
+                </div>
+
+                <select
+                  v-model="selectedPaymentMethod"
+                  :class="inputClass"
+                  class="!py-2"
+                >
+                  <option
+                    v-for="option in paymentMethodOptions"
+                    :key="option.value"
+                    :value="option.value"
+                  >
+                    {{ option.label }}
+                  </option>
+                </select>
+
+                <div v-if="isBankTransfer" class="rounded-lg border border-sky-100 bg-white px-3 py-2">
+                  <div class="flex items-center justify-between gap-2">
+                    <div>
+                      <p class="text-xs font-semibold text-sky-800">Bank data from users table</p>
+                      <p class="text-[11px] text-slate-500">
+                        {{ selectedUserProfile?.bank_account_id ? 'Loaded from user profile.' : 'No bank info saved yet.' }}
+                      </p>
+                    </div>
+                    <button type="button" class="btn-3 text-xs" @click="openBankModal">
+                      <i class="far fa-pen"></i> Edit Bank Data
+                    </button>
+                  </div>
+
+                  <div class="mt-3 grid gap-2 sm:grid-cols-2">
+                    <div
+                      v-for="row in bankPreviewRows"
+                      :key="row.label"
+                      class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+                    >
+                      <p class="text-[11px] uppercase tracking-[0.16em] text-slate-400">
+                        {{ row.label }}
+                      </p>
+                      <p class="mt-1 text-xs font-medium text-slate-800">{{ row.value }}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <p v-else class="text-xs text-slate-500">
+                  Cash payment does not require bank details.
+                </p>
               </div>
               <div class="rounded-xl bg-slate-50 px-3 py-2">
                 <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">PF Rule</p>
@@ -636,7 +961,10 @@ const inputClass =
                 </div>
               </div>
 
-              <div class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
+              <div
+                v-if="!usesBasicOnlySalaryPolicy"
+                class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5"
+              >
                 <div class="flex items-start justify-between gap-3">
                   <div>
                     <p class="text-sm font-medium text-amber-800">Bonus</p>
@@ -653,10 +981,10 @@ const inputClass =
 
             <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
               <div class="flex items-start justify-between gap-3">
-                <div>
-                  <p class="text-sm font-semibold text-slate-900">PF Deduction</p>
-                  <p class="mt-1 text-xs text-slate-500">
-                    {{ (PROVIDENT_FUND_RATE * 100).toFixed(0) }}% of basic salary when applicable.
+                  <div>
+                    <p class="text-sm font-semibold text-slate-900">{{ deductionTitle }}</p>
+                    <p class="mt-1 text-xs text-slate-500">
+                    {{ deductionSupportText }}
                   </p>
                 </div>
                 <div class="text-right">
@@ -672,10 +1000,29 @@ const inputClass =
                 </div>
               </div>
 
+              <div v-if="usesBasicOnlySalaryPolicy" class="mt-3">
+                <label class="mb-1 block text-sm font-medium text-slate-700">{{ deductionTitle }}</label>
+                <input
+                  v-model="form.pf_deduction"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  :class="inputClass"
+                  :disabled="!pfApplicable"
+                  placeholder="0.00"
+                />
+              </div>
+
               <label class="mt-3 flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 ring-1 ring-slate-200">
                 <div>
-                  <p class="text-sm font-medium text-slate-700">Apply PF for this employee</p>
-                  <p class="text-[11px] text-slate-400">Default comes from employment type and can be overridden.</p>
+                  <p class="text-sm font-medium text-slate-700">{{ deductionToggleLabel }}</p>
+                  <p class="text-[11px] text-slate-400">
+                    {{
+                      usesBasicOnlySalaryPolicy
+                        ? 'Somiti amount is manual and does not create an allowance row.'
+                        : 'Default comes from employment type and can be overridden.'
+                    }}
+                  </p>
                 </div>
                 <input
                   v-model="pfApplicable"
@@ -684,6 +1031,9 @@ const inputClass =
                   :disabled="!pfAllowedForCurrentEmploymentType"
                 />
               </label>
+              <p v-if="!usesBasicOnlySalaryPolicy" class="text-xs text-slate-500">
+                When enabled, the PF amount is also added to Additional Allowances as a locked PF row.
+              </p>
             </div>
           </div>
         </section>
@@ -713,7 +1063,10 @@ const inputClass =
           <p class="mt-1 text-xs text-slate-500">Basic + house rent + medical + conveyance (calculated for reference).</p>
         </div>
 
-        <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 shadow-sm">
+        <div
+          v-if="!usesBasicOnlySalaryPolicy"
+          class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 shadow-sm"
+        >
           <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-700">Bonus (Reference)</p>
           <p class="mt-1 font-mono text-xl font-semibold text-amber-900">{{ formatCurrency(bonusAmount) }}</p>
           <p class="mt-1 text-xs text-amber-700">Based on employment type and basic salary (reference only).</p>
@@ -726,9 +1079,9 @@ const inputClass =
         </div>
 
         <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Net After PF</p>
+          <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{{ deductionSummaryTitle }}</p>
           <p class="mt-1 font-mono text-xl font-semibold text-emerald-700">{{ formatCurrency(netPayable) }}</p>
-          <p class="mt-1 text-xs text-slate-500">Total gross minus PF deduction (5% of basic).</p>
+          <p class="mt-1 text-xs text-slate-500">{{ deductionSummaryText }}</p>
         </div>
       </section>
 
@@ -749,5 +1102,92 @@ const inputClass =
         </button>
       </div>
     </form>
+
+    <div
+      v-if="showBankModal"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      @click.self="closeBankModal"
+    >
+      <div class="w-full max-w-xl rounded-2xl bg-white shadow-xl border border-slate-200">
+        <div class="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
+          <div>
+            <h3 class="text-base font-semibold text-slate-900">Update User Bank Info</h3>
+            <p class="mt-0.5 text-xs text-slate-500">
+              {{ selectedUserProfile?.name || 'Selected employee' }} ({{
+                selectedUserProfile?.employee_id || '-'
+              }})
+            </p>
+          </div>
+          <button type="button" class="text-slate-400 hover:text-slate-700" @click="closeBankModal">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <div class="px-5 py-4 space-y-4">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">
+              Salary Receive Method
+            </label>
+            <select v-model="bankUpdateDraft.default_payment_method" :class="inputClass">
+              <option value="Cash">Cash</option>
+              <option value="Bank Transfer">Bank</option>
+            </select>
+            <p class="mt-1 text-xs text-slate-500">
+              This saves to the user profile and will be used by payroll generation.
+            </p>
+          </div>
+
+          <div
+            v-if="normalizePaymentMethod(bankUpdateDraft.default_payment_method) === 'Bank Transfer'"
+            class="grid gap-4 sm:grid-cols-2"
+          >
+            <div class="sm:col-span-2">
+              <label class="mb-1 block text-sm font-medium text-slate-700">Company Bank Account</label>
+              <select v-model="bankUpdateDraft.bank_account_id" :class="inputClass">
+                <option value="">Select bank account</option>
+                <option v-for="account in companyBankAccounts" :key="account.id" :value="account.id">
+                  {{ account.bank_name }} - {{ account.account_number }}
+                </option>
+              </select>
+              <p v-if="bankFieldErrors.bank_account_id" class="mt-1 text-xs text-red-500">
+                {{ bankFieldErrors.bank_account_id }}
+              </p>
+            </div>
+
+            <div>
+              <label class="mb-1 block text-sm font-medium text-slate-700">Account Number</label>
+              <input v-model.trim="bankUpdateDraft.bank_account_no" type="text" :class="inputClass" />
+              <p v-if="bankFieldErrors.bank_account_no" class="mt-1 text-xs text-red-500">
+                {{ bankFieldErrors.bank_account_no }}
+              </p>
+            </div>
+
+            <div class="sm:col-span-2">
+              <label class="mb-1 block text-sm font-medium text-slate-700">Account Holder Name</label>
+              <input
+                v-model.trim="bankUpdateDraft.account_holder_name"
+                type="text"
+                :class="inputClass"
+              />
+            </div>
+          </div>
+
+          <div
+            v-else
+            class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600"
+          >
+            Cash selected. Bank fields are optional.
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 border-t border-slate-100 px-5 py-4">
+          <button type="button" class="btn-3" @click="closeBankModal">Cancel</button>
+          <button type="button" class="btn-2" :disabled="bankSaving" @click="saveBankInfo">
+            <i class="far" :class="bankSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+            {{ bankSaving ? 'Saving...' : 'Save Bank Data' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>

@@ -4,7 +4,7 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import ProfileCompensationHistory from '@/components/profile/ProfileCompensationHistory.vue'
 import ProfileSalarySheetModal from '@/components/profile/ProfileSalarySheetModal.vue'
 import ProfileSalaryStructureCard from '@/components/profile/ProfileSalaryStructureCard.vue'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 const props = defineProps({
   user: { type: Object, default: () => ({}) },
@@ -173,7 +173,11 @@ const load = async () => {
   error.value = ''
 
   try {
-    const res = await apiClient.get('/my-profile/payroll-overview')
+    const res = await apiClient.get('/my-profile/payroll-overview', {
+      params: {
+        month: selectedMonth.value || undefined,
+      },
+    })
     overview.value = {
       summary: res?.data?.data?.summary || {},
       salary_structure: res?.data?.data?.salary_structure || null,
@@ -187,6 +191,10 @@ const load = async () => {
     loading.value = false
   }
 }
+
+watch(selectedMonth, () => {
+  load()
+})
 
 const clearFilters = () => {
   selectedMonth.value = defaultMonthKey

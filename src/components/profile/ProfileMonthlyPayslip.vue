@@ -124,6 +124,7 @@ const deductionRows = computed(() => {
 
   const payroll = currentPayroll.value
   const rows = [
+    { label: 'PF Allowance', value: payroll.pf_allowance_deduction_total },
     { label: 'PF', value: payroll.pf_deduction },
     { label: 'Tax', value: payroll.tax_deduction },
     {
@@ -136,8 +137,9 @@ const deductionRows = computed(() => {
       value: payroll.meal_deduction,
       note: currentMeal.value ? `${currentMeal.value.total_meal || 0} meal(s)` : '',
     },
-    { label: 'Paycut', value: payroll.paycut_deduction },
     { label: 'Others', value: payroll.other_deduction },
+    { label: 'Advance', value: payroll.advance_deduction },
+    { label: 'Paycut', value: payroll.paycut_deduction },
   ]
 
   return rows.filter((item) => toNumber(item.value) > 0)

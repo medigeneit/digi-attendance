@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { storeToRefs } from 'pinia'
@@ -8,6 +8,7 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import PayrollStatusBadge from '@/components/payroll/PayrollStatusBadge.vue'
 import PaymentStatusModal from '@/components/payroll/PaymentStatusModal.vue'
 import { formatCurrency } from '@/utils/currency'
+import { isPfAllowanceRow } from '@/utils/salaryPolicy'
 
 const props = defineProps({ id: { type: [String, Number], required: true } })
 const router = useRouter()
@@ -16,8 +17,18 @@ const payrollStore = usePayrollManagementStore()
 const { item, loading, error } = storeToRefs(payrollStore)
 
 const showPaymentModal = ref(false)
+const advanceDeduction = ref(0)
+const advanceSaving = ref(false)
 
 onMounted(() => payrollStore.fetchItem(props.id))
+
+watch(
+  item,
+  (value) => {
+    advanceDeduction.value = Number(value?.deductions?.advance ?? value?.advance_deduction ?? 0)
+  },
+  { immediate: true }
+)
 
 const handlePaymentSubmit = async ({ id, payload }) => {
   try {
@@ -26,6 +37,20 @@ const handlePaymentSubmit = async ({ id, payload }) => {
     showPaymentModal.value = false
   } catch (e) {
     toast.error(e.message || 'Update failed.')
+  }
+}
+
+const saveAdvanceDeduction = async () => {
+  try {
+    advanceSaving.value = true
+    await payrollStore.updateAdvanceDeduction(props.id, {
+      advance_deduction: toNum(advanceDeduction.value),
+    })
+    toast.success('Advance deduction updated.')
+  } catch (e) {
+    toast.error(e.message || 'Advance update failed.')
+  } finally {
+    advanceSaving.value = false
   }
 }
 
@@ -45,6 +70,7 @@ const deductionLabelMap = {
   tax_deduction: 'Tax Deduction',
   loan_deduction: 'Loan Deduction',
   other_deduction: 'Other Deduction',
+  advance_deduction: 'Advance Deduction',
   paycut_deduction: 'Paycut Deduction',
 }
 
@@ -62,21 +88,173 @@ const normalizedDeductions = computed(() => {
   }))
 })
 
-const deductionFieldRows = computed(() => {
+const earningsData = computed(() => (item.value && typeof item.value.earnings === 'object' ? item.value.earnings : {}))
+const deductionsData = computed(() => (item.value && typeof item.value.deductions === 'object' ? item.value.deductions : {}))
+const appliedAdjustments = computed(() =>
+  Array.isArray(item.value?.adjustments_applied) ? item.value.adjustments_applied : []
+)
+
+const contraEntries = computed(() => {
+  const preferred = item.value?.contra_entries
+  if (Array.isArray(preferred)) return preferred
+
+  const raw = item.value?.other_allowance_breakdown
+  const rows = Array.isArray(raw) ? raw : []
+  return rows.filter((row) => row?.type === 'contra_entry')
+})
+
+const pfAllowanceAmount = computed(() => {
+  const d = deductionsData.value
+  if (d && Object.prototype.hasOwnProperty.call(d, 'pf_allowance')) return toNum(d.pf_allowance)
+
   const raw = item.value || {}
-  return Object.entries(raw)
-    .filter(([key, value]) => {
-      const amount = toNum(value)
-      if (!amount) return false
-      if (key === 'total_deduction') return false
-      if (key === 'deductions') return false
-      return key.includes('deduction')
+  return toNum(raw.pf_allowance_deduction_total ?? raw.pf_allowance_total ?? 0)
+})
+
+const contraEarningTotal = computed(() =>
+  contraEntries.value
+    .filter((row) => row?.side === 'earning')
+    .reduce((sum, row) => sum + toNum(row?.amount), 0),
+)
+
+const earningContraRows = computed(() =>
+  contraEntries.value
+    .filter((row) => row?.side === 'earning')
+    .map((row, index) => ({
+      key: `contra_earning_${row.ref || row.label || index}`,
+      label: row.label || 'Manual Adj',
+      amount: toNum(row.amount),
+    })),
+)
+
+const normalizeSettlementType = (value) => (value === 'manual_settled' ? 'manual_settled' : 'carry_forward')
+
+const refMonthShortLabel = (adj) => {
+  const year = Number(adj?.ref_year)
+  const month = Number(adj?.ref_month)
+
+  if (Number.isFinite(year) && Number.isFinite(month) && month >= 1 && month <= 12) {
+    return new Intl.DateTimeFormat('en-GB', { month: 'short' }).format(new Date(year, month - 1, 1))
+  }
+
+  const refLabel = String(adj?.ref_month_label || '').trim()
+  if (/^\d{4}-\d{2}$/.test(refLabel)) {
+    const [y, m] = refLabel.split('-').map(Number)
+    if (Number.isFinite(y) && Number.isFinite(m) && m >= 1 && m <= 12) {
+      return new Intl.DateTimeFormat('en-GB', { month: 'short' }).format(new Date(y, m - 1, 1))
+    }
+  }
+
+  return ''
+}
+
+const titleize = (value) =>
+  String(value || '')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+
+const labelWithMonth = (base, adj) => {
+  const month = refMonthShortLabel(adj) || adj?.ref_month_label
+  return month ? `${base} (${month})` : base
+}
+
+const manualSettledFallback = computed(() =>
+  appliedAdjustments.value.filter(
+    (adj) => normalizeSettlementType(adj?.settlement_type) === 'manual_settled' && !adj?.contra_injected,
+  ),
+)
+
+const manualSettledFallbackEarningRows = computed(() =>
+  manualSettledFallback.value.map((adj) => ({
+    key: `manual_settled_earning_${adj.id}`,
+    label: labelWithMonth('Manual Adj', adj),
+    amount: Math.abs(toNum(adj.amount)),
+  })),
+)
+
+const manualSettledFallbackDeductionRows = computed(() =>
+  manualSettledFallback.value.map((adj) => ({
+    key: `manual_settled_deduction_${adj.id}`,
+    label: labelWithMonth('Adj Recovery', adj),
+    amount: Math.abs(toNum(adj.amount)),
+  })),
+)
+
+const carryForwardAdjustments = computed(() =>
+  appliedAdjustments.value.filter((adj) => normalizeSettlementType(adj?.settlement_type) === 'carry_forward'),
+)
+
+const carryForwardEarningRows = computed(() =>
+  carryForwardAdjustments.value
+    .filter((adj) => {
+      const type = String(adj?.adjustment_type || '')
+      const amount = toNum(adj?.amount)
+      if (type === 'deduction') return false
+      if (['overtime', 'paycut_reversal', 'bonus'].includes(type)) return true
+      if (type === 'other') return amount >= 0
+      return amount >= 0
     })
-    .map(([key, value]) => ({
-      key,
-      label: deductionLabelMap[key] || formatKeyLabel(key),
-      amount: toNum(value),
+    .map((adj) => ({
+      key: `carry_forward_earning_${adj.id}`,
+      label: labelWithMonth(`${titleize(adj.adjustment_type)} Adj`, adj),
+      amount: toNum(adj.amount),
+    })),
+)
+
+const carryForwardDeductionRows = computed(() =>
+  carryForwardAdjustments.value
+    .filter((adj) => {
+      const type = String(adj?.adjustment_type || '')
+      const amount = toNum(adj?.amount)
+      if (type === 'deduction') return true
+      if (['overtime', 'paycut_reversal', 'bonus'].includes(type)) return false
+      if (type === 'other') return amount < 0
+      return amount < 0
+    })
+    .map((adj) => ({
+      key: `carry_forward_deduction_${adj.id}`,
+      label: labelWithMonth(`${titleize(adj.adjustment_type)} Adj`, adj),
+      amount: Math.abs(toNum(adj.amount)),
+    })),
+)
+
+// Totals are now adjusted on API via CashSlipResource (earnings.total, deductions.total).
+
+const deductionFieldRows = computed(() => {
+  const d = deductionsData.value || {}
+  const pfTotal = toNum(d.provident_fund) + toNum(d.pf_allowance)
+
+  const baseRows = [
+    {
+      key: 'pf_deduction',
+      label: deductionLabelMap.pf_deduction || 'PF Deduction',
+      amount: pfTotal,
+    },
+    {
+      key: 'meal_deduction',
+      label: deductionLabelMap.meal_deduction || 'Meal Deduction',
+      amount: toNum(d.meal),
+    },
+    { key: 'tax_deduction', label: deductionLabelMap.tax_deduction || 'Tax Deduction', amount: toNum(d.tds) },
+    { key: 'loan_deduction', label: deductionLabelMap.loan_deduction || 'Loan Deduction', amount: toNum(d.loan) },
+    {
+      key: 'other_deduction',
+      label: deductionLabelMap.other_deduction || 'Other Deduction',
+      amount: toNum(d.other),
+    },
+    { key: 'advance_deduction', label: deductionLabelMap.advance_deduction || 'Advance Deduction', amount: toNum(d.advance) },
+    { key: 'paycut_deduction', label: deductionLabelMap.paycut_deduction || 'Paycut Deduction', amount: toNum(d.paycut) },
+  ]
+
+  const contraRows = contraEntries.value
+    .filter((row) => row?.side === 'deduction')
+    .map((row, index) => ({
+      key: `contra_deduction_${row.ref || row.label || index}`,
+      label: row.label || 'Adj Recovery',
+      amount: toNum(row.amount),
     }))
+
+  return [...baseRows, ...contraRows].filter((row) => toNum(row.amount) !== 0)
 })
 
 const paymentMethodDisplay = computed(() => {
@@ -92,6 +270,12 @@ const bankNameDisplay = computed(() => {
   return item.value?.bank_name || item.value?.user?.bank_name || null
 })
 
+const companyBankAccountDisplay = computed(() => {
+  const account = item.value?.bank_account || item.value?.user?.bank_account
+  if (!account) return null
+  return [account.bank_name, account.account_number].filter(Boolean).join(' - ')
+})
+
 const accountNumberDisplay = computed(() => {
   return (
     item.value?.account_number ||
@@ -103,33 +287,81 @@ const accountNumberDisplay = computed(() => {
   )
 })
 
-const grossSalaryBase = computed(() => toNum(item.value?.gross_salary))
-const otherAllowanceTotal = computed(() => toNum(item.value?.other_allowance_total))
-const manualAdditionAmount = computed(() => toNum(item.value?.manual_addition))
-const totalEarnings = computed(
-  () => grossSalaryBase.value + otherAllowanceTotal.value + manualAdditionAmount.value
-)
 const baseEarningRows = computed(() => [
-  { key: 'basic_salary', label: 'Basic Salary', amount: toNum(item.value?.basic_salary) },
-  { key: 'house_rent', label: 'House Rent', amount: toNum(item.value?.house_rent) },
-  { key: 'medical_allowance', label: 'Medical Allowance', amount: toNum(item.value?.medical_allowance) },
-  { key: 'conveyance_allowance', label: 'Conveyance', amount: toNum(item.value?.conveyance_allowance) },
+  { key: 'basic', label: 'Basic Salary', amount: toNum(earningsData.value.basic) },
+  { key: 'house_rent', label: 'House Rent', amount: toNum(earningsData.value.house_rent) },
+  { key: 'medical', label: 'Medical', amount: toNum(earningsData.value.medical) },
+  { key: 'conveyance', label: 'Conveyance', amount: toNum(earningsData.value.conveyance) },
 ])
+
+const grossSalaryBase = computed(() => baseEarningRows.value.reduce((sum, row) => sum + toNum(row.amount), 0))
+const manualAdditionAmount = computed(() => toNum(item.value?.manual_addition) - contraEarningTotal.value)
+const otherAllowanceTotalEffective = computed(() => Math.max(0, toNum(earningsData.value.others) - manualAdditionAmount.value))
+const totalEarnings = computed(() => toNum(earningsData.value.total))
 
 const dynamicAllowances = computed(() => {
   const rows = Array.isArray(item.value?.allowances) ? item.value.allowances : []
-  return rows.map((a, index) => ({
-    key: a.allowance_code || a.allowance_name || `allowance-${index}`,
-    label: a.allowance_name || `Allowance ${index + 1}`,
-    amount: toNum(a.amount),
-  }))
+  return rows
+    .filter((a) => !isPfAllowanceRow(a))
+    .map((a, index) => ({
+      key: a.allowance_code || a.allowance_name || `allowance-${index}`,
+      label: a.allowance_name || `Allowance ${index + 1}`,
+      amount: toNum(a.amount),
+    }))
 })
 
-const totalDeductionAmount = computed(() => toNum(item.value?.total_deduction))
-const netSalaryAmount = computed(() => toNum(item.value?.net_salary))
+const totalDeductionAmount = computed(() => toNum(deductionsData.value.total) || toNum(item.value?.total_deduction))
+const totalEarningsDisplay = computed(() => totalEarnings.value)
+const totalDeductionsDisplay = computed(() => totalDeductionAmount.value)
+const netSalaryAmount = computed(() => toNum(item.value?.net_payment ?? item.value?.net_salary))
 const deductionItemCount = computed(
-  () => normalizedDeductions.value.length + deductionFieldRows.value.length
+  () =>
+    normalizedDeductions.value.length +
+    deductionFieldRows.value.length +
+    manualSettledFallbackDeductionRows.value.length +
+    carryForwardDeductionRows.value.length
 )
+
+const earningsTableRows = computed(() => {
+  const rows = [
+    ...baseEarningRows.value,
+    { key: 'others', label: 'Other Allowance', amount: otherAllowanceTotalEffective.value },
+    ...(pfAllowanceAmount.value > 0
+      ? [{ key: 'pf_allowance_display', label: 'PF Allowance', amount: pfAllowanceAmount.value }]
+      : []),
+    ...earningContraRows.value.map((r) => ({ ...r, is_delta: true })),
+    ...manualSettledFallbackEarningRows.value.map((r) => ({ ...r, is_delta: true })),
+    ...carryForwardEarningRows.value.map((r) => ({ ...r, is_delta: true })),
+  ]
+
+  return rows.filter((r) => toNum(r?.amount) !== 0)
+})
+
+const deductionTableRows = computed(() => {
+  const rows = [
+    ...deductionFieldRows.value,
+    ...manualSettledFallbackDeductionRows.value.map((r) => ({ ...r, is_delta: true })),
+    ...carryForwardDeductionRows.value.map((r) => ({ ...r, is_delta: true })),
+  ]
+
+  return rows.filter((r) => toNum(r?.amount) !== 0)
+})
+
+const salaryTableRowCount = computed(() =>
+  Math.max(earningsTableRows.value.length, deductionTableRows.value.length),
+)
+
+const formatRowAmount = (row) => {
+  if (!row) return ''
+  const amount = toNum(row.amount)
+
+  if (row.is_delta) {
+    const sign = amount >= 0 ? '+' : '-'
+    return `${sign} ${formatCurrency(Math.abs(amount))}`
+  }
+
+  return formatCurrency(amount)
+}
 </script>
 
 <template>
@@ -167,140 +399,85 @@ const deductionItemCount = computed(
       </div>
 
       <!-- Salary Breakdown -->
-      <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        <!-- Earnings -->
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-          <div class="flex items-center justify-between gap-2 mb-3">
-            <h3 class="font-bold text-blue-800 flex items-center gap-2">
-              <i class="far fa-plus-circle text-emerald-500"></i> Earnings
-            </h3>
-            <span class="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-full px-2 py-0.5">
-              Base + Other + Manual
-            </span>
-          </div>
-
-          <div class="grid grid-cols-3 gap-2 mb-3">
-            <div class="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5">
-              <div class="text-[10px] uppercase tracking-wide text-slate-500">Base</div>
-              <div class="font-mono font-semibold text-slate-800 text-sm">{{ formatCurrency(grossSalaryBase) }}</div>
-            </div>
-            <div class="rounded-lg border border-amber-200 bg-amber-50 px-2 py-1.5">
-              <div class="text-[10px] uppercase tracking-wide text-amber-700">Other</div>
-              <div class="font-mono font-semibold text-amber-700 text-sm">{{ formatCurrency(otherAllowanceTotal) }}</div>
-            </div>
-            <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1.5">
-              <div class="text-[10px] uppercase tracking-wide text-emerald-700">Manual</div>
-              <div class="font-mono font-semibold text-emerald-700 text-sm">{{ formatCurrency(manualAdditionAmount) }}</div>
-            </div>
-          </div>
-
-          <div class="space-y-1 text-sm">
-            <div
-              v-for="row in baseEarningRows"
-              :key="row.key"
-              class="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-slate-50"
-            >
-              <span class="text-gray-600">{{ row.label }}</span>
-              <span class="font-mono font-medium text-slate-800">{{ formatCurrency(row.amount) }}</span>
-            </div>
-
-            <div
-              v-for="row in dynamicAllowances"
-              :key="row.key"
-              class="flex items-center justify-between py-1.5 px-2 rounded-lg bg-blue-50/40"
-            >
-              <span class="text-gray-700">{{ row.label }}</span>
-              <span class="font-mono font-medium text-blue-700">{{ formatCurrency(row.amount) }}</span>
-            </div>
-
-            <div class="h-px bg-slate-200 my-1"></div>
-
-            <div class="flex items-center justify-between py-1.5 px-2 rounded-lg bg-slate-50 font-semibold">
-              <span class="text-slate-700">Gross Salary (Base)</span>
-              <span class="font-mono text-slate-800">{{ formatCurrency(grossSalaryBase) }}</span>
-            </div>
-            <div class="flex items-center justify-between py-1.5 px-2 rounded-lg border border-dashed border-amber-200">
-              <span class="text-amber-800">Other Allowance Total</span>
-              <span class="font-mono font-semibold text-amber-700">+ {{ formatCurrency(otherAllowanceTotal) }}</span>
-            </div>
-            <div class="flex items-center justify-between py-1.5 px-2 rounded-lg border border-dashed border-emerald-200">
-              <span class="text-emerald-800">Manual Addition (Overtime + Add-on)</span>
-              <span class="font-mono font-semibold text-emerald-700">+ {{ formatCurrency(manualAdditionAmount) }}</span>
-            </div>
-            <div class="flex items-center justify-between py-2 px-2 rounded-lg bg-emerald-50 border border-emerald-200 font-bold">
-              <span class="text-emerald-800">Total Earnings</span>
-              <span class="font-mono text-emerald-800">{{ formatCurrency(totalEarnings) }}</span>
-            </div>
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <h3 class="font-bold text-blue-800 flex items-center gap-2">
+            <i class="far fa-balance-scale text-slate-600"></i> Salary Breakdown
+          </h3>
+          <div class="flex flex-wrap gap-2 text-[11px]">
+            <span class="text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-full px-2 py-0.5">Earnings</span>
+            <span class="text-red-700 bg-red-50 border border-red-100 rounded-full px-2 py-0.5">Deductions</span>
           </div>
         </div>
 
-        <!-- Deductions -->
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-          <div class="flex items-center justify-between mb-3">
-            <h3 class="font-bold text-blue-800 flex items-center gap-2">
-              <i class="far fa-minus-circle text-red-400"></i> Deductions
-            </h3>
-            <span class="text-[11px] text-red-700 bg-red-50 border border-red-100 rounded-full px-2 py-0.5">
-              {{ deductionItemCount }} item(s)
-            </span>
+        <div class="overflow-hidden rounded-lg border border-slate-200">
+          <table class="w-full border-collapse text-[13px]">
+            <thead class="bg-slate-100 text-slate-800">
+              <tr>
+                <th class="border border-slate-200 px-3 py-2 text-left font-semibold">Earnings</th>
+                <th class="border border-slate-200 px-3 py-2 text-right font-semibold">Amount</th>
+                <th class="border border-slate-200 px-3 py-2 text-left font-semibold">Deductions</th>
+                <th class="border border-slate-200 px-3 py-2 text-right font-semibold">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="i in salaryTableRowCount" :key="i" class="bg-white">
+                <td class="border border-slate-200 px-3 py-2">
+                  {{ earningsTableRows[i - 1]?.label || '' }}
+                </td>
+                <td class="border border-slate-200 px-3 py-2 text-right font-mono font-semibold">
+                  {{ formatRowAmount(earningsTableRows[i - 1]) }}
+                </td>
+                <td class="border border-slate-200 px-3 py-2">
+                  {{ deductionTableRows[i - 1]?.label || '' }}
+                </td>
+                <td class="border border-slate-200 px-3 py-2 text-right font-mono font-semibold">
+                  {{ formatRowAmount(deductionTableRows[i - 1]) }}
+                </td>
+              </tr>
+              <tr class="bg-slate-50 font-bold">
+                <td class="border border-slate-200 px-3 py-2 text-right">Total Earnings</td>
+                <td class="border border-slate-200 px-3 py-2 text-right font-mono text-emerald-700">
+                  {{ formatCurrency(totalEarningsDisplay) }}
+                </td>
+                <td class="border border-slate-200 px-3 py-2 text-right">Total Deductions</td>
+                <td class="border border-slate-200 px-3 py-2 text-right font-mono text-red-700">
+                  {{ formatCurrency(totalDeductionsDisplay) }}
+                </td>
+              </tr>
+              <tr class="bg-white font-bold">
+                <td class="border border-slate-200 px-3 py-2 text-right" colspan="3">Net Salary</td>
+                <td class="border border-slate-200 px-3 py-2 text-right font-mono text-blue-800">
+                  {{ formatCurrency(netSalaryAmount) }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div class="flex flex-wrap items-end gap-3">
+          <div class="min-w-[220px] flex-1">
+            <label class="mb-1 block text-sm font-medium text-slate-700">Advance Deduction</label>
+            <input
+              v-model="advanceDeduction"
+              type="number"
+              min="0"
+              step="0.01"
+              class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 shadow-sm transition focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-100"
+              placeholder="0.00"
+            />
           </div>
-          <div class="space-y-1.5 text-sm">
-            <template v-if="normalizedDeductions.length">
-              <div
-                v-for="d in normalizedDeductions"
-                :key="d.key"
-                class="rounded-lg border border-red-100 bg-red-50/60 px-2.5 py-2"
-              >
-                <div class="flex items-start justify-between gap-3">
-                  <div class="min-w-0">
-                    <div class="font-medium text-red-900 truncate">{{ d.name }}</div>
-                    <div class="mt-1 text-[11px] text-red-700/80 truncate">
-                      {{ d.category }}<span v-if="d.source"> | {{ d.source }}</span><span v-if="d.reference"> | {{ d.reference }}</span>
-                    </div>
-                    <div v-if="d.reason" class="text-[11px] text-slate-600 mt-1 break-words">
-                      <span class="font-medium">Reason:</span> {{ d.reason }}
-                    </div>
-                  </div>
-                  <div class="font-mono font-semibold text-red-700 whitespace-nowrap">
-                    - {{ formatCurrency(d.amount) }}
-                  </div>
-                </div>
-              </div>
-            </template>
-
-            <template v-if="deductionFieldRows.length">
-              <div
-                v-for="row in deductionFieldRows"
-                :key="row.key"
-                class="flex items-center justify-between py-1.5 px-2 rounded-lg bg-slate-50"
-              >
-                <span class="text-gray-600" :class="{ 'font-semibold text-rose-700': row.key === 'paycut_deduction' }">
-                  {{ row.label }}
-                </span>
-                <span class="font-mono font-medium text-red-600" :class="{ 'font-bold': row.key === 'paycut_deduction' }">
-                  {{ formatCurrency(row.amount) }}
-                </span>
-              </div>
-            </template>
-
-            <div
-              v-if="!normalizedDeductions.length && !deductionFieldRows.length"
-              class="text-gray-400 text-sm py-3 text-center"
-            >
-              No deductions
-            </div>
-
-            <div class="mt-2 grid grid-cols-2 gap-2">
-              <div class="rounded-lg bg-red-50 border border-red-200 px-2 py-1.5">
-                <div class="text-[11px] uppercase tracking-wide text-red-600">Total Deductions</div>
-                <div class="font-mono font-bold text-red-700">{{ formatCurrency(totalDeductionAmount) }}</div>
-              </div>
-              <div class="rounded-lg bg-blue-50 border border-blue-200 px-2 py-1.5">
-                <div class="text-[11px] uppercase tracking-wide text-blue-700">Net Salary</div>
-                <div class="font-mono font-bold text-blue-800">{{ formatCurrency(netSalaryAmount) }}</div>
-              </div>
-            </div>
-          </div>
+          <button
+            type="button"
+            class="btn-2 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold shadow-sm disabled:opacity-50"
+            :disabled="advanceSaving || loading"
+            @click="saveAdvanceDeduction"
+          >
+            <i class="far fa-save"></i>
+            {{ advanceSaving ? 'Saving...' : 'Save Advance' }}
+          </button>
         </div>
       </div>
 
@@ -326,6 +503,10 @@ const deductionItemCount = computed(
           <div class="rounded-lg bg-slate-50 border border-slate-200 p-2">
             <span class="text-gray-500 block mb-0.5">Bank Name</span>
             <span class="font-medium">{{ bankNameDisplay || '-' }}</span>
+          </div>
+          <div class="rounded-lg bg-slate-50 border border-slate-200 p-2">
+            <span class="text-gray-500 block mb-0.5">Company Bank A/C</span>
+            <span class="font-medium">{{ companyBankAccountDisplay || '-' }}</span>
           </div>
           <div class="rounded-lg bg-slate-50 border border-slate-200 p-2">
             <span class="text-gray-500 block mb-0.5">Account No.</span>

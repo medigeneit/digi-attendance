@@ -5,9 +5,15 @@ import { useRoute, useRouter } from 'vue-router'
 
 const props = defineProps({
   user: Object,
+  visible: {
+    type: Boolean,
+    default: true,
+  },
 })
 
-const open = ref(true)
+const emit = defineEmits(['update:visible'])
+
+const open = ref(props.visible)
 const expandedMenuKey = ref(null)
 
 const route = useRoute()
@@ -24,6 +30,11 @@ const isSuperAdminOrDev = computed(() => ['super_admin', 'developer'].includes(p
 const logout = () => {
   authStore.logout()
   router.push('/login')
+}
+
+const toggleOpen = () => {
+  open.value = !open.value
+  emit('update:visible', open.value)
 }
 
 const toggleSubmenu = (key) => {
@@ -192,6 +203,7 @@ const settingsMenu = [
   { label: 'Designation List', routeName: 'DesignationList' },
   { label: 'Department List', routeName: 'DepartmentList' },
   { label: 'Company List', routeName: 'CompanyList' },
+  { label: 'Company Bank Accounts', routeName: 'CompanyBankAccountList' },
   { label: 'Device List', routeName: 'DeviceList' },
   { label: 'ZK User Management', routeName: 'ZKUsers' },
   { label: 'Permission List', routeName: 'PermissionList' },
@@ -217,7 +229,11 @@ const payrollMenu = [
   { label: 'Employee Loans', routeName: 'PayrollEmployeeLoanList' },
   { label: 'Payroll Batches', routeName: 'PayrollBatchList' },
   { label: 'Generate Payroll', routeName: 'PayrollBatchGenerate' },
+  { label: 'Bank Adviser List', routeName: 'PayrollBankAdviserList' },
+  { label: 'Payroll Slip List', routeName: 'PayrollSlipList' },
   { label: 'Payrolls', routeName: 'PayrollList' },
+  { label: 'Payroll Adjustments', routeName: 'PayrollAdjustmentList' },
+
 ]
 const payrollRouteNames = payrollMenu.map((i) => i.routeName)
 const filteredPayrollMenu = computed(() =>
@@ -332,6 +348,13 @@ watch(open, (val) => {
 })
 
 watch(
+  () => props.visible,
+  (visible) => {
+    open.value = visible
+  },
+)
+
+watch(
   () => route.fullPath,
   () => {
     searchQuery.value = ''
@@ -374,7 +397,7 @@ watch(
 
         <!-- Menu Toggle Button -->
         <button
-          @click="open = !open"
+          @click="toggleOpen"
           class="text-gray-500 hover:text-blue-600 transition justify-center items-center rounded-full"
           :title="open ? 'Minimize Menu' : 'Expand Menu'"
           :class="[open ? 'flex' : ' md:flex']"

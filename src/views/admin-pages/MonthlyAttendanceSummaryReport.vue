@@ -123,6 +123,49 @@ const selectedMonthLabel = computed(() => {
 // "HH:MM"
 const asDuration = (v, fallback = '0:00') => (v && String(v).trim() !== '' ? v : fallback)
 
+const asCompactHours = (value, fallback = '0h') => {
+  if (value === null || value === undefined || value === '') return fallback
+
+  const text = String(value).trim()
+  if (!text) return fallback
+
+  const normalized = text.toLowerCase().replace(/\s+/g, ' ')
+
+  const hasHourMinuteUnits = /h|m/.test(normalized)
+  if (hasHourMinuteUnits) {
+    const hourMatch = normalized.match(/(\d+(?:\.\d+)?)\s*h/)
+    const minuteMatch = normalized.match(/(\d+(?:\.\d+)?)\s*m/)
+
+    if (hourMatch || minuteMatch) {
+      const hours = Number(hourMatch?.[1] || 0)
+      const minutes = Number(minuteMatch?.[1] || 0)
+      const totalHours = hours + minutes / 60
+      const rounded = Math.round(totalHours * 10) / 10
+      return Number.isInteger(rounded) ? `${rounded}h` : `${rounded.toFixed(1)}h`
+    }
+  }
+
+  if (normalized.includes(':')) {
+    const [hoursPart = '0', minutesPart = '0'] = normalized.split(':')
+    const hours = Number(hoursPart)
+    const minutes = Number(minutesPart)
+    if (Number.isFinite(hours) || Number.isFinite(minutes)) {
+      const totalHours = (Number.isFinite(hours) ? hours : 0) + (Number.isFinite(minutes) ? minutes / 60 : 0)
+      const rounded = Math.round(totalHours * 10) / 10
+      return Number.isInteger(rounded) ? `${rounded}h` : `${rounded.toFixed(1)}h`
+    }
+  }
+
+  const numeric = Number(normalized.replace(/h$/, ''))
+  if (Number.isFinite(numeric)) {
+    return Number.isInteger(numeric) ? `${numeric}h` : `${numeric.toFixed(1)}h`
+  }
+
+  return normalized.endsWith('h') ? normalized : `${normalized}h`
+}
+
+const getEmployeeId = (log) => log?.employee_id ?? log?.user?.employee_id ?? '-'
+
 /* ---------------- page UX: toast + banner ---------------- */
 const ui = ref({
   toast: null, // {type:'success'|'error'|'info', text:string}
@@ -600,9 +643,9 @@ onBeforeUnmount(() => {
             <div class="report-card__body">
               <div class="report-card__row">
                 <p class="report-card__body-label">Working Hour</p>
-                <p class="report-card__primary" :class="log?.under_target ? 'text-red-600' : 'text-emerald-600'">
-                  {{ asDuration(log?.total_working_hours) }}
-                  <span class="text-gray-500 text-xs">/ {{ asDuration(log?.total_shift_hours) }}</span>
+                <p class="report-card__primary font-mono tabular-nums" :class="log?.under_target ? 'text-red-600' : 'text-emerald-600'">
+                  {{ asCompactHours(log?.total_working_hours) }}
+                  <span class="text-gray-500 text-xs">/ {{ asCompactHours(log?.total_shift_hours) }}</span>
                 </p>
               </div>
 
@@ -689,13 +732,14 @@ onBeforeUnmount(() => {
                 <tr class="bg-gray-50 text-sm">
                   <th rowspan="2" class="th">#</th>
                   <th rowspan="2" class="th text-left">Employee Name</th>
+                  <th rowspan="2" class="th text-left">Employee ID</th>
                   <th rowspan="2" class="th text-left">Designation</th>
                   <th colspan="6" class="th">Attendance Summary</th>
                   <th colspan="2" class="th">Actual Late</th>
                   <th colspan="2" class="th">Remaining Late</th>
                   <th colspan="2" class="th">Actual Early</th>
                   <th colspan="2" class="th">Remaining Early</th>
-                  <th rowspan="2" class="th">Working Hour</th>
+                  <th rowspan="2" class="th th--wh" title="Working Hour">WH</th>
                   <th colspan="4" class="th">Leave Day</th>
                   <th colspan="2" class="th">Short Leave</th>
                   <th colspan="2" class="th">Addition</th>
@@ -725,6 +769,7 @@ onBeforeUnmount(() => {
                 >
                   <td class="td">{{ index + 1 }}</td>
                   <td class="td text-left">{{ log?.user }}</td>
+                  <td class="td text-left font-mono text-[11px]">{{ getEmployeeId(log) }}</td>
                   <td class="td text-left">{{ log?.designation }}</td>
                   <td class="td">{{ log?.total_monthly_days }}</td>
                   <td class="td">{{ log?.total_present }}</td>
@@ -743,11 +788,11 @@ onBeforeUnmount(() => {
                   <td class="td">{{ log?.total_remain_early_day }}</td>
                   <td class="td">{{ log?.total_remain_early_hour }}</td>
 
-                  <td class="td text-xs">
-                    <p class="font-semibold" :class="log?.under_target ? 'text-red-600' : 'text-emerald-600'">
-                      {{ log?.total_working_hours }}
+                  <td class="td td--wh text-xs">
+                    <p class="whitespace-nowrap font-mono tabular-nums font-semibold" :class="log?.under_target ? 'text-red-600' : 'text-emerald-600'">
+                      {{ asCompactHours(log?.total_working_hours) }}
+                      <span class="text-[10px] text-gray-400">/ {{ asCompactHours(log?.total_shift_hours) }}</span>
                     </p>
-                    <p class="text-[11px] text-gray-500">of {{ log?.total_shift_hours }}</p>
                   </td>
 
                   <td class="td">{{ log?.total_cl_leave }}</td>
@@ -819,7 +864,7 @@ onBeforeUnmount(() => {
 
               <tfoot>
                 <tr class="bg-gray-100 text-center text-sm font-semibold">
-                  <td colspan="18" class="td">Total</td>
+                  <td colspan="19" class="td">Total</td>
                   <td class="td">{{ totals.cl }}</td>
                   <td class="td">{{ totals.ml }}</td>
                   <td class="td">{{ totals.sl }}</td>
@@ -855,6 +900,8 @@ onBeforeUnmount(() => {
 
 .th { @apply border px-2 py-1 text-xs font-semibold text-gray-700 whitespace-nowrap; }
 .td { @apply border px-2 py-1 whitespace-nowrap; }
+.th--wh,
+.td--wh { @apply w-[92px] text-center; }
 
 .toolbar-label { @apply text-[11px] font-semibold uppercase tracking-wide text-slate-400; }
 .segmented-control { @apply inline-flex items-center gap-1 rounded-full bg-slate-100 p-1; }
