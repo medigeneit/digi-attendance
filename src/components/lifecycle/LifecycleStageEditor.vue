@@ -35,6 +35,17 @@ const statusOptions = [
   { value: 'completed', label: 'Completed' },
 ]
 
+const selectedStatusLabel = computed(
+  () => statusOptions.find((item) => item.value === form.status)?.label || 'Not Started',
+)
+
+const selectedStatusTone = computed(() => {
+  if (form.status === 'completed') return 'bg-emerald-100 text-emerald-700 ring-emerald-200'
+  if (form.status === 'in_progress') return 'bg-blue-100 text-blue-700 ring-blue-200'
+  if (form.status === 'on_hold') return 'bg-amber-100 text-amber-700 ring-amber-200'
+  return 'bg-slate-100 text-slate-600 ring-slate-200'
+})
+
 const STAGE_SALARY_TYPES = [
   { key: 'intern', label: 'Intern' },
   { key: 'probationary', label: 'Probationary' },
@@ -1006,11 +1017,33 @@ async function save() {
         <p class="text-xs text-gray-500">{{ definition.description }}</p>
       </div>
 
-      <div class="min-w-[160px]">
-        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Stage Status</label>
-        <select v-model="form.status" class="w-full rounded-lg border px-2.5 py-1.5 text-sm">
+      <div
+        class="w-full rounded-xl border-2 border-blue-200 bg-blue-50/80 p-3 shadow-sm ring-1 ring-blue-100 md:w-[320px]"
+      >
+        <div class="mb-2 flex items-center justify-between gap-3">
+          <label
+            for="stage-status-select"
+            class="text-xs font-bold uppercase tracking-[0.16em] text-blue-800"
+          >
+            Stage Status
+          </label>
+          <span
+            class="rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1"
+            :class="selectedStatusTone"
+          >
+            {{ selectedStatusLabel }}
+          </span>
+        </div>
+        <select
+          id="stage-status-select"
+          v-model="form.status"
+          class="w-full rounded-lg border border-blue-300 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-200"
+        >
           <option v-for="item in statusOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
         </select>
+        <div class="mt-1.5 text-xs font-medium text-blue-700">
+          Select status before saving this stage.
+        </div>
       </div>
     </div>
 
