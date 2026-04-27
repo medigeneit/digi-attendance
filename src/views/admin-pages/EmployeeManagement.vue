@@ -11,11 +11,11 @@
     </RouterLink>
     <RouterLink :to="{ name: 'checklists.board', query:{type:'joining'} }" class="main-button">
       <i class="far fa-tasks text-3xl"></i>
-      Joining Checklist
+      Joining Progress
     </RouterLink>
     <RouterLink :to="{ name: 'checklists.board', query:{type:'exit'} }" class="main-button">
       <i class="far fa-tasks text-3xl"></i>
-      Exit Checklist
+      Exit Progress
     </RouterLink>
   </div>
 </template>
