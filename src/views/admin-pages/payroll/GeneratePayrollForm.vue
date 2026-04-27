@@ -1,27 +1,28 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { storeToRefs } from 'pinia'
 import { usePayrollBatchStore } from '@/stores/payrollBatch'
-import { useCompanyStore } from '@/stores/company'
 import PayrollStatusBadge from '@/components/payroll/PayrollStatusBadge.vue'
 import PayrollAdjustmentPreviewModal from '@/components/payroll/PayrollAdjustmentPreviewModal.vue'
+import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import { formatCurrency } from '@/utils/currency'
 
 const router = useRouter()
+const route = useRoute()
 const toast = useToast()
 const batchStore = usePayrollBatchStore()
-const companyStore = useCompanyStore()
 
 const { loading, error, generateResult, apiUnavailable } = storeToRefs(batchStore)
-const { companies } = storeToRefs(companyStore)
 
 const form = ref({
   company_id: '',
+  department_id: '',
+  line_type: String(route.query.line_type || 'all'),
   salary_month: '',
   salary_type: 'Monthly',
-  employee_ids: [],
+  employee_id: '',
   remarks: '',
 })
 const formErrors = ref({})
@@ -29,14 +30,32 @@ const submitted = ref(false)
 const adjustmentModalOpen = ref(false)
 const adjustmentModalRef = ref(null)
 const pendingGeneratePayload = ref(null)
-
-onMounted(() => companyStore.fetchCompanies())
+const employeeFilterRef = ref(null)
+const doctorGenerateResult = ref(null)
 
 const generatedPayload = computed(() => generateResult.value?.data || generateResult.value || null)
 const generatedBatch = computed(() => generatedPayload.value?.batch || null)
-const generatedPayrolls = computed(() => generatedPayload.value?.generated || generatedPayload.value?.payrolls || [])
-const skippedPayrolls = computed(() => generatedPayload.value?.skipped || [])
-const missingSalaryStructures = computed(() => generatedPayload.value?.missing_salary_structures || [])
+const generatedPayrolls = computed(() => [
+  ...(generatedPayload.value?.generated || generatedPayload.value?.payrolls || []),
+  ...(doctorGenerateResult.value?.data?.generated || doctorGenerateResult.value?.generated || []),
+])
+const skippedPayrolls = computed(() => [
+  ...(generatedPayload.value?.skipped || []),
+  ...(doctorGenerateResult.value?.data?.skipped || doctorGenerateResult.value?.skipped || []),
+])
+const missingSalaryStructures = computed(() => [
+  ...(generatedPayload.value?.missing_salary_structures || []),
+  ...(doctorGenerateResult.value?.data?.missing_salary_structures ||
+    doctorGenerateResult.value?.missing_salary_structures ||
+    []),
+])
+const resultTitle = computed(() =>
+  doctorGenerateResult.value && generatedPayload.value
+    ? 'Payrolls Generated'
+    : doctorGenerateResult.value
+      ? 'Doctor Payroll Generated'
+      : 'Payroll Generated',
+)
 const summaryCards = computed(() => [
   {
     label: 'Generated',
@@ -59,35 +78,104 @@ const validate = () => {
   const errors = {}
   if (!form.value.company_id) errors.company_id = 'Company is required.'
   if (!form.value.salary_month) errors.salary_month = 'Salary month is required.'
-  if (!form.value.salary_type) errors.salary_type = 'Salary type is required.'
   formErrors.value = errors
   return !Object.keys(errors).length
 }
 
+const normalizeLineType = (value) => String(value || 'all').trim().toLowerCase()
+const filteredEmployees = computed(() => {
+  const exposed = employeeFilterRef.value?.employees
+  return Array.isArray(exposed) ? exposed : exposed?.value || []
+})
+const selectedEmployees = computed(() => {
+  if (form.value.employee_id) {
+    return filteredEmployees.value.filter((employee) => String(employee.id) === String(form.value.employee_id))
+  }
+  return filteredEmployees.value
+})
+const regularEmployees = computed(() =>
+  selectedEmployees.value.filter((employee) => normalizeLineType(employee.type) !== 'doctor'),
+)
+const doctorEmployees = computed(() =>
+  selectedEmployees.value.filter((employee) => normalizeLineType(employee.type) === 'doctor'),
+)
+const selectedLineType = computed(() => normalizeLineType(form.value.line_type))
+const shouldGenerateRegular = computed(() => selectedLineType.value !== 'doctor' && regularEmployees.value.length > 0)
+const shouldGenerateDoctor = computed(
+  () => ['all', 'doctor'].includes(selectedLineType.value) && doctorEmployees.value.length > 0,
+)
+
+const buildGeneratePayload = (employees, includeSalaryType = false) => {
+  const payload = {
+    company_id: form.value.company_id,
+    salary_month: form.value.salary_month,
+    employee_ids: employees.map((employee) => Number(employee.id)).filter(Boolean),
+    remarks: form.value.remarks || undefined,
+  }
+
+  if (includeSalaryType) payload.salary_type = 'Monthly'
+  if (!payload.employee_ids.length) delete payload.employee_ids
+  if (!payload.remarks) delete payload.remarks
+
+  return payload
+}
+
+const handleEmployeeFilterChange = (payload = {}) => {
+  form.value.company_id = payload.company_id || ''
+  form.value.department_id = payload.department_id || ''
+  form.value.line_type = payload.line_type || 'all'
+  form.value.employee_id = payload.employee_id || ''
+}
+
 const handleSubmit = async () => {
   if (!validate()) return
-  
-  // Save the payload and open the adjustment preview modal
-  const [year, month] = form.value.salary_month.split('-')
-  pendingGeneratePayload.value = { ...form.value }
-  adjustmentModalOpen.value = true
-  
-  // Trigger the modal to load preview data
-  await new Promise(resolve => setTimeout(resolve, 100))
-  adjustmentModalRef.value?.handleOpen()
+
+  if (!shouldGenerateRegular.value && !shouldGenerateDoctor.value) {
+    toast.error('No employees found for the selected filters.')
+    return
+  }
+
+  if (shouldGenerateRegular.value) {
+    pendingGeneratePayload.value = {
+      regular: buildGeneratePayload(regularEmployees.value, true),
+      doctor: shouldGenerateDoctor.value ? buildGeneratePayload(doctorEmployees.value, false) : null,
+    }
+    adjustmentModalOpen.value = true
+    await new Promise(resolve => setTimeout(resolve, 100))
+    adjustmentModalRef.value?.handleOpen()
+    return
+  }
+
+  await generateDoctorOnly()
+}
+
+const generateDoctorOnly = async () => {
+  try {
+    batchStore.$patch({ generateResult: null })
+    doctorGenerateResult.value = await batchStore.generateDoctorPayroll(
+      buildGeneratePayload(doctorEmployees.value, false),
+    )
+    submitted.value = true
+    toast.success('Doctor payroll generated successfully!')
+  } catch (e) {
+    if (e.errors) formErrors.value = e.errors
+    toast.error(e.message || 'Doctor payroll generation failed.')
+  }
 }
 
 const handleConfirmAdjustments = async () => {
   if (!pendingGeneratePayload.value) return
   
   const payload = pendingGeneratePayload.value
-  if (!payload.employee_ids?.length) delete payload.employee_ids
-  if (!payload.remarks) delete payload.remarks
-  
+
   try {
-    await batchStore.generatePayroll(payload)
+    doctorGenerateResult.value = null
+    await batchStore.generatePayroll(payload.regular || payload)
+    if (payload.doctor) {
+      doctorGenerateResult.value = await batchStore.generateDoctorPayroll(payload.doctor)
+    }
     submitted.value = true
-    toast.success('Payroll batch generated successfully!')
+    toast.success(payload.doctor ? 'Payroll and doctor payroll generated successfully!' : 'Payroll batch generated successfully!')
     pendingGeneratePayload.value = null
   } catch (e) {
     if (e.errors) formErrors.value = e.errors
@@ -103,6 +191,7 @@ const goToBatch = () => {
 
 const resetGeneration = () => {
   submitted.value = false
+  doctorGenerateResult.value = null
   batchStore.$patch({ generateResult: null })
 }
 
@@ -136,13 +225,19 @@ const inputCls =
     <template v-else-if="!submitted">
       <div class="grid gap-5 xl:grid-cols-[minmax(0,2fr)_320px]">
         <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-5 md:p-6 space-y-5">
-        <!-- Company -->
+        <!-- Employee Filters -->
         <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">Company <span class="text-red-500">*</span></label>
-          <select v-model="form.company_id" :class="inputCls">
-            <option value="">Select Company</option>
-            <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
-          </select>
+          <label class="mb-2 block text-sm font-medium text-slate-700">
+            Employee Filter <span class="text-red-500">*</span>
+          </label>
+          <EmployeeFilter
+            ref="employeeFilterRef"
+            :company_id="form.company_id"
+            :department_id="form.department_id"
+            :line_type="form.line_type"
+            :employee_id="form.employee_id"
+            @filter-change="handleEmployeeFilterChange"
+          />
           <p v-if="formErrors.company_id" class="text-red-500 text-xs mt-1">{{ formErrors.company_id }}</p>
         </div>
 
@@ -155,11 +250,7 @@ const inputCls =
           </div>
           <div>
             <label class="mb-1 block text-sm font-medium text-slate-700">Salary Type <span class="text-red-500">*</span></label>
-            <select v-model="form.salary_type" :class="inputCls">
-              <option value="Monthly">Monthly</option>
-              <option value="Bonus">Bonus</option>
-              <option value="Final">Final</option>
-            </select>
+            <input v-model="form.salary_type" type="text" :class="inputCls" readonly />
             <p v-if="formErrors.salary_type" class="text-red-500 text-xs mt-1">{{ formErrors.salary_type }}</p>
           </div>
         </div>
@@ -173,7 +264,10 @@ const inputCls =
         <!-- Info -->
         <div class="flex gap-2 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-700">
           <i class="far fa-info-circle mt-0.5 flex-shrink-0"></i>
-          <span>Prepared by is now taken automatically from the logged-in user. Payroll will be generated for all active employees in the selected company for the given month.</span>
+          <span>
+            Monthly payroll is generated from the selected company, department, line type, and employee filter.
+            Doctor line uses the separate doctor payroll endpoint.
+          </span>
         </div>
 
         <!-- Submit -->
@@ -222,7 +316,7 @@ const inputCls =
     </template>
 
     <!-- Result view -->
-    <template v-else-if="generatedPayload">
+    <template v-else-if="generatedPayload || doctorGenerateResult">
       <!-- Batch summary card -->
       <div class="space-y-5">
         <div class="rounded-3xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-white p-5 shadow-sm">
@@ -231,7 +325,7 @@ const inputCls =
               <i class="fas fa-check-circle text-3xl"></i>
             </div>
             <div>
-              <p class="text-lg font-bold text-emerald-800">Payroll Generated</p>
+              <p class="text-lg font-bold text-emerald-800">{{ resultTitle }}</p>
               <p class="text-sm text-emerald-700">
                 <span v-if="generatedBatch">
                   Batch <span class="font-mono font-bold">#{{ generatedBatch.id }}</span>
@@ -280,15 +374,21 @@ const inputCls =
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
-            <tr v-for="p in generatedPayrolls" :key="p.id" class="hover:bg-gray-50 transition-colors">
+            <tr v-for="(p, index) in generatedPayrolls" :key="`${p.status || p.payment_status || 'payroll'}-${p.id}-${index}`" class="hover:bg-gray-50 transition-colors">
               <td class="px-4 py-3">
                 <div class="font-medium">{{ p.user?.name }}</div>
                 <div class="text-xs text-gray-400">{{ p.user?.employee_id }}</div>
               </td>
-              <td class="px-4 py-3 text-right font-mono">{{ formatCurrency(p.gross_salary) }}</td>
-              <td class="px-4 py-3 text-right font-mono text-red-600">{{ formatCurrency(p.total_deduction) }}</td>
-              <td class="px-4 py-3 text-right font-mono font-bold text-emerald-700">{{ formatCurrency(p.net_salary) }}</td>
-              <td class="px-4 py-3 text-center"><PayrollStatusBadge :status="p.payment_status" /></td>
+              <td class="px-4 py-3 text-right font-mono">
+                {{ formatCurrency(p.gross_salary ?? (Number(p.basic_salary || 0) + Number(p.honorium_total || 0))) }}
+              </td>
+              <td class="px-4 py-3 text-right font-mono text-red-600">
+                {{ formatCurrency(p.total_deduction ?? (Number(p.loan_deduction || 0) + Number(p.samiti_deduction || 0))) }}
+              </td>
+              <td class="px-4 py-3 text-right font-mono font-bold text-emerald-700">
+                {{ formatCurrency(p.net_salary ?? p.net_payable) }}
+              </td>
+              <td class="px-4 py-3 text-center"><PayrollStatusBadge :status="p.payment_status || p.status" /></td>
             </tr>
           </tbody>
         </table>

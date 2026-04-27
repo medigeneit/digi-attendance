@@ -128,6 +128,31 @@ export const usePayrollBatchStore = defineStore('payrollBatch', () => {
     }
   }
 
+  const generateDoctorPayroll = async (payload) => {
+    loading.value = true
+    error.value = null
+    try {
+      const res = await requestWithFallback(
+        'post',
+        ['/doctor-payrolls/generate'],
+        payload,
+      )
+      return res.data
+    } catch (err) {
+      if (err?.isApiUnavailable || err?.status === 404) {
+        const e = new Error(API_UNAVAILABLE_MESSAGE)
+        e.isApiUnavailable = true
+        error.value = e.message
+        throw e
+      }
+      const e = toError(err, 'Failed to generate doctor payroll')
+      error.value = e.message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     list,
     item,
@@ -139,5 +164,6 @@ export const usePayrollBatchStore = defineStore('payrollBatch', () => {
     fetchList,
     fetchItem,
     generatePayroll,
+    generateDoctorPayroll,
   }
 })

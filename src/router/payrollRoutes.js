@@ -78,6 +78,12 @@ export const payrollRoutes = [
     meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Payrolls' },
   },
   {
+    path: '/payrolls/doctors',
+    name: 'DoctorPayrollList',
+    component: () => import('@/views/admin-pages/payroll/DoctorPayrollList.vue'),
+    meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Doctor Payrolls' },
+  },
+  {
     path: '/payrolls/bank-advisers',
     name: 'PayrollBankAdviserList',
     component: () => import('@/views/admin-pages/payroll/BankAdviserList.vue'),

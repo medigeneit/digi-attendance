@@ -74,10 +74,20 @@ const form = ref({
 const userDisplay = ref({ name: null, dept: null })
 const PF_ALLOWANCE_CODE = 'PF'
 const PF_ALLOWANCE_NAME = 'Provident Fund'
+const DAY_HONORIUM_ALLOWANCE_CODE = 'DAY_HONORIUM'
+const DAY_HONORIUM_ALLOWANCE_NAME = 'Day Honorium'
+const DEFAULT_DAY_HONORIUM_AMOUNT = 1000
+const BASIC_ONLY_LINE_TYPES = ['doctor', 'academy_body', 'academic_body']
 const paymentMethodOptions = [
   { label: 'Cash', value: 'Cash' },
   { label: 'Bank', value: 'Bank Transfer' },
 ]
+
+const normalizeLineType = (value) =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_')
 
 const formatEmploymentTypeLabel = (value) => {
   const normalized = normalizeEmploymentType(value)
@@ -91,11 +101,21 @@ const formatEmploymentTypeLabel = (value) => {
 }
 
 const pfDefaultByEmploymentType = (employmentType) => normalizeEmploymentType(employmentType) === 'permanent'
+const selectedPayrollLineType = computed(() =>
+  normalizeLineType(selectedUserProfile.value?.type || selectedLineType.value),
+)
+const usesBasicOnlySalaryPolicy = computed(() =>
+  BASIC_ONLY_LINE_TYPES.includes(selectedPayrollLineType.value),
+)
+const usesDayHonoriumAllowance = computed(() => selectedPayrollLineType.value === 'doctor')
 const pfAllowedForCurrentEmploymentType = computed(() =>
-  isPfAllowedForEmploymentType(selectedEmploymentType.value),
+  usesBasicOnlySalaryPolicy.value || isPfAllowedForEmploymentType(selectedEmploymentType.value),
 )
 const pfAllowanceAmount = computed(() =>
-  pfAllowedForCurrentEmploymentType.value && pfApplicable.value && toNum(form.value.basic_salary) > 0
+  !usesBasicOnlySalaryPolicy.value &&
+  pfAllowedForCurrentEmploymentType.value &&
+  pfApplicable.value &&
+  toNum(form.value.basic_salary) > 0
     ? calculatePfDeduction(form.value.basic_salary)
     : 0,
 )
@@ -112,8 +132,35 @@ const employmentTypeBadgeClass = computed(() => {
 const employmentTypeLabel = computed(() => formatEmploymentTypeLabel(selectedEmploymentType.value))
 
 const pfStatusLabel = computed(() => (pfApplicable.value ? 'Applicable' : 'Not Applicable'))
+const deductionTitle = computed(() =>
+  usesBasicOnlySalaryPolicy.value ? 'Somiti Deduction' : 'PF Deduction',
+)
+const deductionToggleLabel = computed(() =>
+  usesBasicOnlySalaryPolicy.value ? 'Apply Somiti deduction for this employee' : 'Apply PF for this employee',
+)
+const deductionSupportText = computed(() =>
+  usesBasicOnlySalaryPolicy.value
+    ? 'Enter Somiti deduction manually for doctor or academy body salary.'
+    : `${(PROVIDENT_FUND_RATE * 100).toFixed(0)}% of basic salary when applicable.`,
+)
+const deductionSummaryTitle = computed(() =>
+  usesBasicOnlySalaryPolicy.value ? 'Net After Somiti' : 'Net After PF',
+)
+const deductionSummaryText = computed(() =>
+  usesBasicOnlySalaryPolicy.value
+    ? 'Gross salary plus active allowances minus Somiti deduction.'
+    : 'Total gross minus PF deduction (5% of basic).',
+)
+const pageIntroText = computed(() =>
+  usesBasicOnlySalaryPolicy.value
+    ? 'Gross salary is saved as basic salary for doctor and academy body employees.'
+    : `Gross salary is the total payable. Basic breakdown: ${activePolicySummary.value}. PF is 5% of basic.`,
+)
 
 const pfSupportCopy = computed(() => {
+  if (usesBasicOnlySalaryPolicy.value) {
+    return 'Doctor and academy body salary uses gross salary as basic. PF auto allowance is not applied.'
+  }
   if (!selectedEmploymentType.value) return 'Select an employee to auto-suggest PF applicability.'
   if (!pfAllowedForCurrentEmploymentType.value) {
     return 'Probationary employees receive 60% of gross as basic salary. PF is not applicable.'
@@ -124,7 +171,11 @@ const pfSupportCopy = computed(() => {
   return 'This employment type defaults to PF off. Enable it manually if this employee is eligible.'
 })
 
-const activePolicy = computed(() => getSalaryComponentPolicy(selectedEmploymentType.value))
+const activePolicy = computed(() =>
+  usesBasicOnlySalaryPolicy.value
+    ? [{ key: 'basic_salary', label: 'Basic Salary', ratio: 1, shortLabel: 'Basic' }]
+    : getSalaryComponentPolicy(selectedEmploymentType.value),
+)
 const activePolicySummary = computed(() =>
   activePolicy.value.map((item) => `${Math.round(item.ratio * 100)}% ${item.shortLabel}`).join(', '),
 )
@@ -164,13 +215,28 @@ const bankPreviewRows = computed(() => {
 
 const policyGross = computed(() => calculateCoreGross(form.value))
 const bonusAmount = computed(() =>
-  calculateBonusAmount(selectedEmploymentType.value, form.value.basic_salary),
+  usesBasicOnlySalaryPolicy.value
+    ? 0
+    : calculateBonusAmount(selectedEmploymentType.value, form.value.basic_salary),
 )
 const allowanceTotal = computed(() => calculateAllowanceTotal(form.value.allowances))
-const totalGross = computed(() => toNum(form.value.gross_salary) + allowanceTotal.value)
-const netPayable = computed(() => Math.max(0, totalGross.value - toNum(form.value.pf_deduction)))
+const totalGross = computed(() =>
+  usesBasicOnlySalaryPolicy.value
+    ? toNum(form.value.gross_salary)
+    : toNum(form.value.gross_salary) + allowanceTotal.value,
+)
+const netPayableBase = computed(() => toNum(form.value.gross_salary) + allowanceTotal.value)
+const netPayable = computed(() =>
+  Math.max(0, netPayableBase.value - toNum(form.value.pf_deduction)),
+)
 
 const applyPfDeduction = () => {
+  if (usesBasicOnlySalaryPolicy.value) {
+    form.value.pf_deduction = pfApplicable.value ? form.value.pf_deduction : null
+    syncPfAllowanceRow()
+    return
+  }
+
   form.value.pf_deduction =
     pfAllowedForCurrentEmploymentType.value &&
     pfApplicable.value &&
@@ -187,10 +253,28 @@ const isPfAllowanceRow = (allowance = {}) => {
   return code === PF_ALLOWANCE_CODE || name === PF_ALLOWANCE_NAME.toLowerCase()
 }
 
+const isDayHonoriumAllowanceRow = (allowance = {}) => {
+  const code = String(allowance?.allowance_code || '').trim().toUpperCase()
+  const name = String(allowance?.allowance_name || '').trim().toLowerCase()
+  return (
+    code === DAY_HONORIUM_ALLOWANCE_CODE ||
+    name === DAY_HONORIUM_ALLOWANCE_NAME.toLowerCase()
+  )
+}
+
 const syncPfAllowanceRow = () => {
-  const amount = pfAllowanceAmount.value
   const allowances = Array.isArray(form.value.allowances) ? [...form.value.allowances] : []
   const existingIndex = allowances.findIndex((allowance) => isPfAllowanceRow(allowance))
+
+  if (usesBasicOnlySalaryPolicy.value) {
+    if (existingIndex !== -1) {
+      allowances.splice(existingIndex, 1)
+      form.value.allowances = allowances
+    }
+    return
+  }
+
+  const amount = pfAllowanceAmount.value
 
   if (!amount) {
     if (existingIndex !== -1) {
@@ -212,6 +296,35 @@ const syncPfAllowanceRow = () => {
     allowances[existingIndex] = { ...allowances[existingIndex], ...pfRow }
   } else {
     allowances.unshift(pfRow)
+  }
+
+  form.value.allowances = allowances
+}
+
+const syncDayHonoriumAllowanceRow = () => {
+  const allowances = Array.isArray(form.value.allowances) ? [...form.value.allowances] : []
+  const existingIndex = allowances.findIndex((allowance) => isDayHonoriumAllowanceRow(allowance))
+
+  if (!usesDayHonoriumAllowance.value) {
+    if (existingIndex !== -1) {
+      allowances.splice(existingIndex, 1)
+      form.value.allowances = allowances
+    }
+    return
+  }
+
+  const dayHonoriumRow = {
+    allowance_code: DAY_HONORIUM_ALLOWANCE_CODE,
+    allowance_name: DAY_HONORIUM_ALLOWANCE_NAME,
+    amount: existingIndex !== -1 ? allowances[existingIndex].amount || DEFAULT_DAY_HONORIUM_AMOUNT : DEFAULT_DAY_HONORIUM_AMOUNT,
+    is_active: true,
+    remarks: 'Doctor day honorium rate',
+  }
+
+  if (existingIndex !== -1) {
+    allowances[existingIndex] = { ...allowances[existingIndex], ...dayHonoriumRow }
+  } else {
+    allowances.unshift(dayHonoriumRow)
   }
 
   form.value.allowances = allowances
@@ -252,7 +365,12 @@ const syncPolicyBreakdown = (grossValue) => {
 
   const policy = getSalaryComponentPolicy(selectedEmploymentType.value)
   
-  if (policy.length === 1 && policy[0].key === 'basic_salary') {
+  if (usesBasicOnlySalaryPolicy.value) {
+    form.value.basic_salary = gross
+    form.value.house_rent = ''
+    form.value.medical_allowance = ''
+    form.value.conveyance_allowance = ''
+  } else if (policy.length === 1 && policy[0].key === 'basic_salary') {
     // Probationary: only calculate basic as reference
     form.value.basic_salary = Math.round(gross * 0.6 * 100) / 100
     form.value.house_rent = ''
@@ -290,7 +408,9 @@ const fetchUserMeta = async (userId, { applyPfDefault = true } = {}) => {
     assignUserMeta(user)
 
     if (applyPfDefault) {
+      const usesBasicOnlyPolicy = BASIC_ONLY_LINE_TYPES.includes(normalizeLineType(user.type))
       pfApplicable.value =
+        !usesBasicOnlyPolicy &&
         isPfAllowedForEmploymentType(user.employment_type) &&
         pfDefaultByEmploymentType(user.employment_type)
     }
@@ -329,8 +449,9 @@ const loadForEdit = async () => {
     }
 
     pfApplicable.value =
-      isPfAllowedForEmploymentType(data.user?.employment_type) &&
-      hasStoredPf
+      hasStoredPf &&
+      (BASIC_ONLY_LINE_TYPES.includes(normalizeLineType(data.user?.type)) ||
+        isPfAllowedForEmploymentType(data.user?.employment_type))
 
     if (data.user) {
       selectedCompanyId.value = data.user.company_id ? String(data.user.company_id) : ''
@@ -344,6 +465,7 @@ const loadForEdit = async () => {
     }
 
     syncPfAllowanceRow()
+    syncDayHonoriumAllowanceRow()
   } catch (error) {
     toast.error(error.message)
     router.push({ name: 'PayrollSalaryStructureList' })
@@ -398,6 +520,15 @@ watch(selectedEmploymentType, () => {
     pfApplicable.value = false
   }
   syncPolicyBreakdown(form.value.gross_salary)
+})
+
+watch(selectedPayrollLineType, () => {
+  if (isHydrating.value) return
+  if (usesBasicOnlySalaryPolicy.value) {
+    syncPolicyBreakdown(form.value.gross_salary)
+    syncPfAllowanceRow()
+  }
+  syncDayHonoriumAllowanceRow()
 })
 
 watch(
@@ -586,6 +717,7 @@ const handleSubmit = async () => {
   }
 
   syncPfAllowanceRow()
+  syncDayHonoriumAllowanceRow()
   submitting.value = true
 
   try {
@@ -631,7 +763,7 @@ const inputClass =
           {{ isEdit ? 'Edit Salary Structure' : 'Create Salary Structure' }}
         </h1>
         <p class="mt-1 text-sm text-slate-500">
-          Gross salary is the total payable. Basic breakdown: {{ activePolicySummary }}. PF is 5% of basic.
+          {{ pageIntroText }}
         </p>
       </div>
 
@@ -829,7 +961,10 @@ const inputClass =
                 </div>
               </div>
 
-              <div class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
+              <div
+                v-if="!usesBasicOnlySalaryPolicy"
+                class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5"
+              >
                 <div class="flex items-start justify-between gap-3">
                   <div>
                     <p class="text-sm font-medium text-amber-800">Bonus</p>
@@ -846,10 +981,10 @@ const inputClass =
 
             <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
               <div class="flex items-start justify-between gap-3">
-                <div>
-                  <p class="text-sm font-semibold text-slate-900">PF Deduction</p>
-                  <p class="mt-1 text-xs text-slate-500">
-                    {{ (PROVIDENT_FUND_RATE * 100).toFixed(0) }}% of basic salary when applicable.
+                  <div>
+                    <p class="text-sm font-semibold text-slate-900">{{ deductionTitle }}</p>
+                    <p class="mt-1 text-xs text-slate-500">
+                    {{ deductionSupportText }}
                   </p>
                 </div>
                 <div class="text-right">
@@ -865,10 +1000,29 @@ const inputClass =
                 </div>
               </div>
 
+              <div v-if="usesBasicOnlySalaryPolicy" class="mt-3">
+                <label class="mb-1 block text-sm font-medium text-slate-700">{{ deductionTitle }}</label>
+                <input
+                  v-model="form.pf_deduction"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  :class="inputClass"
+                  :disabled="!pfApplicable"
+                  placeholder="0.00"
+                />
+              </div>
+
               <label class="mt-3 flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 ring-1 ring-slate-200">
                 <div>
-                  <p class="text-sm font-medium text-slate-700">Apply PF for this employee</p>
-                  <p class="text-[11px] text-slate-400">Default comes from employment type and can be overridden.</p>
+                  <p class="text-sm font-medium text-slate-700">{{ deductionToggleLabel }}</p>
+                  <p class="text-[11px] text-slate-400">
+                    {{
+                      usesBasicOnlySalaryPolicy
+                        ? 'Somiti amount is manual and does not create an allowance row.'
+                        : 'Default comes from employment type and can be overridden.'
+                    }}
+                  </p>
                 </div>
                 <input
                   v-model="pfApplicable"
@@ -877,7 +1031,7 @@ const inputClass =
                   :disabled="!pfAllowedForCurrentEmploymentType"
                 />
               </label>
-              <p class="text-xs text-slate-500">
+              <p v-if="!usesBasicOnlySalaryPolicy" class="text-xs text-slate-500">
                 When enabled, the PF amount is also added to Additional Allowances as a locked PF row.
               </p>
             </div>
@@ -909,7 +1063,10 @@ const inputClass =
           <p class="mt-1 text-xs text-slate-500">Basic + house rent + medical + conveyance (calculated for reference).</p>
         </div>
 
-        <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 shadow-sm">
+        <div
+          v-if="!usesBasicOnlySalaryPolicy"
+          class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 shadow-sm"
+        >
           <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-700">Bonus (Reference)</p>
           <p class="mt-1 font-mono text-xl font-semibold text-amber-900">{{ formatCurrency(bonusAmount) }}</p>
           <p class="mt-1 text-xs text-amber-700">Based on employment type and basic salary (reference only).</p>
@@ -922,9 +1079,9 @@ const inputClass =
         </div>
 
         <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Net After PF</p>
+          <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{{ deductionSummaryTitle }}</p>
           <p class="mt-1 font-mono text-xl font-semibold text-emerald-700">{{ formatCurrency(netPayable) }}</p>
-          <p class="mt-1 text-xs text-slate-500">Total gross minus PF deduction (5% of basic).</p>
+          <p class="mt-1 text-xs text-slate-500">{{ deductionSummaryText }}</p>
         </div>
       </section>
 

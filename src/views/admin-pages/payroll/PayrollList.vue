@@ -198,6 +198,9 @@ const getTotalEarnings = (payroll) =>
           <p class="mt-1 text-sm text-slate-500">Detailed earnings, deductions and payable amounts in one report view.</p>
         </div>
         <div class="flex flex-wrap gap-2">
+          <button class="btn-3" @click="router.push({ name: 'DoctorPayrollList' })">
+            <i class="far fa-user-md"></i> Doctor Payroll
+          </button>
           <button class="btn-3" @click="handleDownloadExcel" :disabled="loading || !list.length">
             <i class="far fa-file-excel"></i> Excel
           </button>
