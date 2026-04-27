@@ -75,8 +75,7 @@ const definition = {
       key: 'salary_stages',
       label: 'Salary Recommendation',
       type: 'salary_stages',
-      singleOnly: true,
-      help: 'Employment type is non-contract. Define the selected employment type amount, duration, and condition here.',
+      help: 'Employment type is non-contract. Define intern, probationary, and permanent amounts, durations, and conditions here.',
       visibleWhen: {
         path: 'recommendation.salary_mode',
         equals: 'stage_based',
