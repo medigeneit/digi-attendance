@@ -41,9 +41,21 @@ const selectedCompanyId=ref('')
 const selectedDepartmentId=ref('')
 const selectedLineType=ref('all')
 const selectedEmploymentType=ref('')
+const selectedUserProfile=ref(null)
 
 const employeeFilterKey=ref(1)
 const queryHydrated=ref(false)
+
+const DAY_HONORIUM_ALLOWANCE_CODE='DAY_HONORIUM'
+const DAY_HONORIUM_ALLOWANCE_NAME='Day Honorium'
+const DEFAULT_DAY_HONORIUM_AMOUNT=1000
+const BASIC_ONLY_LINE_TYPES=['doctor','academy_body','academic_body']
+
+const normalizeLineType=(value)=>
+ String(value||'')
+  .trim()
+  .toLowerCase()
+  .replace(/[\s-]+/g,'_')
 
 /* ---------------- form ---------------- */
 
@@ -113,6 +125,14 @@ function assignEmploymentType(v){
  selectedEmploymentType.value=v || ''
 }
 
+function assignUserMeta(user){
+ selectedUserProfile.value=user || null
+ assignEmploymentType(user?.employment_type)
+ if(user?.type){
+  selectedLineType.value=user.type
+ }
+}
+
 async function fetchEmploymentType(id){
  if(!id){
    assignEmploymentType('')
@@ -121,9 +141,10 @@ async function fetchEmploymentType(id){
 
  try{
    const user=await userStore.fetchUser(id)
-   assignEmploymentType(user?.employment_type)
+   assignUserMeta(user)
  }catch{
    assignEmploymentType('')
+   selectedUserProfile.value=null
  }
 }
 
@@ -160,9 +181,11 @@ const employmentTypeBadgeClass=computed(()=>{
 /* ---------------- policy ---------------- */
 
 const activePolicy=computed(
-()=>getSalaryComponentPolicy(
- selectedEmploymentType.value
-)
+()=>usesBasicOnlySalaryPolicy.value
+ ? [{ key:'basic_salary', label:'Basic Salary', ratio:1, shortLabel:'Basic' }]
+ : getSalaryComponentPolicy(
+    selectedEmploymentType.value
+   )
 )
 
 const activePolicySummary=computed(
@@ -178,9 +201,68 @@ const activePolicyCompact=computed(
 )
 
 const pfAllowedForCurrentEmploymentType=computed(
-()=>isPfAllowedForEmploymentType(
- selectedEmploymentType.value
+()=>usesBasicOnlySalaryPolicy.value ||
+ isPfAllowedForEmploymentType(
+  selectedEmploymentType.value
+ )
 )
+
+const selectedPayrollLineType=computed(()=>
+ normalizeLineType(
+  selectedUserProfile.value?.type ||
+  currentStructure.value?.user?.type ||
+  selectedLineType.value
+ )
+)
+
+const usesBasicOnlySalaryPolicy=computed(()=>
+ BASIC_ONLY_LINE_TYPES.includes(selectedPayrollLineType.value)
+)
+
+const usesDayHonoriumAllowance=computed(()=>
+ selectedPayrollLineType.value==='doctor'
+)
+
+const deductionTitle=computed(()=>
+ usesBasicOnlySalaryPolicy.value ? 'Somiti Deduction' : 'PF Deduction'
+)
+
+const deductionSummaryTitle=computed(()=>
+ usesBasicOnlySalaryPolicy.value ? 'Net After Somiti' : 'Net After PF'
+)
+
+const deductionSupportText=computed(()=>
+ usesBasicOnlySalaryPolicy.value
+  ? 'Somiti deduction is carried forward manually for doctor or academy body salary.'
+  : `${(PROVIDENT_FUND_RATE*100).toFixed(0)}% of revised basic salary.`
+)
+
+const pageIntroText=computed(()=>
+ usesBasicOnlySalaryPolicy.value
+  ? usesDayHonoriumAllowance.value
+   ? 'Doctor revisions keep gross salary as basic. Increment updates Day Honorium only.'
+   : 'Academy body revisions save gross salary as basic. Bonus and PF auto allowance are not applied.'
+  : `Revise current gross salary directly. Policy breakdown: ${activePolicySummary.value}. PF is 5% of basic.`
+)
+
+const revisionRuleText=computed(()=>
+ usesBasicOnlySalaryPolicy.value
+  ? usesDayHonoriumAllowance.value
+   ? 'Increment changes Day Honorium allowance. Gross and basic salary stay unchanged.'
+   : 'Increment changes saved gross/basic salary. Somiti deduction carries forward.'
+  : 'Increment changes the saved gross salary. Component split and PF are recalculated automatically.'
+)
+
+const incrementSupportText=computed(()=>
+ usesDayHonoriumAllowance.value
+  ? 'Applied on current Day Honorium.'
+  : 'Applied on current gross.'
+)
+
+const revisedGrossSupportText=computed(()=>
+ usesDayHonoriumAllowance.value
+  ? 'Doctor gross/basic salary stays unchanged.'
+  : 'This gross salary is saved directly.'
 )
 
 const currentGross=computed(()=>{
@@ -215,17 +297,42 @@ const currentAllowanceTotal=computed(()=>{
  )
 })
 
+const currentDayHonoriumAllowance=computed(()=>{
+ if(!currentStructure.value) return null
+
+ return (currentStructure.value.allowances || [])
+  .find(row=>isDayHonoriumAllowanceRow(row)) || null
+})
+
+const currentDayHonoriumAmount=computed(()=>{
+ if(!usesDayHonoriumAllowance.value) return 0
+
+ if(!currentDayHonoriumAllowance.value)
+  return DEFAULT_DAY_HONORIUM_AMOUNT
+
+ return toNum(currentDayHonoriumAllowance.value.amount)
+})
+
+const revisedAllowanceTotal=computed(()=>
+ calculateAllowanceTotal(form.value.allowances)
+)
+
 /* ---------------- increment ---------------- */
 
 const incrementAmount=computed(()=>{
  const val=toNum(form.value.increment_value)
+ const base=usesDayHonoriumAllowance.value
+  ? currentDayHonoriumAmount.value
+  : currentGross.value
 
- if(!currentGross.value || val<=0)
+ if(val<=0)
    return 0
 
  if(form.value.increment_type==='percentage'){
+   if(!base) return 0
+
    return Number(
-     ((currentGross.value*val)/100)
+     ((base*val)/100)
       .toFixed(2)
    )
  }
@@ -233,25 +340,38 @@ const incrementAmount=computed(()=>{
  return val
 })
 
+const revisedDayHonoriumAmount=computed(()=>
+ usesDayHonoriumAllowance.value
+  ? Number(
+     (currentDayHonoriumAmount.value+incrementAmount.value)
+      .toFixed(2)
+    )
+  : 0
+)
+
 const revisedGross=computed(
 ()=>Number(
-((currentGross.value||0)+incrementAmount.value)
+((currentGross.value||0)+(usesDayHonoriumAllowance.value ? 0 : incrementAmount.value))
 .toFixed(2)
 )
 )
 
 const revisedBonus=computed(
-()=>calculateBonusAmount(
- selectedEmploymentType.value,
- form.value.basic_salary
-)
+()=>usesBasicOnlySalaryPolicy.value
+ ? 0
+ : calculateBonusAmount(
+    selectedEmploymentType.value,
+    form.value.basic_salary
+   )
 )
 
 const revisedNetPayable=computed(
 ()=>Math.max(
 0,
-revisedGross.value-
-toNum(form.value.pf_deduction)
+(usesBasicOnlySalaryPolicy.value
+ ? revisedGross.value+revisedAllowanceTotal.value
+ : revisedGross.value)-
+ toNum(form.value.pf_deduction)
 )
 )
 
@@ -266,6 +386,40 @@ const componentCards=computed(
  )
 }))
 )
+
+const isDayHonoriumAllowanceRow=(allowance={})=>{
+ const code=String(allowance?.allowance_code||'').trim().toUpperCase()
+ const name=String(allowance?.allowance_name||'').trim().toLowerCase()
+ return code===DAY_HONORIUM_ALLOWANCE_CODE ||
+  name===DAY_HONORIUM_ALLOWANCE_NAME.toLowerCase()
+}
+
+function normalizeRevisionAllowances(allowances=[]){
+ const rows=normalizeAllowances(allowances)
+
+ if(!usesDayHonoriumAllowance.value){
+  return rows.filter(row=>!isDayHonoriumAllowanceRow(row))
+ }
+
+ const existingIndex=rows.findIndex(row=>isDayHonoriumAllowanceRow(row))
+const dayHonoriumRow={
+  allowance_code:DAY_HONORIUM_ALLOWANCE_CODE,
+  allowance_name:DAY_HONORIUM_ALLOWANCE_NAME,
+  amount:revisedDayHonoriumAmount.value || DEFAULT_DAY_HONORIUM_AMOUNT,
+  is_active:true,
+  remarks:existingIndex!==-1
+   ? rows[existingIndex].remarks || 'Doctor day honorium rate'
+   : 'Doctor day honorium rate'
+ }
+
+ if(existingIndex!==-1){
+  rows[existingIndex]={...rows[existingIndex],...dayHonoriumRow}
+ }else{
+  rows.unshift(dayHonoriumRow)
+ }
+
+ return rows
+}
 
 /* ---------------- breakdown ---------------- */
 
@@ -282,6 +436,21 @@ function applyRevisionBreakdown(){
  }
 
  form.value.gross_salary=revisedGross.value
+
+ if(usesBasicOnlySalaryPolicy.value){
+  form.value.basic_salary=revisedGross.value || ''
+  form.value.house_rent=0
+  form.value.medical_allowance=0
+  form.value.conveyance_allowance=0
+  form.value.pf_deduction=
+   currentStructure.value?.pf_deduction ??
+   form.value.pf_deduction ??
+   ''
+  form.value.allowances=normalizeRevisionAllowances(
+   currentStructure.value.allowances
+  )
+  return
+ }
 
  const breakdown=
  splitGrossByPolicy(
@@ -309,7 +478,7 @@ function applyRevisionBreakdown(){
  :''
 
  form.value.allowances=
- normalizeAllowances(
+ normalizeRevisionAllowances(
    currentStructure.value.allowances
  )
 }
@@ -342,6 +511,11 @@ function handleEmployeeFilterChange(payload={}){
 
  form.value.user_id=
  payload.employee_id || null
+
+ if(!form.value.user_id){
+  selectedUserProfile.value=null
+  assignEmploymentType('')
+ }
 
  syncQuery()
 }
@@ -378,11 +552,15 @@ async(id)=>{
 
   currentStructure.value=rows[0]
 
-  assignEmploymentType(
-   rows[0]?.user?.employment_type
-  )
+  if(rows[0]?.user){
+   assignUserMeta(rows[0].user)
+  }else{
+   assignEmploymentType(
+    rows[0]?.user?.employment_type
+   )
+  }
 
-  if(!selectedEmploymentType.value){
+  if(!selectedEmploymentType.value || !selectedUserProfile.value?.type){
    await fetchEmploymentType(id)
   }
 
@@ -402,7 +580,8 @@ watch(
 currentGross,
 ()=>form.value.increment_type,
 ()=>form.value.increment_value,
-selectedEmploymentType
+selectedEmploymentType,
+selectedPayrollLineType
 ],
 ()=>{
 applyRevisionBreakdown()
@@ -448,7 +627,7 @@ async function handleSubmit(){
    conveyance_allowance:toNum(form.value.conveyance_allowance),
    pf_deduction:toNum(form.value.pf_deduction),
    increment_value:toNum(form.value.increment_value),
-   allowances:normalizeAllowances(
+   allowances:normalizeRevisionAllowances(
       form.value.allowances
    )
  })
@@ -482,7 +661,7 @@ const inputClass=
         <p class="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-700">Salary Revision</p>
         <h1 class="mt-1 text-2xl font-semibold text-slate-900">Create Salary Revision</h1>
         <p class="mt-1 text-sm text-slate-500">
-          Revise current gross salary directly. Policy breakdown: {{ activePolicySummary }}. PF is 5% of basic.
+          {{ pageIntroText }}
         </p>
       </div>
 
@@ -538,7 +717,7 @@ const inputClass=
               <div class="rounded-xl bg-slate-50 px-3 py-2">
                 <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Revision Rule</p>
                 <p class="mt-1 text-xs font-medium text-slate-800">
-                  Increment changes the saved gross salary. Component split and PF are recalculated automatically.
+                  {{ revisionRuleText }}
                 </p>
               </div>
 
@@ -571,7 +750,7 @@ const inputClass=
                     <p class="mt-1 font-mono text-sm font-semibold text-slate-900">{{ formatCurrency(currentPolicyGross) }}</p>
                   </div>
                   <div class="rounded-lg bg-white px-3 py-2 ring-1 ring-slate-200">
-                    <p class="text-[11px] text-slate-400">Current PF</p>
+                    <p class="text-[11px] text-slate-400">Current {{ usesBasicOnlySalaryPolicy ? 'Somiti' : 'PF' }}</p>
                     <p class="mt-1 font-mono text-sm font-semibold text-slate-900">{{ formatCurrency(currentPfDeduction) }}</p>
                   </div>
                 </div>
@@ -617,19 +796,21 @@ const inputClass=
               <div class="rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2.5 shadow-sm">
                 <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-700">Increment</p>
                 <p class="mt-1 font-mono text-lg font-semibold text-cyan-900">{{ formatCurrency(incrementAmount) }}</p>
-                <p class="mt-1 text-xs text-cyan-700">Applied on current gross.</p>
+                <p class="mt-1 text-xs text-cyan-700">{{ incrementSupportText }}</p>
               </div>
 
               <div class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
                 <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Revised Gross</p>
                 <p class="mt-1 font-mono text-lg font-semibold text-slate-900">{{ formatCurrency(revisedGross) }}</p>
-                <p class="mt-1 text-xs text-slate-500">This gross salary is saved directly.</p>
+                <p class="mt-1 text-xs text-slate-500">{{ revisedGrossSupportText }}</p>
               </div>
 
               <div class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
-                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Net After PF</p>
+                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{{ deductionSummaryTitle }}</p>
                 <p class="mt-1 font-mono text-lg font-semibold text-emerald-700">{{ formatCurrency(revisedNetPayable) }}</p>
-                <p class="mt-1 text-xs text-slate-500">Revised gross minus PF deduction.</p>
+                <p class="mt-1 text-xs text-slate-500">
+                  {{ usesBasicOnlySalaryPolicy ? 'Revised gross plus allowances minus Somiti deduction.' : 'Revised gross minus PF deduction.' }}
+                </p>
               </div>
             </section>
           </div>
@@ -708,7 +889,9 @@ const inputClass=
                 <div class="flex items-start justify-between gap-3">
                   <div>
                     <p class="text-sm font-medium text-slate-700">{{ item.shortLabel }}</p>
-                    <p class="text-[11px] text-slate-400">{{ Math.round(item.ratio * 100) }}% of revised gross</p>
+                    <p class="text-[11px] text-slate-400">
+                      {{ usesBasicOnlySalaryPolicy ? '100% of revised gross' : `${Math.round(item.ratio * 100)}% of revised gross` }}
+                    </p>
                   </div>
                   <div class="text-right">
                     <p class="font-mono text-sm font-semibold text-slate-900">{{ formatCurrency(item.revisedAmount) }}</p>
@@ -717,7 +900,7 @@ const inputClass=
                 </div>
               </div>
 
-              <div class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
+              <div v-if="!usesBasicOnlySalaryPolicy" class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
                 <div class="flex items-start justify-between gap-3">
                   <div>
                     <p class="text-sm font-medium text-amber-800">Bonus</p>
@@ -731,9 +914,9 @@ const inputClass=
             <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
               <div class="flex items-start justify-between gap-3">
                 <div>
-                  <p class="text-sm font-semibold text-slate-900">PF Deduction</p>
-                  <p class="mt-1 text-xs text-slate-500">
-                    {{ (PROVIDENT_FUND_RATE * 100).toFixed(0) }}% of revised basic salary.
+                    <p class="text-sm font-semibold text-slate-900">{{ deductionTitle }}</p>
+                    <p class="mt-1 text-xs text-slate-500">
+                    {{ deductionSupportText }}
                   </p>
                 </div>
                 <div class="text-right">
@@ -755,11 +938,13 @@ const inputClass=
         <div class="mb-4 flex items-center justify-between gap-3">
           <div>
             <h2 class="text-sm font-semibold text-slate-900">Preserved Additional Allowances</h2>
-            <p class="text-xs text-slate-500">Existing additional allowances carry forward unchanged.</p>
+            <p class="text-xs text-slate-500">
+              {{ usesDayHonoriumAllowance ? 'Day Honorium is revised here. Other allowances carry forward unchanged.' : 'Existing additional allowances carry forward unchanged.' }}
+            </p>
           </div>
           <div class="rounded-xl bg-slate-50 px-3 py-2 text-right">
             <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Allowance Total</p>
-            <p class="mt-1 font-mono text-sm font-semibold text-slate-900">{{ formatCurrency(currentAllowanceTotal) }}</p>
+            <p class="mt-1 font-mono text-sm font-semibold text-slate-900">{{ formatCurrency(revisedAllowanceTotal) }}</p>
           </div>
         </div>
 
