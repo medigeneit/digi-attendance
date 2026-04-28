@@ -52,6 +52,37 @@ const syncQueryParams = (params) => {
   })
 }
 
+const getFilterQuery = () => buildCleanParams()
+
+const goToCreate = () => {
+  router.push({
+    name: 'PayrollSalaryStructureCreate',
+    query: getFilterQuery(),
+  })
+}
+
+const goToEdit = (item) => {
+  router.push({
+    name: 'PayrollSalaryStructureEdit',
+    params: { id: item.id },
+    query: getFilterQuery(),
+  })
+}
+
+const goToRevision = (item) => {
+  router.push({
+    name: 'PayrollSalaryRevisionCreate',
+    query: {
+      ...getFilterQuery(),
+      company_id: item.user?.company_id,
+      department_id: item.user?.department_id,
+      line_type: item.user?.type || 'executive',
+      employee_id: item.user?.id,
+      user_id: item.user?.id,
+    },
+  })
+}
+
 
 const showDeleteModal = ref(false)
 const selectedItem = ref(null)
@@ -394,7 +425,7 @@ const exportExcel = async () => {
     <HeaderWithButtons
       title="Salary Structures"
       right-button-label="Add Structure"
-      @add="router.push({ name: 'PayrollSalaryStructureCreate' })"
+      @add="goToCreate"
     />
 
     <!-- Filters -->
@@ -439,7 +470,7 @@ const exportExcel = async () => {
       <i class="fas fa-file-invoice-dollar text-4xl text-gray-300 mb-3"></i>
       <p class="text-lg font-medium text-gray-500">No salary structures found</p>
       <p class="text-sm text-gray-400 mt-1">Add a salary structure to get started</p>
-      <button class="btn-2 mt-4" @click="router.push({ name: 'PayrollSalaryStructureCreate' })">
+      <button class="btn-2 mt-4" @click="goToCreate">
         <i class="far fa-plus"></i> Add Salary Structure
       </button>
     </div>
@@ -562,18 +593,7 @@ const exportExcel = async () => {
             <td class="px-4 py-3 text-center">
               <div class="flex items-center justify-center gap-1">
                 <button
-                  @click="
-                    router.push({
-                      name: 'PayrollSalaryRevisionCreate',
-                      query: {
-                        company_id: item.user?.company_id,
-                        department_id: item.user?.department_id,
-                        line_type: item.user?.type || 'executive',
-                        employee_id: item.user?.id,
-                        user_id: item.user?.id,
-                      },
-                    })
-                  "
+                  @click="goToRevision(item)"
                   class="inline-flex items-center gap-1.5 rounded-lg border border-cyan-200 bg-cyan-50 px-2.5 py-1.5 text-xs font-semibold text-cyan-700 transition hover:border-cyan-300 hover:bg-cyan-100 hover:text-cyan-800"
                   title="Create Salary Revision"
                 >
@@ -581,12 +601,7 @@ const exportExcel = async () => {
                   <span class="text-[11px]">Revision</span>
                 </button>
                 <button
-                  @click="
-                    router.push({
-                      name: 'PayrollSalaryStructureEdit',
-                      params: { id: item.id },
-                    })
-                  "
+                  @click="goToEdit(item)"
                   class="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
                   title="Edit"
                 >

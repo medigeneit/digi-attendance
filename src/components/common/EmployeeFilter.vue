@@ -13,6 +13,7 @@ const props = defineProps({
   line_type: { type: String, default: 'all' }, // 'all'|'executive'|'support_staff'|'doctor'|'academy_body'
   slotClass: { type: String, default: '' },
   withType: { type: Boolean, default: true },
+  withEmployee: { type: Boolean, default: true },
   initialValue: { type: Object, default: () => ({}) },
 })
 
@@ -41,7 +42,9 @@ const selectedDepartmentId = ref(
 const selectedTypeId = ref(
   props.withType ? String(props.line_type || props.initialValue.line_type || 'all') : null,
 )
-const selectedEmployeeId = ref(String(props.employee_id || props.initialValue.employee_id || ''))
+const selectedEmployeeId = ref(
+  props.withEmployee ? String(props.employee_id || props.initialValue.employee_id || '') : '',
+)
 
 /* ---------- Options ---------- */
 const companyOptions = computed(() =>
@@ -97,6 +100,7 @@ watch(
 watch(
   () => props.employee_id,
   (v) => {
+    if (!props.withEmployee) return
     const next = String(v || '')
     if (next !== selectedEmployeeId.value) selectedEmployeeId.value = next
   },
@@ -141,6 +145,7 @@ watch([selectedDepartmentId, selectedTypeId], () => {
 
 // Employee change → upstream
 watch(selectedEmployeeId, () => {
+  if (!props.withEmployee) return
   emit('update:employee_id', selectedEmployeeId.value || '')
   emitFilterChange()
 })
@@ -182,7 +187,7 @@ function applyFilter() {
   let mapped = filtered.map(formatEmployee)
 
   // 5) 🔒 pin currently selected employee if not present in filtered list
-  if (selectedEmployeeId.value) {
+  if (props.withEmployee && selectedEmployeeId.value) {
     const exists = mapped.some((e) => e.id === String(selectedEmployeeId.value))
     if (!exists) {
       const found = rawEmployees.value.find(
@@ -202,7 +207,7 @@ function emitAll() {
   emit('update:company_id', selectedCompanyId.value || '')
   emit('update:department_id', selectedDepartmentId.value || '')
   if (props.withType) emit('update:line_type', selectedTypeId.value || 'all')
-  emit('update:employee_id', selectedEmployeeId.value || '')
+  if (props.withEmployee) emit('update:employee_id', selectedEmployeeId.value || '')
   emitFilterChange()
 }
 
@@ -215,7 +220,7 @@ function emitFilterChange() {
         company_id: selectedCompanyId.value,
         department_id: selectedDepartmentId.value,
         line_type: selectedTypeId.value,
-        employee_id: selectedEmployeeId.value,
+        employee_id: props.withEmployee ? selectedEmployeeId.value : '',
       }),
     0,
   )
@@ -338,7 +343,7 @@ defineExpose({
     </div>
 
     <!-- Employee -->
-    <div class="relative min-w-0">
+    <div v-if="withEmployee" class="relative min-w-0">
       <EmployeeDropdownInput
         :employees="filterEmployees"
         v-model="selectedEmployeeId"

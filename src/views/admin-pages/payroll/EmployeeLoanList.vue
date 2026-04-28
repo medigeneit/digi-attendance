@@ -1,27 +1,34 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { storeToRefs } from 'pinia'
 import { useEmployeeLoanStore } from '@/stores/employeeLoan'
-import { useCompanyStore } from '@/stores/company'
 import LoaderView from '@/components/common/LoaderView.vue'
 import DeleteModal from '@/components/common/DeleteModal.vue'
 import PaginationBar from '@/components/PaginationBar.vue'
 import AsyncUserCombobox from '@/components/common/AsyncUserCombobox.vue'
+import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoanInstallmentPreview from '@/components/payroll/LoanInstallmentPreview.vue'
 import apiClient from '@/axios'
 import { toNum, formatCurrency } from '@/utils/currency'
 
 const router = useRouter()
+const route = useRoute()
 const toast = useToast()
 const loanStore = useEmployeeLoanStore()
-const companyStore = useCompanyStore()
 
 const { list, loading, error, pagination } = storeToRefs(loanStore)
-const { companies } = storeToRefs(companyStore)
 
-const filters = ref({ company_id: '', user_id: '', status: '', page: 1, per_page: 15 })
+const filters = ref({
+  company_id: '',
+  department_id: '',
+  line_type: 'all',
+  user_id: '',
+  status: '',
+  page: 1,
+  per_page: 15,
+})
 const showModal = ref(false)
 const showDeleteModal = ref(false)
 const selectedItem = ref(null)
@@ -113,21 +120,88 @@ const fetchUsersFn = (params) =>
     .get('/users', { params })
     .then((r) => (Array.isArray(r.data) ? r.data : r.data?.data || r.data?.users || []))
 
-async function load() {
+const parseQueryInt = (value, fallback = 1) => {
+  if (value === undefined || value === null || value === '') return fallback
+  const parsed = Number.parseInt(String(value), 10)
+  return Number.isNaN(parsed) ? fallback : parsed
+}
+
+const buildFilterParams = () => {
   const params = { ...filters.value }
   if (!params.company_id) delete params.company_id
+  if (!params.department_id) delete params.department_id
+  if (!params.line_type || params.line_type === 'all') delete params.line_type
   if (!params.user_id) delete params.user_id
   if (!params.status) delete params.status
+  return params
+}
+
+const syncFiltersToQuery = async (params) => {
+  await router.replace({ query: { ...params } })
+}
+
+const hydrateFiltersFromQuery = () => {
+  const q = route.query || {}
+
+  filters.value = {
+    ...filters.value,
+    company_id: q.company_id ? String(q.company_id) : '',
+    department_id: q.department_id ? String(q.department_id) : '',
+    line_type: q.line_type ? String(q.line_type) : 'all',
+    user_id: q.user_id || q.employee_id ? String(q.user_id || q.employee_id) : '',
+    status: q.status ? String(q.status) : '',
+    page: parseQueryInt(q.page, 1),
+    per_page: parseQueryInt(q.per_page, 15),
+  }
+}
+
+async function load() {
+  const params = buildFilterParams()
+  await syncFiltersToQuery(params)
   await loanStore.fetchList(params)
 }
 
 onMounted(async () => {
-  await Promise.all([companyStore.fetchCompanies(), load()])
+  hydrateFiltersFromQuery()
+  await load()
 })
 
 const resetFilters = () => {
-  filters.value = { company_id: '', user_id: '', status: '', page: 1, per_page: 15 }
+  filters.value = {
+    company_id: '',
+    department_id: '',
+    line_type: 'all',
+    user_id: '',
+    status: '',
+    page: 1,
+    per_page: 15,
+  }
   load()
+}
+
+const onEmployeeFilterChange = (payload = {}) => {
+  filters.value = {
+    ...filters.value,
+    company_id: payload.company_id || '',
+    department_id: payload.department_id || '',
+    line_type: payload.line_type || 'all',
+    user_id: payload.employee_id || '',
+    page: 1,
+  }
+  load()
+}
+
+const applyStatusFilter = () => {
+  filters.value.page = 1
+  load()
+}
+
+const goToDetails = (item) => {
+  router.push({
+    name: 'PayrollEmployeeLoanShow',
+    params: { id: item.id },
+    query: buildFilterParams(),
+  })
 }
 
 const openCreate = () => {
@@ -469,43 +543,37 @@ const inputClass =
 
     <!-- Filters -->
     <div
-      class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-wrap gap-3 items-end"
+      class="bg-white rounded-xl shadow-sm border border-gray-100 p-4"
     >
-      <div>
-        <label class="block text-xs font-medium text-gray-600 mb-1">Company</label>
-        <select
-          v-model="filters.company_id"
-          @change="
-            () => {
-              filters.page = 1
-              load()
-            }
-          "
-          class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+      <div class="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_170px]">
+        <EmployeeFilter
+          :company_id="filters.company_id"
+          :department_id="filters.department_id"
+          :line_type="filters.line_type"
+          :employee_id="filters.user_id"
+          @update:company_id="(value) => (filters.company_id = value)"
+          @update:department_id="(value) => (filters.department_id = value)"
+          @update:line_type="(value) => (filters.line_type = value)"
+          @update:employee_id="(value) => (filters.user_id = value)"
+          @filter-change="onEmployeeFilterChange"
         >
-          <option value="">All Companies</option>
-          <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
-        </select>
+          <div class="flex items-end justify-end">
+            <button class="btn-3" @click="resetFilters"><i class="far fa-undo"></i> Reset</button>
+          </div>
+        </EmployeeFilter>
+        <div>
+          <select
+            v-model="filters.status"
+            @change="applyStatusFilter"
+            class="h-10 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          >
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="closed">Closed</option>
+            <option value="pending">Pending</option>
+          </select>
+        </div>
       </div>
-      <div>
-        <label class="block text-xs font-medium text-gray-600 mb-1">Status</label>
-        <select
-          v-model="filters.status"
-          @change="
-            () => {
-              filters.page = 1
-              load()
-            }
-          "
-          class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-        >
-          <option value="">All Status</option>
-          <option value="active">Active</option>
-          <option value="closed">Closed</option>
-          <option value="pending">Pending</option>
-        </select>
-      </div>
-      <button class="btn-3" @click="resetFilters"><i class="far fa-undo"></i> Reset</button>
     </div>
 
     <LoaderView v-if="loading" />
@@ -633,7 +701,7 @@ const inputClass =
                 class="inline-flex items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-1 py-0.5"
               >
                 <button
-                  @click="router.push({ name: 'PayrollEmployeeLoanShow', params: { id: item.id } })"
+                  @click="goToDetails(item)"
                   class="p-1.5 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors"
                   title="Details"
                 >

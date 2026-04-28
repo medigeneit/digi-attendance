@@ -236,6 +236,7 @@ const inputCls =
             :department_id="form.department_id"
             :line_type="form.line_type"
             :employee_id="form.employee_id"
+            :with-employee="false"
             @filter-change="handleEmployeeFilterChange"
           />
           <p v-if="formErrors.company_id" class="text-red-500 text-xs mt-1">{{ formErrors.company_id }}</p>
