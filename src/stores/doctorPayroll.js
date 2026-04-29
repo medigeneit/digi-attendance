@@ -81,6 +81,26 @@ export const useDoctorPayrollStore = defineStore('doctorPayroll', () => {
     }
   }
 
+  const update = async (id, payload = {}) => {
+    loading.value = true
+    error.value = null
+
+    try {
+      const res = await apiClient.patch(`/doctor-payrolls/${id}`, payload)
+      const updated = res.data?.data || res.data
+      const idx = list.value.findIndex((row) => row.id === id)
+      if (idx !== -1) list.value[idx] = updated
+      if (item.value?.id === id) item.value = updated
+      return updated
+    } catch (err) {
+      const e = toError(err, 'Failed to update doctor payroll')
+      error.value = e.message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
   const markPaid = async (id, payload = {}) => {
     loading.value = true
     error.value = null
@@ -109,6 +129,7 @@ export const useDoctorPayrollStore = defineStore('doctorPayroll', () => {
     pagination,
     fetchList,
     fetchItem,
+    update,
     approve,
     markPaid,
   }
