@@ -386,16 +386,24 @@ const getTotalEarnings = (payroll) =>
             <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-rose-600 whitespace-nowrap">{{ formatCompactCurrency(p.paycut_deduction) }}</td>
             <td class="border border-slate-200 px-1 py-1.5 text-right font-mono font-semibold text-rose-700 whitespace-nowrap">{{ formatCompactCurrency(p.total_deduction) }}</td>
             <td class="border border-slate-200 px-1 py-1.5 text-right font-mono font-bold text-blue-800 whitespace-nowrap">{{ formatCompactCurrency(p.net_salary) }}</td>
-            <td class="border border-slate-200 px-1 py-1.5 text-center whitespace-nowrap"><PayrollStatusBadge :status="p.payment_status" /></td>
+            <td class="border border-slate-200 px-1 py-1.5 text-center whitespace-nowrap">
+              <div class="flex items-center justify-center gap-1">
+                <PayrollStatusBadge :status="p.payment_status" />
+                <button
+                  v-if="p.payment_status !== 'Paid'"
+                  @click="openPaymentModal(p)"
+                  class="inline-flex h-5 w-5 items-center justify-center rounded-md text-emerald-500 hover:bg-emerald-50 hover:text-emerald-700"
+                  title="Update Payment Status"
+                >
+                  <i class="far fa-credit-card text-xs"></i>
+                </button>
+              </div>
+            </td>
             <td class="border border-slate-200 px-1 py-1.5 text-center whitespace-nowrap">
               <div class="flex items-center justify-center gap-0.5">
                 <button @click="router.push({ name: 'PayrollShow', params: { id: p.id } })"
                   class="p-0.5 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 rounded-md" title="View">
                   <i class="far fa-eye text-xs"></i>
-                </button>
-                <button @click="openPaymentModal(p)"
-                  class="p-0.5 text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-md" title="Update Payment">
-                  <i class="far fa-credit-card text-xs"></i>
                 </button>
               </div>
             </td>
