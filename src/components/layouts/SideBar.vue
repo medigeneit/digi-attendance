@@ -118,6 +118,7 @@ const hrdMenu = [
   { label: 'Notice', routeName: 'NoticeList' },
   { label: 'Shift Schedules', routeName: 'ShiftSchedule' },
   { label: 'User Clearances', routeName: 'UserClearance' },
+  { label: 'Life Event Requests', routeName: 'LifeEventRequests' },
   { label: 'Blood Donor List', routeName: 'BloodDonorIndex' },
   { label: 'Organogram List', routeName: 'HrdOrganogram' },
 ]

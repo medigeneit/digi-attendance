@@ -1403,6 +1403,16 @@ const router = createRouter({
           component: () => import('@/views/admin-pages/BloodDonorList.vue'),
           meta: { requiresAuth: true, title: 'Blood Donors' },
         },
+        {
+          path: '/life-event-requests',
+          name: 'LifeEventRequests',
+          component: () => import('@/views/admin-pages/LifeEventRequests.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Life Event Requests',
+          },
+        },
 
         {
           path: '/admin/checklist-templates/:id/items',

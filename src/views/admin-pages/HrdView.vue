@@ -168,6 +168,12 @@ const hasAccessTo = (routeName) => {
       <i class="far fa-exclamation-circle text-3xl"></i>
        Organogram List
     </RouterLink>
+
+    <RouterLink :to="{ name: 'LifeEventRequests' }" class="main-button">
+      <i class="fas fa-user-clock text-3xl"></i>
+      Life Event Requests
+    </RouterLink>
+    
   </div>
 </template>
 

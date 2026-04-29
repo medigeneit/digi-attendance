@@ -1,6 +1,7 @@
 <script setup>
 import LoaderView from '@/components/common/LoaderView.vue'
 import DonorMeModal from '@/components/DonorMeModal.vue'
+import LifeEventUpdateCard from '@/components/profile/LifeEventUpdateCard.vue'
 import ProfileCompensationOverview from '@/components/profile/ProfileCompensationOverview.vue'
 import ChangePasswordModal from '@/components/user/ChangePasswordModal.vue'
 import UserClearanceModal from '@/components/UserClearanceModal.vue'
@@ -218,6 +219,8 @@ const openMyDonorProfile = async () => {
       </section>
 
       <ProfileCompensationOverview :user="user" />
+
+      <LifeEventUpdateCard />
 
       <UserClearanceModal v-model:open="clearanceOpen" :user="user" :hide-trigger="true" />
       <DonorMeModal />
