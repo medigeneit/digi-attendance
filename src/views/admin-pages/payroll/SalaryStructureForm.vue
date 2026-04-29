@@ -115,8 +115,8 @@ const pfAllowanceAmount = computed(() =>
   !usesBasicOnlySalaryPolicy.value &&
   pfAllowedForCurrentEmploymentType.value &&
   pfApplicable.value &&
-  toNum(form.value.basic_salary) > 0
-    ? calculatePfDeduction(form.value.basic_salary)
+  toNum(form.value.pf_deduction) > 0
+    ? toNum(form.value.pf_deduction)
     : 0,
 )
 
@@ -141,7 +141,7 @@ const deductionToggleLabel = computed(() =>
 const deductionSupportText = computed(() =>
   usesBasicOnlySalaryPolicy.value
     ? 'Enter Somiti deduction manually for doctor or academy body salary.'
-    : `${(PROVIDENT_FUND_RATE * 100).toFixed(0)}% of basic salary when applicable.`,
+    : `${(PROVIDENT_FUND_RATE * 100).toFixed(0)}% of basic salary by default; adjust manually if needed.`,
 )
 const deductionSummaryTitle = computed(() =>
   usesBasicOnlySalaryPolicy.value ? 'Net After Somiti' : 'Net After PF',
@@ -149,7 +149,7 @@ const deductionSummaryTitle = computed(() =>
 const deductionSummaryText = computed(() =>
   usesBasicOnlySalaryPolicy.value
     ? 'Gross salary plus active allowances minus Somiti deduction.'
-    : 'Total gross minus PF deduction (5% of basic).',
+    : 'Total gross minus PF deduction.',
 )
 const pageIntroText = computed(() =>
   usesBasicOnlySalaryPolicy.value
@@ -513,6 +513,14 @@ watch(pfApplicable, () => {
   if (isHydrating.value) return
   applyPfDeduction()
 })
+
+watch(
+  () => form.value.pf_deduction,
+  () => {
+    if (isHydrating.value) return
+    syncPfAllowanceRow()
+  },
+)
 
 watch(selectedEmploymentType, () => {
   if (isHydrating.value) return
@@ -1000,7 +1008,7 @@ const inputClass =
                 </div>
               </div>
 
-              <div v-if="usesBasicOnlySalaryPolicy" class="mt-3">
+              <div v-if="pfAllowedForCurrentEmploymentType" class="mt-3">
                 <label class="mb-1 block text-sm font-medium text-slate-700">{{ deductionTitle }}</label>
                 <input
                   v-model="form.pf_deduction"
@@ -1020,7 +1028,7 @@ const inputClass =
                     {{
                       usesBasicOnlySalaryPolicy
                         ? 'Somiti amount is manual and does not create an allowance row.'
-                        : 'Default comes from employment type and can be overridden.'
+                        : 'Default comes from employment type and the amount can be adjusted.'
                     }}
                   </p>
                 </div>
@@ -1032,7 +1040,7 @@ const inputClass =
                 />
               </label>
               <p v-if="!usesBasicOnlySalaryPolicy" class="text-xs text-slate-500">
-                When enabled, the PF amount is also added to Additional Allowances as a locked PF row.
+                When enabled, the default PF allowance row remains locked; changing PF deduction changes net payment.
               </p>
             </div>
           </div>
