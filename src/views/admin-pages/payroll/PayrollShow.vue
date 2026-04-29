@@ -69,6 +69,7 @@ const deductionLabelMap = {
   meal_deduction: 'Meal Deduction',
   tax_deduction: 'Tax Deduction',
   loan_deduction: 'Loan Deduction',
+  security_money_deduction: 'Security Money',
   other_deduction: 'Other Deduction',
   advance_deduction: 'Advance Deduction',
   paycut_deduction: 'Paycut Deduction',
@@ -237,6 +238,11 @@ const deductionFieldRows = computed(() => {
     },
     { key: 'tax_deduction', label: deductionLabelMap.tax_deduction || 'Tax Deduction', amount: toNum(d.tds) },
     { key: 'loan_deduction', label: deductionLabelMap.loan_deduction || 'Loan Deduction', amount: toNum(d.loan) },
+    {
+      key: 'security_money_deduction',
+      label: deductionLabelMap.security_money_deduction || 'Security Money',
+      amount: toNum(d.security_money),
+    },
     {
       key: 'other_deduction',
       label: deductionLabelMap.other_deduction || 'Other Deduction',

@@ -152,7 +152,7 @@ const isLoanCompleted = (loan) => String(loan.status || '').toLowerCase() === 'c
               </span>
             </div>
 
-            <div class="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
+            <div class="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-6">
               <div>
                 <p class="text-xs text-slate-500 dark:text-slate-400">Net Salary</p>
                 <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ formatCurrency(item.net_salary) }}</p>
@@ -164,6 +164,10 @@ const isLoanCompleted = (loan) => String(loan.status || '').toLowerCase() === 'c
               <div>
                 <p class="text-xs text-slate-500 dark:text-slate-400">Loan Deduction</p>
                 <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ formatCurrency(item.loan_deduction) }}</p>
+              </div>
+              <div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Security Money</p>
+                <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ formatCurrency(item.security_money_deduction) }}</p>
               </div>
               <div>
                 <p class="text-xs text-slate-500 dark:text-slate-400">Advance Deduction</p>

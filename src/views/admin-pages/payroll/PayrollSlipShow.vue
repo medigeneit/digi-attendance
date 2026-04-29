@@ -125,11 +125,13 @@ const earningsRows = computed(() => {
 const deductionRows = computed(() => {
   const raw = item.value?.deductions || {}
   const pfAllowance = toNum(item.value?.deductions?.pf_allowance)
+  const securityMoney = toNum(raw.security_money)
   return [
     { key: 'pf', label: 'PF Both', amount: toNum(raw.provident_fund) + pfAllowance },
     { key: 'meal', label: 'Meal Deduction', amount: toNum(raw.meal) },
     { key: 'tax', label: 'Tax', amount: toNum(raw.tds) },
     { key: 'loan', label: 'Loan', amount: toNum(raw.loan) },
+    ...(securityMoney > 0 ? [{ key: 'security_money', label: 'Security Money', amount: securityMoney }] : []),
     { key: 'other', label: 'Others', amount: toNum(raw.other) },
     { key: 'advance', label: 'Advance', amount: toNum(raw.advance) },
     { key: 'paycut', label: 'Paycut', amount: toNum(raw.paycut) },

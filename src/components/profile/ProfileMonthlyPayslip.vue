@@ -215,6 +215,7 @@ const deductionRows = computed(() => {
 
   const payroll = currentPayroll.value
   const otherDeductionBase = Math.max(0, toNumber(payroll.other_deduction) - contraDeductionTotal.value)
+  const securityMoneyDeduction = toNumber(payroll.security_money_deduction)
   const rows = [
     {
       label: 'PF Both',
@@ -223,6 +224,7 @@ const deductionRows = computed(() => {
     { label: 'Meal Deduction', value: payroll.meal_deduction },
     { label: 'Tax', value: payroll.tax_deduction },
     { label: 'Loan', value: payroll.loan_deduction },
+    ...(securityMoneyDeduction > 0 ? [{ label: 'Security Money', value: securityMoneyDeduction }] : []),
     { label: 'Others', value: otherDeductionBase },
     { label: 'Advance', value: payroll.advance_deduction },
     { label: 'Paycut', value: payroll.paycut_deduction },

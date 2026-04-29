@@ -46,6 +46,12 @@ export const payrollRoutes = [
     meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Employee Loans' },
   },
   {
+    path: '/payroll/security-monies',
+    name: 'PayrollSecurityMoneyList',
+    component: () => import('@/views/admin-pages/payroll/SecurityMoneyList.vue'),
+    meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Security Money' },
+  },
+  {
     path: '/payroll/employee-loans/:id',
     name: 'PayrollEmployeeLoanShow',
     component: () => import('@/views/admin-pages/payroll/EmployeeLoanShow.vue'),

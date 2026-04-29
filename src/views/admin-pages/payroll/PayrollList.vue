@@ -288,13 +288,14 @@ const getTotalEarnings = (payroll) =>
         </div>
       </div>
       <div class="w-full overflow-x-auto overscroll-x-contain [scrollbar-width:thin]">
-      <table class="payroll-list-table min-w-[1420px] w-full table-fixed border-collapse text-[10px] leading-tight">
+      <table class="payroll-list-table min-w-[1480px] w-full table-fixed border-collapse text-[10px] leading-tight">
         <colgroup>
           <col class="w-[34px]" />
           <col class="w-[112px]" />
           <col class="w-[92px]" />
           <col class="w-[74px]" />
           <col class="w-[52px]" />
+          <col class="w-[56px]" />
           <col class="w-[56px]" />
           <col class="w-[56px]" />
           <col class="w-[56px]" />
@@ -324,7 +325,7 @@ const getTotalEarnings = (payroll) =>
             <th class="border border-slate-200 px-1 py-2 text-center" rowspan="2">Month</th>
             <!-- <th class="border border-slate-200 px-2 py-2 text-center" rowspan="2">Type</th> -->
             <th class="border border-slate-200 bg-emerald-50 px-1 py-2 text-center" colspan="8">Earnings</th>
-            <th class="border border-slate-200 bg-rose-50 px-1 py-2 text-center" colspan="8">Deductions</th>
+            <th class="border border-slate-200 bg-rose-50 px-1 py-2 text-center" colspan="9">Deductions</th>
             <th class="border border-slate-200 px-1 py-2 text-right" rowspan="2">Payable</th>
             <th class="border border-slate-200 px-1 py-2 text-center" rowspan="2">Status</th>
             <th class="border border-slate-200 px-1 py-2 text-center" rowspan="2">Actions</th>
@@ -342,6 +343,7 @@ const getTotalEarnings = (payroll) =>
             <th class="border border-slate-200 px-1 py-1.5 text-right">Meal</th>
             <th class="border border-slate-200 px-1 py-1.5 text-right">Tax</th>
             <th class="border border-slate-200 px-1 py-1.5 text-right">Loan</th>
+            <th class="border border-slate-200 px-1 py-1.5 text-right">S.M</th>
             <th class="border border-slate-200 px-1 py-1.5 text-right">Other</th>
             <th class="border border-slate-200 px-1 py-1.5 text-right">Advance</th>
             <th class="border border-slate-200 px-1 py-1.5 text-right">Paycut</th>
@@ -381,6 +383,7 @@ const getTotalEarnings = (payroll) =>
             <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-rose-600 whitespace-nowrap">{{ formatCompactCurrency(p.meal_deduction) }}</td>
             <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-rose-600 whitespace-nowrap">{{ formatCompactCurrency(p.tax_deduction) }}</td>
             <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-rose-600 whitespace-nowrap">{{ formatCompactCurrency(p.loan_deduction) }}</td>
+            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-rose-600 whitespace-nowrap">{{ formatCompactCurrency(p.security_money_deduction) }}</td>
             <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-rose-600 whitespace-nowrap">{{ formatCompactCurrency(p.other_deduction) }}</td>
             <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-rose-600 whitespace-nowrap">{{ formatCompactCurrency(p.advance_deduction) }}</td>
             <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-rose-600 whitespace-nowrap">{{ formatCompactCurrency(p.paycut_deduction) }}</td>
