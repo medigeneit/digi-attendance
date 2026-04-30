@@ -486,7 +486,7 @@ const getTotalEarnings = (payroll) =>
               <button
                 type="button"
                 class="w-full text-right font-mono hover:underline"
-                :title="getArrearEntries(p).length ? 'View arrear audit' : 'Add arrear'"
+                :title="getArrearEntries(p).length ? 'View arrear audit' : 'Save arrear'"
                 @click="openArrearModal(p)"
               >
                 {{ formatCompactCurrency(getArrearAmount(p)) }}
@@ -530,7 +530,7 @@ const getTotalEarnings = (payroll) =>
                   v-if="p.payment_status !== 'Paid'"
                   @click="openArrearModal(p)"
                   class="p-0.5 text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-md"
-                  title="Add Arrear"
+                  title="Save Arrear"
                 >
                   <i class="far fa-plus text-xs"></i>
                 </button>
@@ -618,7 +618,7 @@ const getTotalEarnings = (payroll) =>
               :disabled="arrearSaving || selectedArrearPayroll?.payment_status === 'Paid'"
             >
               <i class="far fa-plus"></i>
-              {{ arrearSaving ? 'Saving...' : 'Add Arrear' }}
+              {{ arrearSaving ? 'Saving...' : 'Save Arrear' }}
             </button>
           </div>
         </form>

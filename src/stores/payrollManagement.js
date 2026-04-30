@@ -116,7 +116,7 @@ export const usePayrollManagementStore = defineStore('payrollManagement', () => 
       }
       return res.data
     } catch (err) {
-      const e = toError(err, 'Failed to add arrear')
+      const e = toError(err, 'Failed to save arrear')
       error.value = e.message
       throw e
     } finally {
