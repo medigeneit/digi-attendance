@@ -101,6 +101,29 @@ export const usePayrollManagementStore = defineStore('payrollManagement', () => 
     }
   }
 
+  const addArrear = async (id, payload) => {
+    loading.value = true
+    error.value = null
+    try {
+      const res = await apiClient.post(`/payrolls/${id}/arrears`, payload)
+      const updated = res.data?.data || res.data
+      if (item.value && item.value.id === id) {
+        item.value = { ...item.value, ...updated }
+      }
+      const idx = list.value.findIndex((r) => r.id === id)
+      if (idx !== -1) {
+        list.value[idx] = { ...list.value[idx], ...updated }
+      }
+      return res.data
+    } catch (err) {
+      const e = toError(err, 'Failed to add arrear')
+      error.value = e.message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
   const downloadExcel = async (params = {}) => {
     loading.value = true
     error.value = null
@@ -139,6 +162,7 @@ export const usePayrollManagementStore = defineStore('payrollManagement', () => 
     fetchItem,
     updatePaymentStatus,
     updateAdvanceDeduction,
+    addArrear,
     downloadExcel,
   }
 })

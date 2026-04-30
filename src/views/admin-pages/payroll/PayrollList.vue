@@ -33,6 +33,14 @@ const filters = ref({
 
 const showPaymentModal = ref(false)
 const selectedPayroll = ref(null)
+const showArrearModal = ref(false)
+const selectedArrearPayroll = ref(null)
+const arrearSaving = ref(false)
+const arrearForm = ref({
+  amount: '',
+  reason: '',
+  note: '',
+})
 
 const typeOptions = ['Monthly', 'Bonus', 'Final']
 
@@ -128,6 +136,26 @@ const openPaymentModal = (p) => {
   showPaymentModal.value = true
 }
 
+const openArrearModal = (p) => {
+  selectedArrearPayroll.value = p
+  arrearForm.value = {
+    amount: '',
+    reason: '',
+    note: '',
+  }
+  showArrearModal.value = true
+}
+
+const closeArrearModal = () => {
+  showArrearModal.value = false
+  selectedArrearPayroll.value = null
+  arrearForm.value = {
+    amount: '',
+    reason: '',
+    note: '',
+  }
+}
+
 const handlePaymentSubmit = async ({ id, payload }) => {
   try {
     await payrollStore.updatePaymentStatus(id, payload)
@@ -136,6 +164,39 @@ const handlePaymentSubmit = async ({ id, payload }) => {
     selectedPayroll.value = null
   } catch (e) {
     toast.error(e.message || 'Update failed.')
+  }
+}
+
+const handleArrearSubmit = async () => {
+  if (!selectedArrearPayroll.value) return
+
+  const amount = toNumber(arrearForm.value.amount)
+  const reason = String(arrearForm.value.reason || '').trim()
+
+  if (amount <= 0) {
+    toast.error('Arrear amount must be greater than zero.')
+    return
+  }
+
+  if (!reason) {
+    toast.error('Arrear reason is required.')
+    return
+  }
+
+  try {
+    arrearSaving.value = true
+    await payrollStore.addArrear(selectedArrearPayroll.value.id, {
+      amount,
+      reason,
+      note: String(arrearForm.value.note || '').trim() || undefined,
+    })
+    toast.success('Arrear added.')
+    closeArrearModal()
+  } catch (e) {
+    const firstError = Object.values(e.errors || {})?.[0]?.[0]
+    toast.error(firstError || e.message || 'Arrear add failed.')
+  } finally {
+    arrearSaving.value = false
   }
 }
 
@@ -178,9 +239,50 @@ const formatDate = (value) => {
   }).format(date)
 }
 
+const formatDateTime = (value) => {
+  if (!value) return '-'
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '-'
+
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date)
+}
+
 const toNumber = (value) => {
   const num = Number(value)
   return Number.isFinite(num) ? num : 0
+}
+
+const allowanceRows = (payroll) =>
+  Array.isArray(payroll?.other_allowance_breakdown) ? payroll.other_allowance_breakdown : []
+
+const getAllowanceAmountByCode = (payroll, code) => {
+  const targetCode = String(code || '').trim().toUpperCase()
+  const targetName = String(code || '').trim().toLowerCase()
+
+  return allowanceRows(payroll)
+    .filter((row) => {
+      const allowanceCode = String(row?.allowance_code || '').trim().toUpperCase()
+      const allowanceName = String(row?.allowance_name || '').trim().toLowerCase()
+      return allowanceCode === targetCode || allowanceName === targetName
+    })
+    .reduce((sum, row) => sum + toNumber(row?.amount), 0)
+}
+
+const getArrearAmount = (payroll) => getAllowanceAmountByCode(payroll, 'ARREAR')
+const getPfAllowanceAmount = (payroll) => getAllowanceAmountByCode(payroll, 'PF')
+const getDisplayOtherAllowance = (payroll) =>
+  Math.max(0, toNumber(payroll?.other_allowance_total) - getArrearAmount(payroll) - getPfAllowanceAmount(payroll))
+
+const getArrearEntries = (payroll) => {
+  const entries = payroll?.arrear_entries || payroll?.arrearEntries
+  return Array.isArray(entries) ? entries : []
 }
 
 const getTotalEarnings = (payroll) =>
@@ -284,17 +386,22 @@ const getTotalEarnings = (payroll) =>
             <h2 class="text-base font-semibold text-slate-800">Detailed Payroll Report</h2>
             <p class="text-sm text-slate-500">Reference-style breakdown for each employee.</p>
           </div>
-          <p class="text-xs text-slate-400">Rows: {{ pagination.total || list.length }}</p>
+          <div class="flex flex-wrap items-center gap-2 text-xs">
+            <span class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 font-medium text-slate-600">
+              Month: {{ formatMonth(filters.salary_month) }}
+            </span>
+            <span class="text-slate-400">Rows: {{ pagination.total || list.length }}</span>
+          </div>
         </div>
       </div>
       <div class="w-full overflow-x-auto overscroll-x-contain [scrollbar-width:thin]">
-      <table class="payroll-list-table min-w-[1480px] w-full table-fixed border-collapse text-[10px] leading-tight">
+      <table class="payroll-list-table min-w-[1520px] w-full table-fixed border-collapse text-[10px] leading-tight">
         <colgroup>
           <col class="w-[34px]" />
           <col class="w-[112px]" />
           <col class="w-[92px]" />
           <col class="w-[74px]" />
-          <col class="w-[52px]" />
+          <col class="w-[56px]" />
           <col class="w-[56px]" />
           <col class="w-[56px]" />
           <col class="w-[56px]" />
@@ -322,10 +429,9 @@ const getTotalEarnings = (payroll) =>
             <th class="border border-slate-200 px-1 py-2 text-left" rowspan="2">Employee</th>
             <th class="border border-slate-200 px-1 py-2 text-left" rowspan="2">Emp ID</th>
             <th class="border border-slate-200 px-1 py-2 text-left" rowspan="2">Joining</th>
-            <th class="border border-slate-200 px-1 py-2 text-center" rowspan="2">Month</th>
             <!-- <th class="border border-slate-200 px-2 py-2 text-center" rowspan="2">Type</th> -->
-            <th class="border border-slate-200 bg-emerald-50 px-1 py-2 text-center" colspan="8">Earnings</th>
-            <th class="border border-slate-200 bg-rose-50 px-1 py-2 text-center" colspan="9">Deductions</th>
+            <th class="border border-slate-200 bg-emerald-50 px-1 py-2 text-center" colspan="10">Earnings</th>
+            <th class="border border-slate-200 bg-rose-50 px-1 py-2 text-center" colspan="8">Deductions</th>
             <th class="border border-slate-200 px-1 py-2 text-right" rowspan="2">Payable</th>
             <th class="border border-slate-200 px-1 py-2 text-center" rowspan="2">Status</th>
             <th class="border border-slate-200 px-1 py-2 text-center" rowspan="2">Actions</th>
@@ -337,11 +443,12 @@ const getTotalEarnings = (payroll) =>
             <th class="border border-slate-200 px-1 py-1.5 text-right">Conv.</th>
             <th class="border border-slate-200 px-1 py-1.5 text-right">Gross</th>
             <th class="border border-slate-200 px-1 py-1.5 text-right">Others</th>
+            <th class="border border-slate-200 px-1 py-1.5 text-right">PF</th>
+            <th class="border border-slate-200 px-1 py-1.5 text-right">Arrear</th>
             <th class="border border-slate-200 px-1 py-1.5 text-right">OT/Add</th>
             <th class="border border-slate-200 px-1 py-1.5 text-right">E.Total</th>
             <th class="border border-slate-200 px-1 py-1.5 text-right">PF</th>
             <th class="border border-slate-200 px-1 py-1.5 text-right">Meal</th>
-            <th class="border border-slate-200 px-1 py-1.5 text-right">Tax</th>
             <th class="border border-slate-200 px-1 py-1.5 text-right">Loan</th>
             <th class="border border-slate-200 px-1 py-1.5 text-right">S.M</th>
             <th class="border border-slate-200 px-1 py-1.5 text-right">Other</th>
@@ -361,7 +468,6 @@ const getTotalEarnings = (payroll) =>
               <span class="inline-flex rounded-md bg-slate-100 px-1.5 py-0.5 leading-none whitespace-nowrap">{{ p.user?.employee_id || p.employee_code || '-' }}</span>
             </td>
             <td class="border border-slate-200 px-1 py-1.5 text-[10px] text-slate-500 whitespace-nowrap">{{ formatDate(p.user?.joining_date || p.joining_date) }}</td>
-            <td class="border border-slate-200 px-1 py-1.5 text-center text-slate-600 whitespace-nowrap">{{ formatMonth(p.salary_month) }}</td>
             <!-- <td class="border border-slate-200 px-2 py-2 text-center">
               <span class="rounded-full bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700">{{ p.salary_type || '—' }}</span>
             </td> -->
@@ -372,7 +478,20 @@ const getTotalEarnings = (payroll) =>
             <td class="border border-slate-200 px-1 py-1.5 text-right whitespace-nowrap">
               <div class="font-mono font-semibold text-emerald-700">{{ formatCompactCurrency(p.gross_salary) }}</div>
             </td>
-            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono whitespace-nowrap">{{ formatCompactCurrency(p.other_allowance_total) }}</td>
+            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono whitespace-nowrap">{{ formatCompactCurrency(getDisplayOtherAllowance(p)) }}</td>
+            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-emerald-700 whitespace-nowrap">
+              {{ formatCompactCurrency(getPfAllowanceAmount(p)) }}
+            </td>
+            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-emerald-700 whitespace-nowrap">
+              <button
+                type="button"
+                class="w-full text-right font-mono hover:underline"
+                :title="getArrearEntries(p).length ? 'View arrear audit' : 'Add arrear'"
+                @click="openArrearModal(p)"
+              >
+                {{ formatCompactCurrency(getArrearAmount(p)) }}
+              </button>
+            </td>
             <td class="border border-slate-200 px-1 py-1.5 text-right font-mono whitespace-nowrap">
               {{ formatCompactCurrency(p.manual_addition) }}
             </td>
@@ -381,7 +500,6 @@ const getTotalEarnings = (payroll) =>
             </td>
             <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-rose-600 whitespace-nowrap">{{ formatCompactCurrency(p.pf_deduction) }}</td>
             <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-rose-600 whitespace-nowrap">{{ formatCompactCurrency(p.meal_deduction) }}</td>
-            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-rose-600 whitespace-nowrap">{{ formatCompactCurrency(p.tax_deduction) }}</td>
             <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-rose-600 whitespace-nowrap">{{ formatCompactCurrency(p.loan_deduction) }}</td>
             <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-rose-600 whitespace-nowrap">{{ formatCompactCurrency(p.security_money_deduction) }}</td>
             <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-rose-600 whitespace-nowrap">{{ formatCompactCurrency(p.other_deduction) }}</td>
@@ -408,6 +526,14 @@ const getTotalEarnings = (payroll) =>
                   class="p-0.5 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 rounded-md" title="View">
                   <i class="far fa-eye text-xs"></i>
                 </button>
+                <button
+                  v-if="p.payment_status !== 'Paid'"
+                  @click="openArrearModal(p)"
+                  class="p-0.5 text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-md"
+                  title="Add Arrear"
+                >
+                  <i class="far fa-plus text-xs"></i>
+                </button>
               </div>
             </td>
           </tr>
@@ -428,6 +554,115 @@ const getTotalEarnings = (payroll) =>
       @close="() => { showPaymentModal = false; selectedPayroll = null }"
       @submit="handlePaymentSubmit"
     />
+
+    <div
+      v-if="showArrearModal"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
+      @click.self="closeArrearModal"
+    >
+      <div class="w-full max-w-3xl rounded-2xl bg-white shadow-xl">
+        <div class="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
+          <div class="min-w-0">
+            <h3 class="text-base font-semibold text-slate-900">Arrear</h3>
+            <p class="mt-0.5 truncate text-sm text-slate-500">
+              {{ selectedArrearPayroll?.user?.employee_id || selectedArrearPayroll?.employee_code || '-' }}
+              &middot; {{ selectedArrearPayroll?.user?.name || selectedArrearPayroll?.employee_name || '-' }}
+            </p>
+          </div>
+          <button
+            type="button"
+            class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+            @click="closeArrearModal"
+            title="Close"
+          >
+            <i class="far fa-times"></i>
+          </button>
+        </div>
+
+        <form class="grid gap-4 px-5 py-4 md:grid-cols-[160px_1fr]" @submit.prevent="handleArrearSubmit">
+          <div>
+            <label class="mb-1 block text-xs font-semibold text-slate-600">Amount</label>
+            <input
+              v-model="arrearForm.amount"
+              type="number"
+              min="0.01"
+              step="0.01"
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+              placeholder="0.00"
+            />
+          </div>
+          <div>
+            <label class="mb-1 block text-xs font-semibold text-slate-600">Reason</label>
+            <input
+              v-model="arrearForm.reason"
+              type="text"
+              maxlength="255"
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+              placeholder="Adjustment reason"
+            />
+          </div>
+          <div class="md:col-span-2">
+            <label class="mb-1 block text-xs font-semibold text-slate-600">Note</label>
+            <textarea
+              v-model="arrearForm.note"
+              rows="2"
+              class="w-full resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+              placeholder="Optional audit note"
+            ></textarea>
+          </div>
+          <div class="flex justify-end gap-2 md:col-span-2">
+            <button type="button" class="btn-3" @click="closeArrearModal">Cancel</button>
+            <button
+              type="submit"
+              class="btn-2"
+              :disabled="arrearSaving || selectedArrearPayroll?.payment_status === 'Paid'"
+            >
+              <i class="far fa-plus"></i>
+              {{ arrearSaving ? 'Saving...' : 'Add Arrear' }}
+            </button>
+          </div>
+        </form>
+
+        <div class="border-t border-slate-200 px-5 py-4">
+          <div class="mb-2 flex items-center justify-between gap-2">
+            <h4 class="text-sm font-semibold text-slate-800">Audit History</h4>
+            <span class="text-xs text-slate-500">Total: {{ formatCompactCurrency(getArrearAmount(selectedArrearPayroll)) }}</span>
+          </div>
+          <div v-if="getArrearEntries(selectedArrearPayroll).length" class="max-h-56 overflow-auto rounded-xl border border-slate-200">
+            <table class="w-full border-collapse text-xs">
+              <thead class="bg-slate-50 text-slate-600">
+                <tr>
+                  <th class="border-b border-slate-200 px-3 py-2 text-left">Amount</th>
+                  <th class="border-b border-slate-200 px-3 py-2 text-left">Reason</th>
+                  <th class="border-b border-slate-200 px-3 py-2 text-left">Added By</th>
+                  <th class="border-b border-slate-200 px-3 py-2 text-left">Added At</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="entry in getArrearEntries(selectedArrearPayroll)" :key="entry.id" class="odd:bg-white even:bg-slate-50/60">
+                  <td class="border-b border-slate-100 px-3 py-2 font-mono font-semibold text-emerald-700">
+                    {{ formatCompactCurrency(entry.amount) }}
+                  </td>
+                  <td class="border-b border-slate-100 px-3 py-2">
+                    <div class="font-medium text-slate-800">{{ entry.reason || '-' }}</div>
+                    <div v-if="entry.note" class="mt-0.5 text-slate-500">{{ entry.note }}</div>
+                  </td>
+                  <td class="border-b border-slate-100 px-3 py-2 text-slate-700">
+                    {{ entry.creator?.name || entry.created_by?.name || '-' }}
+                  </td>
+                  <td class="border-b border-slate-100 px-3 py-2 text-slate-600">
+                    {{ formatDateTime(entry.created_at) }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div v-else class="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-500">
+            No arrear entries yet.
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
