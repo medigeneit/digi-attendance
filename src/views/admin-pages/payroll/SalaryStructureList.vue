@@ -5,24 +5,85 @@ import { useToast } from 'vue-toastification'
 import { storeToRefs } from 'pinia'
 import * as XLSX from 'xlsx'
 import { useSalaryStructureStore } from '@/stores/salaryStructure'
-import { useCompanyStore } from '@/stores/company'
 import HeaderWithButtons from '@/components/common/HeaderWithButtons.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import DeleteModal from '@/components/common/DeleteModal.vue'
 import PaginationBar from '@/components/PaginationBar.vue'
 import apiClient from '@/axios'
 import { formatCurrency } from '@/utils/currency'
-import { calculateAllowanceTotal, normalizeAllowances } from '@/utils/salaryPolicy'
-
+import { normalizeAllowances } from '@/utils/salaryPolicy'
+import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 const router = useRouter()
 const toast = useToast()
 const structureStore = useSalaryStructureStore()
-const companyStore = useCompanyStore()
 
 const { list, loading, error, pagination } = storeToRefs(structureStore)
-const { companies } = storeToRefs(companyStore)
 
-const filters = ref({ company_id: '', search: '', page: 1, per_page: 15 })
+const filters = ref({
+  company_id: '',
+  department_id: '',
+  line_type: 'all',
+  employee_id: '',
+  page: 1,
+  per_page: 15,
+})
+
+const buildCleanParams = () => {
+  const params = { ...filters.value }
+
+  if (params.employee_id) {
+    params.user_id = params.employee_id
+  }
+
+  if (!params.company_id) delete params.company_id
+  if (!params.department_id) delete params.department_id
+  if (!params.employee_id) delete params.employee_id
+  if (!params.user_id) delete params.user_id
+  if (!params.line_type || params.line_type === 'all') delete params.line_type
+
+  return params
+}
+
+const syncQueryParams = (params) => {
+  router.replace({
+    query: {
+      ...params,
+    },
+  })
+}
+
+const getFilterQuery = () => buildCleanParams()
+
+const goToCreate = () => {
+  router.push({
+    name: 'PayrollSalaryStructureCreate',
+    query: getFilterQuery(),
+  })
+}
+
+const goToEdit = (item) => {
+  router.push({
+    name: 'PayrollSalaryStructureEdit',
+    params: { id: item.id },
+    query: getFilterQuery(),
+  })
+}
+
+const goToRevision = (item) => {
+  router.push({
+    name: 'PayrollSalaryRevisionCreate',
+    query: {
+      ...getFilterQuery(),
+      company_id: item.user?.company_id,
+      department_id: item.user?.department_id,
+      line_type: item.user?.type || 'executive',
+      employee_id: item.user?.id,
+      user_id: item.user?.id,
+    },
+  })
+}
+
+
 const showDeleteModal = ref(false)
 const selectedItem = ref(null)
 const showAllowanceModal = ref(false)
@@ -30,14 +91,25 @@ const selectedAllowanceItem = ref(null)
 const exportLoading = ref(false)
 
 async function load() {
-  const params = { ...filters.value }
-  if (!params.company_id) delete params.company_id
-  if (!params.search) delete params.search
+ const params = buildCleanParams()
+
+  syncQueryParams(params)
+
   await structureStore.fetchList(params)
 }
 
 onMounted(async () => {
-  await Promise.all([companyStore.fetchCompanies(), load()])
+  filters.value = {
+    ...filters.value,
+    company_id: router.currentRoute.value.query.company_id || '',
+    department_id: router.currentRoute.value.query.department_id || '',
+    line_type: router.currentRoute.value.query.line_type || 'all',
+    employee_id: router.currentRoute.value.query.employee_id || '',
+    page: Number(router.currentRoute.value.query.page || 1),
+    per_page: Number(router.currentRoute.value.query.per_page || 15),
+  }
+
+  await load()
 })
 
 const openDelete = (item) => {
@@ -76,21 +148,83 @@ const handlePageChange = (p) => {
   load()
 }
 
-const applyFilters = () => {
-  filters.value.page = 1
+const onEmployeeFilterChange = (payload = {}) => {
+  filters.value = {
+    ...filters.value,
+    company_id: payload.company_id || '',
+    department_id: payload.department_id || '',
+    line_type: payload.line_type || 'all',
+    employee_id: payload.employee_id || '',
+    page: 1,
+  }
   load()
 }
 
 const resetFilters = () => {
-  filters.value = { company_id: '', search: '', page: 1, per_page: 15 }
+  filters.value = {
+    company_id: '',
+    department_id: '',
+    line_type: 'all',
+    employee_id: '',
+    page: 1,
+    per_page: 15,
+  }
   load()
 }
+
+const normalizeLineType = (value) => String(value || '').trim().toLowerCase().replace(/\s+/g, '_')
+const filteredList = computed(() => list.value || [])
+
+// const filteredList = computed(() => {
+//   const companyId = String(filters.value.company_id || '')
+//   const departmentId = String(filters.value.department_id || '')
+//   const employeeId = String(filters.value.employee_id || '')
+//   const lineType = normalizeLineType(filters.value.line_type)
+
+//   return (list.value || []).filter((item) => {
+//     const user = item?.user || {}
+
+//     if (companyId && String(user.company_id || user.company?.id || '') !== companyId) {
+//       return false
+//     }
+
+//     if (departmentId && String(user.department_id || user.department?.id || '') !== departmentId) {
+//       return false
+//     }
+
+//     if (employeeId && String(item?.user_id || user.id || '') !== employeeId) {
+//       return false
+//     }
+
+//     // if (lineType && lineType !== 'all') {
+//     //   const userType = normalizeLineType(user.type || user.employment_type)
+//     //   if (userType !== lineType) return false
+//     // }
+
+//     return true
+//   })
+// })
+
+const hasClientSideRefinement = computed(() => false)
 
 const EMPTY_ALLOWANCE_SUMMARY = {
   allowances: [],
   activeCount: 0,
   total: 0,
 }
+
+const toNum = (value) => {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+const calculateAllowanceDisplayTotal = (allowances = []) =>
+  Array.isArray(allowances)
+    ? allowances.reduce((sum, allowance) => {
+        if (!allowance?.is_active) return sum
+        return sum + toNum(allowance?.amount)
+      }, 0)
+    : 0
 
 const allowanceSummaryMap = computed(() => {
   const map = {}
@@ -103,7 +237,7 @@ const allowanceSummaryMap = computed(() => {
     map[item.id] = {
       allowances,
       activeCount: allowances.filter((a) => a.is_active).length,
-      total: calculateAllowanceTotal(allowances),
+      total: calculateAllowanceDisplayTotal(allowances),
     }
   }
 
@@ -126,7 +260,14 @@ const buildExportParams = (page = 1) => {
   }
 
   if (filters.value.company_id) params.company_id = filters.value.company_id
-  if (filters.value.search) params.search = filters.value.search
+  if (filters.value.department_id) params.department_id = filters.value.department_id
+  if (filters.value.line_type && filters.value.line_type !== 'all') {
+    params.line_type = filters.value.line_type
+  }
+  if (filters.value.employee_id) {
+    params.employee_id = filters.value.employee_id
+    params.user_id = filters.value.employee_id
+  }
 
   return params
 }
@@ -169,8 +310,27 @@ const exportExcel = async () => {
   try {
     exportLoading.value = true
     const rows = await fetchAllStructuresForExport()
+    const exportRows = rows.filter((item) => {
+      const user = item?.user || {}
+      const companyId = String(filters.value.company_id || '')
+      const departmentId = String(filters.value.department_id || '')
+      const employeeId = String(filters.value.employee_id || '')
+      const lineType = normalizeLineType(filters.value.line_type)
 
-    if (!rows.length) {
+      if (companyId && String(user.company_id || user.company?.id || '') !== companyId) return false
+      if (departmentId && String(user.department_id || user.department?.id || '') !== departmentId) {
+        return false
+      }
+      if (employeeId && String(item?.user_id || user.id || '') !== employeeId) return false
+      if (lineType && lineType !== 'all') {
+        const userType = normalizeLineType(user.type || user.employment_type)
+        if (userType !== lineType) return false
+      }
+
+      return true
+    })
+
+    if (!exportRows.length) {
       toast.info('No salary structure found for export.')
       return
     }
@@ -178,12 +338,12 @@ const exportExcel = async () => {
     const mainSheetRows = []
     const allowanceSheetRows = []
 
-    rows.forEach((item) => {
+    exportRows.forEach((item) => {
       const allowances = normalizeAllowances(item?.allowances).filter(
         (a) => a.allowance_name || a.allowance_code || Number(a.amount) > 0,
       )
       const activeAllowances = allowances.filter((a) => a.is_active)
-      const allowanceTotal = calculateAllowanceTotal(allowances)
+      const allowanceTotal = calculateAllowanceDisplayTotal(allowances)
 
       mainSheetRows.push({
         ID: item.id,
@@ -265,39 +425,30 @@ const exportExcel = async () => {
     <HeaderWithButtons
       title="Salary Structures"
       right-button-label="Add Structure"
-      @add="router.push({ name: 'PayrollSalaryStructureCreate' })"
+      @add="goToCreate"
     />
 
     <!-- Filters -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-      <div class="flex flex-wrap gap-3 items-end">
-        <div>
-          <label class="block text-xs font-medium text-gray-600 mb-1">Company</label>
-          <select
-            v-model="filters.company_id"
-            @change="applyFilters"
-            class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-          >
-            <option value="">All Companies</option>
-            <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
-          </select>
+      <EmployeeFilter
+        :company_id="filters.company_id"
+        :department_id="filters.department_id"
+        :line_type="filters.line_type"
+        :employee_id="filters.employee_id"
+        @update:company_id="(value) => (filters.company_id = value)"
+        @update:department_id="(value) => (filters.department_id = value)"
+        @update:line_type="(value) => (filters.line_type = value)"
+        @update:employee_id="(value) => (filters.employee_id = value)"
+        @filter-change="onEmployeeFilterChange"
+      >
+        <div class="flex items-end justify-end gap-2">
+          <button class="btn-3" @click="resetFilters"><i class="far fa-undo"></i> Reset</button>
+          <button class="btn-2" :disabled="exportLoading" @click="exportExcel">
+            <i class="far fa-file-excel"></i>
+            {{ exportLoading ? 'Exporting...' : 'Export Excel' }}
+          </button>
         </div>
-        <div>
-          <label class="block text-xs font-medium text-gray-600 mb-1">Search Employee</label>
-          <input
-            v-model="filters.search"
-            @input="applyFilters"
-            type="text"
-            placeholder="Name or employee ID..."
-            class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 w-52"
-          />
-        </div>
-        <button class="btn-3" @click="resetFilters"><i class="far fa-undo"></i> Reset</button>
-        <button class="btn-2" :disabled="exportLoading" @click="exportExcel">
-          <i class="far fa-file-excel"></i>
-          {{ exportLoading ? 'Exporting...' : 'Export Excel' }}
-        </button>
-      </div>
+      </EmployeeFilter>
     </div>
 
     <!-- Loading -->
@@ -313,13 +464,13 @@ const exportExcel = async () => {
 
     <!-- Empty -->
     <div
-      v-else-if="!list.length"
+      v-else-if="!filteredList.length"
       class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center"
     >
       <i class="fas fa-file-invoice-dollar text-4xl text-gray-300 mb-3"></i>
       <p class="text-lg font-medium text-gray-500">No salary structures found</p>
       <p class="text-sm text-gray-400 mt-1">Add a salary structure to get started</p>
-      <button class="btn-2 mt-4" @click="router.push({ name: 'PayrollSalaryStructureCreate' })">
+      <button class="btn-2 mt-4" @click="goToCreate">
         <i class="far fa-plus"></i> Add Salary Structure
       </button>
     </div>
@@ -333,19 +484,20 @@ const exportExcel = async () => {
             <th class="px-4 py-3 text-left">Employee</th>
             <th class="px-4 py-3 text-left">Department</th>
             <th class="px-4 py-3 text-right">Basic</th>
-            <th class="px-4 py-3 text-right">House Rent</th>
+            <th class="px-4 py-3 text-right">H.Rent</th>
             <th class="px-4 py-3 text-right">Medical</th>
             <th class="px-4 py-3 text-right">Conveyance</th>
-            <th class="px-4 py-3 text-right">Allowances (Total)</th>
-            <th class="px-4 py-3 text-right">PF Deduction</th>
-            <th class="px-4 py-3 text-right">Gross Salary</th>
+            <th class="px-4 py-3 text-right">Allowances</th>
+            <th class="px-4 py-3 text-right">Revisions</th>
+            <th class="px-4 py-3 text-right">PF</th>
+            <th class="px-4 py-3 text-right">Gross</th>
             <th class="px-4 py-3 text-center">Effective From</th>
             <th class="px-4 py-3 text-center">Status</th>
             <th class="px-4 py-3 text-center">Actions</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-50">
-          <tr v-for="(item, i) in list" :key="item.id" class="hover:bg-gray-50 transition-colors">
+          <tr v-for="(item, i) in filteredList" :key="item.id" class="hover:bg-gray-50 transition-colors">
             <td class="px-4 py-3 text-gray-400 text-xs">
               {{ (filters.page - 1) * filters.per_page + i + 1 }}
             </td>
@@ -380,7 +532,7 @@ const exportExcel = async () => {
               {{ formatCurrency(item.conveyance_allowance) }}
             </td>
             <td class="px-4 py-3 text-right">
-              <div class="inline-flex min-w-[150px] flex-col items-end gap-1.5">
+              <div class="inline-flex  flex-col items-end gap-1.5">
                 <button
                   type="button"
                   class="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 transition-colors"
@@ -403,6 +555,12 @@ const exportExcel = async () => {
                 >
                   No allowance
                 </div>
+              </div>
+            </td>
+            <td class="px-4 py-3 text-right font-mono text-gray-700 ">
+              <div class="min-w-[66px] flex flex-col items-end gap-1.5">
+                  <span class="text-xs"> {{ item.latest_revision?.effective_month }}</span>
+                  <span class="text-green-500">{{ item.latest_revision?.increment_value}}</span>
               </div>
             </td>
             <td class="px-4 py-3 text-right font-mono text-gray-700">
@@ -435,12 +593,15 @@ const exportExcel = async () => {
             <td class="px-4 py-3 text-center">
               <div class="flex items-center justify-center gap-1">
                 <button
-                  @click="
-                    router.push({
-                      name: 'PayrollSalaryStructureEdit',
-                      params: { id: item.id },
-                    })
-                  "
+                  @click="goToRevision(item)"
+                  class="inline-flex items-center gap-1.5 rounded-lg border border-cyan-200 bg-cyan-50 px-2.5 py-1.5 text-xs font-semibold text-cyan-700 transition hover:border-cyan-300 hover:bg-cyan-100 hover:text-cyan-800"
+                  title="Create Salary Revision"
+                >
+                  <i class="far fa-sync-alt text-[11px]"></i>
+                  <span class="text-[11px]">Revision</span>
+                </button>
+                <button
+                  @click="goToEdit(item)"
                   class="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
                   title="Edit"
                 >
@@ -464,8 +625,8 @@ const exportExcel = async () => {
       v-if="pagination.total > 0"
       :page="pagination.current_page || filters.page"
       :per-page="pagination.per_page || filters.per_page"
-      :total="pagination.total || list.length"
-      :last-page="pagination.last_page || 1"
+      :total="hasClientSideRefinement ? filteredList.length : pagination.total || filteredList.length"
+      :last-page="hasClientSideRefinement ? 1 : pagination.last_page || 1"
       @page-change="handlePageChange"
     />
 

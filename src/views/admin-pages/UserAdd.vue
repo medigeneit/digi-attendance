@@ -1,5 +1,6 @@
 <script setup>
 import ShiftWeekendModal from '@/components/common/WeekendAssignModal.vue'
+import { useCompanyBankAccountStore } from '@/stores/companyBankAccount'
 import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
 import { useDesignationStore } from '@/stores/designation'
@@ -14,6 +15,7 @@ const toast = useToast()
 const router = useRouter()
 const userStore = useUserStore()
 const companyStore = useCompanyStore()
+const companyBankAccountStore = useCompanyBankAccountStore()
 const departmentStore = useDepartmentStore()
 const designationStore = useDesignationStore()
 const leaveApprovalStore = useLeaveApprovalStore()
@@ -48,6 +50,10 @@ const form = reactive({
   weekends: [],
   leave_approval_id: '',
   other_approval_id: '',
+  bank_account_id: '',
+  bank_account_no: '',
+  account_holder_name: '',
+  default_payment_method: '',
 })
 
 const selectedWeekend = ref({
@@ -67,9 +73,11 @@ watch(
     if (newCompanyId) {
       await departmentStore.fetchDepartments(newCompanyId)
       await designationStore.fetchDesignations(newCompanyId)
+      await companyBankAccountStore.fetchCompanyBankAccounts({ company_id: null, status: 'Active' })
       form.department_id = ''
       form.designation_id = ''
       form.shift_id = ''
+      form.bank_account_id = ''
     }
   },
 )
@@ -106,6 +114,10 @@ const saveUser = async () => {
       provisional_month: form.provisional_month,
       extended_provisional_month: form.extended_provisional_month,
       weekends: form.weekends,
+      bank_account_id: form.bank_account_id || null,
+      bank_account_no: form.bank_account_no,
+      account_holder_name: form.account_holder_name,
+      default_payment_method: form.default_payment_method,
       ...(weekendPayload ? { selected_weekend: weekendPayload } : {}),
       leave_approval_id: form.leave_approval_id,
       other_approval_id: form.other_approval_id,
@@ -131,6 +143,9 @@ const computedDesignations = computed(() => {
   const indexName = companyStore.companies.find((company) => company.id === form.company_id)?.name
   return indexName ? designations.value[indexName] || [] : []
 })
+
+const companyBankAccounts = computed(() => companyBankAccountStore.items || [])
+const PAYMENT_METHODS = Object.freeze(['Cash', 'Bank Transfer', 'bKash', 'Nagad', 'Rocket', 'Cheque', 'Other'])
 </script>
 
 <template>
@@ -460,6 +475,40 @@ const computedDesignations = computed(() => {
                 <select v-model="form.is_active" class="input-light">
                   <option :value="true">Active</option>
                   <option :value="false">Inactive</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="border p-4 rounded-md bg-gray-100">
+            <p class="title-md">Bank &amp; Payment Info</p>
+            <hr class="my-2" />
+            <div class="grid md:grid-cols-2 gap-4">
+              <div class="space-y-1">
+                <label class="block text-sm font-semibold text-gray-700">Company Bank Account</label>
+                <select v-model="form.bank_account_id" class="input-light">
+                  <option value="">Select bank account</option>
+                  <option v-for="account in companyBankAccounts" :key="account.id" :value="account.id">
+                    {{ account.bank_name }} - {{ account.account_number }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="space-y-1">
+                <label class="block text-sm font-semibold text-gray-700">Bank Account No</label>
+                <input v-model.trim="form.bank_account_no" type="text" class="input-light" placeholder="Account number" />
+              </div>
+
+              <div class="space-y-1">
+                <label class="block text-sm font-semibold text-gray-700">Account Holder Name</label>
+                <input v-model.trim="form.account_holder_name" type="text" class="input-light" placeholder="Name on bank account" />
+              </div>
+
+              <div class="space-y-1">
+                <label class="block text-sm font-semibold text-gray-700">Default Payment Method</label>
+                <select v-model="form.default_payment_method" class="input-light">
+                  <option value="">Select method</option>
+                  <option v-for="method in PAYMENT_METHODS" :key="method" :value="method">{{ method }}</option>
                 </select>
               </div>
             </div>

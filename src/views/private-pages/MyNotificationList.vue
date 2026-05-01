@@ -16,6 +16,7 @@ const error = computed(() => notificationStore.error)
 const applicationFeedbackCount = computed(
   () => count_notifications.value?.application_feedback || 0,
 )
+const probationCount = computed(() => count_notifications.value?.probation || 0)
 
 const totalUnread = computed(
   () =>
@@ -25,6 +26,7 @@ const totalUnread = computed(
     (count_notifications.value?.offday_exchange_applications || 0) +
     (count_notifications.value?.manual_attendance_applications || 0) +
     (count_notifications.value?.overtime_applications || 0) +
+    probationCount.value +
     applicationFeedbackCount.value,
 )
 
@@ -78,6 +80,15 @@ const notificationCards = computed(() => [
     icon: icons.value?.overtime_applications,
   },
   {
+    type: 'probation',
+    label: 'Probation Review',
+    accent: 'bg-amber-100 text-amber-700',
+    badge: 'bg-amber-600',
+    count: probationCount.value,
+    icon: icons.value?.probation,
+    routeName: 'MySpecificNotificationList',
+  },
+  {
     type: 'application_feedback',
     label: 'Application Feedback',
     accent: 'bg-violet-100 text-violet-700',
@@ -87,6 +98,20 @@ const notificationCards = computed(() => [
     routeName: 'MyApplicationFeedbackNotifications',
   },
 ])
+
+const cardTo = (card) => {
+  if (card.routeName === 'MySpecificNotificationList') {
+    return { name: card.routeName, params: { type: card.type } }
+  }
+
+  if (card.routeName) {
+    return { name: card.routeName }
+  }
+
+  return { name: 'MySpecificNotificationList', params: { type: card.type } }
+}
+
+const visibleNotificationCards = computed(() => notificationCards.value)
 </script>
 
 <template>
@@ -144,13 +169,9 @@ const notificationCards = computed(() => [
       <!-- Notifications List -->
       <div v-else class="grid gap-3 md:grid-cols-3">
         <RouterLink
-          v-for="card in notificationCards"
+          v-for="card in visibleNotificationCards"
           :key="card.type"
-          :to="
-            card.routeName
-              ? { name: card.routeName }
-              : { name: 'MySpecificNotificationList', params: { type: card.type } }
-          "
+          :to="cardTo(card)"
           class="group relative overflow-hidden rounded-2xl bg-white/80 p-4 shadow-lg ring-1 ring-slate-200 transition duration-300 hover:-translate-y-1 hover:shadow-xl"
         >
           <div class="flex items-start justify-between gap-3">
@@ -159,7 +180,7 @@ const notificationCards = computed(() => [
                 :class="card.accent"
                 class="h-10 w-10 rounded-xl flex items-center justify-center text-lg"
               >
-                <span>{{ card.icon }}</span>
+                <i :class="card.icon"></i>
               </div>
               <div>
                 <h3 class="text-sm font-semibold text-slate-900">{{ card.label }}</h3>

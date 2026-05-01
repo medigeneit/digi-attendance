@@ -409,60 +409,184 @@ const router = createRouter({
 
         {
           path: '/settings',
-          name: 'SettingsView',
-          component: () => import('@/views/admin-pages/SettingsView.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'Settings View' },
-        },
-        {
-          path: '/settings/permissions-add',
-          name: 'PermissionsAdd',
-          component: () => import('@/views/admin-pages/PermissionAdd.vue'),
-          meta: {
-            requiresAuth: true,
-            roles: ['super_admin', 'developer'],
-            title: 'Permissions Add',
-          },
-        },
-         {
-          path: '/settings/lane-overrides',
-          name: 'LaneOverrides',
-          component: () => import('@/views/admin-pages/LaneOverridesPage.vue')
-        },
-        {
-          path: '/settings/kpi-cycles',
-          name: 'KpiCycles',
-          component: () => import('@/views/admin-pages/CycleSetupPage.vue')
-        },
-        {
-          path: '/settings/kpi/cycles/new',
-          name: 'kpi-cycle-new',
-          component: () => import('@/views/admin-pages/CycleFormPage.vue')
-        },
-        {
-          path: '/settings/kpi/cycles/:id',
-          name: 'kpi-cycle-edit',
-          component: () => import('@/views/admin-pages/CycleFormPage.vue')
-        },
-        {
-          path: '/settings/permissions-edit/:id',
-          name: 'PermissionEdit',
-          component: () => import('@/views/admin-pages/PermissionEdit.vue'),
-          meta: {
-            requiresAuth: true,
-            roles: ['super_admin', 'developer'],
-            title: 'Permissions Add',
-          },
-        },
-
-        {
-          path: '/settings/permissions-list',
-          name: 'PermissionList',
-          component: () => import('@/views/admin-pages/PermissionList.vue'),
-          meta: {
-            requiresAuth: true,
-            roles: ['super_admin', 'developer'],
-            title: 'Permissions List',
-          },
+          children: [
+            {
+              path: '',
+              name: 'SettingsView',
+              component: () => import('@/views/admin-pages/SettingsView.vue'),
+              meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'Settings View' },
+            },
+            {
+              path: 'permissions-add',
+              name: 'PermissionsAdd',
+              component: () => import('@/views/admin-pages/PermissionAdd.vue'),
+              meta: {
+                requiresAuth: true,
+                roles: ['super_admin', 'developer'],
+                title: 'Permissions Add',
+              },
+            },
+            {
+              path: 'lane-overrides',
+              name: 'LaneOverrides',
+              component: () => import('@/views/admin-pages/LaneOverridesPage.vue')
+            },
+            {
+              path: 'kpi-cycles',
+              name: 'KpiCycles',
+              component: () => import('@/views/admin-pages/CycleSetupPage.vue')
+            },
+            {
+              path: 'kpi/cycles/new',
+              name: 'kpi-cycle-new',
+              component: () => import('@/views/admin-pages/CycleFormPage.vue')
+            },
+            {
+              path: 'kpi/cycles/:id',
+              name: 'kpi-cycle-edit',
+              component: () => import('@/views/admin-pages/CycleFormPage.vue')
+            },
+            {
+              path: 'permissions-edit/:id',
+              name: 'PermissionEdit',
+              component: () => import('@/views/admin-pages/PermissionEdit.vue'),
+              meta: {
+                requiresAuth: true,
+                roles: ['super_admin', 'developer'],
+                title: 'Permissions Add',
+              },
+            },
+            {
+              path: 'permissions-list',
+              name: 'PermissionList',
+              component: () => import('@/views/admin-pages/PermissionList.vue'),
+              meta: {
+                requiresAuth: true,
+                roles: ['super_admin', 'developer'],
+                title: 'Permissions List',
+              },
+            },
+            {
+              path: 'user-list',
+              name: 'UserList',
+              component: () => import('@/views/admin-pages/UserList.vue'),
+              meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'User List' },
+            },
+            {
+              path: 'user-add',
+              name: 'UserAdd',
+              component: () => import('@/views/admin-pages/UserAdd.vue'),
+              meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'Add User' },
+            },
+            {
+              path: 'user-show/:id',
+              name: 'UserShow',
+              component: () => import('@/views/admin-pages/UserShow.vue'),
+              meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'Show User' },
+            },
+            {
+              path: 'user-edit/:id',
+              name: 'UserEdit',
+              component: () => import('@/views/admin-pages/UserEdit.vue'),
+              meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'Edit User' },
+            },
+            {
+              path: 'device-list',
+              name: 'DeviceList',
+              component: () => import('@/views/admin-pages/DeviceList.vue'),
+              meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'Device List' },
+            },
+            {
+              path: 'zk-users',
+              name: 'ZKUsers',
+              component: () => import('@/views/admin-pages/ZKUsers.vue'),
+              meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'ZKU List' },
+            },
+            {
+              path: 'company-list',
+              name: 'CompanyList',
+              component: () => import('@/views/admin-pages/CompanyList.vue'),
+              meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'Company List' },
+            },
+            {
+              path: 'company-bank-accounts',
+              name: 'CompanyBankAccountList',
+              component: () => import('@/views/admin-pages/CompanyBankAccountList.vue'),
+              meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'Company Bank Accounts' },
+            },
+            {
+              path: 'department-list',
+              name: 'DepartmentList',
+              component: () => import('@/views/admin-pages/DepartmentList.vue'),
+              meta: {
+                requiresAuth: true,
+                roles: ['super_admin', 'developer'],
+                title: 'Department List',
+              },
+            },
+            {
+              path: 'designation-list',
+              name: 'DesignationList',
+              component: () => import('@/views/admin-pages/DesignationList.vue'),
+              meta: {
+                requiresAuth: true,
+                roles: ['super_admin', 'developer'],
+                title: 'Designation List',
+              },
+            },
+            {
+              path: 'shift-list',
+              name: 'ShiftList',
+              component: () => import('@/views/admin-pages/ShiftList.vue'),
+              meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'Shift List' },
+            },
+            {
+              path: 'leave-type-list',
+              name: 'LeaveTypeList',
+              component: () => import('@/views/admin-pages/LeaveTypeList.vue'),
+              meta: {
+                requiresAuth: true,
+                roles: ['super_admin', 'developer'],
+                title: 'Leave Type List',
+              },
+            },
+            {
+              path: 'leave-approval-list',
+              name: 'LeaveApprovalList',
+              component: () => import('@/views/admin-pages/LeaveApprovalList.vue'),
+              meta: {
+                requiresAuth: true,
+                roles: ['super_admin', 'developer'],
+                title: 'Leave Approval List',
+              },
+            },
+            {
+              path: 'other-approval-list',
+              name: 'OtherApprovalList',
+              component: () => import('@/views/admin-pages/LeaveApprovalList.vue'),
+              meta: {
+                requiresAuth: true,
+                roles: ['super_admin', 'developer'],
+                title: 'Other Approval List',
+              },
+            },
+            {
+              path: 'holiday-list',
+              name: 'HoliDayList',
+              component: () => import('@/views/admin-pages/HoliDayList.vue'),
+              meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'HoliDay List' },
+            },
+            {
+              path: 'department-item-assignments',
+              name: 'ctdi',
+              component: () => import('@/views/admin-pages/DepartmentItemAssignments.vue'),
+              meta: {
+                requiresAuth: true,
+                roles: ['admin', 'super_admin', 'developer'],
+                title: 'Department Assign',
+              },
+            },
+          ],
         },
 
         {
@@ -474,111 +598,6 @@ const router = createRouter({
             roles: ['super_admin', 'developer'],
             title: 'Weekly Leave Histories',
           },
-        },
-
-        {
-          path: '/settings/user-list',
-          name: 'UserList',
-          component: () => import('@/views/admin-pages/UserList.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'User List' },
-        },
-        {
-          path: '/settings/user-add',
-          name: 'UserAdd',
-          component: () => import('@/views/admin-pages/UserAdd.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'Add User' },
-        },
-        {
-          path: '/settings/user-show/:id',
-          name: 'UserShow',
-          component: () => import('@/views/admin-pages/UserShow.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'Show User' },
-        },
-        {
-          path: '/settings/user-edit/:id',
-          name: 'UserEdit',
-          component: () => import('@/views/admin-pages/UserEdit.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'Edit User' },
-        },
-        {
-          path: '/settings/device-list',
-          name: 'DeviceList',
-          component: () => import('@/views/admin-pages/DeviceList.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'Device List' },
-        },
-        {
-          path: '/settings/zk-users',
-          name: 'ZKUsers',
-          component: () => import('@/views/admin-pages/ZKUsers.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'ZKU List' },
-        },
-        {
-          path: '/settings/company-list',
-          name: 'CompanyList',
-          component: () => import('@/views/admin-pages/CompanyList.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'Company List' },
-        },
-        {
-          path: '/settings/department-list',
-          name: 'DepartmentList',
-          component: () => import('@/views/admin-pages/DepartmentList.vue'),
-          meta: {
-            requiresAuth: true,
-            roles: ['super_admin', 'developer'],
-            title: 'Department List',
-          },
-        },
-        {
-          path: '/settings/designation-list',
-          name: 'DesignationList',
-          component: () => import('@/views/admin-pages/DesignationList.vue'),
-          meta: {
-            requiresAuth: true,
-            roles: ['super_admin', 'developer'],
-            title: 'Designation List',
-          },
-        },
-        {
-          path: '/settings/shift-list',
-          name: 'ShiftList',
-          component: () => import('@/views/admin-pages/ShiftList.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'Shift List' },
-        },
-        {
-          path: '/settings/leave-type-list',
-          name: 'LeaveTypeList',
-          component: () => import('@/views/admin-pages/LeaveTypeList.vue'),
-          meta: {
-            requiresAuth: true,
-            roles: ['super_admin', 'developer'],
-            title: 'Leave Type List',
-          },
-        },
-        {
-          path: '/settings/leave-approval-list',
-          name: 'LeaveApprovalList',
-          component: () => import('@/views/admin-pages/LeaveApprovalList.vue'),
-          meta: {
-            requiresAuth: true,
-            roles: ['super_admin', 'developer'],
-            title: 'Leave Approval List',
-          },
-        },
-        {
-          path: '/settings/other-approval-list',
-          name: 'OtherApprovalList',
-          component: () => import('@/views/admin-pages/LeaveApprovalList.vue'),
-          meta: {
-            requiresAuth: true,
-            roles: ['super_admin', 'developer'],
-            title: 'Other Approval List',
-          },
-        },
-        {
-          path: '/settings/holiday-list',
-          name: 'HoliDayList',
-          component: () => import('@/views/admin-pages/HoliDayList.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'HoliDay List' },
         },
         {
           path: '/hrd/notice',
@@ -1384,6 +1403,16 @@ const router = createRouter({
           component: () => import('@/views/admin-pages/BloodDonorList.vue'),
           meta: { requiresAuth: true, title: 'Blood Donors' },
         },
+        {
+          path: '/life-event-requests',
+          name: 'LifeEventRequests',
+          component: () => import('@/views/admin-pages/LifeEventRequests.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Life Event Requests',
+          },
+        },
 
         {
           path: '/admin/checklist-templates/:id/items',
@@ -1406,6 +1435,26 @@ const router = createRouter({
             title: 'Checklists',
           },
         },
+        {
+          path: '/lifecycle/:flowType/board',
+          name: 'lifecycle.board',
+          component: () => import('@/views/admin-pages/LifecycleBoardPage.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Lifecycle Board',
+          },
+        },
+        {
+          path: '/lifecycle/:flowType/users/:userId',
+          name: 'lifecycle.detail',
+          component: () => import('@/views/admin-pages/LifecycleDetailPage.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            title: 'Lifecycle Detail',
+          },
+        },
 
         {
           path: '/users/:userId/checklists/:checklistId',
@@ -1421,16 +1470,6 @@ const router = createRouter({
           path: '/users/:userId/checklists/create/:templateId',
           name: 'checklist.create',
           component: () => import('@/views/admin-pages/ChecklistPage.vue')
-        },
-        {
-          path: '/settings/department-item-assignments',
-          name: 'ctdi',
-          component: () => import('@/views/admin-pages/DepartmentItemAssignments.vue'),
-          meta: {
-            requiresAuth: true,
-            roles: ['admin', 'super_admin', 'developer'],
-            title: 'Department Assign',
-          },
         },
         {
           path: '/kpi-reviews/:employeeId',
@@ -1495,6 +1534,14 @@ const router = createRouter({
 router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore()
   const isAuthenticated = !!authStore.token || localStorage.getItem('auth_token')
+  const storedUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('user') || 'null')
+    } catch {
+      return null
+    }
+  })()
+  const currentRole = authStore.user?.role || storedUser?.role || null
 
   // Root URL should not render an empty AppLayout.
   // Authenticated users -> Dashboard, guests -> Home.
@@ -1513,6 +1560,13 @@ router.beforeEach((to, _from, next) => {
   const shouldRedirectToDashboard = redirectToDashboardPaths.includes(to.path)
   if (isAuthenticated && shouldRedirectToDashboard) {
     return next({ name: 'Dashboard' })
+  }
+
+  const requiredRoles = [...new Set(to.matched.flatMap((record) => record.meta?.roles || []))]
+  if (requiredRoles.length > 0) {
+    if (!currentRole || !requiredRoles.includes(currentRole)) {
+      return next({ name: 'Dashboard' })
+    }
   }
 
   if (to.matched.some((record) => record.meta.requiresAuth) && !isAuthenticated) {

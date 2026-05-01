@@ -1,38 +1,152 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { usePayrollBatchStore } from '@/stores/payrollBatch'
-import { useCompanyStore } from '@/stores/company'
 import LoaderView from '@/components/common/LoaderView.vue'
 import PaginationBar from '@/components/PaginationBar.vue'
+import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 
 const router = useRouter()
+const route = useRoute()
 const batchStore = usePayrollBatchStore()
-const companyStore = useCompanyStore()
 
 const { list, loading, error, pagination, apiUnavailable } = storeToRefs(batchStore)
-const { companies } = storeToRefs(companyStore)
 
-const filters = ref({ company_id: '', salary_month: '', page: 1, per_page: 15 })
+const filters = ref({
+  company_id: '',
+  department_id: '',
+  line_type: 'all',
+  salary_month: '',
+  page: 1,
+  per_page: 15,
+})
+
+const toMonthValue = (value) => {
+  const v = String(value || '').trim()
+  if (!v) return ''
+  if (/^\d{4}-\d{2}$/.test(v)) return v
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v.slice(0, 7)
+  return ''
+}
+
+const parseQueryInt = (value, fallback = 1) => {
+  if (value === undefined || value === null || value === '') return fallback
+  const parsed = Number.parseInt(String(value), 10)
+  return Number.isNaN(parsed) ? fallback : parsed
+}
+
+const salaryMonthPicker = computed({
+  get() {
+    const monthValue = toMonthValue(filters.value.salary_month)
+    if (!monthValue) return { year: null, month: null, day: 1 }
+
+    const [year, month] = monthValue.split('-').map(Number)
+    return { year, month, day: 1 }
+  },
+  set(value) {
+    if (!value?.year || !value?.month) {
+      filters.value.salary_month = ''
+      return
+    }
+
+    filters.value.salary_month = `${value.year}-${String(value.month).padStart(2, '0')}`
+  },
+})
+
+const buildFilterParams = () => {
+  const params = {
+    ...filters.value,
+    salary_month: toMonthValue(filters.value.salary_month),
+  }
+
+  if (!params.company_id) delete params.company_id
+  if (!params.department_id) delete params.department_id
+  if (!params.line_type || params.line_type === 'all') delete params.line_type
+  if (!params.salary_month) delete params.salary_month
+
+  return params
+}
+
+const syncFiltersToQuery = async (params) => {
+  await router.replace({ query: { ...params } })
+}
+
+const hydrateFiltersFromQuery = () => {
+  const q = route.query || {}
+
+  filters.value = {
+    ...filters.value,
+    company_id: q.company_id ? String(q.company_id) : '',
+    department_id: q.department_id ? String(q.department_id) : '',
+    line_type: q.line_type ? String(q.line_type) : 'all',
+    salary_month: toMonthValue(q.salary_month),
+    page: parseQueryInt(q.page, 1),
+    per_page: parseQueryInt(q.per_page, 15),
+  }
+}
 
 async function load() {
-  const params = { ...filters.value }
-  if (!params.company_id) delete params.company_id
-  if (!params.salary_month) delete params.salary_month
+  const params = buildFilterParams()
+  await syncFiltersToQuery(params)
   await batchStore.fetchList(params)
 }
 
 onMounted(async () => {
-  await Promise.all([companyStore.fetchCompanies(), load()])
+  hydrateFiltersFromQuery()
+  await load()
 })
+
+const onEmployeeFilterChange = (payload = {}) => {
+  filters.value = {
+    ...filters.value,
+    company_id: payload.company_id || '',
+    department_id: payload.department_id || '',
+    line_type: payload.line_type || 'all',
+    page: 1,
+  }
+  load()
+}
+
+const applyMonthFilter = () => {
+  filters.value.page = 1
+  load()
+}
+
+const resetFilters = () => {
+  filters.value = {
+    company_id: '',
+    department_id: '',
+    line_type: 'all',
+    salary_month: '',
+    page: 1,
+    per_page: 15,
+  }
+  load()
+}
+
+const goToGenerate = () => {
+  router.push({
+    name: 'PayrollBatchGenerate',
+    query: buildFilterParams(),
+  })
+}
+
+const goToShow = (batch) => {
+  router.push({
+    name: 'PayrollBatchShow',
+    params: { id: batch.id },
+    query: buildFilterParams(),
+  })
+}
 </script>
 
 <template>
   <div class="p-4 md:p-6 space-y-4">
     <div class="flex items-center justify-between gap-2">
       <h1 class="title-md md:title-lg">Payroll Batches</h1>
-      <button class="btn-2" :disabled="apiUnavailable" :class="{ 'opacity-60 cursor-not-allowed': apiUnavailable }" @click="router.push({ name: 'PayrollBatchGenerate' })">
+      <button class="btn-2" :disabled="apiUnavailable" :class="{ 'opacity-60 cursor-not-allowed': apiUnavailable }" @click="goToGenerate">
         <i class="far fa-cog"></i>
         <span class="hidden md:flex">Generate Payroll</span>
       </button>
@@ -44,24 +158,37 @@ onMounted(async () => {
     </div>
 
     <!-- Filters -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-wrap gap-3 items-end">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+      <div class="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_220px]">
+        <EmployeeFilter
+          :company_id="filters.company_id"
+          :department_id="filters.department_id"
+          :line_type="filters.line_type"
+          :with-employee="false"
+          @update:company_id="(value) => (filters.company_id = value)"
+          @update:department_id="(value) => (filters.department_id = value)"
+          @update:line_type="(value) => (filters.line_type = value)"
+          @filter-change="onEmployeeFilterChange"
+        />
       <div>
-        <label class="block text-xs font-medium text-gray-600 mb-1">Company</label>
-        <select v-model="filters.company_id" @change="() => { filters.page = 1; load() }"
-          class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
-          <option value="">All Companies</option>
-          <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
-        </select>
+        
+        <div class="flex items-end justify-end gap-4">
+          <FlexibleDatePicker
+            v-model="salaryMonthPicker"
+            label="Salary Month"
+            :show-year="false"
+            :show-month="true"
+            :show-date="false"
+            :show-summary="false"
+            allow-empty
+            @change="applyMonthFilter"
+          />
+          <button class="btn-1 rounded-md" @click="resetFilters">
+            <i class="far fa-undo"></i> Reset
+          </button>
+        </div>
+        </div>
       </div>
-      <div>
-        <label class="block text-xs font-medium text-gray-600 mb-1">Salary Month</label>
-        <input v-model="filters.salary_month" type="month"
-          @change="() => { filters.page = 1; load() }"
-          class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
-      </div>
-      <button class="btn-3" @click="() => { filters = { company_id: '', salary_month: '', page: 1, per_page: 15 }; load() }">
-        <i class="far fa-undo"></i> Reset
-      </button>
     </div>
 
     <LoaderView v-if="loading" />
@@ -74,7 +201,7 @@ onMounted(async () => {
     <div v-else-if="!list.length" class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
       <i class="fas fa-layer-group text-4xl text-gray-300 mb-3"></i>
       <p class="text-lg font-medium text-gray-500">{{ apiUnavailable ? 'Payroll batch module is not active yet' : 'No payroll batches found' }}</p>
-      <button class="btn-2 mt-4" :disabled="apiUnavailable" :class="{ 'opacity-60 cursor-not-allowed': apiUnavailable }" @click="router.push({ name: 'PayrollBatchGenerate' })">
+      <button class="btn-2 mt-4" :disabled="apiUnavailable" :class="{ 'opacity-60 cursor-not-allowed': apiUnavailable }" @click="goToGenerate">
         <i class="far fa-cog"></i> Generate Payroll
       </button>
     </div>
@@ -111,7 +238,7 @@ onMounted(async () => {
               <span class="font-semibold text-blue-800">{{ batch.payrolls_count ?? (batch.payrolls?.length ?? '—') }}</span>
             </td>
             <td class="px-4 py-3 text-center">
-              <button @click="router.push({ name: 'PayrollBatchShow', params: { id: batch.id } })"
+              <button @click="goToShow(batch)"
                 class="p-1.5 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors" title="View">
                 <i class="far fa-eye text-xs"></i>
               </button>

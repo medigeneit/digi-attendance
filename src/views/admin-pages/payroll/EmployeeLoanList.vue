@@ -1,27 +1,34 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { storeToRefs } from 'pinia'
 import { useEmployeeLoanStore } from '@/stores/employeeLoan'
-import { useCompanyStore } from '@/stores/company'
 import LoaderView from '@/components/common/LoaderView.vue'
 import DeleteModal from '@/components/common/DeleteModal.vue'
 import PaginationBar from '@/components/PaginationBar.vue'
 import AsyncUserCombobox from '@/components/common/AsyncUserCombobox.vue'
+import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoanInstallmentPreview from '@/components/payroll/LoanInstallmentPreview.vue'
 import apiClient from '@/axios'
 import { toNum, formatCurrency } from '@/utils/currency'
 
 const router = useRouter()
+const route = useRoute()
 const toast = useToast()
 const loanStore = useEmployeeLoanStore()
-const companyStore = useCompanyStore()
 
 const { list, loading, error, pagination } = storeToRefs(loanStore)
-const { companies } = storeToRefs(companyStore)
 
-const filters = ref({ company_id: '', user_id: '', status: '', page: 1, per_page: 15 })
+const filters = ref({
+  company_id: '',
+  department_id: '',
+  line_type: 'all',
+  user_id: '',
+  status: '',
+  page: 1,
+  per_page: 15,
+})
 const showModal = ref(false)
 const showDeleteModal = ref(false)
 const selectedItem = ref(null)
@@ -41,6 +48,8 @@ const blankForm = () => ({
   loan_amount: '',
   installment_amount: '',
   total_installments: '',
+  opening_paid_installments: 0,
+  opening_paid_amount: 0,
   start_month: '',
   status: 'active',
   remarks: '',
@@ -60,6 +69,7 @@ const previewLoan = computed(() => ({
   loan_amount: modalForm.value.loan_amount,
   installment_amount: modalForm.value.installment_amount,
   total_installments: modalForm.value.total_installments,
+  opening_paid_installments: modalForm.value.opening_paid_installments,
   start_month: modalForm.value.start_month,
 }))
 
@@ -82,6 +92,18 @@ const calculateInstallmentAmount = (loanAmount, totalInstallments) => {
   return parseFloat((loan / total).toFixed(2))
 }
 
+const openingPaidAmountPreview = computed(() => {
+  const count = Math.max(0, Math.trunc(toNum(modalForm.value.opening_paid_installments)))
+  const amount = toNum(modalForm.value.installment_amount)
+  const loan = toNum(modalForm.value.loan_amount)
+  if (count <= 0 || amount <= 0 || loan <= 0) return 0
+  return Math.min(loan, count * amount)
+})
+
+const openingRemainingPreview = computed(() =>
+  Math.max(0, toNum(modalForm.value.loan_amount) - openingPaidAmountPreview.value),
+)
+
 const applyAutoInstallmentAmount = () => {
   const autoAmount = calculateInstallmentAmount(
     modalForm.value.loan_amount,
@@ -98,21 +120,88 @@ const fetchUsersFn = (params) =>
     .get('/users', { params })
     .then((r) => (Array.isArray(r.data) ? r.data : r.data?.data || r.data?.users || []))
 
-async function load() {
+const parseQueryInt = (value, fallback = 1) => {
+  if (value === undefined || value === null || value === '') return fallback
+  const parsed = Number.parseInt(String(value), 10)
+  return Number.isNaN(parsed) ? fallback : parsed
+}
+
+const buildFilterParams = () => {
   const params = { ...filters.value }
   if (!params.company_id) delete params.company_id
+  if (!params.department_id) delete params.department_id
+  if (!params.line_type || params.line_type === 'all') delete params.line_type
   if (!params.user_id) delete params.user_id
   if (!params.status) delete params.status
+  return params
+}
+
+const syncFiltersToQuery = async (params) => {
+  await router.replace({ query: { ...params } })
+}
+
+const hydrateFiltersFromQuery = () => {
+  const q = route.query || {}
+
+  filters.value = {
+    ...filters.value,
+    company_id: q.company_id ? String(q.company_id) : '',
+    department_id: q.department_id ? String(q.department_id) : '',
+    line_type: q.line_type ? String(q.line_type) : 'all',
+    user_id: q.user_id || q.employee_id ? String(q.user_id || q.employee_id) : '',
+    status: q.status ? String(q.status) : '',
+    page: parseQueryInt(q.page, 1),
+    per_page: parseQueryInt(q.per_page, 15),
+  }
+}
+
+async function load() {
+  const params = buildFilterParams()
+  await syncFiltersToQuery(params)
   await loanStore.fetchList(params)
 }
 
 onMounted(async () => {
-  await Promise.all([companyStore.fetchCompanies(), load()])
+  hydrateFiltersFromQuery()
+  await load()
 })
 
 const resetFilters = () => {
-  filters.value = { company_id: '', user_id: '', status: '', page: 1, per_page: 15 }
+  filters.value = {
+    company_id: '',
+    department_id: '',
+    line_type: 'all',
+    user_id: '',
+    status: '',
+    page: 1,
+    per_page: 15,
+  }
   load()
+}
+
+const onEmployeeFilterChange = (payload = {}) => {
+  filters.value = {
+    ...filters.value,
+    company_id: payload.company_id || '',
+    department_id: payload.department_id || '',
+    line_type: payload.line_type || 'all',
+    user_id: payload.employee_id || '',
+    page: 1,
+  }
+  load()
+}
+
+const applyStatusFilter = () => {
+  filters.value.page = 1
+  load()
+}
+
+const goToDetails = (item) => {
+  router.push({
+    name: 'PayrollEmployeeLoanShow',
+    params: { id: item.id },
+    query: buildFilterParams(),
+  })
 }
 
 const openCreate = () => {
@@ -134,6 +223,8 @@ const openEdit = (item) => {
     loan_amount: item.loan_amount ?? '',
     installment_amount: item.installment_amount ?? '',
     total_installments: item.total_installments ?? '',
+    opening_paid_installments: item.opening_paid_installments ?? 0,
+    opening_paid_amount: item.opening_paid_amount ?? 0,
     start_month: item.start_month || '',
     status: item.status || 'active',
     remarks: item.remarks || '',
@@ -315,6 +406,16 @@ const validateModal = () => {
     errors.installment_amount = 'Installment amount is required.'
   if (!modalForm.value.total_installments)
     errors.total_installments = 'Total installments required.'
+  if (Math.trunc(toNum(modalForm.value.opening_paid_installments)) < 0) {
+    errors.opening_paid_installments = 'Already paid installments cannot be negative.'
+  }
+  if (
+    modalForm.value.total_installments &&
+    Math.trunc(toNum(modalForm.value.opening_paid_installments)) >
+      Math.trunc(toNum(modalForm.value.total_installments))
+  ) {
+    errors.opening_paid_installments = 'Already paid installments cannot exceed total installments.'
+  }
   if (!modalForm.value.start_month) errors.start_month = 'Start month is required.'
   if (!modalForm.value.remarks) errors.remarks = 'Reason is required.'
 
@@ -343,6 +444,7 @@ const validateModal = () => {
 const handleModalSubmit = async () => {
   if (!validateModal()) return
   modalSubmitting.value = true
+  modalForm.value.opening_paid_amount = openingPaidAmountPreview.value
   try {
     if (isEditMode.value) {
       await loanStore.updateItem(selectedItem.value.id, modalForm.value)
@@ -441,43 +543,37 @@ const inputClass =
 
     <!-- Filters -->
     <div
-      class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-wrap gap-3 items-end"
+      class="bg-white rounded-xl shadow-sm border border-gray-100 p-4"
     >
-      <div>
-        <label class="block text-xs font-medium text-gray-600 mb-1">Company</label>
-        <select
-          v-model="filters.company_id"
-          @change="
-            () => {
-              filters.page = 1
-              load()
-            }
-          "
-          class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+      <div class="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_170px]">
+        <EmployeeFilter
+          :company_id="filters.company_id"
+          :department_id="filters.department_id"
+          :line_type="filters.line_type"
+          :employee_id="filters.user_id"
+          @update:company_id="(value) => (filters.company_id = value)"
+          @update:department_id="(value) => (filters.department_id = value)"
+          @update:line_type="(value) => (filters.line_type = value)"
+          @update:employee_id="(value) => (filters.user_id = value)"
+          @filter-change="onEmployeeFilterChange"
         >
-          <option value="">All Companies</option>
-          <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
-        </select>
+          <div class="flex items-end justify-end">
+            <button class="btn-3" @click="resetFilters"><i class="far fa-undo"></i> Reset</button>
+          </div>
+        </EmployeeFilter>
+        <div>
+          <select
+            v-model="filters.status"
+            @change="applyStatusFilter"
+            class="h-10 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          >
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="closed">Closed</option>
+            <option value="pending">Pending</option>
+          </select>
+        </div>
       </div>
-      <div>
-        <label class="block text-xs font-medium text-gray-600 mb-1">Status</label>
-        <select
-          v-model="filters.status"
-          @change="
-            () => {
-              filters.page = 1
-              load()
-            }
-          "
-          class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-        >
-          <option value="">All Status</option>
-          <option value="active">Active</option>
-          <option value="closed">Closed</option>
-          <option value="pending">Pending</option>
-        </select>
-      </div>
-      <button class="btn-3" @click="resetFilters"><i class="far fa-undo"></i> Reset</button>
     </div>
 
     <LoaderView v-if="loading" />
@@ -577,6 +673,12 @@ const inputClass =
               >
                 {{ item.total_installments || 0 }}
               </span>
+              <div
+                v-if="Number(item.opening_paid_installments || 0) > 0"
+                class="mt-1 text-[11px] font-medium text-emerald-700"
+              >
+                Paid before: {{ item.opening_paid_installments }}
+              </div>
             </td>
             <td class="px-3 py-2 text-center text-xs min-w-[108px]">
               <div class="text-[10px] text-slate-500 uppercase tracking-wide">
@@ -599,7 +701,7 @@ const inputClass =
                 class="inline-flex items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-1 py-0.5"
               >
                 <button
-                  @click="router.push({ name: 'PayrollEmployeeLoanShow', params: { id: item.id } })"
+                  @click="goToDetails(item)"
                   class="p-1.5 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors"
                   title="Details"
                 >
@@ -929,6 +1031,49 @@ const inputClass =
                   <p v-if="modalErrors.installment_amount" class="text-red-500 text-xs mt-1">
                     {{ modalErrors.installment_amount }}
                   </p>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">
+                    Already Paid Installments
+                  </label>
+                  <input
+                    v-model="modalForm.opening_paid_installments"
+                    type="number"
+                    min="0"
+                    step="1"
+                    :class="inputClass"
+                    placeholder="0"
+                  />
+                  <p class="text-xs text-gray-500 mt-1">
+                    Paid before this software started. Example: 5 installments already paid.
+                  </p>
+                  <p
+                    v-if="modalErrors.opening_paid_installments"
+                    class="text-red-500 text-xs mt-1"
+                  >
+                    {{ modalErrors.opening_paid_installments }}
+                  </p>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">
+                    Opening Balance Preview
+                  </label>
+                  <div class="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2">
+                    <div class="flex items-center justify-between text-xs text-emerald-800">
+                      <span>Paid before system</span>
+                      <span class="font-mono font-semibold">
+                        {{ formatCurrency(openingPaidAmountPreview) }}
+                      </span>
+                    </div>
+                    <div class="mt-1 flex items-center justify-between text-xs text-slate-600">
+                      <span>Remaining for payroll</span>
+                      <span class="font-mono font-semibold">
+                        {{ formatCurrency(openingRemainingPreview) }}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
                 <div>

@@ -28,11 +28,21 @@ export const useExchangeStore = defineStore('exchange', () => {
   }
 
   // Fetch all exchanges
-  async function fetchExchanges({ payload }) {
+  async function fetchExchanges({ payload } = {}) {
     loading.value = true
     error.value = null
     try {
-      const response = await apiClient.get(`/exchanges?type=${payload.type}`, payload)
+      const params = { ...(payload || {}) }
+
+      if (params.selectedMonth && !params.date) {
+        params.date = params.selectedMonth
+      }
+
+      if (params.date && !params.selectedMonth) {
+        params.selectedMonth = params.date
+      }
+
+      const response = await apiClient.get('/exchanges', { params })
       exchanges.value = response.data.data
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch exchanges'

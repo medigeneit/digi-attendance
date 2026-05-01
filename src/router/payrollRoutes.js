@@ -1,4 +1,5 @@
 const PAYROLL_ROLES = ['admin', 'super_admin', 'developer']
+const PAYROLL_ADJUSTMENT_ROLES = ['hr', 'accounts', 'admin', 'super_admin', 'developer']
 
 export const payrollRoutes = [
   {
@@ -33,10 +34,22 @@ export const payrollRoutes = [
     meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Meal Entries' },
   },
   {
+    path: '/payroll/meal-entries/create',
+    name: 'PayrollMealEntryCreate',
+    component: () => import('@/views/admin-pages/payroll/MealEntryCreate.vue'),
+    meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Bulk Meal Entry' },
+  },
+  {
     path: '/payroll/employee-loans',
     name: 'PayrollEmployeeLoanList',
     component: () => import('@/views/admin-pages/payroll/EmployeeLoanList.vue'),
     meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Employee Loans' },
+  },
+  {
+    path: '/payroll/security-monies',
+    name: 'PayrollSecurityMoneyList',
+    component: () => import('@/views/admin-pages/payroll/SecurityMoneyList.vue'),
+    meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Security Money' },
   },
   {
     path: '/payroll/employee-loans/:id',
@@ -71,10 +84,60 @@ export const payrollRoutes = [
     meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Payrolls' },
   },
   {
+    path: '/payrolls/doctors',
+    name: 'DoctorPayrollList',
+    component: () => import('@/views/admin-pages/payroll/DoctorPayrollList.vue'),
+    meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Doctor Payrolls' },
+  },
+  {
+    path: '/payrolls/bank-advisers',
+    name: 'PayrollBankAdviserList',
+    component: () => import('@/views/admin-pages/payroll/BankAdviserList.vue'),
+    meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Bank Adviser List' },
+  },
+  {
+    path: '/payrolls/cash-slips',
+    name: 'PayrollSlipList',
+    component: () => import('@/views/admin-pages/payroll/PayrollSlipList.vue'),
+    meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Payroll Slip List' },
+  },
+  {
+    path: '/payrolls/cash-slips/:id',
+    name: 'PayrollSlipShow',
+    component: () => import('@/views/admin-pages/payroll/PayrollSlipShow.vue'),
+    props: true,
+    meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Payroll Slip' },
+  },
+  {
     path: '/payrolls/:id',
     name: 'PayrollShow',
     component: () => import('@/views/admin-pages/payroll/PayrollShow.vue'),
     props: true,
     meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Payroll Details' },
+  },
+  {
+    path: '/payroll/adjustments',
+    name: 'PayrollAdjustmentList',
+    component: () => import('@/pages/payroll/adjustments/index.vue'),
+    meta: { requiresAuth: true, roles: PAYROLL_ADJUSTMENT_ROLES, title: 'Payroll Adjustments' },
+  },
+  {
+    path: '/payroll/adjustments/create',
+    name: 'PayrollAdjustmentCreate',
+    component: () => import('@/pages/payroll/adjustments/create.vue'),
+    meta: { requiresAuth: true, roles: PAYROLL_ADJUSTMENT_ROLES, title: 'Create Adjustment' },
+  },
+  {
+    path: '/payroll/adjustments/carry-forward/preview',
+    name: 'PayrollAdjustmentCarryPreview',
+    component: () => import('@/pages/payroll/adjustments/carry-forward/preview.vue'),
+    meta: { requiresAuth: true, roles: PAYROLL_ADJUSTMENT_ROLES, title: 'Carry Forward Preview' },
+  },
+  {
+    path: '/payroll/adjustments/:id',
+    name: 'PayrollAdjustmentShow',
+    component: () => import('@/pages/payroll/adjustments/[id].vue'),
+    props: true,
+    meta: { requiresAuth: true, roles: PAYROLL_ADJUSTMENT_ROLES, title: 'Adjustment Details' },
   },
 ]

@@ -9,6 +9,7 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import DeleteModal from '@/components/common/DeleteModal.vue'
 import PaginationBar from '@/components/PaginationBar.vue'
 import AsyncUserCombobox from '@/components/common/AsyncUserCombobox.vue'
+import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import apiClient from '@/axios'
 import { toNum, formatCurrency } from '@/utils/currency'
 import * as XLSX from 'xlsx'
@@ -26,6 +27,7 @@ const filters = ref({
   salary_month: new Date().toISOString().slice(0, 7),
   company_id: '',
   department_id: '',
+  line_type: 'all',
   user_id: null,
   page: 1,
   per_page: 15,
@@ -66,7 +68,6 @@ const bulkForm = ref({
 })
 const bulkRows = ref([])
 const bulkDepartments = ref([])
-const filterDepartments = ref([])
 const exportLoading = ref(false)
 const showImportGuideModal = ref(false)
 const importFileInputRef = ref(null)
@@ -156,6 +157,7 @@ const buildFilterParams = () => {
     salary_month: toMonthValue(filters.value.salary_month),
     company_id: filters.value.company_id || '',
     department_id: filters.value.department_id || '',
+    line_type: filters.value.line_type || 'all',
     user_id: filters.value.user_id || null,
     page: filters.value.page,
     per_page: filters.value.per_page,
@@ -164,6 +166,7 @@ const buildFilterParams = () => {
   if (!params.salary_month) delete params.salary_month
   if (!params.company_id) delete params.company_id
   if (!params.department_id) delete params.department_id
+  if (!params.line_type || params.line_type === 'all') delete params.line_type
   if (!params.user_id) delete params.user_id
 
   return params
@@ -186,7 +189,8 @@ const hydrateFiltersFromQuery = () => {
   filters.value.salary_month = monthFromQuery || filters.value.salary_month
   filters.value.company_id = q.company_id ? String(q.company_id) : ''
   filters.value.department_id = q.department_id ? String(q.department_id) : ''
-  filters.value.user_id = parseQueryInt(q.user_id, null)
+  filters.value.line_type = q.line_type ? String(q.line_type) : 'all'
+  filters.value.user_id = parseQueryInt(q.user_id || q.employee_id, null)
   filters.value.page = parseQueryInt(q.page, 1)
   filters.value.per_page = parseQueryInt(q.per_page, 15)
 }
@@ -199,7 +203,7 @@ async function load() {
 
 onMounted(async () => {
   hydrateFiltersFromQuery()
-  await Promise.all([companyStore.fetchCompanies(), loadFilterDepartments(), load()])
+  await Promise.all([companyStore.fetchCompanies(), load()])
 })
 
 const applyFilters = () => {
@@ -212,18 +216,24 @@ const resetFilters = () => {
     salary_month: new Date().toISOString().slice(0, 7),
     company_id: '',
     department_id: '',
+    line_type: 'all',
     user_id: null,
     page: 1,
     per_page: 15,
   }
-  loadFilterDepartments()
   load()
 }
 
-const handleFilterCompanyChange = async () => {
-  filters.value.department_id = ''
-  await loadFilterDepartments()
-  applyFilters()
+const onEmployeeFilterChange = (payload = {}) => {
+  filters.value = {
+    ...filters.value,
+    company_id: payload.company_id || '',
+    department_id: payload.department_id || '',
+    line_type: payload.line_type || 'all',
+    user_id: payload.employee_id ? Number(payload.employee_id) : null,
+    page: 1,
+  }
+  load()
 }
 
 const handlePageChange = (page) => {
@@ -304,20 +314,6 @@ const getUserLookup = async () => {
     userByEmployeeId: new Map(
       users.map((user) => [String(user.employee_id || '').trim().toLowerCase(), user]),
     ),
-  }
-}
-
-const loadFilterDepartments = async () => {
-  try {
-    const response = await apiClient.get('/departments', {
-      params: {
-        ...(filters.value.company_id ? { company_id: filters.value.company_id } : {}),
-        per_page: 500,
-      },
-    })
-    filterDepartments.value = toArray(response.data)
-  } catch (_) {
-    filterDepartments.value = []
   }
 }
 
@@ -965,9 +961,9 @@ watch(
     <div class="flex items-center justify-between gap-2">
       <h1 class="title-md md:title-lg">Meal Entries</h1>
       <div class="flex items-center gap-2">
-        <button class="btn-3" @click="toggleBulkPanel">
-          <i class="far" :class="showBulkPanel ? 'fa-times' : 'fa-layer-group'"></i>
-          <span class="hidden md:flex">{{ showBulkPanel ? 'Close Bulk' : 'Bulk Entry' }}</span>
+        <button class="btn-3" @click="router.push({ name: 'PayrollMealEntryCreate' })">
+          <i class="far fa-layer-group"></i>
+          <span class="hidden md:flex">Bulk Entry</span>
         </button>
         <button class="btn-2" @click="openCreate">
           <i class="far fa-plus"></i>
@@ -978,54 +974,36 @@ watch(
 
     <!-- Filters -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-      <div class="flex flex-wrap gap-3 items-end">
-        <div>
-          <label class="block text-xs font-medium text-gray-600 mb-1">Month</label>
+      <div class="grid grid-cols-1 gap-3 xl:grid-cols-[170px_1fr]">
+        <div class="relative">
           <input
             v-model="filters.salary_month"
             type="month"
             @change="applyFilters"
-            class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            class="h-10 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
         </div>
-        <div>
-          <label class="block text-xs font-medium text-gray-600 mb-1">Company</label>
-          <select
-            v-model="filters.company_id"
-            @change="handleFilterCompanyChange"
-            class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-          >
-            <option value="">All Companies</option>
-            <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-xs font-medium text-gray-600 mb-1">Department</label>
-          <select
-            v-model="filters.department_id"
-            @change="applyFilters"
-            class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-          >
-            <option value="">All Departments</option>
-            <option v-for="d in filterDepartments" :key="d.id" :value="d.id">{{ d.name }}</option>
-          </select>
-        </div>
-        <div class="min-w-[260px]">
-          <label class="block text-xs font-medium text-gray-600 mb-1">Employee</label>
-          <AsyncUserCombobox
-            v-model="filters.user_id"
-            :fetcher="fetchUsersFn"
-            placeholder="Filter by employee..."
-            @update:modelValue="applyFilters"
-          />
-        </div>
-        <button class="btn-3" @click="resetFilters">
-          <i class="far fa-undo"></i> Reset
-        </button>
-        <button class="btn-3" @click="downloadFilteredExcel" :disabled="exportLoading">
-          <i class="far" :class="exportLoading ? 'fa-spinner fa-spin' : 'fa-file-excel'"></i>
-          {{ exportLoading ? 'Downloading...' : 'Excel Download' }}
-        </button>
+        <EmployeeFilter
+          :company_id="filters.company_id"
+          :department_id="filters.department_id"
+          :line_type="filters.line_type"
+          :employee_id="filters.user_id"
+          @update:company_id="(value) => (filters.company_id = value)"
+          @update:department_id="(value) => (filters.department_id = value)"
+          @update:line_type="(value) => (filters.line_type = value)"
+          @update:employee_id="(value) => (filters.user_id = value ? Number(value) : null)"
+          @filter-change="onEmployeeFilterChange"
+        >
+          <div class="flex items-end justify-end gap-2">
+            <button class="btn-3" @click="resetFilters">
+              <i class="far fa-undo"></i> Reset
+            </button>
+            <button class="btn-3" @click="downloadFilteredExcel" :disabled="exportLoading">
+              <i class="far" :class="exportLoading ? 'fa-spinner fa-spin' : 'fa-file-excel'"></i>
+              {{ exportLoading ? 'Downloading...' : 'Excel' }}
+            </button>
+          </div>
+        </EmployeeFilter>
       </div>
     </div>
 

@@ -25,6 +25,7 @@ const props = defineProps({
   showYear: { type: Boolean, default: true },
   showMonth: { type: Boolean, default: true },
   showDate: { type: Boolean, default: true },
+  allowEmpty: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['update:modelValue', 'change'])
@@ -36,6 +37,10 @@ const now = new Date()
 const currentYear = now.getFullYear()
 const currentMonth = now.getMonth() + 1
 const currentDay = now.getDate()
+
+const hasModelValue = computed(() =>
+  Boolean(props.modelValue?.year && props.modelValue?.month && props.modelValue?.day),
+)
 
 function daysInMonth(y, m) {
   return new Date(y, m, 0).getDate()
@@ -103,12 +108,14 @@ const selectedDateLabel = computed(() => {
 })
 
 const monthInputValue = computed(() => {
+  if (props.allowEmpty && !hasModelValue.value) return ''
   const y = localYear.value
   const m = String(localMonth.value).padStart(2, '0')
   return `${y}-${m}` // YYYY-MM
 })
 
 const dateInputValue = computed(() => {
+  if (props.allowEmpty && !hasModelValue.value) return ''
   const y = localYear.value
   const m = String(localMonth.value).padStart(2, '0')
   const d = String(localDay.value).padStart(2, '0')
@@ -116,6 +123,8 @@ const dateInputValue = computed(() => {
 })
 
 const summaryLabel = computed(() => {
+  if (props.allowEmpty && !hasModelValue.value) return props.label
+
   const y = localYear.value
   const mLabel = selectedMonthLabel.value
   const d = localDay.value
@@ -170,6 +179,12 @@ function onDateInput(e) {
 }
 
 function updateModel(next) {
+  if (props.allowEmpty && (!next.year || !next.month || !next.day)) {
+    emit('update:modelValue', { year: null, month: null, day: null })
+    emit('change', { year: null, month: null, day: null })
+    return
+  }
+
   const fixed = {
     year: next.year || currentYear,
     month: next.month || currentMonth,
@@ -294,7 +309,9 @@ function stepPeriod(delta) {
                  disabled:opacity-50"
         >
           <i class="far fa-calendar-alt text-slate-400 text-[12px]"></i>
-          <span class="whitespace-nowrap">{{ selectedMonthLabel.toUpperCase() }} - {{ localYear }}</span>
+          <span class="whitespace-nowrap">
+            {{ allowEmpty && !hasModelValue ? 'Select Month' : `${selectedMonthLabel.toUpperCase()} - ${localYear}` }}
+          </span>
           <i class="far fa-chevron-down text-[10px] text-slate-400"></i>
         </button>
 
@@ -350,7 +367,11 @@ function stepPeriod(delta) {
         >
           <i class="far fa-calendar text-slate-400 text-[12px]"></i>
           <span class="whitespace-nowrap">
-            {{ selectedDateLabel }} {{ selectedMonthLabel.toUpperCase() }} {{ localYear }}
+            {{
+              allowEmpty && !hasModelValue
+                ? 'Select Date'
+                : `${selectedDateLabel} ${selectedMonthLabel.toUpperCase()} ${localYear}`
+            }}
           </span>
           <i class="far fa-chevron-down text-[10px] text-slate-400"></i>
         </button>
@@ -427,7 +448,9 @@ function stepPeriod(delta) {
           >
             <span class="flex items-center gap-2 min-w-0">
               <i class="far fa-calendar-alt text-slate-400"></i>
-              <span class="truncate">{{ selectedMonthLabel }} - {{ localYear }}</span>
+              <span class="truncate">
+                {{ allowEmpty && !hasModelValue ? 'Select Month' : `${selectedMonthLabel} - ${localYear}` }}
+              </span>
             </span>
             <i class="far fa-chevron-down text-[10px] text-slate-400"></i>
           </button>
@@ -453,7 +476,9 @@ function stepPeriod(delta) {
           >
             <span class="flex items-center gap-2 min-w-0">
               <i class="far fa-calendar text-slate-400"></i>
-              <span class="truncate">{{ selectedDateLabel }} - {{ selectedMonthLabel }}</span>
+              <span class="truncate">
+                {{ allowEmpty && !hasModelValue ? 'Select Date' : `${selectedDateLabel} - ${selectedMonthLabel}` }}
+              </span>
             </span>
             <i class="far fa-chevron-down text-[10px] text-slate-400"></i>
           </button>

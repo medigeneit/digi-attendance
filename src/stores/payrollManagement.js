@@ -79,6 +79,51 @@ export const usePayrollManagementStore = defineStore('payrollManagement', () => 
     }
   }
 
+  const updateAdvanceDeduction = async (id, payload) => {
+    loading.value = true
+    error.value = null
+    try {
+      const res = await apiClient.patch(`/payrolls/${id}/advance-deduction`, payload)
+      if (item.value && item.value.id === id) {
+        item.value = { ...item.value, ...res.data?.data || res.data }
+      }
+      const idx = list.value.findIndex((r) => r.id === id)
+      if (idx !== -1) {
+        list.value[idx] = { ...list.value[idx], ...res.data?.data || res.data }
+      }
+      return res.data
+    } catch (err) {
+      const e = toError(err, 'Failed to update advance deduction')
+      error.value = e.message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const addArrear = async (id, payload) => {
+    loading.value = true
+    error.value = null
+    try {
+      const res = await apiClient.post(`/payrolls/${id}/arrears`, payload)
+      const updated = res.data?.data || res.data
+      if (item.value && item.value.id === id) {
+        item.value = { ...item.value, ...updated }
+      }
+      const idx = list.value.findIndex((r) => r.id === id)
+      if (idx !== -1) {
+        list.value[idx] = { ...list.value[idx], ...updated }
+      }
+      return res.data
+    } catch (err) {
+      const e = toError(err, 'Failed to save arrear')
+      error.value = e.message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
   const downloadExcel = async (params = {}) => {
     loading.value = true
     error.value = null
@@ -107,5 +152,17 @@ export const usePayrollManagementStore = defineStore('payrollManagement', () => 
     }
   }
 
-  return { list, item, loading, error, pagination, fetchList, fetchItem, updatePaymentStatus, downloadExcel }
+  return {
+    list,
+    item,
+    loading,
+    error,
+    pagination,
+    fetchList,
+    fetchItem,
+    updatePaymentStatus,
+    updateAdvanceDeduction,
+    addArrear,
+    downloadExcel,
+  }
 })

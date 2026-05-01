@@ -1,5 +1,6 @@
 <script setup>
 import { formatCurrency } from '@/utils/currency'
+import { isPfAllowanceRow } from '@/utils/salaryPolicy'
 import { computed, ref } from 'vue'
 
 const props = defineProps({
@@ -8,7 +9,7 @@ const props = defineProps({
 })
 
 const activeAllowances = computed(() =>
-  (props.structure?.allowances || []).filter((item) => item.is_active),
+  (props.structure?.allowances || []).filter((item) => item.is_active && !isPfAllowanceRow(item)),
 )
 
 const inactiveAllowanceCount = computed(

@@ -53,35 +53,54 @@ const schedule = computed(() => {
     })
   }
 
-  const { loan_amount, installment_amount, total_installments, start_month } = props.loan
+  const {
+    loan_amount,
+    installment_amount,
+    total_installments,
+    start_month,
+    opening_paid_installments,
+  } = props.loan
   if (!loan_amount || !installment_amount || !total_installments || !start_month) return []
 
   const result = []
   let remaining = parseFloat(loan_amount) || 0
   const [year, month] = start_month.split('-').map(Number)
   const total = parseInt(total_installments, 10)
+  const openingPaid = Math.max(0, Math.min(parseInt(opening_paid_installments || 0, 10), total))
 
   for (let i = 0; i < total; i++) {
     const d = new Date(year, month - 1 + i, 1)
     const m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
     const amount = Math.min(parseFloat(installment_amount) || 0, remaining)
     remaining = Math.max(0, remaining - amount)
-    result.push({ month: m, amount, remaining_after: remaining, no: i + 1 })
+    result.push({
+      month: m,
+      amount,
+      remaining_after: remaining,
+      no: i + 1,
+      status: i < openingPaid ? 'Paid' : 'Pending',
+    })
   }
   return result
 })
 
 const paid = computed(() => {
-  if (!props.installments) return 0
-  return props.installments.filter((i) => i.status === 'paid').length
+  return schedule.value.filter((i) =>
+    ['paid', 'deducted'].includes(String(i.status || '').toLowerCase()),
+  ).length
 })
+
+const showStatusColumn = computed(() => Boolean(props.installments) || paid.value > 0)
+
+const isPaidInstallment = (status) =>
+  ['paid', 'deducted'].includes(String(status || '').toLowerCase())
 </script>
 
 <template>
   <div>
     <div class="flex items-center justify-between mb-3">
       <h3 class="font-semibold text-blue-900">Installment Schedule</h3>
-      <span v-if="props.installments" class="text-xs text-gray-500">
+      <span v-if="showStatusColumn" class="text-xs text-gray-500">
         Paid: {{ paid }} / {{ schedule.length }}
       </span>
     </div>
@@ -98,7 +117,7 @@ const paid = computed(() => {
             <th class="px-3 py-2 text-left">Month</th>
             <th class="px-3 py-2 text-right">Installment</th>
             <th class="px-3 py-2 text-right">Remaining Balance</th>
-            <th v-if="props.installments" class="px-3 py-2 text-center">Status</th>
+            <th v-if="showStatusColumn" class="px-3 py-2 text-center">Status</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
@@ -106,7 +125,7 @@ const paid = computed(() => {
             v-for="inst in schedule"
             :key="`${inst.no}-${inst.month}`"
             class="hover:bg-gray-50 transition-colors"
-            :class="inst.status === 'paid' ? 'bg-emerald-50/40' : ''"
+            :class="isPaidInstallment(inst.status) ? 'bg-emerald-50/40' : ''"
           >
             <td class="px-3 py-2 text-center text-gray-500 text-xs">{{ inst.no || '—' }}</td>
             <td class="px-3 py-2 font-medium">{{ inst.month || '—' }}</td>
@@ -114,11 +133,11 @@ const paid = computed(() => {
             <td class="px-3 py-2 text-right font-mono text-gray-600">
               {{ formatCurrency(inst.remaining_after) }}
             </td>
-            <td v-if="props.installments" class="px-3 py-2 text-center">
+            <td v-if="showStatusColumn" class="px-3 py-2 text-center">
               <span
                 class="px-2 py-0.5 rounded-full text-xs border font-medium"
                 :class="
-                  inst.status === 'paid'
+                  isPaidInstallment(inst.status)
                     ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                     : 'bg-amber-50 text-amber-700 border-amber-200'
                 "

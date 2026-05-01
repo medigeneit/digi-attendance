@@ -27,10 +27,13 @@ const periodMonthString = computed(() => {
 
 
 const fetchExchanges = () => {
+  const selectedMonth = periodMonthString.value
+
   exchangeStore.fetchExchanges({
     payload: {
       type,
-      date: periodMonthString.value,
+      date: selectedMonth,
+      selectedMonth,
     },
   })
 }
@@ -97,7 +100,6 @@ const goBack = () => {
 
     <div class="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm md:px-6">
       <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-      
         <div>
            <button class="btn-3 order-2 md:order-1" @click="goBack">
             <i class="far fa-arrow-left"></i>
@@ -118,7 +120,7 @@ const goBack = () => {
                 :show-year="false"
                 :show-month="true"
                 :show-date="false"
-                label="Moth"
+                label="Month"
               />
           </div>
         </div>

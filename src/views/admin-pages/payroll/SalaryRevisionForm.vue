@@ -1,12 +1,11 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref, watch, onMounted, nextTick } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useSalaryRevisionStore } from '@/stores/salaryRevision'
 import { useUserStore } from '@/stores/user'
-import AsyncUserCombobox from '@/components/common/AsyncUserCombobox.vue'
 import apiClient from '@/axios'
-import { formatCurrency, toNum } from '@/utils/currency'
+
 import {
   PROVIDENT_FUND_RATE,
   calculateAllowanceTotal,
@@ -18,296 +17,651 @@ import {
   normalizeAllowances,
   normalizeEmploymentType,
   resolvePfDeduction,
-  splitGrossByPolicy,
+  splitGrossByPolicy
 } from '@/utils/salaryPolicy'
 
-const router = useRouter()
-const toast = useToast()
-const revisionStore = useSalaryRevisionStore()
-const userStore = useUserStore()
+import { formatCurrency, toNum } from '@/utils/currency'
+import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 
-const submitting = ref(false)
-const fieldErrors = ref({})
-const currentStructure = ref(null)
-const loadingStructure = ref(false)
-const selectedEmploymentType = ref('')
+const router=useRouter()
+const route=useRoute()
+const toast=useToast()
 
-const userDisplay = ref({ name: null, dept: null })
+const revisionStore=useSalaryRevisionStore()
+const userStore=useUserStore()
 
-const formatEmploymentTypeLabel = (value) => {
-  const normalized = normalizeEmploymentType(value)
-  if (!normalized) return 'Not Set'
-  if (normalized === 'probationary') return 'Probationary'
-  if (normalized === 'part_time') return 'Part Time'
-  return normalized
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ')
+/* ---------------- state ---------------- */
+
+const submitting=ref(false)
+const loadingStructure=ref(false)
+const fieldErrors=ref({})
+const currentStructure=ref(null)
+
+const selectedCompanyId=ref('')
+const selectedDepartmentId=ref('')
+const selectedLineType=ref('all')
+const selectedEmploymentType=ref('')
+const selectedUserProfile=ref(null)
+
+const employeeFilterKey=ref(1)
+const queryHydrated=ref(false)
+
+const DAY_HONORIUM_ALLOWANCE_CODE='DAY_HONORIUM'
+const DAY_HONORIUM_ALLOWANCE_NAME='Day Honorium'
+const DEFAULT_DAY_HONORIUM_AMOUNT=1000
+const BASIC_ONLY_LINE_TYPES=['doctor','academy_body','academic_body']
+
+const normalizeLineType=(value)=>
+ String(value||'')
+  .trim()
+  .toLowerCase()
+  .replace(/[\s-]+/g,'_')
+
+/* ---------------- form ---------------- */
+
+const now=new Date()
+
+const form=ref({
+ user_id:null,
+
+ review_date:
+ `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`,
+
+ effective_month:
+ `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`,
+
+ gross_salary:'',
+ basic_salary:'',
+ house_rent:'',
+ medical_allowance:'',
+ conveyance_allowance:'',
+ pf_deduction:'',
+
+ increment_type:'fixed',
+ increment_value:'',
+ remarks:'',
+
+ allowances:[]
+})
+
+/* ---------------- init from query ---------------- */
+
+async function hydrateFromQuery(){
+
+ const q=route.query
+
+ selectedCompanyId.value=q.company_id
+   ? String(q.company_id)
+   : ''
+
+ selectedDepartmentId.value=q.department_id
+   ? String(q.department_id)
+   : ''
+
+ selectedLineType.value=q.line_type
+   ? String(q.line_type)
+   : 'all'
+
+ form.value.user_id=
+   q.user_id || q.employee_id
+     ? Number(q.user_id || q.employee_id)
+     : null
+
+ await nextTick()
+
+ /* force EmployeeFilter re-render after props ready */
+ employeeFilterKey.value++
+
+ queryHydrated.value=true
 }
 
-const formatLocalDate = (value = new Date()) => {
-  const year = value.getFullYear()
-  const month = `${value.getMonth() + 1}`.padStart(2, '0')
-  const day = `${value.getDate()}`.padStart(2, '0')
-  return `${year}-${month}-${day}`
+onMounted(async()=>{
+ await hydrateFromQuery()
+})
+
+/* ---------------- helpers ---------------- */
+
+function assignEmploymentType(v){
+ selectedEmploymentType.value=v || ''
 }
 
-const formatLocalMonth = (value = new Date()) => {
-  const year = value.getFullYear()
-  const month = `${value.getMonth() + 1}`.padStart(2, '0')
-  return `${year}-${month}`
+function assignUserMeta(user){
+ selectedUserProfile.value=user || null
+ assignEmploymentType(user?.employment_type)
+ if(user?.type){
+  selectedLineType.value=user.type
+ }
 }
 
-const form = ref({
-  user_id: null,
-  review_date: formatLocalDate(),
-  effective_month: formatLocalMonth(),
-  gross_salary: '',
-  basic_salary: '',
-  house_rent: '',
-  medical_allowance: '',
-  conveyance_allowance: '',
-  pf_deduction: '',
-  increment_type: 'fixed',
-  increment_value: '',
-  remarks: '',
-  allowances: [],
+async function fetchEmploymentType(id){
+ if(!id){
+   assignEmploymentType('')
+   return
+ }
+
+ try{
+   const user=await userStore.fetchUser(id)
+   assignUserMeta(user)
+ }catch{
+   assignEmploymentType('')
+   selectedUserProfile.value=null
+ }
+}
+
+const employmentTypeLabel=computed(()=>{
+ const n=normalizeEmploymentType(
+   selectedEmploymentType.value
+ )
+
+ if(!n) return 'Not Set'
+
+ return n
+   .split('_')
+   .map(i=>i.charAt(0).toUpperCase()+i.slice(1))
+   .join(' ')
 })
 
-const fetchUsersFn = (params) =>
-  apiClient
-    .get('/users', { params })
-    .then((r) => (Array.isArray(r.data) ? r.data : r.data?.data || r.data?.users || []))
+const employmentTypeBadgeClass=computed(()=>{
+ const type=normalizeEmploymentType(
+   selectedEmploymentType.value
+ )
 
-const activePolicy = computed(() => getSalaryComponentPolicy(selectedEmploymentType.value))
-const activePolicySummary = computed(() =>
-  activePolicy.value.map((item) => `${Math.round(item.ratio * 100)}% ${item.shortLabel}`).join(', '),
-)
-const activePolicyCompact = computed(() =>
-  activePolicy.value.map((item) => Math.round(item.ratio * 100)).join(' / '),
-)
-const pfAllowedForCurrentEmploymentType = computed(() =>
-  isPfAllowedForEmploymentType(selectedEmploymentType.value),
-)
+ if(type==='permanent')
+   return 'bg-emerald-50 text-emerald-700 ring-emerald-200'
 
-const employmentTypeBadgeClass = computed(() => {
-  const type = normalizeEmploymentType(selectedEmploymentType.value)
-  if (type === 'permanent') return 'bg-emerald-50 text-emerald-700 ring-emerald-200'
-  if (type === 'contract') return 'bg-sky-50 text-sky-700 ring-sky-200'
-  if (type === 'intern') return 'bg-violet-50 text-violet-700 ring-violet-200'
-  if (type === 'probationary') return 'bg-amber-50 text-amber-700 ring-amber-200'
-  return 'bg-slate-100 text-slate-600 ring-slate-200'
+ if(type==='contract')
+   return 'bg-sky-50 text-sky-700 ring-sky-200'
+
+ if(type==='probationary')
+   return 'bg-amber-50 text-amber-700 ring-amber-200'
+
+ return 'bg-slate-100 text-slate-600 ring-slate-200'
 })
 
-const employmentTypeLabel = computed(() => formatEmploymentTypeLabel(selectedEmploymentType.value))
+/* ---------------- policy ---------------- */
 
-const currentPolicyGross = computed(() => {
-  if (!currentStructure.value) return null
-  return calculateCoreGross(currentStructure.value)
-})
-
-const currentGross = computed(() => {
-  if (!currentStructure.value) return null
-  return toNum(currentStructure.value.gross_salary || calculateCoreGross(currentStructure.value))
-})
-
-const currentAllowanceTotal = computed(() =>
-  currentStructure.value ? calculateAllowanceTotal(currentStructure.value.allowances) : 0,
+const activePolicy=computed(
+()=>usesBasicOnlySalaryPolicy.value
+ ? [{ key:'basic_salary', label:'Basic Salary', ratio:1, shortLabel:'Basic' }]
+ : getSalaryComponentPolicy(
+    selectedEmploymentType.value
+   )
 )
 
-const currentBonus = computed(() => {
-  if (!currentStructure.value) return 0
-  return calculateBonusAmount(selectedEmploymentType.value, currentStructure.value.basic_salary)
+const activePolicySummary=computed(
+()=>activePolicy.value
+ .map(i=>`${Math.round(i.ratio*100)}% ${i.shortLabel}`)
+ .join(', ')
+)
+
+const activePolicyCompact=computed(
+()=>activePolicy.value
+ .map(i=>Math.round(i.ratio*100))
+ .join(' / ')
+)
+
+const pfAllowedForCurrentEmploymentType=computed(
+()=>usesBasicOnlySalaryPolicy.value ||
+ isPfAllowedForEmploymentType(
+  selectedEmploymentType.value
+ )
+)
+
+const selectedPayrollLineType=computed(()=>
+ normalizeLineType(
+  selectedUserProfile.value?.type ||
+  currentStructure.value?.user?.type ||
+  selectedLineType.value
+ )
+)
+
+const usesBasicOnlySalaryPolicy=computed(()=>
+ BASIC_ONLY_LINE_TYPES.includes(selectedPayrollLineType.value)
+)
+
+const usesDayHonoriumAllowance=computed(()=>
+ selectedPayrollLineType.value==='doctor'
+)
+
+const deductionTitle=computed(()=>
+ usesBasicOnlySalaryPolicy.value ? 'Somiti Deduction' : 'PF Deduction'
+)
+
+const deductionSummaryTitle=computed(()=>
+ usesBasicOnlySalaryPolicy.value ? 'Net After Somiti' : 'Net After PF'
+)
+
+const deductionSupportText=computed(()=>
+ usesBasicOnlySalaryPolicy.value
+  ? 'Somiti deduction is carried forward manually for doctor or academy body salary.'
+  : `${(PROVIDENT_FUND_RATE*100).toFixed(0)}% of revised basic salary.`
+)
+
+const pageIntroText=computed(()=>
+ usesBasicOnlySalaryPolicy.value
+  ? usesDayHonoriumAllowance.value
+   ? 'Doctor revisions keep gross salary as basic. Increment updates Day Honorium only.'
+   : 'Academy body revisions save gross salary as basic. Bonus and PF auto allowance are not applied.'
+  : `Revise current gross salary directly. Policy breakdown: ${activePolicySummary.value}. PF is 5% of basic.`
+)
+
+const revisionRuleText=computed(()=>
+ usesBasicOnlySalaryPolicy.value
+  ? usesDayHonoriumAllowance.value
+   ? 'Increment changes Day Honorium allowance. Gross and basic salary stay unchanged.'
+   : 'Increment changes saved gross/basic salary. Somiti deduction carries forward.'
+  : 'Increment changes the saved gross salary. Component split and PF are recalculated automatically.'
+)
+
+const incrementSupportText=computed(()=>
+ usesDayHonoriumAllowance.value
+  ? 'Applied on current Day Honorium.'
+  : 'Applied on current gross.'
+)
+
+const revisedGrossSupportText=computed(()=>
+ usesDayHonoriumAllowance.value
+  ? 'Doctor gross/basic salary stays unchanged.'
+  : 'This gross salary is saved directly.'
+)
+
+const currentGross=computed(()=>{
+ if(!currentStructure.value) return 0
+
+ return toNum(
+   currentStructure.value.gross_salary ||
+   calculateCoreGross(
+     currentStructure.value
+   )
+ )
 })
 
-const currentPfDeduction = computed(() => {
-  if (!currentStructure.value) return null
-  return resolvePfDeduction(currentStructure.value)
+const currentPolicyGross=computed(()=>{
+ if(!currentStructure.value) return 0
+ return calculateCoreGross(
+   currentStructure.value
+ )
 })
 
-const incrementAmount = computed(() => {
-  const value = toNum(form.value.increment_value)
-  if (!currentGross.value || value <= 0) return 0
+const currentPfDeduction=computed(()=>{
+ if(!currentStructure.value) return 0
+ return resolvePfDeduction(
+   currentStructure.value
+ )
+})
 
-  if (form.value.increment_type === 'percentage') {
-    return Number.parseFloat(((currentGross.value * value) / 100).toFixed(2))
+const currentAllowanceTotal=computed(()=>{
+ if(!currentStructure.value) return 0
+ return calculateAllowanceTotal(
+  currentStructure.value.allowances
+ )
+})
+
+const currentDayHonoriumAllowance=computed(()=>{
+ if(!currentStructure.value) return null
+
+ return (currentStructure.value.allowances || [])
+  .find(row=>isDayHonoriumAllowanceRow(row)) || null
+})
+
+const currentDayHonoriumAmount=computed(()=>{
+ if(!usesDayHonoriumAllowance.value) return 0
+
+ if(!currentDayHonoriumAllowance.value)
+  return DEFAULT_DAY_HONORIUM_AMOUNT
+
+ return toNum(currentDayHonoriumAllowance.value.amount)
+})
+
+const revisedAllowanceTotal=computed(()=>
+ calculateAllowanceTotal(form.value.allowances)
+)
+
+/* ---------------- increment ---------------- */
+
+const incrementAmount=computed(()=>{
+ const val=toNum(form.value.increment_value)
+ const base=usesDayHonoriumAllowance.value
+  ? currentDayHonoriumAmount.value
+  : currentGross.value
+
+ if(val<=0)
+   return 0
+
+ if(form.value.increment_type==='percentage'){
+   if(!base) return 0
+
+   return Number(
+     ((base*val)/100)
+      .toFixed(2)
+   )
+ }
+
+ return val
+})
+
+const revisedDayHonoriumAmount=computed(()=>
+ usesDayHonoriumAllowance.value
+  ? Number(
+     (currentDayHonoriumAmount.value+incrementAmount.value)
+      .toFixed(2)
+    )
+  : 0
+)
+
+const revisedGross=computed(
+()=>Number(
+((currentGross.value||0)+(usesDayHonoriumAllowance.value ? 0 : incrementAmount.value))
+.toFixed(2)
+)
+)
+
+const revisedBonus=computed(
+()=>usesBasicOnlySalaryPolicy.value
+ ? 0
+ : calculateBonusAmount(
+    selectedEmploymentType.value,
+    form.value.basic_salary
+   )
+)
+
+const revisedNetPayable=computed(
+()=>Math.max(
+0,
+(usesBasicOnlySalaryPolicy.value
+ ? revisedGross.value+revisedAllowanceTotal.value
+ : revisedGross.value)-
+ toNum(form.value.pf_deduction)
+)
+)
+
+const componentCards=computed(
+()=>activePolicy.value.map(item=>({
+ ...item,
+ currentAmount:currentStructure.value
+   ? toNum(currentStructure.value[item.key])
+   :0,
+ revisedAmount:toNum(
+   form.value[item.key]
+ )
+}))
+)
+
+const isDayHonoriumAllowanceRow=(allowance={})=>{
+ const code=String(allowance?.allowance_code||'').trim().toUpperCase()
+ const name=String(allowance?.allowance_name||'').trim().toLowerCase()
+ return code===DAY_HONORIUM_ALLOWANCE_CODE ||
+  name===DAY_HONORIUM_ALLOWANCE_NAME.toLowerCase()
+}
+
+function normalizeRevisionAllowances(allowances=[]){
+ const rows=normalizeAllowances(allowances)
+
+ if(!usesDayHonoriumAllowance.value){
+  return rows.filter(row=>!isDayHonoriumAllowanceRow(row))
+ }
+
+ const existingIndex=rows.findIndex(row=>isDayHonoriumAllowanceRow(row))
+const dayHonoriumRow={
+  allowance_code:DAY_HONORIUM_ALLOWANCE_CODE,
+  allowance_name:DAY_HONORIUM_ALLOWANCE_NAME,
+  amount:revisedDayHonoriumAmount.value || DEFAULT_DAY_HONORIUM_AMOUNT,
+  is_active:true,
+  remarks:existingIndex!==-1
+   ? rows[existingIndex].remarks || 'Doctor day honorium rate'
+   : 'Doctor day honorium rate'
+ }
+
+ if(existingIndex!==-1){
+  rows[existingIndex]={...rows[existingIndex],...dayHonoriumRow}
+ }else{
+  rows.unshift(dayHonoriumRow)
+ }
+
+ return rows
+}
+
+/* ---------------- breakdown ---------------- */
+
+function applyRevisionBreakdown(){
+
+ if(!currentStructure.value){
+   form.value.basic_salary=''
+   form.value.house_rent=''
+   form.value.medical_allowance=''
+   form.value.conveyance_allowance=''
+   form.value.pf_deduction=''
+   form.value.gross_salary=''
+   return
+ }
+
+ form.value.gross_salary=revisedGross.value
+
+ if(usesBasicOnlySalaryPolicy.value){
+  form.value.basic_salary=revisedGross.value || ''
+  form.value.house_rent=0
+  form.value.medical_allowance=0
+  form.value.conveyance_allowance=0
+  form.value.pf_deduction=
+   currentStructure.value?.pf_deduction ??
+   form.value.pf_deduction ??
+   ''
+  form.value.allowances=normalizeRevisionAllowances(
+   currentStructure.value.allowances
+  )
+  return
+ }
+
+ const breakdown=
+ splitGrossByPolicy(
+   revisedGross.value,
+   selectedEmploymentType.value
+ )
+
+ form.value.basic_salary=
+ breakdown.basic_salary || ''
+
+ form.value.house_rent=
+ breakdown.house_rent || ''
+
+ form.value.medical_allowance=
+ breakdown.medical_allowance || ''
+
+ form.value.conveyance_allowance=
+ breakdown.conveyance_allowance || ''
+
+ form.value.pf_deduction=
+ pfAllowedForCurrentEmploymentType.value
+ ? calculatePfDeduction(
+     breakdown.basic_salary
+   )
+ :''
+
+ form.value.allowances=
+ normalizeRevisionAllowances(
+   currentStructure.value.allowances
+ )
+}
+
+/* ---------------- employee filter sync ---------------- */
+
+function syncQuery(){
+
+ router.replace({
+  query:{
+   company_id:selectedCompanyId.value||undefined,
+   department_id:selectedDepartmentId.value||undefined,
+   line_type:selectedLineType.value||undefined,
+   employee_id:form.value.user_id||undefined,
+   user_id:form.value.user_id||undefined
   }
-
-  return value
-})
-
-const revisedGross = computed(() =>
-  Number.parseFloat(((currentGross.value || 0) + incrementAmount.value).toFixed(2)),
-)
-
-const revisedBonus = computed(() =>
-  calculateBonusAmount(selectedEmploymentType.value, form.value.basic_salary),
-)
-
-const revisedNetPayable = computed(() =>
-  Math.max(0, revisedGross.value - toNum(form.value.pf_deduction)),
-)
-
-const componentCards = computed(() =>
-  activePolicy.value.map((item) => ({
-    ...item,
-    currentAmount: currentStructure.value ? toNum(currentStructure.value[item.key]) : 0,
-    revisedAmount: toNum(form.value[item.key]),
-  })),
-)
-
-const assignEmploymentType = (value) => {
-  selectedEmploymentType.value = value || ''
+ })
 }
 
-const fetchEmploymentType = async (userId) => {
-  if (!userId) {
-    assignEmploymentType('')
-    return
-  }
+function handleEmployeeFilterChange(payload={}){
 
-  try {
-    const user = await userStore.fetchUser(userId)
-    assignEmploymentType(user?.employment_type)
-  } catch (_) {
-    assignEmploymentType('')
-  }
+ selectedCompanyId.value=
+ payload.company_id || ''
+
+ selectedDepartmentId.value=
+ payload.department_id || ''
+
+ selectedLineType.value=
+ payload.line_type || 'all'
+
+ form.value.user_id=
+ payload.employee_id || null
+
+ if(!form.value.user_id){
+  selectedUserProfile.value=null
+  assignEmploymentType('')
+ }
+
+ syncQuery()
 }
 
-const applyRevisionBreakdown = () => {
-  if (!currentStructure.value) {
-    form.value.gross_salary = ''
-    form.value.basic_salary = ''
-    form.value.house_rent = ''
-    form.value.medical_allowance = ''
-    form.value.conveyance_allowance = ''
-    form.value.pf_deduction = ''
-    form.value.allowances = []
-    return
-  }
-
-  form.value.gross_salary = revisedGross.value
-
-  const breakdown = splitGrossByPolicy(revisedGross.value, selectedEmploymentType.value)
-  form.value.basic_salary = breakdown.basic_salary || ''
-  form.value.house_rent = breakdown.house_rent || ''
-  form.value.medical_allowance = breakdown.medical_allowance || ''
-  form.value.conveyance_allowance = breakdown.conveyance_allowance || ''
-  form.value.pf_deduction =
-    pfAllowedForCurrentEmploymentType.value && revisedGross.value
-    ? calculatePfDeduction(breakdown.basic_salary)
-    : ''
-  form.value.allowances = normalizeAllowances(currentStructure.value.allowances)
-}
+/* ---------------- load structure ---------------- */
 
 watch(
-  () => form.value.user_id,
-  async (userId) => {
-    currentStructure.value = null
-    assignEmploymentType('')
-    applyRevisionBreakdown()
+()=>form.value.user_id,
+async(id)=>{
 
-    if (!userId) return
+ if(!queryHydrated.value && !id) return
 
-    loadingStructure.value = true
+ currentStructure.value=null
 
-    try {
-      const response = await apiClient.get('/salary-structures', {
-        params: { user_id: userId, is_active: 1, per_page: 1 },
-      })
-      const data = response.data
-      const list = Array.isArray(data) ? data : data?.data || []
+ if(!id) return
 
-      if (list.length) {
-        currentStructure.value = list[0]
-        assignEmploymentType(list[0]?.user?.employment_type)
-        if (!selectedEmploymentType.value) {
-          await fetchEmploymentType(userId)
-        }
-        applyRevisionBreakdown()
-      }
-    } catch (_) {
-      currentStructure.value = null
-      applyRevisionBreakdown()
-    } finally {
-      loadingStructure.value = false
-    }
-  },
+ loadingStructure.value=true
+
+ try{
+
+ const res=await apiClient.get(
+ '/salary-structures',
+ {
+  params:{
+   user_id:id,
+   is_active:1,
+   per_page:1
+  }
+ })
+
+ const rows=res.data?.data || []
+
+ if(rows.length){
+
+  currentStructure.value=rows[0]
+
+  if(rows[0]?.user){
+   assignUserMeta(rows[0].user)
+  }else{
+   assignEmploymentType(
+    rows[0]?.user?.employment_type
+   )
+  }
+
+  if(!selectedEmploymentType.value || !selectedUserProfile.value?.type){
+   await fetchEmploymentType(id)
+  }
+
+  applyRevisionBreakdown()
+ }
+
+ }finally{
+  loadingStructure.value=false
+}
+
+},
+{ immediate:true }
 )
 
 watch(
-  [
-    currentGross,
-    () => form.value.increment_type,
-    () => form.value.increment_value,
-    selectedEmploymentType,
-  ],
-  () => {
-    applyRevisionBreakdown()
-  },
+[
+currentGross,
+()=>form.value.increment_type,
+()=>form.value.increment_value,
+selectedEmploymentType,
+selectedPayrollLineType
+],
+()=>{
+applyRevisionBreakdown()
+}
 )
 
-const validate = () => {
-  const errors = {}
+/* ---------------- submit ---------------- */
 
-  if (!form.value.user_id) errors.user_id = 'Employee is required.'
-  if (!currentStructure.value) {
-    errors.user_id = 'An active salary structure is required before revision.'
-  }
-  if (!form.value.review_date) errors.review_date = 'Review date is required.'
-  if (!form.value.effective_month) errors.effective_month = 'Effective month is required.'
-  if (!form.value.increment_value && form.value.increment_value !== 0) {
-    errors.increment_value = 'Increment value is required.'
-  }
-  if (toNum(form.value.increment_value) <= 0) {
-    errors.increment_value = 'Increment value must be greater than zero.'
-  }
+function validate(){
 
-  fieldErrors.value = errors
-  return !Object.keys(errors).length
+ const errors={}
+
+ if(!form.value.user_id){
+  errors.user_id='Employee required'
+ }
+
+ if(
+ toNum(form.value.increment_value)<=0
+ ){
+  errors.increment_value=
+  'Increment must be greater than zero'
+ }
+
+ fieldErrors.value=errors
+
+ return !Object.keys(errors).length
 }
 
-const handleSubmit = async () => {
-  if (!validate()) return
+async function handleSubmit(){
 
-  submitting.value = true
+ if(!validate()) return
 
-  try {
-    const payload = {
-      ...form.value,
-      gross_salary: toNum(form.value.gross_salary),
-      basic_salary: toNum(form.value.basic_salary),
-      house_rent: toNum(form.value.house_rent),
-      medical_allowance: toNum(form.value.medical_allowance),
-      conveyance_allowance: toNum(form.value.conveyance_allowance),
-      pf_deduction: toNum(form.value.pf_deduction),
-      increment_value: toNum(form.value.increment_value),
-      allowances: normalizeAllowances(form.value.allowances),
-    }
+ submitting.value=true
 
-    await revisionStore.createRevision(payload)
-    toast.success('Salary revision created. New structure has been applied.')
-    router.push({ name: 'PayrollSalaryStructureList' })
-  } catch (error) {
-    if (error.errors) fieldErrors.value = error.errors
-    toast.error(error.message)
-  } finally {
-    submitting.value = false
-  }
+ try{
+
+ await revisionStore.createRevision({
+   ...form.value,
+   gross_salary:toNum(form.value.gross_salary),
+   basic_salary:toNum(form.value.basic_salary),
+   house_rent:toNum(form.value.house_rent),
+   medical_allowance:toNum(form.value.medical_allowance),
+   conveyance_allowance:toNum(form.value.conveyance_allowance),
+   pf_deduction:toNum(form.value.pf_deduction),
+   increment_value:toNum(form.value.increment_value),
+   allowances:normalizeRevisionAllowances(
+      form.value.allowances
+   )
+ })
+
+ toast.success(
+ 'Salary revision created successfully'
+ )
+
+ router.push({
+  name:'PayrollSalaryStructureList'
+ })
+
+ }catch(e){
+ toast.error(
+ e.message || 'Failed'
+ )
+ }finally{
+ submitting.value=false
+ }
+
 }
 
-const inputClass =
-  'w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-700 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100'
+const inputClass=
+'w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm'
 </script>
 
 <template>
-  <div class="mx-auto max-w-5xl space-y-4 p-4 md:p-6">
+  <div class="mx-auto max-w-7xl space-y-3 p-3 md:p-4">
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div>
         <p class="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-700">Salary Revision</p>
         <h1 class="mt-1 text-2xl font-semibold text-slate-900">Create Salary Revision</h1>
         <p class="mt-1 text-sm text-slate-500">
-          Revise current gross salary directly. Policy breakdown: {{ activePolicySummary }}. PF is 5% of basic.
+          {{ pageIntroText }}
         </p>
       </div>
 
@@ -323,74 +677,47 @@ const inputClass =
       </div>
     </div>
 
-    <section class="grid gap-3 md:grid-cols-4">
-      <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Current Gross</p>
-        <p class="mt-1 font-mono text-xl font-semibold text-slate-900">{{ formatCurrency(currentGross) }}</p>
-        <p class="mt-1 text-xs text-slate-500">Active saved gross salary.</p>
-      </div>
-
-      <div class="rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-3 shadow-sm">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-700">Increment</p>
-        <p class="mt-1 font-mono text-xl font-semibold text-cyan-900">{{ formatCurrency(incrementAmount) }}</p>
-        <p class="mt-1 text-xs text-cyan-700">Applied on current gross.</p>
-      </div>
-
-      <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Revised Gross</p>
-        <p class="mt-1 font-mono text-xl font-semibold text-slate-900">{{ formatCurrency(revisedGross) }}</p>
-        <p class="mt-1 text-xs text-slate-500">This gross salary is saved directly.</p>
-      </div>
-
-      <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Net After PF</p>
-        <p class="mt-1 font-mono text-xl font-semibold text-emerald-700">{{ formatCurrency(revisedNetPayable) }}</p>
-        <p class="mt-1 text-xs text-slate-500">Revised gross minus PF deduction.</p>
-      </div>
-    </section>
-
-    <form @submit.prevent="handleSubmit" class="space-y-4">
-      <div class="grid gap-4 xl:grid-cols-[0.92fr_0.88fr]">
-        <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div class="mb-4 flex items-center justify-between gap-3">
-            <div>
-              <h2 class="text-sm font-semibold text-slate-900">Employee Setup</h2>
-              <p class="text-xs text-slate-500">Select employee and review the active structure.</p>
-            </div>
-            <span
-              class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1"
-              :class="employmentTypeBadgeClass"
-            >
-              {{ employmentTypeLabel }}
-            </span>
+    <form @submit.prevent="handleSubmit" class="space-y-3">
+      <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm space-y-3">
+        <div class="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h2 class="text-sm font-semibold text-slate-900">Employee Setup</h2>
           </div>
+          <span
+            class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1"
+            :class="employmentTypeBadgeClass"
+          >
+            {{ employmentTypeLabel }}
+          </span>
+        </div>
+        <EmployeeFilter
+          :key="employeeFilterKey"
+          :company_id="selectedCompanyId"
+          :department_id="selectedDepartmentId"
+          :line_type="selectedLineType"
+          :employee_id="form.user_id"
+          @filter-change="handleEmployeeFilterChange"
+          />
+      </div>
+      <div class="grid items-start gap-3 xl:grid-cols-[0.92fr_0.88fr]">
+        <section class="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm">
 
           <div class="space-y-4">
-            <div>
-              <label class="mb-1 block text-sm font-medium text-slate-700">
-                Employee <span class="text-red-500">*</span>
-              </label>
-              <AsyncUserCombobox
-                v-model="form.user_id"
-                v-model:display="userDisplay"
-                :fetcher="fetchUsersFn"
-                placeholder="Search by name or employee ID..."
-              />
-              <p v-if="fieldErrors.user_id" class="mt-1 text-xs text-red-500">
-                {{ fieldErrors.user_id }}
-              </p>
-            </div>
+           
+            <p v-if="fieldErrors.user_id" class="mt-1 text-xs text-red-500">
+              {{ fieldErrors.user_id }}
+            </p>
 
             <div class="grid gap-3">
-              <div class="rounded-xl bg-slate-50 px-3 py-2">
+              <!-- <div class="rounded-xl bg-slate-50 px-3 py-2">
                 <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Department</p>
                 <p class="mt-1 text-sm font-medium text-slate-800">{{ userDisplay.dept || 'Not selected' }}</p>
-              </div>
+              </div> -->
 
               <div class="rounded-xl bg-slate-50 px-3 py-2">
                 <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Revision Rule</p>
                 <p class="mt-1 text-xs font-medium text-slate-800">
-                  Increment changes the saved gross salary. Component split and PF are recalculated automatically.
+                  {{ revisionRuleText }}
                 </p>
               </div>
 
@@ -423,7 +750,7 @@ const inputClass =
                     <p class="mt-1 font-mono text-sm font-semibold text-slate-900">{{ formatCurrency(currentPolicyGross) }}</p>
                   </div>
                   <div class="rounded-lg bg-white px-3 py-2 ring-1 ring-slate-200">
-                    <p class="text-[11px] text-slate-400">Current PF</p>
+                    <p class="text-[11px] text-slate-400">Current {{ usesBasicOnlySalaryPolicy ? 'Somiti' : 'PF' }}</p>
                     <p class="mt-1 font-mono text-sm font-semibold text-slate-900">{{ formatCurrency(currentPfDeduction) }}</p>
                   </div>
                 </div>
@@ -458,10 +785,38 @@ const inputClass =
                 </p>
               </div>
             </div>
+
+            <section class="grid gap-2 sm:grid-cols-1 xl:grid-cols-2">
+              <div class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
+                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Current Gross</p>
+                <p class="mt-1 font-mono text-lg font-semibold text-slate-900">{{ formatCurrency(currentGross) }}</p>
+                <p class="mt-1 text-xs text-slate-500">Active saved gross salary.</p>
+              </div>
+
+              <div class="rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2.5 shadow-sm">
+                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-700">Increment</p>
+                <p class="mt-1 font-mono text-lg font-semibold text-cyan-900">{{ formatCurrency(incrementAmount) }}</p>
+                <p class="mt-1 text-xs text-cyan-700">{{ incrementSupportText }}</p>
+              </div>
+
+              <div class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
+                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Revised Gross</p>
+                <p class="mt-1 font-mono text-lg font-semibold text-slate-900">{{ formatCurrency(revisedGross) }}</p>
+                <p class="mt-1 text-xs text-slate-500">{{ revisedGrossSupportText }}</p>
+              </div>
+
+              <div class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
+                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{{ deductionSummaryTitle }}</p>
+                <p class="mt-1 font-mono text-lg font-semibold text-emerald-700">{{ formatCurrency(revisedNetPayable) }}</p>
+                <p class="mt-1 text-xs text-slate-500">
+                  {{ usesBasicOnlySalaryPolicy ? 'Revised gross plus allowances minus Somiti deduction.' : 'Revised gross minus PF deduction.' }}
+                </p>
+              </div>
+            </section>
           </div>
         </section>
 
-        <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <section class="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm">
           <div class="mb-4 flex items-center justify-between gap-3">
             <div>
               <h2 class="text-sm font-semibold text-slate-900">Revision Calculator</h2>
@@ -472,7 +827,7 @@ const inputClass =
             </div>
           </div>
 
-          <div class="space-y-4">
+          <div class="space-y-3.5">
             <div class="grid gap-3 sm:grid-cols-[1fr_1.1fr]">
               <div>
                 <label class="mb-2 block text-sm font-medium text-slate-700">Increment Type</label>
@@ -534,7 +889,9 @@ const inputClass =
                 <div class="flex items-start justify-between gap-3">
                   <div>
                     <p class="text-sm font-medium text-slate-700">{{ item.shortLabel }}</p>
-                    <p class="text-[11px] text-slate-400">{{ Math.round(item.ratio * 100) }}% of revised gross</p>
+                    <p class="text-[11px] text-slate-400">
+                      {{ usesBasicOnlySalaryPolicy ? '100% of revised gross' : `${Math.round(item.ratio * 100)}% of revised gross` }}
+                    </p>
                   </div>
                   <div class="text-right">
                     <p class="font-mono text-sm font-semibold text-slate-900">{{ formatCurrency(item.revisedAmount) }}</p>
@@ -543,7 +900,7 @@ const inputClass =
                 </div>
               </div>
 
-              <div class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
+              <div v-if="!usesBasicOnlySalaryPolicy" class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
                 <div class="flex items-start justify-between gap-3">
                   <div>
                     <p class="text-sm font-medium text-amber-800">Bonus</p>
@@ -557,9 +914,9 @@ const inputClass =
             <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
               <div class="flex items-start justify-between gap-3">
                 <div>
-                  <p class="text-sm font-semibold text-slate-900">PF Deduction</p>
-                  <p class="mt-1 text-xs text-slate-500">
-                    {{ (PROVIDENT_FUND_RATE * 100).toFixed(0) }}% of revised basic salary.
+                    <p class="text-sm font-semibold text-slate-900">{{ deductionTitle }}</p>
+                    <p class="mt-1 text-xs text-slate-500">
+                    {{ deductionSupportText }}
                   </p>
                 </div>
                 <div class="text-right">
@@ -581,11 +938,13 @@ const inputClass =
         <div class="mb-4 flex items-center justify-between gap-3">
           <div>
             <h2 class="text-sm font-semibold text-slate-900">Preserved Additional Allowances</h2>
-            <p class="text-xs text-slate-500">Existing additional allowances carry forward unchanged.</p>
+            <p class="text-xs text-slate-500">
+              {{ usesDayHonoriumAllowance ? 'Day Honorium is revised here. Other allowances carry forward unchanged.' : 'Existing additional allowances carry forward unchanged.' }}
+            </p>
           </div>
           <div class="rounded-xl bg-slate-50 px-3 py-2 text-right">
             <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Allowance Total</p>
-            <p class="mt-1 font-mono text-sm font-semibold text-slate-900">{{ formatCurrency(currentAllowanceTotal) }}</p>
+            <p class="mt-1 font-mono text-sm font-semibold text-slate-900">{{ formatCurrency(revisedAllowanceTotal) }}</p>
           </div>
         </div>
 

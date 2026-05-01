@@ -90,5 +90,6 @@ const hasAccessTo = (routeName) => {
       <i class="fas fa-user-clock text-3xl"></i>
       Weekly Leave Histories
     </RouterLink>
+    
   </div>
 </template>

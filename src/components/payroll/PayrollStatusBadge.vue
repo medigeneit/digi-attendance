@@ -8,6 +8,12 @@ const props = defineProps({
 const info = computed(() => {
   const s = (props.status || '').toLowerCase()
   const map = {
+    pending: {
+      cls: 'bg-amber-50 text-amber-700 border-amber-200',
+      icon: 'fa-clock',
+      label: 'Pending',
+      iconOnly: true,
+    },
     paid: {
       cls: 'bg-emerald-50 text-emerald-700 border-emerald-200',
       icon: 'fa-check-circle',
@@ -44,6 +50,7 @@ const info = computed(() => {
       cls: 'bg-slate-100 text-slate-600 border-slate-200',
       icon: 'fa-circle',
       label: props.status || '—',
+      iconOnly: false,
     }
   )
 })
@@ -55,6 +62,6 @@ const info = computed(() => {
     :class="info.cls"
   >
     <i :class="`fas ${info.icon} text-[10px]`"></i>
-    {{ info.label }}
+    <span v-if="!info.iconOnly">{{ info.label }}</span>
   </span>
 </template>
