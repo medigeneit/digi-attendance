@@ -25,9 +25,6 @@ onMounted(async () => {
     await authStore.fetchUser()
   }
   await userStore.fetchUserDashboardData()
-  if (isAdmin.value) {
-    await userStore.fetchAdminDashboardData()
-  }
 
   // Get first unread notice
   const firstUnread = userDashboard.value?.notices?.find((n) => !n.user_feedback)
