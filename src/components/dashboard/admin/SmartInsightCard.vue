@@ -28,17 +28,17 @@ const tones = {
   danger: {
     border: 'border-rose-100',
     icon: 'bg-rose-50 text-rose-600',
-    fallbackIcon: 'fas fa-triangle-exclamation',
+    fallbackIcon: 'fas fa-exclamation-triangle',
   },
   warning: {
     border: 'border-orange-100',
     icon: 'bg-orange-50 text-orange-600',
-    fallbackIcon: 'fas fa-circle-exclamation',
+    fallbackIcon: 'fas fa-exclamation-circle',
   },
   success: {
     border: 'border-emerald-100',
     icon: 'bg-emerald-50 text-emerald-600',
-    fallbackIcon: 'fas fa-circle-check',
+    fallbackIcon: 'fas fa-check-circle',
   },
   info: {
     border: 'border-blue-100',

@@ -1,8 +1,9 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useUserStore } from '@/stores/user'
-import { useDepartmentStore } from '@/stores/department'
+import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import ChartCard from '@/components/dashboard/admin/ChartCard.vue'
 import DashboardTabs from '@/components/dashboard/admin/DashboardTabs.vue'
 import EmptyState from '@/components/dashboard/admin/EmptyState.vue'
@@ -10,23 +11,39 @@ import KpiCard from '@/components/dashboard/admin/KpiCard.vue'
 import SmartInsightCard from '@/components/dashboard/admin/SmartInsightCard.vue'
 
 const userStore = useUserStore()
-const departmentStore = useDepartmentStore()
 const { dashboardInfo, isLoading } = storeToRefs(userStore)
-const { departments } = storeToRefs(departmentStore)
+const route = useRoute()
+const router = useRouter()
 
-const activeTab = ref('overview')
-const filters = ref({
-  date_filter: 'today',
-  department_id: '',
-})
+const localDate = () => {
+  const date = new Date()
+  const offset = date.getTimezoneOffset()
+  return new Date(date.getTime() - offset * 60000).toISOString().slice(0, 10)
+}
 
 const tabs = [
   { key: 'overview', label: 'Overview' },
   { key: 'attendance', label: 'Attendance & Late' },
   { key: 'leave', label: 'Leave Management' },
   // { key: 'insights', label: 'Smart Insights' },
-  // { key: 'export', label: 'Export Reports' },
+  { key: 'reports', label: 'Reports' },
 ]
+
+const tabKeys = tabs.map((tab) => tab.key)
+const normalizeTab = (value) => {
+  const tab = Array.isArray(value) ? value[0] : value
+  if (tab === 'export') return 'reports'
+  return tabKeys.includes(tab) ? tab : 'overview'
+}
+
+const activeTab = ref(normalizeTab(route.query.tab))
+const filters = ref({
+  date_filter: 'today',
+  custom_date: localDate(),
+  company_id: '',
+  department_id: '',
+  line_type: 'all',
+})
 
 const numberValue = (value) => Number(value ?? 0) || 0
 
@@ -106,13 +123,26 @@ const charts = computed(() => normalized.value.charts)
 const insights = computed(() => normalized.value.insights)
 const topLateEmployees = computed(() => normalized.value.topLateEmployees)
 const leaveTypeDistribution = computed(() => normalized.value.leaveTypeDistribution)
+const summaryLabelSuffix = computed(() => (filters.value.date_filter === 'custom' ? 'Selected Date' : 'Today'))
 
 const filterCopy = computed(() => {
+  if (filters.value.date_filter === 'custom') {
+    const date = filters.value.custom_date || localDate()
+    return {
+      option: 'Specific Date',
+      movement: `Last 7 days workforce movement ending ${date}`,
+      summary: `${date} Summary`,
+      lateDepartment: `${date} late count by department`,
+      leaveDepartment: `${date} approved and pending leave days by department`,
+      leaveDistribution: `${date} leave windows`,
+    }
+  }
+
   if (filters.value.date_filter === 'week') {
     return {
       option: 'Last 7 Days',
       movement: 'Last 7 days workforce movement',
-      summary: 'Last 7 Days Summary',
+      summary: "Today's Summary",
       lateDepartment: 'Last 7 days late count by department',
       leaveDepartment: 'Last 7 days approved and pending leave days by department',
       leaveDistribution: 'Last 7 days leave windows',
@@ -123,7 +153,7 @@ const filterCopy = computed(() => {
     return {
       option: 'Month',
       movement: 'Monthly workforce movement',
-      summary: 'Monthly Summary',
+      summary: "Today's Summary",
       lateDepartment: 'Monthly late count by department',
       leaveDepartment: 'Monthly approved and pending leave days by department',
       leaveDistribution: 'Monthly leave windows',
@@ -142,19 +172,19 @@ const filterCopy = computed(() => {
 
 const overviewCards = computed(() => [
   { label: 'Total Employees', value: kpis.value.total_employees, icon: 'fas fa-users', tone: 'blue', to: { name: 'TodayAttendanceReport', query: { status: 'all' } } },
-  { label: 'Present Today', value: kpis.value.present_today, icon: 'fas fa-user-check', tone: 'green', to: { name: 'TodayAttendanceReport', query: { status: 'Present' } } },
-  { label: 'Absent Today', value: kpis.value.absent_today, icon: 'fas fa-user-xmark', tone: 'red', to: { name: 'TodayAttendanceReport', query: { status: 'Absent' } } },
-  { label: 'On Leave Today', value: kpis.value.on_leave_today, icon: 'fas fa-calendar-check', tone: 'blue', to: { name: 'LeaveApplicationsForDay', query: { applicationType: 'today' } } },
+  { label: `Present ${summaryLabelSuffix.value}`, value: kpis.value.present_today, icon: 'fas fa-user-check', tone: 'green', to: { name: 'TodayAttendanceReport', query: { status: 'Present' } } },
+  { label: `Absent ${summaryLabelSuffix.value}`, value: kpis.value.absent_today, icon: 'fas fa-user-times', tone: 'red', to: { name: 'TodayAttendanceReport', query: { status: 'Absent' } } },
+  { label: `On Leave ${summaryLabelSuffix.value}`, value: kpis.value.on_leave_today, icon: 'fas fa-calendar-check', tone: 'blue', to: { name: 'LeaveApplicationsForDay', query: { applicationType: 'today' } } },
   { label: 'Late', value: kpis.value.late_today, icon: 'fas fa-clock', tone: 'orange', to: { name: 'DailyLateAttendanceReport' } },
-  { label: 'Short Leave', value: kpis.value.short_leave_today, icon: 'fas fa-person-walking-arrow-right', tone: 'purple', to: { name: 'DateWiseShortLeaveList' } },
+  { label: 'Short Leave', value: kpis.value.short_leave_today, icon: 'fas fa-walking', tone: 'purple', to: { name: 'DateWiseShortLeaveList' } },
 ])
 
 const leaveCards = computed(() => [
   { label: 'Today Leave', value: kpis.value.on_leave_today, icon: 'fas fa-calendar-day', tone: 'blue' },
   { label: 'Tomorrow Leave', value: kpis.value.tomorrow_leave, icon: 'fas fa-calendar-plus', tone: 'green' },
   { label: 'Previous Week Leaves', value: kpis.value.prev_week_leaves, icon: 'fas fa-calendar-minus', tone: 'orange' },
-  { label: 'Upcoming Leaves', value: kpis.value.upcoming_leaves, icon: 'fas fa-calendar-days', tone: 'purple' },
-  { label: 'Short Leave', value: kpis.value.short_leave_today, icon: 'fas fa-person-walking-arrow-right', tone: 'red' },
+  { label: 'Upcoming Leaves', value: kpis.value.upcoming_leaves, icon: 'fas fa-calendar-alt', tone: 'purple' },
+  { label: 'Short Leave', value: kpis.value.short_leave_today, icon: 'fas fa-walking', tone: 'red' },
 ])
 
 const summaryRows = computed(() => [
@@ -181,22 +211,103 @@ const leaveTypeCards = computed(() =>
   })),
 )
 
-const dashboardParams = computed(() => ({
-    date_filter: filters.value.date_filter,
-    department_id: filters.value.department_id,
-    summary_only: true,
+const reportCards = computed(() => [
+  {
+    label: 'Today Attendance',
+    description: 'Daily present, absent, late, leave and movement summary.',
+    icon: 'fas fa-calendar-day',
+    tone: 'blue',
+    to: { name: 'TodayAttendanceReport' },
+  },
+  {
+    label: 'Date Wise Attendance',
+    description: 'Attendance summary for a selected day or date range.',
+    icon: 'fas fa-calendar-week',
+    tone: 'green',
+    to: {
+      name: 'DateWiseAttendanceSummaryReport',
+      query: {
+        company_id: '',
+        department_id: 'all',
+        line_type: 'all',
+        employee_id: '',
+        start_date: localDate(),
+        end_date: localDate(),
+      },
+    },
+  },
+  {
+    label: 'Monthly Attendance',
+    description: 'Month based attendance register and staff status.',
+    icon: 'fas fa-clipboard-list',
+    tone: 'purple',
+    to: { name: 'MonthlyAttendanceReport' },
+  },
+  {
+    label: 'Daily Late Report',
+    description: 'Late arrivals calculated with shift grace time.',
+    icon: 'fas fa-clock',
+    tone: 'orange',
+    to: { name: 'DailyLateAttendanceReport' },
+  },
+  {
+    label: 'Monthly Leave Report',
+    description: 'Monthly leave usage, approvals and leave windows.',
+    icon: 'fas fa-calendar-check',
+    tone: 'red',
+    to: { name: 'MonthlyLeaveReport' },
+  },
+  {
+    label: 'Weekly Leave Histories',
+    description: 'Past 5 days and next 5 days leave movement in one view.',
+    icon: 'fas fa-calendar-week',
+    tone: 'blue',
+    to: { name: 'WeekLeaveHistories', query: { past_days: 5, future_days: 5 } },
+  },
+])
+
+const orgParams = computed(() => ({
+  company_id: filters.value.company_id || undefined,
+  department_id: filters.value.department_id || undefined,
+  line_type: filters.value.line_type && filters.value.line_type !== 'all' ? filters.value.line_type : undefined,
 }))
 
+const selectedDateParams = computed(() =>
+  filters.value.date_filter === 'custom'
+    ? {
+        date_filter: 'custom',
+        date: filters.value.custom_date || localDate(),
+      }
+    : { date_filter: 'today' },
+)
+
+const dashboardParams = computed(() => ({
+  ...selectedDateParams.value,
+  ...orgParams.value,
+  summary_only: true,
+}))
+
+let lastRefreshKey = ''
 const refreshDashboard = async () => {
-  await userStore.fetchAdminDashboardData(dashboardParams.value)
   const chartParams = {
     date_filter: filters.value.date_filter,
-    department_id: filters.value.department_id,
+    ...(filters.value.date_filter === 'custom' ? { date: filters.value.custom_date || localDate() } : {}),
+    ...orgParams.value,
   }
   const chartParamsTend = {
-    date_filter: filters.value.date_filter === 'today' ? 'week' : filters.value.date_filter, // For attendance trend, use last 7 days data when 'today' is selected to show meaningful trend
-    department_id: filters.value.department_id,
+    date_filter: ['today', 'custom'].includes(filters.value.date_filter) ? 'week' : filters.value.date_filter, // Trend needs at least 7 days, even for today/specific date.
+    ...(filters.value.date_filter === 'custom' ? { date: filters.value.custom_date || localDate() } : {}),
+    ...orgParams.value,
   }
+  const refreshKey = JSON.stringify({
+    summary: dashboardParams.value,
+    trend: chartParamsTend,
+    analytics: chartParams,
+  })
+  if (refreshKey === lastRefreshKey) return
+  lastRefreshKey = refreshKey
+
+  await userStore.fetchAdminDashboardData(dashboardParams.value)
   await Promise.all([
     userStore.fetchAdminDashboardAttendanceTrend(chartParamsTend),
     userStore.fetchAdminDashboardLeaveAnalytics(chartParams),
@@ -205,10 +316,28 @@ const refreshDashboard = async () => {
 }
 
 onMounted(async () => {
-  await Promise.all([
-    refreshDashboard(),
-    departmentStore.fetchDepartments(),
-  ])
+  await refreshDashboard()
+})
+
+watch(
+  () => route.query.tab,
+  (tab) => {
+    const nextTab = normalizeTab(tab)
+    if (activeTab.value !== nextTab) {
+      activeTab.value = nextTab
+    }
+  },
+)
+
+watch(activeTab, (tab) => {
+  if (normalizeTab(route.query.tab) === tab) return
+
+  router.push({
+    query: {
+      ...route.query,
+      tab,
+    },
+  })
 })
 
 watch(filters, refreshDashboard, { deep: true })
@@ -217,31 +346,42 @@ watch(filters, refreshDashboard, { deep: true })
 <template>
   <div class="min-h-screen bg-slate-50 px-1 py-2 md:px-3">
     <div class="mx-auto max-w-[1440px] space-y-6">
-      <div class="flex flex-col gap-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100 lg:flex-row lg:items-center lg:justify-between">
-        <div>
+      <div class="grid gap-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 xl:grid-cols-[330px_1fr] xl:items-center">
+        <div class="min-w-0">
           <p class="text-xs font-semibold uppercase tracking-wide text-blue-600">Admin Dashboard</p>
-          <h1 class="mt-1 text-2xl font-bold text-slate-950 md:text-3xl">HRM Workforce Dashboard</h1>
-          <p class="mt-1 text-sm text-slate-500">Attendance, leave, late arrivals, todos, and workforce signals.</p>
+          <h1 class="mt-1 text-2xl font-bold leading-tight text-slate-950">HRM Workforce Dashboard</h1>
+          <p class="mt-1 max-w-sm text-sm leading-5 text-slate-500">Attendance, leave, late arrivals, todos, and workforce signals.</p>
         </div>
 
-        <div class="grid gap-3 sm:grid-cols-2">
-          <label class="block">
-            <span class="mb-1 block text-xs font-semibold text-slate-500">Date</span>
-            <select v-model="filters.date_filter" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100">
+        <div class="dashboard-filter-row min-w-0">
+          <label class="min-w-0">
+            <span class="mb-1 block text-xs font-semibold text-slate-500">Date Preset</span>
+            <select v-model="filters.date_filter" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100">
               <option value="today">Today</option>
               <option value="week">Last 7 Days</option>
               <option value="month">Month</option>
+              <option value="custom">Specific Date</option>
             </select>
           </label>
-          <label class="block">
-            <span class="mb-1 block text-xs font-semibold text-slate-500">Department</span>
-            <select v-model="filters.department_id" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100">
-              <option value="">All Departments</option>
-              <option v-for="department in departments" :key="department.id" :value="department.id">
-                {{ department.name }}
-              </option>
-            </select>
+          <label class="min-w-0" :class="filters.date_filter !== 'custom' ? 'opacity-50' : ''">
+            <span class="mb-1 block text-xs font-semibold text-slate-500">Specific Date</span>
+            <input
+              v-model="filters.custom_date"
+              type="date"
+              :disabled="filters.date_filter !== 'custom'"
+              class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+            />
           </label>
+
+          <EmployeeFilter
+            v-model:company_id="filters.company_id"
+            v-model:department_id="filters.department_id"
+            v-model:line_type="filters.line_type"
+            :with-type="true"
+            :with-employee="false"
+            class="dashboard-org-filter"
+            slot-class="hidden"
+          />
         </div>
       </div>
 
@@ -268,7 +408,7 @@ watch(filters, refreshDashboard, { deep: true })
               />
               <ChartCard
                 title="Leave Distribution"
-                subtitle="Current leave windows"
+                :subtitle="filterCopy.leaveDistribution"
                 type="donut"
                 :labels="charts.leave_distribution.labels"
                 :series="charts.leave_distribution.series"
@@ -391,18 +531,22 @@ watch(filters, refreshDashboard, { deep: true })
           <EmptyState v-if="!insights.length" title="No insights" message="Dashboard signals are stable." icon="fas fa-lightbulb" />
         </section>
 
-        <section v-else class="grid gap-4 md:grid-cols-3">
-          <RouterLink :to="{ name: 'TodayAttendanceReport' }" class="export-card">
-            <i class="fas fa-file-export text-blue-600"></i>
-            <span>Export Attendance Report</span>
-          </RouterLink>
-          <RouterLink :to="{ name: 'MonthlyLeaveReport' }" class="export-card">
-            <i class="fas fa-calendar-arrow-down text-emerald-600"></i>
-            <span>Export Leave Report</span>
-          </RouterLink>
-          <RouterLink :to="{ name: 'DailyLateAttendanceReport' }" class="export-card">
-            <i class="fas fa-clock-rotate-left text-orange-600"></i>
-            <span>Export Late Report</span>
+        <section v-else class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <RouterLink
+            v-for="report in reportCards"
+            :key="report.label"
+            :to="report.to"
+            class="report-card"
+            :class="`report-card--${report.tone}`"
+          >
+            <div class="report-card__icon">
+              <i :class="report.icon"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-bold text-slate-950">{{ report.label }}</p>
+              <p class="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{{ report.description }}</p>
+            </div>
+            <i class="fas fa-chevron-right text-xs text-slate-300"></i>
           </RouterLink>
         </section>
       </template>
@@ -411,17 +555,17 @@ watch(filters, refreshDashboard, { deep: true })
 </template>
 
 <style scoped>
-.export-card {
+.report-card {
+  --report-color: #2563eb;
+  --report-bg: #eff6ff;
   display: flex;
-  min-height: 130px;
+  min-height: 112px;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
+  gap: 14px;
+  border-left: 4px solid var(--report-color);
   border-radius: 16px;
   background: #ffffff;
-  padding: 24px;
-  font-size: 15px;
-  font-weight: 700;
+  padding: 18px 20px;
   color: #0f172a;
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
   transition:
@@ -429,8 +573,83 @@ watch(filters, refreshDashboard, { deep: true })
     box-shadow 0.18s ease;
 }
 
-.export-card:hover {
+.report-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 14px 36px rgba(15, 23, 42, 0.11);
+}
+
+.report-card__icon {
+  display: flex;
+  height: 44px;
+  width: 44px;
+  flex: 0 0 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: var(--report-bg);
+  color: var(--report-color);
+}
+
+.report-card--blue {
+  --report-color: #2563eb;
+  --report-bg: #eff6ff;
+}
+
+.report-card--green {
+  --report-color: #10b981;
+  --report-bg: #ecfdf5;
+}
+
+.report-card--purple {
+  --report-color: #8b5cf6;
+  --report-bg: #f5f3ff;
+}
+
+.report-card--teal {
+  --report-color: #14b8a6;
+  --report-bg: #f0fdfa;
+}
+
+.report-card--orange {
+  --report-color: #f97316;
+  --report-bg: #fff7ed;
+}
+
+.report-card--red {
+  --report-color: #f43f5e;
+  --report-bg: #fff1f2;
+}
+
+.dashboard-org-filter {
+  display: contents;
+}
+
+.dashboard-filter-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 0.9fr) minmax(160px, 1fr) minmax(170px, 1fr) minmax(170px, 1fr) minmax(150px, 0.9fr);
+  gap: 12px;
+  align-items: end;
+}
+
+.dashboard-org-filter :deep(.relative.min-w-0) {
+  min-width: 0;
+}
+
+@media (max-width: 1280px) {
+  .dashboard-filter-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-filter-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .dashboard-filter-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 </style>
