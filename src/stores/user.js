@@ -167,10 +167,10 @@ export const useUserStore = defineStore('user', () => {
       isLoading.value = false
     }
   }
-  const fetchAdminDashboardData = async () => {
+  const fetchAdminDashboardData = async (params = {}) => {
     try {
       isLoading.value = true
-      const response = await apiClient.get('/admin-dashboard')
+      const response = await apiClient.get('/admin-dashboard', { params })
       const data = response.data
       if (data) {
         dashboardInfo.value = data
@@ -182,6 +182,50 @@ export const useUserStore = defineStore('user', () => {
     } finally {
       isLoading.value = false
     }
+  }
+
+  const mergeAdminDashboardData = (payload = {}) => {
+    dashboardInfo.value = {
+      ...dashboardInfo.value,
+      ...payload,
+      charts: {
+        ...(dashboardInfo.value?.charts || {}),
+        ...(payload?.charts || {}),
+      },
+    }
+  }
+
+  const fetchAdminDashboardAttendanceTrend = async (params = {}) => {
+    const response = await apiClient.get('/admin-dashboard/attendance-trend', { params })
+    mergeAdminDashboardData({
+      charts: {
+        attendance_trend: response.data,
+      },
+    })
+    return response.data
+  }
+
+  const fetchAdminDashboardLeaveAnalytics = async (params = {}) => {
+    const response = await apiClient.get('/admin-dashboard/leave-analytics', { params })
+    mergeAdminDashboardData({
+      charts: {
+        leave_distribution: response.data?.leave_distribution,
+        leave_department_overview: response.data?.leave_department_overview,
+      },
+      leave_type_distribution: response.data?.leave_type_distribution || [],
+    })
+    return response.data
+  }
+
+  const fetchAdminDashboardLateAnalytics = async (params = {}) => {
+    const response = await apiClient.get('/admin-dashboard/late-analytics', { params })
+    mergeAdminDashboardData({
+      charts: {
+        late_by_department: response.data?.late_by_department,
+      },
+      top_late_employees: response.data?.top_late_employees || [],
+    })
+    return response.data
   }
 
   const createUser = async (payload) => {
@@ -303,6 +347,9 @@ export const useUserStore = defineStore('user', () => {
     deleteUser,
     fetchUserDashboardData,
     fetchAdminDashboardData,
+    fetchAdminDashboardAttendanceTrend,
+    fetchAdminDashboardLeaveAnalytics,
+    fetchAdminDashboardLateAnalytics,
     fetchTypeWiseEmployees,
     fetchDepartmentWiseEmployees,
     fetchHandoverDepartmentWiseEmployees,

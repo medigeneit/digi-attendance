@@ -561,7 +561,7 @@ watch(
             to="/reports"
             custom
             v-slot="{ navigate }"
-            v-if="matchesQuery('Requirements')"
+            v-if="matchesQuery('Reports')"
           >
             <div
               class="side-menu"
