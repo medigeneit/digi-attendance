@@ -86,16 +86,19 @@ const filteredRows = computed(() => {
 
 const selectedRows = computed(() => bulkRows.value.filter((row) => row.is_selected))
 
+const regularAmount = (row) => toNum(bulkForm.value.meal_rate) * toNum(row.total_meal)
 const additionalAmount = (row) => toNum(row.total_additional_meal) * toNum(bulkForm.value.common_additional)
-const rowTotal = (row) => toNum(bulkForm.value.meal_rate) * toNum(row.total_meal) + additionalAmount(row)
+const rowTotal = (row) => regularAmount(row) + additionalAmount(row)
 const grandTotal = computed(() => selectedRows.value.reduce((sum, row) => sum + rowTotal(row), 0))
 
 const validate = () => {
   const errors = {}
   if (!bulkForm.value.salary_month) errors.salary_month = 'Month is required.'
-  if (bulkForm.value.meal_rate === '' || toNum(bulkForm.value.meal_rate) < 0) errors.meal_rate = 'Meal rate is required.'
+  if (bulkForm.value.meal_rate === '' || toNum(bulkForm.value.meal_rate) < 0) {
+    errors.meal_rate = 'Regular meal rate is required.'
+  }
   if (bulkForm.value.common_additional === '' || toNum(bulkForm.value.common_additional) < 0) {
-    errors.common_additional = 'Special rate is required.'
+    errors.common_additional = 'Special meal rate is required.'
   }
   if (!selectedRows.value.length) errors.rows = 'Select at least one employee.'
   bulkErrors.value = errors
@@ -378,13 +381,19 @@ watch(() => bulkForm.value.salary_month, () => {
           <label class="block text-[11px] font-medium text-gray-600 mb-1">Month</label>
           <input v-model="bulkForm.salary_month" type="month" :class="inputClass" />
         </div>
-        <div>
-          <label class="block text-[11px] font-medium text-gray-600 mb-1">Meal Rate</label>
-          <input v-model="bulkForm.meal_rate" type="number" min="0" step="0.01" :class="inputClass" placeholder="0.00" />
+        <div class="rounded-xl border border-emerald-200 bg-emerald-50/70 p-2 ring-1 ring-emerald-100">
+          <label class="mb-1 flex items-center gap-1.5 text-[11px] font-semibold text-emerald-800">
+            <i class="far fa-utensils text-[10px]"></i>
+            Regular Meal Rate
+          </label>
+          <input v-model="bulkForm.meal_rate" type="number" min="0" step="0.01" :class="[inputClass, '!border-emerald-300 !bg-white focus:!border-emerald-500 focus:!ring-emerald-100']" placeholder="0.00" />
         </div>
-        <div>
-          <label class="block text-[11px] font-medium text-gray-600 mb-1">Special Rate</label>
-          <input v-model="bulkForm.common_additional" type="number" min="0" step="0.01" :class="inputClass" placeholder="0.00" />
+        <div class="rounded-xl border border-amber-200 bg-amber-50/80 p-2 ring-1 ring-amber-100">
+          <label class="mb-1 flex items-center gap-1.5 text-[11px] font-semibold text-amber-800">
+            <i class="far fa-star text-[10px]"></i>
+            Special Meal Rate
+          </label>
+          <input v-model="bulkForm.common_additional" type="number" min="0" step="0.01" :class="[inputClass, '!border-amber-300 !bg-white focus:!border-amber-500 focus:!ring-amber-100']" placeholder="0.00" />
         </div>
       </div>
       <div class="flex flex-wrap items-center gap-2">
@@ -424,12 +433,13 @@ watch(() => bulkForm.value.salary_month, () => {
 
     <div v-else class="overflow-x-auto rounded-xl border border-gray-100 bg-white shadow-sm">
       <table class="w-full text-xs md:text-sm">
-        <thead class="bg-blue-50 text-[11px] uppercase text-blue-900"><tr><th class="px-3 py-2 text-center">Select</th><th class="px-3 py-2 text-left">Employee</th><th class="px-3 py-2 text-right">Total Meals</th><th class="px-3 py-2 text-right">Total Special Meal</th><th class="px-3 py-2 text-right">Special Amount</th><th class="px-3 py-2 text-right">Sub Total</th></tr></thead>
+        <thead class="bg-blue-50 text-[11px] uppercase text-blue-900"><tr><th class="px-3 py-2 text-center">Select</th><th class="px-3 py-2 text-left">Employee</th><th class="px-3 py-2 text-right">Regular Meals</th><th class="px-3 py-2 text-right">Regular Meal Amount</th><th class="px-3 py-2 text-right">Special Meal</th><th class="px-3 py-2 text-right">Special Amount</th><th class="px-3 py-2 text-right">Total</th></tr></thead>
         <tbody class="divide-y divide-gray-50">
           <tr v-for="row in filteredRows" :key="row.user_id" class="hover:bg-gray-50 transition-colors">
             <td class="px-3 py-2 text-center"><input v-model="row.is_selected" type="checkbox" class="h-4 w-4 accent-blue-600" /></td>
             <td class="px-3 py-2"><div class="font-medium text-blue-900">{{ row.name }}</div><div class="text-[11px] text-gray-400">{{ row.employee_id || '-' }} · {{ row.department_name || 'No department' }}</div></td>
             <td class="px-3 py-2 text-right"><input v-model="row.total_meal" type="number" min="0" step="1" class="w-24 rounded-lg border border-gray-300 px-2.5 py-1.5 text-right text-xs focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="0" /></td>
+            <td class="px-3 py-2 text-right font-mono text-gray-700">{{ formatCurrency(regularAmount(row)) }}</td>
             <td class="px-3 py-2 text-right"><input v-model="row.total_additional_meal" type="number" min="0" step="0.01" class="w-28 rounded-lg border border-gray-300 px-2.5 py-1.5 text-right text-xs focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="0.00" /></td>
             <td class="px-3 py-2 text-right font-mono text-gray-700">{{ formatCurrency(additionalAmount(row)) }}</td>
             <td class="px-3 py-2 text-right font-mono font-semibold text-blue-700">{{ formatCurrency(rowTotal(row)) }}</td>
