@@ -46,6 +46,18 @@ export const payrollRoutes = [
     meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Employee Loans' },
   },
   {
+    path: '/payroll/arrear-entries',
+    name: 'PayrollArrearEntryList',
+    component: () => import('@/views/admin-pages/payroll/PayrollArrearEntryList.vue'),
+    meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Payroll Arrears' },
+  },
+  {
+    path: '/payroll/arrear-entries/create',
+    name: 'PayrollArrearEntryCreate',
+    component: () => import('@/views/admin-pages/payroll/PayrollArrearEntryCreate.vue'),
+    meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Bulk Arrear Entry' },
+  },
+  {
     path: '/payroll/security-monies',
     name: 'PayrollSecurityMoneyList',
     component: () => import('@/views/admin-pages/payroll/SecurityMoneyList.vue'),
