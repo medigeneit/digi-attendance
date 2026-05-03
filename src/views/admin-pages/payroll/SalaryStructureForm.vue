@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useSalaryStructureStore } from '@/stores/salaryStructure'
 import { useUserStore } from '@/stores/user'
@@ -28,6 +28,7 @@ import {
 const props = defineProps({ id: { type: String, default: null } })
 
 const router = useRouter()
+const route = useRoute()
 const toast = useToast()
 const structureStore = useSalaryStructureStore()
 const userStore = useUserStore()
@@ -55,6 +56,13 @@ const bankUpdateDraft = ref({
   account_holder_name: '',
   default_payment_method: 'Cash',
 })
+
+const goToList = () => {
+  router.push({
+    name: 'PayrollSalaryStructureList',
+    query: { ...route.query },
+  })
+}
 
 const form = ref({
   user_id: null,
@@ -468,7 +476,7 @@ const loadForEdit = async () => {
     syncDayHonoriumAllowanceRow()
   } catch (error) {
     toast.error(error.message)
-    router.push({ name: 'PayrollSalaryStructureList' })
+    goToList()
   } finally {
     isHydrating.value = false
     pageLoading.value = false
@@ -749,7 +757,7 @@ const handleSubmit = async () => {
       toast.success('Salary structure created successfully.')
     }
 
-    router.push({ name: 'PayrollSalaryStructureList' })
+    goToList()
   } catch (error) {
     if (error.errors) fieldErrors.value = error.errors
     toast.error(error.message)
@@ -776,7 +784,7 @@ const inputClass =
       </div>
 
       <div class="flex gap-2">
-        <button class="btn-3" @click="router.push({ name: 'PayrollSalaryStructureList' })">
+        <button class="btn-3" @click="goToList">
           <i class="far fa-arrow-left"></i>
           <span class="hidden sm:flex">Back</span>
         </button>
@@ -1097,7 +1105,7 @@ const inputClass =
         <button
           type="button"
           class="btn-3"
-          @click="router.push({ name: 'PayrollSalaryStructureList' })"
+          @click="goToList"
         >
           Cancel
         </button>

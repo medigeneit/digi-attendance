@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { storeToRefs } from 'pinia'
 import * as XLSX from 'xlsx'
@@ -14,6 +14,7 @@ import { formatCurrency } from '@/utils/currency'
 import { normalizeAllowances } from '@/utils/salaryPolicy'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 const router = useRouter()
+const route = useRoute()
 const toast = useToast()
 const structureStore = useSalaryStructureStore()
 
@@ -27,6 +28,15 @@ const filters = ref({
   page: 1,
   per_page: 15,
 })
+const lastLoadedFilterKey = ref('')
+
+const getFilterKey = (value = filters.value) =>
+  [
+    String(value.company_id || ''),
+    String(value.department_id || ''),
+    String(value.line_type || 'all'),
+    String(value.employee_id || ''),
+  ].join('|')
 
 const buildCleanParams = () => {
   const params = { ...filters.value }
@@ -53,6 +63,11 @@ const syncQueryParams = (params) => {
 }
 
 const getFilterQuery = () => buildCleanParams()
+
+const queryNumber = (value, fallback) => {
+  const parsed = Number.parseInt(String(value ?? ''), 10)
+  return Number.isNaN(parsed) ? fallback : parsed
+}
 
 const goToCreate = () => {
   router.push({
@@ -101,13 +116,14 @@ async function load() {
 onMounted(async () => {
   filters.value = {
     ...filters.value,
-    company_id: router.currentRoute.value.query.company_id || '',
-    department_id: router.currentRoute.value.query.department_id || '',
-    line_type: router.currentRoute.value.query.line_type || 'all',
-    employee_id: router.currentRoute.value.query.employee_id || '',
-    page: Number(router.currentRoute.value.query.page || 1),
-    per_page: Number(router.currentRoute.value.query.per_page || 15),
+    company_id: route.query.company_id || '',
+    department_id: route.query.department_id || '',
+    line_type: route.query.line_type || 'all',
+    employee_id: route.query.employee_id || '',
+    page: queryNumber(route.query.page, 1),
+    per_page: queryNumber(route.query.per_page, 15),
   }
+  lastLoadedFilterKey.value = getFilterKey()
 
   await load()
 })
@@ -149,14 +165,27 @@ const handlePageChange = (p) => {
 }
 
 const onEmployeeFilterChange = (payload = {}) => {
+  const nextCompanyId = payload.company_id || ''
+  const nextDepartmentId = payload.department_id || ''
+  const nextLineType = payload.line_type || 'all'
+  const nextEmployeeId = payload.employee_id || ''
+  const nextFilterKey = getFilterKey({
+    company_id: nextCompanyId,
+    department_id: nextDepartmentId,
+    line_type: nextLineType,
+    employee_id: nextEmployeeId,
+  })
+  const filterChanged = nextFilterKey !== lastLoadedFilterKey.value
+
   filters.value = {
     ...filters.value,
-    company_id: payload.company_id || '',
-    department_id: payload.department_id || '',
-    line_type: payload.line_type || 'all',
-    employee_id: payload.employee_id || '',
-    page: 1,
+    company_id: nextCompanyId,
+    department_id: nextDepartmentId,
+    line_type: nextLineType,
+    employee_id: nextEmployeeId,
+    page: filterChanged ? 1 : filters.value.page,
   }
+  lastLoadedFilterKey.value = nextFilterKey
   load()
 }
 
@@ -169,6 +198,7 @@ const resetFilters = () => {
     page: 1,
     per_page: 15,
   }
+  lastLoadedFilterKey.value = getFilterKey()
   load()
 }
 
