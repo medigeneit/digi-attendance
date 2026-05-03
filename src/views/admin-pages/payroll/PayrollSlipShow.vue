@@ -113,12 +113,13 @@ const joiningDate = computed(() => item.value?.joining_date || item.value?.user?
 
 const earningsRows = computed(() => {
   const raw = item.value?.earnings || {}
-   const pfAllowance = toNum(item.value?.deductions?.pf_allowance)
+  const pfAllowance = toNum(item.value?.deductions?.pf_allowance)
   return [
     { key: 'basic', label: 'Basic Salary', amount: toNum(raw.basic) },
     { key: 'house_rent', label: 'House Rent', amount: toNum(raw.house_rent) },
     { key: 'medical', label: 'Medical', amount: toNum(raw.medical) },
     { key: 'conveyance', label: 'Conveyance', amount: toNum(raw.conveyance) },
+    { key: 'gross', label: 'Gross', amount: toNum(raw.gross), highlight: true },
     { key: 'others', label: 'Others', amount: toNum(raw.others) },
     { key: 'pf_allowance', label: 'PF Allowance', amount: pfAllowance },
     { key: 'arrear', label: 'Arrear', amount: toNum(item.value?.arrear) },
@@ -362,15 +363,23 @@ onMounted(fetchSlip)
                 </thead>
                 <tbody>
                   <tr v-for="index in slipRowCount" :key="index">
-	                    <td class="border border-slate-700 px-3 py-2">{{ earningsRowsFinal[index - 1]?.label || '' }}</td>
-	                    <td class="border border-slate-700 px-3 py-2 text-right font-mono font-semibold">
-	                      {{ formatRowAmount(earningsRowsFinal[index - 1]) }}
-	                    </td>
-	                    <td class="border border-slate-700 px-3 py-2">{{ deductionRowsFinal[index - 1]?.label || '' }}</td>
-	                    <td class="border border-slate-700 px-3 py-2 text-right font-mono font-semibold">
-	                      {{ formatRowAmount(deductionRowsFinal[index - 1]) }}
-	                    </td>
-	                  </tr>
+                    <td
+                      class="border border-slate-700 px-3 py-2"
+                      :class="earningsRowsFinal[index - 1]?.highlight ? 'bg-slate-100 font-semibold' : ''"
+                    >
+                      {{ earningsRowsFinal[index - 1]?.label || '' }}
+                    </td>
+                    <td
+                      class="border border-slate-700 px-3 py-2 text-right font-mono font-semibold"
+                      :class="earningsRowsFinal[index - 1]?.highlight ? 'bg-slate-100' : ''"
+                    >
+                      {{ formatRowAmount(earningsRowsFinal[index - 1]) }}
+                    </td>
+                    <td class="border border-slate-700 px-3 py-2">{{ deductionRowsFinal[index - 1]?.label || '' }}</td>
+                    <td class="border border-slate-700 px-3 py-2 text-right font-mono font-semibold">
+                      {{ formatRowAmount(deductionRowsFinal[index - 1]) }}
+                    </td>
+                  </tr>
                   <tr class="font-semibold">
                     <td class="border border-slate-700 px-3 py-2 text-right">Total Earnings</td>
                     <td class="border border-slate-700 px-3 py-2 text-right font-mono">
