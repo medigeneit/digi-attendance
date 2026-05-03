@@ -52,6 +52,18 @@ export const payrollRoutes = [
     meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Payroll Arrears' },
   },
   {
+    path: '/payroll/advance-deductions',
+    name: 'PayrollAdvanceDeductionList',
+    component: () => import('@/views/admin-pages/payroll/PayrollAdvanceDeductionList.vue'),
+    meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Advance Deductions' },
+  },
+  {
+    path: '/payroll/advance-deductions/create',
+    name: 'PayrollAdvanceDeductionCreate',
+    component: () => import('@/views/admin-pages/payroll/PayrollAdvanceDeductionCreate.vue'),
+    meta: { requiresAuth: true, roles: PAYROLL_ROLES, title: 'Bulk Advance Deduction' },
+  },
+  {
     path: '/payroll/arrear-entries/create',
     name: 'PayrollArrearEntryCreate',
     component: () => import('@/views/admin-pages/payroll/PayrollArrearEntryCreate.vue'),

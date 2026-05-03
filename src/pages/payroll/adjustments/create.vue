@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import apiClient from '@/axios'
-import AsyncUserCombobox from '@/components/common/AsyncUserCombobox.vue'
+import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import { useAdjustmentStore } from '@/stores/adjustmentStore'
 import { formatCurrency } from '@/utils/currency'
@@ -13,6 +13,12 @@ const toast = useToast()
 const store = useAdjustmentStore()
 
 const employeeDisplay = ref({ name: null, dept: null })
+const employeeFilters = ref({
+  company_id: '',
+  department_id: '',
+  employee_id: '',
+  line_type: 'all',
+})
 const latestPayroll = ref(null)
 const payrollLoading = ref(false)
 const payrollError = ref('')
@@ -41,11 +47,6 @@ const settlementTypes = [
   { value: 'carry_forward', label: 'Carry Forward (affects net salary)' },
   { value: 'manual_settled', label: 'Manual Settled (contra entry next month, net unchanged)' },
 ]
-
-const employeeFetcher = async ({ q, limit }) => {
-  const res = await apiClient.get('/employees', { params: { q, limit: limit || 20 } })
-  return res.data?.data || res.data || []
-}
 
 const carryToLabel = computed(() => {
   if (!form.value.ref_year || !form.value.ref_month) return '-'
@@ -91,6 +92,10 @@ const loadLatestPayroll = async (employeeId) => {
     form.value.payroll_id = latestPayroll.value.id
     form.value.ref_year = Number(month.slice(0, 4))
     form.value.ref_month = Number(month.slice(5, 7))
+    employeeDisplay.value = {
+      name: latestPayroll.value.user?.name || latestPayroll.value.employee_name || employeeDisplay.value.name,
+      dept: latestPayroll.value.user?.department?.name || latestPayroll.value.department_name || employeeDisplay.value.dept,
+    }
   } catch (e) {
     payrollError.value = e.message || 'Failed to load latest payroll.'
   } finally {
@@ -98,14 +103,24 @@ const loadLatestPayroll = async (employeeId) => {
   }
 }
 
-const onEmployeePicked = async (value, display) => {
-  form.value.employee_id = value || ''
-  employeeDisplay.value = display || { name: null, dept: null }
+const onEmployeeFilterChange = async (payload = {}) => {
+  employeeFilters.value = {
+    company_id: payload.company_id || '',
+    department_id: payload.department_id || '',
+    employee_id: payload.employee_id || '',
+    line_type: payload.line_type || 'all',
+  }
+
+  const nextEmployeeId = payload.employee_id || ''
+  if (String(nextEmployeeId || '') === String(form.value.employee_id || '')) return
+
+  form.value.employee_id = nextEmployeeId
   form.value.payroll_id = ''
   form.value.ref_year = ''
   form.value.ref_month = ''
   latestPayroll.value = null
-  await loadLatestPayroll(value)
+  employeeDisplay.value = { name: null, dept: null }
+  await loadLatestPayroll(nextEmployeeId)
 }
 
 const submit = async () => {
@@ -154,13 +169,13 @@ const submit = async () => {
         <div class="space-y-4">
           <div>
             <label class="mb-1 block text-xs font-medium text-slate-600">Employee</label>
-            <AsyncUserCombobox
-              :model-value="form.employee_id ? Number(form.employee_id) : null"
-              :display="employeeDisplay"
-              placeholder="Search employee..."
-              :fetcher="employeeFetcher"
-              @update:modelValue="(value) => onEmployeePicked(value, employeeDisplay)"
-              @update:display="(value) => (employeeDisplay = value)"
+            <EmployeeFilter
+              v-model:company_id="employeeFilters.company_id"
+              v-model:department_id="employeeFilters.department_id"
+              v-model:employee_id="employeeFilters.employee_id"
+              v-model:line_type="employeeFilters.line_type"
+              :with-type="true"
+              @filter-change="onEmployeeFilterChange"
             />
           </div>
 

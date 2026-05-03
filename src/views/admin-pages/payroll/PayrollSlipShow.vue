@@ -119,6 +119,7 @@ const earningsRows = computed(() => {
     { key: 'medical', label: 'Medical', amount: toNum(raw.medical) },
     { key: 'conveyance', label: 'Conveyance', amount: toNum(raw.conveyance) },
     { key: 'others', label: 'Other Allowance', amount: toNum(raw.others) },
+    { key: 'arrear', label: 'Arrear', amount: toNum(item.value?.arrear) },
   ]
 })
 

@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import apiClient from '@/axios'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 
 const router = useRouter()
@@ -22,6 +23,24 @@ const rows = ref([])
 const loading = ref(false)
 const exporting = ref(false)
 const error = ref('')
+
+const monthToPeriod = (value) => {
+  const month = String(value || '').slice(0, 7)
+  if (!/^\d{4}-\d{2}$/.test(month)) return { year: null, month: null, day: 1 }
+  return { year: Number(month.slice(0, 4)), month: Number(month.slice(5, 7)), day: 1 }
+}
+
+const periodToMonth = (value) => {
+  if (!value?.year || !value?.month) return ''
+  return `${value.year}-${String(value.month).padStart(2, '0')}`
+}
+
+const salaryMonthPeriod = computed({
+  get: () => monthToPeriod(filters.value.salary_month),
+  set: (value) => {
+    filters.value.salary_month = periodToMonth(value)
+  },
+})
 
 const toArray = (data) => {
   if (Array.isArray(data)) return data
@@ -220,11 +239,12 @@ onMounted(loadBankAdviserList)
         />
         <div class="flex gap-4">
           <div class="flex flex-col gap-1">
-            <label class="block text-[11px] font-medium text-gray-600">Month</label>
-            <input
-              v-model="filters.salary_month"
-              type="month"
-              class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm"
+            <FlexibleDatePicker
+              v-model="salaryMonthPeriod"
+              :show-year="false"
+              :show-month="true"
+              :show-date="false"
+              label="Month"
             />
           </div>
           <div class="flex flex-col gap-1">

@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import * as XLSX from 'xlsx'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import { useMealEntryStore } from '@/stores/mealEntry'
 import LoaderView from '@/components/common/LoaderView.vue'
 import apiClient from '@/axios'
@@ -44,6 +45,24 @@ const toMonthValue = (value) => {
   if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v.slice(0, 7)
   return ''
 }
+
+const monthToPeriod = (value) => {
+  const month = toMonthValue(value)
+  if (!month) return { year: null, month: null, day: 1 }
+  return { year: Number(month.slice(0, 4)), month: Number(month.slice(5, 7)), day: 1 }
+}
+
+const periodToMonth = (value) => {
+  if (!value?.year || !value?.month) return ''
+  return `${value.year}-${String(value.month).padStart(2, '0')}`
+}
+
+const salaryMonthPeriod = computed({
+  get: () => monthToPeriod(bulkForm.value.salary_month),
+  set: (value) => {
+    bulkForm.value.salary_month = periodToMonth(value)
+  },
+})
 
 const normalizeHeader = (value) =>
   String(value || '').trim().toLowerCase().replace(/\s+/g, '_')
@@ -378,8 +397,13 @@ watch(() => bulkForm.value.salary_month, () => {
 
       <div class="grid gap-2 md:grid-cols-3">
         <div>
-          <label class="block text-[11px] font-medium text-gray-600 mb-1">Month</label>
-          <input v-model="bulkForm.salary_month" type="month" :class="inputClass" />
+          <FlexibleDatePicker
+            v-model="salaryMonthPeriod"
+            :show-year="false"
+            :show-month="true"
+            :show-date="false"
+            label="Month"
+          />
         </div>
         <div class="rounded-xl border border-emerald-200 bg-emerald-50/70 p-2 ring-1 ring-emerald-100">
           <label class="mb-1 flex items-center gap-1.5 text-[11px] font-semibold text-emerald-800">

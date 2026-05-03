@@ -298,6 +298,8 @@ const baseEarningRows = computed(() => [
   { key: 'house_rent', label: 'House Rent', amount: toNum(earningsData.value.house_rent) },
   { key: 'medical', label: 'Medical', amount: toNum(earningsData.value.medical) },
   { key: 'conveyance', label: 'Conveyance', amount: toNum(earningsData.value.conveyance) },
+  { key: 'arrear', label: 'Arrear', amount: toNum(item.value?.arrear) },
+
 ])
 
 const grossSalaryBase = computed(() => baseEarningRows.value.reduce((sum, row) => sum + toNum(row.amount), 0))

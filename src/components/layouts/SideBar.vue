@@ -228,6 +228,8 @@ const payrollMenu = [
   { label: 'Salary Revisions', routeName: 'PayrollSalaryRevisionCreate' },
   { label: 'Meal Entries', routeName: 'PayrollMealEntryList' },
   { label: 'Employee Loans', routeName: 'PayrollEmployeeLoanList' },
+  { label: 'Advance Deductions', routeName: 'PayrollAdvanceDeductionList' },
+  { label: 'Bulk Advance Deduction', routeName: 'PayrollAdvanceDeductionCreate' },
   { label: 'Payroll Arrears', routeName: 'PayrollArrearEntryList' },
   { label: 'Bulk Arrear Entry', routeName: 'PayrollArrearEntryCreate' },
   { label: 'Security Money', routeName: 'PayrollSecurityMoneyList' },

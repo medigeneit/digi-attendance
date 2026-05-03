@@ -4,32 +4,34 @@ import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import * as XLSX from 'xlsx'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
-import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
-import LoaderView from '@/components/common/LoaderView.vue'
 import apiClient from '@/axios'
 import { formatCurrency, toNum } from '@/utils/currency'
-import { usePayrollArrearEntryStore } from '@/stores/payrollArrearEntry'
+import { usePayrollAdvanceDeductionStore } from '@/stores/payrollAdvanceDeduction'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
-const arrearStore = usePayrollArrearEntryStore()
+const store = usePayrollAdvanceDeductionStore()
 
 const inputClass =
-  'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100'
+  'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-100'
 
 const defaultMonth = () => new Date().toISOString().slice(0, 7)
+
 const bulkForm = ref({
-  salary_month: route.query.salary_month ? String(route.query.salary_month).slice(0, 7) : defaultMonth(),
+  carry_on_month: route.query.carry_on_month || route.query.salary_month ? String(route.query.carry_on_month || route.query.salary_month).slice(0, 7) : defaultMonth(),
   common_amount: '',
   common_note: '',
 })
+
 const employeeFilters = ref({
   company_id: route.query.company_id ? String(route.query.company_id) : '',
   department_id: route.query.department_id ? String(route.query.department_id) : '',
-  employee_id: route.query.user_id || route.query.employee_id ? String(route.query.user_id || route.query.employee_id) : '',
+  employee_id: route.query.employee_id || route.query.user_id ? String(route.query.employee_id || route.query.user_id) : '',
   line_type: route.query.line_type ? String(route.query.line_type) : 'all',
 })
+
 const bulkRows = ref([])
 const bulkErrors = ref({})
 const loadingRows = ref(false)
@@ -59,9 +61,9 @@ const periodToMonth = (value) => {
 }
 
 const salaryMonthPeriod = computed({
-  get: () => monthToPeriod(bulkForm.value.salary_month),
+  get: () => monthToPeriod(bulkForm.value.carry_on_month),
   set: (value) => {
-    bulkForm.value.salary_month = periodToMonth(value)
+    bulkForm.value.carry_on_month = periodToMonth(value)
   },
 })
 
@@ -84,55 +86,102 @@ const fetchAllPages = async (url, params = {}) => {
   const rows = []
   let page = 1
   let lastPage = 1
+
   do {
-    const response = await apiClient.get(url, { params: { ...params, page, per_page: 200 } })
+    const response = await apiClient.get(url, {
+      params: { ...params, page, per_page: 200 },
+    })
+
     const data = response.data
     rows.push(...toArray(data))
-    lastPage = data?.last_page || 1
+    lastPage = data?.last_page || data?.meta?.last_page || 1
     page += 1
   } while (page <= lastPage)
+
   return rows
+}
+
+const normalizeText = (value) => String(value || '').trim().toLowerCase()
+
+const getEmployeeId = (user) =>
+  String(user?.employee_id || user?.employee_code || user?.emp_id || user?.emp_no || '').trim()
+
+const getUserId = (user) => String(user?.id || user?.user_id || '').trim()
+
+const isSameEmployee = (user, identifier) => {
+  const target = normalizeText(identifier)
+  if (!target) return true
+
+  return (
+    normalizeText(getEmployeeId(user)) === target ||
+    normalizeText(getUserId(user)) === target
+  )
+}
+
+const buildUserParams = () => {
+  const params = {
+    status: 'active',
+  }
+
+  if (employeeFilters.value.company_id) params.company_id = employeeFilters.value.company_id
+  if (employeeFilters.value.department_id) params.department_id = employeeFilters.value.department_id
+
+  if (employeeFilters.value.line_type && employeeFilters.value.line_type !== 'all') {
+    params.line_type = employeeFilters.value.line_type
+  }
+
+  if (employeeFilters.value.employee_id) {
+    params.employee_id = employeeFilters.value.employee_id
+    params.user_id = employeeFilters.value.employee_id
+  }
+
+  return params
 }
 
 const onBulkFilterChange = (payload = {}) => {
   employeeFilters.value = {
     company_id: payload.company_id || '',
     department_id: payload.department_id || '',
-    employee_id: payload.employee_id || '',
+    employee_id: payload.employee_id || payload.user_id || '',
     line_type: payload.line_type || 'all',
   }
+
   bulkRows.value = []
 }
 
 const loadRows = async () => {
   bulkErrors.value = {}
-  if (!bulkForm.value.salary_month) {
-    bulkErrors.value.salary_month = 'Carry on month is required.'
+
+  if (!bulkForm.value.carry_on_month) {
+    bulkErrors.value.carry_on_month = 'Carry on month is required.'
     return
   }
+
   loadingRows.value = true
+
   try {
-    const users = await fetchAllPages('/users', {
-      ...(employeeFilters.value.company_id ? { company_id: employeeFilters.value.company_id } : {}),
-      ...(employeeFilters.value.department_id ? { department_id: employeeFilters.value.department_id } : {}),
-      ...(employeeFilters.value.line_type && employeeFilters.value.line_type !== 'all'
-        ? { line_type: employeeFilters.value.line_type }
-        : {}),
-      ...(employeeFilters.value.employee_id ? { employee_id: employeeFilters.value.employee_id } : {}),
-      status: 'active',
-    })
+    const params = buildUserParams()
+    let users = await fetchAllPages('/users', params)
+
+    if (employeeFilters.value.employee_id) {
+      users = users.filter((user) => isSameEmployee(user, employeeFilters.value.employee_id))
+    }
 
     bulkRows.value = users.map((user) => ({
-      user_id: user.id,
-      employee_id: user.employee_id || '',
-      name: user.name || 'Unknown',
+      user_id: user.id || user.user_id,
+      employee_id: getEmployeeId(user),
+      name: user.name || user.full_name || 'Unknown',
       department_name: user.department?.name || user.department_name || '',
       amount: bulkForm.value.common_amount || '',
       note: bulkForm.value.common_note || '',
       is_selected: true,
     }))
+
+    if (!bulkRows.value.length) {
+      toast.info('No employee found with selected filter.')
+    }
   } catch (err) {
-    toast.error(err.message || 'Failed to load employees.')
+    toast.error(err.response?.data?.message || err.message || 'Failed to load employees.')
   } finally {
     loadingRows.value = false
   }
@@ -148,7 +197,9 @@ const applyCommonValues = () => {
 
 const filteredRows = computed(() => {
   const keyword = search.value.trim().toLowerCase()
+
   if (!keyword) return bulkRows.value
+
   return bulkRows.value.filter((row) =>
     [row.employee_id, row.name, row.department_name]
       .map((value) => String(value || '').toLowerCase())
@@ -157,47 +208,74 @@ const filteredRows = computed(() => {
 })
 
 const selectedRows = computed(() => bulkRows.value.filter((row) => row.is_selected))
-const selectedTotal = computed(() => selectedRows.value.reduce((sum, row) => sum + toNum(row.amount), 0))
+
+const selectedTotal = computed(() =>
+  selectedRows.value.reduce((sum, row) => sum + toNum(row.amount), 0),
+)
 
 const validateBulk = () => {
   const errors = {}
-  if (!bulkForm.value.salary_month) errors.salary_month = 'Carry on month is required.'
+
+  if (!bulkForm.value.carry_on_month) errors.carry_on_month = 'Carry on month is required.'
   if (!selectedRows.value.length) errors.rows = 'Select at least one employee.'
-  if (selectedRows.value.some((row) => toNum(row.amount) <= 0)) errors.amount = 'Selected rows must have arrear amount.'
+  if (selectedRows.value.some((row) => toNum(row.amount) <= 0)) {
+    errors.amount = 'Selected rows must have advance deduction amount.'
+  }
+
   bulkErrors.value = errors
   return !Object.keys(errors).length
 }
 
 const backToList = () => {
-  router.push({ name: 'PayrollArrearEntryList', query: { salary_month: bulkForm.value.salary_month, status: 'pending' } })
+  router.push({
+    name: 'PayrollAdvanceDeductionList',
+    query: {
+      carry_on_month: bulkForm.value.carry_on_month,
+      status: 'pending',
+    },
+  })
 }
 
 const saveBulkEntries = async () => {
   if (!validateBulk()) return
+
   saving.value = true
+
   try {
-    await arrearStore.createBulk({
+    await store.createBulk({
       entries: selectedRows.value.map((row) => ({
         user_id: row.user_id,
         employee_id: row.employee_id || null,
-        salary_month: bulkForm.value.salary_month,
+        carry_on_month: bulkForm.value.carry_on_month,
         amount: toNum(row.amount),
-        reason: row.note || 'Payroll arrear',
+        reason: row.note || 'Advance deduction',
       })),
     })
-    toast.success(`${selectedRows.value.length} payroll arrear row(s) saved.`)
+
+    toast.success(`${selectedRows.value.length} advance deduction row(s) saved.`)
     backToList()
   } catch (err) {
     if (err.errors) bulkErrors.value = err.errors
-    toast.error(err.message || 'Failed to save payroll arrears.')
+    toast.error(err.response?.data?.message || err.message || 'Failed to save advance deductions.')
   } finally {
     saving.value = false
   }
 }
 
 const resetBulk = () => {
-  bulkForm.value = { salary_month: defaultMonth(), common_amount: '', common_note: '' }
-  employeeFilters.value = { company_id: '', department_id: '', employee_id: '', line_type: 'all' }
+  bulkForm.value = {
+    carry_on_month: defaultMonth(),
+    common_amount: '',
+    common_note: '',
+  }
+
+  employeeFilters.value = {
+    company_id: '',
+    department_id: '',
+    employee_id: '',
+    line_type: 'all',
+  }
+
   bulkRows.value = []
   search.value = ''
   bulkErrors.value = {}
@@ -206,14 +284,17 @@ const resetBulk = () => {
 
 const downloadTemplate = () => {
   const csv = [
-    'company_id,department_id,line_type,employee_id,user_id,amount,note,salary_month',
-    `1,,,EMP001,,8500,annual increment with eid ul fitr bonus,${bulkForm.value.salary_month || defaultMonth()}`,
+    'company_id,department_id,line_type,employee_id,user_id,amount,note,carry_on_month',
+    `1,,,EMP001,,2000,salary advance recovery,${bulkForm.value.carry_on_month || defaultMonth()}`,
   ].join('\n')
+
   const blob = new Blob([`${csv}\n`], { type: 'text/csv;charset=utf-8;' })
   const link = document.createElement('a')
+
   link.href = URL.createObjectURL(blob)
-  link.download = 'payroll-arrear-template.csv'
+  link.download = 'payroll-advance-deduction-template.csv'
   link.click()
+
   URL.revokeObjectURL(link.href)
 }
 
@@ -225,19 +306,30 @@ const parseImportRecords = (records) => {
   records.forEach((raw, index) => {
     const rowNo = index + 2
     const record = normalizeRecord(raw)
-    const employeeId = String(record.employee_id || record.emp_n || record.emp_no || '').trim()
+
+    const employeeId = String(
+      record.employee_id || record.employee_code || record.emp_id || record.emp_no || record.emp_n || '',
+    ).trim()
+
     const userId = String(record.user_id || '').trim()
-    const amount = record.amount ?? record.arrear_amount ?? record.arear_amanout ?? record.arear_amount
-    const salaryMonth = toMonthValue(record.salary_month || record.carry_on_month || bulkForm.value.salary_month)
+    const amount = record.amount ?? record.advance_amount ?? record.advance_deduction
+    const carryOnMonth = toMonthValue(
+      record.carry_on_month || record.salary_month || record.deduction_month || bulkForm.value.carry_on_month,
+    )
+
     const reasons = []
 
     if (!employeeId && !userId) reasons.push('Missing employee_id or user_id.')
-    if (amount === undefined || amount === '' || toNum(amount) <= 0) reasons.push('Invalid arrear amount.')
-    if (!salaryMonth) reasons.push('Invalid salary_month.')
+    if (amount === undefined || amount === '' || toNum(amount) <= 0) reasons.push('Invalid amount.')
+    if (!carryOnMonth) reasons.push('Invalid carry_on_month.')
 
     if (reasons.length) {
       skipped += 1
-      errorRows.push({ rowNo, identifier: employeeId || (userId ? `user_id:${userId}` : 'N/A'), reason: reasons.join(' ') })
+      errorRows.push({
+        rowNo,
+        identifier: employeeId || (userId ? `user_id:${userId}` : 'N/A'),
+        reason: reasons.join(' '),
+      })
       return
     }
 
@@ -247,7 +339,7 @@ const parseImportRecords = (records) => {
       line_type: record.line_type || record.type || null,
       employee_id: employeeId || null,
       user_id: userId ? Number(userId) : null,
-      salary_month: salaryMonth,
+      carry_on_month: carryOnMonth,
       amount: toNum(amount),
       reason: record.reason || record.note || null,
     })
@@ -259,44 +351,65 @@ const parseImportRecords = (records) => {
 const handleImportFile = async (event) => {
   const file = event?.target?.files?.[0]
   if (!file) return
+
   saving.value = true
+
   try {
     const buffer = await file.arrayBuffer()
     const workbook = XLSX.read(buffer, { type: 'array' })
     const firstSheet = workbook.SheetNames[0]
     const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { defval: '' })
+
     const { entries, skipped, errorRows } = parseImportRecords(rows)
 
     if (!entries.length) {
-      importPreview.value = { fileName: file.name, totalRows: rows.length, acceptedRows: 0, skippedRows: skipped, errorRows }
-      toast.error('No valid arrear rows found.')
+      importPreview.value = {
+        fileName: file.name,
+        totalRows: rows.length,
+        acceptedRows: 0,
+        skippedRows: skipped,
+        errorRows,
+      }
+
+      toast.error('No valid advance deduction rows found.')
       return
     }
 
-    await arrearStore.createBulk({ entries })
-    importPreview.value = { fileName: file.name, totalRows: rows.length, acceptedRows: entries.length, skippedRows: skipped, errorRows }
-    toast.success(`${entries.length} payroll arrear row(s) imported.`)
-    bulkForm.value.salary_month = entries[0]?.salary_month || bulkForm.value.salary_month
+    await store.createBulk({ entries })
+
+    importPreview.value = {
+      fileName: file.name,
+      totalRows: rows.length,
+      acceptedRows: entries.length,
+      skippedRows: skipped,
+      errorRows,
+    }
+
+    toast.success(`${entries.length} advance deduction row(s) imported.`)
+    bulkForm.value.carry_on_month = entries[0]?.carry_on_month || bulkForm.value.carry_on_month
   } catch (err) {
-    toast.error(err.message || 'Failed to import payroll arrears.')
+    toast.error(err.response?.data?.message || err.message || 'Failed to import advance deductions.')
   } finally {
     saving.value = false
     if (importFileInputRef.value) importFileInputRef.value.value = ''
   }
 }
 
-watch(() => bulkForm.value.salary_month, () => {
-  bulkRows.value = []
-})
+watch(
+  () => bulkForm.value.carry_on_month,
+  () => {
+    bulkRows.value = []
+  },
+)
 </script>
 
 <template>
   <div class="p-3 md:p-4 space-y-3">
     <div class="flex flex-wrap items-start justify-between gap-2">
       <div>
-        <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-700">Payroll</p>
-        <h1 class="mt-1 text-xl font-semibold text-slate-900">Bulk Arrear Entry</h1>
-        <p class="mt-1 text-xs text-slate-500">Employee filter diye single ba multiple arrear entry save korun.</p>
+        <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-rose-700">Payroll</p>
+        <h1 class="mt-1 text-xl font-semibold text-slate-900">Bulk Advance Deduction</h1>
+        <p class="mt-1 text-xs text-slate-500">Employee filter diye single ba multiple advance deduction entry save korun.</p>
       </div>
       <div class="flex flex-wrap items-center gap-2">
         <button type="button" class="btn-3" @click="backToList"><i class="far fa-arrow-left"></i> Back</button>
@@ -305,6 +418,7 @@ watch(() => bulkForm.value.salary_month, () => {
         <input ref="importFileInputRef" type="file" class="hidden" accept=".csv,.xlsx,.xls" @change="handleImportFile" />
       </div>
     </div>
+    
 
     <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm space-y-5">
       <div class="flex flex-wrap items-center justify-between gap-2">
@@ -338,17 +452,17 @@ watch(() => bulkForm.value.salary_month, () => {
       />
     </EmployeeFilter>
 
-      <div class="grid gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 ">
+      <div class="grid gap-2 md:grid-cols-3">
         <div>
           <label class="mb-1 block text-xs font-semibold text-slate-600">Common Amount</label>
           <input v-model="bulkForm.common_amount" type="number" min="0" step="0.01" :class="inputClass" placeholder="0.00" />
         </div>
         <div>
           <label class="mb-1 block text-xs font-semibold text-slate-600">Common Note</label>
-          <input v-model.trim="bulkForm.common_note" type="text" :class="inputClass" placeholder="annual increment with eid ul fitr bonus" />
+          <input v-model.trim="bulkForm.common_note" type="text" :class="inputClass" placeholder="salary advance recovery" />
         </div>
         <div class="flex items-end">
-          <button type="button" class="btn-3 w-full" :disabled="!bulkRows.length" @click="applyCommonValues">Apply</button>
+          <button type="button" class="btn-2" :disabled="!bulkRows.length" @click="applyCommonValues">Apply</button>
         </div>
       </div>
 
@@ -357,12 +471,12 @@ watch(() => bulkForm.value.salary_month, () => {
         <div class="ml-auto flex flex-wrap items-center gap-4 text-xs text-slate-600">
           <span>Rows: <b>{{ bulkRows.length }}</b></span>
           <span>Selected: <b>{{ selectedRows.length }}</b></span>
-          <span>Total: <b class="text-indigo-700">{{ formatCurrency(selectedTotal) }}</b></span>
+          <span>Total: <b class="text-rose-700">{{ formatCurrency(selectedTotal) }}</b></span>
         </div>
       </div> -->
 
-      <div v-if="bulkErrors.salary_month || bulkErrors.rows || bulkErrors.amount" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
-        <p v-if="bulkErrors.salary_month">{{ bulkErrors.salary_month }}</p>
+      <div v-if="bulkErrors.carry_on_month || bulkErrors.rows || bulkErrors.amount" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+        <p v-if="bulkErrors.carry_on_month">{{ bulkErrors.carry_on_month }}</p>
         <p v-if="bulkErrors.rows">{{ bulkErrors.rows }}</p>
         <p v-if="bulkErrors.amount">{{ bulkErrors.amount }}</p>
       </div>
@@ -378,20 +492,20 @@ watch(() => bulkForm.value.salary_month, () => {
               <th class="px-3 py-2 text-center font-semibold">Select</th>
               <th class="px-3 py-2 text-left font-semibold">Employee</th>
               <th class="px-3 py-2 text-left font-semibold">Department</th>
-              <th class="px-3 py-2 text-right font-semibold">Arrear Amount</th>
+              <th class="px-3 py-2 text-right font-semibold">Advance Deduction</th>
               <th class="px-3 py-2 text-left font-semibold">Note</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
             <tr v-for="row in filteredRows" :key="row.user_id" class="hover:bg-slate-50">
-              <td class="px-3 py-2 text-center"><input v-model="row.is_selected" type="checkbox" class="h-4 w-4 accent-indigo-600" /></td>
+              <td class="px-3 py-2 text-center"><input v-model="row.is_selected" type="checkbox" class="h-4 w-4 accent-rose-600" /></td>
               <td class="px-3 py-2"><div class="font-medium text-slate-800">{{ row.name }}</div><div class="text-xs text-slate-500">{{ row.employee_id || '-' }}</div></td>
               <td class="px-3 py-2 text-slate-600">{{ row.department_name || '-' }}</td>
               <td class="px-3 py-2 text-right">
-                <input v-model="row.amount" type="number" min="0" step="0.01" class="w-32 rounded-lg border border-slate-300 px-2.5 py-1.5 text-right text-xs focus:outline-none focus:ring-2 focus:ring-indigo-200" placeholder="0.00" />
+                <input v-model="row.amount" type="number" min="0" step="0.01" class="w-32 rounded-lg border border-slate-300 px-2.5 py-1.5 text-right text-xs focus:outline-none focus:ring-2 focus:ring-rose-200" placeholder="0.00" />
               </td>
               <td class="px-3 py-2">
-                <input v-model.trim="row.note" type="text" class="w-full min-w-72 rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-200" placeholder="Note" />
+                <input v-model.trim="row.note" type="text" class="w-full min-w-72 rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-rose-200" placeholder="Note" />
               </td>
             </tr>
           </tbody>
@@ -402,7 +516,7 @@ watch(() => bulkForm.value.salary_month, () => {
         <button type="button" class="btn-3" @click="bulkRows = []">Clear Rows</button>
         <button type="button" class="btn-2" :disabled="saving || !bulkRows.length" @click="saveBulkEntries">
           <i class="far" :class="saving ? 'fa-spinner fa-spin' : 'fa-save'"></i>
-          {{ saving ? 'Saving...' : 'Save Selected Arrears' }}
+          {{ saving ? 'Saving...' : 'Save Selected Deductions' }}
         </button>
       </div>
     </div>

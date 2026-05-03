@@ -7,6 +7,7 @@ import apiClient from '@/axios'
 import LoaderView from '@/components/common/LoaderView.vue'
 import AdjustmentStatusBadge from '@/components/payroll/adjustments/AdjustmentStatusBadge.vue'
 import AsyncUserCombobox from '@/components/common/AsyncUserCombobox.vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import { useAdjustmentStore } from '@/stores/adjustmentStore'
 import { useAuthStore } from '@/stores/auth'
 import { formatCurrency } from '@/utils/currency'
@@ -24,6 +25,24 @@ const filters = ref({
 
 const activeTab = ref('all')
 const employeeDisplay = ref({ name: null, dept: null })
+
+const monthToPeriod = (value) => {
+  const month = String(value || '').slice(0, 7)
+  if (!/^\d{4}-\d{2}$/.test(month)) return { year: null, month: null, day: 1 }
+  return { year: Number(month.slice(0, 4)), month: Number(month.slice(5, 7)), day: 1 }
+}
+
+const periodToMonth = (value) => {
+  if (!value?.year || !value?.month) return ''
+  return `${value.year}-${String(value.month).padStart(2, '0')}`
+}
+
+const filterMonthPeriod = computed({
+  get: () => monthToPeriod(filters.value.month),
+  set: (value) => {
+    filters.value.month = periodToMonth(value)
+  },
+})
 
 const canCreate = computed(() => ['hr', 'super_admin', 'developer'].includes(String(authStore.user?.role || '').toLowerCase()))
 const canVerify = computed(() => ['accounts', 'super_admin', 'developer'].includes(String(authStore.user?.role || '').toLowerCase()))
@@ -164,11 +183,12 @@ onMounted(load)
           />
         </div>
         <div>
-          <label class="mb-1 block text-xs font-medium text-slate-600">Month</label>
-          <input
-            v-model="filters.month"
-            type="month"
-            class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-100"
+          <FlexibleDatePicker
+            v-model="filterMonthPeriod"
+            :show-year="false"
+            :show-month="true"
+            :show-date="false"
+            label="Month"
           />
         </div>
         <button class="btn-3 h-[42px]" @click="load">

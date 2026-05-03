@@ -10,6 +10,7 @@ import DeleteModal from '@/components/common/DeleteModal.vue'
 import PaginationBar from '@/components/PaginationBar.vue'
 import AsyncUserCombobox from '@/components/common/AsyncUserCombobox.vue'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import apiClient from '@/axios'
 import { toNum, formatCurrency } from '@/utils/currency'
 import * as XLSX from 'xlsx'
@@ -145,6 +146,38 @@ const toMonthValue = (value) => {
   if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v.slice(0, 7)
   return ''
 }
+
+const monthToPeriod = (value) => {
+  const month = toMonthValue(value)
+  if (!month) return { year: null, month: null, day: 1 }
+  return { year: Number(month.slice(0, 4)), month: Number(month.slice(5, 7)), day: 1 }
+}
+
+const periodToMonth = (value) => {
+  if (!value?.year || !value?.month) return ''
+  return `${value.year}-${String(value.month).padStart(2, '0')}`
+}
+
+const filterMonthPeriod = computed({
+  get: () => monthToPeriod(filters.value.salary_month),
+  set: (value) => {
+    filters.value.salary_month = periodToMonth(value)
+  },
+})
+
+const bulkMonthPeriod = computed({
+  get: () => monthToPeriod(bulkForm.value.salary_month),
+  set: (value) => {
+    bulkForm.value.salary_month = periodToMonth(value)
+  },
+})
+
+const modalMonthPeriod = computed({
+  get: () => monthToPeriod(modalForm.value.salary_month),
+  set: (value) => {
+    modalForm.value.salary_month = periodToMonth(value)
+  },
+})
 
 const parseQueryInt = (value, fallback = null) => {
   if (value === undefined || value === null || value === '') return fallback
@@ -976,11 +1009,13 @@ watch(
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
       <div class="grid grid-cols-1 gap-3 xl:grid-cols-[170px_1fr]">
         <div class="relative">
-          <input
-            v-model="filters.salary_month"
-            type="month"
+          <FlexibleDatePicker
+            v-model="filterMonthPeriod"
+            :show-year="false"
+            :show-month="true"
+            :show-date="false"
+            label="Month"
             @change="applyFilters"
-            class="h-10 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
         </div>
         <EmployeeFilter
@@ -1037,8 +1072,13 @@ watch(
 
       <div class="grid gap-2 md:grid-cols-[170px_1fr_170px_170px] items-end">
         <div>
-          <label class="block text-xs font-medium text-gray-600 mb-1">Month</label>
-          <input v-model="bulkForm.salary_month" type="month" :class="inputClass" />
+          <FlexibleDatePicker
+            v-model="bulkMonthPeriod"
+            :show-year="false"
+            :show-month="true"
+            :show-date="false"
+            label="Month"
+          />
           <p v-if="bulkErrors.salary_month" class="text-red-500 text-xs mt-1">{{ bulkErrors.salary_month }}</p>
         </div>
         <div>
@@ -1410,9 +1450,15 @@ watch(
 
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">
-                Salary Month <span class="text-red-500">*</span>
+                Month <span class="text-red-500">*</span>
               </label>
-              <input v-model="modalForm.salary_month" type="month" :class="inputClass" />
+              <FlexibleDatePicker
+                v-model="modalMonthPeriod"
+                :show-year="false"
+                :show-month="true"
+                :show-date="false"
+                label="Month"
+              />
               <p v-if="modalErrors.salary_month" class="text-red-500 text-xs mt-1">
                 {{ modalErrors.salary_month }}
               </p>

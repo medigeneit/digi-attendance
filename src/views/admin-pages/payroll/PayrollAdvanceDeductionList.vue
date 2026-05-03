@@ -8,16 +8,13 @@ import PaginationBar from '@/components/PaginationBar.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import { formatCurrency, toNum } from '@/utils/currency'
-import { usePayrollArrearEntryStore } from '@/stores/payrollArrearEntry'
+import { usePayrollAdvanceDeductionStore } from '@/stores/payrollAdvanceDeduction'
 
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
-const arrearStore = usePayrollArrearEntryStore()
-const { list, loading, error, pagination } = storeToRefs(arrearStore)
-
-const inputClass =
-  'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100'
+const store = usePayrollAdvanceDeductionStore()
+const { list, loading, error, pagination } = storeToRefs(store)
 
 const defaultMonth = () => new Date().toISOString().slice(0, 7)
 const monthToPeriod = (value) => {
@@ -25,14 +22,13 @@ const monthToPeriod = (value) => {
   if (!/^\d{4}-\d{2}$/.test(month)) return { year: null, month: null, day: 1 }
   return { year: Number(month.slice(0, 4)), month: Number(month.slice(5, 7)), day: 1 }
 }
-
 const periodToMonth = (value) => {
   if (!value?.year || !value?.month) return ''
   return `${value.year}-${String(value.month).padStart(2, '0')}`
 }
 
 const filters = ref({
-  salary_month: defaultMonth(),
+  carry_on_month: defaultMonth(),
   company_id: '',
   department_id: '',
   line_type: 'all',
@@ -44,16 +40,11 @@ const filters = ref({
 const deletingId = ref(null)
 
 const salaryMonthPeriod = computed({
-  get: () => monthToPeriod(filters.value.salary_month),
+  get: () => monthToPeriod(filters.value.carry_on_month),
   set: (value) => {
-    filters.value.salary_month = periodToMonth(value)
+    filters.value.carry_on_month = periodToMonth(value)
   },
 })
-
-const handleSalaryMonthChange = () => {
-  filters.value.page = 1
-  load()
-}
 
 const parseQueryInt = (value, fallback = 1) => {
   const parsed = Number.parseInt(String(value ?? ''), 10)
@@ -62,7 +53,7 @@ const parseQueryInt = (value, fallback = 1) => {
 
 const buildFilterParams = () => {
   const params = { ...filters.value }
-  if (!params.salary_month) delete params.salary_month
+  if (!params.carry_on_month) delete params.carry_on_month
   if (!params.company_id) delete params.company_id
   if (!params.department_id) delete params.department_id
   if (!params.line_type || params.line_type === 'all') delete params.line_type
@@ -75,7 +66,7 @@ const hydrateFiltersFromQuery = () => {
   const q = route.query || {}
   filters.value = {
     ...filters.value,
-    salary_month: q.salary_month ? String(q.salary_month).slice(0, 7) : defaultMonth(),
+    carry_on_month: q.carry_on_month || q.salary_month ? String(q.carry_on_month || q.salary_month).slice(0, 7) : defaultMonth(),
     company_id: q.company_id ? String(q.company_id) : '',
     department_id: q.department_id ? String(q.department_id) : '',
     line_type: q.line_type ? String(q.line_type) : 'all',
@@ -89,7 +80,7 @@ const hydrateFiltersFromQuery = () => {
 const load = async () => {
   const params = buildFilterParams()
   await router.replace({ query: params })
-  await arrearStore.fetchList(params)
+  await store.fetchList(params)
 }
 
 onMounted(async () => {
@@ -111,7 +102,7 @@ const onListFilterChange = (payload = {}) => {
 
 const resetFilters = () => {
   filters.value = {
-    salary_month: defaultMonth(),
+    carry_on_month: defaultMonth(),
     company_id: '',
     department_id: '',
     line_type: 'all',
@@ -123,15 +114,20 @@ const resetFilters = () => {
   load()
 }
 
+const handleSalaryMonthChange = () => {
+  filters.value.page = 1
+  load()
+}
+
 const deleteEntry = async (item) => {
   if (!item?.id || item.status === 'applied') return
   deletingId.value = item.id
   try {
-    await arrearStore.deleteItem(item.id)
-    toast.success('Payroll arrear deleted.')
+    await store.deleteItem(item.id)
+    toast.success('Advance deduction deleted.')
     await load()
   } catch (err) {
-    toast.error(err.message || 'Failed to delete payroll arrear.')
+    toast.error(err.message || 'Failed to delete advance deduction.')
   } finally {
     deletingId.value = null
   }
@@ -143,7 +139,7 @@ const pageChanged = (page) => {
 }
 
 const goToCreate = () => {
-  router.push({ name: 'PayrollArrearEntryCreate', query: buildFilterParams() })
+  router.push({ name: 'PayrollAdvanceDeductionCreate', query: buildFilterParams() })
 }
 
 const totalPendingAmount = computed(() =>
@@ -162,12 +158,12 @@ const departmentName = (item) => item.employee?.department?.name || item.departm
   <div class="p-3 md:p-4 space-y-3">
     <div class="flex flex-wrap items-start justify-between gap-2">
       <div>
-        <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-700">Payroll</p>
-        <h1 class="mt-1 text-xl font-semibold text-slate-900">Payroll Arrears</h1>
-        <p class="mt-1 text-xs text-slate-500">Pending arrears will be adjusted automatically when payroll is generated.</p>
+        <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-rose-700">Payroll</p>
+        <h1 class="mt-1 text-xl font-semibold text-slate-900">Advance Deductions</h1>
+        <p class="mt-1 text-xs text-slate-500">Pending advance deductions will be adjusted automatically when payroll is generated.</p>
       </div>
       <button type="button" class="btn-2" @click="goToCreate">
-        <i class="far fa-plus"></i> Bulk Arrear Entry
+        <i class="far fa-plus"></i> Bulk Advance Deduction
       </button>
     </div>
 
@@ -175,7 +171,7 @@ const departmentName = (item) => item.employee?.department?.name || item.departm
       <div class="border-b border-slate-200 p-4">
         <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 class="text-sm font-semibold text-slate-900">Arrear List</h2>
+            <h2 class="text-sm font-semibold text-slate-900">Advance Deduction List</h2>
             <p class="mt-0.5 text-xs text-slate-500">Pending total on this page: {{ formatCurrency(totalPendingAmount) }}</p>
           </div>
           <LoaderView v-if="loading" />
@@ -189,19 +185,20 @@ const departmentName = (item) => item.employee?.department?.name || item.departm
             @filter-change="onListFilterChange"
           >
           <FlexibleDatePicker
-                v-model="salaryMonthPeriod"
-                :show-year="false"
-                :show-month="true"
-                :show-date="false"
-                label="Month"
-                @change="handleSalaryMonthChange"
-              />
+            v-model="salaryMonthPeriod"
+            :show-year="false"
+            :show-month="true"
+            :show-date="false"
+            label="Carry On Month"
+            @change="handleSalaryMonthChange"
+          />
           </EmployeeFilter>
           <div class="grid grid-cols-2 gap-2">
-            <div> </div>
+            <div>
+            </div>
             <div>
               <label class="mb-1 block text-xs font-semibold text-slate-600">Status</label>
-              <select v-model="filters.status" :class="inputClass" @change="filters.page = 1; load()">
+              <select v-model="filters.status" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-100" @change="filters.page = 1; load()">
                 <option value="">All</option>
                 <option value="pending">Pending</option>
                 <option value="applied">Applied</option>
@@ -222,8 +219,8 @@ const departmentName = (item) => item.employee?.department?.name || item.departm
               <th class="px-3 py-2 text-left font-semibold">Company</th>
               <th class="px-3 py-2 text-left font-semibold">Department</th>
               <th class="px-3 py-2 text-left font-semibold">Carry On Month</th>
-              <th class="px-3 py-2 text-right font-semibold">Arrear Amount</th>
-              <th class="px-3 py-2 text-left font-semibold">Note</th>
+              <th class="px-3 py-2 text-right font-semibold">Amount</th>
+              <th class="px-3 py-2 text-left font-semibold">Reason</th>
               <th class="px-3 py-2 text-left font-semibold">Status</th>
               <th class="px-3 py-2 text-right font-semibold">Action</th>
             </tr>
@@ -233,7 +230,7 @@ const departmentName = (item) => item.employee?.department?.name || item.departm
               <td class="px-3 py-2"><div class="font-medium text-slate-800">{{ employeeName(item) }}</div><div class="text-xs text-slate-500">{{ employeeCode(item) }}</div></td>
               <td class="px-3 py-2 text-slate-600">{{ companyName(item) }}</td>
               <td class="px-3 py-2 text-slate-600">{{ departmentName(item) }}</td>
-              <td class="px-3 py-2 font-mono text-slate-700">{{ String(item.salary_month || '').slice(0, 7) }}</td>
+              <td class="px-3 py-2 font-mono text-slate-700">{{ String(item.carry_on_month || '').slice(0, 7) }}</td>
               <td class="px-3 py-2 text-right font-mono font-semibold text-slate-800">{{ formatCurrency(item.amount) }}</td>
               <td class="max-w-xs px-3 py-2 text-slate-600">{{ item.reason || item.note || '-' }}</td>
               <td class="px-3 py-2">
@@ -248,7 +245,7 @@ const departmentName = (item) => item.employee?.department?.name || item.departm
               </td>
             </tr>
             <tr v-if="!loading && !list.length">
-              <td colspan="8" class="px-3 py-8 text-center text-sm text-slate-500">No payroll arrears found.</td>
+              <td colspan="8" class="px-3 py-8 text-center text-sm text-slate-500">No advance deductions found.</td>
             </tr>
           </tbody>
         </table>
