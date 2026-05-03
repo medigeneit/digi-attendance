@@ -113,12 +113,14 @@ const joiningDate = computed(() => item.value?.joining_date || item.value?.user?
 
 const earningsRows = computed(() => {
   const raw = item.value?.earnings || {}
+   const pfAllowance = toNum(item.value?.deductions?.pf_allowance)
   return [
     { key: 'basic', label: 'Basic Salary', amount: toNum(raw.basic) },
     { key: 'house_rent', label: 'House Rent', amount: toNum(raw.house_rent) },
     { key: 'medical', label: 'Medical', amount: toNum(raw.medical) },
     { key: 'conveyance', label: 'Conveyance', amount: toNum(raw.conveyance) },
-    { key: 'others', label: 'Other Allowance', amount: toNum(raw.others) },
+    { key: 'others', label: 'Others', amount: toNum(raw.others) },
+    { key: 'pf_allowance', label: 'PF Allowance', amount: pfAllowance },
     { key: 'arrear', label: 'Arrear', amount: toNum(item.value?.arrear) },
   ]
 })

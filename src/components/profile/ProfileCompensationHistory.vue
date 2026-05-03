@@ -226,10 +226,10 @@ const isLoanCompleted = (loan) => String(loan.status || '').toLowerCase() === 'c
                 <p class="text-xs text-slate-500 dark:text-slate-400">Total Meal</p>
                 <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ item.total_meal || 0 }}</p>
               </div>
-              <div>
+              <!-- <div>
                 <p class="text-xs text-slate-500 dark:text-slate-400">Special Meal</p>
                 <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ formatCurrency(specialMealAmount(item)) }}</p>
-              </div>
+              </div> -->
               <div>
                 <p class="text-xs text-slate-500 dark:text-slate-400">Special Meal Rate</p>
                 <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ formatCurrency(specialMealRate(item)) }}</p>

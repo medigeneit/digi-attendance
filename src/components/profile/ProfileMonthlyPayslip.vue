@@ -219,7 +219,7 @@ const deductionRows = computed(() => {
   const rows = [
     {
       label: 'PF Both',
-      value: toNumber(payroll.pf_deduction) + toNumber(payroll.pf_allowance_deduction_total),
+      value: toNumber(payroll.pf_deduction),
     },
     { label: 'Meal Deduction', value: payroll.meal_deduction },
     { label: 'Tax', value: payroll.tax_deduction },
