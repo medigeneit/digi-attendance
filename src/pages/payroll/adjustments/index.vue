@@ -3,10 +3,9 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { storeToRefs } from 'pinia'
-import apiClient from '@/axios'
 import LoaderView from '@/components/common/LoaderView.vue'
 import AdjustmentStatusBadge from '@/components/payroll/adjustments/AdjustmentStatusBadge.vue'
-import AsyncUserCombobox from '@/components/common/AsyncUserCombobox.vue'
+import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import { useAdjustmentStore } from '@/stores/adjustmentStore'
 import { useAuthStore } from '@/stores/auth'
@@ -18,13 +17,19 @@ const adjustmentStore = useAdjustmentStore()
 const authStore = useAuthStore()
 const { adjustments, loading, error } = storeToRefs(adjustmentStore)
 
+defineOptions({
+  name: 'PayrollAdjustmentIndex',
+})
+
 const filters = ref({
+  company_id: '',
+  department_id: '',
   employee_id: '',
+  line_type: 'all',
   month: new Date().toISOString().slice(0, 7),
 })
 
 const activeTab = ref('all')
-const employeeDisplay = ref({ name: null, dept: null })
 
 const monthToPeriod = (value) => {
   const month = String(value || '').slice(0, 7)
@@ -47,13 +52,6 @@ const filterMonthPeriod = computed({
 const canCreate = computed(() => ['hr', 'super_admin', 'developer'].includes(String(authStore.user?.role || '').toLowerCase()))
 const canVerify = computed(() => ['accounts', 'super_admin', 'developer'].includes(String(authStore.user?.role || '').toLowerCase()))
 const canReject = computed(() => ['admin', 'super_admin', 'developer'].includes(String(authStore.user?.role || '').toLowerCase()))
-
-const employeeFilter = async ({ q, limit }) => {
-  const res = await apiClient.get('/employees', {
-    params: { q, limit: limit || 20 },
-  })
-  return res.data?.data || res.data || []
-}
 
 const filteredByMonth = computed(() => {
   const month = filters.value.month ? String(filters.value.month) : ''
@@ -116,9 +114,11 @@ const load = async () => {
   }
 }
 
-const setEmployee = (id, display) => {
-  filters.value.employee_id = id || ''
-  employeeDisplay.value = display || { name: null, dept: null }
+const onEmployeeFilterChange = (payload = {}) => {
+  filters.value.company_id = payload.company_id || ''
+  filters.value.department_id = payload.department_id || ''
+  filters.value.employee_id = payload.employee_id || ''
+  filters.value.line_type = payload.line_type || 'all'
 }
 
 const approveRow = async (row) => {
@@ -170,19 +170,21 @@ onMounted(load)
     </div>
 
     <div class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div class="grid gap-3 lg:grid-cols-[1.5fr_0.8fr_auto] items-end">
+      <div class="grid gap-4 lg:grid-cols-[8fr_0.8fr_auto] items-end">
         <div>
           <label class="mb-1 block text-xs font-medium text-slate-600">Employee</label>
-          <AsyncUserCombobox
-            :model-value="filters.employee_id ? Number(filters.employee_id) : null"
-            :display="employeeDisplay"
-            placeholder="Search employee..."
-            :fetcher="employeeFilter"
-            @update:modelValue="(value) => setEmployee(value, employeeDisplay)"
-            @update:display="(value) => (employeeDisplay = value)"
-          />
-        </div>
-        <div>
+          <EmployeeFilter
+            :company_id="filters.company_id"
+            :department_id="filters.department_id"
+            :employee_id="filters.employee_id"
+            :line_type="filters.line_type"
+            :with-type="true"
+            @update:company_id="filters.company_id = $event"
+            @update:department_id="filters.department_id = $event"
+            @update:employee_id="filters.employee_id = $event"
+            @update:line_type="filters.line_type = $event"
+            @filter-change="onEmployeeFilterChange"
+          >
           <FlexibleDatePicker
             v-model="filterMonthPeriod"
             :show-year="false"
@@ -190,10 +192,13 @@ onMounted(load)
             :show-date="false"
             label="Month"
           />
+          </EmployeeFilter> 
         </div>
-        <button class="btn-3 h-[42px]" @click="load">
-          <i class="far fa-search"></i> Load
-        </button>
+        <div>
+          <button class="btn-1" @click="load">
+            <i class="far fa-search"></i> Load
+          </button>
+        </div>
       </div>
     </div>
 

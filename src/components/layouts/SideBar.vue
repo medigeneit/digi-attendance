@@ -227,18 +227,18 @@ const payrollMenu = [
   { label: 'Salary Structures', routeName: 'PayrollSalaryStructureList' },
   { label: 'Salary Revisions', routeName: 'PayrollSalaryRevisionCreate' },
   { label: 'Meal Entries', routeName: 'PayrollMealEntryList' },
-  { label: 'Employee Loans', routeName: 'PayrollEmployeeLoanList' },
+  { label: 'Loans', routeName: 'PayrollEmployeeLoanList' },
   { label: 'Advance Deductions', routeName: 'PayrollAdvanceDeductionList' },
-  { label: 'Bulk Advance Deduction', routeName: 'PayrollAdvanceDeductionCreate' },
+  // { label: 'Bulk Advance Deduction', routeName: 'PayrollAdvanceDeductionCreate' },
   { label: 'Payroll Arrears', routeName: 'PayrollArrearEntryList' },
-  { label: 'Bulk Arrear Entry', routeName: 'PayrollArrearEntryCreate' },
+  // { label: 'Bulk Arrear Entry', routeName: 'PayrollArrearEntryCreate' },
   { label: 'Security Money', routeName: 'PayrollSecurityMoneyList' },
   { label: 'Payroll Batches', routeName: 'PayrollBatchList' },
   { label: 'Generate Payroll', routeName: 'PayrollBatchGenerate' },
   { label: 'Bank Adviser List', routeName: 'PayrollBankAdviserList' },
   { label: 'Payroll Slip List', routeName: 'PayrollSlipList' },
   { label: 'Payrolls', routeName: 'PayrollList' },
-  { label: 'Payroll Adjustments', routeName: 'PayrollAdjustmentList' },
+  { label: 'Post Payroll Adjustments', routeName: 'PayrollAdjustmentList' },
 
 ]
 const payrollRouteNames = payrollMenu.map((i) => i.routeName)

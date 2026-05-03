@@ -5,7 +5,7 @@ import { useToast } from 'vue-toastification'
 import * as XLSX from 'xlsx'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import apiClient from '@/axios'
-import { formatCurrency, toNum } from '@/utils/currency'
+import { toNum } from '@/utils/currency'
 import { usePayrollAdvanceDeductionStore } from '@/stores/payrollAdvanceDeduction'
 import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 
@@ -14,15 +14,10 @@ const router = useRouter()
 const toast = useToast()
 const store = usePayrollAdvanceDeductionStore()
 
-const inputClass =
-  'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-100'
-
 const defaultMonth = () => new Date().toISOString().slice(0, 7)
 
 const bulkForm = ref({
   carry_on_month: route.query.carry_on_month || route.query.salary_month ? String(route.query.carry_on_month || route.query.salary_month).slice(0, 7) : defaultMonth(),
-  common_amount: '',
-  common_note: '',
 })
 
 const employeeFilters = ref({
@@ -172,8 +167,8 @@ const loadRows = async () => {
       employee_id: getEmployeeId(user),
       name: user.name || user.full_name || 'Unknown',
       department_name: user.department?.name || user.department_name || '',
-      amount: bulkForm.value.common_amount || '',
-      note: bulkForm.value.common_note || '',
+      amount: '',
+      note: '',
       is_selected: true,
     }))
 
@@ -185,14 +180,6 @@ const loadRows = async () => {
   } finally {
     loadingRows.value = false
   }
-}
-
-const applyCommonValues = () => {
-  bulkRows.value = bulkRows.value.map((row) => ({
-    ...row,
-    amount: bulkForm.value.common_amount || row.amount,
-    note: bulkForm.value.common_note || row.note,
-  }))
 }
 
 const filteredRows = computed(() => {
@@ -208,10 +195,6 @@ const filteredRows = computed(() => {
 })
 
 const selectedRows = computed(() => bulkRows.value.filter((row) => row.is_selected))
-
-const selectedTotal = computed(() =>
-  selectedRows.value.reduce((sum, row) => sum + toNum(row.amount), 0),
-)
 
 const validateBulk = () => {
   const errors = {}
@@ -265,8 +248,6 @@ const saveBulkEntries = async () => {
 const resetBulk = () => {
   bulkForm.value = {
     carry_on_month: defaultMonth(),
-    common_amount: '',
-    common_note: '',
   }
 
   employeeFilters.value = {
@@ -436,11 +417,15 @@ watch(
       </div>
 
       <EmployeeFilter
-        v-model:company_id="employeeFilters.company_id"
-        v-model:department_id="employeeFilters.department_id"
-        v-model:employee_id="employeeFilters.employee_id"
-        v-model:line_type="employeeFilters.line_type"
+        :company_id="employeeFilters.company_id"
+        :department_id="employeeFilters.department_id"
+        :employee_id="employeeFilters.employee_id"
+        :line_type="employeeFilters.line_type"
         :with-type="true"
+        @update:company_id="employeeFilters.company_id = $event"
+        @update:department_id="employeeFilters.department_id = $event"
+        @update:employee_id="employeeFilters.employee_id = $event"
+        @update:line_type="employeeFilters.line_type = $event"
         @filter-change="onBulkFilterChange"
       >
       <FlexibleDatePicker
@@ -451,20 +436,6 @@ watch(
         label="Carry On Month"
       />
     </EmployeeFilter>
-
-      <div class="grid gap-2 md:grid-cols-3">
-        <div>
-          <label class="mb-1 block text-xs font-semibold text-slate-600">Common Amount</label>
-          <input v-model="bulkForm.common_amount" type="number" min="0" step="0.01" :class="inputClass" placeholder="0.00" />
-        </div>
-        <div>
-          <label class="mb-1 block text-xs font-semibold text-slate-600">Common Note</label>
-          <input v-model.trim="bulkForm.common_note" type="text" :class="inputClass" placeholder="salary advance recovery" />
-        </div>
-        <div class="flex items-end">
-          <button type="button" class="btn-2" :disabled="!bulkRows.length" @click="applyCommonValues">Apply</button>
-        </div>
-      </div>
 
       <!-- <div class="flex flex-wrap items-center gap-2">
         <div class="w-full md:w-80"><input v-model="search" type="text" :class="inputClass" placeholder="Search loaded employee..." /></div>

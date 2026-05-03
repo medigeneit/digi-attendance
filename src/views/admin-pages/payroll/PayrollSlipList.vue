@@ -283,17 +283,18 @@ onMounted(loadSlipList)
           @update:department_id="(value) => (filters.department_id = value)"
           @update:employee_id="(value) => (filters.employee_id = value)"
           @update:line_type="(value) => (filters.line_type = value)"
+        >
+        <FlexibleDatePicker
+          v-model="salaryMonthPeriod"
+          :show-year="false"
+          :show-month="true"
+          :show-date="false"
+          label="Month"
         />
+        </EmployeeFilter>
 
         <div class="flex flex-wrap gap-3">
           <div class="flex flex-col gap-1">
-            <FlexibleDatePicker
-              v-model="salaryMonthPeriod"
-              :show-year="false"
-              :show-month="true"
-              :show-date="false"
-              label="Month"
-            />
           </div>
           <div class="flex flex-col gap-1">
             <label class="block text-[11px] font-medium text-gray-600">Status</label>
@@ -314,17 +315,6 @@ onMounted(loadSlipList)
               Load
             </button>
           </div>
-        </div>
-
-        <div v-if="activeFilterChips.length" class="flex flex-wrap gap-2">
-          <span
-            v-for="chip in activeFilterChips"
-            :key="`${chip.label}-${chip.value}`"
-            class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700 shadow-sm"
-          >
-            <span class="font-medium text-slate-500">{{ chip.label }}:</span>
-            <span class="font-semibold">{{ chip.value }}</span>
-          </span>
         </div>
       </div>
     </div>

@@ -188,6 +188,20 @@ const contraDeductionRows = computed(() =>
     })),
 )
 
+const pfAllowanceTotal = computed(() => {
+  const payroll = currentPayroll.value
+  if (!payroll) return 0
+
+  return toNumber(payroll.pf_allowance_total ?? payroll.pf_allowance_deduction_total)
+})
+
+const grossSalary = computed(() => {
+  const payroll = currentPayroll.value
+  if (!payroll) return 0
+
+  return toNumber(payroll.gross_salary)
+})
+
 const earningRows = computed(() => {
   if (!currentPayroll.value) return []
 
@@ -198,10 +212,16 @@ const earningRows = computed(() => {
     { label: 'House Rent', value: payroll.house_rent },
     { label: 'Medical', value: payroll.medical_allowance },
     { label: 'Conveyance', value: payroll.conveyance_allowance },
+    { label: 'Gross', value: grossSalary.value },
   ]
 
-  const allowanceTotal = toNumber(payroll.other_allowance_total)
-  rows.push({ label: 'Other Allowance', value: allowanceTotal })
+  const otherAllowanceTotal = toNumber(payroll.other_allowance_display_total ?? payroll.other_allowance_total)
+
+  rows.push({ label: 'Others', value: otherAllowanceTotal })
+
+  if (pfAllowanceTotal.value > 0) {
+    rows.push({ label: 'PF Allowance', value: pfAllowanceTotal.value })
+  }
 
   if (manualAdditionBase > 0) rows.push({ label: 'Manual Addition', value: manualAdditionBase })
 
@@ -235,7 +255,16 @@ const deductionRows = computed(() => {
   return rows
 })
 
-const totalEarnings = computed(() => earningRows.value.reduce((sum, item) => sum + toNumber(item.value), 0))
+const totalEarnings = computed(() => {
+  const payroll = currentPayroll.value
+  if (!payroll) return 0
+
+  if (payroll.total_earnings !== undefined && payroll.total_earnings !== null) {
+    return toNumber(payroll.total_earnings)
+  }
+
+  return toNumber(payroll.net_salary) + toNumber(payroll.total_deduction)
+})
 
 const totalDeductions = computed(() => {
   if (currentPayroll.value?.total_deduction !== undefined && currentPayroll.value?.total_deduction !== null) {
@@ -338,8 +367,16 @@ const bankDetails = computed(() => {
               </thead>
               <tbody>
                 <tr v-for="index in salaryTableRowCount" :key="index">
-                  <td class="border border-slate-700 px-2.5 py-1.5">{{ earningRows[index - 1]?.label || '' }}</td>
-                  <td class="border border-slate-700 px-2.5 py-1.5 text-right font-mono font-semibold">
+                  <td
+                    class="border border-slate-700 px-2.5 py-1.5"
+                    :class="earningRows[index - 1]?.label === 'Gross' ? 'bg-slate-100 font-semibold' : ''"
+                  >
+                    {{ earningRows[index - 1]?.label || '' }}
+                  </td>
+                  <td
+                    class="border border-slate-700 px-2.5 py-1.5 text-right font-mono font-semibold"
+                    :class="earningRows[index - 1]?.label === 'Gross' ? 'bg-slate-100' : ''"
+                  >
                     {{ earningRows[index - 1] ? formatMoney(earningRows[index - 1].value) : '' }}
                   </td>
                   <td class="border border-slate-700 px-2.5 py-1.5">{{ deductionRows[index - 1]?.label || '' }}</td>
