@@ -55,13 +55,31 @@ export const useDoctorPayrollStore = defineStore('doctorPayroll', () => {
             flag: 'excel',
           },
           responseType: 'blob',
+          validateStatus: () => true,
         })
+
+        const contentType = res.headers['content-type'] || ''
+
+        if (res.status !== 200 || contentType.includes('application/json') || contentType.includes('text/html')) {
+          const text = await res.data.text()
+          console.error('Excel download failed:', {
+            status: res.status,
+            contentType,
+            response: text,
+          })
+
+          throw new Error('Server returned non-Excel response. Check console/network response.')
+        }
 
         const month = params.salary_month
           ? String(params.salary_month).slice(0, 7)
           : 'all-months'
 
-        const url = window.URL.createObjectURL(new Blob([res.data]))
+        const blob = new Blob([res.data], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        })
+
+        const url = window.URL.createObjectURL(blob)
         const link = document.createElement('a')
 
         link.href = url
