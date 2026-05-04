@@ -44,6 +44,45 @@ export const useDoctorPayrollStore = defineStore('doctorPayroll', () => {
     }
   }
 
+  const downloadDoctorPayrollExcel = async (params = {}) => {
+      loading.value = true
+      error.value = null
+
+      try {
+        const res = await apiClient.get('/doctor-payrolls', {
+          params: {
+            ...params,
+            flag: 'excel',
+          },
+          responseType: 'blob',
+        })
+
+        const month = params.salary_month
+          ? String(params.salary_month).slice(0, 7)
+          : 'all-months'
+
+        const url = window.URL.createObjectURL(new Blob([res.data]))
+        const link = document.createElement('a')
+
+        link.href = url
+        link.setAttribute('download', `doctor-payroll-report-${month}.xlsx`)
+
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+
+        window.URL.revokeObjectURL(url)
+
+        return true
+      } catch (err) {
+        const e = toError(err, 'Failed to download doctor payroll report')
+        error.value = e.message
+        throw e
+      } finally {
+        loading.value = false
+      }
+  }
+
   const fetchItem = async (id) => {
     loading.value = true
     error.value = null
@@ -128,6 +167,7 @@ export const useDoctorPayrollStore = defineStore('doctorPayroll', () => {
     error,
     pagination,
     fetchList,
+    downloadDoctorPayrollExcel,
     fetchItem,
     update,
     approve,

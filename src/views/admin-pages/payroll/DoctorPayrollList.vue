@@ -118,6 +118,19 @@ async function load() {
   await doctorPayrollStore.fetchList(params)
 }
 
+async function handleDownloadExcel() {
+  try {
+    const params = { ...filters.value }
+    delete params.page
+    delete params.per_page
+    Object.keys(params).forEach((k) => { if (!params[k]) delete params[k] })
+    await doctorPayrollStore.downloadDoctorPayrollExcel(params)
+    toast.success('Payroll report downloaded.')
+  } catch (e) {
+    toast.error(e.message || 'Download failed.')
+  }
+}
+
 const resetFilters = () => {
   filters.value = {
     company_id: '',
@@ -561,6 +574,9 @@ onMounted(async () => {
           </button>
           <button class="btn-3" @click="printReport" :disabled="loading || !list.length">
             <i class="far fa-print"></i> Print
+          </button>
+          <button class="btn-3" @click="handleDownloadExcel" :disabled="loading || !list.length">
+            <i class="far fa-file-excel"></i> Excel
           </button>
           <button class="btn-3" @click="exportPdf" :disabled="loading || pdfExporting || !list.length">
             <i class="far" :class="pdfExporting ? 'fa-spinner fa-spin' : 'fa-file-pdf'"></i> PDF
