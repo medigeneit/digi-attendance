@@ -10,6 +10,7 @@ import PaginationBar from '@/components/PaginationBar.vue'
 import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import PayrollStatusBadge from '@/components/payroll/PayrollStatusBadge.vue'
 import PaymentStatusModal from '@/components/payroll/PaymentStatusModal.vue'
+import SelectDropdown from '@/components/SelectDropdown.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -24,6 +25,7 @@ const getCurrentMonth = () => new Date().toISOString().slice(0, 7)
 
 const filters = ref({
   company_id: '',
+  line_type: 'all',
   salary_month: getCurrentMonth(),
   salary_type: '',
   payment_status: '',
@@ -95,10 +97,18 @@ const summaryCards = computed(() => {
     },
   ]
 })
+const lineTypeOptions = [
+        { id: 'all', label: 'All Types' },
+        { id: 'executive', label: 'Executive' },
+        { id: 'support_staff', label: 'Support Staff' },
+        { id: 'doctor', label: 'Doctor' },
+        { id: 'academy_body', label: 'Academy Body' },
+      ];
 
 const resetFilters = () => {
   filters.value = {
     company_id: '',
+    line_type: 'all',
     salary_month: getCurrentMonth(),
     salary_type: '',
     payment_status: '',
@@ -108,11 +118,11 @@ const resetFilters = () => {
   }
   load()
 }
-
 const applyRouteQueryToFilters = () => {
   const q = route.query
   filters.value = {
     company_id: String(q.company_id || ''),
+    line_type: String(q.line_type || ''),
     salary_month: String(q.salary_month || getCurrentMonth()),
     salary_type: String(q.salary_type || ''),
     payment_status: String(q.payment_status || ''),
@@ -284,6 +294,30 @@ const getTotalEarnings = (payroll) =>
           <option value="">All Types</option>
           <option v-for="type in typeOptions" :key="type" :value="type">{{ type }}</option>
         </select>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">Line Type</label>
+        <SelectDropdown
+          v-model="filters.line_type"
+          :options="lineTypeOptions"
+          @input="() => { filters.page = 1; load() }"
+          placeholder="Select Type"
+          class="h-10 w-full rounded-lg border border-slate-300 bg-white"
+        >
+          <template #selected-option="{ option }">
+            <div class="line-clamp-1 text-sm text-gray-900" :title="option?.label">
+              <span v-if="option?.label">{{ option?.label }}</span>
+              <span v-else class="text-gray-500 whitespace-nowrap">--Select Line--</span>
+            </div>
+          </template>
+          <template #option="{ option }">
+            <div>
+              <div class="line-clamp-1 text-sm text-gray-900 whitespace-nowrap" :title="option.label">
+                {{ option.label }}
+              </div>
+            </div>
+          </template>
+        </SelectDropdown>
       </div>
       <div>
         <label class="block text-xs font-medium text-gray-600 mb-1">Payment Status</label>
