@@ -4,27 +4,26 @@ import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { storeToRefs } from 'pinia'
 import { usePayrollManagementStore } from '@/stores/payrollManagement'
-import { useCompanyStore } from '@/stores/company'
+import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import PaginationBar from '@/components/PaginationBar.vue'
 import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import PayrollStatusBadge from '@/components/payroll/PayrollStatusBadge.vue'
 import PaymentStatusModal from '@/components/payroll/PaymentStatusModal.vue'
-import SelectDropdown from '@/components/SelectDropdown.vue'
 
 const router = useRouter()
 const route = useRoute()
 const toast = useToast()
 const payrollStore = usePayrollManagementStore()
-const companyStore = useCompanyStore()
 
 const { list, loading, error, pagination } = storeToRefs(payrollStore)
-const { companies } = storeToRefs(companyStore)
 
 const getCurrentMonth = () => new Date().toISOString().slice(0, 7)
 
 const filters = ref({
   company_id: '',
+  department_id: '',
+  employee_id: '',
   line_type: 'all',
   salary_month: getCurrentMonth(),
   salary_type: '',
@@ -97,17 +96,39 @@ const summaryCards = computed(() => {
     },
   ]
 })
-const lineTypeOptions = [
-        { id: 'all', label: 'All Types' },
-        { id: 'executive', label: 'Executive' },
-        { id: 'support_staff', label: 'Support Staff' },
-        { id: 'doctor', label: 'Doctor' },
-        { id: 'academy_body', label: 'Academy Body' },
-      ];
+const buildRouteQuery = () => {
+  const params = { ...filters.value }
+  Object.keys(params).forEach((k) => { if (!params[k]) delete params[k] })
+  return params
+}
+
+const buildApiParams = () => {
+  const params = { ...filters.value }
+  if (params.employee_id) {
+    params.user_id = params.employee_id
+  }
+  delete params.employee_id
+  Object.keys(params).forEach((k) => { if (!params[k]) delete params[k] })
+  return params
+}
+
+const onEmployeeFilterChange = (payload = {}) => {
+  filters.value = {
+    ...filters.value,
+    company_id: payload.company_id || '',
+    department_id: payload.department_id || '',
+    employee_id: payload.employee_id || '',
+    line_type: payload.line_type || 'all',
+    page: 1,
+  }
+  load()
+}
 
 const resetFilters = () => {
   filters.value = {
     company_id: '',
+    department_id: '',
+    employee_id: '',
     line_type: 'all',
     salary_month: getCurrentMonth(),
     salary_type: '',
@@ -122,7 +143,9 @@ const applyRouteQueryToFilters = () => {
   const q = route.query
   filters.value = {
     company_id: String(q.company_id || ''),
-    line_type: String(q.line_type || ''),
+    department_id: String(q.department_id || ''),
+    employee_id: String(q.employee_id || q.user_id || ''),
+    line_type: String(q.line_type || 'all'),
     salary_month: String(q.salary_month || getCurrentMonth()),
     salary_type: String(q.salary_type || ''),
     payment_status: String(q.payment_status || ''),
@@ -133,18 +156,15 @@ const applyRouteQueryToFilters = () => {
 }
 
 async function load() {
-  const params = { ...filters.value }
-  Object.keys(params).forEach((k) => { if (!params[k]) delete params[k] })
-  await router.replace({ query: params })
-  await payrollStore.fetchList(params)
+  await router.replace({ query: buildRouteQuery() })
+  await payrollStore.fetchList(buildApiParams())
 }
 
 async function handleDownloadExcel() {
   try {
-    const params = { ...filters.value }
+    const params = buildApiParams()
     delete params.page
     delete params.per_page
-    Object.keys(params).forEach((k) => { if (!params[k]) delete params[k] })
     await payrollStore.downloadExcel(params)
     toast.success('Payroll report downloaded.')
   } catch (e) {
@@ -154,7 +174,7 @@ async function handleDownloadExcel() {
 
 onMounted(async () => {
   applyRouteQueryToFilters()
-  await Promise.all([companyStore.fetchCompanies(), load()])
+  await load()
 })
 
 const openPaymentModal = (p) => {
@@ -268,68 +288,51 @@ const getTotalEarnings = (payroll) =>
 
     <!-- Filters -->
     <div class="rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
-      <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.4fr_1fr_1fr_1fr_auto] items-end">
-      <div>
-        <label class="block text-xs font-medium text-gray-600 mb-1">Company</label>
-        <select v-model="filters.company_id" @change="() => { filters.page = 1; load() }"
-          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
-          <option value="">All Companies</option>
-          <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
-        </select>
-      </div>
-      <div>
-        <FlexibleDatePicker
-          v-model="salaryMonthPeriod"
-          :show-year="false"
-          :show-month="true"
-          :show-date="false"
-          label="Month"
-          @change="handleSalaryMonthChange"
-        />
-      </div>
-      <div>
-        <label class="block text-xs font-medium text-gray-600 mb-1">Salary Type</label>
-        <select v-model="filters.salary_type" @change="() => { filters.page = 1; load() }"
-          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
-          <option value="">All Types</option>
-          <option v-for="type in typeOptions" :key="type" :value="type">{{ type }}</option>
-        </select>
-      </div>
-      <div>
-        <label class="block text-xs font-medium text-gray-600 mb-1">Line Type</label>
-        <SelectDropdown
-          v-model="filters.line_type"
-          :options="lineTypeOptions"
-          @input="() => { filters.page = 1; load() }"
-          placeholder="Select Type"
-          class="h-10 w-full rounded-lg border border-slate-300 bg-white"
+      <div class="space-y-3">
+        <EmployeeFilter
+          :company_id="filters.company_id"
+          :department_id="filters.department_id"
+          :employee_id="filters.employee_id"
+          :line_type="filters.line_type"
+          :with-type="true"
+          :with-employee="true"
+          @update:company_id="(value) => (filters.company_id = value)"
+          @update:department_id="(value) => (filters.department_id = value)"
+          @update:employee_id="(value) => (filters.employee_id = value)"
+          @update:line_type="(value) => (filters.line_type = value)"
+          @filter-change="onEmployeeFilterChange"
         >
-          <template #selected-option="{ option }">
-            <div class="line-clamp-1 text-sm text-gray-900" :title="option?.label">
-              <span v-if="option?.label">{{ option?.label }}</span>
-              <span v-else class="text-gray-500 whitespace-nowrap">--Select Line--</span>
-            </div>
-          </template>
-          <template #option="{ option }">
-            <div>
-              <div class="line-clamp-1 text-sm text-gray-900 whitespace-nowrap" :title="option.label">
-                {{ option.label }}
-              </div>
-            </div>
-          </template>
-        </SelectDropdown>
-      </div>
-      <div>
-        <label class="block text-xs font-medium text-gray-600 mb-1">Payment Status</label>
-        <select v-model="filters.payment_status" @change="() => { filters.page = 1; load() }"
-          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
-          <option value="">All Statuses</option>
-          <option v-for="status in statusOptions" :key="status" :value="status">{{ status }}</option>
-        </select>
-      </div>
-      <button class="btn-3 h-[42px]" @click="resetFilters">
-        <i class="far fa-undo"></i> Reset
-      </button>
+          <FlexibleDatePicker
+            v-model="salaryMonthPeriod"
+            :show-year="false"
+            :show-month="true"
+            :show-date="false"
+            label="Month"
+            @change="handleSalaryMonthChange"
+          />
+        </EmployeeFilter>
+
+        <div class="flex flex-wrap items-end gap-3">
+          <div class="w-full sm:w-48">
+            <label class="block text-xs font-medium text-gray-600 mb-1">Salary Type</label>
+            <select v-model="filters.salary_type" @change="() => { filters.page = 1; load() }"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+              <option value="">All Types</option>
+              <option v-for="type in typeOptions" :key="type" :value="type">{{ type }}</option>
+            </select>
+          </div>
+          <div class="w-full sm:w-48">
+            <label class="block text-xs font-medium text-gray-600 mb-1">Payment Status</label>
+            <select v-model="filters.payment_status" @change="() => { filters.page = 1; load() }"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+              <option value="">All Statuses</option>
+              <option v-for="status in statusOptions" :key="status" :value="status">{{ status }}</option>
+            </select>
+          </div>
+          <button class="btn-3 h-[42px]" @click="resetFilters">
+            <i class="far fa-undo"></i> Reset
+          </button>
+        </div>
       </div>
     </div>
 
