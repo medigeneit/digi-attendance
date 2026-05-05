@@ -217,11 +217,12 @@ const earningRows = computed(() => {
 
   const otherAllowanceTotal = toNumber(payroll.other_allowance_display_total ?? payroll.other_allowance_total)
 
-  rows.push({ label: 'Others', value: otherAllowanceTotal })
-
+  rows.push({ label: 'Others Allowance', value: otherAllowanceTotal })
   if (pfAllowanceTotal.value > 0) {
     rows.push({ label: 'PF Allowance', value: pfAllowanceTotal.value })
   }
+  rows.push({ label: 'Arrear', value: toNumber(payroll.arrear) })
+
 
   if (manualAdditionBase > 0) rows.push({ label: 'Manual Addition', value: manualAdditionBase })
 
