@@ -124,6 +124,13 @@ const onEmployeeFilterChange = (payload = {}) => {
   load()
 }
 
+const goToGenerate = () => {
+  router.push({
+    name: 'PayrollBatchGenerate',
+    query: buildRouteQuery(),
+  })
+}
+
 const resetFilters = () => {
   filters.value = {
     company_id: '',
@@ -279,7 +286,7 @@ const getTotalEarnings = (payroll) =>
           <button class="btn-3" @click="handleDownloadExcel" :disabled="loading || !list.length">
             <i class="far fa-file-excel"></i> Excel
           </button>
-          <button class="btn-2" @click="router.push({ name: 'PayrollBatchGenerate' })">
+          <button class="btn-2" @click="goToGenerate">
             <i class="far fa-plus"></i> Generate
           </button>
         </div>

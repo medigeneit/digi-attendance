@@ -16,13 +16,18 @@ const batchStore = usePayrollBatchStore()
 
 const { loading, error, generateResult, apiUnavailable } = storeToRefs(batchStore)
 
+const queryValue = (key, fallback = '') => {
+  const value = route.query[key]
+  return Array.isArray(value) ? String(value[0] || fallback) : String(value || fallback)
+}
+
 const form = ref({
-  company_id: '',
-  department_id: '',
-  line_type: String(route.query.line_type || 'all'),
-  salary_month: '',
-  salary_type: 'Monthly',
-  employee_id: '',
+  company_id: queryValue('company_id'),
+  department_id: queryValue('department_id'),
+  line_type: queryValue('line_type', 'all'),
+  salary_month: queryValue('salary_month'),
+  salary_type: queryValue('salary_type', 'Monthly') || 'Monthly',
+  employee_id: queryValue('employee_id') || queryValue('user_id'),
   remarks: '',
 })
 const formErrors = ref({})
@@ -236,7 +241,7 @@ const inputCls =
             :department_id="form.department_id"
             :line_type="form.line_type"
             :employee_id="form.employee_id"
-            :with-employee="false"
+            :with-employee="true"
             @filter-change="handleEmployeeFilterChange"
           />
           <p v-if="formErrors.company_id" class="text-red-500 text-xs mt-1">{{ formErrors.company_id }}</p>
