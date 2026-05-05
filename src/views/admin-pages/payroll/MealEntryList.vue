@@ -1044,7 +1044,7 @@ watch(
 
     <!-- Filters -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-      <div class="grid grid-cols-1 gap-3 xl:grid-cols-[170px_1fr]">
+      <div class="grid grid-cols-1 gap-12 xl:grid-cols-[170px_1fr]">
         <div class="relative">
           <FlexibleDatePicker
             v-model="filterMonthPeriod"
