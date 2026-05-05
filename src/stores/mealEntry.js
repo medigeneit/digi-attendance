@@ -76,17 +76,8 @@ export const useMealEntryStore = defineStore('mealEntry', () => {
     loading.value = true
     error.value = null
     try {
-      try {
-        const res = await apiClient.post('/meal-entries/bulk-store', payload)
-        return res.data
-      } catch (bulkErr) {
-        const status = bulkErr?.response?.status
-        if (status !== 404 && status !== 405) throw bulkErr
-
-        // Backward compatibility for APIs that still accept bulk payload on /meal-entries.
-        const fallbackRes = await apiClient.post('/meal-entries', payload)
-        return fallbackRes.data
-      }
+      const res = await apiClient.post('/meal-entries/bulk-store', payload)
+      return res.data
     } catch (err) {
       const e = toError(err, 'Failed to save bulk meal entries')
       error.value = e.message

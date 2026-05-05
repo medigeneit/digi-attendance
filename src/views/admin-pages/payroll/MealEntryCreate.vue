@@ -106,8 +106,8 @@ const filteredRows = computed(() => {
 const selectedRows = computed(() => bulkRows.value.filter((row) => row.is_selected))
 
 const regularAmount = (row) => toNum(bulkForm.value.meal_rate) * toNum(row.total_meal)
-const additionalAmount = (row) => toNum(row.total_additional_meal) * toNum(bulkForm.value.common_additional)
-const rowTotal = (row) => regularAmount(row) + additionalAmount(row)
+const specialAmount = (row) => toNum(row.total_special_meal) * toNum(bulkForm.value.common_additional)
+const rowTotal = (row) => regularAmount(row) + specialAmount(row)
 const grandTotal = computed(() => selectedRows.value.reduce((sum, row) => sum + rowTotal(row), 0))
 
 const validate = () => {
@@ -152,8 +152,8 @@ const loadRows = async () => {
 
     const entryMap = new Map(entries.map((entry) => [String(entry.user_id), entry]))
     if (!bulkForm.value.meal_rate && entries.length) bulkForm.value.meal_rate = entries[0]?.meal_rate ?? ''
-    if (!bulkForm.value.common_additional && entries.length && toNum(entries[0]?.total_meal) > 0) {
-      bulkForm.value.common_additional = toNum(entries[0]?.additional_amount) / toNum(entries[0]?.total_meal)
+    if (!bulkForm.value.common_additional && entries.length) {
+      bulkForm.value.common_additional = entries[0]?.special_meal_rate ?? ''
     }
 
     bulkRows.value = users.map((user) => {
@@ -164,10 +164,7 @@ const loadRows = async () => {
         name: user.name || 'Unknown',
         department_name: user.department?.name || user.department_name || '',
         total_meal: current?.total_meal ?? '',
-        total_additional_meal:
-          current?.additional_amount && toNum(bulkForm.value.common_additional) > 0
-            ? toNum(current.additional_amount) / toNum(bulkForm.value.common_additional)
-            : '',
+        total_special_meal: current?.total_special_meal ?? '',
         is_selected: true,
       }
     })
@@ -185,12 +182,15 @@ const saveBulkEntries = async () => {
     await mealStore.createBulk({
       salary_month: bulkForm.value.salary_month,
       meal_rate: toNum(bulkForm.value.meal_rate),
+      special_meal_rate: toNum(bulkForm.value.common_additional),
       entries: selectedRows.value.map((row) => ({
         user_id: row.user_id,
         salary_month: bulkForm.value.salary_month,
         meal_rate: toNum(bulkForm.value.meal_rate),
+        special_meal_rate: toNum(bulkForm.value.common_additional),
         total_meal: toNum(row.total_meal),
-        additional_amount: additionalAmount(row),
+        total_special_meal: toNum(row.total_special_meal),
+        additional_amount: 0,
       })),
     })
     toast.success('Bulk meal entries saved successfully.')
@@ -226,9 +226,9 @@ const closeImportGuide = () => (showImportGuideModal.value = false)
 
 const downloadBulkTemplate = () => {
   const header = [
-    'employee_id,user_id,salary_month,meal_rate,total_meal,total_additional_meal,additional_rate,additional_amount,total_amount',
+    'employee_id,user_id,salary_month,meal_rate,special_meal_rate,total_meal,total_special_meal,total_amount',
   ]
-  const sample = [`EMP001,,${bulkForm.value.salary_month || ''},${bulkForm.value.meal_rate || ''},22,2,55,110,1320`]
+  const sample = [`EMP001,,${bulkForm.value.salary_month || ''},${bulkForm.value.meal_rate || ''},${bulkForm.value.common_additional || ''},22,2,1600`]
   const csv = `${header.join('\n')}\n${sample.join('\n')}\n`
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
   const link = document.createElement('a')
@@ -256,7 +256,7 @@ const applyImportedRows = async (records, fileName = '') => {
   const importedMap = new Map()
   let skipped = 0
   let importedRate = null
-  let importedAdditionalRate = null
+  let importedSpecialMealRate = null
   let importedMonth = ''
 
   records.forEach((raw, index) => {
@@ -290,21 +290,28 @@ const applyImportedRows = async (records, fileName = '') => {
     const mealRate = record.meal_rate !== undefined && record.meal_rate !== null && String(record.meal_rate) !== ''
       ? toNum(record.meal_rate)
       : toNum(bulkForm.value.meal_rate)
-    const addRate = record.additional_rate !== undefined && record.additional_rate !== null && String(record.additional_rate) !== ''
-      ? toNum(record.additional_rate)
+    const specialMealRate = record.special_meal_rate !== undefined && record.special_meal_rate !== null && String(record.special_meal_rate) !== ''
+      ? toNum(record.special_meal_rate)
+      : record.additional_rate !== undefined && record.additional_rate !== null && String(record.additional_rate) !== ''
+        ? toNum(record.additional_rate)
       : record.common_additional !== undefined && String(record.common_additional) !== ''
         ? toNum(record.common_additional)
         : null
     if (mealRate && !bulkForm.value.meal_rate) importedRate = mealRate
-    if (addRate !== null && !Number.isNaN(addRate)) importedAdditionalRate = addRate
+    if (specialMealRate !== null && !Number.isNaN(specialMealRate)) importedSpecialMealRate = specialMealRate
     if (record.salary_month && !importedMonth) importedMonth = toMonthValue(record.salary_month)
 
     const totalMeal = toNum(record.total_meal)
-    const totalAdditionalMeal =
-      record.total_additional_meal !== undefined && String(record.total_additional_meal) !== ''
+    const activeSpecialMealRate = specialMealRate ?? toNum(bulkForm.value.common_additional)
+    const totalSpecialMeal =
+      record.total_special_meal !== undefined && String(record.total_special_meal) !== ''
+        ? toNum(record.total_special_meal)
+        : record.total_additional_meal !== undefined && String(record.total_additional_meal) !== ''
         ? toNum(record.total_additional_meal)
         : record.additional_amount !== undefined && String(record.additional_amount) !== ''
-          ? (addRate ? toNum(record.additional_amount) / addRate : '')
+          ? (activeSpecialMealRate ? toNum(record.additional_amount) / activeSpecialMealRate : '')
+          : record.total_amount !== undefined && String(record.total_amount) !== '' && activeSpecialMealRate
+            ? (toNum(record.total_amount) - (mealRate * totalMeal)) / activeSpecialMealRate
           : ''
 
     importedMap.set(key, {
@@ -313,14 +320,14 @@ const applyImportedRows = async (records, fileName = '') => {
       name: record.name || '',
       department_name: record.department_name || '',
       total_meal: totalMeal,
-      total_additional_meal: totalAdditionalMeal,
+      total_special_meal: totalSpecialMeal,
       is_selected: true,
     })
   })
 
   bulkRows.value = Array.from(importedMap.values())
   if (importedRate !== null) bulkForm.value.meal_rate = importedRate
-  if (importedAdditionalRate !== null) bulkForm.value.common_additional = importedAdditionalRate
+  if (importedSpecialMealRate !== null) bulkForm.value.common_additional = importedSpecialMealRate
   if (importedMonth) bulkForm.value.salary_month = importedMonth
 
   importPreview.value = {
@@ -429,7 +436,7 @@ watch(() => bulkForm.value.salary_month, () => {
       </div>
       <p class="text-[11px] text-slate-500">
         Import columns: <span class="font-medium">employee_id or user_id, total_meal</span>. Optional:
-        <span class="font-medium">salary_month, meal_rate, additional_rate, total_additional_meal, additional_amount, total_amount</span>.
+        <span class="font-medium">salary_month, meal_rate, special_meal_rate, total_special_meal, total_amount</span>.
       </p>
     </div>
 
@@ -457,15 +464,15 @@ watch(() => bulkForm.value.salary_month, () => {
 
     <div v-else class="overflow-x-auto rounded-xl border border-gray-100 bg-white shadow-sm">
       <table class="w-full text-xs md:text-sm">
-        <thead class="bg-blue-50 text-[11px] uppercase text-blue-900"><tr><th class="px-3 py-2 text-center">Select</th><th class="px-3 py-2 text-left">Employee</th><th class="px-3 py-2 text-right">Regular Meals</th><th class="px-3 py-2 text-right">Regular Meal Amount</th><th class="px-3 py-2 text-right">Special Meal</th><th class="px-3 py-2 text-right">Special Amount</th><th class="px-3 py-2 text-right">Total</th></tr></thead>
+        <thead class="bg-blue-50 text-[11px] uppercase text-blue-900"><tr><th class="px-3 py-2 text-center">Select</th><th class="px-3 py-2 text-left">Employee</th><th class="px-3 py-2 text-right">Regular Meals</th><th class="px-3 py-2 text-right">Regular Meal Amount</th><th class="px-3 py-2 text-right">Special Meals</th><th class="px-3 py-2 text-right">Special Amount</th><th class="px-3 py-2 text-right">Total</th></tr></thead>
         <tbody class="divide-y divide-gray-50">
           <tr v-for="row in filteredRows" :key="row.user_id" class="hover:bg-gray-50 transition-colors">
             <td class="px-3 py-2 text-center"><input v-model="row.is_selected" type="checkbox" class="h-4 w-4 accent-blue-600" /></td>
             <td class="px-3 py-2"><div class="font-medium text-blue-900">{{ row.name }}</div><div class="text-[11px] text-gray-400">{{ row.employee_id || '-' }} · {{ row.department_name || 'No department' }}</div></td>
             <td class="px-3 py-2 text-right"><input v-model="row.total_meal" type="number" min="0" step="1" class="w-24 rounded-lg border border-gray-300 px-2.5 py-1.5 text-right text-xs focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="0" /></td>
             <td class="px-3 py-2 text-right font-mono text-gray-700">{{ formatCurrency(regularAmount(row)) }}</td>
-            <td class="px-3 py-2 text-right"><input v-model="row.total_additional_meal" type="number" min="0" step="0.01" class="w-28 rounded-lg border border-gray-300 px-2.5 py-1.5 text-right text-xs focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="0.00" /></td>
-            <td class="px-3 py-2 text-right font-mono text-gray-700">{{ formatCurrency(additionalAmount(row)) }}</td>
+            <td class="px-3 py-2 text-right"><input v-model="row.total_special_meal" type="number" min="0" step="1" class="w-28 rounded-lg border border-gray-300 px-2.5 py-1.5 text-right text-xs focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="0" /></td>
+            <td class="px-3 py-2 text-right font-mono text-gray-700">{{ formatCurrency(specialAmount(row)) }}</td>
             <td class="px-3 py-2 text-right font-mono font-semibold text-blue-700">{{ formatCurrency(rowTotal(row)) }}</td>
           </tr>
         </tbody>
@@ -495,8 +502,8 @@ watch(() => bulkForm.value.salary_month, () => {
         <div class="flex items-center justify-between px-6 py-4 border-b"><h3 class="font-bold text-blue-900 text-lg">Bulk Import Format Guide</h3><button @click="closeImportGuide" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button></div>
         <div class="p-6 space-y-4 text-sm">
           <p class="text-gray-600">Import file first row should contain headers in the expected format.</p>
-          <div class="rounded-lg border border-blue-100 bg-blue-50 p-4 space-y-2"><p class="text-xs font-semibold text-blue-800 uppercase tracking-wide">Required Columns</p><p class="text-blue-900 font-medium">employee_id or user_id, total_meal</p><p class="text-xs text-blue-700">Additional part can be provided using <strong>total_additional_meal</strong>, <strong>additional_amount</strong>, <strong>total_amount</strong>, or <strong>additional_rate</strong>.</p></div>
-          <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-2"><p class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Optional Columns</p><p class="text-gray-800">salary_month, meal_rate, additional_rate</p></div>
+          <div class="rounded-lg border border-blue-100 bg-blue-50 p-4 space-y-2"><p class="text-xs font-semibold text-blue-800 uppercase tracking-wide">Required Columns</p><p class="text-blue-900 font-medium">employee_id or user_id, total_meal</p><p class="text-xs text-blue-700">Special meal part can be provided using <strong>total_special_meal</strong> and <strong>special_meal_rate</strong>. Legacy <strong>total_additional_meal</strong> is still accepted.</p></div>
+          <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-2"><p class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Optional Columns</p><p class="text-gray-800">salary_month, meal_rate, special_meal_rate, total_amount</p></div>
           <div class="flex flex-wrap justify-end gap-2 pt-1">
             <button type="button" class="btn-3" @click="downloadBulkTemplate"><i class="far fa-file-download"></i> Download Template</button>
             <button type="button" class="btn-3" @click="closeImportGuide">Cancel</button>

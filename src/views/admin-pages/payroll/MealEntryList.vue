@@ -45,8 +45,9 @@ const blankForm = () => ({
   user_id: null,
   salary_month: filters.value.salary_month,
   meal_rate: '',
+  special_meal_rate: '',
   total_meal: '',
-  additional_amount: '',
+  total_special_meal: '',
 })
 
 const modalForm = ref(blankForm())
@@ -107,8 +108,14 @@ const baseAmountPreview = computed(() => {
   return r * m
 })
 
+const specialAmountPreview = computed(() => {
+  const r = toNum(modalForm.value.special_meal_rate)
+  const m = toNum(modalForm.value.total_special_meal)
+  return r * m
+})
+
 const totalAmountPreview = computed(() => {
-  return baseAmountPreview.value + toNum(modalForm.value.additional_amount)
+  return baseAmountPreview.value + specialAmountPreview.value
 })
 
 const filteredBulkRows = computed(() => {
@@ -129,7 +136,7 @@ const bulkGrandTotal = computed(() =>
     (sum, row) =>
       sum +
       (toNum(bulkForm.value.meal_rate) * toNum(row.total_meal)) +
-      (toNum(row.total_additional_meal) * toNum(bulkForm.value.common_additional)),
+      (toNum(row.total_special_meal) * toNum(bulkForm.value.common_additional)),
     0,
   ),
 )
@@ -305,7 +312,7 @@ const toggleBulkPanel = () => {
 
 const rowTotal = (row) =>
   (toNum(bulkForm.value.meal_rate) * toNum(row.total_meal)) +
-  (toNum(row.total_additional_meal) * toNum(bulkForm.value.common_additional))
+  (toNum(row.total_special_meal) * toNum(bulkForm.value.common_additional))
 
 const toArray = (data) => {
   if (Array.isArray(data)) return data
@@ -395,6 +402,9 @@ const loadBulkEmployees = async () => {
     if (entries.length && (bulkForm.value.meal_rate === '' || bulkForm.value.meal_rate === null)) {
       bulkForm.value.meal_rate = entries[0]?.meal_rate ?? ''
     }
+    if (entries.length && (bulkForm.value.common_additional === '' || bulkForm.value.common_additional === null)) {
+      bulkForm.value.common_additional = entries[0]?.special_meal_rate ?? ''
+    }
 
     bulkRows.value = users.map((user) => {
       const current = entryMap.get(user.id)
@@ -405,10 +415,7 @@ const loadBulkEmployees = async () => {
         name: user.name || 'Unknown',
         department_name: user.department?.name || user.department_name || '',
         total_meal: current?.total_meal ?? '',
-        total_additional_meal:
-          current?.additional_amount && toNum(bulkForm.value.common_additional) > 0
-            ? toNum(current.additional_amount) / toNum(bulkForm.value.common_additional)
-            : 0,
+        total_special_meal: current?.total_special_meal ?? 0,
         is_selected: true,
       }
     })
@@ -435,12 +442,12 @@ const validateBulk = () => {
       row.total_meal === '' ||
       Number.isNaN(Number(row.total_meal)) ||
       toNum(row.total_meal) < 0 ||
-      (row.total_additional_meal !== '' && Number.isNaN(Number(row.total_additional_meal))) ||
-      toNum(row.total_additional_meal) < 0,
+      (row.total_special_meal !== '' && Number.isNaN(Number(row.total_special_meal))) ||
+      toNum(row.total_special_meal) < 0,
   )
 
   if (invalidRows.length) {
-    errors.rows = 'All selected employees must have valid total meal and total additional meal values.'
+    errors.rows = 'All selected employees must have valid regular meal and special meal values.'
   }
 
   bulkErrors.value = errors
@@ -497,12 +504,15 @@ const handleBulkSubmit = async () => {
     const payload = {
       salary_month: bulkForm.value.salary_month,
       meal_rate: toNum(bulkForm.value.meal_rate),
+      special_meal_rate: toNum(bulkForm.value.common_additional),
       entries: selectedBulkRows.value.map((row) => ({
         user_id: row.user_id,
         salary_month: bulkForm.value.salary_month,
         meal_rate: toNum(bulkForm.value.meal_rate),
+        special_meal_rate: toNum(bulkForm.value.common_additional),
         total_meal: toNum(row.total_meal),
-        additional_amount: toNum(row.total_additional_meal) * toNum(bulkForm.value.common_additional),
+        total_special_meal: toNum(row.total_special_meal),
+        additional_amount: 0,
       })),
     }
 
@@ -518,8 +528,8 @@ const handleBulkSubmit = async () => {
 }
 
 const downloadBulkTemplate = () => {
-  const header = ['employee_id,user_id,salary_month,meal_rate,total_meal,total_additional_meal,additional_rate,additional_amount,total_amount']
-  const sample = [`EMP001,,${bulkForm.value.salary_month || ''},${bulkForm.value.meal_rate || ''},22,2,${bulkForm.value.common_additional || ''},120,1440`]
+  const header = ['employee_id,user_id,salary_month,meal_rate,special_meal_rate,total_meal,total_special_meal,total_amount']
+  const sample = [`EMP001,,${bulkForm.value.salary_month || ''},${bulkForm.value.meal_rate || ''},${bulkForm.value.common_additional || ''},22,2,1600`]
   const csv = `${header.join('\n')}\n${sample.join('\n')}\n`
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
   const link = document.createElement('a')
@@ -576,6 +586,15 @@ const applyImportedRows = async (records, fileName = '') => {
     }
 
     if (
+      record.total_special_meal !== undefined &&
+      record.total_special_meal !== null &&
+      String(record.total_special_meal) !== '' &&
+      (Number.isNaN(Number(record.total_special_meal)) || toNum(record.total_special_meal) < 0)
+    ) {
+      reasons.push('total_special_meal must be a non-negative number.')
+    }
+
+    if (
       record.total_additional_meal !== undefined &&
       record.total_additional_meal !== null &&
       String(record.total_additional_meal) !== '' &&
@@ -585,12 +604,12 @@ const applyImportedRows = async (records, fileName = '') => {
     }
 
     if (
-      record.additional_amount !== undefined &&
-      record.additional_amount !== null &&
-      String(record.additional_amount) !== '' &&
-      (Number.isNaN(Number(record.additional_amount)) || toNum(record.additional_amount) < 0)
+      record.special_meal_rate !== undefined &&
+      record.special_meal_rate !== null &&
+      String(record.special_meal_rate) !== '' &&
+      (Number.isNaN(Number(record.special_meal_rate)) || toNum(record.special_meal_rate) < 0)
     ) {
-      reasons.push('additional_amount must be a non-negative number.')
+      reasons.push('special_meal_rate must be a non-negative number.')
     }
 
     if (
@@ -634,43 +653,50 @@ const applyImportedRows = async (records, fileName = '') => {
         ? toNum(record.total_meal)
         : ''
 
-    const importedAdditionalRate =
-      record.additional_rate !== undefined && record.additional_rate !== null && String(record.additional_rate) !== ''
-        ? toNum(record.additional_rate)
-        : null
-    if (importedAdditionalRate !== null && !Number.isNaN(importedAdditionalRate)) {
-      bulkForm.value.common_additional = importedAdditionalRate
+    const importedSpecialMealRate =
+      record.special_meal_rate !== undefined && record.special_meal_rate !== null && String(record.special_meal_rate) !== ''
+        ? toNum(record.special_meal_rate)
+        : record.additional_rate !== undefined && record.additional_rate !== null && String(record.additional_rate) !== ''
+          ? toNum(record.additional_rate)
+          : null
+    if (importedSpecialMealRate !== null && !Number.isNaN(importedSpecialMealRate)) {
+      bulkForm.value.common_additional = importedSpecialMealRate
     }
 
-    const activeAdditionalRate = toNum(bulkForm.value.common_additional)
-    const mappedTotalAdditionalMeal =
-      record.total_additional_meal !== undefined &&
-      record.total_additional_meal !== null &&
-      String(record.total_additional_meal) !== ''
+    const activeSpecialMealRate = toNum(bulkForm.value.common_additional)
+    const hasExplicitSpecialMealCount =
+      record.total_special_meal !== undefined &&
+      record.total_special_meal !== null &&
+      String(record.total_special_meal) !== ''
+    const mappedTotalSpecialMeal =
+      hasExplicitSpecialMealCount
+        ? toNum(record.total_special_meal)
+        : record.total_additional_meal !== undefined &&
+          record.total_additional_meal !== null &&
+          String(record.total_additional_meal) !== ''
         ? toNum(record.total_additional_meal)
         : record.additional_meal !== undefined && record.additional_meal !== null && String(record.additional_meal) !== ''
           ? toNum(record.additional_meal)
         : record.additional_amount !== undefined &&
             record.additional_amount !== null &&
             String(record.additional_amount) !== '' &&
-            activeAdditionalRate > 0
-          ? toNum(record.additional_amount) / activeAdditionalRate
+            activeSpecialMealRate > 0
+          ? toNum(record.additional_amount) / activeSpecialMealRate
         : record.total_amount !== undefined &&
             record.total_amount !== null &&
             String(record.total_amount) !== '' &&
             mappedTotalMeal !== '' &&
             !Number.isNaN(mappedMealRate) &&
-            activeAdditionalRate > 0
-          ? (toNum(record.total_amount) - (mappedMealRate * mappedTotalMeal)) / activeAdditionalRate
+            activeSpecialMealRate > 0
+          ? (toNum(record.total_amount) - (mappedMealRate * mappedTotalMeal)) / activeSpecialMealRate
         : 0
-
     const mappedRow = {
       user_id: userId ? parseQueryInt(userId, null) : null,
       employee_id: employeeId,
       name: String(record.name || record.employee_name || employeeId || 'Unknown'),
       department_name: String(record.department_name || record.department || ''),
       total_meal: mappedTotalMeal,
-      total_additional_meal: mappedTotalAdditionalMeal,
+      total_special_meal: mappedTotalSpecialMeal,
       is_selected: true,
     }
 
@@ -853,8 +879,9 @@ const downloadFilteredExcel = async () => {
       Employee_Name: item.user?.name || '',
       Department: item.user?.department?.name || '',
       Meal_Rate: toNum(item.meal_rate),
+      Special_Meal_Rate: toNum(item.special_meal_rate),
       Total_Meals: toNum(item.total_meal),
-      Additional_Amount: toNum(item.additional_amount),
+      Total_Special_Meals: toNum(item.total_special_meal),
       Total_Amount: toNum(item.total_amount),
     }))
 
@@ -869,12 +896,12 @@ const downloadFilteredExcel = async () => {
   }
 }
 
-// Warn when meal_rate changes (affects all in that month)
+// Warn when common rates change (affects all in that month)
 const showRateWarn = ref(false)
 watch(
-  () => modalForm.value.meal_rate,
+  () => [modalForm.value.meal_rate, modalForm.value.special_meal_rate],
   (newVal, oldVal) => {
-    if (isEditMode.value && oldVal !== '' && newVal !== oldVal) {
+    if (isEditMode.value && oldVal && newVal.some((value, index) => value !== oldVal[index])) {
       showRateWarn.value = true
     }
   },
@@ -895,8 +922,9 @@ const openEdit = (item) => {
     user_id: item.user_id,
     salary_month: item.salary_month,
     meal_rate: item.meal_rate ?? '',
+    special_meal_rate: item.special_meal_rate ?? '',
     total_meal: item.total_meal ?? '',
-    additional_amount: item.additional_amount ?? '',
+    total_special_meal: item.total_special_meal ?? '',
   }
   modalUserDisplay.value = item.user
     ? { name: item.user.name, dept: item.user.department?.name || null }
@@ -924,6 +952,10 @@ const validateModal = () => {
     errors.meal_rate = 'Meal rate is required.'
   if (modalForm.value.total_meal === '' || isNaN(parseFloat(modalForm.value.total_meal)))
     errors.total_meal = 'Total meal count is required.'
+  if (modalForm.value.special_meal_rate !== '' && isNaN(parseFloat(modalForm.value.special_meal_rate)))
+    errors.special_meal_rate = 'Special meal rate must be valid.'
+  if (modalForm.value.total_special_meal !== '' && isNaN(parseFloat(modalForm.value.total_special_meal)))
+    errors.total_special_meal = 'Total special meal count must be valid.'
   modalErrors.value = errors
   return !Object.keys(errors).length
 }
@@ -934,11 +966,16 @@ const handleModalSubmit = async () => {
   try {
     const payload = { ...modalForm.value }
     payload.meal_rate = toNum(payload.meal_rate)
+    payload.special_meal_rate =
+      payload.special_meal_rate === '' || payload.special_meal_rate === null
+        ? 0
+        : toNum(payload.special_meal_rate)
     payload.total_meal = toNum(payload.total_meal)
-    payload.additional_amount =
-      payload.additional_amount === '' || payload.additional_amount === null
-        ? null
-        : toNum(payload.additional_amount)
+    payload.total_special_meal =
+      payload.total_special_meal === '' || payload.total_special_meal === null
+        ? 0
+        : toNum(payload.total_special_meal)
+    payload.additional_amount = 0
     if (isEditMode.value) {
       await mealStore.updateItem(selectedItem.value.id, payload)
       toast.success('Meal entry updated.')
@@ -1112,7 +1149,7 @@ watch(
           <p v-if="bulkErrors.meal_rate" class="text-red-500 text-xs mt-1">{{ bulkErrors.meal_rate }}</p>
         </div>
         <div>
-          <label class="block text-xs font-medium text-gray-600 mb-1">Additional Rate</label>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Special Meal Rate</label>
           <input v-model="bulkForm.common_additional" type="number" min="0" step="0.01" :class="inputClass" placeholder="0.00" />
         </div>
         <button class="btn-3" @click="loadBulkEmployees" :disabled="bulkLoading">
@@ -1141,7 +1178,7 @@ watch(
       </div>
 
       <p class="text-xs text-gray-500">
-        Import columns: <span class="font-medium">employee_id or user_id, total_meal</span>. Additional part দিতে পারেন <span class="font-medium">total_additional_meal</span>, <span class="font-medium">additional_amount</span> বা <span class="font-medium">total_amount</span> দিয়ে। Optional: <span class="font-medium">salary_month, meal_rate, additional_rate</span>.
+        Import columns: <span class="font-medium">employee_id or user_id, total_meal</span>. Special meal দিতে পারেন <span class="font-medium">total_special_meal</span>, <span class="font-medium">special_meal_rate</span> বা legacy <span class="font-medium">total_additional_meal</span> দিয়ে। Optional: <span class="font-medium">salary_month, meal_rate</span>.
       </p>
 
       <div v-if="importPreview.totalRows" class="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-2">
@@ -1202,8 +1239,8 @@ watch(
                 <th class="px-3 py-2 text-center">Select</th>
                 <th class="px-3 py-2 text-left">Employee</th>
                 <th class="px-3 py-2 text-right">Total Meals</th>
-                <th class="px-3 py-2 text-right">Total Additional Meal</th>
-                <th class="px-3 py-2 text-right">Additional Amount</th>
+                <th class="px-3 py-2 text-right">Special Meals</th>
+                <th class="px-3 py-2 text-right">Special Amount</th>
                 <th class="px-3 py-2 text-right">Sub Total</th>
               </tr>
             </thead>
@@ -1220,10 +1257,10 @@ watch(
                   <input v-model="row.total_meal" type="number" min="0" step="1" :class="inputClass + ' text-right'" placeholder="0" />
                 </td>
                 <td class="px-3 py-2">
-                  <input v-model="row.total_additional_meal" type="number" min="0" step="0.01" :class="inputClass + ' text-right'" placeholder="0" />
+                  <input v-model="row.total_special_meal" type="number" min="0" step="1" :class="inputClass + ' text-right'" placeholder="0" />
                 </td>
                 <td class="px-3 py-2 text-right font-mono text-gray-700">
-                  {{ formatCurrency(toNum(row.total_additional_meal) * toNum(bulkForm.common_additional)) }}
+                  {{ formatCurrency(toNum(row.total_special_meal) * toNum(bulkForm.common_additional)) }}
                 </td>
                 <td class="px-3 py-2 text-right font-mono font-semibold text-blue-700">
                   {{ formatCurrency(rowTotal(row)) }}
@@ -1275,7 +1312,8 @@ watch(
             <th class="px-4 py-3 text-center">Month</th>
             <th class="px-4 py-3 text-right">Meal Rate</th>
             <th class="px-4 py-3 text-right">Total Meals</th>
-            <th class="px-4 py-3 text-right">Additional</th>
+            <th class="px-4 py-3 text-right">Special Rate</th>
+            <th class="px-4 py-3 text-right">Special Meals</th>
             <th class="px-4 py-3 text-right">Total Amount</th>
             <th class="px-4 py-3 text-center">Actions</th>
           </tr>
@@ -1292,7 +1330,8 @@ watch(
             <td class="px-4 py-3 text-center font-medium">{{ item.salary_month }}</td>
             <td class="px-4 py-3 text-right font-mono">{{ formatCurrency(item.meal_rate) }}</td>
             <td class="px-4 py-3 text-right font-mono">{{ item.total_meal }}</td>
-            <td class="px-4 py-3 text-right font-mono">{{ formatCurrency(item.additional_amount) }}</td>
+            <td class="px-4 py-3 text-right font-mono">{{ formatCurrency(item.special_meal_rate) }}</td>
+            <td class="px-4 py-3 text-right font-mono">{{ item.total_special_meal || 0 }}</td>
             <td class="px-4 py-3 text-right font-mono font-semibold text-blue-700">
               {{ formatCurrency(item.total_amount) }}
             </td>
@@ -1350,12 +1389,12 @@ watch(
             <div class="rounded-lg border border-blue-100 bg-blue-50 p-4 space-y-2">
               <p class="text-xs font-semibold text-blue-800 uppercase tracking-wide">Required Columns</p>
               <p class="text-blue-900 font-medium">employee_id or user_id, total_meal</p>
-              <p class="text-xs text-blue-700">Additional part দিতে <strong>total_additional_meal</strong>, <strong>additional_amount</strong> বা <strong>total_amount</strong> এর যেকোনো একটি দিলেই হবে।</p>
+              <p class="text-xs text-blue-700">Special meal part dite <strong>total_special_meal</strong> and <strong>special_meal_rate</strong> use korun. Legacy import er jonno <strong>total_additional_meal</strong> support ache.</p>
             </div>
 
             <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-2">
               <p class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Optional Columns</p>
-              <p class="text-gray-800">salary_month, meal_rate, additional_rate</p>
+              <p class="text-gray-800">salary_month, meal_rate, special_meal_rate</p>
               <p class="text-xs text-gray-500">
                 <strong>total_amount</strong> দিলে system additional amount হিসাব করে, এরপর additional rate দিয়ে total additional meal derive করে।
               </p>
@@ -1368,10 +1407,9 @@ watch(
                     <th class="px-3 py-2 text-left">employee_id</th>
                     <th class="px-3 py-2 text-center">salary_month</th>
                     <th class="px-3 py-2 text-right">meal_rate</th>
-                    <th class="px-3 py-2 text-right">additional_rate</th>
+                    <th class="px-3 py-2 text-right">special_meal_rate</th>
                     <th class="px-3 py-2 text-right">total_meal</th>
-                    <th class="px-3 py-2 text-right">total_additional_meal</th>
-                    <th class="px-3 py-2 text-right">additional_amount</th>
+                    <th class="px-3 py-2 text-right">total_special_meal</th>
                     <th class="px-3 py-2 text-right">total_amount</th>
                   </tr>
                 </thead>
@@ -1380,11 +1418,10 @@ watch(
                     <td class="px-3 py-2">EMP001</td>
                     <td class="px-3 py-2 text-center">2026-03</td>
                     <td class="px-3 py-2 text-right">60</td>
-                    <td class="px-3 py-2 text-right">60</td>
+                    <td class="px-3 py-2 text-right">140</td>
                     <td class="px-3 py-2 text-right">22</td>
                     <td class="px-3 py-2 text-right">2</td>
-                    <td class="px-3 py-2 text-right">120</td>
-                    <td class="px-3 py-2 text-right">1440</td>
+                    <td class="px-3 py-2 text-right">1600</td>
                   </tr>
                 </tbody>
               </table>
@@ -1411,7 +1448,7 @@ watch(
         v-if="showModal"
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
       >
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 overflow-hidden">
           <div class="flex items-center justify-between px-6 py-4 border-b">
             <h3 class="font-bold text-blue-900 text-lg">
               {{ isEditMode ? 'Edit Meal Entry' : 'Add Meal Entry' }}
@@ -1428,7 +1465,7 @@ watch(
             >
               <i class="fas fa-exclamation-triangle mt-0.5 text-amber-500"></i>
               <span>
-                Changing the meal rate will update the common rate for
+                Changing meal rates will update the common rates for
                 <strong>all meal entries in {{ modalForm.salary_month }}</strong>.
               </span>
             </div>
@@ -1464,7 +1501,7 @@ watch(
               </p>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">
                   Meal Rate <span class="text-red-500">*</span>
@@ -1479,6 +1516,20 @@ watch(
                 />
                 <p v-if="modalErrors.meal_rate" class="text-red-500 text-xs mt-1">
                   {{ modalErrors.meal_rate }}
+                </p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Special Meal Rate</label>
+                <input
+                  v-model="modalForm.special_meal_rate"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  :class="inputClass"
+                  placeholder="0.00"
+                />
+                <p v-if="modalErrors.special_meal_rate" class="text-red-500 text-xs mt-1">
+                  {{ modalErrors.special_meal_rate }}
                 </p>
               </div>
               <div>
@@ -1498,16 +1549,18 @@ watch(
                 </p>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Additional Amount</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Total Special Meals</label>
                 <input
-                  v-model="modalForm.additional_amount"
+                  v-model="modalForm.total_special_meal"
                   type="number"
                   min="0"
-                  step="0.01"
+                  step="1"
                   :class="inputClass"
-                  placeholder="0.00"
+                  placeholder="0"
                 />
-                <p class="text-xs text-gray-400 mt-1">Optional special meal charge.</p>
+                <p v-if="modalErrors.total_special_meal" class="text-red-500 text-xs mt-1">
+                  {{ modalErrors.total_special_meal }}
+                </p>
               </div>
             </div>
 
@@ -1518,8 +1571,8 @@ watch(
                 <span class="font-mono">{{ formatCurrency(baseAmountPreview) }}</span>
               </div>
               <div class="flex items-center justify-between text-xs text-blue-700">
-                <span>Additional Amount</span>
-                <span class="font-mono">{{ formatCurrency(toNum(modalForm.additional_amount)) }}</span>
+                <span>Special Meal Amount</span>
+                <span class="font-mono">{{ formatCurrency(specialAmountPreview) }}</span>
               </div>
               <div class="h-px bg-blue-200"></div>
               <div class="flex items-center justify-between">
