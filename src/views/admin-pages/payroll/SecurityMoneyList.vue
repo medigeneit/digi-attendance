@@ -2,8 +2,6 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useToast } from 'vue-toastification'
-import apiClient from '@/axios'
-import AsyncUserCombobox from '@/components/common/AsyncUserCombobox.vue'
 import DeleteModal from '@/components/common/DeleteModal.vue'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
@@ -30,7 +28,12 @@ const showDeleteModal = ref(false)
 const selectedItem = ref(null)
 const submitting = ref(false)
 const fieldErrors = ref({})
-const userDisplay = ref({ name: null, dept: null })
+const formFilters = ref({
+  company_id: '',
+  department_id: '',
+  line_type: 'all',
+  user_id: '',
+})
 
 const blankForm = () => ({
   user_id: null,
@@ -47,11 +50,6 @@ const blankForm = () => ({
 
 const form = ref(blankForm())
 const isEditMode = computed(() => !!selectedItem.value?.id)
-
-const fetchUsers = (params) =>
-  apiClient
-    .get('/users', { params })
-    .then((r) => (Array.isArray(r.data) ? r.data : r.data?.data || r.data?.users || []))
 
 const buildParams = () => {
   const params = { ...filters.value }
@@ -76,11 +74,45 @@ const handleFilterChange = (payload = {}) => {
   fetchList()
 }
 
+const resetFilters = () => {
+  filters.value = {
+    company_id: '',
+    department_id: '',
+    line_type: 'all',
+    user_id: '',
+    status: '',
+    page: 1,
+    per_page: 15,
+  }
+  fetchList()
+}
+
+const handleFormEmployeeFilterChange = (payload = {}) => {
+  formFilters.value = {
+    company_id: payload.company_id || '',
+    department_id: payload.department_id || '',
+    line_type: payload.line_type || 'all',
+    user_id: payload.employee_id || '',
+  }
+  form.value.user_id = payload.employee_id || null
+}
+
 const calculateInstallmentAmount = () => {
   const amount = toNum(form.value.amount)
   const total = Math.trunc(toNum(form.value.total_installments))
   form.value.installment_amount = amount > 0 && total > 0 ? Number((amount / total).toFixed(2)) : ''
   form.value.opening_paid_amount = openingPaidAmountPreview.value
+}
+
+const addMonthsToMonth = (value, offset) => {
+  const month = String(value || '').slice(0, 7)
+  if (!/^\d{4}-\d{2}$/.test(month)) return ''
+
+  const year = Number(month.slice(0, 4))
+  const monthIndex = Number(month.slice(5, 7)) - 1 + offset
+  const next = new Date(year, monthIndex, 1)
+
+  return `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-01`
 }
 
 const previewInstallments = computed(() => {
@@ -92,13 +124,10 @@ const previewInstallments = computed(() => {
   if (!form.value.start_month || amount <= 0 || installmentAmount <= 0 || total <= 0) return rows
 
   let remaining = amount
-  const start = new Date(`${form.value.start_month.slice(0, 7)}-01T00:00:00`)
   for (let index = 0; index < total; index += 1) {
-    const d = new Date(start)
-    d.setMonth(start.getMonth() + index)
     const value = index === total - 1 ? remaining : Math.min(installmentAmount, remaining)
     rows.push({
-      salary_month: d.toISOString().slice(0, 10),
+      salary_month: addMonthsToMonth(form.value.start_month, index),
       amount: Number(value.toFixed(2)),
       status: index < openingPaid ? 'Paid' : 'Pending',
     })
@@ -116,7 +145,12 @@ const openingPaidAmountPreview = computed(() =>
 const openCreate = () => {
   selectedItem.value = null
   form.value = blankForm()
-  userDisplay.value = { name: null, dept: null }
+  formFilters.value = {
+    company_id: '',
+    department_id: '',
+    line_type: 'all',
+    user_id: '',
+  }
   fieldErrors.value = {}
   showModal.value = true
 }
@@ -135,9 +169,11 @@ const openEdit = (item) => {
     status: String(item.status || 'active').toLowerCase(),
     remarks: item.remarks || '',
   }
-  userDisplay.value = {
-    name: item.user?.name || null,
-    dept: item.user?.department?.name || null,
+  formFilters.value = {
+    company_id: item.user?.company_id || '',
+    department_id: item.user?.department_id || '',
+    line_type: item.user?.type || 'all',
+    user_id: item.user_id || '',
   }
   fieldErrors.value = {}
   showModal.value = true
@@ -213,6 +249,11 @@ const deleteSelected = async () => {
   fetchList()
 }
 
+const paidInstallmentCount = (item) => {
+  const installments = Array.isArray(item?.installments) ? item.installments : []
+  return installments.filter((row) => ['deducted', 'paid'].includes(String(row?.status || '').toLowerCase())).length
+}
+
 watch(
   () => filters.value.status,
   () => {
@@ -235,22 +276,32 @@ onMounted(fetchList)
     </div>
 
     <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <EmployeeFilter
-        :company_id="filters.company_id"
-        :department_id="filters.department_id"
-        :line_type="filters.line_type"
-        :employee_id="filters.user_id"
-        @filter-change="handleFilterChange"
-      />
-      <div class="mt-3 max-w-xs">
-        <label class="mb-1 block text-xs font-semibold text-slate-500">Status</label>
-        <select v-model="filters.status" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
-          <option value="">All</option>
-          <option value="Active">Active</option>
-          <option value="Pending">Pending</option>
-          <option value="Completed">Completed</option>
-          <option value="Closed">Closed</option>
-        </select>
+      <div class="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_170px]">
+        <EmployeeFilter
+          :company_id="filters.company_id"
+          :department_id="filters.department_id"
+          :line_type="filters.line_type"
+          :employee_id="filters.user_id"
+          @update:company_id="(value) => (filters.company_id = value)"
+          @update:department_id="(value) => (filters.department_id = value)"
+          @update:line_type="(value) => (filters.line_type = value)"
+          @update:employee_id="(value) => (filters.user_id = value)"
+          @filter-change="handleFilterChange"
+        >
+          <div class="flex items-end justify-end">
+            <button class="btn-3" @click="resetFilters"><i class="far fa-undo"></i> Reset</button>
+          </div>
+        </EmployeeFilter>
+        <div>
+          <label class="mb-1 block text-xs font-semibold text-slate-500">Status</label>
+          <select v-model="filters.status" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+            <option value="">All</option>
+            <option value="Active">Active</option>
+            <option value="Pending">Pending</option>
+            <option value="Completed">Completed</option>
+            <option value="Closed">Closed</option>
+          </select>
+        </div>
       </div>
     </div>
 
@@ -264,6 +315,7 @@ onMounted(fetchList)
             <th class="px-3 py-2 text-left">Title</th>
             <th class="px-3 py-2 text-right">Amount</th>
             <th class="px-3 py-2 text-right">Installment</th>
+            <th class="px-3 py-2 text-center">Installments</th>
             <th class="px-3 py-2 text-right">Remaining</th>
             <th class="px-3 py-2 text-left">Start</th>
             <th class="px-3 py-2 text-left">Status</th>
@@ -279,10 +331,10 @@ onMounted(fetchList)
             <td class="px-3 py-2">{{ item.title }}</td>
             <td class="px-3 py-2 text-right font-mono">{{ formatCurrency(item.amount) }}</td>
             <td class="px-3 py-2 text-right font-mono">{{ formatCurrency(item.installment_amount) }}</td>
-            <td class="px-3 py-2 text-right font-mono">{{ formatCurrency(item.remaining_balance) }}</td>
-            <td class="px-3 py-2">{{ item.start_month }}</td>
-            <td class="px-3 py-2">
-              <span class="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">{{ item.status }}</span>
+            <td class="px-3 py-2 text-center">
+              <span class="inline-flex rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
+                {{ paidInstallmentCount(item) }} / {{ item.total_installments || 0 }}
+              </span>
               <div
                 v-if="Number(item.opening_paid_installments || 0) > 0"
                 class="mt-1 text-[11px] font-medium text-emerald-600"
@@ -290,13 +342,18 @@ onMounted(fetchList)
                 Paid before: {{ item.opening_paid_installments }}
               </div>
             </td>
-            <td class="px-3 py-2 text-right">
-              <button class="btn-3 mr-2 text-xs" @click="openEdit(item)"><i class="far fa-pen"></i></button>
-              <button class="btn-3 text-xs text-rose-600" @click="confirmDelete(item)"><i class="far fa-trash"></i></button>
+            <td class="px-3 py-2 text-right font-mono">{{ formatCurrency(item.remaining_balance) }}</td>
+            <td class="px-3 py-2">{{ item.start_month }}</td>
+            <td class="px-3 py-2">
+              <span class="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">{{ item.status }}</span>
+            </td>
+            <td class="px-3 py-2 flex text-right">
+              <button class="btn-1 mr-2 text-xs" @click="openEdit(item)"><i class="far fa-pen"></i></button>
+              <button class="btn-1 text-xs text-rose-600" @click="confirmDelete(item)"><i class="far fa-trash"></i></button>
             </td>
           </tr>
           <tr v-if="!list.length">
-            <td colspan="8" class="px-3 py-8 text-center text-slate-400">No security money records found.</td>
+            <td colspan="9" class="px-3 py-8 text-center text-slate-400">No security money records found.</td>
           </tr>
         </tbody>
       </table>
@@ -319,9 +376,19 @@ onMounted(fetchList)
         </div>
 
         <div class="grid gap-4 md:grid-cols-2">
-          <div class="md:col-span-2">
+          <div class="md:col-span-full">
             <label class="mb-1 block text-sm font-medium text-slate-700">Employee</label>
-            <AsyncUserCombobox v-model="form.user_id" v-model:display="userDisplay" :fetcher="fetchUsers" />
+            <EmployeeFilter
+              :company_id="formFilters.company_id"
+              :department_id="formFilters.department_id"
+              :line_type="formFilters.line_type"
+              :employee_id="formFilters.user_id"
+              @update:company_id="(value) => (formFilters.company_id = value)"
+              @update:department_id="(value) => (formFilters.department_id = value)"
+              @update:line_type="(value) => (formFilters.line_type = value)"
+              @update:employee_id="(value) => { formFilters.user_id = value; form.user_id = value || null }"
+              @filter-change="handleFormEmployeeFilterChange"
+            />
             <p v-if="fieldErrors.user_id" class="mt-1 text-xs text-red-600">{{ fieldErrors.user_id }}</p>
           </div>
           <div>

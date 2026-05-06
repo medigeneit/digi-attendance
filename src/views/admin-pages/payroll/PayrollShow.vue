@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { storeToRefs } from 'pinia'
@@ -17,18 +17,8 @@ const payrollStore = usePayrollManagementStore()
 const { item, loading, error } = storeToRefs(payrollStore)
 
 const showPaymentModal = ref(false)
-const advanceDeduction = ref(0)
-const advanceSaving = ref(false)
 
 onMounted(() => payrollStore.fetchItem(props.id))
-
-watch(
-  item,
-  (value) => {
-    advanceDeduction.value = Number(value?.deductions?.advance ?? value?.advance_deduction ?? 0)
-  },
-  { immediate: true }
-)
 
 const handlePaymentSubmit = async ({ id, payload }) => {
   try {
@@ -37,20 +27,6 @@ const handlePaymentSubmit = async ({ id, payload }) => {
     showPaymentModal.value = false
   } catch (e) {
     toast.error(e.message || 'Update failed.')
-  }
-}
-
-const saveAdvanceDeduction = async () => {
-  try {
-    advanceSaving.value = true
-    await payrollStore.updateAdvanceDeduction(props.id, {
-      advance_deduction: toNum(advanceDeduction.value),
-    })
-    toast.success('Advance deduction updated.')
-  } catch (e) {
-    toast.error(e.message || 'Advance update failed.')
-  } finally {
-    advanceSaving.value = false
   }
 }
 
@@ -71,7 +47,6 @@ const deductionLabelMap = {
   loan_deduction: 'Loan Deduction',
   security_money_deduction: 'Security Money',
   other_deduction: 'Other Deduction',
-  advance_deduction: 'Advance Deduction',
   paycut_deduction: 'Paycut Deduction',
 }
 
@@ -248,7 +223,6 @@ const deductionFieldRows = computed(() => {
       label: deductionLabelMap.other_deduction || 'Other Deduction',
       amount: toNum(d.other),
     },
-    { key: 'advance_deduction', label: deductionLabelMap.advance_deduction || 'Advance Deduction', amount: toNum(d.advance) },
     { key: 'paycut_deduction', label: deductionLabelMap.paycut_deduction || 'Paycut Deduction', amount: toNum(d.paycut) },
   ]
 
@@ -464,31 +438,6 @@ const formatRowAmount = (row) => {
         </div>
       </div>
 
-      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div class="flex flex-wrap items-end gap-3">
-          <div class="min-w-[220px] flex-1">
-            <label class="mb-1 block text-sm font-medium text-slate-700">Advance Deduction</label>
-            <input
-              v-model="advanceDeduction"
-              type="number"
-              min="0"
-              step="0.01"
-              class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 shadow-sm transition focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-100"
-              placeholder="0.00"
-            />
-          </div>
-          <button
-            type="button"
-            class="btn-2 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold shadow-sm disabled:opacity-50"
-            :disabled="advanceSaving || loading"
-            @click="saveAdvanceDeduction"
-          >
-            <i class="far fa-save"></i>
-            {{ advanceSaving ? 'Saving...' : 'Save Advance' }}
-          </button>
-        </div>
-      </div>
-
       <!-- Payment Info -->
       <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
         <div class="flex items-center justify-between mb-3">
@@ -499,7 +448,7 @@ const formatRowAmount = (row) => {
             <i class="far fa-edit"></i> Update Status
           </button>
         </div>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+        <div class="grid grid-cols-2 md:grid-cols-6 gap-2 text-sm">
           <div class="rounded-lg bg-slate-50 border border-slate-200 p-2">
             <span class="text-gray-500 block mb-0.5">Status</span>
             <PayrollStatusBadge :status="item.payment_status" />

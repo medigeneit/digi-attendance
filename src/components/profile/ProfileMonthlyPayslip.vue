@@ -17,11 +17,11 @@ const toNumber = (value) => {
 }
 
 const formatMoney = (value) => {
-  const num = toNumber(value)
+  const num = Math.round(toNumber(value))
 
   return new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   }).format(num)
 }
 
@@ -56,7 +56,7 @@ const formatMonth = (value) => {
 }
 
 const numberToWords = (value) => {
-  const n = Math.floor(Math.abs(toNumber(value)))
+  const n = Math.round(Math.abs(toNumber(value)))
   if (!n) return 'Zero Only'
 
   const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine']
@@ -99,15 +99,15 @@ const numberToWords = (value) => {
   return `${parts.join(' ')} Only`
 }
 
-const paymentStatusClass = (status) => {
-  const normalized = String(status || '').toLowerCase()
+// const paymentStatusClass = (status) => {
+//   const normalized = String(status || '').toLowerCase()
 
-  if (normalized === 'paid') return 'border-emerald-300 bg-emerald-100 text-emerald-800'
-  if (normalized === 'partial') return 'border-amber-300 bg-amber-100 text-amber-800'
-  if (normalized === 'pending') return 'border-rose-300 bg-rose-100 text-rose-800'
+//   if (normalized === 'paid') return 'border-emerald-300 bg-emerald-100 text-emerald-800'
+//   if (normalized === 'partial') return 'border-amber-300 bg-amber-100 text-amber-800'
+//   if (normalized === 'pending') return 'border-rose-300 bg-rose-100 text-rose-800'
 
-  return 'border-stone-300 bg-stone-100 text-stone-700'
-}
+//   return 'border-stone-300 bg-stone-100 text-stone-700'
+// }
 
 const currentPayroll = computed(() => {
   const items = Array.isArray(props.payrolls) ? props.payrolls : []
@@ -125,25 +125,25 @@ const currentPayroll = computed(() => {
 
 const currentMonth = computed(() => monthKey(currentPayroll.value?.salary_month || props.selectedMonth))
 
-const currentMeal = computed(() => {
-  if (!currentMonth.value) return null
+// const currentMeal = computed(() => {
+//   if (!currentMonth.value) return null
 
-  return (props.meals || []).find((item) => monthKey(item.salary_month) === currentMonth.value) || null
-})
+//   return (props.meals || []).find((item) => monthKey(item.salary_month) === currentMonth.value) || null
+// })
 
-const monthInstallments = computed(() => {
-  if (!currentMonth.value) return []
+// const monthInstallments = computed(() => {
+//   if (!currentMonth.value) return []
 
-  return (props.loans || []).flatMap((loan) =>
-    (loan.installments || [])
-      .filter((item) => monthKey(item.salary_month) === currentMonth.value)
-      .map((item) => ({
-        ...item,
-        loan_title: loan.loan_title,
-        remaining_balance: loan.remaining_balance,
-      })),
-  )
-})
+//   return (props.loans || []).flatMap((loan) =>
+//     (loan.installments || [])
+//       .filter((item) => monthKey(item.salary_month) === currentMonth.value)
+//       .map((item) => ({
+//         ...item,
+//         loan_title: loan.loan_title,
+//         remaining_balance: loan.remaining_balance,
+//       })),
+//   )
+// })
 
 const contraEntries = computed(() => {
   const preferred = currentPayroll.value?.contra_entries
