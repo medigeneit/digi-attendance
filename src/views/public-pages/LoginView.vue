@@ -104,9 +104,17 @@ const login = async () => {
                   />
                 </div>
                 <div class="space-y-1 text-sm font-medium text-slate-700">
-                  <label for="password" class="flex items-center gap-2">
-                    <span class="fad fa-lock text-slate-900"></span>Password
-                  </label>
+                  <div class="flex items-center justify-between gap-3">
+                    <label for="password" class="flex items-center gap-2">
+                      <span class="fad fa-lock text-slate-900"></span>Password
+                    </label>
+                    <RouterLink
+                      class="text-xs font-semibold text-sky-700 hover:text-sky-900"
+                      to="/forgot-password"
+                    >
+                      Forgot password?
+                    </RouterLink>
+                  </div>
                   <input
                     v-model="password"
                     type="password"
