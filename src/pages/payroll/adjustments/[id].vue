@@ -119,24 +119,29 @@ onMounted(load)
 
     <template v-else-if="item">
       <div class="print-page mx-auto w-full max-w-3xl rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div class="text-center">
-          <div class="text-2xl font-bold text-slate-900">Payroll Adjustment Slip</div>
-          <div class="mt-1 text-sm text-slate-500">For internal approval and record</div>
+        <div class="slip-header relative border-b border-slate-300 pb-3 text-center">
+          <div class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
+            Payroll Department
+          </div>
+          <div class="mt-1 text-2xl font-bold uppercase tracking-wide text-slate-950">
+            Payroll Adjustment Slip
+          </div>
+          <div class="mt-1 text-xs font-medium text-slate-600">For internal approval and record</div>
+          <div class="absolute right-0 top-0 text-right text-[11px] text-slate-500">
+            <div>Slip No.</div>
+            <div class="font-semibold text-slate-900">#{{ item.id }}</div>
+          </div>
         </div>
 
-        <div class="mt-5 flex items-center justify-between gap-3">
-          <div>
-            <div class="text-lg font-semibold text-slate-900">{{ item.employee?.name || '-' }}</div>
-            <div class="text-sm text-slate-500">{{ item.employee?.employee_id || '-' }}</div>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Status</span>
+        <div class="mt-4 flex justify-end">
+          <div class="status-box flex items-center gap-2">
+            <span class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Status</span>
             <AdjustmentStatusBadge :status="item.status" />
           </div>
         </div>
 
-        <div class="mt-6">
-          <div class="text-base font-semibold text-slate-900">Employee Information</div>
+        <div class="section-block mt-4">
+          <div class="section-title text-sm font-bold uppercase tracking-wide text-slate-900">Employee Information</div>
           <table class="slip-table mt-2 w-full">
             <tbody>
               <tr>
@@ -155,8 +160,8 @@ onMounted(load)
           </table>
         </div>
 
-        <div class="mt-6">
-          <div class="text-base font-semibold text-slate-900">Adjustment Details</div>
+        <div class="section-block mt-4">
+          <div class="section-title text-sm font-bold uppercase tracking-wide text-slate-900">Adjustment Details</div>
           <table class="slip-table mt-2 w-full">
             <tbody>
               <tr>
@@ -212,16 +217,21 @@ onMounted(load)
           </div>
         </div>
 
-        <div class="mt-10 grid grid-cols-2 gap-8">
+        <div class="signature-grid mt-8 grid grid-cols-3 gap-6">
           <div class="text-center">
-            <div class="mt-1 text-sm font-semibold text-slate-900">{{ preparedByName }}</div>
+            <div class="signature-name mt-1 text-sm font-semibold text-slate-900">{{ preparedByName }}</div>
             <div class="signature-line mx-auto"></div>
-            <div class="mt-1 text-sm font-semibold text-slate-700">Prepared By</div>
+            <div class="signature-label mt-1 text-xs font-bold uppercase tracking-wide text-slate-700">Prepared By</div>
           </div>
           <div class="text-center">
-            <div class="mt-1 text-sm font-semibold text-slate-900">{{ authorizedByName }}</div>
+            <div class="signature-name mt-1 text-sm font-semibold text-slate-900">{{ authorizedByName }}</div>
             <div class="signature-line mx-auto"></div>
-            <div class="mt-1 text-sm font-semibold text-slate-700">Authorized By</div>
+            <div class="signature-label mt-1 text-xs font-bold uppercase tracking-wide text-slate-700">Authorized By</div>
+          </div>
+          <div class="text-center">
+            <div class="signature-name mt-1 text-sm font-semibold text-slate-900">&nbsp;</div>
+            <div class="signature-line mx-auto"></div>
+            <div class="signature-label mt-1 text-xs font-bold uppercase tracking-wide text-slate-700">Received By</div>
           </div>
         </div>
       </div>
@@ -256,36 +266,75 @@ onMounted(load)
 <style>
 @page {
   size: A4 portrait;
-  margin: 12mm;
+  margin: 0;
 }
 
 @media print {
+  html,
+  body {
+    width: 210mm;
+    min-height: 297mm;
+    background: #ffffff !important;
+  }
+
   .no-print {
     display: none !important;
   }
 
   .print-wrap {
     padding: 0 !important;
+    margin: 0 !important;
   }
 
   .print-page {
+    width: 190mm !important;
+    min-height: 128mm !important;
+    max-height: none !important;
+    margin: 8mm auto 0 !important;
     box-shadow: none !important;
-    border: 1px solid #cbd5e1 !important;
+    border: 1px solid #94a3b8 !important;
     border-radius: 0 !important;
-    padding: 16px !important;
+    overflow: visible !important;
+    padding: 8mm !important;
+    color: #111827 !important;
+    break-inside: avoid !important;
+  }
+
+  .print-page .text-2xl {
+    font-size: 17px !important;
+    line-height: 22px !important;
+  }
+
+  .employee-summary,
+  .section-block {
+    margin-top: 10px !important;
+  }
+
+  .signature-grid {
+    margin-top: 18px !important;
+    page-break-inside: avoid !important;
+  }
+
+  .signature-name {
+    min-height: 15px !important;
+    font-size: 11px !important;
+  }
+
+  .signature-label {
+    font-size: 10px !important;
   }
 }
 
 .slip-table {
   border-collapse: collapse;
   table-layout: fixed;
-  border: 1px solid #94a3b8;
+  border: 1px solid #64748b;
 }
 
 .slip-table th,
 .slip-table td {
   border: 1px solid #94a3b8;
-  padding: 10px 12px;
+  padding: 8px 10px;
   font-size: 12px;
   vertical-align: top;
 }
@@ -303,8 +352,9 @@ onMounted(load)
 }
 
 .signature-line {
-  width: 90%;
+  width: 88%;
   border-top: 1px solid #475569;
   height: 0;
+  margin-top: 4px;
 }
 </style>
