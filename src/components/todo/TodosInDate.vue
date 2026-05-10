@@ -71,9 +71,9 @@ const todoDatesInDate = computed(() => {
               :title="`${todo_date?.title} ${todo_date?.user ? '\nby:' : ''} ${todo_date?.user?.name} ${todo_date?.user?.department ? '\nDEPT:' : ''} ${todo_date.user?.department?.name}`"
               class="px-0.5 mb-2 text-xs rounded cursor-pointer flex items-center gap-2"
               :class="{
-                'bg-white text-sky-900 hover:bg-sky-400/80 hover:text-white  border-sky-300':
+                'bg-white text-sky-900 hover:bg-sky-400/80 hover:text-white  border-sky-300 font-semibold':
                   todo_date.status !== 'COMPLETED',
-                'bg-green-500 text-white': todo_date.status === 'COMPLETED',
+                'bg-green-200 text-green-900': todo_date.status === 'COMPLETED',
               }"
               @click.prevent.stop="emit('clickTodo', todo_date)"
             >
@@ -81,7 +81,7 @@ const todoDatesInDate = computed(() => {
                 :todoDate="todo_date"
                 class="text-sm"
                 size="x-small"
-                :class="[todo_date.status == 'COMPLETED' ? '!text-white' : '']"
+                :class="[todo_date.status == 'COMPLETED' ? '!text-green-800 ml-0.5' : '']"
               />
 
               <div class="line-clamp-1 text-[10px]">{{ todo_date.title }}</div>

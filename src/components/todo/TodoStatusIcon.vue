@@ -9,7 +9,7 @@ const props = defineProps({
 const color = computed(() => {
   switch (props.todoDate.status) {
     case 'PENDING':
-      return 'text-red-400'
+      return 'text-red-300'
     case 'WORKING':
       return 'text-yellow-600'
     case 'COMPLETED':
