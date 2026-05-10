@@ -141,15 +141,14 @@ onMounted(async () => {
 
         <!-- <pre class="overflow-y-auto">{{ todoDateStore.todo_date }}</pre> -->
 
-        <div class="mb-4 flex justify-between items-end">
+        <div class="mb-4 flex justify-between items-start">
           <div>
-            <div class="text-xs text-gray-500">Todo</div>
             <div class="text-base font-semibold">{{ todoDateStore.todo_date?.title }}</div>
             <div v-if="projectName" class="text-xs text-slate-400 mt-1">{{ projectName }}</div>
           </div>
 
           <button
-            class="btn-2 bg-sky-400 text-white hover:bg-sky-600 hover:text-white bg-none"
+            class="btn-2 bg-sky-400 text-white hover:bg-sky-600 hover:text-white bg-none whitespace-nowrap"
             @click.prevent.stop="emit('clickEdit', todoDateStore.todo_date?.todo)"
           >
             <i class="fas fa-pen"></i> Edit Todo
