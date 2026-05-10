@@ -48,7 +48,7 @@ const todoDatesInDate = computed(() => {
 </script>
 
 <template>
-  <div>
+  <div class="">
     <template v-if="todoDatesInDate.items.length === 0">
       <slot name="noTodos">
         <div class="text-gray-400 text-center">No todos</div>
@@ -69,9 +69,9 @@ const todoDatesInDate = computed(() => {
           >
             <div
               :title="`${todo_date?.title} ${todo_date?.user ? '\nby:' : ''} ${todo_date?.user?.name} ${todo_date?.user?.department ? '\nDEPT:' : ''} ${todo_date.user?.department?.name}`"
-              class="px-1 mb-2 text-xs rounded cursor-pointer flex items-center gap-2"
+              class="px-0.5 mb-2 text-xs rounded cursor-pointer flex items-center gap-2"
               :class="{
-                'bg-sky-50 text-sky-900 hover:bg-sky-700 hover:text-white border border-sky-300':
+                'bg-white text-sky-900 hover:bg-sky-400/80 hover:text-white  border-sky-300':
                   todo_date.status !== 'COMPLETED',
                 'bg-green-500 text-white': todo_date.status === 'COMPLETED',
               }"
@@ -80,6 +80,7 @@ const todoDatesInDate = computed(() => {
               <TodoStatusIcon
                 :todoDate="todo_date"
                 class="text-sm"
+                size="x-small"
                 :class="[todo_date.status == 'COMPLETED' ? '!text-white' : '']"
               />
 
@@ -92,10 +93,15 @@ const todoDatesInDate = computed(() => {
           </slot>
         </template>
       </slot>
-      <div v-if="todoDatesInDate.moreItemsCount > 0" class="text-purple-600 text-center">
-        + {{ todoDatesInDate.moreItemsCount }} more todo{{
-          todoDatesInDate.moreItemsCount > 1 ? 's' : ''
-        }}
+      <div v-if="todoDatesInDate.moreItemsCount > 0" class="text-purple-600 text-center text-xs sm:text-sm">
+       <span>
+         + {{ todoDatesInDate.moreItemsCount }}
+       </span>
+       <span class="hidden sm:inline">
+         more todo{{
+           todoDatesInDate.moreItemsCount > 1 ? 's' : ''
+          }}
+        </span>
       </div>
     </template>
   </div>

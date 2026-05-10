@@ -3,6 +3,7 @@ import { computed } from 'vue'
 
 const props = defineProps({
   todoDate: { type: Object, required: true },
+  size: { type: String, default: 'medium' },
 })
 
 const color = computed(() => {
@@ -20,22 +21,40 @@ const color = computed(() => {
   }
   return ''
 })
+
+const iconSize = computed(() => {
+  switch (props.size) {
+    case 'x-small':
+      return 'text-xs'
+    case 'small':
+      return 'text-sm'
+    case 'medium':
+      return 'text-base'
+    case 'large':
+      return 'text-lg'
+    default:
+      return 'text-base'
+  }
+})
+
 </script>
 
 <template>
-  <span :class="color">
-    <i class="fas fa-clock text-base" v-if="todoDate.status == 'PENDING'" title="Pending"></i>
-    <i class="fas fa-sync text-base" v-if="todoDate.status == 'WORKING'" title="Working"></i>
+  <span :class="[color]">
+    <i class="fas fa-clock" :class="iconSize" v-if="todoDate.status == 'PENDING'" title="Pending"></i>
+    <i class="fas fa-sync" :class="iconSize" v-if="todoDate.status == 'WORKING'" title="Working"></i>
     <i
-      class="fas fa-check-square text-lg"
+      class="fas fa-check-square"
+      :class="iconSize"
       v-if="todoDate.status == 'COMPLETED'"
       title="Completed"
     ></i>
     <i
-      class="fas fa-pause-circle text-base"
+      class="fas fa-pause-circle"
+      :class="iconSize"
       v-if="todoDate.status == 'DEPENDANT'"
       title="Dependant"
     ></i>
-    <i class="fas fa-history text-base" v-if="todoDate.status == 'BACK_LOG'" title="Back Log"></i>
+    <i class="fas fa-history" :class="iconSize" v-if="todoDate.status == 'BACK_LOG'" title="Back Log"></i>
   </span>
 </template>

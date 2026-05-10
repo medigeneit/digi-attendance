@@ -18,6 +18,7 @@ const endOfMonth = ref()
 
 // Days of week starting from Saturday
 const daysInWeek = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+const shortDaysInWeek = ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri']
 
 function getPreviousMonthTrailingDays(year, month, startOffset, prevMonthDays) {
   const dates = []
@@ -148,16 +149,19 @@ watch(() => props.month, updateOnMonthChange)
   <div>
     <slot name="calender-top"></slot>
     <div
-      class="grid grid-cols-7 *:text-center *:p-2 *:border-r *:border-b *:text-blue-800 *:text-sm"
+      class="flex lg:grid grid-cols-7 *:min-w-40 *:lg:min-w-full *:text-center *:p-1 *:border-r *:border-b *:text-blue-800 *:text-sm sticky top-0 bg-white z-10"
     >
-      <div v-for="day in daysInWeek" :key="day">{{ day }}</div>
+      <div v-for="day in daysInWeek" :key="day" class="font-medium text-xs max-h-8 leading-8">
+        <span class="hidden lg:inline text-xs">{{ day }}</span>
+        <span class="inline lg:hidden text-xs">{{ shortDaysInWeek[daysInWeek.indexOf(day)] }}</span>
+      </div>
     </div>
 
     <!-- Weekly rows -->
 
     <div class="flex flex-col">
       <div
-        class="week grid grid-cols-7 min-h-28 items-stretch"
+        class="week flex lg:grid  *:min-w-40 *:lg:min-w-full *:flex-1 grid-cols-7 min-h-28 items-stretch  "
         v-for="(week, wIdx) in weeks"
         :key="wIdx"
       >

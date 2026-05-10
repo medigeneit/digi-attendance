@@ -28,12 +28,12 @@ function isToday(date) {
 }
 </script>
 <template>
-  <div class="relative">
+  <div class="relative overflow-y-auto"  >
     <CalenderView v-if="month" :month="month" class="border-t border-blue-200/50 relative">
       <template #date="{ day, month, yearMonthDate, isCurrentMonth }">
         <div
           tabindex="0"
-          class="border p-4 cursor-pointer group/date relative focus:outline-slate-400"
+          class="border-r border-b p-1.5 cursor-pointer group/date relative focus:outline-slate-400"
           :class="{
             'bg-sky-50   border-sky-300 focus:bg-sky-50 focus:outline-sky-400':
               isToday(yearMonthDate),
@@ -57,13 +57,14 @@ function isToday(date) {
             <TodosInDate :date="yearMonthDate" @clickTodo="(todo) => emit('clickTodo', todo)">
               <template #noTodos>
                 <span></span>
+
               </template>
             </TodosInDate>
           </div>
-          <div class="flex items-center justify-center">
+          <div class="flex items-center justify-center mt-2">
             <button
               @click.prevent.stop="emit('clickDateCell', yearMonthDate)"
-              class="btn-3 !py-1 invisible group-hover/date:visible text-sm text-red-800/40"
+              class="btn-3 !py-0.5 invisible group-hover/date:visible text-sm text-red-800/40"
             >
               <i class="fas fa-plus"></i>
               <span class="hidden lg:inline whitespace-nowrap"> Add todo </span>
