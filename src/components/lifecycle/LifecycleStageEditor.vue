@@ -53,7 +53,11 @@ const STAGE_SALARY_TYPES = [
 ]
 
 onMounted(() => {
-  if (props.definition?.fields?.some((field) => field.type === 'user_select')) {
+  if (
+    props.definition?.fields?.some((field) =>
+      ['user_select', 'reviewer_assignment'].includes(field.type),
+    )
+  ) {
     usersStore.fetchUsers()
   }
 })
@@ -1296,20 +1300,25 @@ async function save() {
                     {{ assignment.role_label }}
                   </div>
                   <div class="mt-1 flex flex-col gap-2">
-                    <select
-                      :value="assignment.user_id || ''"
-                      class="w-full rounded-lg border px-2.5 py-1.5 text-sm"
-                      @change="updateReviewerAssignmentUser(field, assignment.role, $event.target.value)"
+                    <SelectDropdown
+                      :model-value="assignment.user_id || ''"
+                      :options="usersStore.items"
+                      label="name"
+                      :searchBy="searchLifecycleUsers"
+                      placeholder="Select User"
+                      class="h-10 w-full bg-white text-sm"
+                      clearable
+                      searchable
+                      @update:model-value="updateReviewerAssignmentUser(field, assignment.role, $event)"
                     >
-                      <option value="">Select User</option>
-                      <option
-                        v-for="user in usersStore.items"
-                        :key="user.id"
-                        :value="user.id"
-                      >
-                        {{ user.name }} ({{ user.designation?.title || 'N/A' }})
-                      </option>
-                    </select>
+                      <template #option="{ option }">
+                        <UserChip :user="option || {}" class="w-full overflow-hidden border relative" />
+                      </template>
+                      <template #selected-option="{ option }">
+                        <UserChip v-if="option" :user="option || {}" />
+                        <span v-else class="text-sm text-gray-500">Select User</span>
+                      </template>
+                    </SelectDropdown>
                   </div>
                 </div>
                 <button
