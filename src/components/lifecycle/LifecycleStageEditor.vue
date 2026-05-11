@@ -58,7 +58,7 @@ onMounted(() => {
       ['user_select', 'reviewer_assignment'].includes(field.type),
     )
   ) {
-    usersStore.fetchUsers()
+    usersStore.fetchUsers({ all: 1 })
   }
 })
 
@@ -967,6 +967,10 @@ function clearFile(fieldKey) {
 function searchLifecycleUsers(options, term) {
   const needle = (term || '').trim().toLowerCase()
   if (!needle) return Array.isArray(options) ? [...options] : []
+
+  if (needle.length >= 2) {
+    usersStore.searchUsers(needle, { all: 1, limit: 50 })
+  }
 
   return (Array.isArray(options) ? options : []).filter((option) => {
     const haystacks = [

@@ -13,7 +13,7 @@ const usersStore = useLifecycleUsersStore()
 
 onMounted(() => {
   if (!Array.isArray(usersStore.items) || !usersStore.items.length) {
-    usersStore.fetchUsers()
+    usersStore.fetchUsers({ all: 1 })
   }
 })
 
