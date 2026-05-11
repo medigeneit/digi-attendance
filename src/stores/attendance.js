@@ -187,6 +187,22 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   }
 
+  const sendTodayAttendanceMessage = async (payload = {}) => {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const response = await apiClient.post('/attendance/today/send-message', payload)
+      return response.data
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Message sending failed'
+      console.error('[Attendance Message Error]', error.value)
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
 
   const getMonthlyAttendanceLateReport = async (
     company_id,
@@ -602,6 +618,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     getUserDailyLogsByDate,
     getMonthlyAttendanceByShift,
     getTodayAttendanceReport,
+    sendTodayAttendanceMessage,
     getMonthlyAttendanceLateReport,
     getMonthlyAttendanceSummaryReport,
     postPayrollPeriods,

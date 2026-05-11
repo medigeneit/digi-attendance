@@ -4,6 +4,7 @@ import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import SelectedEmployeeCard from '@/components/user/SelectedEmployeeCard.vue'
+import UserMessageSender from '@/components/common/UserMessageSender.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useUserStore } from '@/stores/user'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
@@ -221,6 +222,34 @@ const fmtHours = (v) => {
   const m = totalMins % 60
   return m ? `${h}h ${m}m` : `${h}h`
 }
+
+const employeeMessageUserId = computed(() => selectedUser.value?.id || filters.value.employee_id || '')
+const employeeMessageName = computed(() => selectedUser.value?.name || 'Employee')
+const employeeRecentMessages = computed(() => selectedUser.value?.message_history || [])
+
+const attendanceMessageContext = computed(() => ({
+  source: 'employee_attendance',
+  user_id: employeeMessageUserId.value,
+  month: selectedMonth.value,
+  company_id: filters.value.company_id || '',
+  department_id: filters.value.department_id || '',
+  line_type: filters.value.line_type || '',
+}))
+
+const defaultAttendanceMessage = computed(() => {
+  const summary = attendanceStore?.summary || {}
+  const month = selectedMonth.value || 'selected month'
+
+  return [
+    `Dear ${employeeMessageName.value},`,
+    `your attendance summary for ${month}:`,
+    `working ${summary.total_working_days || 0}d,`,
+    `present ${summary.total_present_days || 0}d,`,
+    `late ${summary.actual_late_day || 0}d,`,
+    `absent ${summary.total_absent_days || 0}d.`,
+    'Please contact HR if any correction is needed.',
+  ].join(' ')
+})
 </script>
 
 <template>
@@ -276,6 +305,19 @@ const fmtHours = (v) => {
               <!-- <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
                 {{ presentRate }}% Present Rate
               </span> -->
+              <UserMessageSender
+                :user-id="employeeMessageUserId"
+                :user-name="employeeMessageName"
+                :default-message="defaultAttendanceMessage"
+                :context="attendanceMessageContext"
+                :recent-messages="employeeRecentMessages"
+                :show-recent-messages="true"
+                :disabled="!employeeMessageUserId"
+                button-label="Message"
+                modal-title="Attendance message"
+                recent-title="Recent message history"
+                disabled-title="Select an employee first"
+              />
               <router-link
                 :to="{ name: 'MonthWiseApplicationLog', query: { ...$route.query } }"
                 class="inline-flex items-center gap-1 rounded-md border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-medium text-zinc-700 hover:bg-zinc-50"

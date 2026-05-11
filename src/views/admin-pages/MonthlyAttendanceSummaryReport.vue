@@ -2,6 +2,7 @@
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
+import UserMessageSender from '@/components/common/UserMessageSender.vue'
 import UpdateApprovalTime from '@/components/paycut/UpdateOrCreate.vue'
 import DisplayFormattedWorkingHours from '@/components/paycut/DisplayFormattedWorkingHours.vue'
 
@@ -165,6 +166,34 @@ const asCompactHours = (value, fallback = '0h') => {
 }
 
 const getEmployeeId = (log) => log?.employee_id ?? log?.user?.employee_id ?? '-'
+
+const defaultSummaryMessage = (log) => {
+  const employee = log?.user || 'Employee'
+  const month = selectedMonthLabel.value
+  const present = toNum(log?.total_present)
+  const absent = toNum(log?.total_absent)
+  const leave = toNum(log?.total_leave)
+  const lateDays = toNum(log?.actual_late_day)
+  const lateHour = asDuration(log?.actual_late_hour)
+  const earlyDays = toNum(log?.actual_early_day)
+  const earlyHour = asDuration(log?.actual_early_hour)
+  const payable = toNum(log?.payable_hour)
+
+  return `Dear ${employee}, your attendance summary for ${month}: Present ${present} day(s), Leave ${leave} day(s), Absent ${absent} day(s), Late ${lateDays} day(s) (${lateHour}), Early ${earlyDays} day(s) (${earlyHour}), Payable ${payable} hour(s). Please contact HR for any correction.`
+}
+
+const summaryMessageContext = (log) => ({
+  source: 'monthly_attendance_summary',
+  month: selectedMonth.value,
+  present_days: toNum(log?.total_present),
+  leave_days: toNum(log?.total_leave),
+  absent_days: toNum(log?.total_absent),
+  actual_late_days: toNum(log?.actual_late_day),
+  actual_late_hour: asDuration(log?.actual_late_hour),
+  actual_early_days: toNum(log?.actual_early_day),
+  actual_early_hour: asDuration(log?.actual_early_hour),
+  payable_hour: toNum(log?.payable_hour),
+})
 
 /* ---------------- page UX: toast + banner ---------------- */
 const ui = ref({
@@ -708,14 +737,26 @@ onBeforeUnmount(() => {
                 />
               </div>
 
-              <router-link
-                :to="{ name: 'EmployeeAttendance', query: { ...route.query, employee_id: log?.user_id, date: selectedMonth } }"
-                target="_blank"
-                class="report-card__cta"
-              >
-                Job Card
-                <i class="far fa-arrow-up-right-from-square text-xs"></i>
-              </router-link>
+              <div class="flex flex-wrap items-center justify-end gap-2">
+                <UserMessageSender
+                  :user-id="log?.user_id"
+                  :user-name="log?.user"
+                  :default-message="defaultSummaryMessage(log)"
+                  :context="summaryMessageContext(log)"
+                  :disabled="!log?.user_id"
+                  button-label="Message"
+                  modal-title="Monthly attendance summary"
+                  disabled-title="Employee user id missing"
+                />
+                <router-link
+                  :to="{ name: 'EmployeeAttendance', query: { ...route.query, employee_id: log?.user_id, date: selectedMonth } }"
+                  target="_blank"
+                  class="report-card__cta"
+                >
+                  Job Card
+                  <i class="far fa-arrow-up-right-from-square text-xs"></i>
+                </router-link>
+              </div>
             </footer>
           </article>
         </div>
@@ -850,14 +891,26 @@ onBeforeUnmount(() => {
                   <td class="td">{{ log?.payable_hour }}h</td>
 
                   <td class="td">
-                    <router-link
-                      :to="{ name: 'EmployeeAttendance', query: { ...route.query, employee_id: log?.user_id, date: selectedMonth } }"
-                      target="_blank"
-                      class="inline-flex w-20 items-center gap-1 rounded-md bg-blue-50 px-1 py-1 font-medium text-blue-700 hover:bg-blue-100"
-                    >
-                      Job Card
-                      <i class="far fa-arrow-up-right-from-square text-xs"></i>
-                    </router-link>
+                    <div class="flex items-center justify-center gap-2">
+                      <UserMessageSender
+                        :user-id="log?.user_id"
+                        :user-name="log?.user"
+                        :default-message="defaultSummaryMessage(log)"
+                        :context="summaryMessageContext(log)"
+                        :disabled="!log?.user_id"
+                        button-label="Message"
+                        modal-title="Monthly attendance summary"
+                        disabled-title="Employee user id missing"
+                      />
+                      <router-link
+                        :to="{ name: 'EmployeeAttendance', query: { ...route.query, employee_id: log?.user_id, date: selectedMonth } }"
+                        target="_blank"
+                        class="inline-flex w-20 items-center gap-1 rounded-md bg-blue-50 px-1 py-1 font-medium text-blue-700 hover:bg-blue-100"
+                      >
+                        Job Card
+                        <i class="far fa-arrow-up-right-from-square text-xs"></i>
+                      </router-link>
+                    </div>
                   </td>
                 </tr>
               </tbody>

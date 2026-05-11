@@ -6,6 +6,7 @@ import { storeToRefs } from 'pinia'
 import LoaderView from '@/components/common/LoaderView.vue'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
+import UserMessageSender from '@/components/common/UserMessageSender.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useCompanyStore } from '@/stores/company'
 const router = useRouter()
@@ -158,6 +159,23 @@ const getStatusMeta = (log) => {
   return { text: log.status, tone: toneMap[log.status] || 'neutral' }
 }
 
+const getRowClass = (log) => ({
+  'table-row--absent': log?.status === 'Absent',
+  'table-row--weekend': log?.status === 'Weekend',
+})
+
+const defaultAttendanceMessage = (log) => {
+  const employee = log?.user_name || 'Employee'
+  const date = selectedDate.value || log?.date || ''
+  return `Dear ${employee}, you are marked absent on ${date}. Please contact HR.`
+}
+
+const attendanceMessageContext = (log) => ({
+  source: 'today_attendance',
+  date: selectedDate.value,
+  status: log?.status,
+})
+
 const goBack = () => router.go(-1)
 
 // Lifecycle
@@ -223,8 +241,9 @@ watch(status, () => {
     </div>
 
     <div class="glass-panel space-y-3 compact-panel relative z-50">
-      <div class="flex flex-wrap gap-2">
+      <div class="attendance-filter-bar">
         <EmployeeFilter
+          class="min-w-0"
           v-model:company_id="filters.company_id"
           v-model:department_id="filters.department_id"
           v-model:employee_id="filters.employee_id"
@@ -235,7 +254,7 @@ watch(status, () => {
         >
         <div class="relative gap-4">
 
-          <select id="userSelect" v-model="status" class="input-1 py-0.5">
+          <select id="userSelect" v-model="status" class="input-1 py-1.5">
             <option v-for="option in statusOptions" :key="option.value" :value="option.value">
               {{ option.label }}
             </option>
@@ -249,8 +268,11 @@ watch(status, () => {
           :show-month="false"
           :show-date="true"
           label="Month"
+          class="attendance-date-filter"
         />
-        <button type="button" @click="fetchAttendance" class="btn-2 rounded py-0.5 px-3">Search</button>
+        <button type="button" @click="fetchAttendance" class="btn-2 attendance-search-button">
+          Search
+        </button>
       </div>
     </div>
 
@@ -297,10 +319,16 @@ watch(status, () => {
                   <th class="th !text-center">Late</th>
                   <th class="th !text-center">Early</th>
                   <th class="th !text-center">Status</th>
+                  <th class="th !text-center">Action</th>
                 </tr>
               </thead>
               <tbody class="text-[11px] text-center">
-                <tr v-for="(log, index) in logs" :key="`${log?.date}-${index}`" class="table-row">
+                <tr
+                  v-for="(log, index) in logs"
+                  :key="`${log?.date}-${index}`"
+                  class="table-row"
+                  :class="getRowClass(log)"
+                >
                   <td class="td">{{ index + 1 }}</td>
                   <td class="td text-left">
                     <p class="font-semibold text-slate-800">{{ log.user_name }}</p>
@@ -346,6 +374,17 @@ watch(status, () => {
                       </router-link>
                     </div>
                   </td>
+                  <td class="td">
+                    <UserMessageSender
+                      :user-id="log.user_id"
+                      :user-name="log.user_name"
+                      :default-message="defaultAttendanceMessage(log)"
+                      :context="attendanceMessageContext(log)"
+                      :disabled="log.status !== 'Absent'"
+                      disabled-title="Only absent employees can be messaged from this report"
+                      modal-title="Attendance message"
+                    />
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -377,6 +416,29 @@ watch(status, () => {
 }
 .compact-panel {
   @apply py-3;
+}
+.attendance-filter-bar {
+  @apply grid items-start gap-3;
+  grid-template-columns: minmax(0, 1fr);
+}
+.attendance-date-filter {
+  @apply min-w-0;
+}
+.attendance-search-button {
+  @apply h-10 w-full rounded px-4 py-0 text-sm;
+}
+@media (min-width: 768px) {
+  .attendance-filter-bar {
+    grid-template-columns: minmax(0, 1fr) minmax(210px, 240px) auto;
+  }
+  .attendance-search-button {
+    @apply w-auto self-end;
+  }
+}
+@media (max-width: 767px) {
+  .attendance-filter-bar :deep(.grid) {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 .filter-grid {
   @apply grid gap-3 lg:grid-cols-2;
@@ -433,6 +495,14 @@ watch(status, () => {
 .table-row:nth-child(even) {
   @apply bg-slate-50/40;
 }
+.table-row--absent,
+.table-row--absent:nth-child(even) {
+  @apply bg-rose-50;
+}
+.table-row--weekend,
+.table-row--weekend:nth-child(even) {
+  @apply bg-slate-100;
+}
 .status-chip {
   @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide;
 }
@@ -457,13 +527,19 @@ watch(status, () => {
 .table-row:hover {
   @apply bg-slate-100;
 }
+.table-row--absent:hover {
+  @apply bg-rose-100;
+}
+.table-row--weekend:hover {
+  @apply bg-slate-200;
+}
 .table-row td {
   @apply align-middle;
 }
 .table-row td p {
   @apply leading-tight;
 }
-.table-row td .text-[11px] {
+.table-row td .text-\[11px\] {
   @apply mt-0.5;
 }
 .table-row:nth-child(odd) .status-chip {

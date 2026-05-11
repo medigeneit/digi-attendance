@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
 import LoaderView from '@/components/common/LoaderView.vue'
+import UserMessageSender from '@/components/common/UserMessageSender.vue'
 import PaginationBar from '@/components/PaginationBar.vue'
 import SearchInput from '@/components/SearchInput.vue'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
@@ -165,6 +166,64 @@ const selectCurrentMonth = () => {
 const monthTone = (index) => (index % 2 === 0 ? 'tone-a' : 'tone-b')
 
 const users = computed(() => storeUsers.value || [])
+
+const getDisciplineSummary = (user) => {
+  return visibleMonths.value.reduce(
+    (summary, month) => {
+      const record = getRecord(user, month.month_start)
+      const indisciplines = [
+        ...getAutoIndisciplineItems(record),
+        ...getManualIndisciplineItems(record),
+      ]
+      const actions = [
+        ...getAutoActionItems(record),
+        ...getManualActionItems(record),
+      ]
+      const attachments = getAttachmentCount(record)
+
+      if (indisciplines.length || actions.length || attachments) {
+        summary.months.push({
+          label: month.label || monthLabel(month.month_start),
+          indisciplines: indisciplines.length,
+          actions: actions.length,
+          attachments,
+        })
+      }
+
+      summary.indisciplines += indisciplines.length
+      summary.actions += actions.length
+      summary.attachments += attachments
+
+      return summary
+    },
+    { indisciplines: 0, actions: 0, attachments: 0, months: [] }
+  )
+}
+
+const defaultDisciplineMessage = (user) => {
+  const summary = getDisciplineSummary(user)
+  const monthText = summary.months.length
+    ? summary.months
+      .map((month) => `${month.label}: ${month.indisciplines} indiscipline, ${month.actions} action, ${month.attachments} attachment`)
+      .join('; ')
+    : 'No month-wise discipline entries in the selected view'
+
+  return `Dear ${getUserName(user)}, discipline report summary for ${filters.value.year}: ${summary.indisciplines} indiscipline item(s), ${summary.actions} action item(s), ${summary.attachments} attachment(s), final outcome ${getFinalOutcome(user)}. ${monthText}. Please contact HR for any clarification.`
+}
+
+const disciplineMessageContext = (user) => {
+  const summary = getDisciplineSummary(user)
+
+  return {
+    source: 'discipline_report',
+    year: filters.value.year,
+    selected_months: visibleMonths.value.map((month) => month.month_start),
+    indiscipline_count: summary.indisciplines,
+    action_count: summary.actions,
+    attachment_count: summary.attachments,
+    final_outcome: getFinalOutcome(user),
+  }
+}
 
 const yearOptions = computed(() => {
   const years = []
@@ -399,6 +458,16 @@ watch(
                 <div class="space-y-1">
                   <p class="text-sm font-semibold text-slate-800">{{ getUserName(user) }}</p>
                   <p class="text-[11px] text-slate-500">{{ getUserMeta(user) }}</p>
+                  <UserMessageSender
+                    :user-id="getUserId(user)"
+                    :user-name="getUserName(user)"
+                    :default-message="defaultDisciplineMessage(user)"
+                    :context="disciplineMessageContext(user)"
+                    :disabled="!getUserId(user)"
+                    button-label="Message"
+                    modal-title="Discipline report message"
+                    disabled-title="Employee user id missing"
+                  />
                 </div>
               </td>
 
