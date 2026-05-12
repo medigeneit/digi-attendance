@@ -15,6 +15,11 @@ export const useAttendanceStore = defineStore('attendance', () => {
   const error = ref(null)
   const isLoading = ref(false)
   const reportMeta = ref(null)
+  const localDate = () => {
+    const date = new Date()
+    const offset = date.getTimezoneOffset()
+    return new Date(date.getTime() - offset * 60000).toISOString().slice(0, 10)
+  }
 
   const getUserDailyLogsByDate = async (_userId, date) => {
     const formattedDate = formatDateToDayMonthYear(date)
@@ -250,20 +255,22 @@ export const useAttendanceStore = defineStore('attendance', () => {
   ) => {
     isLoading.value = true
     try {
+      const normalizedType = type || 'daily'
+      const normalizedValue = value || (normalizedType === 'daily' ? selectedDate.value || localDate() : selectedMonth.value)
       const params = {
         company_id,
         department_id,
         line_type, // eg: "executive"
         employee_id, // eg: 5
-        type, // 'daily'
-        ...(type === 'daily' ? { date: value } : { month: value }),
+        type: normalizedType, // 'daily'
+        ...(normalizedType === 'daily' ? { date: normalizedValue } : { month: normalizedValue }),
       }
 
       const response = await apiClient.get('/attendance/late-reports', { params })
 
-      if (type === 'daily') {
+      if (normalizedType === 'daily') {
         dailyLateLogs.value = response.data
-      } else if (type === 'monthly') {
+      } else if (normalizedType === 'monthly') {
         monthlyLateLogs.value = response.data
       }
 

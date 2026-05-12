@@ -124,6 +124,23 @@ const insights = computed(() => normalized.value.insights)
 const topLateEmployees = computed(() => normalized.value.topLateEmployees)
 const leaveTypeDistribution = computed(() => normalized.value.leaveTypeDistribution)
 const summaryLabelSuffix = computed(() => (filters.value.date_filter === 'custom' ? 'Selected Date' : 'Today'))
+const selectedReportDate = computed(() => (filters.value.date_filter === 'custom' ? filters.value.custom_date || localDate() : localDate()))
+const dashboardFilterQuery = computed(() => ({
+  company_id: filters.value.company_id || '',
+  department_id: filters.value.department_id || 'all',
+  line_type: filters.value.line_type || 'all',
+  employee_id: '',
+}))
+
+const leaveApplicationQuery = (applicationType) => ({
+  applicationType,
+  ...dashboardFilterQuery.value,
+})
+
+const datedApplicationQuery = computed(() => ({
+  date: selectedReportDate.value,
+  ...dashboardFilterQuery.value,
+}))
 
 const filterCopy = computed(() => {
   if (filters.value.date_filter === 'custom') {
@@ -174,17 +191,17 @@ const overviewCards = computed(() => [
   { label: 'Total Employees', value: kpis.value.total_employees, icon: 'fas fa-users', tone: 'blue', to: { name: 'TodayAttendanceReport', query: { status: 'all' } } },
   { label: `Present ${summaryLabelSuffix.value}`, value: kpis.value.present_today, icon: 'fas fa-user-check', tone: 'green', to: { name: 'TodayAttendanceReport', query: { status: 'Present' } } },
   { label: `Absent ${summaryLabelSuffix.value}`, value: kpis.value.absent_today, icon: 'fas fa-user-times', tone: 'red', to: { name: 'TodayAttendanceReport', query: { status: 'Absent' } } },
-  { label: `On Leave ${summaryLabelSuffix.value}`, value: kpis.value.on_leave_today, icon: 'fas fa-calendar-check', tone: 'blue', to: { name: 'LeaveApplicationsForDay', query: { applicationType: 'today' } } },
-  { label: 'Late', value: kpis.value.late_today, icon: 'fas fa-clock', tone: 'orange', to: { name: 'DailyLateAttendanceReport' } },
-  { label: 'Short Leave', value: kpis.value.short_leave_today, icon: 'fas fa-walking', tone: 'purple', to: { name: 'DateWiseShortLeaveList' } },
+  { label: `On Leave ${summaryLabelSuffix.value}`, value: kpis.value.on_leave_today, icon: 'fas fa-calendar-check', tone: 'blue', to: { name: 'LeaveApplicationsForDay', query: leaveApplicationQuery('today') } },
+  { label: 'Late', value: kpis.value.late_today, icon: 'fas fa-clock', tone: 'orange', to: { name: 'DailyLateAttendanceReport', query: datedApplicationQuery.value } },
+  { label: 'Short Leave', value: kpis.value.short_leave_today, icon: 'fas fa-walking', tone: 'purple', to: { name: 'DateWiseShortLeaveList', query: datedApplicationQuery.value } },
 ])
 
 const leaveCards = computed(() => [
-  { label: 'Today Leave', value: kpis.value.on_leave_today, icon: 'fas fa-calendar-day', tone: 'blue' },
-  { label: 'Tomorrow Leave', value: kpis.value.tomorrow_leave, icon: 'fas fa-calendar-plus', tone: 'green' },
-  { label: 'Previous Week Leaves', value: kpis.value.prev_week_leaves, icon: 'fas fa-calendar-minus', tone: 'orange' },
-  { label: 'Upcoming Leaves', value: kpis.value.upcoming_leaves, icon: 'fas fa-calendar-alt', tone: 'purple' },
-  { label: 'Short Leave', value: kpis.value.short_leave_today, icon: 'fas fa-walking', tone: 'red' },
+  { label: 'Today Leave', value: kpis.value.on_leave_today, icon: 'fas fa-calendar-day', tone: 'blue', to: { name: 'LeaveApplicationsForDay', query: leaveApplicationQuery('today') } },
+  { label: 'Tomorrow Leave', value: kpis.value.tomorrow_leave, icon: 'fas fa-calendar-plus', tone: 'green', to: { name: 'LeaveApplicationsForDay', query: leaveApplicationQuery('tomorrow') } },
+  { label: 'Previous Week Leaves', value: kpis.value.prev_week_leaves, icon: 'fas fa-calendar-minus', tone: 'orange', to: { name: 'PreviousAfterApplicationList', query: { applicationType: 'prev', ...datedApplicationQuery.value } } },
+  { label: 'Upcoming Leaves', value: kpis.value.upcoming_leaves, icon: 'fas fa-calendar-alt', tone: 'purple', to: { name: 'PreviousAfterApplicationList', query: { applicationType: 'after', ...datedApplicationQuery.value } } },
+  { label: 'Short Leave', value: kpis.value.short_leave_today, icon: 'fas fa-walking', tone: 'red', to: { name: 'DateWiseShortLeaveList', query: datedApplicationQuery.value } },
 ])
 
 const summaryRows = computed(() => [
@@ -248,7 +265,7 @@ const reportCards = computed(() => [
     description: 'Late arrivals calculated with shift grace time.',
     icon: 'fas fa-clock',
     tone: 'orange',
-    to: { name: 'DailyLateAttendanceReport' },
+    to: { name: 'DailyLateAttendanceReport', query: datedApplicationQuery.value },
   },
   {
     label: 'Monthly Leave Report',

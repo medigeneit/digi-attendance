@@ -22,12 +22,18 @@ const { dailyLateLogs, isLoading, selectedDate } = storeToRefs(attendanceStore)
 const { companies } = storeToRefs(companyStore)
 const { departments } = storeToRefs(departmentStore)
 
+const localDate = () => {
+  const date = new Date()
+  const offset = date.getTimezoneOffset()
+  return new Date(date.getTime() - offset * 60000).toISOString().slice(0, 10)
+}
+
 const filters = ref({
   company_id: route.query.company_id || '',
   department_id: route.query.department_id || '',
   line_type: route.query.line_type || 'all',
   employee_id: route.query.employee_id || '',
-  date: route.query.date || '', // ISO yyyy-mm-dd
+  date: route.query.date || selectedDate.value || localDate(), // ISO yyyy-mm-dd
 })
 
 // normalize types
@@ -75,7 +81,7 @@ const selectedEmployee = ref(null)
 const filterEmployees = ref([])
 
 // keep store date in sync initially (filters → store)
-selectedDate.value = filters.value.date || ''
+selectedDate.value = filters.value.date || localDate()
 
 // -----------------------------
 // Helpers
@@ -89,12 +95,16 @@ function ensureEmployeeIdFromObject() {
 }
 
 async function fetchLateReport() {
+  if (!filters.value.date) {
+    filters.value.date = localDate()
+  }
+
   await attendanceStore.getDailyLateReport(
     filters.value.company_id || '',
     filters.value.department_id || '',
     filters.value.line_type || 'all',
     filters.value.employee_id || '',
-    filters.value.date || '',
+    filters.value.date,
     'daily'
   )
 }
@@ -271,6 +281,7 @@ const handleFilterChange = () => {
     department_id: filters.value.department_id,
     line_type: filters.value.line_type,
     employee_id: filters.value.employee_id,
+    date: filters.value.date || localDate(),
   }
 
   const isDifferent = Object.entries(newQuery).some(
