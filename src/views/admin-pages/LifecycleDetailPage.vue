@@ -3,11 +3,13 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ChecklistTable from '@/components/ChecklistTable.vue'
 import { resolveLifecycleStageComponent } from '@/components/lifecycle/stages/stageRegistry'
+import { useAuthStore } from '@/stores/auth'
 import { useChecklistStore } from '@/stores/checklist'
 import { useLifecycleStore } from '@/stores/lifecycle'
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 const lifecycleStore = useLifecycleStore()
 const checklistStore = useChecklistStore()
 
@@ -24,6 +26,29 @@ const stages = computed(() => lifecycleStore.currentRecord?.stages || [])
 const activeStageCode = ref(null)
 const checklistStarting = ref(false)
 
+const isSuperAdmin = computed(() => String(authStore.user?.role || '').toLowerCase() === 'super_admin')
+
+const probationStage = computed(() => stages.value.find((item) => item.code === 'probation') || null)
+
+const isCurrentUserProbationReviewer = computed(() => {
+  const currentUserId = Number(authStore.user?.id)
+  if (!currentUserId) return false
+
+  const payload = probationStage.value?.record?.payload || {}
+  const assignments = Array.isArray(payload.reviewer_assignments) ? payload.reviewer_assignments : []
+  const matrixRows = Array.isArray(payload.reviewer_matrix) ? payload.reviewer_matrix : []
+
+  return [...assignments, ...matrixRows].some((item) => Number(item?.user_id) === currentUserId)
+})
+
+const visibleStages = computed(() => {
+  if (flowType.value === 'onboarding' && !isSuperAdmin.value && isCurrentUserProbationReviewer.value) {
+    return stages.value.filter((item) => item.code === 'probation')
+  }
+
+  return stages.value
+})
+
 async function load() {
   lifecycleStore.setFlowType(flowType.value)
   await lifecycleStore.fetchDetail(userId.value, flowType.value)
@@ -38,7 +63,7 @@ async function load() {
 
 watch([flowType, userId], load, { immediate: true })
 watch(
-  stages,
+  visibleStages,
   (value) => {
     const requested = String(route.query.stage || '')
     const allowed = value.map((item) => item.code)
@@ -61,7 +86,7 @@ function stageTone(status) {
 }
 
 const activeStage = computed(
-  () => stages.value.find((item) => item.code === activeStageCode.value) || stages.value[0] || null,
+  () => visibleStages.value.find((item) => item.code === activeStageCode.value) || visibleStages.value[0] || null,
 )
 const activeStageComponent = computed(() =>
   resolveLifecycleStageComponent(flowType.value, activeStageCode.value),
@@ -214,7 +239,7 @@ const checklistSummaryItems = computed(() => [
         <div class="px-4 py-3 md:px-4.5">
           <div class="mb-3 grid gap-1.5 sm:grid-cols-2 xl:grid-cols-5">
             <button
-              v-for="stage in stages"
+              v-for="stage in visibleStages"
               :key="stage.code"
               type="button"
               class="rounded-lg border px-2.5 py-2 text-left transition"
