@@ -110,9 +110,24 @@ const currentStageLabel = computed(() => {
   return row?.label || 'Not started'
 })
 
+function formatDateLabel(value) {
+  if (!value) return ''
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+
+  return date.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
 const employeeMetaItems = computed(() =>
   [
     employee.value?.employee_id || 'No employee ID',
+    employee.value?.employment_type ? `Employment Type: ${employee.value.employment_type}` : null,
+    employee.value?.joining_date ? `Joining Date: ${formatDateLabel(employee.value.joining_date)}` : null,
     employee.value?.department?.name || 'No department',
     employee.value?.designation?.title || 'No designation',
   ].filter(Boolean),

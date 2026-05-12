@@ -12,6 +12,8 @@ const props = defineProps({
   definition: { type: Object, required: true },
   summaryItems: { type: Array, default: () => [] },
   defaultPayload: { type: Object, default: () => ({}) },
+  compact: { type: Boolean, default: false },
+  hideRemarks: { type: Boolean, default: false },
 })
 
 const store = useLifecycleStore()
@@ -230,6 +232,10 @@ function fieldColumnClass(field, defaultSpan = 1) {
 }
 
 function textareaHeightClass(field) {
+  if (props.compact) {
+    return Number(field?.colSpan ?? 2) === 1 ? 'min-h-[42px]' : 'min-h-[50px]'
+  }
+
   return Number(field?.colSpan ?? 2) === 1 ? 'min-h-[52px]' : 'min-h-[64px]'
 }
 
@@ -1018,26 +1024,42 @@ async function save() {
 </script>
 
 <template>
-  <section class="rounded-xl border bg-white shadow-sm">
-    <div class="flex flex-wrap items-start justify-between gap-2.5 border-b px-4 py-2.5 md:px-4.5">
+  <section :class="compact ? 'rounded-lg border bg-white shadow-sm' : 'rounded-xl border bg-white shadow-sm'">
+    <div
+      :class="[
+        'flex flex-wrap items-start justify-between border-b',
+        compact ? 'gap-2 px-3 py-2' : 'gap-2.5 px-4 py-2.5 md:px-4.5',
+      ]"
+    >
       <div>
         <h2 class="text-sm font-semibold text-slate-900 md:text-base">{{ definition.title }}</h2>
-        <p class="text-xs text-gray-500">{{ definition.description }}</p>
+        <p v-if="definition.description && !compact" class="text-xs text-gray-500">
+          {{ definition.description }}
+        </p>
       </div>
 
       <div
-        class="w-full rounded-xl border-2 border-blue-200 bg-blue-50/80 p-3 shadow-sm ring-1 ring-blue-100 md:w-[320px]"
+        :class="[
+          'w-full border-blue-200 bg-blue-50/80 shadow-sm ring-1 ring-blue-100 md:w-[320px]',
+          compact ? 'rounded-lg border p-2' : 'rounded-xl border-2 p-3',
+        ]"
       >
-        <div class="mb-2 flex items-center justify-between gap-3">
+        <div :class="['flex items-center justify-between gap-3', compact ? 'mb-1.5' : 'mb-2']">
           <label
             for="stage-status-select"
-            class="text-xs font-bold uppercase tracking-[0.16em] text-blue-800"
+            :class="[
+              'font-bold uppercase text-blue-800',
+              compact ? 'text-[10px] tracking-[0.14em]' : 'text-xs tracking-[0.16em]',
+            ]"
           >
             Stage Status
           </label>
           <span
-            class="rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1"
-            :class="selectedStatusTone"
+            :class="[
+              'rounded-full font-semibold ring-1',
+              compact ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-[11px]',
+              selectedStatusTone,
+            ]"
           >
             {{ selectedStatusLabel }}
           </span>
@@ -1045,30 +1067,38 @@ async function save() {
         <select
           id="stage-status-select"
           v-model="form.status"
-          class="w-full rounded-lg border border-blue-300 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-200"
+          :class="[
+            'w-full rounded-lg border border-blue-300 bg-white font-semibold text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-200',
+            compact ? 'px-2.5 py-1.5 text-xs' : 'px-3 py-2.5 text-sm',
+          ]"
         >
           <option v-for="item in statusOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
         </select>
-        <div class="mt-1.5 text-xs font-medium text-blue-700">
+        <div v-if="!compact" class="mt-1.5 text-xs font-medium text-blue-700">
           Select status before saving this stage.
         </div>
       </div>
     </div>
 
-    <div class="space-y-3 px-4 py-3 md:px-4.5">
+    <div :class="[compact ? 'space-y-2 px-3 py-2' : 'space-y-3 px-4 py-3 md:px-4.5']">
       <div
         v-if="summaryItems.length"
-        class="grid gap-1.5 rounded-xl border border-blue-100 bg-blue-50/60 px-2.5 py-2.5 md:grid-cols-2 xl:grid-cols-3"
+        :class="[
+          'grid rounded-xl border border-blue-100 bg-blue-50/60 md:grid-cols-3',
+          compact ? 'gap-x-3 gap-y-1 px-2 py-1.5 xl:grid-cols-4' : 'gap-1.5 px-2.5 py-2.5 xl:grid-cols-3',
+        ]"
       >
         <div v-for="item in summaryItems" :key="item.label" class="min-w-0">
-          <div class="text-xs font-medium uppercase tracking-wide text-blue-700">{{ item.label }}</div>
-          <div class="truncate text-sm font-semibold text-slate-800" :title="item.value || 'N/A'">
+          <div :class="['font-medium uppercase text-blue-700', compact ? 'text-[10px] tracking-wide' : 'text-xs tracking-wide']">
+            {{ item.label }}
+          </div>
+          <div :class="['truncate font-semibold text-slate-800', compact ? 'text-xs' : 'text-sm']" :title="item.value || 'N/A'">
             {{ item.value || 'N/A' }}
           </div>
         </div>
       </div>
 
-      <div class="grid gap-2.5 md:grid-cols-2">
+      <div :class="['grid md:grid-cols-2', compact ? 'gap-2' : 'gap-2.5']">
         <template v-for="field in visibleFields">
           <div v-if="field.type === 'section'" :key="`${field.key}-section`" :class="fieldColumnClass(field, 2)">
             <div class="flex items-center gap-2.5">
@@ -1089,8 +1119,11 @@ async function save() {
             <input
               :value="getFieldValue(field)"
               :type="field.type"
-              class="w-full rounded-lg border px-2.5 py-1.5 text-sm"
-              :class="{ 'bg-gray-50 text-gray-500': field.readonly }"
+              :class="[
+                'w-full rounded-lg border text-sm',
+                compact ? 'px-2.5 py-1.5' : 'px-2.5 py-1.5',
+                { 'bg-gray-50 text-gray-500': field.readonly },
+              ]"
               :placeholder="field.placeholder || ''"
               :readonly="field.readonly"
               :disabled="field.readonly"
@@ -1347,17 +1380,18 @@ async function save() {
             v-else-if="field.type === 'reviewer_matrix'"
             :key="`${field.key}-reviewer-matrix`"
             :class="[
-              'rounded-xl border border-slate-200 bg-slate-50/50 p-2.5',
+              'rounded-xl border border-slate-200 bg-slate-50/50',
+              compact ? 'p-2' : 'p-2.5',
               fieldColumnClass(field, 2),
             ]"
           >
-            <div class="mb-2.5 flex items-start justify-between gap-3">
+            <div :class="['flex items-start justify-between gap-3', compact ? 'mb-1.5' : 'mb-2.5']">
               <div>
                 <div class="text-sm font-semibold text-slate-800">{{ field.label }}</div>
-                <div v-if="field.help" class="mt-1 text-xs text-slate-500">{{ field.help }}</div>
+                <div v-if="field.help && !compact" class="mt-1 text-xs text-slate-500">{{ field.help }}</div>
               </div>
             </div>
-            <div class="space-y-2.5">
+            <div :class="compact ? 'space-y-1.5' : 'space-y-2.5'">
               <div
                 v-for="(slab, slabIndex) in reviewerMatrixSlabs(field)"
                 :key="`${field.key}-${slab.key}`"
@@ -1365,21 +1399,32 @@ async function save() {
               >
                 <button
                   type="button"
-                  class="flex w-full items-start justify-between gap-3 px-3 py-2 text-left"
-                  :class="isReviewerMatrixSlabExpanded(field, slab.key) ? 'bg-blue-50/60' : 'bg-white'"
+                  :class="[
+                    'flex w-full items-start justify-between gap-3 text-left',
+                    compact ? 'px-2.5 py-1.5' : 'px-3 py-2',
+                    isReviewerMatrixSlabExpanded(field, slab.key) ? 'bg-blue-50/60' : 'bg-white',
+                  ]"
                   @click="toggleReviewerMatrixSlab(field, slab.key)"
                 >
                   <div class="min-w-0">
                     <div class="text-sm font-semibold text-slate-800">
                       {{ reviewerMatrixSlabLabel(slab, slabIndex) }}
                     </div>
-                    <div class="mt-0.5 text-xs text-slate-500">
+                    <div :class="[compact ? 'text-[11px]' : 'mt-0.5 text-xs', 'text-slate-500']">
                       {{ reviewerMatrixSlabSummary(field, slab.key).assigned }} assigned reviewers,
                       {{ reviewerMatrixSlabSummary(field, slab.key).completed }} completed,
                       {{ reviewerMatrixSlabSummary(field, slab.key).pending }} pending
                     </div>
                   </div>
-                  <div class="rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]" :class="isReviewerMatrixSlabExpanded(field, slab.key) ? 'border-blue-200 bg-blue-100 text-blue-700' : 'border-slate-200 bg-slate-50 text-slate-500'">
+                  <div
+                    :class="[
+                      'rounded-full border font-semibold uppercase tracking-[0.14em]',
+                      compact ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-[11px]',
+                      isReviewerMatrixSlabExpanded(field, slab.key)
+                        ? 'border-blue-200 bg-blue-100 text-blue-700'
+                        : 'border-slate-200 bg-slate-50 text-slate-500',
+                    ]"
+                  >
                     {{ isReviewerMatrixSlabExpanded(field, slab.key) ? 'Open' : 'Minimized' }}
                   </div>
                 </button>
@@ -1420,7 +1465,10 @@ async function save() {
                           <td class="px-2.5 py-2">
                             <textarea
                               :value="reviewerMatrixSlabRowValue(row, slab.key, 'note')"
-                              class="min-h-[48px] w-full rounded-lg border px-2.5 py-1.5 text-xs"
+                              :class="[
+                                'w-full rounded-lg border px-2.5 py-1.5 text-xs',
+                                compact ? 'min-h-[36px]' : 'min-h-[48px]',
+                              ]"
                               placeholder="Reviewer note"
                               @input="updateReviewerMatrixSlabItem(field, index, slab.key, 'note', $event.target.value)"
                             />
@@ -1428,7 +1476,10 @@ async function save() {
                           <td class="px-2.5 py-2">
                             <textarea
                               :value="row.special_note"
-                              class="min-h-[48px] w-full rounded-lg border px-2.5 py-1.5 text-xs"
+                              :class="[
+                                'w-full rounded-lg border px-2.5 py-1.5 text-xs',
+                                compact ? 'min-h-[36px]' : 'min-h-[48px]',
+                              ]"
                               placeholder="Special comments"
                               @input="updateReviewerMatrixItem(field, index, 'special_note', $event.target.value)"
                             />
@@ -1439,7 +1490,7 @@ async function save() {
                   </div>
                 </div>
 
-                <div v-else class="space-y-2 border-t px-3 py-2.5">
+                <div v-else :class="[compact ? 'space-y-1 border-t px-2.5 py-1.5' : 'space-y-2 border-t px-3 py-2.5']">
                   <div class="flex flex-wrap gap-1.5">
                     <span
                       v-for="row in reviewerMatrixFieldValue(field)"
@@ -1468,7 +1519,8 @@ async function save() {
               :rows="field.rows || 3"
               :class="[
                 textareaHeightClass(field),
-                'w-full rounded-lg border px-2.5 py-1.5 text-sm',
+                'w-full rounded-lg border text-sm',
+                compact ? 'px-2.5 py-1.5' : 'px-2.5 py-1.5',
               ]"
               :placeholder="field.placeholder || ''"
               @input="updateFieldValue(field, $event.target.value)"
@@ -1483,7 +1535,10 @@ async function save() {
             <span class="mb-1 block text-sm font-medium text-gray-700">{{ field.label }}</span>
             <select
               :value="getFieldValue(field)"
-              class="w-full rounded-lg border px-2.5 py-1.5 text-sm"
+              :class="[
+                'w-full rounded-lg border text-sm',
+                compact ? 'px-2.5 py-1.5' : 'px-2.5 py-1.5',
+              ]"
               @change="updateFieldValue(field, $event.target.value)"
             >
               <option value="">Select</option>
@@ -1716,7 +1771,11 @@ async function save() {
           <div
             v-else-if="field.type === 'file'"
             :key="`${field.key}-file`"
-            :class="['rounded-lg border px-3 py-2.5', fieldColumnClass(field, 2)]"
+            :class="[
+              'rounded-lg border',
+              compact ? 'px-3 py-2' : 'px-3 py-2.5',
+              fieldColumnClass(field, 2),
+            ]"
           >
             <div class="mb-1.5 text-sm font-medium text-gray-700">{{ field.label }}</div>
             <input
@@ -1736,9 +1795,19 @@ async function save() {
             <div v-if="uploading[field.key]" class="mt-2 text-xs text-gray-500">Uploading...</div>
           </div>
         </template>
+
+        <label v-if="compact && !hideRemarks" class="block">
+          <span class="mb-1 block text-sm font-medium text-gray-700">Remarks</span>
+          <textarea
+            v-model="form.remarks"
+            class="min-h-[50px] w-full rounded-lg border px-2.5 py-1.5 text-sm"
+            rows="2"
+            placeholder="Notes, context, handover remarks, or HR observations"
+          />
+        </label>
       </div>
 
-      <label class="block">
+      <label v-if="!compact && !hideRemarks" class="block">
         <span class="mb-1 block text-sm font-medium text-gray-700">Remarks</span>
         <textarea
           v-model="form.remarks"
