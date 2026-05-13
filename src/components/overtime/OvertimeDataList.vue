@@ -12,6 +12,7 @@ import UpdateApprovalTime from './UpdateApprovalTime.vue'
 const authStore = useAuthStore()
 const overtimeStore = useOvertimeStore()
 const notificationStore = useNotificationStore()
+const OVERTIME_APPROVAL_TIME_USER_ID = 8
 
 const props = defineProps({
   user: Object,
@@ -69,7 +70,10 @@ const typeClass = (t) => {
   return 'bg-gray-50 text-gray-700 ring-gray-200'
 }
 
-const isCurrentRecommendBy = (o) => Number(o?.recommend_by_user_id) === Number(authStore.user?.id)
+const isPending = (o) => String(o?.status || 'Pending').toLowerCase() === 'pending'
+
+const isCurrentRecommendBy = (o) =>
+  Number(o?.approval_recommend_by_user_id || o?.recommend_by_user_id) === Number(authStore.user?.id)
 
 const approvalPermissionsFor = (o) =>
   notificationStore.applicationApprovalPermissions?.[Number(o?.id)] ||
@@ -77,7 +81,7 @@ const approvalPermissionsFor = (o) =>
   {}
 
 const canSetApprovalTime = (o) =>
-  isCurrentRecommendBy(o) || !!approvalPermissionsFor(o).allow_recommend_by
+  isPending(o) && Number(authStore.user?.id) === OVERTIME_APPROVAL_TIME_USER_ID
 
 const needsApprovalTime = (o) => !o?.approval_overtime_hours && canSetApprovalTime(o)
 

@@ -243,7 +243,7 @@ const canDeleteApplication = (overtime) => {
                   <DisplayFormattedWorkingHours :workingHours="overtime?.request_overtime_hours" />
                 </td>
                 <td class="px-4 py-3 text-slate-700 text-center">
-                  <DisplayFormattedWorkingHours :workingHours="overtime?.approval_overtime_hours" />
+                  <DisplayFormattedWorkingHours :workingHours="overtime?.approval_overtime_hours" /> 
                 </td>
                 <td class="px-4 py-3 text-center">
                   <span
