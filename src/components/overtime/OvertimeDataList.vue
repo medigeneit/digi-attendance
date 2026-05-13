@@ -64,16 +64,22 @@ const typeClass = (t) => {
   return 'bg-gray-50 text-gray-700 ring-gray-200'
 }
 
+const isCurrentRecommendBy = (o) => Number(o?.recommend_by_user_id) === Number(authStore.user?.id)
+
+const approvalPermissionsFor = (o) =>
+  notificationStore.applicationApprovalPermissions?.[Number(o?.id)] ||
+  notificationStore.applicationApprovalPermissions?.[String(o?.id)] ||
+  {}
+
 const canSetApprovalTime = (o) =>
-  o?.recommend_by_user_id === authStore.user?.id ||
-  !!notificationStore.applicationApprovalPermissions?.[o?.id]?.allow_recommend_by
+  isCurrentRecommendBy(o) || !!approvalPermissionsFor(o).allow_recommend_by
 
 const needsApprovalTime = (o) => !o?.approval_overtime_hours && canSetApprovalTime(o)
 
 const canTakeAction = (o) => {
-  const perms = notificationStore.applicationApprovalPermissions?.[o?.id] || {}
+  const perms = approvalPermissionsFor(o)
   const anyPerm = Object.values(perms).some(Boolean)
-  if (o?.recommend_by_user_id === authStore.user?.id) {
+  if (isCurrentRecommendBy(o)) {
     return (o?.approval_overtime_hours ?? null) && anyPerm
   }
   return anyPerm

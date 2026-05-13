@@ -95,13 +95,21 @@ export const useNotificationStore = defineStore('notification', () => {
     error.value = null
 
     try {
+      const ids = [...new Set((applicationIds || []).map((id) => Number(id)).filter(Boolean))]
+
+      if (!ids.length) {
+        applicationApprovalPermissions.value = {}
+        return
+      }
+
       const response = await apiClient.get(
-        `/pending-notifications/${notificationType}/${applicationIds.join(',')}/application-permissions`,
+        `/pending-notifications/${notificationType}/${ids.join(',')}/application-permissions`,
       )
 
-      applicationApprovalPermissions.value = response.data || []
+      applicationApprovalPermissions.value = response.data || {}
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch notifications'
+      applicationApprovalPermissions.value = {}
       console.log({
         fetchApprovalPermissionsByUserApplicationIds: err,
       })
