@@ -35,20 +35,21 @@ const filters = ref({
   department_id: route.query.department_id || 'all',
   line_type: route.query.line_type || 'all',
   employee_id: route.query.employee_id || '',
+  status: route.query.status || 'all',
   category: '',
 })
 
 onMounted(async () => {
+  loading.value = true
   if (filters.value.employee_id) {
-    loading.value = true
     try {
       await fetchUser(filters.value.employee_id)
-      await fetchOvertimeListData()
     } catch (error) {
       console.log(error)
     }
-    loading.value = false
   }
+  await fetchOvertimeListData()
+  loading.value = false
 })
 
 // Fetch user when employee_id changes
@@ -68,15 +69,22 @@ const applicationIds = computed(() => {
 // Fetch attendance
 const fetchOvertimeListData = async () => {
   const month = periodMonth.value
-  if (filters.value.employee_id && month) {
-    await overtimeStore.fetchUserMonthlyOvertimes(filters.value.employee_id, month)
+  if (!month) return
 
-    if (applicationIds.value?.length) {
-      await notificationStore.fetchApprovalPermissionsByUserApplicationIds(
-        'overtime_applications',
-        applicationIds.value,
-      )
-    }
+  await overtimeStore.fetchOvertimes({
+    month,
+    company_id: filters.value.company_id,
+    department_id: filters.value.department_id,
+    line_type: filters.value.line_type,
+    employee_id: filters.value.employee_id,
+    status: filters.value.status,
+  })
+
+  if (applicationIds.value?.length) {
+    await notificationStore.fetchApprovalPermissionsByUserApplicationIds(
+      'overtime_applications',
+      applicationIds.value,
+    )
   }
 }
 
@@ -92,10 +100,15 @@ watch(periodMonth, (date) => {
 watch(
   () => filters.value.employee_id,
   async (newVal, oldVal) => {
-    if (newVal && newVal !== oldVal) {
+    if (newVal === oldVal) return
+
+    if (newVal) {
       await fetchUser(newVal)
-      await fetchOvertimeListData()
+    } else {
+      selectedUser.value = null
     }
+
+    await fetchOvertimeListData()
   },
 )
 
@@ -103,16 +116,28 @@ watch(
 const goBack = () => router.go(-1)
 
 // Filter change handler
-const handleFilterChange = () => {
+const handleFilterChange = (nextFilters = {}) => {
+  filters.value = {
+    ...filters.value,
+    ...nextFilters,
+  }
+
   router.replace({
     query: {
       ...route.query,
       company_id: filters.value.company_id,
       department_id: filters.value.department_id,
       line_type: filters.value.line_type,
-      employee_id: filters.value.employee_id || route.query.employee_id,
+      employee_id: filters.value.employee_id || undefined,
+      status: filters.value.status && filters.value.status !== 'all' ? filters.value.status : undefined,
     },
   })
+
+  fetchOvertimeListData()
+}
+
+const handleStatusChange = () => {
+  handleFilterChange()
 }
 </script>
 
@@ -146,18 +171,29 @@ const handleFilterChange = () => {
         label="Month"
       />
       </EmployeeFilter>
+      <div class="relative min-w-0">
+        <select
+          v-model="filters.status"
+          class="h-10 w-full min-w-[170px] rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-blue-400"
+          @change="handleStatusChange"
+        >
+          <option value="all">All Status</option>
+          <option value="Pending">Pending</option>
+          <option value="Approved">Approved</option>
+          <option value="Rejected">Rejected</option>
+        </select>
+        <div class="absolute left-3 -top-2 z-30 bg-white px-1 text-[11px] leading-none text-blue-500">
+          Status
+        </div>
+      </div>
     </div>
 
     <LoaderView v-if="overtimeStore.isLoading || loading" />
 
     <OvertimeDataList
-      v-else-if="selectedUser"
+      v-else
       :user="selectedUser"
       :onUpdate="fetchOvertimeListData"
     />
-
-    <div v-if="!selectedUser">
-      <p class="text-gray-400 text-center text-2xl italic">Select an employee, please.</p>
-    </div>
   </div>
 </template>

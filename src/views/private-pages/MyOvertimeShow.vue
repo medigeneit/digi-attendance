@@ -123,6 +123,12 @@ const onAction = async () => {
             </b>
           </div>
           <div>
+            <span class="text-gray-500 mr-1">Approved hour:</span>
+            <b>
+              <DisplayFormattedWorkingHours :workingHours="overtime.approval_overtime_hours" />
+            </b>
+          </div>
+          <div>
             <span class="text-gray-500 mr-1">Details:</span>
             <span class="text-sm font-semibold">{{ overtime?.work_details || 'N/A' }}</span>
           </div>

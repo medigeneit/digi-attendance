@@ -51,7 +51,11 @@ onBeforeMount(() => {
   <div class="bg-white shadow">
     <div class="mx-auto flex justify-between items-center px-4">
       <RouterLink to="/" class="logo ml-7 md:ml-0 pr-2 flex-shrink-0 my-1">
-        <img class="h-[25px] md:h-[50px]" src="/src/assets/logo.png" alt="Logo" />
+        <img
+          class="h-[36px] w-[132px] scale-125 object-cover object-center md:h-[48px] md:w-[175px]"
+          src="/src/assets/logo.png"
+          alt="Logo"
+        />
       </RouterLink>
 
       <div class="flex gap-1.5 md:gap-3 items-center relative my-1" ref="notificationListRef">

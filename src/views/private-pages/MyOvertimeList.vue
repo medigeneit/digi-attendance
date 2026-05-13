@@ -2,11 +2,13 @@
 import LoaderView from '@/components/common/LoaderView.vue'
 import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import DisplayFormattedWorkingHours from '@/components/overtime/DisplayFormattedWorkingHours.vue'
+import { useAuthStore } from '@/stores/auth'
 import { useOvertimeStore } from '@/stores/overtime'
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const overtimeStore = useOvertimeStore()
 
 const now = new Date()
@@ -25,7 +27,7 @@ const periodMonth = computed(() => {
 })
 
 const fetchOvertimeListData = (month) => {
-  overtimeStore.fetchUserOvertimes({ month })
+  overtimeStore.fetchOvertimes({ month })
 }
 
 watch(
@@ -97,11 +99,26 @@ const statusBadgeClass = (status) => {
   return 'border border-slate-200 bg-slate-50 text-slate-800'
 }
 
+const detailsLabel = (value) => {
+  const text = String(value || '').trim()
+  return text || 'Pending'
+}
+
 function deleteApplication(applicationId) {
   const confirmed = confirm('Are you sure you want to delete this application?')
   if (confirmed) {
     overtimeStore.deleteOvertime(applicationId)
   }
+}
+
+const canDeleteApplication = (overtime) => {
+  const role = authStore.user?.role
+  const isPrivileged = ['admin', 'super_admin', 'developer'].includes(role)
+  const isOwnPending =
+    Number(overtime?.user_id) === Number(authStore.user?.id) &&
+    (overtime?.status === 'Pending' || !overtime?.status)
+
+  return isPrivileged || isOwnPending
 }
 </script>
 
@@ -185,21 +202,22 @@ function deleteApplication(applicationId) {
     <div v-else class="space-y-4">
       <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-slate-100 text-sm">
+          <table class="min-w-[1180px] table-fixed divide-y divide-slate-100 text-sm">
             <thead class="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500">
               <tr>
-                <th class="px-4 py-3 text-center">#</th>
-                <th class="px-4 py-3 text-center">Date</th>
-                <th class="px-4 py-3 text-center">Type</th>
-                <th class="px-4 py-3 text-center">Shift</th>
-                <th class="px-4 py-3 text-center">Check-In</th>
-                <th class="px-4 py-3 text-center">Check-Out</th>
-                <th class="px-4 py-3 text-center">Working</th>
-                <th class="px-4 py-3 text-center">Request</th>
-                <th class="px-4 py-3 text-center">Approved</th>
-                <th class="px-4 py-3 text-center">Status</th>
-                <th class="px-4 py-3 text-center">Details</th>
-                <th class="px-4 py-3 text-center">Actions</th>
+                <th class="w-10 px-3 py-3 text-center">#</th>
+                <th class="w-44 px-3 py-3 text-center">Employee</th>
+                <th class="w-28 px-3 py-3 text-center">Date</th>
+                <th class="w-20 px-3 py-3 text-center">Type</th>
+                <th class="w-24 px-3 py-3 text-center">Shift</th>
+                <th class="w-24 px-3 py-3 text-center">Check-In</th>
+                <th class="w-24 px-3 py-3 text-center">Check-Out</th>
+                <th class="w-24 px-3 py-3 text-center">Working</th>
+                <th class="w-24 px-3 py-3 text-center">Request</th>
+                <th class="w-28 px-3 py-3 text-center">Approved</th>
+                <th class="w-28 px-3 py-3 text-center">Status</th>
+                <th class="w-40 px-3 py-3 text-center">Details</th>
+                <th class="w-32 px-3 py-3 text-center">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
@@ -209,6 +227,10 @@ function deleteApplication(applicationId) {
                 class="hover:bg-slate-50 transition"
               >
                 <td class="px-4 py-3 font-semibold text-slate-600 text-center">{{ index + 1 }}</td>
+                <td class="px-4 py-3 text-slate-700 text-center">
+                  <div class="font-semibold text-slate-800">{{ overtime?.user?.name || 'N/A' }}</div>
+                  <div class="text-xs text-slate-500">{{ overtime?.user?.employee_id || '' }}</div>
+                </td>
                 <td class="px-4 py-3 text-slate-700 text-center">{{ formatDate(overtime?.date) }}</td>
                 <td class="px-4 py-3 text-slate-700 text-center">{{ overtime?.duty_type }}</td>
                 <td class="px-4 py-3 text-slate-700 text-center">{{ overtime?.shift }}</td>
@@ -233,35 +255,43 @@ function deleteApplication(applicationId) {
                     {{ overtime?.status || 'Pending' }}
                   </span>
                 </td>
-                <td class="px-4 py-3 text-slate-700 text-center">{{ overtime?.work_details }}</td>
-                <td class="px-4 py-3">
+                <td class="px-3 py-3 text-center">
+                  <span
+                    class="mx-auto block max-w-[150px] truncate text-slate-700"
+                    :class="!overtime?.work_details ? 'text-amber-700' : ''"
+                    :title="detailsLabel(overtime?.work_details)"
+                  >
+                    {{ detailsLabel(overtime?.work_details) }}
+                  </span>
+                </td>
+                <td class="px-3 py-3">
                   <div class="flex items-center justify-center gap-2">
                     <RouterLink
                       :to="{ name: 'MyOvertimeShow', params: { id: overtime?.id } }"
-                      class="inline-flex items-center rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-indigo-200 hover:text-indigo-700"
+                      class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-indigo-200 hover:text-indigo-700"
+                      title="View"
                     >
-                      <i class="far fa-eye mr-1"></i>
-                      View
+                      <i class="far fa-eye text-sm"></i>
                     </RouterLink>
                     <button
-                      v-if="overtime.status == 'Pending' || !overtime.status"
+                      v-if="canDeleteApplication(overtime)"
                       type="button"
                       @click="deleteApplication(overtime?.id)"
-                      class="inline-flex items-center rounded-full border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:border-red-300 hover:text-red-700"
+                      class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 text-red-600 transition hover:border-red-300 hover:text-red-700"
+                      title="Delete"
                     >
-                      <i class="far fa-trash mr-1"></i>
-                      Delete
+                      <i class="far fa-trash text-sm"></i>
                     </button>
                   </div>
                 </td>
               </tr>
               <tr v-if="myOvertimes.length === 0">
-                <td :colspan="12" class="px-4 py-3 text-center text-red-500">No overtimes found</td>
+                <td :colspan="13" class="px-4 py-3 text-center text-red-500">No overtimes found</td>
               </tr>
             </tbody>
             <tfoot v-if="myOvertimes.length" class="bg-slate-50">
               <tr class="font-semibold">
-                <td class="px-4 py-3 text-right" colspan="7">Totals</td>
+                <td class="px-4 py-3 text-right" colspan="8">Totals</td>
                 <td class="px-4 py-3 text-center">
                   <DisplayFormattedWorkingHours :workingHours="totalRequestedMinutes" />
                 </td>

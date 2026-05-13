@@ -48,6 +48,11 @@ const initials = computed(() => {
 
 const statusLabel = (s) => (s ? String(s) : 'Pending')
 
+const detailsLabel = (value) => {
+  const text = String(value || '').trim()
+  return text || 'Pending'
+}
+
 const statusClass = (s) => {
   const v = String(s || 'pending').toLowerCase()
   if (v.includes('approved') || v.includes('accept')) return 'bg-emerald-50 text-emerald-700 ring-emerald-200'
@@ -100,7 +105,7 @@ const totalApprovedMinutes = computed(() =>
 <template>
   <div class="space-y-4">
     <!-- Header: User + Totals -->
-    <div class="card-bg p-4 gap-1"> 
+    <div v-if="user" class="card-bg p-4 gap-1"> 
       <div class="flex flex-wrap gap-x-8 gap-y-2"> 
         <p v-if="user?.employee_id" class="text-gray-700"> 
           <span class="text-gray-400">Employee ID:</span> 
@@ -130,22 +135,23 @@ const totalApprovedMinutes = computed(() =>
       
       <div class="overflow-x-auto">
         <!-- min width so table doesn't look crushed -->
-        <table class="min-w-[1200px] w-full text-sm">
+        <table class="min-w-[1180px] w-full table-fixed text-sm">
           <thead class="sticky top-0 z-10 bg-gray-50 text-gray-600">
             <tr class="border-b border-gray-200">
-              <th class="px-3 py-2 text-left font-semibold">#</th>
-              <th class="px-3 py-2 text-left font-semibold">Applied</th>
-              <th class="px-3 py-2 text-left font-semibold">Date</th>
-              <th class="px-3 py-2 text-left font-semibold">Type</th>
-              <th class="px-3 py-2 text-left font-semibold">Shift</th>
-              <th class="px-3 py-2 text-left font-semibold">In</th>
-              <th class="px-3 py-2 text-left font-semibold">Out</th>
-              <th class="px-3 py-2 text-center font-semibold">Working</th>
-              <th class="px-3 py-2 text-center font-semibold">Request</th>
-              <th class="px-3 py-2 text-center font-semibold">Approved</th>
-              <th class="px-3 py-2 text-left font-semibold">Details</th>
-              <th class="px-3 py-2 text-center font-semibold">Status</th>
-              <th class="px-3 py-2 text-center font-semibold">Action</th>
+              <th class="w-10 px-3 py-2 text-left font-semibold">#</th>
+              <th v-if="!user" class="w-44 px-3 py-2 text-left font-semibold">Employee</th>
+              <th class="w-28 px-3 py-2 text-left font-semibold">Applied</th>
+              <th class="w-28 px-3 py-2 text-left font-semibold">Date</th>
+              <th class="w-20 px-3 py-2 text-left font-semibold">Type</th>
+              <th class="w-24 px-3 py-2 text-left font-semibold">Shift</th>
+              <th class="w-24 px-3 py-2 text-left font-semibold">In</th>
+              <th class="w-24 px-3 py-2 text-left font-semibold">Out</th>
+              <th class="w-24 px-3 py-2 text-center font-semibold">Working</th>
+              <th class="w-24 px-3 py-2 text-center font-semibold">Request</th>
+              <th class="w-28 px-3 py-2 text-center font-semibold">Approved</th>
+              <th class="w-40 px-3 py-2 text-left font-semibold">Details</th>
+              <th class="w-28 px-3 py-2 text-center font-semibold">Status</th>
+              <th class="w-32 px-3 py-2 text-center font-semibold">Action</th>
             </tr>
           </thead>
 
@@ -156,6 +162,11 @@ const totalApprovedMinutes = computed(() =>
               class="hover:bg-gray-50"
             >
               <td class="px-3 py-2 text-gray-600">{{ index + 1 }}</td>
+
+              <td v-if="!user" class="px-3 py-2">
+                <div class="font-semibold text-gray-900">{{ overtime?.user?.name || 'N/A' }}</div>
+                <div class="text-xs text-gray-500">{{ overtime?.user?.employee_id || '' }}</div>
+              </td>
 
               <td class="px-3 py-2">
                 <span class="text-gray-900">{{ formatDate(overtime?.created_at) }}</span>
@@ -203,9 +214,13 @@ const totalApprovedMinutes = computed(() =>
                 </div>
               </td>
 
-              <td class="px-3 py-2 text-gray-900">
-                <span class="line-clamp-2">
-                  {{ overtime?.work_details || '—' }}
+              <td class="px-3 py-2 text-gray-700">
+                <span
+                  class="block max-w-[150px] truncate"
+                  :class="!overtime?.work_details ? 'text-amber-700' : ''"
+                  :title="detailsLabel(overtime?.work_details)"
+                >
+                  {{ detailsLabel(overtime?.work_details) }}
                 </span>
               </td>
 
@@ -234,10 +249,10 @@ const totalApprovedMinutes = computed(() =>
 
                   <RouterLink
                     :to="{ name: 'MyOvertimeShow', params: { id: overtime.id } }"
-                    class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50"
                     title="View"
                   >
-                    <i class="far fa-eye text-base"></i>
+                    <i class="far fa-eye text-sm"></i>
                   </RouterLink>
 
                   <!-- Keep your existing delete component -->
@@ -256,7 +271,7 @@ const totalApprovedMinutes = computed(() =>
 
           <tfoot v-if="rows.length" class="bg-gray-50">
             <tr class="border-t border-gray-200 font-semibold">
-              <td class="px-3 py-2 text-right text-gray-700" colspan="7">Totals</td>
+              <td class="px-3 py-2 text-right text-gray-700" :colspan="user ? 7 : 8">Totals</td>
 
               <td class="px-3 py-2 text-center">
                 <DisplayFormattedWorkingHours :workingHours="totalWorkingMinutes" />
