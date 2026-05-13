@@ -83,7 +83,9 @@ const approvalPermissionsFor = (o) =>
 const canSetApprovalTime = (o) =>
   isPending(o) && Number(authStore.user?.id) === OVERTIME_APPROVAL_TIME_USER_ID
 
-const needsApprovalTime = (o) => !o?.approval_overtime_hours && canSetApprovalTime(o)
+const hasApprovalTime = (o) => Number(o?.approval_overtime_hours) > 0
+
+const needsApprovalTime = (o) => !hasApprovalTime(o) && canSetApprovalTime(o)
 
 const canTakeAction = (o) => {
   const perms = approvalPermissionsFor(o)
@@ -248,6 +250,8 @@ const totalApprovedMinutes = computed(() =>
                       :applicationId="overtime.id"
                       :onSuccess="onSuccess"
                       :variant="1"
+                      :acceptDisabled="!hasApprovalTime(overtime)"
+                      acceptDisabledMessage="Approval overtime not set"
                     />
                   </div>
 

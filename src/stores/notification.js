@@ -47,6 +47,7 @@ export const useNotificationStore = defineStore('notification', () => {
       grouped_counts.value = response?.data?.grouped_counts
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch notifications'
+      throw err
     } finally {
       loading.value = false
     }
@@ -64,7 +65,8 @@ export const useNotificationStore = defineStore('notification', () => {
       totalUnreadNotifications.value = response?.data?.total_unread
       grouped_counts.value = response?.data?.grouped_counts
     } catch (err) {
-      error.value = err.response?.data?.message || 'Failed to fetch notifications'
+      error.value = err.response?.data?.message || 'Failed to update notification'
+      throw err
     } finally {
       loading.value = false
     }
@@ -81,7 +83,8 @@ export const useNotificationStore = defineStore('notification', () => {
 
       approvalPermissions.value = response.data || {}
     } catch (err) {
-      error.value = err.response?.data?.message || 'Failed to fetch notifications'
+      error.value = err.response?.data?.message || 'Failed to update notification'
+      throw err
     } finally {
       loading.value = false
     }
