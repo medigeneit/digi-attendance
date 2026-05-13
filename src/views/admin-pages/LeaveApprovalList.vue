@@ -1,6 +1,7 @@
 <script setup>
 import LeaveApprovalModal from '@/components/LeaveApprovalModal.vue'
 import DeleteModal from '@/components/common/DeleteModal.vue'
+import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import HeaderWithButtons from '@/components/common/HeaderWithButtons.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import { useLeaveApprovalStore } from '@/stores/leave-approval'
@@ -21,6 +22,29 @@ const showDeleteModal = ref(false)
 const selectedLeaveApproval = ref(null)
 
 const search = ref('')
+const selectedCompanyId = ref('')
+const selectedDepartmentId = ref('')
+
+const formatDateTime = (value) => {
+  if (!value) return 'Not updated yet'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'Not updated yet'
+
+  return date.toLocaleString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+const updatedByName = (approval) => approval?.updated_by_user?.name || 'System / unknown'
+
+const onEmployeeFilterChange = (payload = {}) => {
+  selectedCompanyId.value = payload.company_id || ''
+  selectedDepartmentId.value = payload.department_id || ''
+}
 
 // ✅ sticky toolbar height calculation (so department header sticks under it)
 const toolbarRef = ref(null)
@@ -35,7 +59,16 @@ const measureToolbar = async () => {
 
 const filteredApprovals = computed(() => {
   const q = search.value.trim().toLowerCase()
-  const list = leaveApprovalStore.leaveApprovals || []
+  let list = [...(leaveApprovalStore.leaveApprovals || [])]
+
+  if (selectedCompanyId.value) {
+    list = list.filter((a) => String(a?.department?.company_id || '') === String(selectedCompanyId.value))
+  }
+
+  if (selectedDepartmentId.value) {
+    list = list.filter((a) => String(a?.department_id || a?.department?.id || '') === String(selectedDepartmentId.value))
+  }
+
   if (!q) return list
 
   return list.filter((a) => {
@@ -47,6 +80,8 @@ const filteredApprovals = computed(() => {
       a?.operational_admin_user?.name,
       a?.recommend_by_user?.name,
       a?.approved_by_user?.name,
+      a?.updated_by_user?.name,
+      a?.change_note,
     ]
       .filter(Boolean)
       .join(' ')
@@ -161,8 +196,16 @@ onUnmounted(() => {
       <div class="p-3 space-y-4">
         <HeaderWithButtons :title="`${approvalType} Approvals`" @add="openAddModal" />
 
+        <EmployeeFilter
+          v-model:company_id="selectedCompanyId"
+          v-model:department_id="selectedDepartmentId"
+          :with-type="false"
+          :with-employee="false"
+          @filter-change="onEmployeeFilterChange"
+        />
+
           <div class="flex flex-col md:flex-row md:items-center gap-3">
-            <div class="flex-1">
+            <!-- <div class="flex-1">
               <div class="relative">
                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔎</span>
                 <input
@@ -172,7 +215,7 @@ onUnmounted(() => {
                   class="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-200"
                 />
               </div>
-            </div>
+            </div> -->
 
             <div class="flex items-center gap-2 text-sm text-gray-600">
               <button
@@ -272,6 +315,21 @@ onUnmounted(() => {
                     <span class="text-gray-500">Approved By</span>
                     <span class="text-gray-900">{{ a?.approved_by_user?.name || 'N/A' }}</span>
                   </div>
+                  <div class="rounded-lg border border-gray-200 bg-white p-3">
+                    <div class="flex items-center justify-between gap-3">
+                      <span class="text-gray-500">Last Update</span>
+                      <span class="text-right font-medium text-gray-900">
+                        {{ formatDateTime(a?.updated_at) }}
+                      </span>
+                    </div>
+                    <div class="mt-1 flex items-center justify-between gap-3">
+                      <span class="text-gray-500">Updated By</span>
+                      <span class="text-right text-gray-900">{{ updatedByName(a) }}</span>
+                    </div>
+                    <div v-if="a?.change_note" class="mt-2 border-t border-gray-100 pt-2 text-gray-700">
+                      {{ a.change_note }}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -290,6 +348,7 @@ onUnmounted(() => {
                       <th class="py-3 px-4 text-left">Operational Admin</th>
                       <th class="py-3 px-4 text-left">Recommend By</th>
                       <th class="py-3 px-4 text-left">Approved By</th>
+                      <th class="py-3 px-4 text-left min-w-56">Last Update</th>
                       <th class="py-3 px-4 text-center w-28">Actions</th>
                     </tr>
                   </thead>
@@ -321,6 +380,21 @@ onUnmounted(() => {
                       </td>
                       <td class="py-3 px-4 text-gray-700">
                         {{ leaveApproval?.approved_by_user?.name || 'N/A' }}
+                      </td>
+                      <td class="py-3 px-4 text-gray-700">
+                        <div class="font-medium text-gray-900">
+                          {{ formatDateTime(leaveApproval?.updated_at) }}
+                        </div>
+                        <div class="mt-0.5 text-xs text-gray-500">
+                          by {{ updatedByName(leaveApproval) }}
+                        </div>
+                        <div
+                          v-if="leaveApproval?.change_note"
+                          class="mt-1 max-w-xs truncate text-xs text-gray-600"
+                          :title="leaveApproval.change_note"
+                        >
+                          {{ leaveApproval.change_note }}
+                        </div>
                       </td>
 
                       <td class="py-3 px-4">

@@ -31,6 +31,7 @@ const form = reactive({
   operational_admin_user_id: null,
   recommend_by_user_id: null,
   approved_by_user_id: null,
+  change_note: '',
   type: props.approvalType,
 })
 
@@ -68,6 +69,7 @@ const resetForm = () => {
     operational_admin_user_id: null,
     recommend_by_user_id: null,
     approved_by_user_id: null,
+    change_note: '',
     type: props.approvalType,
   })
   Object.assign(selectedUsers, {
@@ -113,6 +115,7 @@ watch(
         operational_admin_user_id: newLeaveApproval.operational_admin_user_id ?? null,
         recommend_by_user_id: newLeaveApproval.recommend_by_user_id ?? null,
         approved_by_user_id: newLeaveApproval.approved_by_user_id ?? null,
+        change_note: newLeaveApproval.change_note ?? '',
         type: newLeaveApproval.type ?? props.approvalType,
       })
 
@@ -177,14 +180,14 @@ onMounted(async () => {
     v-if="show"
     class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50"
   >
-    <div class="bg-white rounded-lg shadow-lg w-full max-w-lg">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] overflow-hidden">
       <div class="px-6 py-4 border-b">
         <h3 class="text-lg font-bold capitalize">
           {{ isEditMode ? 'Edit' : 'Add' }} {{ approvalType }} Approval
         </h3>
       </div>
 
-      <form @submit.prevent="handleSubmit" class="p-6 space-y-4">
+      <form @submit.prevent="handleSubmit" class="p-6 space-y-4 overflow-y-auto max-h-[calc(90vh-72px)]">
         <div>
           <label for="name" class="block text-sm font-medium">Approval Name</label>
           <input
@@ -229,6 +232,23 @@ onMounted(async () => {
             />
           </div>
         </template>
+
+        <div>
+          <label for="change_note" class="block text-sm font-medium text-gray-700">
+            Change Note
+          </label>
+          <textarea
+            id="change_note"
+            v-model.trim="form.change_note"
+            rows="3"
+            maxlength="1000"
+            class="w-full border rounded px-3 py-2 resize-y"
+            placeholder="Why is this approval setup being created or changed?"
+          ></textarea>
+          <div class="mt-1 text-xs text-gray-500">
+            Optional, but useful when approvers change or responsibilities move.
+          </div>
+        </div>
 
         <div class="flex justify-end space-x-4">
           <button
