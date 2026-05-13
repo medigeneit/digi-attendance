@@ -27,7 +27,7 @@ const periodMonth = computed(() => {
 })
 
 const fetchOvertimeListData = (month) => {
-  overtimeStore.fetchOvertimes({ month })
+  overtimeStore.fetchUserOvertimes({ month })
 }
 
 watch(

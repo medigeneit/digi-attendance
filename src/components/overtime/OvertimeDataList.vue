@@ -72,9 +72,6 @@ const typeClass = (t) => {
 
 const isPending = (o) => String(o?.status || 'Pending').toLowerCase() === 'pending'
 
-const isCurrentRecommendBy = (o) =>
-  Number(o?.approval_recommend_by_user_id || o?.recommend_by_user_id) === Number(authStore.user?.id)
-
 const approvalPermissionsFor = (o) =>
   notificationStore.applicationApprovalPermissions?.[Number(o?.id)] ||
   notificationStore.applicationApprovalPermissions?.[String(o?.id)] ||
@@ -89,12 +86,12 @@ const needsApprovalTime = (o) => !hasApprovalTime(o) && canSetApprovalTime(o)
 
 const canTakeAction = (o) => {
   const perms = approvalPermissionsFor(o)
-  const anyPerm = Object.values(perms).some(Boolean)
-  if (isCurrentRecommendBy(o)) {
-    return (o?.approval_overtime_hours ?? null) && anyPerm
-  }
-  return anyPerm
+  return Object.values(perms).some(Boolean)
 }
+
+const isFinalApprovalAction = (o) => Boolean(approvalPermissionsFor(o).allow_approved_by)
+
+const shouldBlockApprovalWithoutTime = (o) => isFinalApprovalAction(o) && !hasApprovalTime(o)
 
 /* ---------- Totals (MINUTES) ---------- */
 const totalWorkingMinutes = computed(() =>
@@ -250,7 +247,7 @@ const totalApprovedMinutes = computed(() =>
                       :applicationId="overtime.id"
                       :onSuccess="onSuccess"
                       :variant="1"
-                      :acceptDisabled="!hasApprovalTime(overtime)"
+                      :acceptDisabled="shouldBlockApprovalWithoutTime(overtime)"
                       acceptDisabledMessage="Approval overtime not set"
                     />
                   </div>
