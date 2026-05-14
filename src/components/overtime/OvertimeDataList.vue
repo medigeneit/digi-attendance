@@ -72,6 +72,10 @@ const typeClass = (t) => {
 
 const isPending = (o) => String(o?.status || 'Pending').toLowerCase() === 'pending'
 
+const isApproved = (o) => String(o?.status || '').toLowerCase() === 'approved'
+
+const approvedAt = (o) => (isApproved(o) ? o?.approved_at || o?.updated_at : null)
+
 const approvalPermissionsFor = (o) =>
   notificationStore.applicationApprovalPermissions?.[Number(o?.id)] ||
   notificationStore.applicationApprovalPermissions?.[String(o?.id)] ||
@@ -138,23 +142,24 @@ const totalApprovedMinutes = computed(() =>
       
       <div class="overflow-x-auto">
         <!-- min width so table doesn't look crushed -->
-        <table class="min-w-[1180px] w-full table-fixed text-sm">
+        <table class="min-w-[1120px] w-full table-fixed text-xs">
           <thead class="sticky top-0 z-10 bg-gray-50 text-gray-600">
             <tr class="border-b border-gray-200">
-              <th class="w-10 px-3 py-2 text-left font-semibold">#</th>
-              <th v-if="!user" class="w-44 px-3 py-2 text-left font-semibold">Employee</th>
-              <th class="w-28 px-3 py-2 text-left font-semibold">Applied</th>
-              <th class="w-28 px-3 py-2 text-left font-semibold">Date</th>
-              <th class="w-20 px-3 py-2 text-left font-semibold">Type</th>
-              <th class="w-24 px-3 py-2 text-left font-semibold">Shift</th>
-              <th class="w-24 px-3 py-2 text-left font-semibold">In</th>
-              <th class="w-24 px-3 py-2 text-left font-semibold">Out</th>
-              <th class="w-24 px-3 py-2 text-center font-semibold">Working</th>
-              <th class="w-24 px-3 py-2 text-center font-semibold">Request</th>
-              <th class="w-28 px-3 py-2 text-center font-semibold">Approved</th>
-              <th class="w-40 px-3 py-2 text-left font-semibold">Details</th>
-              <th class="w-28 px-3 py-2 text-center font-semibold">Status</th>
-              <th class="w-32 px-3 py-2 text-center font-semibold">Action</th>
+              <th class="w-8 px-2 py-1.5 text-left font-semibold">#</th>
+              <th v-if="!user" class="w-36 px-2 py-1.5 text-left font-semibold">Employee</th>
+              <th class="w-24 px-2 py-1.5 text-left font-semibold">Applied</th>
+              <th class="w-24 px-2 py-1.5 text-left font-semibold">Date</th>
+              <th class="w-20 px-2 py-1.5 text-left font-semibold">Type</th>
+              <th class="w-20 px-2 py-1.5 text-left font-semibold">Shift</th>
+              <th class="w-20 px-2 py-1.5 text-left font-semibold">In</th>
+              <th class="w-20 px-2 py-1.5 text-left font-semibold">Out</th>
+              <th class="w-20 px-2 py-1.5 text-center font-semibold">Working</th>
+              <th class="w-20 px-2 py-1.5 text-center font-semibold">Request</th>
+              <th class="w-24 px-2 py-1.5 text-center font-semibold">Approved</th>
+              <th class="w-24 px-2 py-1.5 text-left font-semibold">Approved At</th>
+              <th class="w-32 px-2 py-1.5 text-left font-semibold">Details</th>
+              <th class="w-24 px-2 py-1.5 text-center font-semibold">Status</th>
+              <th class="w-28 px-2 py-1.5 text-center font-semibold">Action</th>
             </tr>
           </thead>
 
@@ -164,47 +169,47 @@ const totalApprovedMinutes = computed(() =>
               :key="overtime?.id"
               class="hover:bg-gray-50"
             >
-              <td class="px-3 py-2 text-gray-600">{{ index + 1 }}</td>
+              <td class="px-2 py-1.5 text-gray-600">{{ index + 1 }}</td>
 
-              <td v-if="!user" class="px-3 py-2">
+              <td v-if="!user" class="px-2 py-1.5">
                 <div class="font-semibold text-gray-900">{{ overtime?.user?.name || 'N/A' }}</div>
                 <div class="text-xs text-gray-500">{{ overtime?.user?.employee_id || '' }}</div>
               </td>
 
-              <td class="px-3 py-2">
+              <td class="px-2 py-1.5">
                 <span class="text-gray-900">{{ formatDate(overtime?.created_at) }}</span>
               </td>
 
-              <td class="px-3 py-2">
+              <td class="px-2 py-1.5">
                 <span class="text-gray-900">{{ formatDate(overtime?.date) }}</span>
               </td>
 
-              <td class="px-3 py-2">
+              <td class="px-2 py-1.5">
                 <span
-                  class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset"
+                  class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[11px] font-medium ring-1 ring-inset"
                   :class="typeClass(overtime?.duty_type)"
                 >
                   {{ overtime?.duty_type || '—' }}
                 </span>
               </td>
 
-              <td class="px-3 py-2 text-gray-900">{{ overtime?.shift || '—' }}</td>
+              <td class="px-2 py-1.5 text-gray-900">{{ overtime?.shift || '—' }}</td>
 
-              <td class="px-3 py-2 text-gray-900">{{ overtime?.check_in || '—' }}</td>
+              <td class="px-2 py-1.5 text-gray-900">{{ overtime?.check_in || '—' }}</td>
 
-              <td class="px-3 py-2 text-gray-900">{{ overtime?.check_out || '—' }}</td>
+              <td class="px-2 py-1.5 text-gray-900">{{ overtime?.check_out || '—' }}</td>
 
-              <td class="px-3 py-2 text-center">
+              <td class="px-2 py-1.5 text-center">
                 <DisplayFormattedWorkingHours :workingHours="overtime?.working_hours" />
               </td>
 
-              <td class="px-3 py-2 text-center">
+              <td class="px-2 py-1.5 text-center">
                 <DisplayFormattedWorkingHours :workingHours="overtime?.request_overtime_hours" />
               </td>
 
-              <td class="px-3 py-2 text-center">
+              <td class="px-2 py-1.5 text-center">
                 <div
-                  class="inline-flex items-center justify-center gap-2 rounded-xl px-2 py-1"
+                  class="inline-flex items-center justify-center gap-1 rounded-lg px-1.5 py-0.5"
                   :class="needsApprovalTime(overtime) ? 'bg-amber-50 ring-1 ring-inset ring-amber-200' : ''"
                 >
                   <DisplayFormattedWorkingHours :workingHours="overtime?.approval_overtime_hours" />
@@ -217,9 +222,13 @@ const totalApprovedMinutes = computed(() =>
                 </div>
               </td>
 
-              <td class="px-3 py-2 text-gray-700">
+              <td class="px-2 py-1.5 text-gray-700">
+                {{ formatDate(approvedAt(overtime)) }}
+              </td>
+
+              <td class="px-2 py-1.5 text-gray-700">
                 <span
-                  class="block max-w-[150px] truncate"
+                  class="block max-w-[120px] truncate"
                   :class="!overtime?.work_details ? 'text-amber-700' : ''"
                   :title="detailsLabel(overtime?.work_details)"
                 >
@@ -227,20 +236,20 @@ const totalApprovedMinutes = computed(() =>
                 </span>
               </td>
 
-              <td class="px-3 py-2 text-center">
+              <td class="px-2 py-1.5 text-center">
                 <span
-                  class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset"
+                  class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[11px] font-medium ring-1 ring-inset"
                   :class="statusClass(overtime?.status)"
                 >
                   {{ statusLabel(overtime?.status) }}
                 </span>
               </td>
 
-              <td class="px-3 py-2">
-                <div class="flex items-center justify-center gap-2">
+              <td class="px-2 py-1.5">
+                <div class="flex items-center justify-center gap-1.5">
                   <div
                     v-if="canTakeAction(overtime)"
-                    class="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-2 py-1"
+                    class="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-1.5 py-0.5"
                   >
                     <AcceptAndRejectHandler
                       notificationType="overtime_applications"
@@ -254,7 +263,7 @@ const totalApprovedMinutes = computed(() =>
 
                   <RouterLink
                     :to="{ name: 'MyOvertimeShow', params: { id: overtime.id } }"
-                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50"
+                    class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gray-200 text-gray-700 hover:bg-gray-50"
                     title="View"
                   >
                     <i class="far fa-eye text-sm"></i>
@@ -276,23 +285,24 @@ const totalApprovedMinutes = computed(() =>
 
           <tfoot v-if="rows.length" class="bg-gray-50">
             <tr class="border-t border-gray-200 font-semibold">
-              <td class="px-3 py-2 text-right text-gray-700" :colspan="user ? 7 : 8">Totals</td>
+              <td class="px-2 py-1.5 text-right text-gray-700" :colspan="user ? 7 : 8">Totals</td>
 
-              <td class="px-3 py-2 text-center">
+              <td class="px-2 py-1.5 text-center">
                 <DisplayFormattedWorkingHours :workingHours="totalWorkingMinutes" />
               </td>
 
-              <td class="px-3 py-2 text-center">
+              <td class="px-2 py-1.5 text-center">
                 <DisplayFormattedWorkingHours :workingHours="totalRequestedMinutes" />
               </td>
 
-              <td class="px-3 py-2 text-center">
+              <td class="px-2 py-1.5 text-center">
                 <DisplayFormattedWorkingHours :workingHours="totalApprovedMinutes" />
               </td>
 
-              <td class="px-3 py-2 text-center text-gray-500">—</td>
-              <td class="px-3 py-2 text-center text-gray-500">—</td>
-              <td class="px-3 py-2 text-center text-gray-500">—</td>
+              <td class="px-2 py-1.5 text-center text-gray-500">—</td>
+              <td class="px-2 py-1.5 text-center text-gray-500">—</td>
+              <td class="px-2 py-1.5 text-center text-gray-500">—</td>
+              <td class="px-2 py-1.5 text-center text-gray-500">-</td>
             </tr>
           </tfoot>
         </table>
@@ -300,3 +310,4 @@ const totalApprovedMinutes = computed(() =>
     </div>
   </div>
 </template>
+

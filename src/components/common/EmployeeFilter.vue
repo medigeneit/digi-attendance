@@ -12,6 +12,10 @@ const props = defineProps({
   employee_id: { type: [String, Number], default: '' },
   line_type: { type: String, default: 'all' }, // 'all'|'executive'|'support_staff'|'doctor'|'academy_body'
   slotClass: { type: String, default: '' },
+  gridClass: {
+    type: String,
+    default: 'grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5',
+  },
   withType: { type: Boolean, default: true },
   withEmployee: { type: Boolean, default: true },
   initialValue: { type: Object, default: () => ({}) },
@@ -240,7 +244,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
+  <div :class="gridClass">
     <!-- Company -->
     <div class="relative min-w-0">
       <SelectDropdown
