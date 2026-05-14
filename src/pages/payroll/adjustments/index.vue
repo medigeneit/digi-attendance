@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { storeToRefs } from 'pinia'
 import LoaderView from '@/components/common/LoaderView.vue'
@@ -11,6 +11,7 @@ import { useAdjustmentStore } from '@/stores/adjustmentStore'
 import { useAuthStore } from '@/stores/auth'
 import { formatCurrency } from '@/utils/currency'
 
+const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 const adjustmentStore = useAdjustmentStore()
@@ -21,15 +22,72 @@ defineOptions({
   name: 'PayrollAdjustmentIndex',
 })
 
+const defaultMonth = () => new Date().toISOString().slice(0, 7)
+const allowedTabs = ['all', 'pending', 'verified', 'approved', 'carried']
+const routeSyncing = ref(false)
+
+const queryValue = (value, fallback = '') => {
+  if (Array.isArray(value)) return value[0] ? String(value[0]) : fallback
+  return value !== undefined && value !== null && value !== '' ? String(value) : fallback
+}
+
+const validMonth = (value) => {
+  const month = String(value || '').slice(0, 7)
+  return /^\d{4}-\d{2}$/.test(month) ? month : defaultMonth()
+}
+
+const queryMonth = (query = {}) => {
+  if (query.month) return validMonth(queryValue(query.month))
+  if (query.ref_year && query.ref_month) {
+    const year = queryValue(query.ref_year)
+    const month = String(queryValue(query.ref_month)).padStart(2, '0')
+    return validMonth(`${year}-${month}`)
+  }
+  return defaultMonth()
+}
+
 const filters = ref({
   company_id: '',
   department_id: '',
   employee_id: '',
   line_type: 'all',
-  month: new Date().toISOString().slice(0, 7),
+  month: defaultMonth(),
 })
 
 const activeTab = ref('all')
+
+const applyQueryFilters = (query = {}) => {
+  routeSyncing.value = true
+  filters.value = {
+    company_id: queryValue(query.company_id),
+    department_id: queryValue(query.department_id),
+    employee_id: queryValue(query.employee_id || query.user_id),
+    line_type: queryValue(query.line_type, 'all') || 'all',
+    month: queryMonth(query),
+  }
+
+  const tab = queryValue(query.tab || query.status, 'all')
+  activeTab.value = allowedTabs.includes(tab) ? tab : 'all'
+  routeSyncing.value = false
+}
+
+const buildRouteQuery = () => {
+  const query = {}
+  if (filters.value.company_id) query.company_id = filters.value.company_id
+  if (filters.value.department_id) query.department_id = filters.value.department_id
+  if (filters.value.employee_id) query.employee_id = filters.value.employee_id
+  if (filters.value.line_type && filters.value.line_type !== 'all') query.line_type = filters.value.line_type
+  if (filters.value.month) query.month = filters.value.month
+  if (activeTab.value && activeTab.value !== 'all') query.tab = activeTab.value
+  return query
+}
+
+const syncRouteQuery = async () => {
+  if (routeSyncing.value) return
+  const nextQuery = buildRouteQuery()
+  if (JSON.stringify(route.query) === JSON.stringify(nextQuery)) return
+  await router.replace({ query: nextQuery })
+}
 
 const monthToPeriod = (value) => {
   const month = String(value || '').slice(0, 7)
@@ -104,6 +162,7 @@ const activeMonthLabel = computed(() => {
 
 const load = async () => {
   try {
+    await syncRouteQuery()
     await adjustmentStore.fetchAll({
       employee_id: filters.value.employee_id || undefined,
       ref_year: filters.value.month ? Number(filters.value.month.slice(0, 4)) : undefined,
@@ -141,11 +200,31 @@ const openDetail = (row) => {
 watch(
   () => filters.value.month,
   () => {
+    if (routeSyncing.value) return
     load()
   },
 )
 
-onMounted(load)
+watch(
+  () => [filters.value.company_id, filters.value.department_id, filters.value.employee_id, filters.value.line_type, activeTab.value],
+  () => {
+    syncRouteQuery()
+  },
+)
+
+watch(
+  () => route.query,
+  async () => {
+    if (routeSyncing.value) return
+    applyQueryFilters(route.query)
+    await load()
+  },
+)
+
+onMounted(() => {
+  applyQueryFilters(route.query)
+  load()
+})
 </script>
 
 <template>
@@ -233,6 +312,7 @@ onMounted(load)
           <div class="text-xs text-slate-400">Rows: {{ visibleAdjustments.length }}</div>
         </div>
       </div>
+      
 
       <LoaderView v-if="loading" />
 

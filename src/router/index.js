@@ -814,7 +814,7 @@ const router = createRouter({
           meta: {
             requiresAuth: true,
             roles: ['admin', 'super_admin', 'developer'],
-            title: 'Attendance',
+            title: 'Job Card',
           },
         },
 
