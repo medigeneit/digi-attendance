@@ -1,7 +1,9 @@
 <script setup>
-import { onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useToast } from 'vue-toastification'
 import { storeToRefs } from 'pinia'
+import { useAuthStore } from '@/stores/auth'
 import { usePayrollBatchStore } from '@/stores/payrollBatch'
 import LoaderView from '@/components/common/LoaderView.vue'
 import PayrollStatusBadge from '@/components/payroll/PayrollStatusBadge.vue'
@@ -9,12 +11,199 @@ import { formatCurrency } from '@/utils/currency'
 
 const props = defineProps({ id: { type: [String, Number], required: true } })
 const router = useRouter()
+const toast = useToast()
 const batchStore = usePayrollBatchStore()
+const authStore = useAuthStore()
 const { item, loading, error, apiUnavailable } = storeToRefs(batchStore)
+const openMore = ref(false)
+const actionLoading = ref(null)
+const confirmAction = ref(null)
+const cancellationReason = ref('')
 
 onMounted(() => {
   if (!apiUnavailable.value) batchStore.fetchItem(props.id)
 })
+
+const status = computed(() => String(item.value?.status || 'generated').toLowerCase())
+const privilegedRoles = ['admin', 'super_admin', 'developer']
+const payrollRoles = ['admin', 'super_admin', 'developer', 'hr', 'accounts']
+const accountRoles = ['admin', 'super_admin', 'developer', 'accounts']
+
+const userPermissions = computed(() => {
+  const raw = authStore.user?.permissions || authStore.user?.permission_names || authStore.user?.abilities || []
+  return Array.isArray(raw)
+    ? raw.map((permission) => String(permission?.name || permission).toLowerCase())
+    : []
+})
+
+const userRoles = computed(() => {
+  const roles = [authStore.user?.role, ...(authStore.user?.roles || [])]
+  return roles.map((role) => String(role?.name || role || '').toLowerCase()).filter(Boolean)
+})
+
+const hasRole = (roles) => userRoles.value.some((role) => roles.includes(role))
+const can = (permission, fallbackRoles = payrollRoles) =>
+  userPermissions.value.includes(permission.toLowerCase()) || hasRole(fallbackRoles)
+
+const hasPermissionForAction = (action) => {
+  const map = {
+    view: ['payroll.batch.view', payrollRoles],
+    review: ['payroll.batch.review', payrollRoles],
+    approve: ['payroll.batch.approve', privilegedRoles],
+    mark_paid: ['payroll.batch.mark_paid', accountRoles],
+    lock: ['payroll.batch.lock', privilegedRoles],
+    regenerate: ['payroll.batch.regenerate', payrollRoles],
+    cancel: ['payroll.batch.cancel', privilegedRoles],
+    export: ['payroll.batch.export', payrollRoles],
+    adjustment: ['payroll.adjustment.create', payrollRoles],
+    audit: ['payroll.batch.view', payrollRoles],
+  }
+  const [permission, roles] = map[action] || []
+  return permission ? can(permission, roles) : false
+}
+
+const actionCopy = {
+  review: {
+    title: 'Review Payroll Batch?',
+    message: 'This batch will move to Reviewed status.',
+    success: 'Payroll batch reviewed.',
+  },
+  approve: {
+    title: 'Approve Payroll Batch?',
+    message: 'Approved payroll cannot be regenerated without reverting approval.',
+    success: 'Payroll batch approved.',
+  },
+  mark_paid: {
+    title: 'Mark Payroll Batch as Paid?',
+    message: 'Paid payroll cannot be edited or regenerated. Corrections must be made through adjustment.',
+    success: 'Payroll batch marked as paid.',
+  },
+  lock: {
+    title: 'Lock Payroll Batch?',
+    message: 'Locked payroll is final and cannot be edited, regenerated, deleted, or recalculated.',
+    success: 'Payroll batch locked.',
+  },
+  cancel: {
+    title: 'Cancel Payroll Batch?',
+    message: 'Cancelled payroll cannot be paid or locked.',
+    success: 'Payroll batch cancelled.',
+  },
+}
+
+const primaryAction = computed(() => {
+  const map = {
+    draft: { action: 'regenerate', label: 'Regenerate', icon: 'fa-redo' },
+    generated: { action: 'review', label: 'Review', icon: 'fa-clipboard-check' },
+    reviewed: { action: 'approve', label: 'Approve', icon: 'fa-check-circle' },
+    approved: { action: 'mark_paid', label: 'Mark as Paid', icon: 'fa-money-bill-wave' },
+    paid: { action: 'lock', label: 'Lock', icon: 'fa-lock' },
+  }
+  const primary = map[status.value]
+  return primary && hasPermissionForAction(primary.action) ? primary : null
+})
+
+const secondaryActions = computed(() => {
+  const actions = {
+    draft: ['view', 'regenerate', 'cancel'],
+    generated: ['view', 'regenerate', 'cancel'],
+    reviewed: ['view', 'cancel'],
+    approved: ['view', 'export', 'cancel'],
+    paid: ['view', 'export', 'adjustment'],
+    locked: ['view', 'export', 'audit'],
+    cancelled: ['view', 'audit'],
+  }[status.value] || ['view']
+
+  const labels = {
+    view: ['View', 'fa-eye'],
+    regenerate: ['Regenerate', 'fa-redo'],
+    cancel: ['Cancel', 'fa-ban'],
+    export: ['Export', 'fa-file-export'],
+    adjustment: ['Create Adjustment', 'fa-plus-circle'],
+    audit: ['Audit Trail', 'fa-history'],
+  }
+
+  return actions
+    .filter((action) => action !== primaryAction.value?.action && hasPermissionForAction(action))
+    .map((action) => ({ action, label: labels[action][0], icon: labels[action][1] }))
+})
+
+const hasActions = computed(() => !!primaryAction.value || secondaryActions.value.length > 0)
+
+const statusAction = async (action, successMessage, payload = {}) => {
+  actionLoading.value = action
+  try {
+    await batchStore.transitionBatch(item.value.id, action, payload)
+    toast.success(successMessage)
+  } catch (e) {
+    toast.error(e.message || 'Payroll batch status update failed.')
+  } finally {
+    actionLoading.value = null
+  }
+}
+
+const regenerateBatch = () => {
+  router.push({
+    name: 'PayrollBatchGenerate',
+    query: {
+      company_id: item.value.company_id,
+      salary_month: item.value.salary_month?.slice(0, 7),
+      salary_type: item.value.salary_type || 'Monthly',
+      payroll_cycle: item.value.payroll_cycle || 'regular',
+    },
+  })
+}
+
+const exportBatch = () => {
+  router.push({ name: 'PayrollList', query: { payroll_batch_id: item.value.id, flag: 'excel' } })
+}
+
+const createAdjustment = () => {
+  router.push({
+    name: 'PayrollAdjustmentCreate',
+    query: {
+      payroll_batch_id: item.value.id,
+      salary_month: item.value.salary_month?.slice(0, 7),
+    },
+  })
+}
+
+const openConfirm = (action) => {
+  if (action === 'view') return
+  if (action === 'audit') {
+    const firstPayrollId = item.value?.payrolls?.[0]?.id
+    if (firstPayrollId) {
+      router.push({ name: 'PayrollShow', params: { id: firstPayrollId } })
+    } else {
+      toast.info('No payroll audit trail is available for this batch yet.')
+    }
+    return
+  }
+  if (action === 'regenerate') return regenerateBatch()
+  if (action === 'export') return exportBatch()
+  if (action === 'adjustment') return createAdjustment()
+  cancellationReason.value = ''
+  confirmAction.value = { action, ...actionCopy[action] }
+  openMore.value = false
+}
+
+const closeConfirm = () => {
+  confirmAction.value = null
+  cancellationReason.value = ''
+}
+
+const runConfirmedAction = async () => {
+  if (!confirmAction.value || actionLoading.value) return
+  if (confirmAction.value.action === 'cancel' && !cancellationReason.value.trim()) {
+    toast.error('Cancellation reason is required.')
+    return
+  }
+  await statusAction(
+    confirmAction.value.action,
+    confirmAction.value.success,
+    confirmAction.value.action === 'cancel' ? { reason: cancellationReason.value.trim() } : {},
+  )
+  closeConfirm()
+}
 </script>
 
 <template>
@@ -41,9 +230,12 @@ onMounted(() => {
       <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
         <div class="flex flex-wrap gap-4 items-start justify-between mb-4">
           <div>
-            <h2 class="text-xl font-bold text-blue-900">
-              Batch <span class="font-mono">#{{ item.id }}</span>
-            </h2>
+            <div class="flex flex-wrap items-center gap-2">
+              <h2 class="text-xl font-bold text-blue-900">
+                Batch <span class="font-mono">#{{ item.id }}</span>
+              </h2>
+              <PayrollStatusBadge :status="item.status || 'generated'" />
+            </div>
             <p class="text-sm text-gray-500 mt-0.5">{{ item.company?.name || '—' }}</p>
           </div>
           <div class="text-right text-sm text-gray-500">
@@ -51,6 +243,46 @@ onMounted(() => {
             <p>Prepared by: {{ item.prepared_by?.name || '—' }}</p>
           </div>
         </div>
+        <div v-if="hasActions" class="mb-4 flex flex-wrap items-center gap-2 border-y border-slate-100 py-3">
+          <button
+            v-if="primaryAction"
+            class="btn-2"
+            :disabled="!!actionLoading"
+            @click="openConfirm(primaryAction.action)"
+          >
+            <i class="far" :class="actionLoading === primaryAction.action ? 'fa-spinner fa-spin' : primaryAction.icon"></i>
+            {{ primaryAction.label }}
+          </button>
+
+          <div v-if="secondaryActions.length" class="relative">
+            <button
+              class="btn-3"
+              :disabled="!!actionLoading"
+              @click="openMore = !openMore"
+            >
+              <i class="far fa-ellipsis-h"></i> More
+            </button>
+            <div
+              v-if="openMore"
+              class="absolute left-0 top-10 z-20 w-52 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
+            >
+              <button
+                v-for="action in secondaryActions"
+                :key="action.action"
+                class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                @click="openConfirm(action.action)"
+              >
+                <i class="far w-4" :class="action.icon"></i>
+                <span>{{ action.label }}</span>
+              </button>
+            </div>
+          </div>
+
+          <button v-if="hasPermissionForAction('audit')" class="btn-3" @click="openConfirm('audit')">
+            <i class="far fa-history"></i> Audit Trail
+          </button>
+        </div>
+
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div class="bg-blue-50 rounded-xl p-3 text-center">
             <div class="text-xs text-blue-600 mb-1">Salary Month</div>
@@ -126,6 +358,36 @@ onMounted(() => {
 
     <div v-else class="bg-gray-50 rounded-xl p-12 text-center text-gray-400">
       <p>Batch not found.</p>
+    </div>
+
+    <div v-if="confirmAction" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+      <div class="w-full max-w-md rounded-xl bg-white p-5 shadow-2xl">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">{{ confirmAction.title }}</h2>
+            <p class="mt-1 text-sm text-slate-600">{{ confirmAction.message }}</p>
+          </div>
+          <button class="btn-3" @click="closeConfirm"><i class="far fa-times"></i></button>
+        </div>
+
+        <div v-if="confirmAction.action === 'cancel'" class="mt-4">
+          <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Cancellation Reason <span class="text-red-500">*</span></label>
+          <textarea
+            v-model="cancellationReason"
+            rows="3"
+            class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+            placeholder="Reason for cancelling this payroll batch"
+          ></textarea>
+        </div>
+
+        <div class="mt-5 flex justify-end gap-2">
+          <button class="btn-3" :disabled="!!actionLoading" @click="closeConfirm">Cancel</button>
+          <button class="btn-2" :disabled="!!actionLoading" @click="runConfirmedAction">
+            <i class="far" :class="actionLoading ? 'fa-spinner fa-spin' : 'fa-check'"></i>
+            Confirm
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>

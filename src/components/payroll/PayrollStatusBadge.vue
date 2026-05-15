@@ -15,8 +15,8 @@ const info = computed(() => {
       iconOnly: true,
     },
     paid: {
-      cls: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      icon: 'fa-check-circle',
+      cls: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+      icon: 'fa-money-bill-wave',
       label: 'Paid',
     },
     unpaid: {
@@ -35,7 +35,7 @@ const info = computed(() => {
       label: 'Hold',
     },
     cancelled: {
-      cls: 'bg-rose-50 text-rose-700 border-rose-200',
+      cls: 'bg-red-50 text-red-700 border-red-200',
       icon: 'fa-ban',
       label: 'Cancelled',
     },
@@ -43,6 +43,26 @@ const info = computed(() => {
       cls: 'bg-blue-50 text-blue-700 border-blue-200',
       icon: 'fa-file-invoice',
       label: 'Generated',
+    },
+    draft: {
+      cls: 'bg-slate-50 text-slate-700 border-slate-200',
+      icon: 'fa-pencil-alt',
+      label: 'Draft',
+    },
+    reviewed: {
+      cls: 'bg-purple-50 text-purple-700 border-purple-200',
+      icon: 'fa-search',
+      label: 'Reviewed',
+    },
+    approved: {
+      cls: 'bg-green-50 text-green-700 border-green-200',
+      icon: 'fa-thumbs-up',
+      label: 'Approved',
+    },
+    locked: {
+      cls: 'bg-slate-900 text-white border-slate-900',
+      icon: 'fa-lock',
+      label: 'Locked',
     },
   }
   return (

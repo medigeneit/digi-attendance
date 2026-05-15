@@ -6,6 +6,7 @@ import { storeToRefs } from 'pinia'
 import { usePayrollManagementStore } from '@/stores/payrollManagement'
 import LoaderView from '@/components/common/LoaderView.vue'
 import PayrollStatusBadge from '@/components/payroll/PayrollStatusBadge.vue'
+import PayrollAuditTrail from '@/components/payroll/PayrollAuditTrail.vue'
 import PaymentStatusModal from '@/components/payroll/PaymentStatusModal.vue'
 import { formatCurrency } from '@/utils/currency'
 import { isPfAllowanceRow } from '@/utils/salaryPolicy'
@@ -17,8 +18,30 @@ const payrollStore = usePayrollManagementStore()
 const { item, loading, error } = storeToRefs(payrollStore)
 
 const showPaymentModal = ref(false)
+const activeTab = ref('breakdown')
+const audit = ref(null)
+const auditLoading = ref(false)
 
 onMounted(() => payrollStore.fetchItem(props.id))
+
+const isLockedPayroll = computed(() => ['paid', 'locked'].includes(String(item.value?.payment_status || '').toLowerCase()))
+
+const loadAudit = async () => {
+  if (audit.value || auditLoading.value) return
+  auditLoading.value = true
+  try {
+    audit.value = await payrollStore.fetchAudit(props.id)
+  } catch (e) {
+    toast.error(e.message || 'Failed to load audit trail.')
+  } finally {
+    auditLoading.value = false
+  }
+}
+
+const setTab = (tab) => {
+  activeTab.value = tab
+  if (tab === 'audit') loadAudit()
+}
 
 const handlePaymentSubmit = async ({ id, payload }) => {
   try {
@@ -47,7 +70,16 @@ const deductionLabelMap = {
   loan_deduction: 'Loan Deduction',
   security_money_deduction: 'Security Money',
   other_deduction: 'Other Deduction',
-  paycut_deduction: 'Paycut Deduction',
+  paycut_deduction: 'Attendance Deduction',
+}
+
+const cycleLabels = {
+  regular: 'Regular Monthly',
+  half_salary_advance: 'Half Salary Advance',
+  half_month: 'Half Salary Advance',
+  advance: 'Half Salary Advance',
+  final_settlement: 'Final Settlement',
+  bonus_only: 'Bonus Only',
 }
 
 const normalizedDeductions = computed(() => {
@@ -223,7 +255,12 @@ const deductionFieldRows = computed(() => {
       label: deductionLabelMap.other_deduction || 'Other Deduction',
       amount: toNum(d.other),
     },
-    { key: 'paycut_deduction', label: deductionLabelMap.paycut_deduction || 'Paycut Deduction', amount: toNum(d.paycut) },
+    {
+      key: 'half_salary_advance_adjustment',
+      label: 'Half Salary Advance Adjustment',
+      amount: toNum(d.half_salary_advance_adjustment ?? item.value?.advance_adjusted_amount),
+    },
+    { key: 'paycut_deduction', label: paycutDeductionLabel.value, amount: toNum(d.paycut) },
   ]
 
   const contraRows = contraEntries.value
@@ -296,6 +333,48 @@ const totalDeductionAmount = computed(() => toNum(deductionsData.value.total) ||
 const totalEarningsDisplay = computed(() => totalEarnings.value)
 const totalDeductionsDisplay = computed(() => totalDeductionAmount.value)
 const netSalaryAmount = computed(() => toNum(item.value?.net_payment ?? item.value?.net_salary))
+const payrollCycle = computed(() => item.value?.payroll_cycle || item.value?.settlement_mode || item.value?.payrollBatch?.payroll_cycle || item.value?.payroll_batch?.payroll_cycle || 'regular')
+const payrollCycleLabel = computed(() => item.value?.payroll_cycle_label || cycleLabels[payrollCycle.value] || formatKeyLabel(payrollCycle.value))
+const isAdvanceCycle = computed(() => ['half_salary_advance', 'half_month', 'advance'].includes(String(payrollCycle.value || '').toLowerCase()))
+const isBonusOnlyCycle = computed(() => String(payrollCycle.value || '').toLowerCase() === 'bonus_only')
+const grossReferenceAmount = computed(() =>
+  toNum(
+    item.value?.gross_reference_amount
+      ?? item.value?.monthly_gross_salary
+      ?? item.value?.gross_salary
+      ?? item.value?.calculation_breakdown?.gross_salary
+      ?? earningsData.value.gross
+      ?? grossSalaryBase.value,
+  ),
+)
+const salaryAdvancePayable = computed(() => toNum(item.value?.base_payable_amount ?? earningsData.value.basic))
+const advancePercentage = computed(() => {
+  const configured = item.value?.advance_percentage ?? item.value?.salary_percentage
+  if (configured !== null && configured !== undefined && configured !== '') return toNum(configured)
+  return grossReferenceAmount.value > 0 ? (salaryAdvancePayable.value / grossReferenceAmount.value) * 100 : 0
+})
+const formatPercent = (value) => {
+  const amount = toNum(value)
+  if (!amount) return '0%'
+  return `${new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: amount % 1 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(amount)}%`
+}
+const salaryAdvanceLabel = computed(() =>
+  advancePercentage.value > 0
+    ? `Salary Advance Payable (${formatPercent(advancePercentage.value)} of Gross)`
+    : 'Salary Advance Payable',
+)
+const advanceAdjustedAmount = computed(() => toNum(item.value?.advance_adjusted_amount ?? item.value?.calculation_breakdown?.advance_adjusted_amount))
+const paycutDeductionLabel = computed(() => {
+  const paycutAmount = toNum(deductionsData.value.paycut ?? item.value?.paycut_deduction)
+  if (advanceAdjustedAmount.value > 0 && Math.abs(paycutAmount - advanceAdjustedAmount.value) < 1) {
+    return 'Half Salary Advance Adjustment'
+  }
+
+  return deductionLabelMap.paycut_deduction || 'Attendance Deduction'
+})
 const deductionItemCount = computed(
   () =>
     normalizedDeductions.value.length +
@@ -305,9 +384,40 @@ const deductionItemCount = computed(
 )
 
 const earningsTableRows = computed(() => {
+  if (isAdvanceCycle.value) {
+    const rows = [
+      ...(grossReferenceAmount.value > 0
+        ? [{ key: 'gross_reference', label: 'Gross Salary (Reference)', amount: grossReferenceAmount.value }]
+        : []),
+      { key: 'salary_advance', label: salaryAdvanceLabel.value, amount: salaryAdvancePayable.value },
+      ...(toNum(item.value?.bonus_amount ?? earningsData.value.bonus) > 0
+        ? [{ key: 'bonus', label: 'Bonus', amount: toNum(item.value?.bonus_amount ?? earningsData.value.bonus) }]
+        : []),
+      ...earningContraRows.value.map((r) => ({ ...r, is_delta: true })),
+      ...manualSettledFallbackEarningRows.value.map((r) => ({ ...r, is_delta: true })),
+      ...carryForwardEarningRows.value.map((r) => ({ ...r, is_delta: true })),
+    ]
+
+    return rows.filter((r) => toNum(r?.amount) !== 0)
+  }
+
+  if (isBonusOnlyCycle.value) {
+    const rows = [
+      { key: 'bonus', label: 'Bonus', amount: toNum(item.value?.bonus_amount ?? earningsData.value.bonus) },
+      ...earningContraRows.value.map((r) => ({ ...r, is_delta: true })),
+      ...manualSettledFallbackEarningRows.value.map((r) => ({ ...r, is_delta: true })),
+      ...carryForwardEarningRows.value.map((r) => ({ ...r, is_delta: true })),
+    ]
+
+    return rows.filter((r) => toNum(r?.amount) !== 0)
+  }
+
   const rows = [
     ...baseEarningRows.value,
     { key: 'others', label: 'Other Allowance', amount: otherAllowanceTotalEffective.value },
+    ...(toNum(item.value?.bonus_amount ?? earningsData.value.bonus) > 0
+      ? [{ key: 'bonus', label: 'Bonus', amount: toNum(item.value?.bonus_amount ?? earningsData.value.bonus) }]
+      : []),
     ...(pfAllowanceAmount.value > 0
       ? [{ key: 'pf_allowance_display', label: 'PF Allowance', amount: pfAllowanceAmount.value }]
       : []),
@@ -376,12 +486,34 @@ const formatRowAmount = (row) => {
           <div class="flex flex-col items-end gap-2">
             <PayrollStatusBadge :status="item.payment_status" />
             <div class="text-xs text-gray-400">{{ item.salary_month }} &middot; {{ item.salary_type }}</div>
+            <span class="rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
+              {{ payrollCycleLabel }}
+            </span>
           </div>
         </div>
       </div>
 
+      <div class="rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
+        <div class="flex flex-wrap gap-2">
+          <button
+            class="rounded-lg px-4 py-2 text-sm font-medium"
+            :class="activeTab === 'breakdown' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-50'"
+            @click="setTab('breakdown')"
+          >
+            Salary Breakdown
+          </button>
+          <button
+            class="rounded-lg px-4 py-2 text-sm font-medium"
+            :class="activeTab === 'audit' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-50'"
+            @click="setTab('audit')"
+          >
+            Audit Trail
+          </button>
+        </div>
+      </div>
+
       <!-- Salary Breakdown -->
-      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+      <div v-if="activeTab === 'breakdown'" class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
         <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
           <h3 class="font-bold text-blue-800 flex items-center gap-2">
             <i class="far fa-balance-scale text-slate-600"></i> Salary Breakdown
@@ -428,7 +560,7 @@ const formatRowAmount = (row) => {
                 </td>
               </tr>
               <tr class="bg-white font-bold">
-                <td class="border border-slate-200 px-3 py-2 text-right" colspan="3">Net Salary</td>
+                <td class="border border-slate-200 px-3 py-2 text-right" colspan="3">Net Payment</td>
                 <td class="border border-slate-200 px-3 py-2 text-right font-mono text-blue-800">
                   {{ formatCurrency(netSalaryAmount) }}
                 </td>
@@ -439,13 +571,18 @@ const formatRowAmount = (row) => {
       </div>
 
       <!-- Payment Info -->
-      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+      <div v-if="activeTab === 'breakdown'" class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
         <div class="flex items-center justify-between mb-3">
           <h3 class="font-bold text-blue-800 flex items-center gap-2">
             <i class="far fa-credit-card text-blue-500"></i> Payment Info
           </h3>
-          <button class="btn-3 text-xs" @click="showPaymentModal = true">
-            <i class="far fa-edit"></i> Update Status
+          <button
+            class="btn-3 text-xs"
+            :disabled="isLockedPayroll"
+            :title="isLockedPayroll ? 'Paid/locked payroll cannot be modified. Create an adjustment instead.' : 'Update Payment Status'"
+            @click="showPaymentModal = true"
+          >
+            <i class="far" :class="isLockedPayroll ? 'fa-lock' : 'fa-edit'"></i> Update Status
           </button>
         </div>
         <div class="grid grid-cols-2 md:grid-cols-6 gap-2 text-sm">
@@ -484,6 +621,8 @@ const formatRowAmount = (row) => {
           </div>
         </div>
       </div>
+
+      <PayrollAuditTrail v-if="activeTab === 'audit'" :audit="audit" :loading="auditLoading" />
 
       <!-- Actions -->
       <div class="flex gap-3">

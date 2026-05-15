@@ -26,7 +26,7 @@ const filters = ref({
   employee_id: '',
   line_type: 'all',
   salary_month: getCurrentMonth(),
-  salary_type: '',
+  payroll_cycle: 'regular',
   payment_status: '',
   default_payment_method: 'Cash',
   page: 1,
@@ -36,9 +36,14 @@ const filters = ref({
 const showPaymentModal = ref(false)
 const selectedPayroll = ref(null)
 
-const typeOptions = ['Monthly', 'Bonus', 'Final']
+const cycleOptions = [
+  { value: 'regular', label: 'Regular Monthly' },
+  { value: 'half_salary_advance', label: 'Half Salary Advance' },
+  { value: 'final_settlement', label: 'Final Settlement' },
+  { value: 'bonus_only', label: 'Bonus Only' },
+]
 
-const statusOptions = ['Pending', 'Paid', 'Partial']
+const statusOptions = ['Pending', 'Generated', 'Reviewed', 'Approved', 'Paid', 'Locked', 'Cancelled', 'Partial']
 
 const monthToPeriod = (value) => {
   const month = String(value || '').slice(0, 7)
@@ -138,7 +143,7 @@ const resetFilters = () => {
     employee_id: '',
     line_type: 'all',
     salary_month: getCurrentMonth(),
-    salary_type: '',
+    payroll_cycle: 'regular',
     payment_status: '',
     default_payment_method: 'Cash',
     page: 1,
@@ -154,7 +159,7 @@ const applyRouteQueryToFilters = () => {
     employee_id: String(q.employee_id || q.user_id || ''),
     line_type: String(q.line_type || 'all'),
     salary_month: String(q.salary_month || getCurrentMonth()),
-    salary_type: String(q.salary_type || ''),
+    payroll_cycle: String(q.payroll_cycle || 'regular'),
     payment_status: String(q.payment_status || ''),
     default_payment_method: String(q.default_payment_method || 'Cash'),
     page: Number(q.page) > 0 ? Number(q.page) : 1,
@@ -268,7 +273,11 @@ const getDisplayOtherAllowance = (payroll) =>
 const getTotalEarnings = (payroll) =>
   toNumber(payroll?.gross_salary) +
   toNumber(payroll?.other_allowance_total) +
-  toNumber(payroll?.manual_addition)
+  toNumber(payroll?.manual_addition) +
+  toNumber(payroll?.bonus_amount)
+
+const isLockedPayroll = (payroll) =>
+  ['paid', 'locked'].includes(String(payroll?.payment_status || payroll?.status || '').toLowerCase())
 </script>
 
 <template>
@@ -321,11 +330,11 @@ const getTotalEarnings = (payroll) =>
 
         <div class="flex flex-wrap items-end gap-3">
           <div class="w-full sm:w-48">
-            <label class="block text-xs font-medium text-gray-600 mb-1">Salary Type</label>
-            <select v-model="filters.salary_type" @change="() => { filters.page = 1; load() }"
+            <label class="block text-xs font-medium text-gray-600 mb-1">Payroll Cycle</label>
+            <select v-model="filters.payroll_cycle" @change="() => { filters.page = 1; load() }"
               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
-              <option value="">All Types</option>
-              <option v-for="type in typeOptions" :key="type" :value="type">{{ type }}</option>
+              <option value="">All Cycles</option>
+              <option v-for="cycle in cycleOptions" :key="cycle.value" :value="cycle.value">{{ cycle.label }}</option>
             </select>
           </div>
           <div class="w-full sm:w-48">
@@ -411,6 +420,7 @@ const getTotalEarnings = (payroll) =>
           <col class="w-[56px]" />
           <col class="w-[56px]" />
           <col class="w-[56px]" />
+          <col class="w-[56px]" />
           <col class="w-[72px]" />
           <col class="w-[62px]" />
           <col class="w-[56px]" />
@@ -422,11 +432,11 @@ const getTotalEarnings = (payroll) =>
             <th class="border border-slate-200 px-1 py-2 text-left" rowspan="2">Emp ID</th>
             <th class="border border-slate-200 px-1 py-2 text-left" rowspan="2">Joining</th>
             <!-- <th class="border border-slate-200 px-2 py-2 text-center" rowspan="2">Type</th> -->
-            <th class="border border-slate-200 bg-emerald-50 px-1 py-2 text-center" colspan="10">Earnings</th>
+            <th class="border border-slate-200 bg-emerald-50 px-1 py-2 text-center" colspan="11">Earnings</th>
             <th class="border border-slate-200 bg-rose-50 px-1 py-2 text-center" colspan="8">Deductions</th>
             <th class="border border-slate-200 px-1 py-2 text-right" rowspan="2">Payable</th>
-            <th class="border border-slate-200 px-1 py-2 text-center" rowspan="2">Status</th>
-            <th class="border border-slate-200 px-1 py-2 text-center" rowspan="2">Actions</th>
+            <th class="border border-slate-200 px-2 py-2 text-center min-w-[92px]" rowspan="2">Status</th>
+            <th class="border border-slate-200 px-2 py-2 text-center min-w-[52px]" rowspan="2">Actions</th>
           </tr>
           <tr>
             <th class="border border-slate-200 px-1 py-1.5 text-right">Basic</th>
@@ -437,6 +447,7 @@ const getTotalEarnings = (payroll) =>
             <th class="border border-slate-200 px-1 py-1.5 text-right">Others</th>
             <th class="border border-slate-200 px-1 py-1.5 text-right">PF</th>
             <th class="border border-slate-200 px-1 py-1.5 text-right">Arrear</th>
+            <th class="border border-slate-200 px-1 py-1.5 text-right">Bonus</th>
             <th class="border border-slate-200 px-1 py-1.5 text-right">OT/Add</th>
             <th class="border border-slate-200 px-1 py-1.5 text-right">E.Total</th>
             <th class="border border-slate-200 px-1 py-1.5 text-right">PF</th>
@@ -477,6 +488,9 @@ const getTotalEarnings = (payroll) =>
             <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-emerald-700 whitespace-nowrap">
               {{ formatCompactCurrency(getArrearAmount(p)) }}
             </td>
+            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-emerald-700 whitespace-nowrap">
+              {{ formatCompactCurrency(p.bonus_amount) }}
+            </td>
             <td class="border border-slate-200 px-1 py-1.5 text-right font-mono whitespace-nowrap">
               {{ formatCompactCurrency(p.manual_addition) }}
             </td>
@@ -492,20 +506,27 @@ const getTotalEarnings = (payroll) =>
             <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-rose-600 whitespace-nowrap">{{ formatCompactCurrency(p.paycut_deduction) }}</td>
             <td class="border border-slate-200 px-1 py-1.5 text-right font-mono font-semibold text-rose-700 whitespace-nowrap">{{ formatCompactCurrency(p.total_deduction) }}</td>
             <td class="border border-slate-200 px-1 py-1.5 text-right font-mono font-bold text-blue-800 whitespace-nowrap">{{ formatCompactCurrency(p.net_salary) }}</td>
-            <td class="border border-slate-200 px-1 py-1.5 text-center whitespace-nowrap">
-              <div class="flex items-center justify-center gap-1">
+            <td class="border border-slate-200 px-2 py-1.5 text-center whitespace-nowrap min-w-[92px]">
+              <div class="flex items-center justify-center gap-1.5">
                 <PayrollStatusBadge :status="p.payment_status" />
                 <button
-                  v-if="p.payment_status !== 'Paid'"
+                  v-if="!isLockedPayroll(p)"
                   @click="openPaymentModal(p)"
-                  class="inline-flex h-5 w-5 items-center justify-center rounded-md text-emerald-500 hover:bg-emerald-50 hover:text-emerald-700"
+                  class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-emerald-500 hover:bg-emerald-50 hover:text-emerald-700"
                   title="Update Payment Status"
                 >
                   <i class="far fa-credit-card text-xs"></i>
                 </button>
+                <span
+                  v-else
+                  class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-slate-500"
+                  title="Paid/locked payroll cannot be modified. Create an adjustment instead."
+                >
+                  <i class="fas fa-lock text-xs"></i>
+                </span>
               </div>
             </td>
-            <td class="border border-slate-200 px-1 py-1.5 text-center whitespace-nowrap">
+            <td class="border border-slate-200 px-2 py-1.5 text-center whitespace-nowrap min-w-[52px]">
               <div class="flex items-center justify-center gap-0.5">
                 <button @click="router.push({ name: 'PayrollShow', params: { id: p.id } })"
                   class="p-0.5 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 rounded-md" title="View">
