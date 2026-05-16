@@ -23,11 +23,16 @@ const actionLoadingId = ref(null)
 const confirmAction = ref(null)
 const cancellationReason = ref('')
 
+const currentMonth = () => {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+}
+
 const filters = ref({
   company_id: '',
   department_id: '',
   line_type: 'all',
-  salary_month: '',
+  salary_month: currentMonth(),
   page: 1,
   per_page: 15,
 })
@@ -90,7 +95,7 @@ const hydrateFiltersFromQuery = () => {
     company_id: q.company_id ? String(q.company_id) : '',
     department_id: q.department_id ? String(q.department_id) : '',
     line_type: q.line_type ? String(q.line_type) : 'all',
-    salary_month: toMonthValue(q.salary_month),
+    salary_month: toMonthValue(q.salary_month) || currentMonth(),
     page: parseQueryInt(q.page, 1),
     per_page: parseQueryInt(q.per_page, 15),
   }
@@ -128,12 +133,22 @@ const resetFilters = () => {
     company_id: '',
     department_id: '',
     line_type: 'all',
-    salary_month: '',
+    salary_month: currentMonth(),
     page: 1,
     per_page: 15,
   }
   load()
 }
+
+const lineTypeLabels = {
+  executive: 'Executive',
+  support_staff: 'Support Staff',
+  doctor: 'Doctor',
+  academy_body: 'Academy Body',
+  academic_body: 'Academy Body',
+}
+
+const lineTypeLabel = (value) => lineTypeLabels[value] || value || '—'
 
 const goToGenerate = () => {
   router.push({
@@ -400,9 +415,10 @@ const runConfirmedAction = async () => {
             <th class="px-4 py-3 text-left">#</th>
             <th class="px-4 py-3 text-left">Batch ID</th>
             <th class="px-4 py-3 text-left">Company</th>
+            <th class="px-4 py-3 text-left">Department</th>
+            <th class="px-4 py-3 text-left">Line Type</th>
             <th class="px-4 py-3 text-center">Salary Month</th>
             <th class="px-4 py-3 text-center">Salary Type</th>
-            <th class="px-4 py-3 text-center">Mode</th>
             <th class="px-4 py-3 text-center">Status</th>
             <th class="px-4 py-3 text-left">Prepared By</th>
             <th class="px-4 py-3 text-center">Generated At</th>
@@ -415,13 +431,14 @@ const runConfirmedAction = async () => {
             <td class="px-4 py-3 text-gray-400 text-xs">{{ (filters.page - 1) * filters.per_page + i + 1 }}</td>
             <td class="px-4 py-3 font-mono text-blue-700 font-medium">#{{ batch.id }}</td>
             <td class="px-4 py-3 font-medium">{{ batch.company?.name || '—' }}</td>
+            <td class="px-4 py-3 text-gray-600">{{ batch.department?.name || '—' }}</td>
+            <td class="px-4 py-3 text-gray-600">{{ lineTypeLabel(batch.line_type) }}</td>
             <td class="px-4 py-3 text-center">{{ batch.salary_month || '—' }}</td>
             <td class="px-4 py-3 text-center">
               <span class="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-medium">
                 {{ batch.salary_type || '—' }}
               </span>
             </td>
-            <td class="px-4 py-3 text-center text-xs capitalize text-slate-600">{{ (batch.payroll_cycle || 'regular').replace(/_/g, ' ') }}</td>
             <td class="px-4 py-3 text-center"><PayrollStatusBadge :status="batch.status || 'generated'" /></td>
             <td class="px-4 py-3 text-gray-600">{{ batch.prepared_by?.name || '—' }}</td>
             <td class="px-4 py-3 text-center text-gray-500 text-xs">{{ batch.created_at?.slice(0, 10) || '—' }}</td>

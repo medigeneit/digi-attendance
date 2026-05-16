@@ -21,6 +21,12 @@ const queryValue = (key, fallback = '') => {
   return Array.isArray(value) ? String(value[0] || fallback) : String(value || fallback)
 }
 
+const allowedPayrollCycles = ['regular', 'half_salary_advance', 'bonus_only']
+const queryPayrollCycle = () => {
+  const cycle = queryValue('payroll_cycle', 'regular') || 'regular'
+  return allowedPayrollCycles.includes(cycle) ? cycle : 'regular'
+}
+
 const form = ref({
   company_id: queryValue('company_id'),
   department_id: queryValue('department_id'),
@@ -28,7 +34,7 @@ const form = ref({
   salary_month: queryValue('salary_month'),
   salary_type: queryValue('salary_type', 'Monthly') || 'Monthly',
   employee_id: queryValue('employee_id') || queryValue('user_id'),
-  payroll_cycle: queryValue('payroll_cycle', 'regular') || 'regular',
+  payroll_cycle: queryPayrollCycle(),
   salary_percentage: 50,
   fixed_pay_amount: '',
   period_start: '',
@@ -52,12 +58,10 @@ const modeOptions = computed(() => {
   const labels = {
     regular: 'Regular Monthly Payroll',
     half_salary_advance: 'Half Salary Advance',
-    final_settlement: 'Final Settlement',
     bonus_only: 'Bonus Only',
   }
-  const allowed = ['regular', 'half_salary_advance', 'final_settlement', 'bonus_only']
   const cycles = options.value?.cycles || []
-  return allowed.map((value) => ({
+  return allowedPayrollCycles.map((value) => ({
     value,
     label: cycles.find((cycle) => cycle.value === value)?.label || labels[value],
   }))
@@ -68,7 +72,6 @@ const inputCls =
 
 const isRegularMode = computed(() => form.value.payroll_cycle === 'regular')
 const isHalfMode = computed(() => form.value.payroll_cycle === 'half_salary_advance')
-const isFinalMode = computed(() => form.value.payroll_cycle === 'final_settlement')
 const isBonusOnlyMode = computed(() => form.value.payroll_cycle === 'bonus_only')
 const isNonRegularMode = computed(() => !isRegularMode.value)
 
@@ -97,6 +100,44 @@ const targetEmployees = computed(() => (isRegularMode.value ? regularEmployees.v
 
 const previewItems = computed(() => previewResult.value?.items || [])
 const previewWarnings = computed(() => previewResult.value?.warnings || [])
+const previewWarningSummaries = computed(() => {
+  const warnings = previewWarnings.value || []
+  const skipped = warnings.filter((warning) => warning.type === 'skipped_payroll')
+  const missingSalary = warnings.filter((warning) => warning.type === 'missing_salary_structure')
+  const missingBonus = warnings.filter((warning) => warning.type === 'missing_bonus')
+  const other = warnings.filter((warning) => !['skipped_payroll', 'missing_salary_structure', 'missing_bonus'].includes(warning.type))
+  const summaries = []
+
+  if (missingSalary.length) {
+    summaries.push({
+      key: 'missing_salary_structure',
+      message: `${missingSalary.length} employee${missingSalary.length > 1 ? 's do' : ' does'} not have an active salary structure for this payroll month.`,
+    })
+  }
+
+  if (missingBonus.length) {
+    summaries.push({
+      key: 'missing_bonus',
+      message: `${missingBonus.length} employee${missingBonus.length > 1 ? 's do' : ' does'} not have an approved bonus for this payroll month.`,
+    })
+  }
+
+  if (skipped.length) {
+    summaries.push({
+      key: 'skipped_payroll',
+      message: `${skipped.length} employee${skipped.length > 1 ? 's already have' : ' already has'} a reviewed, approved, paid, locked, or cancelled payroll and will be skipped.`,
+    })
+  }
+
+  other.forEach((warning, index) => {
+    summaries.push({
+      key: `other-${index}-${warning.employee_id || ''}`,
+      message: warning.message,
+    })
+  })
+
+  return summaries
+})
 const generatedPayload = computed(() => generateResult.value?.data || generateResult.value || null)
 const generatedBatch = computed(() => generatedPayload.value?.batch || null)
 const generatedPayrolls = computed(() => [
@@ -145,10 +186,6 @@ watch(
       form.value.apply_deductions = false
       form.value.deduct_previous_advance = false
       advancedOpen.value = true
-    } else if (mode === 'final_settlement') {
-      form.value.apply_deductions = true
-      form.value.deduct_previous_advance = false
-      advancedOpen.value = true
     } else if (mode === 'bonus_only') {
       form.value.apply_deductions = false
       form.value.include_bonus = true
@@ -175,13 +212,6 @@ const validate = () => {
   const errors = {}
   if (!form.value.company_id) errors.company_id = 'Company is required.'
   if (!form.value.salary_month) errors.salary_month = 'Salary month is required.'
-  if (isFinalMode.value) {
-    if (!form.value.period_start) errors.period_start = 'Period start is required.'
-    if (!form.value.period_end) errors.period_end = 'Period end is required.'
-    if (!form.value.employee_id && targetEmployees.value.length !== 1) {
-      errors.employee_id = 'Select one employee for final settlement.'
-    }
-  }
   if (isHalfMode.value && !Number(form.value.salary_percentage || 0) && !Number(form.value.fixed_pay_amount || 0)) {
     errors.salary_percentage = 'Salary percentage or fixed amount is required.'
   }
@@ -193,6 +223,8 @@ const buildPayrollPayload = () => {
   const employees = targetEmployees.value
   const payload = {
     company_id: form.value.company_id,
+    department_id: form.value.department_id || undefined,
+    line_type: form.value.line_type && form.value.line_type !== 'all' ? form.value.line_type : undefined,
     salary_month: form.value.salary_month,
     salary_type: 'Monthly',
     payroll_cycle: form.value.payroll_cycle,
@@ -207,10 +239,6 @@ const buildPayrollPayload = () => {
   if (isHalfMode.value) {
     payload.salary_percentage = form.value.salary_percentage || undefined
     payload.fixed_pay_amount = form.value.fixed_pay_amount || undefined
-  }
-  if (isFinalMode.value) {
-    payload.period_start = form.value.period_start
-    payload.period_end = form.value.period_end
   }
   if (isBonusOnlyMode.value) {
     payload.include_bonus = true
@@ -392,7 +420,7 @@ const goToBatch = () => {
                 </label>
               </div>
 
-              <div v-else-if="isHalfMode" class="grid gap-3 md:grid-cols-2">
+              <div v-else-if="isHalfMode" class="grid gap-2 md:grid-cols-3">
                 <div>
                   <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Salary Percentage</label>
                   <input v-model="form.salary_percentage" type="number" min="0" max="100" :class="inputCls" />
@@ -405,7 +433,7 @@ const goToBatch = () => {
                 <label class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
                   <input v-model="form.include_bonus" type="checkbox" /> Include bonus
                 </label>
-                <div class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
+                <div class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 md:col-span-2">
                   Deductions and previous advance deduction are forced off.
                 </div>
                 <template v-if="form.include_bonus">
@@ -416,26 +444,10 @@ const goToBatch = () => {
                       <option v-for="type in options?.bonus_types || []" :key="type.value" :value="type.value">{{ type.label }}</option>
                     </select>
                   </div>
-                  <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+                  <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700 md:col-span-2">
                     Bonus is paid with advance and not adjusted from month-end payroll.
                   </div>
                 </template>
-              </div>
-
-              <div v-else-if="isFinalMode" class="grid gap-3 md:grid-cols-3">
-                <div>
-                  <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Period Start</label>
-                  <input v-model="form.period_start" type="date" :class="inputCls" />
-                  <p v-if="formErrors.period_start" class="mt-1 text-xs text-red-500">{{ formErrors.period_start }}</p>
-                </div>
-                <div>
-                  <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Period End</label>
-                  <input v-model="form.period_end" type="date" :class="inputCls" />
-                  <p v-if="formErrors.period_end" class="mt-1 text-xs text-red-500">{{ formErrors.period_end }}</p>
-                </div>
-                <label class="mt-5 flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
-                  <input v-model="form.include_bonus" type="checkbox" /> Include bonus
-                </label>
               </div>
 
               <div v-else-if="isBonusOnlyMode" class="grid gap-3 md:grid-cols-2">
@@ -515,7 +527,7 @@ const goToBatch = () => {
         </aside>
       </div>
 
-      <div v-if="previewItems.length || previewWarnings.length" class="space-y-3">
+      <div v-if="previewItems.length || previewWarningSummaries.length" class="space-y-3">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 class="text-base font-bold text-slate-900">Payroll Preview</h2>
@@ -526,10 +538,10 @@ const goToBatch = () => {
           </button>
         </div>
         <PayrollPreviewTable :items="previewItems" :mode="form.payroll_cycle" />
-        <div v-if="previewWarnings.length" class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+        <div v-if="previewWarningSummaries.length" class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
           <p class="font-semibold">Warnings</p>
           <ul class="mt-2 list-disc space-y-1 pl-5">
-            <li v-for="warning in previewWarnings" :key="`${warning.type}-${warning.employee_id}-${warning.message}`">
+            <li v-for="warning in previewWarningSummaries" :key="warning.key">
               {{ warning.message }}
             </li>
           </ul>
@@ -617,11 +629,11 @@ const goToBatch = () => {
           <div class="rounded-lg bg-blue-50 p-3 text-sm text-blue-900"><span class="text-blue-600">Total net payable</span><p class="font-semibold">{{ formatCurrency(previewTotals.net) }}</p></div>
         </div>
 
-        <div v-if="isNonRegularMode || previewWarnings.length" class="mt-4 rounded-lg border border-orange-200 bg-orange-50 p-3 text-sm text-orange-800">
+        <div v-if="isNonRegularMode || previewWarningSummaries.length" class="mt-4 rounded-lg border border-orange-200 bg-orange-50 p-3 text-sm text-orange-800">
           <p class="font-semibold">Important warnings</p>
           <div class="mt-2"><PayrollRuleSummary :mode="form.payroll_cycle" /></div>
-          <ul v-if="previewWarnings.length" class="mt-2 list-disc pl-5">
-            <li v-for="warning in previewWarnings" :key="warning.message">{{ warning.message }}</li>
+          <ul v-if="previewWarningSummaries.length" class="mt-2 list-disc pl-5">
+            <li v-for="warning in previewWarningSummaries" :key="warning.key">{{ warning.message }}</li>
           </ul>
         </div>
 

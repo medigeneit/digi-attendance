@@ -46,12 +46,12 @@ const goBack = () => {
 
 const myOvertimes = computed(() => overtimeStore.overtimes || [])
 
-const totalRequestedMinutes = computed(() => {
+const totalRequestedHours = computed(() => {
   const list = overtimeStore.overtimes || []
   return list.reduce((sum, o) => sum + (Number(o?.request_overtime_hours) || 0), 0)
 })
 
-const totalApprovedMinutes = computed(() => {
+const totalApprovedHours = computed(() => {
   const list = overtimeStore.overtimes || []
   return list.reduce((sum, o) => sum + (Number(o?.approval_overtime_hours) || 0), 0)
 })
@@ -169,13 +169,13 @@ const canDeleteApplication = (overtime) => {
         <div class="rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2">
           <div class="text-slate-500">Requested</div>
           <div class="text-lg font-semibold text-slate-800">
-            <DisplayFormattedWorkingHours :workingHours="totalRequestedMinutes" />
+            <DisplayFormattedWorkingHours :workingHours="totalRequestedHours" />
           </div>
         </div>
         <div class="rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2">
           <div class="text-slate-500">Approved</div>
           <div class="text-lg font-semibold text-slate-800">
-            <DisplayFormattedWorkingHours :workingHours="totalApprovedMinutes" />
+            <DisplayFormattedWorkingHours :workingHours="totalApprovedHours" />
           </div>
         </div>
         <div class="rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2">
@@ -293,10 +293,10 @@ const canDeleteApplication = (overtime) => {
               <tr class="font-semibold">
                 <td class="px-4 py-3 text-right" colspan="8">Totals</td>
                 <td class="px-4 py-3 text-center">
-                  <DisplayFormattedWorkingHours :workingHours="totalRequestedMinutes" />
+                  <DisplayFormattedWorkingHours :workingHours="totalRequestedHours" />
                 </td>
                 <td class="px-4 py-3 text-center">
-                  <DisplayFormattedWorkingHours :workingHours="totalApprovedMinutes" />
+                  <DisplayFormattedWorkingHours :workingHours="totalApprovedHours" />
                 </td>
                 <td class="px-4 py-3 text-center">—</td>
                 <td class="px-4 py-3 text-center">—</td>

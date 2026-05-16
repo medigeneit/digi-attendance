@@ -33,6 +33,7 @@ defineExpose({ totals })
       <table class="min-w-[980px] w-full text-sm">
         <thead class="bg-slate-50 text-xs uppercase text-slate-600">
           <tr>
+            <th class="px-3 py-3 text-left">#</th>
             <th class="px-3 py-3 text-left">Employee</th>
             <th class="px-3 py-3 text-right">Gross Salary</th>
             <th class="px-3 py-3 text-right">{{ isHalfSalaryAdvance ? 'Salary Advance' : 'Base Payable' }}</th>
@@ -45,7 +46,8 @@ defineExpose({ totals })
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
-          <tr v-for="item in items" :key="item.employee?.id" class="hover:bg-slate-50">
+          <tr v-for="(item, index) in items" :key="item.employee?.id" class="hover:bg-slate-50">
+            <td class="px-3 py-3 text-slate-500">{{ index + 1 }}</td>
             <td class="px-3 py-3">
               <div class="font-semibold text-slate-900">{{ item.employee?.name || '-' }}</div>
               <div class="text-xs text-slate-500">{{ item.employee?.employee_id || '-' }}</div>
@@ -65,6 +67,7 @@ defineExpose({ totals })
         </tbody>
         <tfoot class="bg-slate-50 font-semibold">
           <tr>
+            <td></td>
             <td class="px-3 py-3 text-right">Totals</td>
             <td></td>
             <td class="px-3 py-3 text-right font-mono">{{ formatCurrency(totals.base) }}</td>
