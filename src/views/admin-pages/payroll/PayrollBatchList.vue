@@ -1,24 +1,38 @@
 <script setup>
 import { computed, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useToast } from 'vue-toastification'
 import { storeToRefs } from 'pinia'
+import { useAuthStore } from '@/stores/auth'
 import { usePayrollBatchStore } from '@/stores/payrollBatch'
 import LoaderView from '@/components/common/LoaderView.vue'
 import PaginationBar from '@/components/PaginationBar.vue'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
+import PayrollStatusBadge from '@/components/payroll/PayrollStatusBadge.vue'
 
 const router = useRouter()
 const route = useRoute()
+const toast = useToast()
 const batchStore = usePayrollBatchStore()
+const authStore = useAuthStore()
 
 const { list, loading, error, pagination, apiUnavailable } = storeToRefs(batchStore)
+const openMoreId = ref(null)
+const actionLoadingId = ref(null)
+const confirmAction = ref(null)
+const cancellationReason = ref('')
+
+const currentMonth = () => {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+}
 
 const filters = ref({
   company_id: '',
   department_id: '',
   line_type: 'all',
-  salary_month: '',
+  salary_month: currentMonth(),
   page: 1,
   per_page: 15,
 })
@@ -81,7 +95,7 @@ const hydrateFiltersFromQuery = () => {
     company_id: q.company_id ? String(q.company_id) : '',
     department_id: q.department_id ? String(q.department_id) : '',
     line_type: q.line_type ? String(q.line_type) : 'all',
-    salary_month: toMonthValue(q.salary_month),
+    salary_month: toMonthValue(q.salary_month) || currentMonth(),
     page: parseQueryInt(q.page, 1),
     per_page: parseQueryInt(q.per_page, 15),
   }
@@ -119,12 +133,22 @@ const resetFilters = () => {
     company_id: '',
     department_id: '',
     line_type: 'all',
-    salary_month: '',
+    salary_month: currentMonth(),
     page: 1,
     per_page: 15,
   }
   load()
 }
+
+const lineTypeLabels = {
+  executive: 'Executive',
+  support_staff: 'Support Staff',
+  doctor: 'Doctor',
+  academy_body: 'Academy Body',
+  academic_body: 'Academy Body',
+}
+
+const lineTypeLabel = (value) => lineTypeLabels[value] || value || '—'
 
 const goToGenerate = () => {
   router.push({
@@ -139,6 +163,184 @@ const goToShow = (batch) => {
     params: { id: batch.id },
     query: buildFilterParams(),
   })
+}
+
+const normalizeStatus = (batch) => String(batch?.status || 'generated').toLowerCase()
+const privilegedRoles = ['admin', 'super_admin', 'developer']
+const payrollRoles = ['admin', 'super_admin', 'developer', 'hr', 'accounts']
+const accountRoles = ['admin', 'super_admin', 'developer', 'accounts']
+
+const userPermissions = computed(() => {
+  const raw = authStore.user?.permissions || authStore.user?.permission_names || authStore.user?.abilities || []
+  return Array.isArray(raw)
+    ? raw.map((permission) => String(permission?.name || permission).toLowerCase())
+    : []
+})
+
+const userRoles = computed(() => {
+  const roles = [authStore.user?.role, ...(authStore.user?.roles || [])]
+  return roles.map((role) => String(role?.name || role || '').toLowerCase()).filter(Boolean)
+})
+
+const hasRole = (roles) => userRoles.value.some((role) => roles.includes(role))
+const can = (permission, fallbackRoles = payrollRoles) =>
+  userPermissions.value.includes(permission.toLowerCase()) || hasRole(fallbackRoles)
+
+const hasPermissionForAction = (action) => {
+  const map = {
+    view: ['payroll.batch.view', payrollRoles],
+    review: ['payroll.batch.review', payrollRoles],
+    approve: ['payroll.batch.approve', privilegedRoles],
+    mark_paid: ['payroll.batch.mark_paid', accountRoles],
+    lock: ['payroll.batch.lock', privilegedRoles],
+    regenerate: ['payroll.batch.regenerate', payrollRoles],
+    cancel: ['payroll.batch.cancel', privilegedRoles],
+    export: ['payroll.batch.export', payrollRoles],
+    adjustment: ['payroll.adjustment.create', payrollRoles],
+    audit: ['payroll.batch.view', payrollRoles],
+  }
+  const [permission, roles] = map[action] || []
+  return permission ? can(permission, roles) : false
+}
+
+const actionCopy = {
+  review: {
+    title: 'Review Payroll Batch?',
+    message: 'This batch will move to Reviewed status.',
+    success: 'Payroll batch reviewed.',
+  },
+  approve: {
+    title: 'Approve Payroll Batch?',
+    message: 'Approved payroll cannot be regenerated without reverting approval.',
+    success: 'Payroll batch approved.',
+  },
+  mark_paid: {
+    title: 'Mark Payroll Batch as Paid?',
+    message: 'Paid payroll cannot be edited or regenerated. Corrections must be made through adjustment.',
+    success: 'Payroll batch marked as paid.',
+  },
+  lock: {
+    title: 'Lock Payroll Batch?',
+    message: 'Locked payroll is final and cannot be edited, regenerated, deleted, or recalculated.',
+    success: 'Payroll batch locked.',
+  },
+  cancel: {
+    title: 'Cancel Payroll Batch?',
+    message: 'Cancelled payroll cannot be paid or locked.',
+    success: 'Payroll batch cancelled.',
+  },
+}
+
+const primaryActionFor = (batch) => {
+  const status = normalizeStatus(batch)
+  const map = {
+    draft: { action: 'regenerate', label: 'Regenerate', icon: 'fa-redo' },
+    generated: { action: 'review', label: 'Review', icon: 'fa-clipboard-check' },
+    reviewed: { action: 'approve', label: 'Approve', icon: 'fa-check-circle' },
+    approved: { action: 'mark_paid', label: 'Mark Paid', icon: 'fa-money-bill-wave' },
+    paid: { action: 'lock', label: 'Lock', icon: 'fa-lock' },
+  }
+  const primary = map[status]
+  return primary && hasPermissionForAction(primary.action) ? primary : null
+}
+
+const moreActionsFor = (batch) => {
+  const status = normalizeStatus(batch)
+  const actions = {
+    draft: ['view', 'regenerate', 'cancel'],
+    generated: ['view', 'regenerate', 'cancel'],
+    reviewed: ['view', 'cancel'],
+    approved: ['view', 'export', 'cancel'],
+    paid: ['view', 'export', 'adjustment'],
+    locked: ['view', 'export', 'audit'],
+    cancelled: ['view', 'audit'],
+  }[status] || ['view']
+
+  const primary = primaryActionFor(batch)?.action
+  const labels = {
+    view: ['View', 'fa-eye'],
+    regenerate: ['Regenerate', 'fa-redo'],
+    cancel: ['Cancel', 'fa-ban'],
+    export: ['Export', 'fa-file-export'],
+    adjustment: ['Create Adjustment', 'fa-plus-circle'],
+    audit: ['Audit Trail', 'fa-history'],
+  }
+
+  return actions
+    .filter((action) => action !== primary && hasPermissionForAction(action))
+    .map((action) => ({ action, label: labels[action][0], icon: labels[action][1] }))
+}
+
+const regenerateBatch = (batch) => {
+  router.push({
+    name: 'PayrollBatchGenerate',
+    query: {
+      ...buildFilterParams(),
+      company_id: batch.company_id,
+      salary_month: toMonthValue(batch.salary_month),
+      salary_type: batch.salary_type || 'Monthly',
+      payroll_cycle: batch.payroll_cycle || 'regular',
+    },
+  })
+}
+
+const exportBatch = (batch) => {
+  router.push({
+    name: 'PayrollList',
+    query: {
+      payroll_batch_id: batch.id,
+      flag: 'excel',
+    },
+  })
+}
+
+const createAdjustment = (batch) => {
+  router.push({
+    name: 'PayrollAdjustmentCreate',
+    query: {
+      payroll_batch_id: batch.id,
+      salary_month: toMonthValue(batch.salary_month),
+    },
+  })
+}
+
+const showAuditTrail = (batch) => goToShow(batch)
+
+const openConfirm = (batch, action) => {
+  if (action === 'regenerate') return regenerateBatch(batch)
+  if (action === 'view') return goToShow(batch)
+  if (action === 'export') return exportBatch(batch)
+  if (action === 'adjustment') return createAdjustment(batch)
+  if (action === 'audit') return showAuditTrail(batch)
+  cancellationReason.value = ''
+  confirmAction.value = { batch, action, ...actionCopy[action] }
+  openMoreId.value = null
+}
+
+const closeConfirm = () => {
+  confirmAction.value = null
+  cancellationReason.value = ''
+}
+
+const runConfirmedAction = async () => {
+  if (!confirmAction.value || actionLoadingId.value) return
+  const { batch, action, success } = confirmAction.value
+  if (action === 'cancel' && !cancellationReason.value.trim()) {
+    toast.error('Cancellation reason is required.')
+    return
+  }
+
+  actionLoadingId.value = `${batch.id}:${action}`
+  try {
+    await batchStore.transitionBatch(batch.id, action, action === 'cancel' ? { reason: cancellationReason.value.trim() } : {})
+    toast.success(success)
+    closeConfirm()
+    await batchStore.fetchList(buildFilterParams())
+  } catch (e) {
+    toast.error(e.message || 'Payroll batch status update failed.')
+  } finally {
+    actionLoadingId.value = null
+  }
 }
 </script>
 
@@ -213,8 +415,11 @@ const goToShow = (batch) => {
             <th class="px-4 py-3 text-left">#</th>
             <th class="px-4 py-3 text-left">Batch ID</th>
             <th class="px-4 py-3 text-left">Company</th>
+            <th class="px-4 py-3 text-left">Department</th>
+            <th class="px-4 py-3 text-left">Line Type</th>
             <th class="px-4 py-3 text-center">Salary Month</th>
             <th class="px-4 py-3 text-center">Salary Type</th>
+            <th class="px-4 py-3 text-center">Status</th>
             <th class="px-4 py-3 text-left">Prepared By</th>
             <th class="px-4 py-3 text-center">Generated At</th>
             <th class="px-4 py-3 text-center">Payrolls</th>
@@ -226,22 +431,69 @@ const goToShow = (batch) => {
             <td class="px-4 py-3 text-gray-400 text-xs">{{ (filters.page - 1) * filters.per_page + i + 1 }}</td>
             <td class="px-4 py-3 font-mono text-blue-700 font-medium">#{{ batch.id }}</td>
             <td class="px-4 py-3 font-medium">{{ batch.company?.name || '—' }}</td>
+            <td class="px-4 py-3 text-gray-600">{{ batch.department?.name || '—' }}</td>
+            <td class="px-4 py-3 text-gray-600">{{ lineTypeLabel(batch.line_type) }}</td>
             <td class="px-4 py-3 text-center">{{ batch.salary_month || '—' }}</td>
             <td class="px-4 py-3 text-center">
               <span class="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-medium">
                 {{ batch.salary_type || '—' }}
               </span>
             </td>
+            <td class="px-4 py-3 text-center"><PayrollStatusBadge :status="batch.status || 'generated'" /></td>
             <td class="px-4 py-3 text-gray-600">{{ batch.prepared_by?.name || '—' }}</td>
             <td class="px-4 py-3 text-center text-gray-500 text-xs">{{ batch.created_at?.slice(0, 10) || '—' }}</td>
             <td class="px-4 py-3 text-center">
               <span class="font-semibold text-blue-800">{{ batch.payrolls_count ?? (batch.payrolls?.length ?? '—') }}</span>
             </td>
             <td class="px-4 py-3 text-center">
-              <button @click="goToShow(batch)"
-                class="p-1.5 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors" title="View">
-                <i class="far fa-eye text-xs"></i>
-              </button>
+              <div class="relative inline-flex items-center justify-center gap-1">
+                <button
+                  v-if="hasPermissionForAction('view')"
+                  @click="goToShow(batch)"
+                  class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-indigo-500 transition-colors hover:bg-indigo-50 hover:text-indigo-700"
+                  title="View"
+                >
+                  <i class="far fa-eye text-xs"></i>
+                </button>
+
+                <button
+                  v-if="primaryActionFor(batch)"
+                  class="inline-flex h-8 items-center gap-1.5 rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  :disabled="!!actionLoadingId"
+                  @click="openConfirm(batch, primaryActionFor(batch).action)"
+                >
+                  <i
+                    class="far"
+                    :class="actionLoadingId === `${batch.id}:${primaryActionFor(batch).action}` ? 'fa-spinner fa-spin' : primaryActionFor(batch).icon"
+                  ></i>
+                  <span>{{ primaryActionFor(batch).label }}</span>
+                </button>
+
+                <button
+                  v-if="moreActionsFor(batch).length"
+                  class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-800"
+                  title="More actions"
+                  @click="openMoreId = openMoreId === batch.id ? null : batch.id"
+                >
+                  <i class="far fa-ellipsis-h text-xs"></i>
+                </button>
+
+                <div
+                  v-if="openMoreId === batch.id"
+                  class="absolute right-0 top-9 z-20 w-48 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 text-left shadow-lg"
+                >
+                  <button
+                    v-for="action in moreActionsFor(batch)"
+                    :key="action.action"
+                    class="flex w-full items-center gap-2 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    :disabled="!!actionLoadingId"
+                    @click="openConfirm(batch, action.action)"
+                  >
+                    <i class="far w-4" :class="action.icon"></i>
+                    <span>{{ action.label }}</span>
+                  </button>
+                </div>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -252,5 +504,35 @@ const goToShow = (batch) => {
       :per-page="pagination.per_page || filters.per_page" :total="pagination.total || list.length"
       :last-page="pagination.last_page || 1"
       @page-change="(p) => { filters.page = p; load() }" />
+
+    <div v-if="confirmAction" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+      <div class="w-full max-w-md rounded-xl bg-white p-5 shadow-2xl">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">{{ confirmAction.title }}</h2>
+            <p class="mt-1 text-sm text-slate-600">{{ confirmAction.message }}</p>
+          </div>
+          <button class="btn-3" @click="closeConfirm"><i class="far fa-times"></i></button>
+        </div>
+
+        <div v-if="confirmAction.action === 'cancel'" class="mt-4">
+          <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Cancellation Reason <span class="text-red-500">*</span></label>
+          <textarea
+            v-model="cancellationReason"
+            rows="3"
+            class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+            placeholder="Reason for cancelling this payroll batch"
+          ></textarea>
+        </div>
+
+        <div class="mt-5 flex justify-end gap-2">
+          <button class="btn-3" :disabled="!!actionLoadingId" @click="closeConfirm">Cancel</button>
+          <button class="btn-2" :disabled="!!actionLoadingId" @click="runConfirmedAction">
+            <i class="far" :class="actionLoadingId ? 'fa-spinner fa-spin' : 'fa-check'"></i>
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>

@@ -97,14 +97,14 @@ const isFinalApprovalAction = (o) => Boolean(approvalPermissionsFor(o).allow_app
 
 const shouldBlockApprovalWithoutTime = (o) => isFinalApprovalAction(o) && !hasApprovalTime(o)
 
-/* ---------- Totals (MINUTES) ---------- */
-const totalWorkingMinutes = computed(() =>
+/* ---------- Totals (decimal hours) ---------- */
+const totalWorkingHours = computed(() =>
   rows.value.reduce((sum, o) => sum + (Number(o?.working_hours) || 0), 0),
 )
-const totalRequestedMinutes = computed(() =>
+const totalRequestedHours = computed(() =>
   rows.value.reduce((sum, o) => sum + (Number(o?.request_overtime_hours) || 0), 0),
 )
-const totalApprovedMinutes = computed(() =>
+const totalApprovedHours = computed(() =>
   rows.value.reduce((sum, o) => sum + (Number(o?.approval_overtime_hours) || 0), 0),
 )
 </script>
@@ -288,15 +288,15 @@ const totalApprovedMinutes = computed(() =>
               <td class="px-2 py-1.5 text-right text-gray-700" :colspan="user ? 7 : 8">Totals</td>
 
               <td class="px-2 py-1.5 text-center">
-                <DisplayFormattedWorkingHours :workingHours="totalWorkingMinutes" />
+                <DisplayFormattedWorkingHours :workingHours="totalWorkingHours" />
               </td>
 
               <td class="px-2 py-1.5 text-center">
-                <DisplayFormattedWorkingHours :workingHours="totalRequestedMinutes" />
+                <DisplayFormattedWorkingHours :workingHours="totalRequestedHours" />
               </td>
 
               <td class="px-2 py-1.5 text-center">
-                <DisplayFormattedWorkingHours :workingHours="totalApprovedMinutes" />
+                <DisplayFormattedWorkingHours :workingHours="totalApprovedHours" />
               </td>
 
               <td class="px-2 py-1.5 text-center text-gray-500">—</td>

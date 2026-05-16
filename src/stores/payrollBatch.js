@@ -9,6 +9,8 @@ export const usePayrollBatchStore = defineStore('payrollBatch', () => {
   const error = ref(null)
   const pagination = ref({})
   const generateResult = ref(null)
+  const previewResult = ref(null)
+  const options = ref(null)
   const apiUnavailable = ref(false)
   const API_UNAVAILABLE_MESSAGE = 'Payroll batch API is not available yet. You can continue without this module for now.'
 
@@ -21,19 +23,18 @@ export const usePayrollBatchStore = defineStore('payrollBatch', () => {
   }
 
   const requestWithFallback = async (method, endpoints, configOrPayload = undefined, config = undefined) => {
-    if (apiUnavailable.value) {
-      const e = new Error(API_UNAVAILABLE_MESSAGE)
-      e.status = 404
-      e.isApiUnavailable = true
-      throw e
-    }
-
     let lastErr = null
     for (let i = 0; i < endpoints.length; i += 1) {
       const endpoint = endpoints[i]
       try {
-        if (method === 'get') return await apiClient.get(endpoint, configOrPayload)
-        if (method === 'post') return await apiClient.post(endpoint, configOrPayload, config)
+        let response = null
+        if (method === 'get') response = await apiClient.get(endpoint, configOrPayload)
+        if (method === 'post') response = await apiClient.post(endpoint, configOrPayload, config)
+        if (method === 'patch') response = await apiClient.patch(endpoint, configOrPayload, config)
+        if (response) {
+          apiUnavailable.value = false
+          return response
+        }
       } catch (err) {
         lastErr = err
         // Only try next endpoint when route is missing
@@ -128,6 +129,55 @@ export const usePayrollBatchStore = defineStore('payrollBatch', () => {
     }
   }
 
+  const previewPayroll = async (payload) => {
+    loading.value = true
+    error.value = null
+    previewResult.value = null
+    try {
+      const res = await requestWithFallback('post', ['/payroll/preview'], payload)
+      previewResult.value = res.data?.data || res.data
+      return previewResult.value
+    } catch (err) {
+      const e = toError(err, 'Failed to preview payroll')
+      error.value = e.message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const fetchOptions = async () => {
+    try {
+      const res = await requestWithFallback('get', ['/payroll/options'])
+      options.value = res.data?.data || res.data
+      return options.value
+    } catch (err) {
+      if (err?.isApiUnavailable || err?.status === 404) return null
+      throw toError(err, 'Failed to fetch payroll options')
+    }
+  }
+
+  const transitionBatch = async (id, action, payload = {}) => {
+    error.value = null
+    try {
+      const actionEndpoints = {
+        review: [`/payroll-batches/${id}/review`],
+        approve: [`/payroll-batches/${id}/approve`],
+        mark_paid: [`/payroll-batches/${id}/mark-paid`, `/payroll-batches/${id}/paid`],
+        paid: [`/payroll-batches/${id}/mark-paid`, `/payroll-batches/${id}/paid`],
+        lock: [`/payroll-batches/${id}/lock`],
+        cancel: [`/payroll-batches/${id}/cancel`],
+      }
+      const res = await requestWithFallback('post', actionEndpoints[action] || [`/payroll-batches/${id}/${action}`], payload)
+      item.value = res.data?.data || res.data
+      return item.value
+    } catch (err) {
+      const e = toError(err, 'Failed to update payroll batch status')
+      error.value = e.message
+      throw e
+    }
+  }
+
   const generateDoctorPayroll = async (payload) => {
     loading.value = true
     error.value = null
@@ -160,10 +210,15 @@ export const usePayrollBatchStore = defineStore('payrollBatch', () => {
     error,
     pagination,
     generateResult,
+    previewResult,
+    options,
     apiUnavailable,
     fetchList,
     fetchItem,
     generatePayroll,
+    previewPayroll,
+    fetchOptions,
+    transitionBatch,
     generateDoctorPayroll,
   }
 })

@@ -79,6 +79,16 @@ export const usePayrollManagementStore = defineStore('payrollManagement', () => 
     }
   }
 
+  const fetchAudit = async (id) => {
+    try {
+      const res = await apiClient.get(`/payrolls/${id}/audit`)
+      return res.data?.data || res.data
+    } catch (err) {
+      const e = toError(err, 'Failed to fetch payroll audit details')
+      throw e
+    }
+  }
+
   const updateAdvanceDeduction = async (id, payload) => {
     loading.value = true
     error.value = null
@@ -161,6 +171,7 @@ export const usePayrollManagementStore = defineStore('payrollManagement', () => 
     fetchList,
     fetchItem,
     updatePaymentStatus,
+    fetchAudit,
     updateAdvanceDeduction,
     addArrear,
     downloadExcel,

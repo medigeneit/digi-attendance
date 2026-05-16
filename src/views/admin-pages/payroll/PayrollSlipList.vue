@@ -17,7 +17,15 @@ const filters = ref({
   line_type: 'all',
   salary_month: currentMonth(),
   payment_status: '',
+  payroll_cycle: 'regular',
 })
+
+const cycleOptions = [
+  { value: 'regular', label: 'Regular Monthly' },
+  { value: 'half_salary_advance', label: 'Half Salary Advance' },
+  { value: 'final_settlement', label: 'Final Settlement' },
+  { value: 'bonus_only', label: 'Bonus Only' },
+]
 
 const rows = ref([])
 const loading = ref(false)
@@ -82,6 +90,7 @@ const activeFilterChips = computed(() => {
     chips.push({ label: 'Line Type', value: filters.value.line_type })
   }
   if (filters.value.payment_status) chips.push({ label: 'Status', value: filters.value.payment_status })
+  if (filters.value.payroll_cycle) chips.push({ label: 'Cycle', value: cycleLabel(filters.value.payroll_cycle) })
   if (filters.value.salary_month) chips.push({ label: 'Month', value: formatMonth(filters.value.salary_month) })
 
   return chips
@@ -115,6 +124,11 @@ function formatCompactCurrency(value) {
   }).format(num)
 }
 
+function cycleLabel(value) {
+  const option = cycleOptions.find((item) => item.value === value)
+  return option?.label || String(value || 'Regular Monthly').replace(/_/g, ' ')
+}
+
 function viewSlip(id) {
   router.push({ name: 'PayrollSlipShow', params: { id } })
 }
@@ -128,6 +142,7 @@ const buildParams = () => ({
     : {}),
   ...(filters.value.employee_id ? { user_id: filters.value.employee_id } : {}),
   ...(filters.value.payment_status ? { payment_status: filters.value.payment_status } : {}),
+  ...(filters.value.payroll_cycle ? { payroll_cycle: filters.value.payroll_cycle } : {}),
 })
 
 async function loadSlipList() {
@@ -224,6 +239,7 @@ function resetFilters() {
     line_type: 'all',
     salary_month: currentMonth(),
     payment_status: '',
+    payroll_cycle: 'regular',
   }
   loadSlipList()
 }
@@ -308,6 +324,18 @@ onMounted(loadSlipList)
               <option value="Paid">Paid</option>
             </select>
           </div>
+          <div class="flex flex-col gap-1">
+            <label class="block text-[11px] font-medium text-gray-600">Payroll Cycle</label>
+            <select
+              v-model="filters.payroll_cycle"
+              class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm"
+            >
+              <option value="">All Cycles</option>
+              <option v-for="cycle in cycleOptions" :key="cycle.value" :value="cycle.value">
+                {{ cycle.label }}
+              </option>
+            </select>
+          </div>
           <div class="flex items-end gap-2">
             <button class="btn-3 h-[38px]" @click="resetFilters">Reset</button>
             <button class="btn-2 h-[38px]" @click="loadSlipList" :disabled="loading || exporting || pdfExporting">
@@ -354,6 +382,7 @@ onMounted(loadSlipList)
             <tr>
               <th rowspan="2" class="border border-slate-200 px-2 py-2 text-left align-middle">Employee Name</th>
               <th rowspan="2" class="border border-slate-200 px-2 py-2 text-left align-middle">ID</th>
+              <th rowspan="2" class="border border-slate-200 px-2 py-2 text-left align-middle">Cycle</th>
               <th rowspan="2" class="border border-slate-200 px-2 py-2 text-left align-middle">Joining Date</th>
               <th rowspan="2" class="border border-slate-200 px-2 py-2 text-right align-middle">Earnings Total</th>
               <th rowspan="2" class="border border-slate-200 px-2 py-2 text-right align-middle">Deductions Total</th>
@@ -375,6 +404,11 @@ onMounted(loadSlipList)
               <td class="border border-slate-200 px-2 py-2 text-[11px] text-slate-600 whitespace-nowrap">
                 <span class="rounded-md bg-slate-100 px-1.5 py-0.5">
                   {{ p.employee_code || '-' }}
+                </span>
+              </td>
+              <td class="border border-slate-200 px-2 py-2 text-[11px] text-slate-700 whitespace-nowrap">
+                <span class="rounded-md border border-blue-100 bg-blue-50 px-1.5 py-0.5 font-medium text-blue-700">
+                  {{ p.payroll_cycle_label || cycleLabel(p.payroll_cycle || p.settlement_mode) }}
                 </span>
               </td>
               <td class="border border-slate-200 px-2 py-2 text-xs text-slate-700 whitespace-nowrap">

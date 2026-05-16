@@ -22,6 +22,15 @@ const formatMoney = (value) =>
     maximumFractionDigits: 0,
   }).format(toNum(value))
 
+const formatPercent = (value) => {
+  const amount = toNum(value)
+  if (!amount) return '0%'
+  return `${new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: amount % 1 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(amount)}%`
+}
+
 const formatDate = (value) => {
   if (!value) return '-'
   const date = new Date(`${String(value).slice(0, 10)}T00:00:00`)
@@ -110,10 +119,70 @@ const employeeId = computed(() => item.value?.employee_code || item.value?.user?
 const designation = computed(() => item.value?.designation_name || item.value?.user?.designation?.name || '-')
 const department = computed(() => item.value?.department_name || item.value?.user?.department?.name || '-')
 const joiningDate = computed(() => item.value?.joining_date || item.value?.user?.joining_date || null)
+const payrollCycleLabel = computed(() => item.value?.payroll_cycle_label || titleize(item.value?.payroll_cycle || item.value?.settlement_mode || 'regular'))
+const slipTitle = computed(() => item.value?.slip_title || 'Payroll Cash Slip')
+const isAdvanceCycle = computed(() =>
+  ['half_salary_advance', 'half_month', 'advance'].includes(String(item.value?.payroll_cycle || item.value?.settlement_mode || '').toLowerCase()),
+)
+const isBonusOnlyCycle = computed(() => String(item.value?.payroll_cycle || item.value?.settlement_mode || '').toLowerCase() === 'bonus_only')
+const grossReferenceAmount = computed(() =>
+  toNum(
+    item.value?.gross_reference_amount
+      ?? item.value?.monthly_gross_salary
+      ?? item.value?.gross_salary
+      ?? item.value?.calculation_breakdown?.gross_salary
+      ?? item.value?.earnings?.gross,
+  ),
+)
+const salaryAdvancePayable = computed(() => toNum(item.value?.base_payable_amount ?? item.value?.earnings?.basic))
+const advancePercentage = computed(() => {
+  const configured = item.value?.advance_percentage ?? item.value?.salary_percentage
+  if (configured !== null && configured !== undefined && configured !== '') return toNum(configured)
+  return grossReferenceAmount.value > 0 ? (salaryAdvancePayable.value / grossReferenceAmount.value) * 100 : 0
+})
+const salaryAdvanceLabel = computed(() =>
+  advancePercentage.value > 0
+    ? `Advance Payable (${formatPercent(advancePercentage.value)} of Gross)`
+    : 'Advance Payable',
+)
+const advanceAdjustedAmount = computed(() => toNum(item.value?.advance_adjusted_amount ?? item.value?.calculation_breakdown?.advance_adjusted_amount))
+const paycutDeductionLabel = computed(() => {
+  const paycutAmount = toNum(item.value?.deductions?.paycut ?? item.value?.paycut_deduction)
+  if (advanceAdjustedAmount.value > 0 && Math.abs(paycutAmount - advanceAdjustedAmount.value) < 1) {
+    return 'Half Salary Advance Adjustment'
+  }
+
+  return 'Attendance Deduction'
+})
+const payPeriodLabel = computed(() => {
+  if (item.value?.period_start && item.value?.period_end) {
+    return `${formatDate(item.value.period_start)} - ${formatDate(item.value.period_end)}`
+  }
+  return item.value?.pay_period || formatMonth(item.value?.salary_month)
+})
 
 const earningsRows = computed(() => {
   const raw = item.value?.earnings || {}
   const pfAllowance = toNum(item.value?.deductions?.pf_allowance)
+
+  if (isAdvanceCycle.value) {
+    return [
+      ...(grossReferenceAmount.value > 0
+        ? [{ key: 'gross_reference', label: 'Gross Salary (Reference)', amount: grossReferenceAmount.value, reference: true }]
+        : []),
+      { key: 'salary_advance', label: salaryAdvanceLabel.value, amount: salaryAdvancePayable.value, highlight: true },
+      ...(toNum(raw.bonus ?? item.value?.bonus_amount) > 0
+        ? [{ key: 'bonus', label: 'Bonus', amount: toNum(raw.bonus ?? item.value?.bonus_amount) }]
+        : []),
+    ]
+  }
+
+  if (isBonusOnlyCycle.value) {
+    return [
+      { key: 'bonus', label: 'Bonus', amount: toNum(raw.bonus ?? item.value?.bonus_amount), highlight: true },
+    ]
+  }
+
   return [
     { key: 'basic', label: 'Basic Salary', amount: toNum(raw.basic) },
     { key: 'house_rent', label: 'House Rent', amount: toNum(raw.house_rent) },
@@ -121,6 +190,9 @@ const earningsRows = computed(() => {
     { key: 'conveyance', label: 'Conveyance', amount: toNum(raw.conveyance) },
     { key: 'gross', label: 'Gross', amount: toNum(raw.gross), highlight: true },
     { key: 'others', label: 'Others', amount: toNum(raw.others) },
+    ...(toNum(raw.bonus ?? item.value?.bonus_amount) > 0
+      ? [{ key: 'bonus', label: 'Bonus', amount: toNum(raw.bonus ?? item.value?.bonus_amount) }]
+      : []),
     { key: 'pf_allowance', label: 'PF Allowance', amount: pfAllowance },
     { key: 'arrear', label: 'Arrear', amount: toNum(item.value?.arrear) },
   ]
@@ -137,8 +209,13 @@ const deductionRows = computed(() => {
     { key: 'loan', label: 'Loan', amount: toNum(raw.loan) },
     ...(securityMoney > 0 ? [{ key: 'security_money', label: 'Security Money', amount: securityMoney }] : []),
     { key: 'other', label: 'Others', amount: toNum(raw.other) },
+    {
+      key: 'half_salary_advance_adjustment',
+      label: 'Half Salary Advance Adjustment',
+      amount: toNum(raw.half_salary_advance_adjustment ?? item.value?.advance_adjusted_amount),
+    },
     { key: 'advance', label: 'Advance', amount: toNum(raw.advance) },
-    { key: 'paycut', label: 'Paycut', amount: toNum(raw.paycut) },
+    { key: 'paycut', label: paycutDeductionLabel.value, amount: toNum(raw.paycut) },
   ]
 })
 
@@ -316,37 +393,35 @@ onMounted(fetchSlip)
           <div class="paper mx-auto">
             <div class="text-center">
               <div class="mt-1 text-[15px] font-medium text-slate-700">{{ companyName }}</div>
-              <div class="mt-1 text-[13px] text-slate-600">System generated payslip</div>
+              <div class="mt-1 text-[13px] text-slate-600">{{ slipTitle }}</div>
+              <div class="mt-1 text-[13px] text-slate-600">{{ payPeriodLabel }}</div>
             </div>
 
-            <div class="info-grid mt-8 text-[14px] text-slate-800">
+            <div class="info-grid mt-8 text-[13px] text-slate-800">
               
               <div class="space-y-1">
                 <div class="flex gap-2">
-                  <span class="w-36 text-slate-600">Employee name</span>
+                  <span class="w-22 text-slate-600">Employee name</span>
                   <span>: {{ employeeName }}</span>
                 </div>
                 <div class="flex gap-2">
-                  <span class="w-36 text-slate-600">Designation</span>
-                  <span>: {{ designation }}</span>
+                  <span class="w-22 text-slate-600">Date of Joining</span>
+                  <span>: {{ formatDate(joiningDate) }}</span>
                 </div>
+                
                 <div class="flex gap-2">
-                  <span class="w-36 text-slate-600">Department</span>
-                  <span>: {{ department }}</span>
+                  <span class="w-22 text-slate-600">Employee ID</span>
+                  <span>: {{ employeeId }}</span>
                 </div>
               </div>
               <div class="space-y-1">
                 <div class="flex gap-2">
-                  <span class="w-36 text-slate-600">Date of Joining</span>
-                  <span>: {{ formatDate(joiningDate) }}</span>
+                  <span class="w-22 text-slate-600">Designation</span>
+                  <span>: {{ designation }}</span>
                 </div>
                 <div class="flex gap-2">
-                  <span class="w-36 text-slate-600">Pay Period</span>
-                  <span>: {{ formatMonth(item.salary_month) }}</span>
-                </div>
-                <div class="flex gap-2">
-                  <span class="w-36 text-slate-600">Employee ID</span>
-                  <span>: {{ employeeId }}</span>
+                  <span class="w-22 text-slate-600">Department</span>
+                  <span>: {{ department }}</span>
                 </div>
               </div>
             </div>
@@ -365,13 +440,19 @@ onMounted(fetchSlip)
                   <tr v-for="index in slipRowCount" :key="index">
                     <td
                       class="border border-slate-700 px-3 py-2"
-                      :class="earningsRowsFinal[index - 1]?.highlight ? 'bg-slate-100 font-semibold' : ''"
+                      :class="[
+                        earningsRowsFinal[index - 1]?.highlight ? 'bg-slate-100 font-semibold' : '',
+                        earningsRowsFinal[index - 1]?.reference ? 'text-slate-600' : '',
+                      ]"
                     >
                       {{ earningsRowsFinal[index - 1]?.label || '' }}
                     </td>
                     <td
                       class="border border-slate-700 px-3 py-2 text-right font-mono font-semibold"
-                      :class="earningsRowsFinal[index - 1]?.highlight ? 'bg-slate-100' : ''"
+                      :class="[
+                        earningsRowsFinal[index - 1]?.highlight ? 'bg-slate-100' : '',
+                        earningsRowsFinal[index - 1]?.reference ? 'text-slate-600' : '',
+                      ]"
                     >
                       {{ formatRowAmount(earningsRowsFinal[index - 1]) }}
                     </td>
@@ -391,7 +472,7 @@ onMounted(fetchSlip)
                     </td>
                   </tr>
                   <tr class="font-semibold">
-                    <td class="border border-slate-700 px-3 py-2 text-right" colspan="3">Net Pay</td>
+                    <td class="border border-slate-700 px-3 py-2 text-right" colspan="3">Net Payment</td>
                     <td class="border border-slate-700 px-3 py-2 text-right font-mono">
                       {{ formatMoney(netPayment) }}
                     </td>

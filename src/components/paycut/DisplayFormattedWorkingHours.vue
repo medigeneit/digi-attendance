@@ -1,17 +1,11 @@
 <script setup>
 import { computed } from 'vue'
+import { formatDecimalHours } from '@/utils/overtime'
 
 const props = defineProps(['workingHours'])
 
 const formattedWorkingHours = computed(() => {
-  if (!props.workingHours) {
-    return '-'
-  }
-
-  const h = Math.floor(props.workingHours)
-  const m = Math.round((props.workingHours - h) * 60)
-
-  return m ? `${h}h ${m}m` : `${h}h`
+  return formatDecimalHours(props.workingHours)
 })
 </script>
 
