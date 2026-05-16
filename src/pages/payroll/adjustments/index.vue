@@ -323,6 +323,12 @@ onMounted(() => {
       <div v-else-if="!visibleAdjustments.length" class="p-12 text-center text-slate-500">
         <i class="far fa-folder-open text-3xl text-slate-300"></i>
         <p class="mt-2 text-sm font-medium">No adjustments found.</p>
+
+        <div class="flex justify-center p-4">
+          <button v-if="canCreate" class="btn-2" @click="router.push({ name: 'PayrollAdjustmentCreate' })">
+              <i class="far fa-plus"></i> New Adjustment
+            </button>
+        </div>
       </div>
 
       <div v-else class="overflow-x-auto">

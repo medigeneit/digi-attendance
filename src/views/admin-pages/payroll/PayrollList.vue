@@ -509,7 +509,7 @@ const isLockedPayroll = (payroll) =>
             <td class="border border-slate-200 px-1 py-1.5 text-center whitespace-nowrap min-w-[76px]">
               <div class="flex items-center justify-center gap-1">
                 <PayrollStatusBadge :status="p.payment_status" compact />
-                <button
+                <!-- <button
                   v-if="!isLockedPayroll(p)"
                   @click="openPaymentModal(p)"
                   class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-emerald-500 hover:bg-emerald-50 hover:text-emerald-700"
@@ -523,7 +523,7 @@ const isLockedPayroll = (payroll) =>
                   title="Paid/locked payroll cannot be modified. Create an adjustment instead."
                 >
                   <i class="fas fa-lock text-xs"></i>
-                </span>
+                </span> -->
               </div>
             </td>
             <td class="border border-slate-200 px-2 py-1.5 text-center whitespace-nowrap min-w-[52px]">
