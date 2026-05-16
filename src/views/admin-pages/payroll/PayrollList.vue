@@ -435,7 +435,7 @@ const isLockedPayroll = (payroll) =>
             <th class="border border-slate-200 bg-emerald-50 px-1 py-2 text-center" colspan="11">Earnings</th>
             <th class="border border-slate-200 bg-rose-50 px-1 py-2 text-center" colspan="8">Deductions</th>
             <th class="border border-slate-200 px-1 py-2 text-right" rowspan="2">Payable</th>
-            <th class="border border-slate-200 px-2 py-2 text-center min-w-[92px]" rowspan="2">Status</th>
+            <th class="border border-slate-200 px-2 py-2 text-center min-w-[76px]" rowspan="2">Status</th>
             <th class="border border-slate-200 px-2 py-2 text-center min-w-[52px]" rowspan="2">Actions</th>
           </tr>
           <tr>
@@ -506,9 +506,9 @@ const isLockedPayroll = (payroll) =>
             <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-rose-600 whitespace-nowrap">{{ formatCompactCurrency(p.paycut_deduction) }}</td>
             <td class="border border-slate-200 px-1 py-1.5 text-right font-mono font-semibold text-rose-700 whitespace-nowrap">{{ formatCompactCurrency(p.total_deduction) }}</td>
             <td class="border border-slate-200 px-1 py-1.5 text-right font-mono font-bold text-blue-800 whitespace-nowrap">{{ formatCompactCurrency(p.net_salary) }}</td>
-            <td class="border border-slate-200 px-2 py-1.5 text-center whitespace-nowrap min-w-[92px]">
-              <div class="flex items-center justify-center gap-1.5">
-                <PayrollStatusBadge :status="p.payment_status" />
+            <td class="border border-slate-200 px-1 py-1.5 text-center whitespace-nowrap min-w-[76px]">
+              <div class="flex items-center justify-center gap-1">
+                <PayrollStatusBadge :status="p.payment_status" compact />
                 <button
                   v-if="!isLockedPayroll(p)"
                   @click="openPaymentModal(p)"

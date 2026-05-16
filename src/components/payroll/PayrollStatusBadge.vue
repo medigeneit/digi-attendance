@@ -3,6 +3,7 @@ import { computed } from 'vue'
 
 const props = defineProps({
   status: { type: String, default: '' },
+  compact: { type: Boolean, default: false },
 })
 
 const info = computed(() => {
@@ -78,10 +79,14 @@ const info = computed(() => {
 
 <template>
   <span
-    class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border"
-    :class="info.cls"
+    class="inline-flex items-center justify-center rounded-full text-xs font-medium border"
+    :class="[
+      info.cls,
+      compact ? 'h-6 w-6 shrink-0' : 'gap-1.5 px-2.5 py-0.5',
+    ]"
+    :title="info.label"
   >
     <i :class="`fas ${info.icon} text-[10px]`"></i>
-    <span v-if="!info.iconOnly">{{ info.label }}</span>
+    <span v-if="!compact && !info.iconOnly">{{ info.label }}</span>
   </span>
 </template>
