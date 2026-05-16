@@ -519,6 +519,7 @@ const exportExcel = async () => {
             <th class="px-4 py-3 text-right">Conveyance</th>
             <th class="px-4 py-3 text-right">Allowances</th>
             <th class="px-4 py-3 text-right">Revisions</th>
+            <th class="py-3 text-right">Revision Date</th>
             <th class="px-4 py-3 text-right">PF</th>
             <th class="px-4 py-3 text-right">Gross</th>
             <th class="px-4 py-3 text-center">Effective From</th>
@@ -579,19 +580,19 @@ const exportExcel = async () => {
                   </span>
                   <i class="far fa-eye text-xs"></i>
                 </button>
-                <div
+                <!-- <div
                   v-if="!getAllowanceSummary(item).allowances.length"
                   class="text-xs text-slate-400"
                 >
                   No allowance
-                </div>
+                </div> -->
               </div>
             </td>
             <td class="px-4 py-3 text-right font-mono text-gray-700 ">
-              <div class="min-w-[66px] flex flex-col items-end gap-1.5">
-                  <span class="text-xs"> {{ item.latest_revision?.effective_month }}</span>
-                  <span class="text-green-500">{{ item.latest_revision?.increment_value}}</span>
-              </div>
+              <span class="text-green-500">{{ item.latest_revision?.increment_value}}</span>
+            </td>
+            <td class="px-4 py-3 text-right font-mono text-gray-700">
+              <div class="text-xs min-w-[66px]"> {{ item.latest_revision?.effective_month }}</div>
             </td>
             <td class="px-4 py-3 text-right font-mono text-gray-700">
               {{
