@@ -178,6 +178,27 @@ export const usePayrollBatchStore = defineStore('payrollBatch', () => {
     }
   }
 
+  const reviewPayroll = async (id) => {
+    error.value = null
+    try {
+      const res = await requestWithFallback('post', [`/payrolls/${id}/review`], {})
+      const updated = res.data?.data || res.data
+      if (item.value?.payrolls?.length) {
+        item.value = {
+          ...item.value,
+          payrolls: item.value.payrolls.map((payroll) =>
+            String(payroll.id) === String(id) ? { ...payroll, ...updated } : payroll,
+          ),
+        }
+      }
+      return updated
+    } catch (err) {
+      const e = toError(err, 'Failed to review payroll')
+      error.value = e.message
+      throw e
+    }
+  }
+
   const generateDoctorPayroll = async (payload) => {
     loading.value = true
     error.value = null
@@ -219,6 +240,7 @@ export const usePayrollBatchStore = defineStore('payrollBatch', () => {
     previewPayroll,
     fetchOptions,
     transitionBatch,
+    reviewPayroll,
     generateDoctorPayroll,
   }
 })
