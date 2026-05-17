@@ -49,6 +49,17 @@ const toNumber = (value) => {
   return Number.isFinite(number) ? number : 0
 }
 
+const payrollCycleLabel = (item) => {
+  if (item?.payroll_cycle_label) return item.payroll_cycle_label
+
+  const cycle = String(item?.payroll_cycle || item?.settlement_mode || '').toLowerCase()
+  if (['half_salary_advance', 'half_month', 'advance'].includes(cycle)) return 'Half Salary Advance'
+  if (cycle === 'bonus_only') return 'Bonus Only'
+  if (cycle === 'final_settlement') return 'Final Settlement'
+
+  return item?.salary_type || 'Monthly'
+}
+
 const specialMealAmount = (item) => toNumber(item?.special_meal_amount ?? item?.additional_amount)
 
 const specialMealRate = (item) => {
@@ -126,7 +137,7 @@ const isLoanCompleted = (loan) => String(loan.status || '').toLowerCase() === 'c
             @click="$emit('print-sheet')"
           >
             <i class="far fa-file-invoice-dollar"></i>
-            Monthly Sheet
+            Salary Slips
           </button>
         </div>
         <template v-if="hasMonthlyPayrolls && payrolls.length">
@@ -141,6 +152,9 @@ const isLoanCompleted = (loan) => String(loan.status || '').toLowerCase() === 'c
                   <h4 class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ formatMonth(item.salary_month) }}</h4>
                   <span class="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
                     {{ item.salary_type || 'Monthly' }}
+                  </span>
+                  <span class="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs text-blue-700 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-200">
+                    {{ payrollCycleLabel(item) }}
                   </span>
                 </div>
                 <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">

@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 const props = defineProps({
   user: { type: Object, default: () => ({}) },
@@ -23,6 +23,16 @@ const formatMoney = (value) => {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(num)
+}
+
+const formatPercent = (value) => {
+  const amount = toNumber(value)
+  if (!amount) return '0%'
+
+  return `${new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: amount % 1 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(amount)}%`
 }
 
 const formatDate = (value) => {
@@ -99,6 +109,29 @@ const numberToWords = (value) => {
   return `${parts.join(' ')} Only`
 }
 
+const payrollCycle = (payroll) =>
+  String(payroll?.payroll_cycle || payroll?.settlement_mode || payroll?.calculation_breakdown?.cycle || 'regular').toLowerCase()
+
+const cycleLabel = (payroll) => {
+  if (payroll?.payroll_cycle_label) return payroll.payroll_cycle_label
+
+  const cycle = payrollCycle(payroll)
+  if (['half_salary_advance', 'half_month', 'advance'].includes(cycle)) return 'Half Salary Advance'
+  if (cycle === 'bonus_only') return 'Bonus Only'
+  if (cycle === 'final_settlement') return 'Final Settlement'
+
+  return 'Regular Monthly'
+}
+
+const cycleSort = (payroll) => {
+  const cycle = payrollCycle(payroll)
+  if (cycle === 'regular') return 1
+  if (['half_salary_advance', 'half_month', 'advance'].includes(cycle)) return 2
+  if (cycle === 'bonus_only') return 3
+  if (cycle === 'final_settlement') return 4
+  return 9
+}
+
 // const paymentStatusClass = (status) => {
 //   const normalized = String(status || '').toLowerCase()
 
@@ -109,18 +142,39 @@ const numberToWords = (value) => {
 //   return 'border-stone-300 bg-stone-100 text-stone-700'
 // }
 
-const currentPayroll = computed(() => {
+const selectedPayrollId = ref('')
+
+const slipPayrolls = computed(() => {
   const items = Array.isArray(props.payrolls) ? props.payrolls : []
 
-  if (!items.length) return null
+  return [...items].sort((a, b) => cycleSort(a) - cycleSort(b) || Number(b.id || 0) - Number(a.id || 0))
+})
 
-  if (props.selectedMonth) {
-    return items.find((item) =>
-      monthKey(item.salary_month) === props.selectedMonth && String(item.salary_type || '').toLowerCase() === 'monthly',
-    ) || items.find((item) => monthKey(item.salary_month) === props.selectedMonth) || null
+watch(
+  slipPayrolls,
+  (items) => {
+    if (!items.length) {
+      selectedPayrollId.value = ''
+      return
+    }
+
+    if (items.some((item) => String(item.id) === String(selectedPayrollId.value))) return
+
+    const regular = items.find((item) => payrollCycle(item) === 'regular' || String(item.salary_type || '').toLowerCase() === 'monthly')
+    selectedPayrollId.value = String((regular || items[0]).id)
+  },
+  { immediate: true },
+)
+
+const currentPayroll = computed(() => {
+  if (!slipPayrolls.value.length) return null
+
+  if (selectedPayrollId.value) {
+    const selected = slipPayrolls.value.find((item) => String(item.id) === String(selectedPayrollId.value))
+    if (selected) return selected
   }
 
-  return items.find((item) => String(item.salary_type || '').toLowerCase() === 'monthly') || items[0]
+  return slipPayrolls.value[0]
 })
 
 const currentMonth = computed(() => monthKey(currentPayroll.value?.salary_month || props.selectedMonth))
@@ -202,17 +256,72 @@ const grossSalary = computed(() => {
   return toNumber(payroll.gross_salary)
 })
 
+const currentCycle = computed(() => payrollCycle(currentPayroll.value))
+const isAdvanceCycle = computed(() => ['half_salary_advance', 'half_month', 'advance'].includes(currentCycle.value))
+const isBonusOnlyCycle = computed(() => currentCycle.value === 'bonus_only')
+const grossReferenceAmount = computed(() =>
+  toNumber(
+    currentPayroll.value?.gross_reference_amount
+      ?? currentPayroll.value?.monthly_gross_salary
+      ?? currentPayroll.value?.calculation_breakdown?.gross_salary
+      ?? currentPayroll.value?.gross_salary,
+  ),
+)
+const salaryAdvancePayable = computed(() =>
+  toNumber(currentPayroll.value?.base_payable_amount ?? currentPayroll.value?.advance_paid_amount ?? currentPayroll.value?.basic_salary),
+)
+const bonusAmount = computed(() =>
+  toNumber(currentPayroll.value?.bonus_amount ?? currentPayroll.value?.calculation_breakdown?.bonus_amount ?? currentPayroll.value?.calculation_breakdown?.additions?.bonus),
+)
+const advancePercentage = computed(() => {
+  const configured = currentPayroll.value?.advance_percentage ?? currentPayroll.value?.salary_percentage ?? currentPayroll.value?.calculation_breakdown?.salary_percentage
+  if (configured !== null && configured !== undefined && configured !== '') return toNumber(configured)
+
+  return grossReferenceAmount.value > 0 ? (salaryAdvancePayable.value / grossReferenceAmount.value) * 100 : 0
+})
+const salaryAdvanceLabel = computed(() =>
+  advancePercentage.value > 0
+    ? `Advance Payable (${formatPercent(advancePercentage.value)} of Gross)`
+    : 'Advance Payable',
+)
+const advanceAdjustedAmount = computed(() =>
+  toNumber(currentPayroll.value?.advance_adjusted_amount ?? currentPayroll.value?.calculation_breakdown?.advance_adjusted_amount),
+)
+const paycutDeductionLabel = computed(() => {
+  const paycutAmount = toNumber(currentPayroll.value?.paycut_deduction)
+  if (advanceAdjustedAmount.value > 0 && Math.abs(paycutAmount - advanceAdjustedAmount.value) < 1) {
+    return 'Half Salary Advance Adjustment'
+  }
+
+  return 'Attendance Deduction'
+})
+
 const earningRows = computed(() => {
   if (!currentPayroll.value) return []
 
   const payroll = currentPayroll.value
+
+  if (isAdvanceCycle.value) {
+    return [
+      ...(grossReferenceAmount.value > 0
+        ? [{ label: 'Gross Salary (Reference)', value: grossReferenceAmount.value, reference: true }]
+        : []),
+      { label: salaryAdvanceLabel.value, value: salaryAdvancePayable.value, highlight: true },
+      ...(bonusAmount.value > 0 ? [{ label: 'Bonus', value: bonusAmount.value }] : []),
+    ]
+  }
+
+  if (isBonusOnlyCycle.value) {
+    return [{ label: 'Bonus', value: bonusAmount.value, highlight: true }]
+  }
+
   const manualAdditionBase = Math.max(0, toNumber(payroll.manual_addition) - contraEarningTotal.value)
   const rows = [
     { label: 'Basic Salary', value: payroll.basic_salary },
     { label: 'House Rent', value: payroll.house_rent },
     { label: 'Medical', value: payroll.medical_allowance },
     { label: 'Conveyance', value: payroll.conveyance_allowance },
-    { label: 'Gross', value: grossSalary.value },
+    { label: 'Gross', value: grossSalary.value, highlight: true },
   ]
 
   const otherAllowanceTotal = toNumber(payroll.other_allowance_display_total ?? payroll.other_allowance_total)
@@ -221,6 +330,7 @@ const earningRows = computed(() => {
   if (pfAllowanceTotal.value > 0) {
     rows.push({ label: 'PF Allowance', value: pfAllowanceTotal.value })
   }
+  if (bonusAmount.value > 0) rows.push({ label: 'Bonus', value: bonusAmount.value })
   rows.push({ label: 'Arrear', value: toNumber(payroll.arrear) })
 
 
@@ -235,6 +345,8 @@ const deductionRows = computed(() => {
   if (!currentPayroll.value) return []
 
   const payroll = currentPayroll.value
+  if (isAdvanceCycle.value || isBonusOnlyCycle.value) return []
+
   const otherDeductionBase = Math.max(0, toNumber(payroll.other_deduction) - contraDeductionTotal.value)
   const securityMoneyDeduction = toNumber(payroll.security_money_deduction)
   const rows = [
@@ -247,8 +359,9 @@ const deductionRows = computed(() => {
     { label: 'Loan', value: payroll.loan_deduction },
     ...(securityMoneyDeduction > 0 ? [{ label: 'Security Money', value: securityMoneyDeduction }] : []),
     { label: 'Others', value: otherDeductionBase },
+    ...(advanceAdjustedAmount.value > 0 ? [{ label: 'Half Salary Advance Adjustment', value: advanceAdjustedAmount.value }] : []),
     { label: 'Advance', value: payroll.advance_deduction },
-    { label: 'Paycut', value: payroll.paycut_deduction },
+    { label: paycutDeductionLabel.value, value: payroll.paycut_deduction },
   ]
 
   rows.push(...contraDeductionRows.value)
@@ -260,6 +373,10 @@ const totalEarnings = computed(() => {
   const payroll = currentPayroll.value
   if (!payroll) return 0
 
+  if (isAdvanceCycle.value || isBonusOnlyCycle.value) {
+    return earningRows.value.reduce((sum, item) => sum + (item.reference ? 0 : toNumber(item.value)), 0)
+  }
+
   if (payroll.total_earnings !== undefined && payroll.total_earnings !== null) {
     return toNumber(payroll.total_earnings)
   }
@@ -268,6 +385,8 @@ const totalEarnings = computed(() => {
 })
 
 const totalDeductions = computed(() => {
+  if (isAdvanceCycle.value || isBonusOnlyCycle.value) return 0
+
   if (currentPayroll.value?.total_deduction !== undefined && currentPayroll.value?.total_deduction !== null) {
     return toNumber(currentPayroll.value.total_deduction)
   }
@@ -282,10 +401,19 @@ const salaryTableRowCount = computed(() =>
 )
 
 const slipTitle = computed(() => {
-  if (currentPayroll.value?.salary_month) return formatMonth(currentPayroll.value.salary_month)
-  if (props.selectedMonth) return formatMonth(props.selectedMonth)
+  if (currentPayroll.value?.slip_title) return currentPayroll.value.slip_title
+  if (isAdvanceCycle.value) return 'Half Salary Advance Slip'
+  if (isBonusOnlyCycle.value) return 'Bonus Payment Slip'
 
-  return 'Latest Month'
+  return 'Payroll Cash Slip'
+})
+
+const payPeriodLabel = computed(() => {
+  if (currentPayroll.value?.period_start && currentPayroll.value?.period_end) {
+    return `${formatDate(currentPayroll.value.period_start)} - ${formatDate(currentPayroll.value.period_end)}`
+  }
+
+  return currentPayroll.value?.pay_period || formatMonth(currentPayroll.value?.salary_month || props.selectedMonth)
 })
 
 const employeeName = computed(() => currentPayroll.value?.employee_name || props.user?.name || '-')
@@ -294,7 +422,7 @@ const designation = computed(() =>
   currentPayroll.value?.designation_name || props.user?.designation?.title || props.user?.post || '-',
 )
 const department = computed(() =>
-  currentPayroll.value?.departm32t_name || props.user?.department?.name || '-',
+  currentPayroll.value?.department_name || props.user?.department?.name || '-',
 )
 const companyName = computed(() =>
   currentPayroll.value?.company?.name || currentPayroll.value?.company_name || props.user?.company?.name || 'DigitGate IT',
@@ -319,10 +447,28 @@ const bankDetails = computed(() => {
   >
     <div v-if="currentPayroll" class="mx-auto max-w-[760px] bg-white ring-1 ring-slate-300 print:max-w-none print:shadow-none print:ring-0">
       <div class="p-4 print:p-0">
+        <div
+          v-if="slipPayrolls.length > 1"
+          class="mb-3 flex flex-wrap gap-2 print:hidden"
+        >
+          <button
+            v-for="payroll in slipPayrolls"
+            :key="payroll.id"
+            type="button"
+            class="rounded-md border px-3 py-1.5 text-xs font-medium transition"
+            :class="String(payroll.id) === String(selectedPayrollId)
+              ? 'border-blue-500 bg-blue-50 text-blue-700'
+              : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'"
+            @click="selectedPayrollId = String(payroll.id)"
+          >
+            {{ payroll.slip_title || cycleLabel(payroll) }}
+          </button>
+        </div>
         <div class="salary-paper mx-auto">
           <div class="text-center">
             <div class="text-[14px] font-medium text-slate-700">{{ companyName }}</div>
-            <div class="mt-0.5 text-[12px] text-slate-600">System generated payslip</div>
+            <div class="mt-0.5 text-[12px] text-slate-600">{{ slipTitle }}</div>
+            <div class="mt-0.5 text-[12px] text-slate-600">{{ payPeriodLabel }}</div>
           </div>
 
           <div class="salary-info-grid mt-6 text-[13px] text-slate-800">
@@ -347,7 +493,11 @@ const bankDetails = computed(() => {
               </div>
               <div class="flex gap-2">
                 <span class="w-28 text-slate-600">Pay Period</span>
-                <span>: {{ slipTitle }}</span>
+                <span>: {{ payPeriodLabel }}</span>
+              </div>
+              <div class="flex gap-2">
+                <span class="w-28 text-slate-600">Payroll Type</span>
+                <span>: {{ cycleLabel(currentPayroll) }}</span>
               </div>
               <div class="flex gap-2">
                 <span class="w-28 text-slate-600">Employee ID</span>
@@ -370,13 +520,19 @@ const bankDetails = computed(() => {
                 <tr v-for="index in salaryTableRowCount" :key="index">
                   <td
                     class="border border-slate-700 px-2.5 py-1.5"
-                    :class="earningRows[index - 1]?.label === 'Gross' ? 'bg-slate-100 font-semibold' : ''"
+                    :class="[
+                      earningRows[index - 1]?.highlight ? 'bg-slate-100 font-semibold' : '',
+                      earningRows[index - 1]?.reference ? 'text-slate-600' : '',
+                    ]"
                   >
                     {{ earningRows[index - 1]?.label || '' }}
                   </td>
                   <td
                     class="border border-slate-700 px-2.5 py-1.5 text-right font-mono font-semibold"
-                    :class="earningRows[index - 1]?.label === 'Gross' ? 'bg-slate-100' : ''"
+                    :class="[
+                      earningRows[index - 1]?.highlight ? 'bg-slate-100' : '',
+                      earningRows[index - 1]?.reference ? 'text-slate-600' : '',
+                    ]"
                   >
                     {{ earningRows[index - 1] ? formatMoney(earningRows[index - 1].value) : '' }}
                   </td>

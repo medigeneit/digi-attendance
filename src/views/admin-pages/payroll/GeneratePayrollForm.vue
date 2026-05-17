@@ -388,7 +388,7 @@ const goToBatch = () => {
               </div>
 
               <div>
-                <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Payroll Mode <span class="text-red-500">*</span></label>
+                <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Payroll Type <span class="text-red-500">*</span></label>
                 <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
                   <button
                     v-for="mode in modeOptions"
@@ -464,8 +464,8 @@ const goToBatch = () => {
               </div>
 
               <div v-if="isNonRegularMode">
-                <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Mode Note</label>
-                <textarea v-model="form.note" rows="2" :class="inputCls" placeholder="Reason or internal note for this payroll mode..."></textarea>
+                <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Type Note</label>
+                <textarea v-model="form.note" rows="2" :class="inputCls" placeholder="Reason or internal note for this payroll type..."></textarea>
               </div>
             </section>
 
@@ -618,7 +618,7 @@ const goToBatch = () => {
         </div>
 
         <div class="mt-4 grid gap-2 md:grid-cols-2">
-          <div class="rounded-lg bg-slate-50 p-3 text-sm"><span class="text-slate-500">Payroll mode</span><p class="font-semibold">{{ modeLabel }}</p></div>
+          <div class="rounded-lg bg-slate-50 p-3 text-sm"><span class="text-slate-500">Payroll Type</span><p class="font-semibold">{{ modeLabel }}</p></div>
           <div class="rounded-lg bg-slate-50 p-3 text-sm"><span class="text-slate-500">Month</span><p class="font-semibold">{{ form.salary_month || '-' }}</p></div>
           <div class="rounded-lg bg-slate-50 p-3 text-sm"><span class="text-slate-500">Employee count</span><p class="font-semibold">{{ previewItems.length }}</p></div>
           <div class="rounded-lg bg-slate-50 p-3 text-sm"><span class="text-slate-500">{{ isHalfMode ? 'Total salary advance' : 'Total base payable' }}</span><p class="font-semibold">{{ formatCurrency(previewTotals.base) }}</p></div>
