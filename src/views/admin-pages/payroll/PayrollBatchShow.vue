@@ -129,6 +129,15 @@ const secondaryActions = computed(() => {
 
 const hasActions = computed(() => !!primaryAction.value || secondaryActions.value.length > 0)
 
+const canReviewPayroll = (payroll) => {
+  if (!hasPermissionForAction('review')) return false
+  const payrollStatus = String(payroll?.payment_status || 'pending').toLowerCase()
+  const batchStatus = status.value
+
+  return ['pending', 'generated', 'draft'].includes(payrollStatus)
+    && !['approved', 'paid', 'locked', 'cancelled'].includes(batchStatus)
+}
+
 const statusAction = async (action, successMessage, payload = {}) => {
   actionLoading.value = action
   try {
@@ -203,6 +212,20 @@ const runConfirmedAction = async () => {
     confirmAction.value.action === 'cancel' ? { reason: cancellationReason.value.trim() } : {},
   )
   closeConfirm()
+}
+
+const reviewPayrollRow = async (payroll) => {
+  if (!payroll?.id || actionLoading.value) return
+  const key = `payroll-review-${payroll.id}`
+  actionLoading.value = key
+  try {
+    await batchStore.reviewPayroll(payroll.id)
+    toast.success(`${payroll.user?.name || payroll.employee_name || 'Payroll'} reviewed.`)
+  } catch (e) {
+    toast.error(e.message || 'Payroll review failed.')
+  } finally {
+    actionLoading.value = null
+  }
 }
 </script>
 
@@ -318,7 +341,7 @@ const runConfirmedAction = async () => {
               <th class="px-4 py-3 text-right">Deductions</th>
               <th class="px-4 py-3 text-right">Net Salary</th>
               <th class="px-4 py-3 text-center">Status</th>
-              <th class="px-4 py-3 text-center">View</th>
+              <th class="px-4 py-3 text-center">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
@@ -334,10 +357,22 @@ const runConfirmedAction = async () => {
               <td class="px-4 py-3 text-right font-mono font-bold text-emerald-700">{{ formatCurrency(p.net_salary) }}</td>
               <td class="px-4 py-3 text-center"><PayrollStatusBadge :status="p.payment_status" /></td>
               <td class="px-4 py-3 text-center">
+                <div class="flex items-center justify-center gap-1.5">
+                  <button
+                    v-if="canReviewPayroll(p)"
+                    class="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100 disabled:opacity-60"
+                    :disabled="actionLoading === `payroll-review-${p.id}`"
+                    title="Review Payroll"
+                    @click="reviewPayrollRow(p)"
+                  >
+                    <i class="far" :class="actionLoading === `payroll-review-${p.id}` ? 'fa-spinner fa-spin' : 'fa-clipboard-check'"></i>
+                    Review
+                  </button>
                 <button @click="router.push({ name: 'PayrollShow', params: { id: p.id } })"
                   class="p-1.5 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors" title="View Payroll">
                   <i class="far fa-eye text-xs"></i>
                 </button>
+                </div>
               </td>
             </tr>
           </tbody>
