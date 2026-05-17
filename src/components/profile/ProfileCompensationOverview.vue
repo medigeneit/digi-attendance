@@ -220,7 +220,7 @@ onMounted(load)
           @click="paySheetOpen = true"
         >
           <i class="far fa-file-invoice-dollar"></i>
-          Monthly Salary Sheet
+          Salary Slips
         </button>
         <button
           type="button"
