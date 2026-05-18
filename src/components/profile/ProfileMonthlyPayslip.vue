@@ -445,8 +445,8 @@ const bankDetails = computed(() => {
   <section
     class="bg-slate-100 px-2 py-3 print:bg-white print:p-0 dark:bg-slate-950"
   >
-    <div v-if="currentPayroll" class="mx-auto max-w-[760px] bg-white ring-1 ring-slate-300 print:max-w-none print:shadow-none print:ring-0">
-      <div class="p-4 print:p-0">
+    <div v-if="currentPayroll" class="mx-auto max-w-[820px] bg-white shadow-xl ring-1 ring-slate-300 print:max-w-none print:shadow-none print:ring-0">
+      <div class="p-8 print:p-0">
         <div
           v-if="slipPayrolls.length > 1"
           class="mb-3 flex flex-wrap gap-2 print:hidden"
@@ -466,60 +466,56 @@ const bankDetails = computed(() => {
         </div>
         <div class="salary-paper mx-auto">
           <div class="text-center">
-            <div class="text-[14px] font-medium text-slate-700">{{ companyName }}</div>
-            <div class="mt-0.5 text-[12px] text-slate-600">{{ slipTitle }}</div>
-            <div class="mt-0.5 text-[12px] text-slate-600">{{ payPeriodLabel }}</div>
+            <div class="mt-1 text-[15px] font-medium text-slate-700">{{ companyName }}</div>
+            <div class="mt-1 text-[13px] text-slate-600">{{ slipTitle }}</div>
+            <div class="mt-1 text-[13px] text-slate-600">{{ payPeriodLabel }}</div>
           </div>
 
-          <div class="salary-info-grid mt-6 text-[13px] text-slate-800">
+          <div class="salary-info-grid mt-8 text-[13px] text-slate-800">
             <div class="space-y-1">
               <div class="flex gap-2">
-                <span class="w-28 text-slate-600">Employee name</span>
+                <span class="salary-info-label text-slate-600">Employee name</span>
                 <span>: {{ employeeName }}</span>
               </div>
               <div class="flex gap-2">
-                <span class="w-28 text-slate-600">Designation</span>
-                <span>: {{ designation }}</span>
+                <span class="salary-info-label text-slate-600">Date of Joining</span>
+                <span>: {{ formatDate(joiningDate) }}</span>
               </div>
               <div class="flex gap-2">
-                <span class="w-28 text-slate-600">Department</span>
-                <span>: {{ department }}</span>
+                <span class="salary-info-label text-slate-600">Employee ID</span>
+                <span>: {{ employeeId }}</span>
               </div>
             </div>
             <div class="space-y-1">
               <div class="flex gap-2">
-                <span class="w-28 text-slate-600">Date of Joining</span>
-                <span>: {{ formatDate(joiningDate) }}</span>
+                <span class="salary-info-label text-slate-600">Designation</span>
+                <span>: {{ designation }}</span>
               </div>
               <div class="flex gap-2">
-                <span class="w-28 text-slate-600">Pay Period</span>
-                <span>: {{ payPeriodLabel }}</span>
+                <span class="salary-info-label text-slate-600">Department</span>
+                <span>: {{ department }}</span>
               </div>
               <div class="flex gap-2">
-                <span class="w-28 text-slate-600">Payroll Type</span>
+                <span class="salary-info-label text-slate-600">Payroll Type</span>
                 <span>: {{ cycleLabel(currentPayroll) }}</span>
-              </div>
-              <div class="flex gap-2">
-                <span class="w-28 text-slate-600">Employee ID</span>
-                <span>: {{ employeeId }}</span>
               </div>
             </div>
           </div>
 
-          <div class="mt-5 overflow-hidden border border-slate-700">
-            <table class="salary-slip-table w-full border-collapse text-[12px]">
+          <div class="mt-6 overflow-hidden border border-slate-700">
+            <table class="salary-slip-table w-full border-collapse text-[13px]">
               <thead>
                 <tr class="bg-slate-100 text-slate-900">
-                  <th class="border border-slate-700 px-2.5 py-1.5 text-center font-semibold">Earnings</th>
-                  <th class="border border-slate-700 px-2.5 py-1.5 text-center font-semibold">Amount</th>
-                  <th class="border border-slate-700 px-2.5 py-1.5 text-center font-semibold">Deductions</th>
-                  <th class="border border-slate-700 px-2.5 py-1.5 text-center font-semibold">Amount</th>
+                  <th class="border border-slate-700 px-3 py-2 text-center font-semibold">Earnings</th>
+                  <th class="border border-slate-700 px-3 py-2 text-center font-semibold">Amount</th>
+                  <th class="border border-slate-700 px-3 py-2 text-center font-semibold">Deductions</th>
+                  <th class="border border-slate-700 px-3 py-2 text-center font-semibold">Amount</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="index in salaryTableRowCount" :key="index">
                   <td
-                    class="border border-slate-700 px-2.5 py-1.5"
+                    class="border border-slate-700 px-3 py-2"
                     :class="[
                       earningRows[index - 1]?.highlight ? 'bg-slate-100 font-semibold' : '',
                       earningRows[index - 1]?.reference ? 'text-slate-600' : '',
@@ -528,7 +524,7 @@ const bankDetails = computed(() => {
                     {{ earningRows[index - 1]?.label || '' }}
                   </td>
                   <td
-                    class="border border-slate-700 px-2.5 py-1.5 text-right font-mono font-semibold"
+                    class="border border-slate-700 px-3 py-2 text-right font-mono font-semibold"
                     :class="[
                       earningRows[index - 1]?.highlight ? 'bg-slate-100' : '',
                       earningRows[index - 1]?.reference ? 'text-slate-600' : '',
@@ -536,24 +532,24 @@ const bankDetails = computed(() => {
                   >
                     {{ earningRows[index - 1] ? formatMoney(earningRows[index - 1].value) : '' }}
                   </td>
-                  <td class="border border-slate-700 px-2.5 py-1.5">{{ deductionRows[index - 1]?.label || '' }}</td>
-                  <td class="border border-slate-700 px-2.5 py-1.5 text-right font-mono font-semibold">
+                  <td class="border border-slate-700 px-3 py-2">{{ deductionRows[index - 1]?.label || '' }}</td>
+                  <td class="border border-slate-700 px-3 py-2 text-right font-mono font-semibold">
                     {{ deductionRows[index - 1] ? formatMoney(deductionRows[index - 1].value) : '' }}
                   </td>
                 </tr>
                 <tr class="font-semibold">
-                  <td class="border border-slate-700 px-2.5 py-1.5 text-right">Total Earnings</td>
-                  <td class="border border-slate-700 px-2.5 py-1.5 text-right font-mono">
+                  <td class="border border-slate-700 px-3 py-2 text-right">Total Earnings</td>
+                  <td class="border border-slate-700 px-3 py-2 text-right font-mono">
                     {{ formatMoney(totalEarnings) }}
                   </td>
-                  <td class="border border-slate-700 px-2.5 py-1.5 text-right">Total Deductions</td>
-                  <td class="border border-slate-700 px-2.5 py-1.5 text-right font-mono">
+                  <td class="border border-slate-700 px-3 py-2 text-right">Total Deductions</td>
+                  <td class="border border-slate-700 px-3 py-2 text-right font-mono">
                     {{ formatMoney(totalDeductions) }}
                   </td>
                 </tr>
                 <tr class="font-semibold">
-                  <td class="border border-slate-700 px-2.5 py-1.5 text-right" colspan="3">Net Pay</td>
-                  <td class="border border-slate-700 px-2.5 py-1.5 text-right font-mono">
+                  <td class="border border-slate-700 px-3 py-2 text-right" colspan="3">Net Payment</td>
+                  <td class="border border-slate-700 px-3 py-2 text-right font-mono">
                     {{ formatMoney(netPayment) }}
                   </td>
                 </tr>
@@ -561,14 +557,25 @@ const bankDetails = computed(() => {
             </table>
           </div>
 
-          <div class="mt-4">
-            <div class="w-3/4 text-left">
-              <div class="text-[14px] font-semibold text-slate-800">{{ numberToWords(netPayment) }}</div>
-              <div class="mt-1 text-[15px] font-bold text-slate-600">{{ formatMoney(netPayment) }}</div>
+          <div class="mt-5">
+            <div class="salary-amount-box">
+              <div class="text-[15px] font-semibold text-slate-800">{{ numberToWords(netPayment) }}</div>
+              <div class="mt-1 text-[16px] font-bold text-slate-600">{{ formatMoney(netPayment) }}</div>
             </div>
           </div>
 
-          <div class="mt-6 border-t border-slate-200 pt-2 text-center text-xs text-slate-600">
+          <div class="salary-signature-grid mt-14">
+            <div>
+              <div class="salary-signature-line"></div>
+              <div class="mt-2 text-center text-sm text-slate-700">Employer Signature</div>
+            </div>
+            <div>
+              <div class="salary-signature-line"></div>
+              <div class="mt-2 text-center text-sm text-slate-700">Employee Signature</div>
+            </div>
+          </div>
+
+          <div class="mt-8 border-t border-slate-200 pt-3 text-center text-sm text-slate-600">
             Payment Method: {{ paymentMethod }}<span v-if="bankDetails"> | {{ bankDetails }}</span>
           </div>
         </div>
@@ -585,9 +592,9 @@ const bankDetails = computed(() => {
 
 <style scoped>
 .salary-paper {
-  width: 172mm;
-  min-height: 190mm;
-  padding: 5mm;
+  width: 190mm;
+  min-height: 277mm;
+  padding: 0 6mm 6mm;
   color: #111827;
 }
 
@@ -597,6 +604,11 @@ const bankDetails = computed(() => {
   gap: 0 10mm;
 }
 
+.salary-info-label {
+  width: 7.5rem;
+  flex: none;
+}
+
 .salary-slip-table {
   table-layout: fixed;
 }
@@ -604,6 +616,22 @@ const bankDetails = computed(() => {
 .salary-slip-table th,
 .salary-slip-table td {
   word-break: break-word;
+}
+
+.salary-amount-box {
+  width: 75%;
+  text-align: left;
+}
+
+.salary-signature-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10mm;
+}
+
+.salary-signature-line {
+  border-top: 1px solid #6b7280;
+  margin-top: 4.5rem;
 }
 
 @media (max-width: 767px) {
@@ -617,6 +645,15 @@ const bankDetails = computed(() => {
     grid-template-columns: 1fr;
     gap: 12px;
   }
+
+  .salary-amount-box {
+    width: 100%;
+  }
+
+  .salary-signature-grid {
+    grid-template-columns: 1fr;
+    gap: 8mm;
+  }
 }
 
 @media print {
@@ -627,6 +664,14 @@ const bankDetails = computed(() => {
   }
 
   .salary-info-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .salary-amount-box {
+    width: 75%;
+  }
+
+  .salary-signature-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
