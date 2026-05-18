@@ -129,7 +129,7 @@ const emit = defineEmits([
           class="btn-icon bg-transparent text-red-400 border-red-400 border hover:bg-red-400 hover:text-white"
           @click.prevent.stop="() => emit('clickChangeStatus', todoDate, 'WORKING')"
         >
-          <i class="fas fa-play ml-[4px]"></i>
+          <i class="fas fa-play text-xs ml-[4px]"></i>
         </button>
 
         <button
