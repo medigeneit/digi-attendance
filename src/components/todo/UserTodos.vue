@@ -51,13 +51,13 @@ async function handleTodosRearrange() {
 }
 </script>
 <template>
-  <div class="border rounded-md">
+  <div class="border-x rounded max-w-6xl mx-auto">
     <div
-      class="text-gray-700 bg-gradient-to-tl from-sky-400/60 to-sky-400 border-b py-2 px-4 flex items-center"
+      class="text-gray-700 bg-gradient-to-tl from-sky-100/60 to-sky-200 border-b py-1.5 px-1 flex items-center"
     >
       <div class="font-semibold flex items-center gap-2">
-        <UserAvatar :user="user" />
-        <div class="text-white text-base">{{ user.label }}</div>
+        <UserAvatar size="small" :user="user"  />
+        <div class="text-base">{{ user.label }}</div>
       </div>
 
       <div class="ml-auto flex items-center gap-2">

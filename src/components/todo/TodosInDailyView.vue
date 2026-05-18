@@ -67,7 +67,7 @@ const userWiseTodos = (todos) => {
 // })
 </script>
 <template>
-  <div class="relative bg-white p-4">
+  <div class="relative bg-white ">
     <div
       class="text-red-500 text-sm border border-red-300 max-w-6xl mx-auto py-2 gap-2 shadow-sm rounded flex items-center px-3"
       v-if="todoStore.error"
@@ -78,8 +78,8 @@ const userWiseTodos = (todos) => {
       </div>
     </div>
 
-    <div class="max-w-6xl mx-auto border rounded my-5">
-      <div class="text-gray-700 border-b py-2 px-4 flex items-center">
+    <div class="max-w-6xl mx-auto rounded ">
+      <div class="text-gray-700 border-b py-2  flex items-center">
         <button class="fa fa-arrow-left btn-icon mr-2" @click.prevent="emit('backClick')"></button>
         <div class="text-lg font-semibold flex items-center gap-2">
           {{ getDisplayDate(selectedDate, { weekDay: 'long' }) }}
@@ -98,7 +98,7 @@ const userWiseTodos = (todos) => {
           </button>
         </div>
       </div>
-      <TodosInDate :date="date" max-items="all" class="w-full space-y-4 p-2">
+      <TodosInDate :date="date" max-items="all" class="w-full space-y-4 py-2">
         <template #todoItems="{ allTodos }">
           <template v-for="user in userWiseTodos(allTodos)" :key="user.id">
             <UserTodos
