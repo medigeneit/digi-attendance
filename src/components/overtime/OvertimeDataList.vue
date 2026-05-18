@@ -82,11 +82,19 @@ const approvalPermissionsFor = (o) =>
 
 const approvalTimeUserId = (o) =>
   Number(
-    o?.user?.other_approval?.operational_admin_user_id ??
-      o?.user?.otherApproval?.operational_admin_user_id ??
-      o?.user?.overtime_approval?.operational_admin_user_id ??
-      o?.overtime_approval?.operational_admin_user_id,
+    o?.user?.other_approval?.recommend_by_user_id ??
+      o?.user?.otherApproval?.recommend_by_user_id ??
+      o?.user?.overtime_approval?.recommend_by_user_id ??
+      o?.overtime_approval?.recommend_by_user_id,
   )
+
+// const approvalTimeUserId = (o) =>
+//   Number(
+//     o?.user?.other_approval?.operational_admin_user_id ??
+//       o?.user?.otherApproval?.operational_admin_user_id ??
+//       o?.user?.overtime_approval?.operational_admin_user_id ??
+//       o?.overtime_approval?.operational_admin_user_id,
+//   )
 
 const canSetApprovalTime = (o) =>
   isPending(o) && Number(authStore.user?.id) === approvalTimeUserId(o)
