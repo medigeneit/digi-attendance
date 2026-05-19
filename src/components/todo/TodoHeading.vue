@@ -235,7 +235,7 @@ const handleInputChange = (event) => {
         class="md:ml-auto flex items-center justify-between md:justify-start gap-2 w-full lg:w-auto"
         v-if="selected_type == 'month-view'"
       >
-        <button class="btn-3 px-3 rounded h-7" @click.prevent="handleClickOnPreviousMonth">
+        <button class="btn-3 border border-blue-400 text-blue-400 hover:text-blue-100 px-3 rounded size-8" @click.prevent="handleClickOnPreviousMonth">
           <span class="fas fa-arrow-left"></span>
           <!-- <span class="hidden lg:inline">Previous Month</span> -->
         </button>
@@ -245,10 +245,10 @@ const handleInputChange = (event) => {
           type="month"
           :value="input"
           @input="handleInputChange"
-          class="border-2 px-2 rounded border-blue-900"
+          class="border px-2 rounded border-blue-400 text-blue-800 w-32 text-sm h-8"
         />
 
-        <button class="btn-3 px-3 rounded h-7 md:ml-0" @click.prevent="handleClickOnNextMonth">
+        <button class="btn-3 border border-blue-400 text-blue-400 hover:text-blue-100 px-3 rounded size-8 md:ml-0" @click.prevent="handleClickOnNextMonth">
           <!-- <span class="hidden lg:inline">Next Month</span> -->
           <span class="fas fa-arrow-right"></span>
         </button>
@@ -258,7 +258,7 @@ const handleInputChange = (event) => {
         class="md:ml-auto flex items-center justify-between md:justify-start gap-2 w-full lg:w-auto"
         v-if="selected_type == 'day-view'"
       >
-        <button class="btn-3 px-3 rounded h-7" @click.prevent="handleClickOnPreviousDay">
+        <button class="btn-3 border border-blue-400 text-blue-400 hover:text-blue-100 px-3 rounded size-8" @click.prevent="handleClickOnPreviousDay">
           <span class="fas fa-arrow-left"></span>
           <!-- <span class="hidden lg:inline">Previous Day</span> -->
         </button>
@@ -268,10 +268,10 @@ const handleInputChange = (event) => {
           type="date"
           :value="input"
           @input="handleInputChange"
-          class="border-2 px-2 rounded border-blue-900 w-28"
+          class="border px-2 rounded border-blue-400 text-blue-800 w-32 text-sm h-8"
         />
 
-        <button class="btn-3 px-3 rounded h-7 md:ml-0" @click.prevent="handleClickOnNextDay">
+        <button class="btn-3 border border-blue-400 text-blue-400 hover:text-blue-100 px-3 rounded size-8 md:ml-0" @click.prevent="handleClickOnNextDay">
           <!-- <span class="hidden lg:inline">Next Day</span> -->
           <span class="fas fa-arrow-right"></span>
         </button>

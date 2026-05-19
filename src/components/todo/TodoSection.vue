@@ -268,7 +268,7 @@ watch(
 </style>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+  <div class="min-h-[60vh]  ">
     <div class="max-w-full mx-auto">
       <!-- Main container with professional styling -->
       <div class="bg-white overflow-hidden relative">

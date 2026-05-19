@@ -35,20 +35,20 @@ watch(
         <div class="flex flex-wrap items-center justify-center gap-3 border-b border-gray-200 bg-gradient-to-r from-slate-50 to-white px-4 py-3">
           <button
             @click.prevent="mainSection = 'todos'"
-            class="min-w-[96px] !py-0.5 text-sm"
+            class="min-w-[96px] !py-0.5 text-sm border border-blue-300"
             :class="{
               'btn-2': mainSection == 'todos',
-              'btn-3 hover:bg-gray-200 hover:text-blue-500': mainSection != 'todos',
+              'btn-3 hover:bg-gray-200 hover:text-blue-500 text-blue-500': mainSection != 'todos',
             }"
           >
             Todos
           </button>
           <button
             @click.prevent="mainSection = 'tasks'"
-            class="min-w-[96px] !py-0.5 text-sm"
+            class="min-w-[96px] !py-0.5 text-sm border border-blue-300"
             :class="{
               'btn-2': mainSection == 'tasks',
-              'btn-3 hover:bg-gray-200 hover:text-blue-500': mainSection != 'tasks',
+              'btn-3 hover:bg-gray-200 hover:text-blue-500 text-blue-500': mainSection != 'tasks',
             }"
           >
             Tasks
