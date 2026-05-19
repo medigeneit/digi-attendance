@@ -51,37 +51,38 @@ async function handleTodosRearrange() {
 }
 </script>
 <template>
-  <div class="border-x rounded max-w-6xl mx-auto">
-    <div
-      class="text-gray-700 bg-gradient-to-tl from-sky-100/60 to-sky-200 border-b py-1.5 px-1 flex items-center"
-    >
-      <div class="font-semibold flex items-center gap-2">
-        <UserAvatar size="small" :user="user"  />
-        <div class="text-base">{{ user.label }}</div>
+  <div class="max-w-6xl mx-auto mb-6">
+    <!-- User section header -->
+    <div class="flex items-center justify-between  py-1 bg-blue-50 border-y border-blue-200">
+      <div class="flex items-center gap-3 justify-between w-full px-1">
+        <div class="flex items-center gap-1">
+          <UserAvatar size="small" :user="user" />
+          <div class="font-semibold text-gray-800 text-base">{{ user.label }}</div>
+        </div>
+        <DepartmentChip :department="user?.department" class="text-xs mt-0.5" />
       </div>
 
-      <div class="ml-auto flex items-center gap-2">
-        <div class="flex items-center gap-3 mr-6" v-if="draggableTodos?.isItemsChanged">
-          <button
-            @click.prevent="() => handleTodosRearrange()"
-            class="btn-2 disabled:opacity-40 disabled:pointer-events-none"
-            :disabled="todoStore.updatingPriority"
-          >
-            Save Rearranged
-          </button>
-          <button
-            @click.prevent="() => draggableTodos.resetItems()"
-            class="btn-3 disabled:opacity-40 disabled:pointer-events-none"
-            :disabled="todoStore.updatingPriority"
-          >
-            Discard
-          </button>
-        </div>
-        <DepartmentChip :department="user?.department" class="px-2" />
+      <!-- Save/Discard buttons -->
+      <div class="flex items-center gap-2" v-if="draggableTodos?.isItemsChanged">
+        <button
+          @click.prevent="() => handleTodosRearrange()"
+          class="btn btn-sm bg-green-500 text-white hover:bg-green-600 disabled:opacity-40 disabled:pointer-events-none"
+          :disabled="todoStore.updatingPriority"
+        >
+          <i class="fas fa-save mr-1"></i> Save
+        </button>
+        <button
+          @click.prevent="() => draggableTodos.resetItems()"
+          class="btn btn-sm bg-gray-400 text-white hover:bg-gray-500 disabled:opacity-40 disabled:pointer-events-none"
+          :disabled="todoStore.updatingPriority"
+        >
+          <i class="fas fa-times mr-1"></i> Discard
+        </button>
       </div>
     </div>
 
-    <div :date="date" max-items="all" class="w-full">
+    <!-- Todos list container -->
+    <div class="space-y-2">
       <DraggableList
         :items="todosDates"
         ref="draggableTodos"
@@ -97,7 +98,7 @@ async function handleTodosRearrange() {
             @clickChangeStatus="(todoDate, status) => handleClickComplete(todoDate, status)"
             hide-department
             hide-user
-            class="border-b border-sky-200"
+            class="border-sky-100"
             :userRole="userRole"
           />
         </template>
@@ -105,10 +106,14 @@ async function handleTodosRearrange() {
 
       <div
         v-if="todosDates.length === 0"
-        class="flex min-h-[38vh] items-center justify-center text-gray-400 text-center rounded-md"
+        class="flex min-h-[20vh] items-center justify-center text-gray-400 text-center rounded-lg bg-gray-50 border border-dashed border-gray-300"
       >
-        No Todos
+        <div>
+          <i class="fas fa-inbox text-4xl mb-2 opacity-30"></i>
+          <p>No todos for this user</p>
+        </div>
       </div>
     </div>
+    <hr />
   </div>
 </template>

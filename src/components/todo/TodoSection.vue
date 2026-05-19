@@ -218,71 +218,158 @@ watch(
 )
 </script>
 
+<style scoped>
+/* Smooth fade transition for content */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Scale and fade transition for view changes */
+.fade-scale-enter-active,
+.fade-scale-leave-active {
+  transition: all 0.3s ease;
+}
+
+.fade-scale-enter-from {
+  opacity: 0;
+  transform: scale(0.98);
+}
+
+.fade-scale-leave-to {
+  opacity: 0;
+  transform: scale(0.98);
+}
+
+/* Improved heading styling */
+:deep(.todo-heading) {
+  background: linear-gradient(135deg, #f0f4ff 0%, #f9fafb 100%);
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* Better spacing for content areas */
+:deep(.todo-calendar-view),
+:deep(.todo-daily-view) {
+  padding: 1.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  :deep(.todo-calendar-view),
+  :deep(.todo-daily-view) {
+    padding: 1rem;
+  }
+}
+</style>
+
 <template>
-  <div>
-    <div class="bg-white relative">
-      <LoaderView
-        v-if="todoDateStore.loading"
-        class="absolute inset-0 bg-opacity-80 text-center py-4 text-gray-500 z-10 flex items-center justify-center"
-      >
-        Loading...
-      </LoaderView>
-
-      <TodoHeading
-        :selected="selected"
-        class="z-20 rounded-b-md"
-        @change="handleHeadingChange"
-        @reload-click="handleReloadClick"
-      >
-        <template #before="params">
-          <slot name="beforeHeader" v-bind="params"></slot>
-        </template>
-        <template #inner="params">
-          <slot name="innerHeader" v-bind="params"></slot>
-        </template>
-        <template #after="params">
-          <slot name="afterHeader" v-bind="params"></slot>
-        </template>
-        <template #bottom="params">
-          <div>
-            <slot name="bottomHeader" v-bind="params"></slot>
-            <div
-              v-if="todoDateStore.error"
-              class="text-red-600 py-4 text-semibold text-center text-xl min-h-[50vh] flex items-center justify-center"
-            >
-              {{ todoDateStore.error }}
-            </div>
+  <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div class="max-w-full mx-auto">
+      <!-- Main container with professional styling -->
+      <div class="bg-white overflow-hidden relative">
+        <!-- Loading overlay with improved styling -->
+        <LoaderView
+          v-if="todoDateStore.loading"
+          class="absolute inset-0 bg-white bg-opacity-90 backdrop-blur-sm z-10 flex items-center justify-center"
+        >
+          <div class="flex flex-col items-center gap-3">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <p class="text-gray-600 font-medium">Loading tasks...</p>
           </div>
-        </template>
-        <template #typeSelection="params">
-          <slot name="typeSelection" v-bind="params"></slot>
-        </template>
-      </TodoHeading>
+        </LoaderView>
 
-      <TodoCalenderView
-        :month="getMonthString"
-        v-if="selected.type == 'month-view' && (companyId || userRole == 'employee')"
-        class="bg-white"
-        @dateClick="handleDateClick"
-        @clickTodo="handleClickTodo"
-        @clickDateCell="handleClickAddTodo"
-      />
+        <!-- Header section -->
+        <TodoHeading
+          :selected="selected"
+          class="z-20 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50"
+          @change="handleHeadingChange"
+          @reload-click="handleReloadClick"
+        >
+          <template #before="params">
+            <slot name="beforeHeader" v-bind="params"></slot>
+          </template>
+          <template #inner="params">
+            <slot name="innerHeader" v-bind="params"></slot>
+          </template>
+          <template #after="params">
+            <slot name="afterHeader" v-bind="params"></slot>
+          </template>
+          <template #bottom="params">
+            <div>
+              <slot name="bottomHeader" v-bind="params"></slot>
+              <!-- Error message with professional styling -->
+              <transition name="fade">
+                <div
+                  v-if="todoDateStore.error"
+                  class="m-4 p-4 bg-red-50 border-l-4 border-red-500 rounded-md flex items-start gap-3"
+                >
+                  <div class="flex-shrink-0 mt-0.5">
+                    <svg
+                      class="h-5 w-5 text-red-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                  </div>
+                  <div class="flex-1">
+                    <p class="text-red-700 font-semibold">Error</p>
+                    <p class="text-red-600 text-sm">{{ todoDateStore.error }}</p>
+                  </div>
+                </div>
+              </transition>
+            </div>
+          </template>
+          <template #typeSelection="params">
+            <slot name="typeSelection" v-bind="params"></slot>
+          </template>
+        </TodoHeading>
 
-      <TodosInDailyView
-        :date="getDateString"
-        v-if="selected.type == 'day-view' && (companyId || userRole == 'employee')"
-        :userRole="userRole"
-        @clickTodo="handleClickTodo"
-        @clickEdit="handleClickEditTodo"
-        @clickAdd="handleClickAddTodo"
-        @clickDelete="handleClickDeleteTodo"
-        @clickChangeStatus="handleClickChangeStatusTodo"
-        @backClick="handleClickBackFromDayView"
-        @update="handleTodoUpdate"
-        @addCarryClick="handleClickAddTodo"
-      />
+        <!-- Content area with transitions -->
+        <transition name="fade-scale" mode="out-in">
+          <div :key="selected.type" class="bg-white">
+            <!-- Month view -->
+            <TodoCalenderView
+              :month="getMonthString"
+              v-if="selected.type == 'month-view' && (companyId || userRole == 'employee')"
+              class="p-4 sm:p-6"
+              @dateClick="handleDateClick"
+              @clickTodo="handleClickTodo"
+              @clickDateCell="handleClickAddTodo"
+            />
+
+            <!-- Day view -->
+            <TodosInDailyView
+              :date="getDateString"
+              v-if="selected.type == 'day-view' && (companyId || userRole == 'employee')"
+              class="p-4 sm:p-6"
+              :userRole="userRole"
+              @clickTodo="handleClickTodo"
+              @clickEdit="handleClickEditTodo"
+              @clickAdd="handleClickAddTodo"
+              @clickDelete="handleClickDeleteTodo"
+              @clickChangeStatus="handleClickChangeStatusTodo"
+              @backClick="handleClickBackFromDayView"
+              @update="handleTodoUpdate"
+              @addCarryClick="handleClickAddTodo"
+            />
+          </div>
+        </transition>
+      </div>
     </div>
 
+    <!-- Modal -->
     <TodoCreateEditShow
       :todoModal="todoModal"
       :userRole="userRole"
