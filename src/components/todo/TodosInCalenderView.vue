@@ -29,7 +29,7 @@ function isToday(date) {
 </script>
 <template>
   <div class="relative overflow-y-auto"  >
-    <CalenderView v-if="month" :month="month" class="border-t border-blue-200/50 relative">
+    <CalenderView v-if="month" :month="month" class="border-t border-l border-blue-200/50 relative ">
       <template #date="{ day, month, yearMonthDate, isCurrentMonth }">
         <div
           tabindex="0"

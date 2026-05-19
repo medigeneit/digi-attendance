@@ -277,10 +277,7 @@ watch(
           v-if="todoDateStore.loading"
           class="absolute inset-0 bg-white bg-opacity-90 backdrop-blur-sm z-10 flex items-center justify-center"
         >
-          <div class="flex flex-col items-center gap-3">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            <p class="text-gray-600 font-medium">Loading tasks...</p>
-          </div>
+          <p class="text-gray-600 font-medium">Loading tasks...</p>
         </LoaderView>
 
         <!-- Header section -->
