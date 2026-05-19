@@ -340,7 +340,7 @@ watch(
             <TodoCalenderView
               :month="getMonthString"
               v-if="selected.type == 'month-view' && (companyId || userRole == 'employee')"
-              class="p-4 sm:p-6"
+              class=""
               @dateClick="handleDateClick"
               @clickTodo="handleClickTodo"
               @clickDateCell="handleClickAddTodo"

@@ -31,7 +31,7 @@ watch(
 <template>
   <div class="w-full px-4 py-4 sm:px-6">
     <div class="grid items-start gap-6 xl:grid-cols-[minmax(0,2.2fr)_minmax(350px,0.95fr)]">
-      <div class="min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-md">
+      <div class="min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-white  ">
         <div class="flex flex-wrap items-center justify-center gap-3 border-b border-gray-200 bg-gradient-to-r from-slate-50 to-white px-4 py-3">
           <button
             @click.prevent="mainSection = 'todos'"
@@ -55,8 +55,8 @@ watch(
           </button>
         </div>
 
-        <DashboardMyTodoList v-if="mainSection == 'todos'" />
-        <DailyTask v-if="mainSection == 'tasks'" />
+        <DashboardMyTodoList v-if="mainSection == 'todos'" class="border-0" />
+        <DailyTask v-if="mainSection == 'tasks'"  class="border-0"/>
       </div>
 
       <div class="grid items-start gap-6 md:grid-cols-2 xl:sticky xl:top-[88px] xl:grid-cols-1">
