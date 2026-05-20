@@ -169,6 +169,20 @@ const formatTimeHM = (d) =>
                 <ApprovalItem
                   :application="manualAttendance"
                   type="manual_attendance_applications"
+                  item="coordinator"
+                  :onAction="onAction"
+                />
+
+                <ApprovalItem
+                  :application="manualAttendance"
+                  type="manual_attendance_applications"
+                  item="operational_admin"
+                  :onAction="onAction"
+                />
+
+                <ApprovalItem
+                  :application="manualAttendance"
+                  type="manual_attendance_applications"
                   item="recommend_by"
                   :onAction="onAction"
                 />

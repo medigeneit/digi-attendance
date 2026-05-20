@@ -175,12 +175,12 @@ const onAction = async () => {
           :onAction="onAction"
         />
 
-        <!-- <ApprovalItem
+        <ApprovalItem
           :application="manualAttendance"
           type="manual_attendance_applications"
           item="coordinator"
           :onAction="onAction"
-        /> -->
+        />
         
         <ApprovalItem
             :application="manualAttendance"

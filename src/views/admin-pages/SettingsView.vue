@@ -9,13 +9,9 @@
       <i class="fas fa-mosque text-3xl"></i>
       Holiday List
     </RouterLink>
-    <RouterLink :to="{ name: 'LeaveApprovalList' }" class="main-button">
+    <RouterLink :to="{ name: 'LeaveApprovalList', params: { type: 'leave' } }" class="main-button">
       <i class="fas fa-users-class text-3xl"></i>
-      Leave Approval List
-    </RouterLink>
-    <RouterLink :to="{ name: 'OtherApprovalList' }" class="main-button">
-      <i class="fas fa-users-class text-3xl"></i>
-      Other Approval List
+      Approval Rules
     </RouterLink>
     <RouterLink :to="{ name: 'LeaveTypeList' }" class="main-button">
       <i class="fas fa-list text-3xl"></i>

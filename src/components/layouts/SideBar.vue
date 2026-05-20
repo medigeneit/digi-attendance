@@ -197,8 +197,7 @@ const empRouteNames = ['checklists.board', 'lifecycle.board', 'lifecycle.detail'
 const settingsMenu = [
   { label: 'User List', routeName: 'UserList' },
   { label: 'Holiday List', routeName: 'HoliDayList' },
-  { label: 'Leave Approval List', routeName: 'LeaveApprovalList' },
-  { label: 'Other Approval List', routeName: 'OtherApprovalList' },
+  { label: 'Approval Rules', routeName: 'LeaveApprovalList', params: { type: 'leave' } },
   { label: 'Leave Type List', routeName: 'LeaveTypeList' },
   { label: 'Shift List', routeName: 'ShiftList' },
   { label: 'Designation List', routeName: 'DesignationList' },

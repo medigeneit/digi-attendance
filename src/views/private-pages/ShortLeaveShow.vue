@@ -207,7 +207,7 @@ const onAction = async () => {
             :application="shortLeave"
             type="short_leave_applications"
             item="operational_admin"
-            :onAction="refreshApplication"
+            :onAction="onAction"
           />
 
         <ApprovalItem

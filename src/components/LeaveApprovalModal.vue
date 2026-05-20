@@ -18,6 +18,10 @@ const departmentStore = useDepartmentStore()
 const { departments } = storeToRefs(departmentStore)
 
 const isEditMode = ref(false)
+const formErrors = reactive({
+  name: '',
+  department_id: '',
+})
 
 // ✅ Multiselect expects object
 const selectedDepartment = ref(null)
@@ -59,6 +63,13 @@ Object.keys(selectedUsers).forEach((field) => {
   )
 })
 
+watch(
+  () => form.name,
+  (value) => {
+    if (value?.trim()) formErrors.name = ''
+  },
+)
+
 const resetForm = () => {
   Object.assign(form, {
     id: null,
@@ -80,6 +91,8 @@ const resetForm = () => {
     approved_by_user_id: null,
   })
   selectedDepartment.value = null
+  formErrors.name = ''
+  formErrors.department_id = ''
   isEditMode.value = false
 }
 
@@ -133,6 +146,7 @@ watch(
   () => selectedDepartment.value,
   (newDepartment) => {
     form.department_id = newDepartment?.id || null
+    if (form.department_id) formErrors.department_id = ''
   },
 )
 
@@ -146,10 +160,21 @@ watch(
 )
 
 const handleSubmit = () => {
-  if (!form.name || !form.approved_by_user_id) {
-    alert('Name and Approved By are required!')
+  formErrors.name = ''
+  formErrors.department_id = ''
+
+  if (!form.name?.trim()) {
+    formErrors.name = 'Approval Name is required.'
+  }
+
+  if (!form.department_id) {
+    formErrors.department_id = 'Department is required.'
+  }
+
+  if (formErrors.name || formErrors.department_id) {
     return
   }
+
   emit('save', { ...form, type: form.type || props.approvalType })
   closeModal()
 }
@@ -192,23 +217,32 @@ onMounted(async () => {
           <label for="name" class="block text-sm font-medium">Approval Name</label>
           <input
             id="name"
-            v-model="form.name"
+            v-model.trim="form.name"
             type="text"
             class="w-full border rounded px-3 py-2"
+            :class="formErrors.name ? 'border-red-400 focus:outline-none focus:ring-2 focus:ring-red-100' : ''"
             placeholder="Enter approval name"
             required
           />
+          <p v-if="formErrors.name" class="mt-1 text-xs text-red-600">
+            {{ formErrors.name }}
+          </p>
         </div>
 
         <!-- ✅ Department selected দেখাবে -->
-        <MultiselectDropdown
-          v-model="selectedDepartment"
-          :multiple="false"
-          label="name"
-          top-label="Select Department"
-          :options="departments"
-          placeholder="Choose department"
-        />
+        <div>
+          <MultiselectDropdown
+            v-model="selectedDepartment"
+            :multiple="false"
+            label="name"
+            top-label="Select Department *"
+            :options="departments"
+            placeholder="Choose department"
+          />
+          <p v-if="formErrors.department_id" class="mt-1 text-xs text-red-600">
+            {{ formErrors.department_id }}
+          </p>
+        </div>
 
         <template
           v-for="(label, field) in {

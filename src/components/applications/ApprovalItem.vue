@@ -51,6 +51,8 @@ const itemUserId = computed(() => application?.[`${item}_user_id`])
 const itemNote = computed(() => application?.[`${item}_note`] || '')
 
 const approvalUser = computed(() => application?.user?.[approvalKey.value]?.[`${item}_user`] || {})
+const approvalUserId = computed(() => application?.user?.[approvalKey.value]?.[`${item}_user_id`])
+const isConfigured = computed(() => Boolean(itemUserId.value || approvalUserId.value || approvalUser.value?.id))
 
 const hasPermission = computed(() => notificationStore.approvalPermissions?.[`allow_${item}`])
 
@@ -78,7 +80,7 @@ const isPending = computed(
 </script>
 
 <template>
-  <div class="flex flex-col justify-center items-center text-sm md:text-base text-center">
+  <div v-if="isConfigured" class="flex flex-col justify-center items-center text-sm md:text-base text-center">
     <div v-if="itemUserId" class="text-center">
       <p class="text-center">{{ itemUser?.name || '' }}</p>
 
@@ -87,7 +89,7 @@ const isPending = computed(
       </div>
     </div>
     <p v-else class="text-center">
-      {{ approvalUser?.name || 'N/A' }}
+      {{ approvalUser?.name || '' }}
     </p>
 
     <AcceptAndRejectHandler

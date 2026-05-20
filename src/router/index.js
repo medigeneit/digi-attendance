@@ -557,7 +557,7 @@ const router = createRouter({
               },
             },
             {
-              path: 'leave-approval-list',
+              path: 'leave-approval-list/:type?',
               name: 'LeaveApprovalList',
               component: () => import('@/views/admin-pages/LeaveApprovalList.vue'),
               meta: {
@@ -567,7 +567,7 @@ const router = createRouter({
               },
             },
             {
-              path: 'other-approval-list',
+              path: 'other-approval-list/:type?',
               name: 'OtherApprovalList',
               component: () => import('@/views/admin-pages/LeaveApprovalList.vue'),
               meta: {

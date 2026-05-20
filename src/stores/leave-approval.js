@@ -5,6 +5,8 @@ import { computed, ref } from 'vue'
 export const useLeaveApprovalStore = defineStore('leaveApproval', () => {
   const leaveApprovals = ref([])
   const leaveApproval = ref(null)
+  const applicationTypes = ref([])
+  const applicationType = ref(null)
   const loading = ref(false)
   const error = ref(null)
 
@@ -17,6 +19,37 @@ export const useLeaveApprovalStore = defineStore('leaveApproval', () => {
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch leave approvals.'
       console.error('Error fetching leave approvals:', err)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const fetchApplicationTypes = async () => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await apiClient.get('/approval-settings/application-types')
+      applicationTypes.value = response.data || []
+      return response.data
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to fetch approval application types.'
+      console.error('Error fetching approval application types:', err)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const fetchApprovalRules = async (params = {}) => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await apiClient.get('/approval-settings/rules', { params })
+      applicationType.value = response.data?.application_type || null
+      leaveApprovals.value = response.data?.data || []
+      return response.data
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to fetch approval rules.'
+      console.error('Error fetching approval rules:', err)
     } finally {
       loading.value = false
     }
@@ -83,9 +116,13 @@ export const useLeaveApprovalStore = defineStore('leaveApproval', () => {
   return {
     leaveApprovals: computed(() => leaveApprovals.value),
     leaveApproval: computed(() => leaveApproval.value),
+    applicationTypes: computed(() => applicationTypes.value),
+    applicationType: computed(() => applicationType.value),
     loading: computed(() => loading.value),
     error: computed(() => error.value),
     fetchLeaveApprovals,
+    fetchApplicationTypes,
+    fetchApprovalRules,
     fetchLeaveApproval,
     createLeaveApproval,
     updateLeaveApproval,
