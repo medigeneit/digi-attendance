@@ -9,7 +9,7 @@ function handleTodoInputChange(changedSelected) {
   router.push({
     query: {
       ...route.query,
-      
+
         [`todos[type]`]: changedSelected.type,
         [`todos[year]`]: changedSelected.year,
         [`todos[month]`]: changedSelected.month,
@@ -36,9 +36,10 @@ function handleTodoInputChange(changedSelected) {
       <div class="flex items-center gap-2 mr-2">
         <button
           @click.prevent="changeType(types[0]?.value)"
+          class="border border-blue-300"
           :class="[
             'rounded text-sm h-[32px] w-20',
-            selected?.type == types[0]?.value ? 'btn-2' : 'btn-3',
+            selected?.type == types[0]?.value ? 'btn-2 ' : 'btn-3  text-blue-500 ',
           ]"
         >
           {{ types[0]?.label }}
@@ -46,9 +47,10 @@ function handleTodoInputChange(changedSelected) {
 
         <button
           @click.prevent="changeType(types[1]?.value)"
+          class="border border-blue-300"
           :class="[
             'rounded text-sm h-[32px] w-20',
-            selected?.type == types[1]?.value ? 'btn-2 ' : 'btn-3',
+            selected?.type == types[1]?.value ? 'btn-2 ' : 'btn-3  text-blue-500 ',
           ]"
         >
           {{ types[1]?.label }}
