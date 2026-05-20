@@ -72,6 +72,15 @@ const toNum = (value) => {
 }
 
 const monthValue = (value) => String(value || '').slice(0, 7)
+const currentMonthValue = () => {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+}
+const monthIndex = (month) => {
+  const normalized = monthValue(month)
+  if (!normalized) return 0
+  return Number(normalized.slice(0, 4)) * 12 + Number(normalized.slice(5, 7))
+}
 
 const formatMonthLabel = (value) => {
   const month = monthValue(value)
@@ -79,6 +88,15 @@ const formatMonthLabel = (value) => {
   const date = new Date(`${month}-01T00:00:00`)
   if (Number.isNaN(date.getTime())) return month
   return new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' }).format(date)
+}
+
+const formatPercent = (value) => {
+  const amount = toNum(value)
+  if (!amount) return '0%'
+  return `${new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: amount % 1 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(amount)}%`
 }
 
 const addMonths = (month, count = 1) => {
@@ -89,6 +107,8 @@ const addMonths = (month, count = 1) => {
   date.setMonth(date.getMonth() + count)
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
 }
+
+const maxMonth = (...months) => months.filter(Boolean).sort((a, b) => monthIndex(a) - monthIndex(b)).at(-1) || ''
 
 const setRefMonth = (month) => {
   const normalized = monthValue(month)
@@ -102,12 +122,16 @@ const setRefMonth = (month) => {
   form.value.ref_month = Number(normalized.slice(5, 7))
 }
 
-const setCarryMonth = (month) => {
-  const normalized = monthValue(month)
+const setCarryMonth = (month, clampToMinimum = false) => {
+  let normalized = monthValue(month)
   if (!normalized) {
     form.value.carry_to_year = ''
     form.value.carry_to_month = ''
     return
+  }
+
+  if (clampToMinimum && monthIndex(normalized) < monthIndex(minCarryToMonth.value)) {
+    normalized = minCarryToMonth.value
   }
 
   form.value.carry_to_year = Number(normalized.slice(0, 4))
@@ -119,7 +143,7 @@ const carryToMonthInput = computed({
     if (!form.value.carry_to_year || !form.value.carry_to_month) return ''
     return `${form.value.carry_to_year}-${String(form.value.carry_to_month).padStart(2, '0')}`
   },
-  set: setCarryMonth,
+  set: (value) => setCarryMonth(value, true),
 })
 
 const payrollCycle = (payroll) => String(payroll?.payroll_cycle || payroll?.settlement_mode || payroll?.payroll_batch?.payroll_cycle || payroll?.payrollBatch?.payroll_cycle || '').toLowerCase()
@@ -130,6 +154,23 @@ const isRegularPayroll = (payroll) => {
   return cycle === 'regular' || salaryType === 'monthly'
 }
 
+const hasRegularPayrollForMonth = (month) => payrollOptions.value.some((payroll) => {
+  if (!isRegularPayroll(payroll)) return false
+  return monthValue(payroll.salary_month) === monthValue(month)
+})
+
+const minCarryToMonth = computed(() => {
+  let month = currentMonthValue()
+  let guard = 0
+
+  while (hasRegularPayrollForMonth(month) && guard < 120) {
+    month = addMonths(month, 1)
+    guard += 1
+  }
+
+  return month
+})
+
 const payrollOptionLabel = (payroll) => {
   const cycle = payrollCycle(payroll)
   const type = payroll?.salary_type || (cycle ? cycle.replace(/_/g, ' ') : 'Payroll')
@@ -137,6 +178,38 @@ const payrollOptionLabel = (payroll) => {
 }
 
 const isOvertimeAdjustment = computed(() => form.value.adjustment_type === 'overtime')
+const selectedPayrollCycle = computed(() => payrollCycle(latestPayroll.value))
+const isAdvanceCycle = computed(() => ['half_salary_advance', 'half_month', 'advance'].includes(selectedPayrollCycle.value))
+const isBonusOnlyCycle = computed(() => selectedPayrollCycle.value === 'bonus_only')
+const grossReferenceAmount = computed(() =>
+  toNum(
+    latestPayroll.value?.gross_reference_amount
+      ?? latestPayroll.value?.monthly_gross_salary
+      ?? latestPayroll.value?.gross_salary
+      ?? latestPayroll.value?.calculation_breakdown?.gross_salary
+      ?? latestPayroll.value?.earnings?.gross,
+  ),
+)
+const salaryAdvancePayable = computed(() => toNum(latestPayroll.value?.base_payable_amount ?? latestPayroll.value?.earnings?.basic))
+const advancePercentage = computed(() => {
+  const configured = latestPayroll.value?.advance_percentage ?? latestPayroll.value?.salary_percentage
+  if (configured !== null && configured !== undefined && configured !== '') return toNum(configured)
+  return grossReferenceAmount.value > 0 ? (salaryAdvancePayable.value / grossReferenceAmount.value) * 100 : 0
+})
+const salaryAdvanceLabel = computed(() =>
+  advancePercentage.value > 0
+    ? `Advance Payable (${formatPercent(advancePercentage.value)} of Gross)`
+    : 'Advance Payable',
+)
+const advanceAdjustedAmount = computed(() => toNum(latestPayroll.value?.advance_adjusted_amount ?? latestPayroll.value?.calculation_breakdown?.advance_adjusted_amount))
+const paycutDeductionLabel = computed(() => {
+  const paycutAmount = toNum(latestPayroll.value?.deductions?.paycut ?? latestPayroll.value?.paycut_deduction)
+  if (advanceAdjustedAmount.value > 0 && Math.abs(paycutAmount - advanceAdjustedAmount.value) < 1) {
+    return 'Half Salary Advance Adjustment'
+  }
+
+  return 'Attendance Deduction'
+})
 
 const payrollGrossSalary = computed(() => {
   const payroll = latestPayroll.value || {}
@@ -172,6 +245,25 @@ const overtimeAmount = computed(() => {
 
 const slipEarningRows = computed(() => {
   const earnings = latestPayroll.value?.earnings || {}
+
+  if (isAdvanceCycle.value) {
+    return [
+      ...(grossReferenceAmount.value > 0
+        ? [{ key: 'gross_reference', label: 'Gross Salary (Reference)', amount: grossReferenceAmount.value, reference: true }]
+        : []),
+      { key: 'salary_advance', label: salaryAdvanceLabel.value, amount: salaryAdvancePayable.value, highlight: true },
+      ...(toNum(earnings.bonus ?? latestPayroll.value?.bonus_amount) > 0
+        ? [{ key: 'bonus', label: 'Bonus', amount: toNum(earnings.bonus ?? latestPayroll.value?.bonus_amount) }]
+        : []),
+    ]
+  }
+
+  if (isBonusOnlyCycle.value) {
+    return [
+      { key: 'bonus', label: 'Bonus', amount: toNum(earnings.bonus ?? latestPayroll.value?.bonus_amount), highlight: true },
+    ]
+  }
+
   const rows = [
     { key: 'basic', label: 'Basic Salary', amount: toNum(earnings.basic ?? latestPayroll.value?.basic_salary) },
     { key: 'house_rent', label: 'House Rent', amount: toNum(earnings.house_rent ?? latestPayroll.value?.house_rent) },
@@ -179,6 +271,9 @@ const slipEarningRows = computed(() => {
     { key: 'conveyance', label: 'Conveyance', amount: toNum(earnings.conveyance ?? latestPayroll.value?.conveyance_allowance) },
     { key: 'gross', label: 'Gross', amount: toNum(earnings.gross ?? latestPayroll.value?.gross_salary), highlight: true },
     { key: 'others', label: 'Others', amount: toNum(earnings.others ?? latestPayroll.value?.other_allowance_total) },
+    ...(toNum(earnings.bonus ?? latestPayroll.value?.bonus_amount) > 0
+      ? [{ key: 'bonus', label: 'Bonus', amount: toNum(earnings.bonus ?? latestPayroll.value?.bonus_amount) }]
+      : []),
     { key: 'pf_allowance', label: 'PF Allowance', amount: toNum(latestPayroll.value?.deductions?.pf_allowance) },
     { key: 'arrear', label: 'Arrear', amount: toNum(latestPayroll.value?.arrear ?? latestPayroll.value?.arrear_amount) },
   ]
@@ -188,8 +283,27 @@ const slipEarningRows = computed(() => {
 
 const slipDeductionRows = computed(() => {
   const deductions = latestPayroll.value?.deductions || {}
+  const pfBoth = toNum(deductions.provident_fund) + toNum(deductions.pf_allowance ?? latestPayroll.value?.pf_deduction)
+
+  if (isAdvanceCycle.value) {
+    return [
+      { key: 'pf', label: 'PF Both', amount: pfBoth },
+      { key: 'meal', label: 'Meal Deduction', amount: toNum(deductions.meal ?? latestPayroll.value?.meal_deduction) },
+      { key: 'tds', label: 'Tax', amount: toNum(deductions.tds ?? latestPayroll.value?.tax_deduction) },
+      { key: 'loan', label: 'Loan', amount: toNum(deductions.loan ?? latestPayroll.value?.loan_deduction) },
+      { key: 'other', label: 'Others', amount: toNum(deductions.other ?? latestPayroll.value?.other_deduction) },
+      {
+        key: 'half_salary_advance_adjustment',
+        label: 'Half Salary Advance Adjustment',
+        amount: toNum(deductions.half_salary_advance_adjustment ?? latestPayroll.value?.advance_adjusted_amount),
+      },
+      { key: 'advance', label: 'Advance', amount: toNum(deductions.advance ?? latestPayroll.value?.advance_deduction) },
+      { key: 'paycut', label: paycutDeductionLabel.value, amount: toNum(deductions.paycut ?? latestPayroll.value?.paycut_deduction) },
+    ]
+  }
+
   const rows = [
-    { key: 'pf', label: 'PF Both', amount: toNum(deductions.provident_fund) + toNum(deductions.pf_allowance ?? latestPayroll.value?.pf_deduction) },
+    { key: 'pf', label: 'PF Both', amount: pfBoth },
     { key: 'meal', label: 'Meal Deduction', amount: toNum(deductions.meal ?? latestPayroll.value?.meal_deduction) },
     { key: 'tds', label: 'Tax', amount: toNum(deductions.tds ?? latestPayroll.value?.tax_deduction) },
     { key: 'loan', label: 'Loan', amount: toNum(deductions.loan ?? latestPayroll.value?.loan_deduction) },
@@ -224,7 +338,7 @@ const selectReferencePayroll = async (payrollRow) => {
   form.value.payroll_id = payrollRow.id
   const refMonth = monthValue(payrollRow.salary_month)
   setRefMonth(refMonth)
-  setCarryMonth(addMonths(refMonth, 1))
+  setCarryMonth(maxMonth(addMonths(refMonth, 1), minCarryToMonth.value), true)
 
   employeeDisplay.value = {
     name: payrollRow.user?.name || payrollRow.employee_name || employeeDisplay.value.name,
@@ -308,6 +422,14 @@ const submit = async () => {
   if (!form.value.employee_id) return toast.error('Select an employee.')
   if (!form.value.payroll_id) return toast.error('Select a reference payroll month.')
   if (!form.value.carry_to_year || !form.value.carry_to_month) return toast.error('Select a carry month.')
+  if (monthIndex(carryToMonthInput.value) < monthIndex(minCarryToMonth.value)) {
+    setCarryMonth(minCarryToMonth.value)
+    return toast.error(`Carry month must be ${formatMonthLabel(minCarryToMonth.value)} or later.`)
+  }
+  if (hasRegularPayrollForMonth(carryToMonthInput.value)) {
+    setCarryMonth(minCarryToMonth.value)
+    return toast.error('Regular payroll already exists for that carry month. Select an open month.')
+  }
   if (!form.value.adjustment_type) return toast.error('Select adjustment type.')
   if (isOvertimeAdjustment.value && Number(form.value.overtime_hours || 0) <= 0) return toast.error('Enter overtime hours.')
   if (!form.value.amount || Number(form.value.amount) === 0) return toast.error('Enter a valid amount.')
@@ -384,8 +506,12 @@ const submit = async () => {
               <input
                 v-model="carryToMonthInput"
                 type="month"
+                :min="minCarryToMonth"
                 class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-100"
               />
+              <p class="mt-1 text-xs text-slate-500">
+                Minimum open month: {{ formatMonthLabel(minCarryToMonth) }}
+              </p>
             </div>
           </div>
 
