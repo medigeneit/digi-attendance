@@ -8,7 +8,6 @@ import ChartCard from '@/components/dashboard/admin/ChartCard.vue'
 import DashboardTabs from '@/components/dashboard/admin/DashboardTabs.vue'
 import EmptyState from '@/components/dashboard/admin/EmptyState.vue'
 import KpiCard from '@/components/dashboard/admin/KpiCard.vue'
-import SmartInsightCard from '@/components/dashboard/admin/SmartInsightCard.vue'
 
 const userStore = useUserStore()
 const { dashboardInfo, isLoading } = storeToRefs(userStore)
@@ -120,7 +119,6 @@ const normalized = computed(() => {
 
 const kpis = computed(() => normalized.value.kpis)
 const charts = computed(() => normalized.value.charts)
-const insights = computed(() => normalized.value.insights)
 const topLateEmployees = computed(() => normalized.value.topLateEmployees)
 const leaveTypeDistribution = computed(() => normalized.value.leaveTypeDistribution)
 const summaryLabelSuffix = computed(() => (filters.value.date_filter === 'custom' ? 'Selected Date' : 'Today'))
@@ -409,39 +407,27 @@ watch(filters, refreshDashboard, { deep: true })
       </div>
 
       <template v-else>
-        <section v-if="activeTab === 'overview'" class="grid gap-6 xl:grid-cols-[1fr_360px]">
-          <div class="space-y-6">
-            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              <KpiCard v-for="card in overviewCards" :key="card.label" v-bind="card" />
-            </div>
-
-            <div class="grid gap-6 lg:grid-cols-2">
-              <ChartCard
-                title="Attendance Trend"
-                :subtitle="filterCopy.movement"
-                type="area"
-                :categories="charts.attendance_trend.categories"
-                :series="charts.attendance_trend.series"
-              />
-              <ChartCard
-                title="Leave Distribution"
-                :subtitle="filterCopy.leaveDistribution"
-                type="donut"
-                :labels="charts.leave_distribution.labels"
-                :series="charts.leave_distribution.series"
-              />
-            </div>
+        <section v-if="activeTab === 'overview'" class="w-full space-y-6">
+          <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <KpiCard v-for="card in overviewCards" :key="card.label" v-bind="card" />
           </div>
 
-          <aside class="space-y-4">
-            <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
-              <h2 class="text-base font-bold text-slate-900">Smart Insights</h2>
-              <div class="mt-4 space-y-3">
-                <SmartInsightCard v-for="insight in insights.slice(0, 3)" :key="`${insight.title}-${insight.message}`" :insight="insight" />
-                <EmptyState v-if="!insights.length" title="No insights" message="Dashboard signals are stable." icon="fas fa-lightbulb" />
-              </div>
-            </div>
-          </aside>
+          <div class="grid w-full gap-6 lg:grid-cols-2">
+            <ChartCard
+              title="Attendance Trend"
+              :subtitle="filterCopy.movement"
+              type="area"
+              :categories="charts.attendance_trend.categories"
+              :series="charts.attendance_trend.series"
+            />
+            <ChartCard
+              title="Leave Distribution"
+              :subtitle="filterCopy.leaveDistribution"
+              type="donut"
+              :labels="charts.leave_distribution.labels"
+              :series="charts.leave_distribution.series"
+            />
+          </div>
         </section>
 
         <section v-else-if="activeTab === 'attendance'" class="space-y-6">
@@ -541,11 +527,6 @@ watch(filters, refreshDashboard, { deep: true })
             </div>
             <EmptyState v-else title="No leave type data" message="No leave type records found for the selected filters." icon="far fa-calendar" />
           </section>
-        </section>
-
-        <section v-else-if="activeTab === 'insights'" class="grid gap-4 lg:grid-cols-3">
-          <SmartInsightCard v-for="insight in insights" :key="`${insight.title}-${insight.message}`" :insight="insight" />
-          <EmptyState v-if="!insights.length" title="No insights" message="Dashboard signals are stable." icon="fas fa-lightbulb" />
         </section>
 
         <section v-else class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
