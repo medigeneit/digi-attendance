@@ -22,6 +22,7 @@ const employeeFilters = ref({
   line_type: 'all',
 })
 const latestPayroll = ref(null)
+const payrollOptions = ref([])
 const payrollLoading = ref(false)
 const payrollError = ref('')
 const submitting = ref(false)
@@ -31,6 +32,8 @@ const form = ref({
   payroll_id: '',
   ref_year: '',
   ref_month: '',
+  carry_to_year: '',
+  carry_to_month: '',
   adjustment_type: 'overtime',
   settlement_type: 'carry_forward',
   overtime_hours: '',
@@ -52,18 +55,13 @@ const settlementTypes = [
 ]
 
 const carryToLabel = computed(() => {
-  if (!form.value.ref_year || !form.value.ref_month) return '-'
-  const year = Number(form.value.ref_year)
-  const month = Number(form.value.ref_month)
-  const next = new Date(Date.UTC(year, month, 1))
-  return new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' }).format(next)
+  if (!form.value.carry_to_year || !form.value.carry_to_month) return '-'
+  return formatMonthLabel(`${form.value.carry_to_year}-${String(form.value.carry_to_month).padStart(2, '0')}`)
 })
 
 const payrollMonthLabel = computed(() => {
   if (!latestPayroll.value?.salary_month) return '-'
-  const date = new Date(`${String(latestPayroll.value.salary_month).slice(0, 10)}T00:00:00`)
-  if (Number.isNaN(date.getTime())) return String(latestPayroll.value.salary_month).slice(0, 10)
-  return new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' }).format(date)
+  return formatMonthLabel(latestPayroll.value.salary_month)
 })
 
 const payrollNet = computed(() => Number(latestPayroll.value?.net_salary || 0))
@@ -71,6 +69,71 @@ const payrollNet = computed(() => Number(latestPayroll.value?.net_salary || 0))
 const toNum = (value) => {
   const n = Number(value)
   return Number.isFinite(n) ? n : 0
+}
+
+const monthValue = (value) => String(value || '').slice(0, 7)
+
+const formatMonthLabel = (value) => {
+  const month = monthValue(value)
+  if (!month) return '-'
+  const date = new Date(`${month}-01T00:00:00`)
+  if (Number.isNaN(date.getTime())) return month
+  return new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' }).format(date)
+}
+
+const addMonths = (month, count = 1) => {
+  const normalized = monthValue(month)
+  if (!normalized) return ''
+  const date = new Date(`${normalized}-01T00:00:00`)
+  if (Number.isNaN(date.getTime())) return ''
+  date.setMonth(date.getMonth() + count)
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+}
+
+const setRefMonth = (month) => {
+  const normalized = monthValue(month)
+  if (!normalized) {
+    form.value.ref_year = ''
+    form.value.ref_month = ''
+    return
+  }
+
+  form.value.ref_year = Number(normalized.slice(0, 4))
+  form.value.ref_month = Number(normalized.slice(5, 7))
+}
+
+const setCarryMonth = (month) => {
+  const normalized = monthValue(month)
+  if (!normalized) {
+    form.value.carry_to_year = ''
+    form.value.carry_to_month = ''
+    return
+  }
+
+  form.value.carry_to_year = Number(normalized.slice(0, 4))
+  form.value.carry_to_month = Number(normalized.slice(5, 7))
+}
+
+const carryToMonthInput = computed({
+  get: () => {
+    if (!form.value.carry_to_year || !form.value.carry_to_month) return ''
+    return `${form.value.carry_to_year}-${String(form.value.carry_to_month).padStart(2, '0')}`
+  },
+  set: setCarryMonth,
+})
+
+const payrollCycle = (payroll) => String(payroll?.payroll_cycle || payroll?.settlement_mode || payroll?.payroll_batch?.payroll_cycle || payroll?.payrollBatch?.payroll_cycle || '').toLowerCase()
+
+const isRegularPayroll = (payroll) => {
+  const cycle = payrollCycle(payroll)
+  const salaryType = String(payroll?.salary_type || '').toLowerCase()
+  return cycle === 'regular' || salaryType === 'monthly'
+}
+
+const payrollOptionLabel = (payroll) => {
+  const cycle = payrollCycle(payroll)
+  const type = payroll?.salary_type || (cycle ? cycle.replace(/_/g, ' ') : 'Payroll')
+  return `${formatMonthLabel(payroll?.salary_month)} - ${type}`
 }
 
 const isOvertimeAdjustment = computed(() => form.value.adjustment_type === 'overtime')
@@ -144,9 +207,43 @@ const slipTotalEarnings = computed(() => toNum(latestPayroll.value?.earnings?.to
 const slipTotalDeductions = computed(() => toNum(latestPayroll.value?.deductions?.total) || toNum(latestPayroll.value?.total_deduction))
 const slipNetPayment = computed(() => toNum(latestPayroll.value?.net_payment ?? latestPayroll.value?.net_salary))
 
-const loadLatestPayroll = async (employeeId) => {
+const loadPayrollSlip = async (payrollRow) => {
+  latestPayroll.value = payrollRow
+  if (!payrollRow?.id) return
+
+  const slipRes = await apiClient.get(`/payroll-cash-slips/${payrollRow.id}`)
+  const slip = slipRes.data?.data || null
+  if (slip && String(form.value.payroll_id) === String(payrollRow.id)) {
+    latestPayroll.value = { ...payrollRow, ...slip }
+  }
+}
+
+const selectReferencePayroll = async (payrollRow) => {
+  if (!payrollRow) return
+
+  form.value.payroll_id = payrollRow.id
+  const refMonth = monthValue(payrollRow.salary_month)
+  setRefMonth(refMonth)
+  setCarryMonth(addMonths(refMonth, 1))
+
+  employeeDisplay.value = {
+    name: payrollRow.user?.name || payrollRow.employee_name || employeeDisplay.value.name,
+    dept: payrollRow.user?.department?.name || payrollRow.department_name || employeeDisplay.value.dept,
+  }
+
+  await loadPayrollSlip(payrollRow)
+}
+
+const onReferencePayrollChange = async () => {
+  const selected = payrollOptions.value.find((payroll) => String(payroll.id) === String(form.value.payroll_id))
+  if (!selected) return
+  await selectReferencePayroll(selected)
+}
+
+const loadEmployeePayrolls = async (employeeId) => {
   payrollError.value = ''
   latestPayroll.value = null
+  payrollOptions.value = []
 
   if (!employeeId) return
 
@@ -155,35 +252,22 @@ const loadLatestPayroll = async (employeeId) => {
     const res = await apiClient.get('/payrolls', {
       params: {
         user_id: employeeId,
-        per_page: 1,
+        per_page: 24,
       },
     })
 
     const payload = res.data?.data || []
-    const payrollRow = Array.isArray(payload) ? payload[0] || null : payload?.[0] || null
-    latestPayroll.value = payrollRow
+    payrollOptions.value = Array.isArray(payload) ? payload : []
 
-    if (!latestPayroll.value) {
+    if (!payrollOptions.value.length) {
       payrollError.value = 'No payroll found for this employee.'
       return
     }
 
-    const slipRes = await apiClient.get(`/payroll-cash-slips/${latestPayroll.value.id}`)
-    const slip = slipRes.data?.data || null
-    if (slip) {
-      latestPayroll.value = { ...payrollRow, ...slip }
-    }
-
-    const month = String(latestPayroll.value.salary_month).slice(0, 7)
-    form.value.payroll_id = latestPayroll.value.id
-    form.value.ref_year = Number(month.slice(0, 4))
-    form.value.ref_month = Number(month.slice(5, 7))
-    employeeDisplay.value = {
-      name: latestPayroll.value.user?.name || latestPayroll.value.employee_name || employeeDisplay.value.name,
-      dept: latestPayroll.value.user?.department?.name || latestPayroll.value.department_name || employeeDisplay.value.dept,
-    }
+    const defaultPayroll = payrollOptions.value.find(isRegularPayroll) || payrollOptions.value[0]
+    await selectReferencePayroll(defaultPayroll)
   } catch (e) {
-    payrollError.value = e.message || 'Failed to load latest payroll.'
+    payrollError.value = e.message || 'Failed to load payrolls.'
   } finally {
     payrollLoading.value = false
   }
@@ -204,9 +288,12 @@ const onEmployeeFilterChange = async (payload = {}) => {
   form.value.payroll_id = ''
   form.value.ref_year = ''
   form.value.ref_month = ''
+  form.value.carry_to_year = ''
+  form.value.carry_to_month = ''
   latestPayroll.value = null
+  payrollOptions.value = []
   employeeDisplay.value = { name: null, dept: null }
-  await loadLatestPayroll(nextEmployeeId)
+  await loadEmployeePayrolls(nextEmployeeId)
 }
 
 watch(
@@ -219,7 +306,8 @@ watch(
 
 const submit = async () => {
   if (!form.value.employee_id) return toast.error('Select an employee.')
-  if (!form.value.payroll_id) return toast.error('No payroll found for this employee.')
+  if (!form.value.payroll_id) return toast.error('Select a reference payroll month.')
+  if (!form.value.carry_to_year || !form.value.carry_to_month) return toast.error('Select a carry month.')
   if (!form.value.adjustment_type) return toast.error('Select adjustment type.')
   if (isOvertimeAdjustment.value && Number(form.value.overtime_hours || 0) <= 0) return toast.error('Enter overtime hours.')
   if (!form.value.amount || Number(form.value.amount) === 0) return toast.error('Enter a valid amount.')
@@ -232,6 +320,8 @@ const submit = async () => {
       payroll_id: form.value.payroll_id,
       ref_year: form.value.ref_year,
       ref_month: form.value.ref_month,
+      carry_to_year: form.value.carry_to_year,
+      carry_to_month: form.value.carry_to_month,
       adjustment_type: form.value.adjustment_type,
       settlement_type: form.value.settlement_type,
       amount: form.value.amount,
@@ -255,7 +345,7 @@ const submit = async () => {
       <button class="btn-3" @click="router.back()"><i class="far fa-arrow-left"></i></button>
       <div>
         <h1 class="text-2xl font-bold text-slate-900">Create Adjustment</h1>
-        <p class="text-sm text-slate-500">Link an adjustment to the employee's latest payroll month.</p>
+        <p class="text-sm text-slate-500">Link an adjustment to a selected reference payroll month.</p>
       </div>
     </div>
 
@@ -272,6 +362,31 @@ const submit = async () => {
               :with-type="true"
               @filter-change="onEmployeeFilterChange"
             />
+          </div>
+
+          <div class="grid gap-4 md:grid-cols-2">
+            <div>
+              <label class="mb-1 block text-xs font-medium text-slate-600">Reference Payroll Month</label>
+              <select
+                v-model="form.payroll_id"
+                :disabled="payrollLoading || !payrollOptions.length"
+                class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:bg-slate-50 disabled:text-slate-400"
+                @change="onReferencePayrollChange"
+              >
+                <option value="">--Select Payroll Month--</option>
+                <option v-for="payroll in payrollOptions" :key="payroll.id" :value="payroll.id">
+                  {{ payrollOptionLabel(payroll) }}
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="mb-1 block text-xs font-medium text-slate-600">Carry To Month</label>
+              <input
+                v-model="carryToMonthInput"
+                type="month"
+                class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-100"
+              />
+            </div>
           </div>
 
           <div class="grid gap-4 md:grid-cols-2">
@@ -367,7 +482,7 @@ const submit = async () => {
 
       <div class="space-y-4">
         <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 class="text-lg font-semibold text-slate-900">Latest Payroll</h2>
+          <h2 class="text-lg font-semibold text-slate-900">Reference Payroll</h2>
           <LoaderView v-if="payrollLoading" />
           <div v-else-if="payrollError" class="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
             {{ payrollError }}
@@ -379,7 +494,7 @@ const submit = async () => {
               <div class="text-sm text-slate-500">{{ employeeDisplay?.dept || ' ' }}</div>
               <div class="mt-2 grid gap-2 text-xs sm:grid-cols-2">
                 <div class="flex items-center justify-between gap-2">
-                  <span class="text-slate-500">Payroll Month</span>
+                  <span class="text-slate-500">Ref Month</span>
                   <span class="font-semibold text-slate-800">{{ payrollMonthLabel }}</span>
                 </div>
                 <div class="flex items-center justify-between gap-2">
@@ -441,7 +556,7 @@ const submit = async () => {
             </div>
           </div>
           <div v-else class="mt-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
-            Choose an employee to load the latest payroll.
+            Choose an employee to load payroll months.
           </div>
         </div>
       </div>
