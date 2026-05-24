@@ -11,6 +11,7 @@ export const usePayrollBatchStore = defineStore('payrollBatch', () => {
   const generateResult = ref(null)
   const previewResult = ref(null)
   const options = ref(null)
+  const stepErpLogs = ref([])
   const apiUnavailable = ref(false)
   const API_UNAVAILABLE_MESSAGE = 'Payroll batch API is not available yet. You can continue without this module for now.'
 
@@ -199,6 +200,38 @@ export const usePayrollBatchStore = defineStore('payrollBatch', () => {
     }
   }
 
+  const syncStepErp = async (id, mode = 'manual') => {
+    error.value = null
+    try {
+      const endpoints = {
+        manual: [`/payroll-batches/${id}/step-erp-sync`],
+        retry: [`/payroll-batches/${id}/step-erp-sync/retry`],
+        force: [`/payroll-batches/${id}/step-erp-sync/force`],
+      }
+      const res = await requestWithFallback('post', endpoints[mode] || endpoints.manual, {})
+      item.value = res.data?.data || res.data
+      return res.data
+    } catch (err) {
+      const e = toError(err, 'Failed to queue Step ERP salary sheet sync')
+      error.value = e.message
+      throw e
+    }
+  }
+
+  const fetchStepErpLogs = async (id) => {
+    error.value = null
+    try {
+      const res = await requestWithFallback('get', [`/payroll-batches/${id}/step-erp-sync/logs`])
+      const d = res.data
+      stepErpLogs.value = d?.data && Array.isArray(d.data) ? d.data : (Array.isArray(d) ? d : [])
+      return res.data
+    } catch (err) {
+      const e = toError(err, 'Failed to fetch Step ERP sync logs')
+      error.value = e.message
+      throw e
+    }
+  }
+
   const generateDoctorPayroll = async (payload) => {
     loading.value = true
     error.value = null
@@ -233,6 +266,7 @@ export const usePayrollBatchStore = defineStore('payrollBatch', () => {
     generateResult,
     previewResult,
     options,
+    stepErpLogs,
     apiUnavailable,
     fetchList,
     fetchItem,
@@ -241,6 +275,8 @@ export const usePayrollBatchStore = defineStore('payrollBatch', () => {
     fetchOptions,
     transitionBatch,
     reviewPayroll,
+    syncStepErp,
+    fetchStepErpLogs,
     generateDoctorPayroll,
   }
 })

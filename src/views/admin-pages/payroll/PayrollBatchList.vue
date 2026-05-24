@@ -22,6 +22,8 @@ const openMoreId = ref(null)
 const actionLoadingId = ref(null)
 const confirmAction = ref(null)
 const cancellationReason = ref('')
+const syncLogs = ref([])
+const showSyncLogsFor = ref(null)
 
 const currentMonth = () => {
   const now = new Date()
@@ -198,6 +200,10 @@ const hasPermissionForAction = (action) => {
     export: ['payroll.batch.export', payrollRoles],
     adjustment: ['payroll.adjustment.create', payrollRoles],
     audit: ['payroll.batch.view', payrollRoles],
+    step_erp_sync: ['payroll.batch.step_erp_sync', accountRoles],
+    step_erp_retry: ['payroll.batch.step_erp_sync', accountRoles],
+    step_erp_force: ['payroll.batch.step_erp_sync', accountRoles],
+    step_erp_logs: ['payroll.batch.step_erp_sync', accountRoles],
   }
   const [permission, roles] = map[action] || []
   return permission ? can(permission, roles) : false
@@ -228,6 +234,21 @@ const actionCopy = {
     title: 'Cancel Payroll Batch?',
     message: 'Cancelled payroll cannot be paid or locked.',
     success: 'Payroll batch cancelled.',
+  },
+  step_erp_sync: {
+    title: 'Send to Client?',
+    message: 'Are you sure you want to send this salary sheet to client?',
+    success: 'Salary sheet sync queued.',
+  },
+  step_erp_retry: {
+    title: 'Retry Failed Sync?',
+    message: 'Only failed or pending chunks will be sent again.',
+    success: 'Failed or pending chunks queued for retry.',
+  },
+  step_erp_force: {
+    title: 'Force Resync?',
+    message: 'This will resend the full salary sheet even if already synced. Continue?',
+    success: 'Full salary sheet force resync queued.',
   },
 }
 
@@ -264,9 +285,22 @@ const moreActionsFor = (batch) => {
     export: ['Export', 'fa-file-export'],
     adjustment: ['Create Adjustment', 'fa-plus-circle'],
     audit: ['Audit Trail', 'fa-history'],
+    step_erp_sync: ['Send to Client', 'fa-paper-plane'],
+    step_erp_retry: ['Retry Failed Sync', 'fa-redo'],
+    step_erp_force: ['Force Resync', 'fa-sync-alt'],
+    step_erp_logs: ['View Sync Logs', 'fa-list-alt'],
   }
 
-  return actions
+  const syncActions = hasPermissionForAction('step_erp_sync')
+    ? [
+        ...(batch.sync_status !== 'success' ? ['step_erp_sync'] : []),
+        ...(['failed', 'partial_failed', 'queued', 'processing'].includes(String(batch.sync_status || 'not_sent')) ? ['step_erp_retry'] : []),
+        'step_erp_force',
+        'step_erp_logs',
+      ]
+    : []
+
+  return [...actions, ...syncActions]
     .filter((action) => action !== primary && hasPermissionForAction(action))
     .map((action) => ({ action, label: labels[action][0], icon: labels[action][1] }))
 }
@@ -306,12 +340,26 @@ const createAdjustment = (batch) => {
 
 const showAuditTrail = (batch) => goToShow(batch)
 
+const viewSyncLogs = async (batch) => {
+  actionLoadingId.value = `${batch.id}:step_erp_logs`
+  try {
+    const res = await batchStore.fetchStepErpLogs(batch.id)
+    syncLogs.value = res?.data && Array.isArray(res.data) ? res.data : []
+    showSyncLogsFor.value = batch
+  } catch (e) {
+    toast.error(e.message || 'Failed to load Step ERP sync logs.')
+  } finally {
+    actionLoadingId.value = null
+  }
+}
+
 const openConfirm = (batch, action) => {
   if (action === 'regenerate') return regenerateBatch(batch)
   if (action === 'view') return goToShow(batch)
   if (action === 'export') return exportBatch(batch)
   if (action === 'adjustment') return createAdjustment(batch)
   if (action === 'audit') return showAuditTrail(batch)
+  if (action === 'step_erp_logs') return viewSyncLogs(batch)
   cancellationReason.value = ''
   confirmAction.value = { batch, action, ...actionCopy[action] }
   openMoreId.value = null
@@ -332,7 +380,16 @@ const runConfirmedAction = async () => {
 
   actionLoadingId.value = `${batch.id}:${action}`
   try {
-    await batchStore.transitionBatch(batch.id, action, action === 'cancel' ? { reason: cancellationReason.value.trim() } : {})
+    if (action.startsWith('step_erp_')) {
+      const modeMap = {
+        step_erp_sync: 'manual',
+        step_erp_retry: 'retry',
+        step_erp_force: 'force',
+      }
+      await batchStore.syncStepErp(batch.id, modeMap[action])
+    } else {
+      await batchStore.transitionBatch(batch.id, action, action === 'cancel' ? { reason: cancellationReason.value.trim() } : {})
+    }
     toast.success(success)
     closeConfirm()
     await batchStore.fetchList(buildFilterParams())
@@ -420,6 +477,7 @@ const runConfirmedAction = async () => {
             <th class="px-4 py-3 text-center">Salary Month</th>
             <th class="px-4 py-3 text-center">Salary Type</th>
             <th class="px-4 py-3 text-center">Status</th>
+            <th class="px-4 py-3 text-center">Client Sync</th>
             <th class="px-4 py-3 text-left">Prepared By</th>
             <th class="px-4 py-3 text-center">Generated At</th>
             <th class="px-4 py-3 text-center">Payrolls</th>
@@ -440,6 +498,18 @@ const runConfirmedAction = async () => {
               </span>
             </td>
             <td class="px-4 py-3 text-center"><PayrollStatusBadge :status="batch.status || 'generated'" /></td>
+            <td class="px-4 py-3 text-center">
+              <span class="px-2 py-0.5 rounded-full border text-xs font-medium"
+                :class="{
+                  'bg-emerald-50 text-emerald-700 border-emerald-200': batch.sync_status === 'success',
+                  'bg-red-50 text-red-700 border-red-200': ['failed', 'partial_failed'].includes(batch.sync_status),
+                  'bg-amber-50 text-amber-700 border-amber-200': ['queued', 'processing'].includes(batch.sync_status),
+                  'bg-slate-50 text-slate-600 border-slate-200': !batch.sync_status || batch.sync_status === 'not_sent',
+                }"
+              >
+                {{ (batch.sync_status || 'not_sent').replaceAll('_', ' ') }}
+              </span>
+            </td>
             <td class="px-4 py-3 text-gray-600">{{ batch.prepared_by?.name || '—' }}</td>
             <td class="px-4 py-3 text-center text-gray-500 text-xs">{{ batch.created_at?.slice(0, 10) || '—' }}</td>
             <td class="px-4 py-3 text-center">
@@ -504,6 +574,49 @@ const runConfirmedAction = async () => {
       :per-page="pagination.per_page || filters.per_page" :total="pagination.total || list.length"
       :last-page="pagination.last_page || 1"
       @page-change="(p) => { filters.page = p; load() }" />
+
+    <div v-if="showSyncLogsFor" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+      <div class="w-full max-w-5xl rounded-xl bg-white p-5 shadow-2xl">
+        <div class="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Step ERP Sync Logs</h2>
+            <p class="mt-1 text-sm text-slate-600">Batch #{{ showSyncLogsFor.id }}</p>
+          </div>
+          <button class="btn-3" @click="showSyncLogsFor = null"><i class="far fa-times"></i></button>
+        </div>
+        <div class="max-h-[70vh] overflow-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-slate-50 text-xs uppercase text-slate-600">
+              <tr>
+                <th class="px-3 py-2 text-left">Batch</th>
+                <th class="px-3 py-2 text-center">Mode</th>
+                <th class="px-3 py-2 text-center">Chunk</th>
+                <th class="px-3 py-2 text-center">Employees</th>
+                <th class="px-3 py-2 text-center">Status</th>
+                <th class="px-3 py-2 text-center">HTTP</th>
+                <th class="px-3 py-2 text-left">Error</th>
+                <th class="px-3 py-2 text-center">Sent At</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr v-for="log in syncLogs" :key="log.id">
+                <td class="px-3 py-2 font-mono text-xs">{{ log.batch_id }}</td>
+                <td class="px-3 py-2 text-center">{{ log.sync_mode }}</td>
+                <td class="px-3 py-2 text-center">{{ log.chunk_no }}/{{ log.total_chunks }}</td>
+                <td class="px-3 py-2 text-center">{{ log.employee_count }}</td>
+                <td class="px-3 py-2 text-center">{{ log.status }}</td>
+                <td class="px-3 py-2 text-center">{{ log.http_status || '—' }}</td>
+                <td class="px-3 py-2 text-xs text-red-600">{{ log.error_message || '—' }}</td>
+                <td class="px-3 py-2 text-center text-xs">{{ log.sent_at?.slice(0, 19) || '—' }}</td>
+              </tr>
+              <tr v-if="!syncLogs.length">
+                <td colspan="8" class="px-3 py-6 text-center text-slate-400">No Step ERP sync logs found.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
 
     <div v-if="confirmAction" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
       <div class="w-full max-w-md rounded-xl bg-white p-5 shadow-2xl">
