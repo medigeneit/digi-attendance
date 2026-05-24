@@ -372,7 +372,7 @@ onMounted(() => {
               <th class="border border-slate-200 px-2 py-1.5 text-center">Ref Month</th>
               <th class="border border-slate-200 px-2 py-1.5 text-center">Carry To</th>
               <th class="border border-slate-200 px-2 py-1.5 text-center">Status</th>
-              <th class="border border-slate-200 px-2 py-1.5 text-center">Actions</th>
+              <th class="w-[160px] border border-slate-200 px-2 py-1.5 text-center">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -394,35 +394,49 @@ onMounted(() => {
               <td class="border border-slate-200 px-2 py-1.5 text-center font-mono text-slate-700">{{ row.ref_month_label }}</td>
               <td class="border border-slate-200 px-2 py-1.5 text-center font-mono text-slate-700">{{ row.carry_to_label || '-' }}</td>
               <td class="border border-slate-200 px-2 py-1.5 text-center"><AdjustmentStatusBadge :status="row.status" /></td>
-              <td class="border border-slate-200 px-2 py-1.5">
-                <div class="flex flex-nowrap items-center justify-center gap-1">
-                  <button class="btn-3 h-7 px-2 text-xs" title="View" @click="openDetail(row)">
-                    <i class="far fa-eye"></i> View
+              <td class="border border-slate-200 px-2 py-1.5 align-middle">
+                <div class="flex h-8 items-center justify-center gap-1.5">
+                  <button
+                    class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-blue-200 bg-blue-50 leading-none text-blue-700 transition hover:border-blue-300 hover:bg-blue-100"
+                    title="View"
+                    aria-label="View adjustment"
+                    @click="openDetail(row)"
+                  >
+                    <i class="far fa-eye block text-[11px] leading-none"></i>
                   </button>
                   <button
                     v-if="canVerify && ['pending', 'verified'].includes(row.status)"
-                    class="btn-3 h-7 px-2 text-xs"
+                    class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-emerald-200 bg-emerald-50 leading-none text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100"
+                    title="Approve"
+                    aria-label="Approve adjustment"
                     @click="approveRow(row)"
                   >
-                    <i class="far fa-check-circle"></i> Approve
+                    <i class="far fa-check-circle block text-[11px] leading-none"></i>
                   </button>
                   <button
                     v-else-if="canReject && ['pending', 'verified'].includes(row.status)"
-                    class="btn-3 h-7 px-2 text-xs"
+                    class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-amber-200 bg-amber-50 leading-none text-amber-700 transition hover:border-amber-300 hover:bg-amber-100"
+                    title="Review"
+                    aria-label="Review adjustment"
                     @click="openDetail(row)"
                   >
-                    <i class="far fa-clipboard-list"></i> Review
+                    <i class="far fa-clipboard-list block text-[11px] leading-none"></i>
                   </button>
+                  <span v-else class="h-7 w-7 shrink-0"></span>
                   <button
                     v-if="canDelete"
-                    class="h-7 rounded border border-red-200 bg-red-50 px-2 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-red-200 bg-red-50 leading-none text-red-700 transition hover:border-red-300 hover:bg-red-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-300"
                     :disabled="!canDeleteRow(row) || isDeleting(row.id)"
                     :title="canDeleteRow(row) ? 'Delete' : 'Only pending or rejected adjustments can be deleted'"
+                    aria-label="Delete adjustment"
                     @click="deleteRow(row)"
                   >
-                    <i class="far fa-trash-alt"></i>
-                    {{ isDeleting(row.id) ? 'Deleting' : 'Delete' }}
+                    <i
+                      class="block text-[11px] leading-none"
+                      :class="isDeleting(row.id) ? 'far fa-spinner fa-spin' : 'far fa-trash-alt'"
+                    ></i>
                   </button>
+                  <span v-else class="h-7 w-7 shrink-0"></span>
                 </div>
               </td>
             </tr>
