@@ -130,6 +130,21 @@ export const useAdjustmentStore = defineStore('adjustment', () => {
     }
   }
 
+  const remove = async (id) => {
+    loading.value = true
+    error.value = null
+    try {
+      await apiClient.delete(`/payroll-adjustments/${id}`)
+      adjustments.value = adjustments.value.filter((row) => row.id !== id)
+      if (item.value?.id === id) item.value = null
+      return true
+    } catch (err) {
+      setError(err, 'Failed to delete payroll adjustment')
+    } finally {
+      loading.value = false
+    }
+  }
+
   const loadCarryPreview = async (year, month) => {
     loading.value = true
     error.value = null
@@ -176,6 +191,7 @@ export const useAdjustmentStore = defineStore('adjustment', () => {
     create,
     verify,
     reject,
+    remove,
     loadCarryPreview,
     applyCarryForward,
     pendingList,

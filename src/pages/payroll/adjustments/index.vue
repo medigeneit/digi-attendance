@@ -25,6 +25,7 @@ defineOptions({
 const defaultMonth = () => new Date().toISOString().slice(0, 7)
 const allowedTabs = ['all', 'pending', 'verified', 'approved', 'carried']
 const routeSyncing = ref(false)
+const deletingIds = ref(new Set())
 
 const queryValue = (value, fallback = '') => {
   if (Array.isArray(value)) return value[0] ? String(value[0]) : fallback
@@ -108,6 +109,7 @@ const filterMonthPeriod = computed({
 })
 
 const canCreate = computed(() => ['hr', 'super_admin', 'developer'].includes(String(authStore.user?.role || '').toLowerCase()))
+const canDelete = computed(() => String(authStore.user?.role || '').toLowerCase() === 'super_admin')
 const canVerify = computed(() => ['accounts', 'super_admin', 'developer'].includes(String(authStore.user?.role || '').toLowerCase()))
 const canReject = computed(() => ['admin', 'super_admin', 'developer'].includes(String(authStore.user?.role || '').toLowerCase()))
 
@@ -164,7 +166,10 @@ const load = async () => {
   try {
     await syncRouteQuery()
     await adjustmentStore.fetchAll({
+      company_id: filters.value.company_id || undefined,
+      department_id: filters.value.department_id || undefined,
       employee_id: filters.value.employee_id || undefined,
+      line_type: filters.value.line_type && filters.value.line_type !== 'all' ? filters.value.line_type : undefined,
       ref_year: filters.value.month ? Number(filters.value.month.slice(0, 4)) : undefined,
       ref_month: filters.value.month ? Number(filters.value.month.slice(5, 7)) : undefined,
     })
@@ -193,6 +198,28 @@ const approveRow = async (row) => {
   }
 }
 
+const canDeleteRow = (row) => canDelete.value && ['pending', 'rejected'].includes(row.status)
+
+const isDeleting = (id) => deletingIds.value.has(id)
+
+const deleteRow = async (row) => {
+  if (!canDeleteRow(row)) return
+  const confirmed = window.confirm(`Delete adjustment for ${row.employee?.name || 'this employee'}?`)
+  if (!confirmed) return
+
+  deletingIds.value = new Set([...deletingIds.value, row.id])
+  try {
+    await adjustmentStore.remove(row.id)
+    toast.success('Adjustment deleted.')
+  } catch (e) {
+    toast.error(e.message || 'Delete failed.')
+  } finally {
+    const next = new Set(deletingIds.value)
+    next.delete(row.id)
+    deletingIds.value = next
+  }
+}
+
 const openDetail = (row) => {
   router.push({ name: 'PayrollAdjustmentShow', params: { id: row.id } })
 }
@@ -208,7 +235,8 @@ watch(
 watch(
   () => [filters.value.company_id, filters.value.department_id, filters.value.employee_id, filters.value.line_type, activeTab.value],
   () => {
-    syncRouteQuery()
+    if (routeSyncing.value) return
+    load()
   },
 )
 
@@ -228,12 +256,12 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="space-y-4 p-4 md:p-6">
-    <div class="rounded-3xl border border-slate-200 bg-gradient-to-r from-slate-50 via-white to-amber-50 p-5 shadow-sm">
+  <div class="space-y-3 p-3 md:p-4">
+    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 class="text-2xl font-bold text-slate-900">Post-Payroll Adjustments</h1>
-          <p class="mt-1 text-sm text-slate-500">
+          <h1 class="text-xl font-bold text-slate-900">Post-Payroll Adjustments</h1>
+          <p class="mt-0.5 text-xs text-slate-500">
             Manage approved carry-forward adjustments for {{ activeMonthLabel }}.
           </p>
         </div>
@@ -248,8 +276,10 @@ onMounted(() => {
       </div>
     </div>
 
-    <div class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div class="grid gap-4 lg:grid-cols-[8fr_0.8fr_auto] items-end">
+    
+
+    <div class="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+      <div class="grid items-end gap-3 lg:grid-cols-[1fr_auto]">
         <div>
           <label class="mb-1 block text-xs font-medium text-slate-600">Employee</label>
           <EmployeeFilter
@@ -274,34 +304,34 @@ onMounted(() => {
           </EmployeeFilter> 
         </div>
         <div>
-          <button class="btn-1" @click="load">
+          <button class="btn-1 h-9 px-4 text-xs" @click="load">
             <i class="far fa-search"></i> Load
           </button>
         </div>
       </div>
     </div>
 
-    <div class="grid gap-2 md:grid-cols-2 xl:grid-cols-5">
+    <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
       <button
         v-for="card in summaryCards"
         :key="card.label"
-        class="rounded-2xl border p-3 text-left shadow-sm transition hover:-translate-y-0.5"
+        class="rounded-xl border px-3 py-2 text-left shadow-sm transition hover:-translate-y-0.5"
         :class="card.tone"
         @click="activeTab = card.label.toLowerCase()"
       >
-        <div class="text-[11px] font-semibold uppercase tracking-[0.2em] opacity-70">{{ card.label }}</div>
-        <div class="mt-1 text-xl font-bold">{{ card.value }}</div>
+        <div class="text-[10px] font-semibold uppercase tracking-wider opacity-70">{{ card.label }}</div>
+        <div class="text-lg font-bold">{{ card.value }}</div>
       </button>
     </div>
 
-    <div class="rounded-3xl border border-slate-200 bg-white shadow-sm">
-      <div class="border-b border-slate-100 px-4 py-3">
+    <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div class="border-b border-slate-100 px-3 py-2">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div class="flex flex-wrap gap-2">
             <button
               v-for="tab in ['all', 'pending', 'verified', 'approved', 'carried']"
               :key="tab"
-              class="rounded-full border px-3 py-1.5 text-sm font-medium transition"
+              class="rounded-full border px-3 py-1 text-xs font-medium transition"
               :class="activeTab === tab ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600'"
               @click="activeTab = tab"
             >
@@ -332,52 +362,66 @@ onMounted(() => {
       </div>
 
       <div v-else class="overflow-x-auto">
-        <table class="min-w-[1180px] w-full border-collapse text-sm">
+        <table class="min-w-[1100px] w-full border-collapse text-xs">
           <thead class="bg-slate-50 text-slate-700">
             <tr>
-              <th class="border border-slate-200 px-3 py-2 text-left">Employee</th>
-              <th class="border border-slate-200 px-3 py-2 text-left">Type</th>
-              <th class="border border-slate-200 px-3 py-2 text-right">Amount</th>
-              <th class="border border-slate-200 px-3 py-2 text-center">Ref Month</th>
-              <th class="border border-slate-200 px-3 py-2 text-center">Carry To</th>
-              <th class="border border-slate-200 px-3 py-2 text-center">Status</th>
-              <th class="border border-slate-200 px-3 py-2 text-center">Actions</th>
+              <th class="w-12 border border-slate-200 px-2 py-1.5 text-center">SL</th>
+              <th class="border border-slate-200 px-2 py-1.5 text-left">Employee</th>
+              <th class="border border-slate-200 px-2 py-1.5 text-left">Type</th>
+              <th class="border border-slate-200 px-2 py-1.5 text-right">Amount</th>
+              <th class="border border-slate-200 px-2 py-1.5 text-center">Ref Month</th>
+              <th class="border border-slate-200 px-2 py-1.5 text-center">Carry To</th>
+              <th class="border border-slate-200 px-2 py-1.5 text-center">Status</th>
+              <th class="border border-slate-200 px-2 py-1.5 text-center">Actions</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="row in visibleAdjustments" :key="row.id" class="odd:bg-white even:bg-slate-50/40">
-              <td class="border border-slate-200 px-3 py-2">
+            <tr v-for="(row, index) in visibleAdjustments" :key="row.id" class="odd:bg-white even:bg-slate-50/40">
+              <td class="border border-slate-200 px-2 py-1.5 text-center font-mono text-slate-500">
+                {{ index + 1 }}
+              </td>
+              <td class="border border-slate-200 px-2 py-1.5">
                 <div class="font-semibold text-slate-900">{{ row.employee?.name || '-' }}</div>
                 <div class="text-xs text-slate-500">{{ row.employee?.employee_id || '-' }}</div>
               </td>
-              <td class="border border-slate-200 px-3 py-2">
+              <td class="border border-slate-200 px-2 py-1.5">
                 <div class="capitalize text-slate-800">{{ row.adjustment_type?.replace(/_/g, ' ') }}</div>
                 <div class="text-xs text-slate-500 break-words">{{ row.reason }}</div>
               </td>
-              <td class="border border-slate-200 px-3 py-2 text-right font-mono font-semibold" :class="Number(row.amount) >= 0 ? 'text-emerald-700' : 'text-rose-700'">
+              <td class="border border-slate-200 px-2 py-1.5 text-right font-mono font-semibold" :class="Number(row.amount) >= 0 ? 'text-emerald-700' : 'text-rose-700'">
                 {{ Number(row.amount) >= 0 ? '+' : '' }}{{ formatCurrency(row.amount) }}
               </td>
-              <td class="border border-slate-200 px-3 py-2 text-center font-mono text-slate-700">{{ row.ref_month_label }}</td>
-              <td class="border border-slate-200 px-3 py-2 text-center font-mono text-slate-700">{{ row.carry_to_label || '-' }}</td>
-              <td class="border border-slate-200 px-3 py-2 text-center"><AdjustmentStatusBadge :status="row.status" /></td>
-              <td class="border border-slate-200 px-3 py-2">
-                <div class="flex flex-wrap items-center justify-center gap-1">
-                  <button class="btn-3 h-8 text-xs" @click="openDetail(row)">
+              <td class="border border-slate-200 px-2 py-1.5 text-center font-mono text-slate-700">{{ row.ref_month_label }}</td>
+              <td class="border border-slate-200 px-2 py-1.5 text-center font-mono text-slate-700">{{ row.carry_to_label || '-' }}</td>
+              <td class="border border-slate-200 px-2 py-1.5 text-center"><AdjustmentStatusBadge :status="row.status" /></td>
+              <td class="border border-slate-200 px-2 py-1.5">
+                <div class="flex flex-nowrap items-center justify-center gap-1">
+                  <button class="btn-3 h-7 px-2 text-xs" title="View" @click="openDetail(row)">
                     <i class="far fa-eye"></i> View
                   </button>
                   <button
                     v-if="canVerify && ['pending', 'verified'].includes(row.status)"
-                    class="btn-3 h-8 text-xs"
+                    class="btn-3 h-7 px-2 text-xs"
                     @click="approveRow(row)"
                   >
                     <i class="far fa-check-circle"></i> Approve
                   </button>
                   <button
                     v-else-if="canReject && ['pending', 'verified'].includes(row.status)"
-                    class="btn-3 h-8 text-xs"
+                    class="btn-3 h-7 px-2 text-xs"
                     @click="openDetail(row)"
                   >
                     <i class="far fa-clipboard-list"></i> Review
+                  </button>
+                  <button
+                    v-if="canDelete"
+                    class="h-7 rounded border border-red-200 bg-red-50 px-2 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    :disabled="!canDeleteRow(row) || isDeleting(row.id)"
+                    :title="canDeleteRow(row) ? 'Delete' : 'Only pending or rejected adjustments can be deleted'"
+                    @click="deleteRow(row)"
+                  >
+                    <i class="far fa-trash-alt"></i>
+                    {{ isDeleting(row.id) ? 'Deleting' : 'Delete' }}
                   </button>
                 </div>
               </td>
