@@ -15,24 +15,6 @@ const selectedRow = ref(null)
 const selectedBoardRowId = ref(null)
 const viewMode = ref('split')
 
-const STAGE_DESCRIPTIONS = {
-  // onboarding: {
-  //   pre_boarding: 'Documents, approvals, and readiness checks before day one.',
-  //   joining: 'Joining formalities and first-day checklist items.',
-  //   training: 'Orientation, tools, and resource setup for the new joiner.',
-  //   probation: 'Performance follow-up and probation milestone tracking.',
-  //   confirmation: 'Final review, confirmation, and regularization tasks.',
-  // },
-  // offboarding: {
-  //   exit_request: 'Initial resignation or separation request handling.',
-  //   clearance_in_progress: 'Department clearance and exit checklist follow-up.',
-  //   handover_in_progress: 'Knowledge transfer, asset return, and handover work.',
-  //   exit_interview: 'Feedback capture and final exit interview activities.',
-  //   settlement_pending: 'Final settlement, dues, and closeout preparation.',
-  //   exited: 'Employee exit closed and lifecycle completed.',
-  // },
-}
-
 const clamp = (v, min = 0, max = 100) => Math.min(Math.max(Number(v || 0), min), max)
 const stageAverageProgress = (stages = []) => {
   const values = (Array.isArray(stages) ? stages : [])
@@ -78,9 +60,7 @@ const stageItems = computed(() =>
   store.lifecycleStatusOptions.map((item, index) => ({
     ...item,
     count: stageCounts.value[item.value] || 0,
-    description:
-      STAGE_DESCRIPTIONS?.[store.flowType]?.[item.value] ||
-      'Track lifecycle records for this stage.',
+    description:'',
     sequence: index + 1,
     isActive: activeStage.value === item.value,
   })),

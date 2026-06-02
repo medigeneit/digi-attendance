@@ -1404,6 +1404,12 @@ const router = createRouter({
           meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'Employee Management' },
         },
         {
+          path: '/employee-management/reports',
+          name: 'emp-manage.reports',
+          component: () => import('@/views/admin-pages/EmpReportsList.vue'),
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'], title: 'Reports & Lists' },
+        },
+        {
           path: '/blood-donors',
           name: 'BloodDonorIndex',
           component: () => import('@/views/admin-pages/BloodDonorList.vue'),

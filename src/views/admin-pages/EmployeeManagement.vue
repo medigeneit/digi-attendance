@@ -51,6 +51,12 @@ const workQueues = [
     to: { name: 'UserAdd' },
     icon: 'far fa-user-plus',
   },
+  {
+    title: 'Reports & Lists',
+    description: 'Filter, preview and export employee data — Excel, CSV, Print.',
+    to: { name: 'emp-manage.reports' },
+    icon: 'far fa-file-chart-column',
+  },
 ]
 
 const processSteps = [

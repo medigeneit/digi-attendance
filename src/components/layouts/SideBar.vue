@@ -127,6 +127,12 @@ const hrdRouteNames = hrdMenu.map((i) => i.routeName)
 // EmpManage
 const empManageMenu = [
   {
+    key: 'reports_lists',
+    label: 'Reports & Lists',
+    to: { name: 'emp-manage.reports' },
+    items: [],
+  },
+  {
     key: 'onboarding',
     label: 'Onboarding',
     to: { name: 'lifecycle.board', params: { flowType: 'onboarding' } },
@@ -191,7 +197,7 @@ const empManageMenu = [
     ],
   },
 ]
-const empRouteNames = ['checklists.board', 'lifecycle.board', 'lifecycle.detail']
+const empRouteNames = ['checklists.board', 'lifecycle.board', 'lifecycle.detail', 'emp-manage.reports']
 
 // Settings
 const settingsMenu = [
@@ -260,13 +266,18 @@ const filteredEmpManageMenu = computed(() => {
   return empManageMenu
     .map((group) => {
       const groupMatched = matchesQuery(group.label)
+      // Direct-link entries (no subitems) — keep only if group label matches
+      if (!group.items?.length) return groupMatched ? group : null
       const items = groupMatched
         ? group.items
         : group.items.filter((item) => matchesQuery(item.label))
-
       return { ...group, items }
     })
-    .filter((group) => group.items.length > 0)
+    .filter((group) => {
+      if (!group) return false
+      if (!group.items?.length) return true   // direct-link — label already checked above
+      return group.items.length > 0
+    })
 })
 const filteredSettingsMenu = computed(() =>
   normalizedQuery.value ? settingsMenu.filter((i) => matchesQuery(i.label)) : settingsMenu,
@@ -306,6 +317,9 @@ const isEmpGroupActive = (group) => {
     return ['lifecycle.board', 'lifecycle.detail'].includes(currentName.value) &&
       route.params.flowType === group.to.params?.flowType
   }
+
+  // Direct-link entry (no subitems) — match on route name
+  if (!group.items?.length) return currentName.value === group.to.name
 
   return group.items?.some((item) => isEmpItemActive(item))
 }
@@ -813,7 +827,7 @@ watch(
                   }"
                 >
                   <span class="flex-1">{{ group.label }}</span>
-                  <span class="text-[11px] text-slate-400">/</span>
+                  <span v-if="group.items?.length" class="text-[11px] text-slate-400">/</span>
                 </RouterLink>
 
                 <RouterLink
