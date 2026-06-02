@@ -7,11 +7,14 @@ import autoTable from 'jspdf-autotable'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import { useUserStore } from '@/stores/user'
 import { useEmpReportsStore } from '@/stores/empReports'
+import { useAuthStore } from '@/stores/auth'
 
 const userStore = useUserStore()
 const empStore  = useEmpReportsStore()
+const authStore = useAuthStore()
 const { users, isLoading }          = storeToRefs(userStore)
 const { summary, isLoadingSummary } = storeToRefs(empStore)
+const canExportReports = computed(() => authStore.canFeature('emp_reports.export'))
 
 // ─── Filter state ─────────────────────────────────────────────────────────────
 const filterCompanyId    = ref('')
@@ -205,6 +208,7 @@ function applyPreset(preset) {
 }
 
 async function downloadPreset(preset) {
+  if (!canExportReports.value) return
   const params = { sort: 'grade_joining' }
   if (preset.p.line_type && preset.p.line_type !== 'all') params.line_type = preset.p.line_type
   if (preset.p.status)   params.status    = preset.p.status
@@ -224,6 +228,7 @@ function getExportRows() {
 }
 
 function downloadCustomExcel() {
+  if (!canExportReports.value) return
   const headers = activeColumns.value.map(c => c.label)
   const rows    = getExportRows()
   const ws = XLSX.utils.aoa_to_sheet([headers, ...rows])
@@ -236,6 +241,7 @@ function downloadCustomExcel() {
 }
 
 function downloadCustomPDF() {
+  if (!canExportReports.value) return
   const landscape = activeColumns.value.length > 7
   const doc = new jsPDF({ orientation: landscape ? 'landscape' : 'portrait', unit: 'pt', format: 'A4' })
   autoTable(doc, {
@@ -363,6 +369,7 @@ onMounted(() => {
           <!-- Actions -->
           <div class="flex items-center gap-2">
             <button
+              v-if="canExportReports"
               class="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md bg-blue-600 py-1.5 text-[11px] font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
               @click="downloadPreset(preset)"
             >
@@ -486,12 +493,14 @@ onMounted(() => {
             </div>
             <div class="flex flex-wrap gap-1.5">
               <button
+                v-if="canExportReports"
                 class="inline-flex items-center gap-1.5 rounded bg-blue-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-blue-700"
                 @click="downloadCustomExcel"
               >
                 <i class="far fa-file-excel"></i> Excel
               </button>
               <button
+                v-if="canExportReports"
                 class="inline-flex items-center gap-1.5 rounded bg-rose-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-rose-700"
                 @click="downloadCustomPDF"
               >

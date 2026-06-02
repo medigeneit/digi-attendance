@@ -473,10 +473,21 @@ const router = createRouter({
               },
             },
             {
+              path: 'feature-permissions',
+              name: 'FeaturePermissionList',
+              component: () => import('@/views/admin-pages/FeaturePermissionList.vue'),
+              meta: {
+                requiresAuth: true,
+                roles: ['super_admin', 'developer'],
+                feature: 'settings.permissions.manage',
+                title: 'Feature Permissions',
+              },
+            },
+            {
               path: 'user-list',
               name: 'UserList',
               component: () => import('@/views/admin-pages/UserList.vue'),
-              meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'User List' },
+              meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'], title: 'User List' },
             },
             {
               path: 'user-add',
@@ -1263,7 +1274,7 @@ const router = createRouter({
           component: () => import('@/views/admin-pages/KpiFormatList.vue'),
           meta: {
             requiresAuth: true,
-            roles: ['super_admin', 'developer'],
+            roles: ['admin', 'super_admin', 'developer'],
             title: 'KPI Monthly Format Add',
           },
         },
@@ -1273,7 +1284,7 @@ const router = createRouter({
           component: () => import('@/views/admin-pages/KpiFormatForm.vue'),
           meta: {
             requiresAuth: true,
-            roles: ['super_admin', 'developer'],
+            roles: ['admin', 'super_admin', 'developer'],
             title: 'KPI Monthly Format Add',
           },
         },
@@ -1283,7 +1294,7 @@ const router = createRouter({
           component: () => import('@/views/admin-pages/KpiFormatForm.vue'),
           meta: {
             requiresAuth: true,
-            roles: ['super_admin', 'developer'],
+            roles: ['admin', 'super_admin', 'developer'],
             title: 'KPI Monthly Format  Edit',
           },
         },
@@ -1401,13 +1412,13 @@ const router = createRouter({
           path: '/employee-management',
           name: 'EmployeeManagementView',
           component: () => import('@/views/admin-pages/EmployeeManagement.vue'),
-          meta: { requiresAuth: true, roles: ['super_admin', 'developer'], title: 'Employee Management' },
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'], feature: 'employee.view', title: 'Employee Management' },
         },
         {
           path: '/employee-management/reports',
           name: 'emp-manage.reports',
           component: () => import('@/views/admin-pages/EmpReportsList.vue'),
-          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'], title: 'Reports & Lists' },
+          meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer'], feature: 'emp_reports.view', title: 'Reports & Lists' },
         },
         {
           path: '/blood-donors',
@@ -1454,6 +1465,7 @@ const router = createRouter({
           meta: {
             requiresAuth: true,
             roles: ['admin', 'super_admin', 'developer'],
+            feature: 'lifecycle.view',
             title: 'Lifecycle Board',
           },
         },
@@ -1464,6 +1476,7 @@ const router = createRouter({
           meta: {
             requiresAuth: true,
             roles: ['admin', 'super_admin', 'developer'],
+            feature: 'lifecycle.view',
             title: 'Lifecycle Detail',
           },
         },
@@ -1543,7 +1556,7 @@ const router = createRouter({
   },
 })
 
-router.beforeEach((to, _from, next) => {
+router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
   const isAuthenticated = !!authStore.token || localStorage.getItem('auth_token')
   const storedUser = (() => {
@@ -1577,6 +1590,19 @@ router.beforeEach((to, _from, next) => {
   const requiredRoles = [...new Set(to.matched.flatMap((record) => record.meta?.roles || []))]
   if (requiredRoles.length > 0) {
     if (!currentRole || !requiredRoles.includes(currentRole)) {
+      return next({ name: 'Dashboard' })
+    }
+  }
+
+  const requiredFeatures = [...new Set(to.matched.flatMap((record) => {
+    const feature = record.meta?.feature
+    if (Array.isArray(feature)) return feature
+    return feature ? [feature] : []
+  }))]
+
+  if (requiredFeatures.length > 0 && isAuthenticated) {
+    await authStore.fetchFeaturePermissions()
+    if (!requiredFeatures.every((feature) => authStore.canFeature(feature))) {
       return next({ name: 'Dashboard' })
     }
   }

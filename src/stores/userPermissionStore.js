@@ -5,6 +5,8 @@ import apiClient from '../axios';
 export const useUserPermissionStore = defineStore('permission', () => {
   const userPermissions = ref([]);
   const userPermission = ref(null);
+  const featureCatalog = ref([]);
+  const userFeaturePermissions = ref({});
   const loading = ref(false);
   const error = ref(null);
 
@@ -84,9 +86,56 @@ export const useUserPermissionStore = defineStore('permission', () => {
     }
   };
 
+  const fetchFeatureCatalog = async () => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await apiClient.get('/feature-permissions/catalog');
+      featureCatalog.value = response?.data?.data || [];
+      return featureCatalog.value;
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Feature permission catalog load failed';
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const fetchUserFeaturePermissions = async (userId) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await apiClient.get(`/users/${userId}/feature-permissions`);
+      userFeaturePermissions.value[userId] = response?.data?.data || {};
+      return userFeaturePermissions.value[userId];
+    } catch (err) {
+      error.value = err.response?.data?.message || 'User feature permissions load failed';
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const updateUserFeaturePermissions = async (userId, permissions) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await apiClient.put(`/users/${userId}/feature-permissions`, { permissions });
+      userFeaturePermissions.value[userId] = response?.data?.data || {};
+      return userFeaturePermissions.value[userId];
+    } catch (err) {
+      error.value = err.response?.data?.message || 'User feature permissions update failed';
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
   return {
     userPermissions: computed(() => userPermissions.value),
     userPermission: computed(() => userPermission.value),
+    featureCatalog: computed(() => featureCatalog.value),
+    userFeaturePermissions: computed(() => userFeaturePermissions.value),
     loading: computed(() => loading.value),
     error: computed(() => error.value),
     fetchUserPermissions,
@@ -94,5 +143,8 @@ export const useUserPermissionStore = defineStore('permission', () => {
     createPermission,
     updatePermission,
     deletePermission,
+    fetchFeatureCatalog,
+    fetchUserFeaturePermissions,
+    updateUserFeaturePermissions,
   };
 });

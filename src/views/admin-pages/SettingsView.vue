@@ -49,6 +49,10 @@
       <i class="fas fa-users text-3xl"></i>
       Permission List
     </RouterLink>
+    <RouterLink :to="{ name: 'FeaturePermissionList' }" class="main-button">
+      <i class="fas fa-th-large text-3xl"></i>
+      Feature Permissions
+    </RouterLink>
     <RouterLink :to="{ name: 'KpiMonthlyList' }" class="main-button">
       <i class="far fa-file-chart-line text-3xl"></i>
       Monthly KPI Criteria

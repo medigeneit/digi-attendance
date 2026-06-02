@@ -26,6 +26,44 @@ const currentName = computed(() => route.name)
 const isAdmin = computed(() => ['admin', 'super_admin', 'developer'].includes(props.user?.role))
 
 const isSuperAdminOrDev = computed(() => ['super_admin', 'developer'].includes(props.user?.role))
+const canFeature = (permissionKey) => authStore.canFeature(permissionKey)
+const canAnyFeature = (permissionKeys) => permissionKeys.some((key) => canFeature(key))
+const canReports = computed(() => canAnyFeature(['attendance.report', 'attendance.export']))
+const canKpi = computed(() => canAnyFeature(['kpi.view', 'kpi.manage', 'kpi.review', 'kpi.export']))
+const canHrd = computed(() => canAnyFeature(['attendance.view', 'attendance.report', 'attendance.adjust']))
+const payrollFeatureKeys = [
+  'payroll.salary_structures.view',
+  'payroll.salary_structures.manage',
+  'payroll.salary_revisions.manage',
+  'payroll.meal_entries.view',
+  'payroll.meal_entries.manage',
+  'payroll.loans.view',
+  'payroll.loans.manage',
+  'payroll.advance_deductions.view',
+  'payroll.advance_deductions.manage',
+  'payroll.arrears.view',
+  'payroll.arrears.manage',
+  'payroll.security_money.view',
+  'payroll.security_money.manage',
+  'payroll.batches.view',
+  'payroll.batches.generate',
+  'payroll.batches.approve',
+  'payroll.reports.view',
+  'payroll.reports.export',
+  'payroll.doctor.view',
+  'payroll.doctor.manage',
+  'payroll.bank_adviser.view',
+  'payroll.slips.view',
+  'payroll.adjustments.view',
+  'payroll.adjustments.manage',
+]
+const canPayroll = computed(() => canAnyFeature(payrollFeatureKeys))
+const canSettings = computed(() =>
+  canAnyFeature(['settings.view', 'settings.manage', 'settings.permissions.manage']),
+)
+const canEmpManage = computed(() =>
+  canAnyFeature(['employee.view', 'emp_reports.view', 'lifecycle.view']),
+)
 
 const logout = () => {
   authStore.logout()
@@ -201,23 +239,24 @@ const empRouteNames = ['checklists.board', 'lifecycle.board', 'lifecycle.detail'
 
 // Settings
 const settingsMenu = [
-  { label: 'User List', routeName: 'UserList' },
-  { label: 'Holiday List', routeName: 'HoliDayList' },
-  { label: 'Approval Rules', routeName: 'LeaveApprovalList', params: { type: 'leave' } },
-  { label: 'Leave Type List', routeName: 'LeaveTypeList' },
-  { label: 'Shift List', routeName: 'ShiftList' },
-  { label: 'Designation List', routeName: 'DesignationList' },
-  { label: 'Department List', routeName: 'DepartmentList' },
-  { label: 'Company List', routeName: 'CompanyList' },
-  { label: 'Company Bank Accounts', routeName: 'CompanyBankAccountList' },
-  { label: 'Device List', routeName: 'DeviceList' },
-  { label: 'ZK User Management', routeName: 'ZKUsers' },
-  { label: 'Permission List', routeName: 'PermissionList' },
-  { label: 'Monthly KPI Criteria', routeName: 'KpiMonthlyList' },
-  { label: 'KPI Forms', routeName: 'KpiCycles' },
-  { label: 'KPI Permissions', routeName: 'LaneOverrides' },
-  { label: 'Joining Template Items', routeName: 'TemplateItems', params: { id: 1 } },
-  { label: 'Exit Template Items', routeName: 'TemplateItems', params: { id: 2 } },
+  { label: 'User List', routeName: 'UserList', feature: 'settings.view' },
+  { label: 'Holiday List', routeName: 'HoliDayList', feature: 'settings.manage' },
+  { label: 'Approval Rules', routeName: 'LeaveApprovalList', params: { type: 'leave' }, feature: 'settings.manage' },
+  { label: 'Leave Type List', routeName: 'LeaveTypeList', feature: 'settings.manage' },
+  { label: 'Shift List', routeName: 'ShiftList', feature: 'settings.manage' },
+  { label: 'Designation List', routeName: 'DesignationList', feature: 'settings.manage' },
+  { label: 'Department List', routeName: 'DepartmentList', feature: 'settings.manage' },
+  { label: 'Company List', routeName: 'CompanyList', feature: 'settings.manage' },
+  { label: 'Company Bank Accounts', routeName: 'CompanyBankAccountList', feature: 'settings.manage' },
+  { label: 'Device List', routeName: 'DeviceList', feature: 'settings.manage' },
+  { label: 'ZK User Management', routeName: 'ZKUsers', feature: 'settings.manage' },
+  { label: 'Permission List', routeName: 'PermissionList', feature: 'settings.permissions.manage' },
+  { label: 'Feature Permissions', routeName: 'FeaturePermissionList', feature: 'settings.permissions.manage' },
+  { label: 'Monthly KPI Criteria', routeName: 'KpiMonthlyList', feature: 'kpi.manage' },
+  { label: 'KPI Forms', routeName: 'KpiCycles', feature: 'kpi.manage' },
+  { label: 'KPI Permissions', routeName: 'LaneOverrides', feature: 'kpi.manage' },
+  { label: 'Joining Template Items', routeName: 'TemplateItems', params: { id: 1 }, feature: 'lifecycle.update' },
+  { label: 'Exit Template Items', routeName: 'TemplateItems', params: { id: 2 }, feature: 'lifecycle.update' },
 ]
 const settingsRouteNames = settingsMenu.map((i) => i.routeName)
 
@@ -229,41 +268,45 @@ const careerMenu = [
 const careerRouteNames = careerMenu.map((i) => i.routeName)
 
 const payrollMenu = [
-  { label: 'Salary Structures', routeName: 'PayrollSalaryStructureList' },
-  { label: 'Salary Revisions', routeName: 'PayrollSalaryRevisionCreate' },
-  { label: 'Meal Entries', routeName: 'PayrollMealEntryList' },
-  { label: 'Loans', routeName: 'PayrollEmployeeLoanList' },
-  { label: 'Advance Deductions', routeName: 'PayrollAdvanceDeductionList' },
+  { label: 'Salary Structures', routeName: 'PayrollSalaryStructureList', feature: 'payroll.salary_structures.view' },
+  { label: 'Salary Revisions', routeName: 'PayrollSalaryRevisionCreate', feature: 'payroll.salary_revisions.manage' },
+  { label: 'Meal Entries', routeName: 'PayrollMealEntryList', feature: 'payroll.meal_entries.view' },
+  { label: 'Loans', routeName: 'PayrollEmployeeLoanList', feature: 'payroll.loans.view' },
+  { label: 'Advance Deductions', routeName: 'PayrollAdvanceDeductionList', feature: 'payroll.advance_deductions.view' },
   // { label: 'Bulk Advance Deduction', routeName: 'PayrollAdvanceDeductionCreate' },
-  { label: 'Payroll Arrears', routeName: 'PayrollArrearEntryList' },
+  { label: 'Payroll Arrears', routeName: 'PayrollArrearEntryList', feature: 'payroll.arrears.view' },
   // { label: 'Bulk Arrear Entry', routeName: 'PayrollArrearEntryCreate' },
-  { label: 'Security Money', routeName: 'PayrollSecurityMoneyList' },
-  { label: 'Payroll Batches', routeName: 'PayrollBatchList' },
-  { label: 'Generate Payroll', routeName: 'PayrollBatchGenerate' },
-  { label: 'Bank Adviser List', routeName: 'PayrollBankAdviserList' },
-  { label: 'Payroll Slip List', routeName: 'PayrollSlipList' },
-  { label: 'Payrolls', routeName: 'PayrollList' },
-  { label: 'Post Payroll Adjustments', routeName: 'PayrollAdjustmentList' },
+  { label: 'Security Money', routeName: 'PayrollSecurityMoneyList', feature: 'payroll.security_money.view' },
+  { label: 'Payroll Batches', routeName: 'PayrollBatchList', feature: 'payroll.batches.view' },
+  { label: 'Generate Payroll', routeName: 'PayrollBatchGenerate', feature: 'payroll.batches.generate' },
+  { label: 'Doctor Payroll', routeName: 'DoctorPayrollList', feature: 'payroll.doctor.view' },
+  { label: 'Bank Adviser List', routeName: 'PayrollBankAdviserList', feature: 'payroll.bank_adviser.view' },
+  { label: 'Payroll Slip List', routeName: 'PayrollSlipList', feature: 'payroll.slips.view' },
+  { label: 'Payrolls', routeName: 'PayrollList', feature: 'payroll.reports.view' },
+  { label: 'Post Payroll Adjustments', routeName: 'PayrollAdjustmentList', feature: 'payroll.adjustments.view' },
 
 ]
 const payrollRouteNames = payrollMenu.map((i) => i.routeName)
-const filteredPayrollMenu = computed(() =>
-  normalizedQuery.value ? payrollMenu.filter((i) => matchesQuery(i.label)) : payrollMenu,
-)
+const filterBySearch = (items) =>
+  normalizedQuery.value ? items.filter((i) => matchesQuery(i.label)) : items
 
-const filteredReportsMenu = computed(() =>
-  normalizedQuery.value ? reportsMenu.filter((i) => matchesQuery(i.label)) : reportsMenu,
-)
-const filteredKpiMenu = computed(() =>
-  normalizedQuery.value ? kpiMenu.filter((i) => matchesQuery(i.label)) : kpiMenu,
-)
-const filteredHrdMenu = computed(() =>
-  normalizedQuery.value ? hrdMenu.filter((i) => matchesQuery(i.label)) : hrdMenu,
-)
+const filteredPayrollMenu = computed(() => {
+  if (!canPayroll.value) return []
+  return filterBySearch(payrollMenu.filter((item) => !item.feature || canFeature(item.feature)))
+})
+
+const filteredReportsMenu = computed(() => (canReports.value ? filterBySearch(reportsMenu) : []))
+const filteredKpiMenu = computed(() => (canKpi.value ? filterBySearch(kpiMenu) : []))
+const filteredHrdMenu = computed(() => (canHrd.value ? filterBySearch(hrdMenu) : []))
 const filteredEmpManageMenu = computed(() => {
-  if (!normalizedQuery.value) return empManageMenu
+  const allowedGroups = empManageMenu.filter((group) => {
+    if (group.key === 'reports_lists') return canFeature('emp_reports.view')
+    return canFeature('lifecycle.view')
+  })
 
-  return empManageMenu
+  if (!normalizedQuery.value) return allowedGroups
+
+  return allowedGroups
     .map((group) => {
       const groupMatched = matchesQuery(group.label)
       // Direct-link entries (no subitems) — keep only if group label matches
@@ -279,9 +322,10 @@ const filteredEmpManageMenu = computed(() => {
       return group.items.length > 0
     })
 })
-const filteredSettingsMenu = computed(() =>
-  normalizedQuery.value ? settingsMenu.filter((i) => matchesQuery(i.label)) : settingsMenu,
-)
+const filteredSettingsMenu = computed(() => {
+  if (!canSettings.value) return []
+  return filterBySearch(settingsMenu.filter((item) => !item.feature || canFeature(item.feature)))
+})
 const filteredCareerMenu = computed(() =>
   normalizedQuery.value ? careerMenu.filter((i) => matchesQuery(i.label)) : careerMenu,
 )
@@ -573,7 +617,7 @@ watch(
           <h4 v-if="open">Task Management</h4>
         </RouterLink>
 
-        <template v-if="!isSearching || filteredReportsMenu.length">
+        <template v-if="filteredReportsMenu.length">
           <RouterLink
             to="/reports"
             custom
@@ -645,7 +689,7 @@ watch(
           </transition>
         </template>
 
-        <template v-if="!isSearching || filteredKpiMenu.length">
+        <template v-if="filteredKpiMenu.length">
           <RouterLink to="/kpi" custom v-slot="{ navigate }">
             <div
               class="side-menu"
@@ -710,7 +754,7 @@ watch(
           </transition>
         </template>
 
-        <template v-if="!isSearching || filteredHrdMenu.length">
+        <template v-if="filteredHrdMenu.length">
           <RouterLink to="/hrd" custom v-slot="{ navigate }">
             <div
               class="side-menu"
@@ -775,7 +819,7 @@ watch(
           </transition>
         </template>
 
-        <template v-if="isSuperAdminOrDev && (!isSearching || filteredEmpManageMenu.length)">
+        <template v-if="isAdmin && canEmpManage && (!isSearching || filteredEmpManageMenu.length)">
           <RouterLink to="/employee-management" custom v-slot="{ navigate }">
             <div
               class="side-menu"
@@ -854,7 +898,7 @@ watch(
           </transition>
         </template>
 
-        <template v-if="!isSearching || filteredSettingsMenu.length">
+        <template v-if="filteredSettingsMenu.length">
           <RouterLink to="/settings" custom v-slot="{ navigate }">
             <div
               class="side-menu"
@@ -989,7 +1033,7 @@ watch(
           </transition>
         </template>
 
-        <template v-if="!isSearching || filteredPayrollMenu.length">
+        <template v-if="filteredPayrollMenu.length">
           <RouterLink to="/payroll/salary-structures" custom v-slot="{ navigate }">
             <div
               class="side-menu"

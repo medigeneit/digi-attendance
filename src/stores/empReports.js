@@ -23,7 +23,7 @@ export const useEmpReportsStore = defineStore('empReports', () => {
     isDownloading.value = true
     try {
       const response = await apiClient.get('/users', {
-        params: { ...params, flag: 'excel' },
+        params: { ...params, flag: 'excel', report_context: 'emp_reports' },
         responseType: 'blob',
       })
       const url = window.URL.createObjectURL(new Blob([response.data]))
