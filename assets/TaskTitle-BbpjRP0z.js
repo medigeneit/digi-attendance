@@ -1,0 +1,1 @@
+import{y as p,c as a,o as n,b as o,l as m,t as r}from"./index-PP7p-d7s.js";const u={key:0},k={__name:"TaskTitle",props:{title:String},setup(l){const c=l,t=p(()=>String(c.title).split("->"));return(i,_)=>{var e,s;return n(),a("span",null,[o(r(t.value[0])+" ",1),(e=t.value)!=null&&e[1]?(n(),a("span",u,"»")):m("",!0),o(" "+r((s=t.value)==null?void 0:s[1]),1)])}}};export{k as _};
