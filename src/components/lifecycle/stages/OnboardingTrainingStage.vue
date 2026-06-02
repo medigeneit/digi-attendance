@@ -25,13 +25,6 @@ const form = reactive({
   payload: {},
 })
 
-const statusOptions = [
-  { value: 'not_started', label: 'Not Started' },
-  { value: 'in_progress', label: 'In Progress' },
-  { value: 'on_hold', label: 'On Hold' },
-  { value: 'completed', label: 'Completed' },
-]
-
 const trainingItems = [
   {
     key: 'basic',
@@ -83,17 +76,6 @@ onMounted(() => {
   if (!Array.isArray(usersStore.items) || !usersStore.items.length) {
     usersStore.fetchUsers({ all: 1 })
   }
-})
-
-const selectedStatusLabel = computed(
-  () => statusOptions.find((item) => item.value === form.status)?.label || 'Not Started',
-)
-
-const selectedStatusTone = computed(() => {
-  if (form.status === 'completed') return 'bg-emerald-100 text-emerald-700 ring-emerald-200'
-  if (form.status === 'in_progress') return 'bg-blue-100 text-blue-700 ring-blue-200'
-  if (form.status === 'on_hold') return 'bg-amber-100 text-amber-700 ring-amber-200'
-  return 'bg-slate-100 text-slate-600 ring-slate-200'
 })
 
 const completedTrainingCount = computed(() =>
@@ -212,7 +194,6 @@ function updateSupervisor(userId) {
 
 function createFormSnapshot() {
   return JSON.stringify({
-    status: form.status,
     remarks: form.remarks || '',
     payload: form.payload || {},
   })
@@ -286,7 +267,6 @@ async function save() {
 
   try {
     await store.saveStageRecord(props.lifecycleId, props.stage.code, {
-      status: form.status,
       payload: form.payload,
       remarks: form.remarks || null,
     })
@@ -472,23 +452,6 @@ async function save() {
         </div>
 
         <div class="flex flex-wrap items-end gap-2">
-          <label class="block min-w-[190px]">
-            <span class="mb-1 flex items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-blue-800">
-              Stage Status
-              <span class="rounded-full px-2 py-0.5 text-[10px] font-semibold normal-case tracking-normal ring-1" :class="selectedStatusTone">
-                {{ selectedStatusLabel }}
-              </span>
-            </span>
-            <select
-              v-model="form.status"
-              class="w-full rounded-lg border border-blue-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-200"
-            >
-              <option v-for="item in statusOptions" :key="item.value" :value="item.value">
-                {{ item.label }}
-              </option>
-            </select>
-          </label>
-
           <button
             type="button"
             class="inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60"

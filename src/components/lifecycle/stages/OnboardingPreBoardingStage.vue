@@ -21,13 +21,6 @@ const form = reactive({
   payload: {},
 })
 
-const statusOptions = [
-  { value: 'not_started', label: 'Not Started' },
-  { value: 'in_progress', label: 'In Progress' },
-  { value: 'on_hold', label: 'On Hold' },
-  { value: 'completed', label: 'Completed' },
-]
-
 const cvStatusOptions = [
   { value: 'pending', label: 'Pending' },
   { value: 'reviewed', label: 'Reviewed' },
@@ -78,40 +71,11 @@ const employmentTypeLabel = computed(() => {
   return 'Not Set'
 })
 
-const selectedStatusLabel = computed(
-  () => statusOptions.find((item) => item.value === form.status)?.label || 'Not Started',
-)
-
-const selectedStatusTone = computed(() => {
-  if (form.status === 'completed') return 'bg-emerald-100 text-emerald-700 ring-emerald-200'
-  if (form.status === 'in_progress') return 'bg-blue-100 text-blue-700 ring-blue-200'
-  if (form.status === 'on_hold') return 'bg-amber-100 text-amber-700 ring-amber-200'
-  return 'bg-slate-100 text-slate-600 ring-slate-200'
-})
-
 const evaluationTotal = computed(() =>
   evaluationItems.reduce((total, item) => total + numberValue(form.payload?.evaluation?.[item.key]), 0),
 )
 
 const salaryMode = computed(() => form.payload?.recommendation?.salary_mode || defaultSalaryMode())
-
-const summaryItems = computed(() => [
-  { label: 'Employment Type', value: employmentTypeLabel.value },
-  {
-    label: 'Salary Plan',
-    value: salaryMode.value === 'contract_steps' ? 'Contract Slabs' : 'Stage Based',
-  },
-  {
-    label: 'CV Status',
-    value: cvStatusOptions.find((item) => item.value === form.payload?.cv_review_status)?.label || 'Pending',
-  },
-  { label: 'Total Mark', value: `${evaluationTotal.value}` },
-  {
-    label: 'Condition',
-    value: form.payload?.recommendation?.joining_condition ? 'Added' : 'Pending',
-  },
-  { label: 'Stage Status', value: selectedStatusLabel.value },
-])
 
 const hasUnsavedChanges = computed(() => createFormSnapshot() !== baselineSnapshot.value)
 
@@ -323,7 +287,6 @@ function createFormSnapshot() {
   })
 
   return JSON.stringify({
-    status: form.status,
     remarks: form.remarks || '',
     payload,
   })
@@ -358,7 +321,6 @@ async function save() {
     })
 
     await store.saveStageRecord(props.lifecycleId, props.stage.code, {
-      status: form.status,
       payload,
       remarks: form.remarks || null,
     })
@@ -378,32 +340,23 @@ async function save() {
 </script>
 
 <template>
-  <section class="rounded-lg border bg-white shadow-sm">
+  <section class="rounded-md border bg-white text-[12px] shadow-sm">
     <div class="border-b px-3 py-2">
-      <h2 class="text-sm font-semibold text-slate-900 md:text-base">Pre-Boarding</h2>
+      <h2 class="text-sm font-semibold text-slate-900">Pre-Boarding</h2>
     </div>
 
     <div class="space-y-2 px-3 py-2">
-      <div class="grid gap-x-3 gap-y-1 rounded-xl border border-blue-100 bg-blue-50/60 px-2 py-1.5 md:grid-cols-3 xl:grid-cols-6">
-        <div v-for="item in summaryItems" :key="item.label" class="min-w-0">
-          <div class="text-[10px] font-medium uppercase tracking-wide text-blue-700">
-            {{ item.label }}
-          </div>
-          <div class="truncate text-xs font-semibold text-slate-800" :title="item.value || 'N/A'">
-            {{ item.value || 'N/A' }}
-          </div>
-        </div>
-      </div>
-
-      <div class="grid gap-2 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.7fr)]">
-        <div class="rounded-xl border border-slate-200 bg-slate-50/50 p-2">
-          <div class="mb-1.5 flex flex-wrap items-center justify-between gap-2">
-            <div class="text-sm font-semibold text-slate-800">CV / Exam Review</div>
+      <div class="space-y-2">
+        <div class="rounded-md border border-blue-200 bg-slate-50/50 p-2">
+          <div class="mb-2 flex flex-wrap items-center justify-between gap-2 border-b border-blue-100 pb-1.5">
+            <div class="inline-flex rounded bg-blue-100 px-2 py-1 text-xs font-bold uppercase tracking-[0.14em] text-blue-800">
+              CV / Exam Review
+            </div>
             <label class="flex items-center gap-2 text-xs font-medium text-slate-600">
               CV Status
               <select
                 :value="form.payload.cv_review_status"
-                class="rounded-lg border bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-900"
+                class="rounded-md border bg-white px-2 py-1 text-xs font-semibold text-slate-900"
                 @change="form.payload = { ...(form.payload || {}), cv_review_status: $event.target.value }"
               >
                 <option v-for="option in cvStatusOptions" :key="option.value" :value="option.value">
@@ -417,7 +370,7 @@ async function save() {
             <label
               v-for="item in evaluationItems"
               :key="item.key"
-              class="rounded-xl border p-2"
+              class="rounded-md border p-1.5"
               :class="item.tone"
             >
               <span class="mb-1 block text-[10px] font-bold uppercase tracking-[0.12em]">
@@ -427,41 +380,45 @@ async function save() {
                 :value="form.payload.evaluation?.[item.key] || ''"
                 type="number"
                 min="0"
-                class="w-full rounded-lg border bg-white px-2.5 py-1.5 text-sm font-semibold text-slate-900"
+                class="w-full rounded-md border bg-white px-2 py-1 text-xs font-semibold text-slate-900"
                 placeholder="0"
                 @input="updateEvaluation(item.key, $event.target.value)"
               />
             </label>
 
-            <div class="rounded-xl border border-slate-200 bg-white p-2">
+            <div class="rounded-md border border-slate-200 bg-white p-1.5">
               <div class="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">Total Mark</div>
-              <div class="mt-1 rounded-lg bg-slate-900 px-3 py-2 text-lg font-semibold text-white">
+              <div class="mt-1 rounded-md bg-slate-900 px-2 py-1.5 text-base font-semibold text-white">
                 {{ evaluationTotal }}
               </div>
             </div>
           </div>
 
           <label class="mt-2 block">
-            <span class="mb-1 block text-sm font-medium text-slate-700">Exam Review Note</span>
+            <span class="mb-1 block text-xs font-medium text-slate-700">Exam Review Note</span>
             <textarea
               :value="form.payload.evaluation?.notes || ''"
               rows="2"
-              class="min-h-[46px] w-full rounded-lg border bg-white px-2.5 py-1.5 text-sm"
+              class="min-h-[40px] w-full rounded-md border bg-white px-2 py-1 text-xs"
               placeholder="CV screening note, exam outcome, or reviewer comment"
               @input="updateEvaluationNote($event.target.value)"
             />
           </label>
         </div>
 
-        <div class="rounded-xl border border-slate-200 bg-slate-50/50 p-2">
-          <div class="mb-1.5 text-sm font-semibold text-slate-800">Recommendation</div>
+        <div class="rounded-md border border-emerald-200 bg-slate-50/50 p-2">
+          <div class="mb-2 border-b border-emerald-100 pb-1.5">
+            <div class="inline-flex rounded bg-emerald-100 px-2 py-1 text-xs font-bold uppercase tracking-[0.14em] text-emerald-800">
+              Recommendation
+            </div>
+          </div>
 
           <div class="grid gap-2 sm:grid-cols-2">
             <label class="block">
               <span class="mb-1 block text-xs font-medium text-slate-600">Employment Type</span>
               <input
                 :value="employmentTypeLabel"
-                class="w-full rounded-lg border bg-slate-100 px-2.5 py-1.5 text-sm font-semibold text-slate-800"
+                class="w-full rounded-md border bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-800"
                 readonly
               />
             </label>
@@ -470,7 +427,7 @@ async function save() {
               <span class="mb-1 block text-xs font-medium text-slate-600">Salary Plan</span>
               <select
                 :value="salaryMode"
-                class="w-full rounded-lg border bg-white px-2.5 py-1.5 text-sm font-semibold text-slate-900"
+                class="w-full rounded-md border bg-white px-2 py-1 text-xs font-semibold text-slate-900"
                 @change="updateSalaryMode($event.target.value)"
               >
                 <option v-for="option in salaryModeOptions" :key="option.value" :value="option.value">
@@ -481,11 +438,11 @@ async function save() {
           </div>
 
           <label class="mt-2 block">
-            <span class="mb-1 block text-sm font-medium text-slate-700">Recommendation Notes</span>
+            <span class="mb-1 block text-xs font-medium text-slate-700">Recommendation Notes</span>
             <textarea
               :value="form.payload.recommendation?.notes || ''"
               rows="3"
-              class="min-h-[74px] w-full rounded-lg border bg-white px-2.5 py-1.5 text-sm"
+              class="min-h-[54px] w-full rounded-md border bg-white px-2 py-1 text-xs"
               placeholder="Committee note, approval note, or final recommendation summary"
               @input="updateRecommendation('notes', $event.target.value)"
             />
@@ -493,9 +450,11 @@ async function save() {
         </div>
       </div>
 
-      <div class="rounded-xl border border-slate-200 bg-slate-50/50 p-2">
-        <div class="mb-1.5 flex flex-wrap items-center justify-between gap-2">
-          <div class="text-sm font-semibold text-slate-800">Salary Recommendation</div>
+      <div class="rounded-md border border-violet-200 bg-slate-50/50 p-2">
+        <div class="mb-2 flex flex-wrap items-center justify-between gap-2 border-b border-violet-100 pb-1.5">
+          <div class="inline-flex rounded bg-violet-100 px-2 py-1 text-xs font-bold uppercase tracking-[0.14em] text-violet-800">
+            Salary Recommendation
+          </div>
           <button
             v-if="salaryMode === 'contract_steps'"
             type="button"
@@ -570,10 +529,10 @@ async function save() {
           <div
             v-for="item in salaryStageItems"
             :key="item.key"
-            class="overflow-hidden rounded-xl border"
+            class="overflow-hidden rounded-md border"
             :class="item.card"
           >
-            <div class="border-b px-2.5 py-1.5 text-sm font-semibold" :class="item.header">
+            <div class="border-b px-2 py-1 text-xs font-semibold" :class="item.header">
               {{ item.title }}
             </div>
             <div class="grid gap-2 bg-white/80 p-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
@@ -583,7 +542,7 @@ async function save() {
                   :value="form.payload.salary_stages?.[item.key]?.amount || ''"
                   type="number"
                   min="0"
-                  class="w-full rounded-lg border bg-white px-2.5 py-1.5 text-sm"
+                class="w-full rounded-md border bg-white px-2 py-1 text-xs"
                   placeholder="0"
                   @input="updateSalaryStage(item.key, 'amount', $event.target.value)"
                 />
@@ -594,7 +553,7 @@ async function save() {
                   :value="form.payload.salary_stages?.[item.key]?.duration_months || ''"
                   type="number"
                   min="0"
-                  class="w-full rounded-lg border bg-white px-2.5 py-1.5 text-sm"
+                class="w-full rounded-md border bg-white px-2 py-1 text-xs"
                   placeholder="0"
                   @input="updateSalaryStage(item.key, 'duration_months', $event.target.value)"
                 />
@@ -604,7 +563,7 @@ async function save() {
                 <textarea
                   :value="form.payload.salary_stages?.[item.key]?.notes || ''"
                   rows="2"
-                  class="min-h-[48px] w-full rounded-lg border bg-white px-2.5 py-1.5 text-sm"
+                  class="min-h-[40px] w-full rounded-md border bg-white px-2 py-1 text-xs"
                   placeholder="Condition or notes"
                   @input="updateSalaryStage(item.key, 'notes', $event.target.value)"
                 />
@@ -616,28 +575,28 @@ async function save() {
 
       <div class="grid gap-2 lg:grid-cols-2">
         <label class="block">
-          <span class="mb-1 block text-sm font-medium text-slate-700">Joining Condition</span>
+          <span class="mb-1 block text-xs font-medium text-slate-700">Joining Condition</span>
           <textarea
             :value="form.payload.recommendation?.joining_condition || ''"
             rows="2"
-            class="min-h-[52px] w-full rounded-lg border px-2.5 py-1.5 text-sm"
+            class="min-h-[40px] w-full rounded-md border px-2 py-1 text-xs"
             placeholder="Mention conditions to be fulfilled before joining"
             @input="updateRecommendation('joining_condition', $event.target.value)"
           />
         </label>
 
         <label class="block">
-          <span class="mb-1 block text-sm font-medium text-gray-700">Remarks</span>
+          <span class="mb-1 block text-xs font-medium text-gray-700">Remarks</span>
           <textarea
             v-model="form.remarks"
-            class="min-h-[52px] w-full rounded-lg border px-2.5 py-1.5 text-sm"
+            class="min-h-[40px] w-full rounded-md border px-2 py-1 text-xs"
             rows="2"
             placeholder="Pre-boarding handover note or follow-up remarks"
           />
         </label>
       </div>
 
-      <div class="flex flex-wrap items-end justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2.5">
+      <div class="flex flex-wrap items-center justify-between gap-2 rounded-md border border-slate-200 bg-slate-50/70 px-2.5 py-2">
         <div
           class="flex min-w-0 items-start gap-3"
           :class="{
@@ -659,32 +618,15 @@ async function save() {
             }"
           />
           <div class="min-w-0">
-            <div class="text-sm font-semibold">{{ saveStatusMeta.label }}</div>
+            <div class="text-xs font-semibold">{{ saveStatusMeta.label }}</div>
             <div class="text-xs opacity-90">{{ saveStatusMeta.detail }}</div>
           </div>
         </div>
 
         <div class="flex flex-wrap items-end gap-2">
-          <label class="block min-w-[190px]">
-            <span class="mb-1 flex items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-blue-800">
-              Stage Status
-              <span class="rounded-full px-2 py-0.5 text-[10px] font-semibold normal-case tracking-normal ring-1" :class="selectedStatusTone">
-                {{ selectedStatusLabel }}
-              </span>
-            </span>
-            <select
-              v-model="form.status"
-              class="w-full rounded-lg border border-blue-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-200"
-            >
-              <option v-for="item in statusOptions" :key="item.value" :value="item.value">
-                {{ item.label }}
-              </option>
-            </select>
-          </label>
-
           <button
             type="button"
-            class="inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+            class="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60"
             :class="
               saving
                 ? 'bg-blue-600 hover:bg-blue-600'

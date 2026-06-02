@@ -29,8 +29,8 @@ const empType = computed(() => normType(props.user?.employment_type))
 function getProbationInfo(u) {
   const isProb = normType(u?.employment_type) === 'probationary'
   const start = asDate(u?.joining_date) || asDate(u?.created_at)
-  const baseMonths = Number(u?.probation_months) || 0
-  const extMonths  = Number(u?.probation_extension_months) || 0
+  const baseMonths = Number(u?.provisional_month ?? u?.probation_months) || 0
+  const extMonths  = Number(u?.extended_provisional_month ?? u?.probation_extension_months) || 0
 
   if (!isProb || !start || Number.isNaN(baseMonths) || baseMonths <= 0) {
     return {

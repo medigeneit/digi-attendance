@@ -656,12 +656,12 @@ function clearWeekend() {
                   id="password"
                   v-model="form.password"
                   :type="showPassword ? 'text' : 'password'"
-                  class="`${input-light} pr-10`"
+                  class="input-light pr-10"
                   autocomplete="new-password"
                   placeholder="Create a secure password"
                 />
                 <button type="button" class="absolute inset-y-0 right-2 px-1 text-gray-600" @click="showPassword = !showPassword" :aria-label="showPassword ? 'Hide password' : 'Show password'">
-                  <i class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                  <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
                 </button>
               </div>
             </div>

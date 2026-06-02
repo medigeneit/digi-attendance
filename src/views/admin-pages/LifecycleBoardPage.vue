@@ -1,27 +1,47 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import BoardFilters from '@/components/BoardFilters.vue'
 import LifecycleBoardTable from '@/components/LifecycleBoardTable.vue'
 import { useLifecycleStore } from '@/stores/lifecycle'
 
 const store = useLifecycleStore()
 const route = useRoute()
+const router = useRouter()
 
 const companies = ref([])
 const departments = ref([])
 
 const flowType = computed(() => (route.params.flowType === 'offboarding' ? 'offboarding' : 'onboarding'))
 
+const positiveIntFromQuery = (value) => {
+  const parsed = Number(value)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+}
+
 const fromQuery = (query = {}) => ({
-  companyId: query.company_id ? Number(query.company_id) : null,
-  departmentId: query.department_id ? Number(query.department_id) : null,
-  employeeId: query.employee_id ? Number(query.employee_id) : null,
+  companyId: positiveIntFromQuery(query.company_id),
+  departmentId: positiveIntFromQuery(query.department_id),
+  employeeId: positiveIntFromQuery(query.employee_id),
   lineType: query.line_type ?? null,
   user_type: query.user_type ?? store.userType,
   search: query.search ?? store.search,
-  lifecycleStatus: query.lifecycle_status ?? null,
+  lifecycleStatus: null,
 })
+
+function cleanInvalidQuery() {
+  const query = { ...route.query }
+  let changed = false
+
+  for (const key of ['company_id', 'department_id', 'employee_id']) {
+    if (query[key] != null && positiveIntFromQuery(query[key]) === null) {
+      delete query[key]
+      changed = true
+    }
+  }
+
+  if (changed) router.replace({ query })
+}
 
 const filterModel = ref({
   companyId: null,
@@ -40,7 +60,7 @@ function syncStoreFromModel(value = filterModel.value) {
   store.lineType = value.lineType ?? null
   store.userType = value.user_type ?? 'Probationary'
   store.search = value.search ?? ''
-  store.lifecycleStatus = value.lifecycleStatus ?? null
+  store.lifecycleStatus = null
 }
 
 watch(
@@ -64,6 +84,7 @@ async function applyFilters() {
 }
 
 async function load() {
+  cleanInvalidQuery()
   const nextModel = fromQuery(route.query)
   Object.assign(filterModel.value, nextModel)
   syncStoreFromModel(nextModel)
@@ -82,18 +103,42 @@ const title = computed(() => `${store.flowLabel} Lifecycle Board`)
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50/70 px-4 py-5 md:px-6">
-    <div class="mb-5 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-      <div>
-        <h1 class="text-2xl font-semibold text-slate-900">{{ title }}</h1>
-        <p class="mt-1 text-sm text-slate-500">
-          Use the board below to monitor stage-wise movement, progress, and checklist completion.
-        </p>
-      </div>
-      <div class="text-sm text-slate-500">Existing checklist flow remains available.</div>
-    </div>
+  <div class="min-h-screen bg-slate-50 px-3 py-4 text-[12px] md:px-5">
+    <div class="mb-4 rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div class="flex flex-col gap-3 border-b border-slate-100 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <div class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+            EmpManage
+          </div>
+          <h1 class="mt-1 text-lg font-semibold text-slate-950 md:text-xl">{{ title }}</h1>
+          <p class="mt-1 text-xs text-slate-500">
+            Monitor the whole employee journey, open quick detail in a drawer, and keep the table context intact.
+          </p>
+        </div>
 
-    <div class="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div class="flex flex-wrap gap-2">
+          <RouterLink
+            :to="{ name: 'lifecycle.board', params: { flowType: 'onboarding' } }"
+            class="rounded-md border px-3 py-2 text-xs font-semibold"
+            :class="flowType === 'onboarding'
+              ? 'border-slate-900 bg-slate-900 text-white'
+              : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'"
+          >
+            Onboarding
+          </RouterLink>
+          <RouterLink
+            :to="{ name: 'lifecycle.board', params: { flowType: 'offboarding' } }"
+            class="rounded-md border px-3 py-2 text-xs font-semibold"
+            :class="flowType === 'offboarding'
+              ? 'border-slate-900 bg-slate-900 text-white'
+              : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'"
+          >
+            Offboarding
+          </RouterLink>
+        </div>
+      </div>
+
+      <div class="p-3">
       <BoardFilters
         v-model="filterModel"
         :companies="companies"
@@ -102,9 +147,10 @@ const title = computed(() => `${store.flowLabel} Lifecycle Board`)
         :lifecycle-statuses="store.lifecycleStatusOptions"
         @submit="applyFilters"
       />
+      </div>
     </div>
 
-    <div v-if="store.error" class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+    <div v-if="store.error" class="rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
       Failed to load lifecycle board.
     </div>
     <LifecycleBoardTable v-else />

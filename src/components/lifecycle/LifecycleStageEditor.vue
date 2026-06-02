@@ -30,24 +30,6 @@ const form = reactive({
   payload: {},
 })
 
-const statusOptions = [
-  { value: 'not_started', label: 'Not Started' },
-  { value: 'in_progress', label: 'In Progress' },
-  { value: 'on_hold', label: 'On Hold' },
-  { value: 'completed', label: 'Completed' },
-]
-
-const selectedStatusLabel = computed(
-  () => statusOptions.find((item) => item.value === form.status)?.label || 'Not Started',
-)
-
-const selectedStatusTone = computed(() => {
-  if (form.status === 'completed') return 'bg-emerald-100 text-emerald-700 ring-emerald-200'
-  if (form.status === 'in_progress') return 'bg-blue-100 text-blue-700 ring-blue-200'
-  if (form.status === 'on_hold') return 'bg-amber-100 text-amber-700 ring-amber-200'
-  return 'bg-slate-100 text-slate-600 ring-slate-200'
-})
-
 const STAGE_SALARY_TYPES = [
   { key: 'intern', label: 'Intern' },
   { key: 'probationary', label: 'Probationary' },
@@ -241,7 +223,6 @@ function textareaHeightClass(field) {
 
 function createFormSnapshot() {
   return JSON.stringify({
-    status: form.status,
     remarks: form.remarks || '',
     payload: form.payload || {},
   })
@@ -1006,7 +987,6 @@ async function save() {
 
   try {
     await store.saveStageRecord(props.lifecycleId, props.stage.code, {
-      status: form.status,
       payload: form.payload,
       remarks: form.remarks || null,
     })
@@ -1024,11 +1004,11 @@ async function save() {
 </script>
 
 <template>
-  <section :class="compact ? 'rounded-lg border bg-white shadow-sm' : 'rounded-xl border bg-white shadow-sm'">
+  <section :class="compact ? 'rounded-md border bg-white shadow-sm' : 'rounded-lg border bg-white shadow-sm'">
     <div
       :class="[
-        'flex flex-wrap items-start justify-between border-b',
-        compact ? 'gap-2 px-3 py-2' : 'gap-2.5 px-4 py-2.5 md:px-4.5',
+        'border-b',
+        compact ? 'px-3 py-2' : 'px-4 py-2.5 md:px-4.5',
       ]"
     >
       <div>
@@ -1036,47 +1016,6 @@ async function save() {
         <p v-if="definition.description && !compact" class="text-xs text-gray-500">
           {{ definition.description }}
         </p>
-      </div>
-
-      <div
-        :class="[
-          'w-full border-blue-200 bg-blue-50/80 shadow-sm ring-1 ring-blue-100 md:w-[320px]',
-          compact ? 'rounded-lg border p-2' : 'rounded-xl border-2 p-3',
-        ]"
-      >
-        <div :class="['flex items-center justify-between gap-3', compact ? 'mb-1.5' : 'mb-2']">
-          <label
-            for="stage-status-select"
-            :class="[
-              'font-bold uppercase text-blue-800',
-              compact ? 'text-[10px] tracking-[0.14em]' : 'text-xs tracking-[0.16em]',
-            ]"
-          >
-            Stage Status
-          </label>
-          <span
-            :class="[
-              'rounded-full font-semibold ring-1',
-              compact ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-[11px]',
-              selectedStatusTone,
-            ]"
-          >
-            {{ selectedStatusLabel }}
-          </span>
-        </div>
-        <select
-          id="stage-status-select"
-          v-model="form.status"
-          :class="[
-            'w-full rounded-lg border border-blue-300 bg-white font-semibold text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-200',
-            compact ? 'px-2.5 py-1.5 text-xs' : 'px-3 py-2.5 text-sm',
-          ]"
-        >
-          <option v-for="item in statusOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
-        </select>
-        <div v-if="!compact" class="mt-1.5 text-xs font-medium text-blue-700">
-          Select status before saving this stage.
-        </div>
       </div>
     </div>
 

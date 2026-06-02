@@ -28,13 +28,6 @@ const form = reactive({
   payload: {},
 })
 
-const statusOptions = [
-  { value: 'not_started', label: 'Not Started' },
-  { value: 'in_progress', label: 'In Progress' },
-  { value: 'on_hold', label: 'On Hold' },
-  { value: 'completed', label: 'Completed' },
-]
-
 const reviewerTypes = [
   { value: 'incharge', label: 'Incharge' },
   { value: 'op_admin', label: 'OP Admin' },
@@ -80,6 +73,16 @@ function addMonthsToIsoDate(value, monthsToAdd) {
   }
 
   return target.toISOString().slice(0, 10)
+}
+
+function toDateAtStartOfDay(value) {
+  if (!value) return null
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+
+  date.setHours(0, 0, 0, 0)
+  return date
 }
 
 function formatDateLabel(value) {
@@ -403,15 +406,22 @@ const summaryItems = computed(() => {
     : items
 })
 
-const selectedStatusLabel = computed(
-  () => statusOptions.find((item) => item.value === form.status)?.label || 'Not Started',
-)
+const probationSummary = computed(() => {
+  const currentEmployee = props.employee || {}
+  const payload = normalizedStage.value?.record?.payload || defaultPayload.value
+  const baseMonths = toNumber(currentEmployee.provisional_month)
+  const extendedMonths = toNumber(payload.extended_months ?? currentEmployee.extended_provisional_month)
+  const totalMonths = toNumber(currentEmployee.probation_months_total) || baseMonths + extendedMonths
+  const calculatedEndDate = payload.probation_end_date || addMonthsToIsoDate(currentEmployee.joining_date, totalMonths)
+  const completed = reviewerSlabs.filter((slab) => reviewerSlabSummary(slab.key).pending === 0 && reviewerMatrixRows.value.length).length
 
-const selectedStatusTone = computed(() => {
-  if (form.status === 'completed') return 'bg-emerald-100 text-emerald-700 ring-emerald-200'
-  if (form.status === 'in_progress') return 'bg-blue-100 text-blue-700 ring-blue-200'
-  if (form.status === 'on_hold') return 'bg-amber-100 text-amber-700 ring-amber-200'
-  return 'bg-slate-100 text-slate-600 ring-slate-200'
+  return {
+    baseMonths,
+    extendedMonths,
+    totalMonths,
+    calculatedEndDate: formatDateLabel(calculatedEndDate) || 'N/A',
+    checkpointText: `${completed} / ${reviewerSlabs.length} done`,
+  }
 })
 
 const localReviewerAssignments = computed(() =>
@@ -425,18 +435,22 @@ const reviewerMatrixRows = computed(() =>
 )
 
 const activeReviewerSlabKey = computed(() => {
-  for (const slab of reviewerSlabs) {
-    const hasPending = reviewerMatrixRows.value.some(
-      (row) => String(row?.[`slab_${slab.key}_status`] || '').toLowerCase() !== 'completed',
-    )
+  const payload = normalizedStage.value?.record?.payload || defaultPayload.value
+  const startDate = payload.probation_start_date || props.employee?.joining_date || ''
+  const firstCheckpoint = toDateAtStartOfDay(addMonthsToIsoDate(startDate, 1))
+  const secondCheckpoint = toDateAtStartOfDay(addMonthsToIsoDate(startDate, 2))
+  const today = toDateAtStartOfDay(new Date())
 
-    if (hasPending) return slab.key
-  }
-
-  return reviewerSlabs[0]?.key || ''
+  if (!today || !firstCheckpoint || !secondCheckpoint) return reviewerSlabs[0]?.key || ''
+  if (today >= secondCheckpoint) return 'final'
+  if (today >= firstCheckpoint) return '60'
+  return '30'
 })
 
 const expandedSlabKey = computed(() => reviewerMatrixExpandedKey.value || activeReviewerSlabKey.value)
+const activeSlabIndex = computed(() =>
+  Math.max(0, reviewerSlabs.findIndex((slab) => slab.key === activeReviewerSlabKey.value)),
+)
 const isExtendProbation = computed(() => normalizeDecisionValue(form.payload.recommendation) === 'extend_probation')
 const hasUnsavedChanges = computed(() => createFormSnapshot() !== baselineSnapshot.value)
 
@@ -523,7 +537,6 @@ function mergePayloadDefaults(baseValue, incomingValue) {
 
 function createFormSnapshot() {
   return JSON.stringify({
-    status: form.status,
     remarks: form.remarks || '',
     payload: form.payload || {},
   })
@@ -693,6 +706,27 @@ function reviewerSlabLabel(slab) {
   return `${slab.label} ${slab.subtitle}`
 }
 
+function roleLabel(role) {
+  const match = reviewerTypes.find((item) => item.value === role)
+  return match?.label || String(role || '').replace(/_/g, ' ').toUpperCase()
+}
+
+function reviewerInitials(name) {
+  return String(name || '--')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('') || '--'
+}
+
+function statusTone(status) {
+  const value = String(status || '').toLowerCase()
+  if (value === 'completed') return 'border-emerald-300 bg-emerald-50 text-emerald-700'
+  if (value === 'blocked') return 'border-rose-300 bg-rose-50 text-rose-700'
+  return 'border-amber-300 bg-amber-50 text-amber-700'
+}
+
 function reviewerSlabTone(slabKey, isExpanded = false) {
   const tones = {
     30: {
@@ -805,7 +839,6 @@ async function save() {
 
   try {
     await store.saveStageRecord(props.lifecycleId, props.stage.code, {
-      status: form.status,
       payload: {
         ...form.payload,
         reviewer_matrix: reviewerMatrixRows.value,
@@ -828,33 +861,74 @@ async function save() {
 <template>
   <section class="rounded-lg border bg-white shadow-sm">
     <div class="border-b px-3 py-2">
-      <h2 class="text-sm font-semibold text-slate-900 md:text-base">Probation Tracking</h2>
+      <h2 class="inline-flex rounded-md bg-blue-100 px-2 py-1 text-[12px] font-black uppercase tracking-[0.18em] text-blue-800">
+        Probation Tracking
+      </h2>
     </div>
 
-    <div class="space-y-2 px-3 py-2">
-      <div
-        v-if="summaryItems.length"
-        class="grid gap-x-3 gap-y-1 rounded-xl border border-blue-100 bg-blue-50/60 px-2 py-1.5 md:grid-cols-3 xl:grid-cols-4"
-      >
-        <div v-for="item in summaryItems" :key="item.label" class="min-w-0">
-          <div class="text-[10px] font-medium uppercase tracking-wide text-blue-700">
-            {{ item.label }}
-          </div>
-          <div class="truncate text-xs font-semibold text-slate-800" :title="item.value || 'N/A'">
-            {{ item.value || 'N/A' }}
-          </div>
+    <div class="space-y-3 px-3 py-2 text-[12px]">
+      <div class="grid gap-2 rounded-lg border-2 border-slate-800 bg-[#fffdf8] px-3 py-2 shadow-sm sm:grid-cols-2 xl:grid-cols-4">
+        <div>
+          <div class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Base Probation</div>
+          <div class="mt-0.5 text-base font-black text-slate-950">{{ probationSummary.baseMonths }} months</div>
+        </div>
+        <div>
+          <div class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Extended</div>
+          <div class="mt-0.5 text-base font-black text-slate-950">{{ probationSummary.extendedMonths }} months</div>
+        </div>
+        <div>
+          <div class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Calculated End</div>
+          <div class="mt-0.5 text-base font-black text-slate-950">{{ probationSummary.calculatedEndDate }}</div>
+        </div>
+        <div>
+          <div class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Checkpoints</div>
+          <div class="mt-0.5 text-base font-black text-slate-950">{{ probationSummary.checkpointText }}</div>
         </div>
       </div>
 
-      <div v-if="canManageProbation" class="rounded-xl border border-slate-200 bg-slate-50/50 p-2">
+      <div>
+        <div class="mb-1.5 inline-flex rounded bg-blue-100 px-2 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-blue-800">
+          Review Timeline
+        </div>
+        <div class="grid gap-2 lg:grid-cols-3">
+          <button
+            v-for="(slab, index) in reviewerSlabs"
+            :key="slab.key"
+            type="button"
+            class="relative rounded-lg border-2 bg-white px-3 py-2 text-left transition"
+            :class="activeReviewerSlabKey === slab.key
+              ? 'border-blue-500 bg-blue-50 shadow-sm'
+              : 'border-slate-200 hover:border-slate-300'"
+            @click="reviewerMatrixExpandedKey = slab.key"
+          >
+            <span
+              v-if="index < reviewerSlabs.length - 1"
+              class="pointer-events-none absolute -right-4 top-1/2 z-10 hidden h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border border-slate-300 bg-white text-sm font-black text-slate-700 shadow-sm lg:inline-flex"
+            >
+              →
+            </span>
+            <div class="text-[10px] font-bold uppercase tracking-[0.16em]" :class="activeReviewerSlabKey === slab.key ? 'text-blue-600' : 'text-slate-400'">
+              {{ activeReviewerSlabKey === slab.key ? 'Open now' : index < activeSlabIndex ? 'Done' : 'Upcoming' }}
+            </div>
+            <div class="mt-1 text-sm font-black text-slate-950">{{ slab.label }} · {{ slab.subtitle }}</div>
+            <div class="mt-1 text-xs text-slate-500">
+              {{ reviewerSlabSummary(slab.key).completed }}/{{ reviewerSlabSummary(slab.key).assigned }} reviewers
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <div class="rounded-lg border border-slate-200 bg-[#fffdf8] p-2">
         <div class="mb-1.5 flex flex-wrap items-center justify-between gap-2">
-          <div class="text-sm font-semibold text-slate-800">Assigned Reviewers</div>
-          <div class="flex flex-wrap gap-1.5">
+          <div class="inline-flex rounded bg-emerald-100 px-2 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-emerald-800">
+            Assigned Reviewers · tap a cell to set status
+          </div>
+          <div v-if="canManageProbation" class="flex flex-wrap gap-1">
             <button
               v-for="type in reviewerTypes"
               :key="type.value"
               type="button"
-              class="rounded-full border border-blue-200 bg-white px-2 py-0.5 text-[11px] font-medium text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+              class="rounded-full border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
               :disabled="localReviewerAssignments.some((item) => item.role === type.value)"
               @click="addReviewerAssignment(type.value, type.label)"
             >
@@ -863,178 +937,97 @@ async function save() {
           </div>
         </div>
 
-        <div v-if="localReviewerAssignments.length" class="grid gap-2 md:grid-cols-2">
-          <div v-for="item in localReviewerAssignments" :key="item.role" class="rounded-lg border bg-white p-2">
-            <div class="mb-1.5 flex items-center justify-between gap-2">
-              <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                {{ item.role_label || item.role }}
-              </div>
-              <button
-                type="button"
-                class="rounded border border-rose-200 px-2 py-0.5 text-[11px] font-medium text-rose-600 hover:bg-rose-50"
-                @click="removeReviewerAssignment(item.role)"
-              >
-                Remove
-              </button>
-            </div>
-            <SelectDropdown
-              :model-value="item.user_id"
-              :options="usersStore.items"
-              label="name"
-              :searchBy="searchLifecycleUsers"
-              placeholder="-- SELECT USER --"
-              class="h-10 w-full"
-              clearable
-              searchable
-              @update:model-value="updateReviewerAssignmentUser(item.role, $event)"
-            >
-              <template #option="{ option }">
-                <UserChip :user="option || {}" class="relative w-full overflow-hidden border" />
-              </template>
-              <template #selected-option="{ option }">
-                <UserChip v-if="option" :user="option || {}" />
-              </template>
-            </SelectDropdown>
-          </div>
-        </div>
-
-        <div v-else class="rounded-lg border border-dashed border-slate-300 bg-white px-3 py-3 text-sm text-slate-500">
-          No reviewer assigned yet.
-        </div>
-      </div>
-
-      <div class="rounded-xl border border-slate-200 bg-slate-50/50 p-2">
-        <div class="mb-1.5 text-sm font-semibold text-slate-800">Review Slabs</div>
-        <div class="space-y-1.5">
-          <div
-            v-for="slab in reviewerSlabs"
-            :key="slab.key"
-            class="overflow-hidden rounded-xl border"
-            :class="reviewerSlabTone(slab.key, expandedSlabKey === slab.key).card"
-          >
-            <button
-              type="button"
-              class="flex w-full items-start justify-between gap-3 px-2.5 py-1.5 text-left"
-              :class="reviewerSlabTone(slab.key, expandedSlabKey === slab.key).header"
-              @click="reviewerMatrixExpandedKey = expandedSlabKey === slab.key ? '' : slab.key"
-            >
-              <div class="min-w-0">
-                <div
-                  class="text-sm font-semibold"
-                  :class="reviewerSlabTone(slab.key, expandedSlabKey === slab.key).title"
-                >
-                  {{ reviewerSlabLabel(slab) }}
-                </div>
-                <div
-                  class="text-[11px]"
-                  :class="reviewerSlabTone(slab.key, expandedSlabKey === slab.key).meta"
-                >
-                  {{ reviewerSlabSummary(slab.key).assigned }} assigned reviewers,
-                  {{ reviewerSlabSummary(slab.key).completed }} completed,
-                  {{ reviewerSlabSummary(slab.key).pending }} pending
-                </div>
-              </div>
-              <div
-                class="rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]"
-                :class="reviewerSlabTone(slab.key, expandedSlabKey === slab.key).badge"
-              >
-                {{ expandedSlabKey === slab.key ? 'Open' : 'Minimized' }}
-              </div>
-            </button>
-
-            <div v-if="expandedSlabKey === slab.key" class="overflow-x-auto border-t">
-              <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
-                <thead
-                  class="text-[11px] uppercase tracking-[0.12em]"
-                  :class="reviewerSlabTone(slab.key, expandedSlabKey === slab.key).tableHead"
-                >
-                  <tr>
-                    <th class="px-2.5 py-2">Reviewer</th>
-                    <th class="px-2.5 py-2">Status</th>
-                    <th class="px-2.5 py-2">Note</th>
-                    <th class="px-2.5 py-2">Special Comment</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 bg-white">
-                  <tr v-for="(row, index) in reviewerMatrixRows" :key="`${slab.key}-${row.role}`">
-                    <td class="min-w-[220px] px-2.5 py-2 align-top">
-                      <div class="font-semibold text-slate-800">{{ row.role_label || row.role }}</div>
-                      <div class="text-xs text-slate-500">{{ row.user_name || row.label || 'Unassigned' }}</div>
-                    </td>
-                    <td class="min-w-[180px] px-2.5 py-2 align-top">
-                      <select
-                        :value="row[`slab_${slab.key}_status`] || 'pending'"
-                        class="w-full rounded-lg border px-2.5 py-1.5 text-xs disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
-                        :disabled="!canEditReviewerMatrixRow(row)"
-                        @change="updateReviewerMatrixRow(index, `slab_${slab.key}_status`, $event.target.value)"
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="completed">Completed</option>
-                        <option value="blocked">Blocked</option>
-                      </select>
-                      <div
-                        v-if="row[`slab_${slab.key}_updated_by_name`]"
-                        class="mt-1 text-[10px] font-medium text-slate-500"
-                      >
-                        By {{ row[`slab_${slab.key}_updated_by_name`] }}
-                      </div>
-                    </td>
-                    <td class="min-w-[280px] px-2.5 py-2 align-top">
-                      <textarea
-                        :value="row[`slab_${slab.key}_note`] || ''"
-                        class="min-h-[36px] w-full rounded-lg border px-2.5 py-1.5 text-xs disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
-                        :disabled="!canEditReviewerMatrixRow(row)"
-                        placeholder="Reviewer note"
-                        @input="updateReviewerMatrixRow(index, `slab_${slab.key}_note`, $event.target.value)"
-                      />
-                      <div
-                        v-if="row[`slab_${slab.key}_updated_by_name`]"
-                        class="mt-1 text-[10px] font-medium text-slate-500"
-                      >
-                        By {{ row[`slab_${slab.key}_updated_by_name`] }}
-                      </div>
-                    </td>
-                    <td class="min-w-[280px] px-2.5 py-2 align-top">
-                      <textarea
-                        :value="row[`slab_${slab.key}_special_note`] || ''"
-                        class="min-h-[36px] w-full rounded-lg border px-2.5 py-1.5 text-xs disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
-                        :disabled="!canEditReviewerMatrixRow(row)"
-                        placeholder="Special comments"
-                        @input="updateReviewerMatrixRow(index, `slab_${slab.key}_special_note`, $event.target.value)"
-                      />
-                      <div
-                        v-if="row[`slab_${slab.key}_special_note_updated_by_name`]"
-                        class="mt-1 text-[10px] font-medium text-slate-500"
-                      >
-                        By {{ row[`slab_${slab.key}_special_note_updated_by_name`] }}
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <div v-else class="space-y-1 border-t px-2.5 py-1.5">
-              <div class="flex flex-wrap gap-1.5">
-                <span
-                  v-for="row in reviewerMatrixRows"
-                  :key="`${slab.key}-${row.role}-chip`"
-                  class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600"
-                >
-                  {{ row.user_name || row.label }}
-                </span>
-                <span v-if="!reviewerMatrixRows.length" class="text-xs text-slate-500">
-                  No reviewers assigned in this slab yet.
-                </span>
-              </div>
-            </div>
-          </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full border-y border-slate-800 text-left text-xs">
+            <thead class="border-b border-slate-800 text-[10px] uppercase tracking-[0.18em] text-slate-500">
+              <tr>
+                <th class="px-2 py-2">Role</th>
+                <th class="min-w-[220px] px-2 py-2">Reviewer</th>
+                <th v-for="slab in reviewerSlabs" :key="`head-${slab.key}`" class="px-2 py-2 text-center">
+                  {{ slab.label.replace(' Review', '') }}
+                </th>
+                <th class="min-w-[190px] px-2 py-2">Note</th>
+                <th v-if="canManageProbation" class="w-20 px-2 py-2"></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200 bg-white/70">
+              <tr v-for="(row, index) in reviewerMatrixRows" :key="row.role">
+                <td class="px-2 py-2 font-bold uppercase text-slate-800">{{ roleLabel(row.role) }}</td>
+                <td class="px-2 py-2">
+                  <div v-if="canManageProbation" class="min-w-[210px]">
+                    <SelectDropdown
+                      :model-value="row.user_id"
+                      :options="usersStore.items"
+                      label="name"
+                      :searchBy="searchLifecycleUsers"
+                      placeholder="-- SELECT USER --"
+                      class="h-8 w-full text-xs"
+                      clearable
+                      searchable
+                      @update:model-value="updateReviewerAssignmentUser(row.role, $event)"
+                    >
+                      <template #option="{ option }">
+                        <UserChip :user="option || {}" class="relative w-full overflow-hidden border" />
+                      </template>
+                      <template #selected-option="{ option }">
+                        <UserChip v-if="option" :user="option || {}" />
+                      </template>
+                    </SelectDropdown>
+                  </div>
+                  <div v-else class="flex items-center gap-2">
+                    <span class="inline-flex h-7 w-7 items-center justify-center rounded-md border-2 border-slate-700 bg-blue-50 text-[10px] font-bold text-blue-700">
+                      {{ reviewerInitials(row.user_name || row.label) }}
+                    </span>
+                    <span class="font-semibold text-slate-800">{{ row.user_name || row.label || 'Unassigned' }}</span>
+                  </div>
+                </td>
+                <td v-for="slab in reviewerSlabs" :key="`${row.role}-${slab.key}`" class="px-2 py-2 text-center">
+                  <select
+                    :value="row[`slab_${slab.key}_status`] || 'pending'"
+                    class="h-7 rounded-full border px-2 text-[11px] font-semibold disabled:cursor-not-allowed disabled:bg-slate-100"
+                    :class="statusTone(row[`slab_${slab.key}_status`])"
+                    :disabled="!canEditReviewerMatrixRow(row)"
+                    @change="updateReviewerMatrixRow(index, `slab_${slab.key}_status`, $event.target.value)"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="completed">Done</option>
+                    <option value="blocked">Blocked</option>
+                  </select>
+                </td>
+                <td class="px-2 py-2">
+                  <textarea
+                    :value="row[`slab_${expandedSlabKey}_note`] || ''"
+                    class="min-h-[32px] w-full rounded-md border px-2 py-1 text-xs disabled:bg-slate-100"
+                    :disabled="!canEditReviewerMatrixRow(row)"
+                    placeholder="Reviewer note"
+                    @input="updateReviewerMatrixRow(index, `slab_${expandedSlabKey}_note`, $event.target.value)"
+                  />
+                </td>
+                <td v-if="canManageProbation" class="px-2 py-2 text-right">
+                  <button
+                    type="button"
+                    class="rounded border border-rose-200 px-2 py-1 text-[11px] font-semibold text-rose-600 hover:bg-rose-50"
+                    @click="removeReviewerAssignment(row.role)"
+                  >
+                    Remove
+                  </button>
+                </td>
+              </tr>
+              <tr v-if="!reviewerMatrixRows.length">
+                <td colspan="6" class="px-3 py-6 text-center text-sm text-slate-500">
+                  No reviewer assigned yet.
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
       <div class="grid gap-2 md:grid-cols-2">
         <div class="rounded-lg border px-3 py-2">
-          <div class="mb-1.5 text-sm font-medium text-gray-700">Assessment Form</div>
+          <div class="mb-1.5 inline-flex rounded bg-slate-100 px-2 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-700">
+            Assessment Form
+          </div>
           <input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" class="block w-full text-sm text-gray-600" @change="onFileChange" />
           <div
             v-if="form.payload.assessment_form_attachment"
@@ -1051,7 +1044,9 @@ async function save() {
         </div>
 
         <div v-if="canManageProbation" class="rounded-lg border border-slate-200 bg-slate-50/60 p-2">
-          <div class="mb-2 text-sm font-semibold text-slate-800">Probation Decision</div>
+          <div class="mb-2 inline-flex rounded bg-violet-100 px-2 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-violet-800">
+            Probation Decision
+          </div>
           <div class="grid gap-2 md:grid-cols-2">
             <label class="block">
               <span class="mb-1 block text-sm font-medium text-gray-700">Recommendation</span>
@@ -1149,23 +1144,6 @@ async function save() {
         </div>
 
         <div class="flex flex-wrap items-end gap-2">
-          <label class="block min-w-[190px]">
-            <span class="mb-1 flex items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-blue-800">
-              Stage Status
-              <span class="rounded-full px-2 py-0.5 text-[10px] font-semibold normal-case tracking-normal ring-1" :class="selectedStatusTone">
-                {{ selectedStatusLabel }}
-              </span>
-            </span>
-            <select
-              v-model="form.status"
-              class="w-full rounded-lg border border-blue-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-200"
-            >
-              <option v-for="item in statusOptions" :key="item.value" :value="item.value">
-                {{ item.label }}
-              </option>
-            </select>
-          </label>
-
           <button
             type="button"
             class="inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60"
