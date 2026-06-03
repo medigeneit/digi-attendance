@@ -619,6 +619,8 @@ function clearWeekend() {
               >
                 <option value="employee">Employee</option>
                 <option value="admin">Admin</option>
+                <option value="hr_manager">HR Manager</option>
+                <option value="accounts">Accounts</option>
                 <option value="super_admin">Super Admin</option>
                 <option value="developer">Developer</option>
               </select>

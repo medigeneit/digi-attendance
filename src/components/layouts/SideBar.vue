@@ -59,10 +59,37 @@ const payrollFeatureKeys = [
 ]
 const canPayroll = computed(() => canAnyFeature(payrollFeatureKeys))
 const canSettings = computed(() =>
-  canAnyFeature(['settings.view', 'settings.manage', 'settings.permissions.manage']),
+  canAnyFeature([
+    'settings.user.view',
+    'settings.holiday.view',
+    'settings.approval.view',
+    'settings.leave_type.view',
+    'settings.shift.view',
+    'settings.designation.view',
+    'settings.department.view',
+    'settings.company.view',
+    'settings.company_bank.view',
+    'settings.device.view',
+    'settings.zk_user.view',
+    'settings.permission.view',
+    'settings.feature_permission.view',
+    'settings.kpi_criteria.view',
+    'settings.kpi_forms.view',
+    'settings.kpi_permissions.view',
+    'settings.joining_template.view',
+    'settings.exit_template.view',
+  ]),
 )
 const canEmpManage = computed(() =>
   canAnyFeature(['employee.view', 'emp_reports.view', 'lifecycle.view']),
+)
+const canCareers = computed(() =>
+  canAnyFeature([
+    'careers.jobs.view',
+    'careers.jobs.manage',
+    'careers.applications.view',
+    'careers.applications.manage',
+  ]),
 )
 
 const logout = () => {
@@ -239,31 +266,31 @@ const empRouteNames = ['checklists.board', 'lifecycle.board', 'lifecycle.detail'
 
 // Settings
 const settingsMenu = [
-  { label: 'User List', routeName: 'UserList', feature: 'settings.view' },
-  { label: 'Holiday List', routeName: 'HoliDayList', feature: 'settings.manage' },
-  { label: 'Approval Rules', routeName: 'LeaveApprovalList', params: { type: 'leave' }, feature: 'settings.manage' },
-  { label: 'Leave Type List', routeName: 'LeaveTypeList', feature: 'settings.manage' },
-  { label: 'Shift List', routeName: 'ShiftList', feature: 'settings.manage' },
-  { label: 'Designation List', routeName: 'DesignationList', feature: 'settings.manage' },
-  { label: 'Department List', routeName: 'DepartmentList', feature: 'settings.manage' },
-  { label: 'Company List', routeName: 'CompanyList', feature: 'settings.manage' },
-  { label: 'Company Bank Accounts', routeName: 'CompanyBankAccountList', feature: 'settings.manage' },
-  { label: 'Device List', routeName: 'DeviceList', feature: 'settings.manage' },
-  { label: 'ZK User Management', routeName: 'ZKUsers', feature: 'settings.manage' },
-  { label: 'Permission List', routeName: 'PermissionList', feature: 'settings.permissions.manage' },
-  { label: 'Feature Permissions', routeName: 'FeaturePermissionList', feature: 'settings.permissions.manage' },
-  { label: 'Monthly KPI Criteria', routeName: 'KpiMonthlyList', feature: 'kpi.manage' },
-  { label: 'KPI Forms', routeName: 'KpiCycles', feature: 'kpi.manage' },
-  { label: 'KPI Permissions', routeName: 'LaneOverrides', feature: 'kpi.manage' },
-  { label: 'Joining Template Items', routeName: 'TemplateItems', params: { id: 1 }, feature: 'lifecycle.update' },
-  { label: 'Exit Template Items', routeName: 'TemplateItems', params: { id: 2 }, feature: 'lifecycle.update' },
+  { label: 'User List', routeName: 'UserList', feature: 'settings.user.view' },
+  { label: 'Holiday List', routeName: 'HoliDayList', feature: 'settings.holiday.view' },
+  { label: 'Approval Rules', routeName: 'LeaveApprovalList', params: { type: 'leave' }, feature: 'settings.approval.view' },
+  { label: 'Leave Type List', routeName: 'LeaveTypeList', feature: 'settings.leave_type.view' },
+  { label: 'Shift List', routeName: 'ShiftList', feature: 'settings.shift.view' },
+  { label: 'Designation List', routeName: 'DesignationList', feature: 'settings.designation.view' },
+  { label: 'Department List', routeName: 'DepartmentList', feature: 'settings.department.view' },
+  { label: 'Company List', routeName: 'CompanyList', feature: 'settings.company.view' },
+  { label: 'Company Bank Accounts', routeName: 'CompanyBankAccountList', feature: 'settings.company_bank.view' },
+  { label: 'Device List', routeName: 'DeviceList', feature: 'settings.device.view' },
+  { label: 'ZK User Management', routeName: 'ZKUsers', feature: 'settings.zk_user.view' },
+  { label: 'Permission List', routeName: 'PermissionList', feature: 'settings.permission.view' },
+  { label: 'Feature Permissions', routeName: 'FeaturePermissionList', feature: 'settings.feature_permission.view' },
+  { label: 'Monthly KPI Criteria', routeName: 'KpiMonthlyList', feature: 'settings.kpi_criteria.view' },
+  { label: 'KPI Forms', routeName: 'KpiCycles', feature: 'settings.kpi_forms.view' },
+  { label: 'KPI Permissions', routeName: 'LaneOverrides', feature: 'settings.kpi_permissions.view' },
+  { label: 'Joining Template Items', routeName: 'TemplateItems', params: { id: 1 }, feature: 'settings.joining_template.view' },
+  { label: 'Exit Template Items', routeName: 'TemplateItems', params: { id: 2 }, feature: 'settings.exit_template.view' },
 ]
 const settingsRouteNames = settingsMenu.map((i) => i.routeName)
 
 // Careers
 const careerMenu = [
-  { label: 'Job Circulars', routeName: 'AdminCareersJobs' },
-  { label: 'Applications', routeName: 'AdminCareersApplications' },
+  { label: 'Job Circulars', routeName: 'AdminCareersJobs', feature: 'careers.jobs.view' },
+  { label: 'Applications', routeName: 'AdminCareersApplications', feature: 'careers.applications.view' },
 ]
 const careerRouteNames = careerMenu.map((i) => i.routeName)
 
@@ -326,9 +353,11 @@ const filteredSettingsMenu = computed(() => {
   if (!canSettings.value) return []
   return filterBySearch(settingsMenu.filter((item) => !item.feature || canFeature(item.feature)))
 })
-const filteredCareerMenu = computed(() =>
-  normalizedQuery.value ? careerMenu.filter((i) => matchesQuery(i.label)) : careerMenu,
-)
+const filteredCareerMenu = computed(() => {
+  if (!canCareers.value) return []
+  const allowedItems = careerMenu.filter((item) => !item.feature || canFeature(item.feature))
+  return normalizedQuery.value ? allowedItems.filter((i) => matchesQuery(i.label)) : allowedItems
+})
 
 const submenuOpen = (key, filteredList) =>
   normalizedQuery.value ? filteredList.length > 0 : isSubmenuOpen(key)
