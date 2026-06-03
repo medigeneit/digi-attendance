@@ -67,35 +67,8 @@ const notices = computed(() => {
 })
 
 const unreadCount = computed(() => notices.value.filter((n) => !n?.user_feedback).length)
-const firstUnreadNotice = computed(() => notices.value.find((n) => !n?.user_feedback) || null)
-const showUnreadModal = ref(false)
-const skippedNoticeId = ref(null)
-
-watch(
-  () => firstUnreadNotice.value?.id ?? null,
-  (noticeId) => {
-    if (!noticeId) {
-      skippedNoticeId.value = null
-      showUnreadModal.value = false
-      return
-    }
-
-    showUnreadModal.value = skippedNoticeId.value !== noticeId
-  },
-  { immediate: true },
-)
-
-const postponeNotice = () => {
-  if (firstUnreadNotice.value?.id) {
-    skippedNoticeId.value = firstUnreadNotice.value.id
-  }
-  showUnreadModal.value = false
-}
-
-const goToDetails = (notice = firstUnreadNotice.value) => {
+const goToDetails = (notice) => {
   if (!notice) return
-
-  showUnreadModal.value = false
   const path = notice.type === 1 ? `/notice-details/${notice.id}` : `/policy-details/${notice.id}`
   router.push(path)
 }
@@ -167,66 +140,5 @@ const goToDetails = (notice = firstUnreadNotice.value) => {
       </article>
     </div>
 
-    <OverlyModal
-      v-if="firstUnreadNotice && showUnreadModal"
-      :show="showUnreadModal"
-      @close="postponeNotice"
-    >
-      <template #default>
-        <div class="border-b border-slate-200 px-4 py-4 sm:px-6">
-          <div class="flex items-start justify-between gap-3">
-            <div class="min-w-0">
-              <div class="mb-2 inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold text-blue-700">
-                <i class="fas fa-bell"></i>
-                Unread Notice
-              </div>
-              <h3 class="text-base font-semibold text-slate-900 sm:text-lg">
-                {{ firstUnreadNotice.title || 'New notice' }}
-              </h3>
-            </div>
-
-            <button
-              type="button"
-              class="inline-flex size-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700"
-              aria-label="Close notice"
-              @click="postponeNotice"
-            >
-              <i class="fas fa-times text-sm"></i>
-            </button>
-          </div>
-        </div>
-
-        <div class="space-y-5 px-4 py-4 sm:px-6 sm:py-5">
-          <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
-            <p class="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-              <i class="fas fa-calendar-alt text-slate-400"></i>
-              <span>Published: {{ prettyDate(firstUnreadNotice.published_at) }}</span>
-            </p>
-          </div>
-
-          <p class="text-sm leading-6 text-slate-700">
-            You must read this notice before proceeding.
-          </p>
-
-          <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <button
-              type="button"
-              class="inline-flex items-center justify-center rounded-xl bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
-              @click="postponeNotice"
-            >
-              Later
-            </button>
-            <button
-              type="button"
-              class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
-              @click="goToDetails(firstUnreadNotice)"
-            >
-              Read now
-              <i class="fas fa-arrow-right text-xs"></i>
-            </button>
-          </div>
-        </div>
-      </template>
-    </OverlyModal>
   </div>
 </template>
