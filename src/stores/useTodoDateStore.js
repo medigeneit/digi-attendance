@@ -14,7 +14,10 @@ export const useTodoDateStore = defineStore('todo-date', () => {
   const todo_date_counts = ref({})
 
 
-  const emptyTodoDates = () => todo_date.value = []
+  const emptyTodoDates = () => {
+    todo_date.value = null
+    todo_dates.value = []
+  }
 
   const fetchTodoDates = async (params) => {
 

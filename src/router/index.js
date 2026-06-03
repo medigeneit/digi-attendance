@@ -264,6 +264,12 @@ const router = createRouter({
           component: () => import('@/views/private-pages/MyTodoList.vue'),
           meta: { requiresAuth: true },
         },
+        {
+          path: 'my-work',
+          name: 'MyWork',
+          component: () => import('@/views/private-pages/MyWorkPage.vue'),
+          meta: { requiresAuth: true, title: 'My Work' },
+        },
 
         {
           path: 'todos',

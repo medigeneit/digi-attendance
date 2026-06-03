@@ -3,16 +3,17 @@ import RequiredIcon from '@/components/RequiredIcon.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useCompanyStore } from '@/stores/company'
 
-// import { useTaskStore } from '@/stores/useTaskStore'
 import { stripTags } from '@/libs/string'
 import { findRequirement } from '@/services/requirement'
 import { useTaskStore } from '@/stores/useTaskStore'
+import apiClient from '@/axios'
 import { computed, onMounted, ref, watch } from 'vue'
 import CompanyDepartmentSelectInput from '../common/CompanyDepartmentSelectInput.vue'
 import SectionLoading from '../common/SectionLoading.vue'
 import TextEditor from '../TextEditor.vue'
 import TextWithHr from '../TextWithHr.vue'
 import IsTargetTaskInput from './IsTargetTaskInput.vue'
+import TaskAssignEmployeeInput from './TaskAssignEmployeeInput.vue'
 import TaskUrgencyInput from './TaskUrgencyInput.vue'
 
 const props = defineProps({
@@ -40,13 +41,14 @@ const store = useTaskStore()
 const auth = useAuthStore()
 const companyStore = useCompanyStore()
 const task = ref()
-const selectedUser = ref([])
-const user_ids = computed(() => selectedUser.value.map((u) => u.id))
+const availableEmployees = ref([])
 
 const state = ref('')
 const requirement = ref()
 
 const assign_type = ref(null)
+
+const isAdmin = computed(() => auth.user?.role !== 'employee' && auth.isAdminMood)
 
 const form = ref({
   title: '',
@@ -62,16 +64,28 @@ const form = ref({
   deadline: null,
 })
 
-watch(user_ids, (val) => {
-  form.value.user_ids = val
-})
-
 watch(
   () => props.defaultValues,
   (defaults) => {
     form.value = { ...defaults }
   },
   { immediate: true },
+)
+
+watch(
+  () => form.value.to_department_id,
+  async (deptId) => {
+    if (deptId && isAdmin.value) {
+      try {
+        const res = await apiClient.get('/users', { params: { department_id: deptId, is_active: 1 } })
+        availableEmployees.value = Array.isArray(res.data) ? res.data : (res.data?.data || [])
+      } catch {
+        availableEmployees.value = []
+      }
+    } else {
+      availableEmployees.value = []
+    }
+  },
 )
 
 onMounted(async () => {
@@ -270,7 +284,7 @@ function handleDescriptionCopy(){
         <TextEditor v-model="form.description" />
       </div>
 
-      <template v-if="auth.user?.role != 'employee' && auth.isAdminMood">
+      <template v-if="isAdmin">
         <TextWithHr class="mb-6">
           <div class="px-2">
             <b class="fas fa-cog text-gray-400"></b>
@@ -306,6 +320,18 @@ function handleDescriptionCopy(){
               class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
             />
           </div>
+        </div>
+
+        <div class="mb-6">
+          <label class="block text-gray-600 text-sm mb-2 font-medium">
+            Assign Employee(s)
+            <span class="ml-1 text-xs text-slate-400">(select To Department first)</span>
+          </label>
+          <TaskAssignEmployeeInput
+            v-model="form.user_ids"
+            :employees="availableEmployees"
+            placeholder="-- Select employee(s) --"
+          />
         </div>
       </template>
 

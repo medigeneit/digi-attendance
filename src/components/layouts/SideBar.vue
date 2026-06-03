@@ -121,6 +121,7 @@ const matchesQuery = (label) => {
 // Core (visible for everyone)
 const coreMenu = [
   { label: 'Dashboard', to: { path: '/dashboard' }, icon: 'fad fa-table' },
+  { label: 'My Work', to: { path: '/my-work' }, icon: 'fad fa-calendar-check' },
   { label: 'Task List', to: { path: '/my-requirement-tasks' }, icon: 'fad fa-tasks' },
   { label: 'Profile', to: { path: '/profile' }, icon: 'fad fa-user' },
   { label: 'Notifications', to: { path: '/notifications' }, icon: 'fad fa-bells' },

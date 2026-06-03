@@ -67,29 +67,30 @@ const todoDatesInDate = computed(() => {
             :todoDate="todo_date"
             :moreItemsCount="todoDatesInDate.moreItemsCount"
           >
-            <div
+            <button
+              type="button"
               :title="`${todo_date?.title} ${todo_date?.user ? '\nby:' : ''} ${todo_date?.user?.name} ${todo_date?.user?.department ? '\nDEPT:' : ''} ${todo_date.user?.department?.name}`"
-              class="px-0.5 mb-2 text-xs rounded cursor-pointer flex items-center gap-2"
+              class="mb-1.5 flex min-h-6 w-full cursor-pointer items-center gap-1.5 rounded-md border px-1.5 py-1 text-left text-[11px] leading-tight shadow-sm transition"
               :class="{
-                'bg-white text-sky-900 hover:bg-sky-400/80 hover:text-white  border-sky-300 font-semibold':
+                'border-sky-100 bg-white text-sky-950 hover:border-sky-300 hover:bg-sky-50 font-semibold':
                   todo_date.status !== 'COMPLETED',
-                'bg-green-200 text-green-900': todo_date.status === 'COMPLETED',
+                'border-green-200 bg-green-50 text-green-900': todo_date.status === 'COMPLETED',
               }"
               @click.prevent.stop="emit('clickTodo', todo_date)"
             >
               <TodoStatusIcon
                 :todoDate="todo_date"
-                class="text-sm"
+                class="shrink-0 text-sm"
                 size="x-small"
                 :class="[todo_date.status == 'COMPLETED' ? '!text-green-800 ml-0.5' : '']"
               />
 
-              <div class="line-clamp-1 text-[10px]">{{ todo_date.title }}</div>
+              <div class="min-w-0 flex-1 truncate">{{ todo_date.title }}</div>
 
               <template v-if="todo_date.user">
-                <UserAvatar :user="todo_date.user" size="xsmall" class="ml-auto" />
+                <UserAvatar :user="todo_date.user" size="xsmall" class="shrink-0" />
               </template>
-            </div>
+            </button>
           </slot>
         </template>
       </slot>
