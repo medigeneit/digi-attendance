@@ -2,6 +2,7 @@
 import OverlyModal from '@/components/common/OverlyModal.vue'
 import TodoAddForm from '@/components/todo/TodoAddForm.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useNoticeStore } from '@/stores/notice'
 import { useUserStore } from '@/stores/user'
 import apiClient from '@/axios'
 import { storeToRefs } from 'pinia'
@@ -10,8 +11,10 @@ import { useRoute, useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
 const userStore = useUserStore()
+const noticeStore = useNoticeStore()
 const { user: authUser } = storeToRefs(authStore)
 const { employeeDashboardOverview, userDashboard } = storeToRefs(userStore)
+const { notices: noticeStoreNotices } = storeToRefs(noticeStore)
 const route = useRoute()
 const router = useRouter()
 
@@ -20,7 +23,6 @@ const initialDate = isValidDate(route.query.date) ? String(route.query.date) : f
 const selectedDate = ref(initialDate)
 const visibleMonth = ref(isValidMonth(route.query.month) ? String(route.query.month) : initialDate.slice(0, 7))
 const showTodoForm = ref(false)
-const showPendingNoticeModal = ref(false)
 
 // Todos fetched from my-todo-dates API for the visible month
 const myTodoDates = ref([])
@@ -102,7 +104,7 @@ const hero = computed(() => overview.value.hero || {})
 const attendance = computed(() => overview.value.attendance || {})
 const tasks = computed(() => overview.value.tasks?.selected_date || [])
 const todos = computed(() => overview.value.todos?.selected_date || [])
-const notices = computed(() => overview.value.notices || [])
+const notices = computed(() => noticeStoreNotices.value?.length ? noticeStoreNotices.value : overview.value.notices || [])
 const quickActions = computed(() => overview.value.quick_actions || {})
 const applications = computed(() => overview.value.applications || {})
 const markers = computed(() => {
@@ -237,13 +239,17 @@ const checkOut = computed(() => formatTime(attendance.value.today?.check_out))
 const lastSevenDays = computed(() => attendance.value.last_7_days || [])
 
 const leaveBalances = computed(() => flattenLeaveBalances(overview.value.leave_balance).slice(0, 4))
-const unreadNotices = computed(() => notices.value.filter((notice) => !notice?.user_feedback).slice(0, 3))
-const visibleNotices = computed(() => (unreadNotices.value.length ? unreadNotices.value : notices.value.slice(0, 3)))
-const pendingNoticeModalKey = computed(() => {
-  const ids = unreadNotices.value.map((notice) => notice.id).filter(Boolean).join(',')
-  return ids ? `dashboard-pending-notices:${ids}` : ''
-})
-
+const unreadNotices = computed(() => notices.value.filter((notice) => !notice?.user_feedback).slice(0, 5))
+const visibleNotices = computed(() =>
+  [...notices.value]
+    .sort((a, b) => {
+      const au = a?.user_feedback ? 1 : 0
+      const bu = b?.user_feedback ? 1 : 0
+      if (au !== bu) return au - bu
+      return new Date(b?.published_at || 0) - new Date(a?.published_at || 0)
+    })
+    .slice(0, 5),
+)
 const calendarDays = computed(() => {
   const [year, month] = visibleMonth.value.split('-').map(Number)
   const first = new Date(year, month - 1, 1)
@@ -271,8 +277,9 @@ async function fetchOverview() {
     await authStore.fetchUser()
   }
 
-  // Fetch todos for the month from dedicated endpoint
+  // Fetch todos and notices in parallel — independent of dashboard overview
   fetchMyTodoDates()
+  noticeStore.fetchUserNotices()
 
   try {
     await userStore.fetchEmployeeDashboardOverview({
@@ -397,19 +404,6 @@ function formatNoticeTime(value) {
   return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(date)
 }
 
-function openPendingNoticeModal() {
-  if (!unreadNotices.value.length || !pendingNoticeModalKey.value) return
-  if (sessionStorage.getItem(pendingNoticeModalKey.value)) return
-  showPendingNoticeModal.value = true
-}
-
-function closePendingNoticeModal() {
-  if (pendingNoticeModalKey.value) {
-    sessionStorage.setItem(pendingNoticeModalKey.value, 'dismissed')
-  }
-  showPendingNoticeModal.value = false
-}
-
 function flattenLeaveBalances(raw) {
   if (Array.isArray(raw)) {
     if (raw.some((item) => Array.isArray(item?.balances || item?.items || item?.leave_balance))) {
@@ -462,7 +456,6 @@ function toggleAction(key) {
 
 watch([selectedDate, visibleMonth], fetchOverview)
 watch(visibleMonth, fetchMyTodoDates)
-watch(unreadNotices, openPendingNoticeModal)
 
 onMounted(fetchOverview)
 </script>
@@ -696,28 +689,68 @@ onMounted(fetchOverview)
               <div class="flex items-center gap-2 text-sm font-semibold text-slate-900">
                 <i class="far fa-bullhorn text-blue-600"></i>
                 Notices
+                <span
+                  v-if="unreadNotices.length"
+                  class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-600"
+                >
+                  <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-rose-500"></span>
+                  {{ unreadNotices.length }} pending
+                </span>
               </div>
               <RouterLink :to="{ name: 'NoticeView' }" class="text-xs font-semibold text-blue-600">
                 View All
               </RouterLink>
             </header>
+
             <div v-if="visibleNotices.length" class="divide-y divide-slate-100">
-              <article v-for="notice in visibleNotices" :key="notice.id" class="flex gap-3 px-4 py-3">
-                <span class="inline-flex h-8 w-8 flex-none items-center justify-center rounded bg-blue-50 text-blue-600">
+              <article
+                v-for="notice in visibleNotices"
+                :key="notice.id"
+                class="flex items-start gap-3 px-4 py-3 transition hover:bg-slate-50"
+                :class="!notice.user_feedback ? 'border-l-2 border-rose-400' : 'border-l-2 border-transparent'"
+              >
+                <span
+                  class="mt-0.5 inline-flex h-8 w-8 flex-none items-center justify-center rounded text-xs"
+                  :class="!notice.user_feedback ? 'bg-rose-50 text-rose-500' : 'bg-slate-100 text-slate-400'"
+                >
                   <i class="far fa-bell"></i>
                 </span>
-                <div class="min-w-0">
+                <div class="min-w-0 flex-1">
                   <RouterLink
                     :to="notice.type === 1 ? `/notice-details/${notice.id}` : `/policy-details/${notice.id}`"
-                    class="block truncate text-sm font-medium text-slate-900 hover:text-blue-700"
+                    class="block truncate text-sm font-medium hover:text-blue-700"
+                    :class="!notice.user_feedback ? 'text-slate-900 font-semibold' : 'text-slate-500'"
                   >
                     {{ notice.title || 'Untitled notice' }}
                   </RouterLink>
-                  <p class="mt-1 text-[11px] text-slate-500">{{ formatNoticeTime(notice.published_at) }}</p>
+                  <div class="mt-1 flex flex-wrap items-center gap-2">
+                    <p class="text-[11px] text-slate-400">{{ formatNoticeTime(notice.published_at) }}</p>
+                    <span
+                      v-if="!notice.user_feedback"
+                      class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold text-rose-600"
+                    >
+                      <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-rose-500"></span>
+                      Pending
+                    </span>
+                    <span
+                      v-else
+                      class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600"
+                    >
+                      <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                      Read
+                    </span>
+                  </div>
                 </div>
               </article>
             </div>
-            <div v-else class="px-4 py-8 text-center text-sm text-slate-500">No pending notice found</div>
+
+            <div v-else class="flex flex-col items-center justify-center px-4 py-8 text-center">
+              <span class="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                <i class="far fa-bell-slash"></i>
+              </span>
+              <p class="text-sm font-semibold text-slate-600">No notices yet</p>
+              <p class="mt-0.5 text-xs text-slate-400">You'll be notified when new notices arrive.</p>
+            </div>
           </section>
         </div>
 
@@ -832,64 +865,6 @@ onMounted(fetchOverview)
         @update="handleTodoAdded"
         @cancelClick="showTodoForm = false"
       />
-    </OverlyModal>
-
-    <OverlyModal
-      v-if="showPendingNoticeModal"
-      :close-on-backdrop="false"
-      @close="closePendingNoticeModal"
-    >
-      <div class="overflow-hidden rounded-2xl bg-white">
-        <header class="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4">
-          <div>
-            <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-blue-600">Pending Notices</p>
-            <h2 class="mt-1 text-lg font-semibold text-slate-900">Please review your unread notices</h2>
-          </div>
-          <button
-            type="button"
-            class="inline-flex h-8 w-8 flex-none items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-            aria-label="Close pending notices"
-            @click="closePendingNoticeModal"
-          >
-            <i class="far fa-times"></i>
-          </button>
-        </header>
-
-        <div class="max-h-[60vh] divide-y divide-slate-100 overflow-y-auto">
-          <article v-for="notice in unreadNotices" :key="notice.id" class="flex gap-3 px-5 py-4">
-            <span class="inline-flex h-10 w-10 flex-none items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-              <i class="far fa-bell"></i>
-            </span>
-            <div class="min-w-0 flex-1">
-              <RouterLink
-                :to="notice.type === 1 ? `/notice-details/${notice.id}` : `/policy-details/${notice.id}`"
-                class="block text-sm font-semibold text-slate-900 hover:text-blue-700"
-                @click="closePendingNoticeModal"
-              >
-                {{ notice.title || 'Untitled notice' }}
-              </RouterLink>
-              <p class="mt-1 text-[11px] text-slate-500">{{ formatNoticeTime(notice.published_at) }}</p>
-            </div>
-          </article>
-        </div>
-
-        <footer class="flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 px-5 py-4">
-          <button
-            type="button"
-            class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
-            @click="closePendingNoticeModal"
-          >
-            Later
-          </button>
-          <RouterLink
-            :to="{ name: 'NoticeView' }"
-            class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
-            @click="closePendingNoticeModal"
-          >
-            View All
-          </RouterLink>
-        </footer>
-      </div>
     </OverlyModal>
   </div>
 </template>
