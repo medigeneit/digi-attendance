@@ -310,7 +310,7 @@ const payrollMenu = [
   { label: 'Payroll Batches', routeName: 'PayrollBatchList', feature: 'payroll.batches.view' },
   { label: 'Generate Payroll', routeName: 'PayrollBatchGenerate', feature: 'payroll.batches.generate' },
   { label: 'Doctor Payroll', routeName: 'DoctorPayrollList', feature: 'payroll.doctor.view' },
-  { label: 'Bank Adviser List', routeName: 'PayrollBankAdviserList', feature: 'payroll.bank_adviser.view' },
+  { label: 'Bank Advise', routeName: 'PayrollBankAdviserList', feature: 'payroll.bank_adviser.view' },
   { label: 'Payroll Slip List', routeName: 'PayrollSlipList', feature: 'payroll.slips.view' },
   { label: 'Payrolls', routeName: 'PayrollList', feature: 'payroll.reports.view' },
   { label: 'Post Payroll Adjustments', routeName: 'PayrollAdjustmentList', feature: 'payroll.adjustments.view' },

@@ -6,6 +6,7 @@ import { useRouter } from 'vue-router'
 import LoaderView from '@/components/common/LoaderView.vue'
 import DeleteModal from '@/components/common/DeleteModal.vue'
 import CompanyBankAccountModal from '@/components/settings/CompanyBankAccountModal.vue'
+import SalaryTransferLetterModal from '@/components/settings/SalaryTransferLetterModal.vue'
 
 import { useCompanyBankAccountStore } from '@/stores/companyBankAccount'
 
@@ -20,6 +21,7 @@ const filters = ref({
 
 const showModal = ref(false)
 const showDeleteModal = ref(false)
+const showLetterModal = ref(false)
 const selected = ref(null)
 const saving = ref(false)
 
@@ -76,6 +78,11 @@ const closeModal = () => {
 const openDelete = (row) => {
   selected.value = row
   showDeleteModal.value = true
+}
+
+const openLetter = (row) => {
+  selected.value = row
+  showLetterModal.value = true
 }
 
 const closeDelete = () => {
@@ -244,6 +251,13 @@ watch(
                 <td class="py-3 px-3 text-center">
                   <div class="flex item-center justify-center gap-2">
                     <button
+                      class="inline-flex items-center justify-center h-9 w-9 rounded-xl border border-blue-200 text-blue-600 hover:bg-blue-50"
+                      @click="openLetter(row)"
+                      title="Salary Transfer Letter"
+                    >
+                      <i class="far fa-file-alt"></i>
+                    </button>
+                    <button
                       class="inline-flex items-center justify-center h-9 w-9 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50"
                       @click="openEditModal(row)"
                       title="Edit"
@@ -278,6 +292,12 @@ watch(
         </table>
       </div>
     </div>
+
+    <SalaryTransferLetterModal
+      :show="showLetterModal"
+      :bank-account="selected"
+      @close="showLetterModal = false"
+    />
 
     <CompanyBankAccountModal
       :show="showModal"

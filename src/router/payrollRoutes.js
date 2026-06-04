@@ -124,7 +124,7 @@ export const payrollRoutes = [
     path: '/payrolls/bank-advisers',
     name: 'PayrollBankAdviserList',
     component: () => import('@/views/admin-pages/payroll/BankAdviserList.vue'),
-    meta: payrollMeta('Bank Adviser List', 'payroll.bank_adviser.view'),
+    meta: payrollMeta('Bank Advise', 'payroll.bank_adviser.view'),
   },
   {
     path: '/payrolls/cash-slips',
