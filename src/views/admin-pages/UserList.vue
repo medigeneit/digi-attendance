@@ -71,7 +71,7 @@ const weekendDays = (u) => (hasWeekend(u) ? u.assign_weekend.weekends.join(', ')
 const matchesQuickSearch = (u, q) => {
   if (!q) return true
   const s = q.toLowerCase()
-  return [u?.name, u?.phone, u?.employee_id, u?.company?.name, u?.department?.name, u?.designation?.title].some((val) =>
+  return [u?.name, u?.phone, u?.employee_id, u?.company?.name, u?.unit?.name, u?.department?.name, u?.designation?.title].some((val) =>
     String(val || '')
       .toLowerCase()
       .includes(s)

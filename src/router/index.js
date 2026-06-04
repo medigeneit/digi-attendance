@@ -539,10 +539,16 @@ const router = createRouter({
               meta: { requiresAuth: true, roles: ['super_admin', 'developer'], feature: 'settings.company.view', title: 'Company List' },
             },
             {
+              path: 'unit-list',
+              name: 'UnitList',
+              component: () => import('@/views/admin-pages/UnitList.vue'),
+              meta: { requiresAuth: true, roles: ['super_admin', 'developer'], feature: 'settings.unit.view', title: 'Unit List' },
+            },
+            {
               path: 'company-bank-accounts',
               name: 'CompanyBankAccountList',
               component: () => import('@/views/admin-pages/CompanyBankAccountList.vue'),
-              meta: { requiresAuth: true, roles: ['super_admin', 'developer'], feature: 'settings.company_bank.view', title: 'Company Bank Accounts' },
+              meta: { requiresAuth: true, roles: ['super_admin', 'developer'], feature: 'settings.company_bank.view', title: 'Bank Accounts' },
             },
             {
               path: 'department-list',

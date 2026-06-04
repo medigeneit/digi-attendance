@@ -8,6 +8,7 @@ import { useDepartmentStore } from '@/stores/department'
 import { useDesignationStore } from '@/stores/designation'
 import { useLeaveApprovalStore } from '@/stores/leave-approval'
 import { useShiftStore } from '@/stores/shift'
+import { useUnitStore } from '@/stores/unit'
 import { useUserStore } from '@/stores/user'
 
 import dayjs from 'dayjs'
@@ -23,10 +24,12 @@ const departmentStore = useDepartmentStore()
 const designationStore = useDesignationStore()
 const leaveApprovalStore = useLeaveApprovalStore()
 const shiftStore = useShiftStore()
+const unitStore = useUnitStore()
 const userStore = useUserStore()
 
 const { designations } = storeToRefs(designationStore)
 const { shifts } = storeToRefs(shiftStore)
+const { units } = storeToRefs(unitStore)
 const { error } = storeToRefs(userStore)
 
 const route = useRoute()
@@ -60,6 +63,7 @@ const form = reactive({
   device_user_id: null,
   is_active: true,
   company_id: '',
+  unit_id: '',
   department_id: '',
   designation_id: '',
   shift_id: '',
@@ -172,6 +176,7 @@ async function loadUser() {
   form.weekends = user.weekends || []
   form.is_active = Boolean(user.is_active)
   form.company_id = user.company_id || ''
+  form.unit_id = user.unit_id || ''
   form.department_id = user.department_id || ''
   form.designation_id = user.designation_id || ''
   form.shift_id = user.shift_id || ''
@@ -194,6 +199,7 @@ onMounted(async () => {
     // Prime dropdowns in parallel
     await Promise.all([
       companyStore.fetchCompanies(),
+      unitStore.fetchUnits(),
       leaveApprovalStore.fetchLeaveApprovals(),
     ])
     await loadUser()
@@ -399,6 +405,14 @@ function clearWeekend() {
             </div>
 
             <div>
+              <label for="unit">Unit</label>
+              <select id="unit" v-model="form.unit_id" class="input-light">
+                <option value="">Select a unit</option>
+                <option v-for="unit in units" :key="unit?.id" :value="unit?.id">{{ unit?.name }}</option>
+              </select>
+            </div>
+
+            <div>
               <label for="department">Department<span class="text-red-500">*</span></label>
               <select
                 id="department"
@@ -563,7 +577,7 @@ function clearWeekend() {
           <legend class="title-md px-2">Bank &amp; Payment Info</legend>
           <div class="grid md:grid-cols-2 gap-4">
             <div>
-              <label for="bankAccountId">Company Bank Account</label>
+              <label for="bankAccountId">Bank Account</label>
               <select id="bankAccountId" v-model="form.bank_account_id" class="input-light">
                 <option value="">— Select —</option>
                 <option v-for="account in companyBankAccounts" :key="account.id" :value="account.id">

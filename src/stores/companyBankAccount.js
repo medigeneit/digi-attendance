@@ -15,7 +15,7 @@ export const useCompanyBankAccountStore = defineStore('companyBankAccount', () =
       items.value = response.data || []
       return items.value
     } catch (err) {
-      error.value = err.response?.data?.message || 'Failed to load company bank accounts.'
+      error.value = err.response?.data?.message || 'Failed to load bank accounts.'
       throw err
     } finally {
       loading.value = false
@@ -31,7 +31,7 @@ export const useCompanyBankAccountStore = defineStore('companyBankAccount', () =
       items.value.unshift(created)
       return created
     } catch (err) {
-      error.value = err.response?.data?.message || 'Failed to create company bank account.'
+      error.value = err.response?.data?.message || 'Failed to create bank account.'
       throw err
     } finally {
       loading.value = false
@@ -48,7 +48,7 @@ export const useCompanyBankAccountStore = defineStore('companyBankAccount', () =
       if (idx !== -1) items.value[idx] = updated
       return updated
     } catch (err) {
-      error.value = err.response?.data?.message || 'Failed to update company bank account.'
+      error.value = err.response?.data?.message || 'Failed to update bank account.'
       throw err
     } finally {
       loading.value = false
@@ -62,7 +62,7 @@ export const useCompanyBankAccountStore = defineStore('companyBankAccount', () =
       await apiClient.delete(`/company-bank-accounts/${id}`)
       items.value = items.value.filter((row) => String(row.id) !== String(id))
     } catch (err) {
-      error.value = err.response?.data?.message || 'Failed to delete company bank account.'
+      error.value = err.response?.data?.message || 'Failed to delete bank account.'
       throw err
     } finally {
       loading.value = false

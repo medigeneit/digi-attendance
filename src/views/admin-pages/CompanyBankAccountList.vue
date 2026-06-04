@@ -7,16 +7,13 @@ import LoaderView from '@/components/common/LoaderView.vue'
 import DeleteModal from '@/components/common/DeleteModal.vue'
 import CompanyBankAccountModal from '@/components/settings/CompanyBankAccountModal.vue'
 
-import { useCompanyStore } from '@/stores/company'
 import { useCompanyBankAccountStore } from '@/stores/companyBankAccount'
 
 const router = useRouter()
 const toast = useToast()
-const companyStore = useCompanyStore()
 const bankAccountStore = useCompanyBankAccountStore()
 
 const filters = ref({
-  company_id: '',
   status: '',
   q: '',
 })
@@ -26,20 +23,13 @@ const showDeleteModal = ref(false)
 const selected = ref(null)
 const saving = ref(false)
 
-const companies = computed(() => companyStore.companies || [])
 const rows = computed(() => bankAccountStore.items || [])
 const q = computed(() => String(filters.value.q || '').trim().toLowerCase())
-
-const companyName = (companyId) => {
-  const c = (companies.value || []).find((x) => String(x.id) === String(companyId))
-  return c ? (c.short_name ? `${c.name} (${c.short_name})` : c.name) : `Company #${companyId}`
-}
 
 const visibleRows = computed(() => {
   if (!q.value) return rows.value || []
   return (rows.value || []).filter((row) => {
     const hay = [
-      companyName(row.company_id),
       row.bank_name,
       row.branch_name,
       row.account_name,
@@ -64,9 +54,7 @@ const stats = computed(() => ({
 }))
 
 const load = async () => {
-  await companyStore.fetchCompanies()
   await bankAccountStore.fetchCompanyBankAccounts({
-    company_id: filters.value.company_id || undefined,
     status: filters.value.status || undefined,
   })
 }
@@ -99,10 +87,6 @@ const handleSave = async (payload) => {
   try {
     const data = { ...payload }
     delete data.id
-
-    if (data.company_id !== '' && data.company_id !== null && data.company_id !== undefined) {
-      data.company_id = Number(data.company_id)
-    }
 
     if (payload?.id) {
       await bankAccountStore.updateCompanyBankAccount(payload.id, data)
@@ -146,7 +130,7 @@ onMounted(async () => {
 
 let filterTimer = null
 watch(
-  () => [filters.value.company_id, filters.value.status],
+  () => filters.value.status,
   () => {
     if (filterTimer) clearTimeout(filterTimer)
     filterTimer = setTimeout(() => load(), 250)
@@ -164,8 +148,8 @@ watch(
             <span class="hidden md:flex">Back</span>
           </button>
           <div>
-            <h1 class="text-2xl font-bold text-slate-900">Company Bank Accounts</h1>
-            <p class="mt-1 text-sm text-slate-500">Maintain company-wise salary bank accounts.</p>
+            <h1 class="text-2xl font-bold text-slate-900">Bank Accounts</h1>
+            <p class="mt-1 text-sm text-slate-500">Maintain salary bank accounts.</p>
           </div>
         </div>
         <div class="flex flex-wrap items-center gap-2">
@@ -182,17 +166,7 @@ watch(
     </div>
 
     <div class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div class="grid gap-3 lg:grid-cols-[1fr_0.7fr_1fr_auto] items-end">
-        <div>
-          <label class="mb-1 block text-xs font-medium text-slate-600">Company</label>
-          <select v-model="filters.company_id" class="input-light">
-            <option value="">All Companies</option>
-            <option v-for="c in companies" :key="c.id" :value="c.id">
-              {{ c.short_name ? `${c.name} (${c.short_name})` : c.name }}
-            </option>
-          </select>
-        </div>
-
+      <div class="grid gap-3 lg:grid-cols-[0.7fr_1fr_auto] items-end">
         <div>
           <label class="mb-1 block text-xs font-medium text-slate-600">Status</label>
           <select v-model="filters.status" class="input-light">
@@ -204,7 +178,7 @@ watch(
 
         <div>
           <label class="mb-1 block text-xs font-medium text-slate-600">Search</label>
-          <input v-model="filters.q" type="text" class="input-light" placeholder="Search bank, account, routing, company..." />
+          <input v-model="filters.q" type="text" class="input-light" placeholder="Search bank, account, routing..." />
         </div>
 
         <button class="btn-3 h-[44px]" @click="load">
@@ -219,18 +193,16 @@ watch(
           <thead>
             <tr class="bg-slate-50 text-slate-700 text-sm leading-normal">
               <th class="py-3 px-3 text-left">#</th>
-              <th class="py-3 px-3 text-left">Company</th>
               <th class="py-3 px-3 text-left">Bank</th>
               <th class="py-3 px-3 text-left">Account</th>
               <th class="py-3 px-3 text-left">Routing / SWIFT</th>
-              <th class="py-3 px-3 text-center">Default</th>
               <th class="py-3 px-3 text-center">Status</th>
               <th class="py-3 px-3 text-center">Action</th>
             </tr>
           </thead>
           <tbody class="text-slate-700 text-sm">
             <tr v-if="bankAccountStore.loading">
-              <td colspan="8" class="py-10">
+              <td colspan="6" class="py-10">
                 <LoaderView />
               </td>
             </tr>
@@ -242,10 +214,6 @@ watch(
                 class="border-t border-slate-100 hover:bg-blue-50/40"
               >
                 <td class="py-3 px-3 text-left font-semibold text-slate-600">{{ index + 1 }}</td>
-                <td class="py-3 px-3 text-left whitespace-nowrap">
-                  <div class="font-semibold text-slate-900">{{ companyName(row.company_id) }}</div>
-                  <div class="text-xs text-slate-500">ID: {{ row.company_id }}</div>
-                </td>
                 <td class="py-3 px-3 text-left">
                   <div class="font-semibold text-slate-900">{{ row.bank_name }}</div>
                   <div class="text-xs text-slate-500">{{ row.branch_name || '-' }}</div>
@@ -264,14 +232,6 @@ watch(
                   <div class="text-xs">
                     <span class="font-semibold text-slate-500">SWIFT:</span> {{ row.swift_code || '-' }}
                   </div>
-                </td>
-                <td class="py-3 px-3 text-center">
-                  <span
-                    class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold"
-                    :class="row.is_default ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'"
-                  >
-                    {{ row.is_default ? 'Yes' : 'No' }}
-                  </span>
                 </td>
                 <td class="py-3 px-3 text-center">
                   <span
@@ -303,11 +263,11 @@ watch(
             </template>
 
             <tr v-else>
-              <td colspan="8" class="py-14 text-center">
+              <td colspan="6" class="py-14 text-center">
                 <div class="mx-auto max-w-md">
                   <div class="text-3xl text-slate-300"><i class="far fa-folder-open"></i></div>
                   <div class="mt-2 text-sm font-semibold text-slate-800">No bank accounts found</div>
-                  <div class="mt-1 text-xs text-slate-500">Try changing filters, or add a new company bank account.</div>
+                  <div class="mt-1 text-xs text-slate-500">Try changing filters, or add a new bank account.</div>
                   <button class="btn-2 mx-auto mt-4" @click="openAddModal">
                     <i class="far fa-plus"></i> Add New
                   </button>
@@ -323,7 +283,6 @@ watch(
       :show="showModal"
       :saving="saving"
       :bank-account="selected"
-      :companies="companies"
       @close="closeModal"
       @save="handleSave"
     />
