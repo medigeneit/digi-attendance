@@ -301,17 +301,32 @@ async function handleTodoAdded() {
   await Promise.all([fetchOverview(), fetchMyTodoDates()])
 }
 
-async function toggleTodoComplete(todo) {
+// ─── Todo confirm state ───────────────────────────────────────────────────────
+const confirmingTodoId = ref(null)
+
+function requestToggle(todo) {
   if (todo.status === 'COMPLETED') return
+  confirmingTodoId.value = todo.id
+}
+
+function cancelConfirm() {
+  confirmingTodoId.value = null
+}
+
+async function confirmToggle(todo) {
+  confirmingTodoId.value = null
   const nextStatus = todo.status === 'PENDING' ? 'WORKING' : 'COMPLETED'
   try {
     await apiClient.patch(`/my-todo-dates/${todo.id}/status`, { status: nextStatus })
-    // Optimistically update local state
     const idx = myTodoDates.value.findIndex((t) => t.id === todo.id)
     if (idx !== -1) myTodoDates.value[idx] = { ...myTodoDates.value[idx], status: nextStatus }
   } catch {
     // silent — list will refresh on next fetch
   }
+}
+
+async function toggleTodoComplete(todo) {
+  requestToggle(todo)
 }
 
 function selectCalendarDate(date) {
@@ -632,27 +647,30 @@ onMounted(fetchOverview)
               <article
                 v-for="todo in todosForSelectedDate.slice(0, 6)"
                 :key="todo.id"
-                class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50"
+                class="flex items-center gap-3 px-4 py-2.5 transition hover:bg-slate-50"
+                :class="confirmingTodoId === todo.id ? 'bg-amber-50/60' : ''"
               >
+                <!-- Status icon (bigger) -->
                 <button
                   type="button"
                   :disabled="todo.status === 'COMPLETED'"
-                  class="mt-0.5 inline-flex h-5 w-5 flex-none items-center justify-center rounded border transition"
+                  class="inline-flex h-9 w-9 flex-none items-center justify-center rounded-xl border-2 transition"
                   :class="todo.status === 'COMPLETED'
                     ? 'border-emerald-400 bg-emerald-50 cursor-default'
-                    : 'border-slate-300 hover:border-blue-400 hover:bg-blue-50 cursor-pointer'"
-                  :title="todo.status === 'COMPLETED' ? 'Completed' : todo.status === 'WORKING' ? 'Click to complete' : 'Click to start'"
-                  @click.prevent="toggleTodoComplete(todo)"
+                    : confirmingTodoId === todo.id
+                      ? 'border-amber-400 bg-amber-50 cursor-pointer'
+                      : todo.status === 'WORKING'
+                        ? 'border-amber-300 bg-amber-50 hover:border-amber-400 cursor-pointer'
+                        : 'border-slate-300 bg-white hover:border-blue-400 hover:bg-blue-50 cursor-pointer'"
+                  :title="todo.status === 'COMPLETED' ? 'Completed' : todo.status === 'WORKING' ? 'Mark complete' : 'Start task'"
+                  @click.prevent="requestToggle(todo)"
                 >
-                  <i
-                    v-if="todo.status === 'COMPLETED'"
-                    class="fas fa-check text-[8px] text-emerald-600"
-                  ></i>
-                  <i
-                    v-else-if="todo.status === 'WORKING'"
-                    class="fas fa-play text-[7px] text-amber-500"
-                  ></i>
+                  <i v-if="todo.status === 'COMPLETED'" class="fas fa-check text-sm text-emerald-600"></i>
+                  <i v-else-if="todo.status === 'WORKING'" class="fas fa-play text-xs text-amber-500"></i>
+                  <i v-else class="far fa-circle text-xs text-slate-300"></i>
                 </button>
+
+                <!-- Title + date -->
                 <div class="min-w-0 flex-1">
                   <p
                     class="truncate text-sm font-medium"
@@ -664,19 +682,45 @@ onMounted(fetchOverview)
                     {{ (todo.date || todo.attributes?.date || '').slice(0, 10) }}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  :disabled="todo.status === 'COMPLETED'"
-                  class="rounded border px-2 py-1 text-[11px] transition"
-                  :class="todo.status === 'COMPLETED'
-                    ? 'border-emerald-200 bg-emerald-50 text-emerald-600 cursor-default'
-                    : todo.status === 'WORKING'
-                      ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 cursor-pointer'
-                      : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 cursor-pointer'"
-                  @click.prevent="toggleTodoComplete(todo)"
-                >
-                  {{ todo.status === 'COMPLETED' ? 'Done' : todo.status === 'WORKING' ? 'Working →' : 'Pending →' }}
-                </button>
+
+                <!-- Right side: confirm panel OR status badge -->
+                <div class="flex shrink-0 items-center gap-1.5">
+
+                  <!-- Inline confirm (step 2) -->
+                  <template v-if="confirmingTodoId === todo.id">
+                    <span class="text-[11px] font-semibold text-amber-700">Confirm?</span>
+                    <button
+                      type="button"
+                      class="inline-flex h-7 items-center gap-1 rounded-lg bg-emerald-600 px-2.5 text-[11px] font-bold text-white shadow-sm hover:bg-emerald-700 active:scale-95"
+                      @click.prevent="confirmToggle(todo)"
+                    >
+                      <i class="fas fa-check text-[9px]"></i> Yes
+                    </button>
+                    <button
+                      type="button"
+                      class="inline-flex h-7 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] font-semibold text-slate-500 hover:bg-slate-100 active:scale-95"
+                      @click.prevent="cancelConfirm"
+                    >
+                      <i class="fas fa-times text-[9px]"></i> No
+                    </button>
+                  </template>
+
+                  <!-- Status badge (step 1) -->
+                  <button
+                    v-else
+                    type="button"
+                    :disabled="todo.status === 'COMPLETED'"
+                    class="rounded-lg border px-2.5 py-1 text-[11px] font-semibold transition"
+                    :class="todo.status === 'COMPLETED'
+                      ? 'border-emerald-200 bg-emerald-50 text-emerald-600 cursor-default'
+                      : todo.status === 'WORKING'
+                        ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 cursor-pointer'
+                        : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 cursor-pointer'"
+                    @click.prevent="requestToggle(todo)"
+                  >
+                    {{ todo.status === 'COMPLETED' ? 'Done ✓' : todo.status === 'WORKING' ? 'Working →' : 'Pending →' }}
+                  </button>
+                </div>
               </article>
             </div>
             <div v-else class="px-4 py-8 text-center text-sm text-slate-500">
