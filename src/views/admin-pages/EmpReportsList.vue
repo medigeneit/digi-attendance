@@ -4,7 +4,7 @@ import { storeToRefs } from 'pinia'
 import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
+import EmpReportMultiFilter from '@/components/reports/EmpReportMultiFilter.vue'
 import { useUserStore } from '@/stores/user'
 import { useEmpReportsStore } from '@/stores/empReports'
 import { useAuthStore } from '@/stores/auth'
@@ -17,13 +17,30 @@ const { summary, isLoadingSummary } = storeToRefs(empStore)
 const canExportReports = computed(() => authStore.canFeature('emp_reports.export'))
 
 // ─── Filter state ─────────────────────────────────────────────────────────────
-const filterCompanyId    = ref('')
-const filterDepartmentId = ref('')
-const filterLineType     = ref('all')
+const filterCompanyIds    = ref([])
+const filterDepartmentIds = ref([])
+const filterLineType      = ref('all')
 const filterStatus       = ref('active')
 const filterSearch       = ref('')
 const filterJoiningYear  = ref('')
 const filterHasBlood     = ref(false)
+const sortBy             = ref('grade_joining_department')
+const sortDir            = ref('asc')
+
+const SORT_OPTIONS = [
+  { value: 'grade_joining_department', label: 'Grade + Joining Date + Department' },
+  { value: 'grade_joining', label: 'Grade + Joining Date' },
+  { value: 'grade', label: 'Grade' },
+  { value: 'joining_date', label: 'Joining Date' },
+  { value: 'department', label: 'Department' },
+  { value: 'designation', label: 'Designation' },
+  { value: 'company', label: 'Company' },
+  { value: 'name', label: 'Name' },
+  { value: 'employee_id', label: 'Employee ID' },
+  { value: 'line_type', label: 'Line Type' },
+  { value: 'status', label: 'Status' },
+  { value: 'last_working_date', label: 'Last Working Date' },
+]
 
 // ─── Year options ─────────────────────────────────────────────────────────────
 const currentYear   = new Date().getFullYear()
@@ -157,22 +174,33 @@ function cellValue(row, key, idx) {
 }
 
 // ─── Build API params ─────────────────────────────────────────────────────────
-function buildParams(overrides = {}) {
-  const p = { sort: 'grade_joining' }
-  const lt = overrides.line_type ?? filterLineType.value
-  if (lt && lt !== 'all')           p.line_type     = lt
-  const co = overrides.company_id ?? filterCompanyId.value
-  if (co)                           p.company_id    = co
-  const dp = overrides.department_id ?? filterDepartmentId.value
-  if (dp && dp !== 'all')           p.department_id = dp
-  const st = overrides.status ?? filterStatus.value
-  if (st)                           p.status        = st
-  const q  = overrides.q ?? filterSearch.value
-  if (q)                            p.q             = q
-  const jy = overrides.joining_year ?? filterJoiningYear.value
-  if (jy)                           p.joining_year  = jy
-  const hb = 'has_blood' in overrides ? overrides.has_blood : filterHasBlood.value
-  if (hb)                           p.has_blood     = 1
+function buildParams() {
+  const p = {
+    sort_by:  sortBy.value,
+    sort_dir: sortDir.value,
+  }
+  const lt = filterLineType.value
+  if (lt && lt !== 'all') p.line_type = lt
+
+  const cos = filterCompanyIds.value
+  if (cos.length === 1)      p.company_id  = cos[0]
+  else if (cos.length > 1)   p.company_ids = cos
+
+  const dps = filterDepartmentIds.value
+  if (dps.length === 1)      p.department_id  = dps[0]
+  else if (dps.length > 1)   p.department_ids = dps
+
+  const st = filterStatus.value
+  if (st) p.status = st
+
+  const q = filterSearch.value
+  if (q) p.q = q
+
+  const jy = filterJoiningYear.value
+  if (jy) p.joining_year = jy
+
+  if (filterHasBlood.value) p.has_blood = 1
+
   return p
 }
 
@@ -183,16 +211,9 @@ function schedulePreview() {
   previewTimer = setTimeout(() => userStore.fetchUsers(buildParams()), 200)
 }
 
-function syncEmployeeFilter(payload = {}) {
-  if (Object.prototype.hasOwnProperty.call(payload, 'company_id')) {
-    filterCompanyId.value = payload.company_id || ''
-  }
-  if (Object.prototype.hasOwnProperty.call(payload, 'department_id')) {
-    filterDepartmentId.value = payload.department_id || ''
-  }
-  if (Object.prototype.hasOwnProperty.call(payload, 'line_type')) {
-    filterLineType.value = payload.line_type || 'all'
-  }
+function handleFilterChange({ company_ids, department_ids }) {
+  filterCompanyIds.value    = company_ids    || []
+  filterDepartmentIds.value = department_ids || []
   schedulePreview()
 }
 
@@ -209,7 +230,10 @@ function applyPreset(preset) {
 
 async function downloadPreset(preset) {
   if (!canExportReports.value) return
-  const params = { sort: 'grade_joining' }
+  const params = {
+    sort_by: sortBy.value,
+    sort_dir: sortDir.value,
+  }
   if (preset.p.line_type && preset.p.line_type !== 'all') params.line_type = preset.p.line_type
   if (preset.p.status)   params.status    = preset.p.status
   if (preset.key === 'year_joining' && presetYearJoining.value) params.joining_year = presetYearJoining.value
@@ -271,6 +295,8 @@ watch(filterStatus,      schedulePreview)
 watch(filterJoiningYear, schedulePreview)
 watch(filterHasBlood,    schedulePreview)
 watch(filterSearch,      schedulePreview)
+watch(sortBy,            schedulePreview)
+watch(sortDir,           schedulePreview)
 watch(presetYearJoining, (year) => {
   if (activePresetKey.value !== 'year_joining') return
   filterJoiningYear.value = year || ''
@@ -388,61 +414,83 @@ onMounted(() => {
 
     <!-- ── Custom report builder ─────────────────────────────────────────── -->
     <section class="rounded-md border border-slate-200 bg-white shadow-sm">
-      <div class="flex items-center justify-between border-b border-slate-100 px-4 py-2.5 print:hidden">
-        <h2 class="text-sm font-semibold text-slate-950">Custom Report Builder</h2>
-        <span class="text-[11px] text-slate-400">Column toggles apply to Excel · PDF · Print</span>
+
+      <!-- Header: single-line title + scope + line type filters -->
+      <div class="flex flex-wrap items-center gap-2 border-b border-slate-100 px-4 py-2 print:hidden">
+        <h2 class="shrink-0 text-sm font-semibold text-slate-950">Custom Report Builder</h2>
+        <span class="shrink-0 text-slate-200">|</span>
+        <EmpReportMultiFilter
+          :company-ids="filterCompanyIds"
+          :department-ids="filterDepartmentIds"
+          :horizontal="true"
+          class="flex-1"
+          @change="handleFilterChange"
+        />
+        <select
+          v-model="filterLineType"
+          class="h-8 shrink-0 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400"
+        >
+          <option value="all">All Types</option>
+          <option value="executive">Executive</option>
+          <option value="support_staff">Support Staff</option>
+          <option value="doctor">Doctor</option>
+          <option value="academy_body">Academy Body</option>
+        </select>
+        <select
+          v-model="filterStatus"
+          class="h-8 shrink-0 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400"
+        >
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+          <option value="">All Status</option>
+        </select>
+        <select
+          v-model="filterJoiningYear"
+          class="h-8 shrink-0 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400"
+        >
+          <option value="">All Years</option>
+          <option v-for="y in JOINING_YEARS" :key="y" :value="String(y)">{{ y }}</option>
+        </select>
+        <span class="shrink-0 text-[11px] text-slate-400">Column toggles · Excel · PDF · Print</span>
       </div>
 
       <div class="flex min-h-0 flex-col md:flex-row md:divide-x md:divide-slate-100">
 
         <!-- Left: filters + column toggles -->
-        <div class="w-full shrink-0 space-y-4 overflow-y-auto border-b border-slate-100 p-3 md:w-60 md:border-b-0 xl:w-64 print:hidden">
+        <div class="w-full shrink-0 space-y-4 overflow-y-auto border-b border-slate-100 p-3 md:w-56 md:border-b-0 xl:w-64 print:hidden">
 
-          <!-- EmployeeFilter: Company → Department → Line Type -->
-          <!-- Uses @update:* for immediate ref sync, @filter-change to trigger fetch -->
-          <div>
-            <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">Filters</div>
-            <EmployeeFilter
-              :company_id="filterCompanyId"
-              :department_id="filterDepartmentId"
-              :line_type="filterLineType"
-              :with-employee="false"
-              grid-class="grid grid-cols-1 gap-3"
-              @update:company_id="syncEmployeeFilter({ company_id: $event })"
-              @update:department_id="syncEmployeeFilter({ department_id: $event })"
-              @update:line_type="syncEmployeeFilter({ line_type: $event })"
-              @filter-change="syncEmployeeFilter"
-            />
-          </div>
-
-          <!-- Status -->
-          <div>
-            <label class="mb-0.5 block text-[11px] text-slate-500">Status</label>
-            <select
-              v-model="filterStatus"
-              class="w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400"
-            >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="">All</option>
-            </select>
-          </div>
-
-          <!-- Joining Year -->
-          <div>
-            <label class="mb-0.5 block text-[11px] text-slate-500">Joining Year</label>
-            <select
-              v-model="filterJoiningYear"
-              class="w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400"
-            >
-              <option value="">All Years</option>
-              <option v-for="y in JOINING_YEARS" :key="y" :value="String(y)">{{ y }}</option>
-            </select>
+          <!-- Sorting -->
+          <div class="space-y-2 rounded-md border border-slate-100 bg-slate-50 p-2">
+            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Sorting</div>
+            <div>
+              <label class="mb-0.5 block text-[11px] text-slate-500">Sort By</label>
+              <select
+                v-model="sortBy"
+                class="w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400"
+              >
+                <option v-for="option in SORT_OPTIONS" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="mb-0.5 block text-[11px] text-slate-500">Direction</label>
+              <select
+                v-model="sortDir"
+                class="w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400"
+              >
+                <option value="asc">Ascending</option>
+                <option value="desc">Descending</option>
+              </select>
+            </div>
           </div>
 
           <!-- Search -->
           <div>
-            <label class="mb-0.5 block text-[11px] text-slate-500">Search</label>
+            <label class="mb-0.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              <i class="far fa-search text-blue-400"></i>
+              Search
+            </label>
             <div class="flex gap-1">
               <input
                 v-model="filterSearch"
