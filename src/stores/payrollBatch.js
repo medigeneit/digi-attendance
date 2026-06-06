@@ -20,6 +20,7 @@ export const usePayrollBatchStore = defineStore('payrollBatch', () => {
     const e = new Error(msg)
     e.status = err?.response?.status
     e.errors = err?.response?.data?.errors || {}
+    e.meta = err?.response?.data?.meta || {}
     return e
   }
 

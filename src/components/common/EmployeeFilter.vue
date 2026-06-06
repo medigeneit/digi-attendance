@@ -18,6 +18,7 @@ const props = defineProps({
   },
   withType: { type: Boolean, default: true },
   withEmployee: { type: Boolean, default: true },
+  activeOnly: { type: Boolean, default: false },
   initialValue: { type: Object, default: () => ({}) },
 })
 
@@ -158,7 +159,10 @@ watch(selectedEmployeeId, () => {
 async function loadCompanyDeps(companyId) {
   await Promise.all([
     departmentStore.fetchDepartments(companyId),
-    companyStore.fetchEmployee(companyId, { with: 'department,company' }),
+    companyStore.fetchEmployee(companyId, {
+      with: 'department,company',
+      ...(props.activeOnly ? { status: 'active' } : {}),
+    }),
   ])
 }
 

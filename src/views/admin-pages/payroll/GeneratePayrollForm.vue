@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { storeToRefs } from 'pinia'
 import { usePayrollBatchStore } from '@/stores/payrollBatch'
+import { useAttendanceStore } from '@/stores/attendance'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import PayrollRuleSummary from '@/components/payroll/PayrollRuleSummary.vue'
 import PayrollPreviewTable from '@/components/payroll/PayrollPreviewTable.vue'
@@ -14,6 +15,7 @@ const router = useRouter()
 const route = useRoute()
 const toast = useToast()
 const batchStore = usePayrollBatchStore()
+const attendanceStore = useAttendanceStore()
 const { loading, error, generateResult, previewResult, options, apiUnavailable } = storeToRefs(batchStore)
 
 const queryValue = (key, fallback = '') => {
@@ -53,6 +55,8 @@ const advancedOpen = ref(false)
 const confirmOpen = ref(false)
 const employeeFilterRef = ref(null)
 const doctorGenerateResult = ref(null)
+const snapshotIssue = ref(null)
+const snapshotRecalculating = ref(false)
 
 const modeOptions = computed(() => {
   const labels = {
@@ -154,6 +158,8 @@ const missingSalaryStructures = computed(() => [
     doctorGenerateResult.value?.missing_salary_structures ||
     []),
 ])
+const snapshotMissingUsers = computed(() => snapshotIssue.value?.missing_users || [])
+const hasSnapshotIssue = computed(() => Boolean(snapshotIssue.value?.required_recalculation))
 
 const previewTotals = computed(() =>
   previewItems.value.reduce(
@@ -193,6 +199,7 @@ watch(
       advancedOpen.value = true
     }
     batchStore.$patch({ previewResult: null })
+    snapshotIssue.value = null
   },
 )
 
@@ -206,6 +213,7 @@ const handleEmployeeFilterChange = (payload = {}) => {
   form.value.line_type = payload.line_type || 'all'
   form.value.employee_id = payload.employee_id || ''
   batchStore.$patch({ previewResult: null })
+  snapshotIssue.value = null
 }
 
 const validate = () => {
@@ -250,6 +258,23 @@ const buildPayrollPayload = () => {
   return payload
 }
 
+const captureSnapshotIssue = (error) => {
+  const meta = error?.meta || {}
+  if (meta.required_recalculation) {
+    snapshotIssue.value = meta
+    return true
+  }
+  snapshotIssue.value = null
+  return false
+}
+
+const formatSnapshotDate = (value) => {
+  if (!value) return 'Never'
+  const date = new Date(String(value).replace(' ', 'T'))
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleString()
+}
+
 const buildDoctorPayload = () => {
   const payload = {
     company_id: form.value.company_id,
@@ -273,24 +298,35 @@ const handlePreview = async () => {
     return
   }
   try {
+    snapshotIssue.value = null
     await batchStore.previewPayroll(buildPayrollPayload())
     toast.success('Payroll preview is ready.')
   } catch (e) {
+    if (captureSnapshotIssue(e)) {
+      toast.error(e.message || 'Recalculate monthly attendance snapshot first.')
+      return
+    }
     if (e.errors) formErrors.value = e.errors
     toast.error(e.message || 'Preview failed.')
   }
 }
 
 const openConfirm = async () => {
+  if (hasSnapshotIssue.value) {
+    toast.error('Recalculate monthly attendance snapshot first.')
+    return
+  }
   if (!previewItems.value.length) {
     await handlePreview()
     if (!previewItems.value.length) return
   }
+  if (hasSnapshotIssue.value) return
   confirmOpen.value = true
 }
 
 const handleGenerate = async () => {
   try {
+    snapshotIssue.value = null
     doctorGenerateResult.value = null
     await batchStore.generatePayroll(buildPayrollPayload())
     if (shouldGenerateDoctor.value) {
@@ -300,8 +336,38 @@ const handleGenerate = async () => {
     confirmOpen.value = false
     toast.success(shouldGenerateDoctor.value ? 'Payroll and doctor payroll generated successfully.' : 'Payroll batch generated successfully.')
   } catch (e) {
+    if (captureSnapshotIssue(e)) {
+      confirmOpen.value = false
+      toast.error(e.message || 'Recalculate monthly attendance snapshot first.')
+      return
+    }
     if (e.errors) formErrors.value = e.errors
     toast.error(e.message || 'Generation failed.')
+  }
+}
+
+const recalculateSnapshot = async () => {
+  if (!form.value.company_id || !form.value.salary_month) {
+    toast.error('Company and salary month are required.')
+    return
+  }
+
+  snapshotRecalculating.value = true
+  try {
+    await attendanceStore.recalculateMonthlySnapshot(
+      form.value.company_id,
+      form.value.department_id || undefined,
+      form.value.line_type || 'all',
+      form.value.employee_id || undefined,
+      form.value.salary_month,
+    )
+    snapshotIssue.value = null
+    toast.success('Monthly attendance snapshot recalculated.')
+    await handlePreview()
+  } catch (e) {
+    toast.error(e?.response?.data?.message || e.message || 'Snapshot recalculation failed.')
+  } finally {
+    snapshotRecalculating.value = false
   }
 }
 
@@ -374,6 +440,7 @@ const goToBatch = () => {
                 :line_type="form.line_type"
                 :employee_id="form.employee_id"
                 :with-employee="true"
+                active-only
                 @filter-change="handleEmployeeFilterChange"
               />
               <p v-if="formErrors.company_id" class="text-xs text-red-500">{{ formErrors.company_id }}</p>
@@ -483,7 +550,7 @@ const goToBatch = () => {
                 <button v-if="selectedLineType === 'doctor' && isRegularMode" class="btn-2" :disabled="loading" @click="generateDoctorOnly">
                   <i class="far fa-user-md"></i> Generate Doctor
                 </button>
-                <button v-else class="btn-2" :disabled="loading" @click="openConfirm">
+                <button v-else class="btn-2" :disabled="loading || hasSnapshotIssue" @click="openConfirm">
                   <i class="far fa-check-circle"></i> Generate
                 </button>
               </div>
@@ -497,6 +564,48 @@ const goToBatch = () => {
             <div v-if="error" class="flex gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
               <i class="fas fa-exclamation-circle mt-0.5"></i> {{ error }}
             </div>
+
+            <section v-if="hasSnapshotIssue" class="space-y-3 rounded-lg border border-red-200 bg-red-50 p-3">
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p class="text-sm font-bold text-red-800">Monthly attendance snapshot is not ready</p>
+                  <p class="mt-1 text-xs text-red-700">
+                    Recalculate attendance snapshot for {{ form.salary_month }} before payroll preview/generation.
+                  </p>
+                </div>
+                <button class="btn-2" :disabled="snapshotRecalculating || loading" @click="recalculateSnapshot">
+                  <i class="far" :class="snapshotRecalculating ? 'fa-spinner fa-spin' : 'fa-sync'"></i>
+                  Recalculate Snapshot
+                </button>
+              </div>
+
+              <div class="overflow-x-auto rounded-lg border border-red-100 bg-white">
+                <table class="w-full min-w-[760px] text-xs">
+                  <thead class="bg-red-100 text-left uppercase text-red-800">
+                    <tr>
+                      <th class="px-3 py-2">#</th>
+                      <th class="px-3 py-2">Employee</th>
+                      <th class="px-3 py-2">Emp ID</th>
+                      <th class="px-3 py-2">Department</th>
+                      <th class="px-3 py-2">Line Type</th>
+                      <th class="px-3 py-2">Issue</th>
+                      <th class="px-3 py-2">Last Update</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-red-50 text-slate-700">
+                    <tr v-for="(user, index) in snapshotMissingUsers" :key="user.user_id || index">
+                      <td class="px-3 py-2">{{ index + 1 }}</td>
+                      <td class="px-3 py-2 font-semibold text-slate-900">{{ user.name || '-' }}</td>
+                      <td class="px-3 py-2 font-mono">{{ user.employee_id || '-' }}</td>
+                      <td class="px-3 py-2">{{ user.department || '-' }}</td>
+                      <td class="px-3 py-2">{{ user.line_type || '-' }}</td>
+                      <td class="px-3 py-2 text-red-700">{{ user.reason || 'Snapshot is not ready.' }}</td>
+                      <td class="px-3 py-2">{{ formatSnapshotDate(user.last_update) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
           </div>
         </div>
 
@@ -533,7 +642,7 @@ const goToBatch = () => {
             <h2 class="text-base font-bold text-slate-900">Payroll Preview</h2>
             <p class="text-xs text-slate-500">Review calculated values before generating payroll.</p>
           </div>
-          <button class="btn-2" :disabled="loading" @click="openConfirm">
+          <button class="btn-2" :disabled="loading || hasSnapshotIssue" @click="openConfirm">
             <i class="far fa-check-circle"></i> Confirm Generate
           </button>
         </div>
@@ -639,7 +748,7 @@ const goToBatch = () => {
 
         <div class="mt-5 flex justify-end gap-2">
           <button class="btn-3" @click="confirmOpen = false">Cancel</button>
-          <button class="btn-2" :disabled="loading" @click="handleGenerate">
+          <button class="btn-2" :disabled="loading || hasSnapshotIssue" @click="handleGenerate">
             <i class="far" :class="loading ? 'fa-spinner fa-spin' : 'fa-check'"></i>
             Generate Payroll
           </button>
