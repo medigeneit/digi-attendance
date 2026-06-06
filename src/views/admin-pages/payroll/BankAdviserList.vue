@@ -125,7 +125,7 @@ async function fetchAllPages(url, params = {}) {
   do {
     const { data } = await apiClient.get(url, { params: { ...params, page, per_page: 200 } })
     items.push(...toArray(data))
-    last = data?.last_page || 1
+    last = data?.meta?.last_page ?? 1
     page++
   } while (page <= last)
   return items
@@ -133,8 +133,8 @@ async function fetchAllPages(url, params = {}) {
 
 function buildParams() {
   const p = { salary_month: salaryMonth.value }
-  if (selectedBank.value?.bank_name) p.bank_name = selectedBank.value.bank_name
-  if (filterUnitId.value)               p.unit_id   = filterUnitId.value
+  if (filterBankId.value) p.bank_account_id = filterBankId.value
+  if (filterUnitId.value) p.unit_id         = filterUnitId.value
   return p
 }
 

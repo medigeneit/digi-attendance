@@ -1,7 +1,7 @@
 <script setup>
 import { useCompanyBankAccountStore } from '@/stores/companyBankAccount'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 
 const props = defineProps({
   show:         { type: Boolean, default: false },
@@ -28,8 +28,9 @@ const serial   = ref('01')
 // ─── Pad (letterhead) config — persisted in localStorage ─────────────────────
 const PAD_KEY = 'salary-letter-pad'
 const pad = reactive({
-  headerHeight: 3.5,  // cm — empty space reserved for pre-printed header
-  footerHeight: 2.5,  // cm — empty space reserved for pre-printed footer
+  headerHeight:  3.5,   // cm — empty space reserved for pre-printed header
+  footerHeight:  2.5,   // cm — empty space reserved for pre-printed footer
+  repeatHeader:  false, // repeat intro text on every printed page
 })
 const showPadConfig = ref(false)
 
@@ -39,6 +40,26 @@ function loadPad() {
   } catch { /* ignore */ }
 }
 watch(pad, () => localStorage.setItem(PAD_KEY, JSON.stringify({ ...pad })), { deep: true })
+
+// Inject a dynamic @page rule so header/footer space applies on every printed page
+let pageStyleEl = null
+function updatePageStyle() {
+  if (!pageStyleEl) {
+    pageStyleEl = document.createElement('style')
+    pageStyleEl.id = 'letter-page-margins'
+    document.head.appendChild(pageStyleEl)
+  }
+  let css = `@page { margin-top: ${pad.headerHeight}cm; margin-bottom: ${pad.footerHeight}cm; }`
+  if (pad.repeatHeader) {
+    // position:fixed in print repeats the element on every page in Chrome/Edge/Firefox
+    css += `
+      @media print {
+        #ltr-intro { position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; background: white !important; }
+      }`
+  }
+  pageStyleEl.textContent = css
+}
+watch(pad, updatePageStyle, { deep: true })
 
 // ─── Bank account selection ───────────────────────────────────────────────────
 const bankAccStore = useCompanyBankAccountStore()
@@ -110,18 +131,70 @@ function blankCellValue(col, n) { return col.key === 'sl' ? n : '' }
 
 function doPrint() { window.print() }
 
+const modalRoot = ref(null)
+
+function handleBeforePrint() {
+  const el = modalRoot.value
+  if (!el) return
+  // Strip scroll container so no scrollbar appears in print output
+  el.style.setProperty('position', 'static', 'important')
+  el.style.setProperty('inset', 'auto', 'important')
+  el.style.setProperty('overflow', 'visible', 'important')
+  el.style.setProperty('height', 'auto', 'important')
+  el.style.setProperty('background-color', 'white', 'important')
+  el.style.setProperty('z-index', 'auto', 'important')
+  // Hide the Vue app root so only the teleported letter prints
+  const app = document.getElementById('app')
+  if (app) app.style.setProperty('display', 'none', 'important')
+  // When repeating header: measure intro height and push body down to avoid overlap
+  if (pad.repeatHeader) {
+    const introEl  = document.getElementById('ltr-intro')
+    const bodyCell = document.getElementById('ltr-body-cell')
+    if (introEl && bodyCell) {
+      const h = introEl.getBoundingClientRect().height
+      bodyCell.style.setProperty('padding-top', `${h}px`, 'important')
+    }
+  }
+}
+
+function handleAfterPrint() {
+  const el = modalRoot.value
+  if (!el) return
+  el.style.removeProperty('position')
+  el.style.removeProperty('inset')
+  el.style.removeProperty('overflow')
+  el.style.removeProperty('height')
+  el.style.removeProperty('background-color')
+  el.style.removeProperty('z-index')
+  const app = document.getElementById('app')
+  if (app) app.style.removeProperty('display')
+  // Restore body cell padding
+  const bodyCell = document.getElementById('ltr-body-cell')
+  if (bodyCell) bodyCell.style.removeProperty('padding-top')
+}
+
 onMounted(async () => {
   loadPad()
+  updatePageStyle()
   if (!bankAccounts.value.length) await bankAccStore.fetchCompanyBankAccounts()
   if (!props.bankAccount && !selectedBankAcc.value && bankAccounts.value.length) {
     selectedBankAcc.value = bankAccounts.value.find(b => String(b.status).toLowerCase() === 'active') || bankAccounts.value[0]
   }
+  window.addEventListener('beforeprint', handleBeforePrint)
+  window.addEventListener('afterprint', handleAfterPrint)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('beforeprint', handleBeforePrint)
+  window.removeEventListener('afterprint', handleAfterPrint)
+  pageStyleEl?.remove()
+  pageStyleEl = null
 })
 </script>
 
 <template>
   <Teleport to="body">
-    <div v-if="show" class="fixed inset-0 z-[9999] overflow-y-auto bg-gray-100 print:bg-white">
+    <div v-if="show" ref="modalRoot" class="letter-modal-root fixed inset-0 z-[9999] overflow-y-auto bg-gray-100 print:bg-white">
 
       <!-- ── Control bar (hidden on print) ──────────────────────────────────── -->
       <div class="print:hidden sticky top-0 z-10 border-b border-slate-200 bg-white shadow-sm">
@@ -291,6 +364,25 @@ onMounted(async () => {
             </div>
           </div>
 
+          <!-- Repeat header toggle -->
+          <div>
+            <label class="block text-[10px] text-slate-500 mb-0.5">Header on</label>
+            <div class="flex items-center rounded-lg border border-violet-200 overflow-hidden text-xs font-semibold">
+              <button
+                type="button"
+                class="h-8 px-3 transition"
+                :class="!pad.repeatHeader ? 'bg-violet-600 text-white' : 'bg-white text-slate-500 hover:bg-violet-50'"
+                @click="pad.repeatHeader = false"
+              >First page</button>
+              <button
+                type="button"
+                class="h-8 px-3 transition border-l border-violet-200"
+                :class="pad.repeatHeader  ? 'bg-violet-600 text-white' : 'bg-white text-slate-500 hover:bg-violet-50'"
+                @click="pad.repeatHeader = true"
+              >All pages</button>
+            </div>
+          </div>
+
           <p class="ml-auto self-end text-[10px] text-violet-500">
             <i class="far fa-save mr-0.5"></i> Auto-saved in browser
           </p>
@@ -300,98 +392,117 @@ onMounted(async () => {
       <!-- ── Letter page ─────────────────────────────────────────────────────── -->
       <div
         id="letter-print-area"
-        class="mx-auto my-8 flex min-h-[1050px] w-full max-w-[760px] flex-col bg-white shadow-md print:my-0 print:min-h-screen print:max-w-none print:shadow-none"
+        class="mx-auto my-8 flex min-h-[1050px] w-full max-w-[760px] flex-col bg-white shadow-md print:my-0 print:min-h-screen print:max-w-none print:shadow-none print:w-full"
         style="font-family: 'Times New Roman', Times, serif;"
       >
-        <!-- Reserved space for pre-printed header -->
-        <div :style="`height: ${pad.headerHeight}cm; min-height: ${pad.headerHeight}cm;`"></div>
+        <!-- Reserved space for pre-printed header (screen only — @page margin-top handles every page in print) -->
+        <div class="print:hidden" :style="`height: ${pad.headerHeight}cm; min-height: ${pad.headerHeight}cm;`"></div>
 
-        <!-- ── Letter body ── -->
-        <div class="flex-1 px-10 pb-6">
+        <!-- ── Letter body (wrapper split into intro + data so intro can repeat on every page) ── -->
+        <div id="ltr-wrapper" class="flex-1">
 
-          <!-- Letter No + Date -->
-          <div class="mb-3 flex justify-between text-sm">
-            <div>
-              <span class="font-bold">Letter No: Salary </span>
-              <span class="font-bold underline">{{ letterNo }}</span>
+          <!-- ─ Intro section: Letter No, Subject, Salutation, Body para ─ -->
+          <div id="ltr-intro">
+            <div id="ltr-intro-row">
+              <div id="ltr-intro-cell" class="px-10 pt-4">
+
+                <!-- Letter No + Date -->
+                <div class="mb-3 flex justify-between text-sm">
+                  <div>
+                    <span class="font-bold">Letter No: Salary </span>
+                    <span class="font-bold underline">{{ letterNo }}</span>
+                  </div>
+                  <div>
+                    <span class="font-bold">Date: </span>
+                    <span class="font-bold underline">{{ letterDate }}</span>
+                  </div>
+                </div>
+
+                <!-- Subject -->
+                <div class="mb-4 text-sm font-bold leading-relaxed">
+                  Subject: Request for transfer of salary for the month of
+                  <span class="underline">{{ subjectMonth }}</span> from
+                  {{ acName }} A/C No. {{ acNumber }}
+                </div>
+
+                <!-- Salutation -->
+                <p class="mb-4 text-sm">Dear Sir/Madam</p>
+
+                <!-- Body -->
+                <p class="mb-6 text-justify text-sm leading-relaxed">
+                  With reference to the above mentioned subject you are requested to transfer the
+                  amount in favor of the following Name and Account No. from
+                  <strong>{{ acName }}</strong> (AC No.<strong>{{ acNumber }}</strong>).
+                </p>
+
+              </div>
             </div>
-            <div>
-              <span class="font-bold">Date: </span>
-              <span class="font-bold underline">{{ letterDate }}</span>
+          </div>
+
+          <!-- ─ Data section: employee table + signature ─ -->
+          <div id="ltr-body">
+            <div id="ltr-body-row">
+              <div id="ltr-body-cell" class="px-10 pb-6">
+
+                <!-- Table -->
+                <table class="w-full border-collapse text-sm">
+                  <thead>
+                    <tr>
+                      <th
+                        v-for="col in activeCols" :key="col.key"
+                        class="border border-black px-3 py-2 font-semibold"
+                        :class="{
+                          'text-center w-10': col.key === 'sl',
+                          'text-left':        col.key === 'name',
+                          'text-center w-28': col.key === 'employeeId',
+                          'text-center w-40': col.key === 'accountNo',
+                          'text-right  w-32': col.key === 'amount',
+                        }"
+                      >{{ col.key === 'name' ? 'Name of Officer' : col.label }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(emp, idx) in tableRows" :key="`emp-${idx}`">
+                      <td
+                        v-for="col in activeCols" :key="col.key"
+                        class="border border-black px-3 py-1.5"
+                        :class="{
+                          'text-center': col.key === 'sl' || col.key === 'employeeId' || col.key === 'accountNo',
+                          'text-right':  col.key === 'amount',
+                        }"
+                      >{{ cellValue(col, emp, idx) }}</td>
+                    </tr>
+                    <tr v-for="n in emptyCount" :key="`blank-${n}`">
+                      <td
+                        v-for="col in activeCols" :key="col.key"
+                        class="border border-black px-3 py-4"
+                        :class="{ 'text-center text-slate-400': col.key === 'sl' }"
+                      >{{ blankCellValue(col, n) }}</td>
+                    </tr>
+                    <!-- Total row -->
+                    <tr class="font-bold">
+                      <td :colspan="activeCols.length - 1" class="border border-black px-4 py-2 text-right">Total</td>
+                      <td class="border border-black px-4 py-2 text-right">{{ hasRows ? fmtAmount(tableTotal) : '' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <!-- Signature -->
+                <div class="mt-14 flex justify-end">
+                  <div class="text-center text-sm">
+                    <div class="mb-1 w-48 border-t border-black"></div>
+                    <p>Authorized Signature</p>
+                  </div>
+                </div>
+
+              </div>
             </div>
           </div>
 
-          <!-- Subject -->
-          <div class="mb-4 text-sm font-bold leading-relaxed">
-            Subject: Request for transfer of salary for the month of
-            <span class="underline">{{ subjectMonth }}</span> from
-            {{ acName }} A/C No. {{ acNumber }}
-          </div>
-
-          <!-- Salutation -->
-          <p class="mb-4 text-sm">Dear Sir/Madam</p>
-
-          <!-- Body -->
-          <p class="mb-6 text-justify text-sm leading-relaxed">
-            With reference to the above mentioned subject you are requested to transfer the
-            amount in favor of the following Name and Account No. from
-            <strong>{{ acName }}</strong> (AC No.<strong>{{ acNumber }}</strong>).
-          </p>
-
-          <!-- Table -->
-          <table class="w-full border-collapse text-sm">
-            <thead>
-              <tr>
-                <th
-                  v-for="col in activeCols" :key="col.key"
-                  class="border border-black px-3 py-2 font-semibold"
-                  :class="{
-                    'text-center w-10': col.key === 'sl',
-                    'text-left':        col.key === 'name',
-                    'text-center w-28': col.key === 'employeeId',
-                    'text-center w-40': col.key === 'accountNo',
-                    'text-right  w-32': col.key === 'amount',
-                  }"
-                >{{ col.key === 'name' ? 'Name of Officer' : col.label }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(emp, idx) in tableRows" :key="`emp-${idx}`">
-                <td
-                  v-for="col in activeCols" :key="col.key"
-                  class="border border-black px-3 py-1.5"
-                  :class="{
-                    'text-center': col.key === 'sl' || col.key === 'employeeId' || col.key === 'accountNo',
-                    'text-right':  col.key === 'amount',
-                  }"
-                >{{ cellValue(col, emp, idx) }}</td>
-              </tr>
-              <tr v-for="n in emptyCount" :key="`blank-${n}`">
-                <td
-                  v-for="col in activeCols" :key="col.key"
-                  class="border border-black px-3 py-4"
-                  :class="{ 'text-center text-slate-400': col.key === 'sl' }"
-                >{{ blankCellValue(col, n) }}</td>
-              </tr>
-              <!-- Total row -->
-              <tr class="font-bold">
-                <td :colspan="activeCols.length - 1" class="border border-black px-4 py-2 text-right">Total</td>
-                <td class="border border-black px-4 py-2 text-right">{{ hasRows ? fmtAmount(tableTotal) : '' }}</td>
-              </tr>
-            </tbody>
-          </table>
-
-          <!-- Signature -->
-          <div class="mt-14 flex justify-end">
-            <div class="text-center text-sm">
-              <div class="mb-1 w-48 border-t border-black"></div>
-              <p>Authorized Signature</p>
-            </div>
-          </div>
         </div>
 
-        <!-- Reserved space for pre-printed footer -->
-        <div :style="`height: ${pad.footerHeight}cm; min-height: ${pad.footerHeight}cm;`"></div>
+        <!-- Reserved space for pre-printed footer (screen only — @page margin-bottom handles every page in print) -->
+        <div class="print:hidden" :style="`height: ${pad.footerHeight}cm; min-height: ${pad.footerHeight}cm;`"></div>
 
       </div>
     </div>
@@ -400,10 +511,23 @@ onMounted(async () => {
 
 <style scoped>
 @media print {
+  /* Strip the modal scroll container so no scrollbar appears in print output */
+  .letter-modal-root {
+    position: static !important;
+    inset: auto !important;
+    overflow: visible !important;
+    background: white !important;
+    height: auto !important;
+    scrollbar-width: none !important;
+  }
+
   #letter-print-area {
     margin: 0 !important;
+    padding: 0 !important;
     box-shadow: none !important;
     min-height: 100vh !important;
+    max-width: 100% !important;
+    width: 100% !important;
   }
 }
 </style>
