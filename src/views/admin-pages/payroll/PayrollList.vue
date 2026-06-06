@@ -28,7 +28,7 @@ const filters = ref({
   salary_month: getCurrentMonth(),
   payroll_cycle: 'regular',
   payment_status: '',
-  default_payment_method: 'Cash',
+  default_payment_method: '',
   page: 1,
   per_page: 15,
 })
@@ -103,12 +103,14 @@ const summaryCards = computed(() => {
 })
 const buildRouteQuery = () => {
   const params = { ...filters.value }
+  delete params.default_payment_method
   Object.keys(params).forEach((k) => { if (!params[k]) delete params[k] })
   return params
 }
 
 const buildApiParams = () => {
   const params = { ...filters.value }
+  delete params.default_payment_method
   if (params.employee_id) {
     params.user_id = params.employee_id
   }
@@ -145,7 +147,7 @@ const resetFilters = () => {
     salary_month: getCurrentMonth(),
     payroll_cycle: 'regular',
     payment_status: '',
-    default_payment_method: 'Cash',
+    default_payment_method: '',
     page: 1,
     per_page: 15,
   }
@@ -161,7 +163,7 @@ const applyRouteQueryToFilters = () => {
     salary_month: String(q.salary_month || getCurrentMonth()),
     payroll_cycle: String(q.payroll_cycle || 'regular'),
     payment_status: String(q.payment_status || ''),
-    default_payment_method: String(q.default_payment_method || 'Cash'),
+    default_payment_method: String(q.default_payment_method || ''),
     page: Number(q.page) > 0 ? Number(q.page) : 1,
     per_page: Number(q.per_page) > 0 ? Number(q.per_page) : 15,
   }

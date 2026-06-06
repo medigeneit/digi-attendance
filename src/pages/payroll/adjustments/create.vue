@@ -153,6 +153,8 @@ const carryToMonthInput = computed({
 })
 
 const payrollCycle = (payroll) => String(payroll?.payroll_cycle || payroll?.settlement_mode || payroll?.payroll_batch?.payroll_cycle || payroll?.payrollBatch?.payroll_cycle || '').toLowerCase()
+const allowsSameMonthCarryForPayroll = (payroll) =>
+  ['half_salary_advance', 'half_month', 'advance', 'bonus_only'].includes(payrollCycle(payroll))
 
 const isRegularPayroll = (payroll) => {
   const cycle = payrollCycle(payroll)
@@ -160,10 +162,18 @@ const isRegularPayroll = (payroll) => {
   return cycle === 'regular' || salaryType === 'monthly'
 }
 
+const isPaidOrLockedPayroll = (payroll) =>
+  ['paid', 'locked'].includes(String(payroll?.payment_status || payroll?.status || payroll?.payroll_batch?.status || payroll?.payrollBatch?.status || '').toLowerCase())
+
 const hasRegularPayrollForMonth = (month, ignoredPayrollId = null) => payrollOptions.value.some((payroll) => {
   if (ignoredPayrollId && String(payroll.id) === String(ignoredPayrollId)) return false
   if (!isRegularPayroll(payroll)) return false
   return monthValue(payroll.salary_month) === monthValue(month)
+})
+
+const hasLockedRegularPayrollForMonth = (month) => payrollOptions.value.some((payroll) => {
+  if (!isRegularPayroll(payroll)) return false
+  return monthValue(payroll.salary_month) === monthValue(month) && isPaidOrLockedPayroll(payroll)
 })
 
 const minCarryToMonth = computed(() => {
@@ -178,7 +188,15 @@ const minCarryToMonth = computed(() => {
   return month
 })
 
-const carryToMonthMinimum = computed(() => minMonth(referencePayrollMonth.value, minCarryToMonth.value) || minCarryToMonth.value)
+const selectedReferencePayroll = computed(() =>
+  payrollOptions.value.find((payroll) => String(payroll.id) === String(form.value.payroll_id)) || latestPayroll.value,
+)
+const allowsSameMonthCarry = computed(() => allowsSameMonthCarryForPayroll(selectedReferencePayroll.value))
+const isSameReferenceCarry = computed(() => monthValue(carryToMonthInput.value) === monthValue(referencePayrollMonth.value))
+const carryToMonthMinimum = computed(() => {
+  if (allowsSameMonthCarry.value && referencePayrollMonth.value) return referencePayrollMonth.value
+  return maxMonth(addMonths(referencePayrollMonth.value, 1), minCarryToMonth.value) || minCarryToMonth.value
+})
 
 const payrollOptionLabel = (payroll) => {
   const cycle = payrollCycle(payroll)
@@ -318,8 +336,17 @@ const slipDeductionRows = computed(() => {
     { key: 'loan', label: 'Loan', amount: toNum(deductions.loan ?? latestPayroll.value?.loan_deduction) },
     { key: 'security_money', label: 'Security Money', amount: toNum(deductions.security_money ?? latestPayroll.value?.security_money_deduction) },
     { key: 'other', label: 'Others', amount: toNum(deductions.other ?? latestPayroll.value?.other_deduction) },
+    {
+      key: 'half_salary_advance_adjustment',
+      label: 'Half Salary Advance Adjustment',
+      amount: toNum(
+        deductions.half_salary_advance_adjustment
+          ?? latestPayroll.value?.advance_adjusted_amount
+          ?? latestPayroll.value?.calculation_breakdown?.advance_adjusted_amount,
+      ),
+    },
     { key: 'advance', label: 'Advance', amount: toNum(deductions.advance ?? latestPayroll.value?.advance_deduction) },
-    { key: 'paycut', label: 'Paycut', amount: toNum(deductions.paycut ?? latestPayroll.value?.paycut_deduction) },
+    { key: 'paycut', label: paycutDeductionLabel.value, amount: toNum(deductions.paycut ?? latestPayroll.value?.paycut_deduction) },
   ]
 
   return rows.filter((row) => row.amount !== 0)
@@ -345,9 +372,15 @@ const selectReferencePayroll = async (payrollRow) => {
   if (!payrollRow) return
 
   form.value.payroll_id = payrollRow.id
+  latestPayroll.value = payrollRow
   const refMonth = monthValue(payrollRow.salary_month)
   setRefMonth(refMonth)
-  setCarryMonth(maxMonth(addMonths(refMonth, 1), minCarryToMonth.value), true)
+  setCarryMonth(
+    allowsSameMonthCarryForPayroll(payrollRow)
+      ? refMonth
+      : maxMonth(addMonths(refMonth, 1), minCarryToMonth.value),
+    true,
+  )
 
   employeeDisplay.value = {
     name: payrollRow.user?.name || payrollRow.employee_name || employeeDisplay.value.name,
@@ -435,7 +468,10 @@ const submit = async () => {
     setCarryMonth(carryToMonthMinimum.value)
     return toast.error(`Carry month must be ${formatMonthLabel(carryToMonthMinimum.value)} or later.`)
   }
-  if (hasRegularPayrollForMonth(carryToMonthInput.value, form.value.payroll_id)) {
+  if (allowsSameMonthCarry.value && isSameReferenceCarry.value && hasLockedRegularPayrollForMonth(carryToMonthInput.value)) {
+    return toast.error('Regular payroll for that month is already paid or locked. Select a later open month.')
+  }
+  if (!(allowsSameMonthCarry.value && isSameReferenceCarry.value) && hasRegularPayrollForMonth(carryToMonthInput.value, form.value.payroll_id)) {
     setCarryMonth(carryToMonthMinimum.value)
     return toast.error('Regular payroll already exists for that carry month. Select an open month.')
   }
