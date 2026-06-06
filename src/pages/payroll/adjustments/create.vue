@@ -109,6 +109,12 @@ const addMonths = (month, count = 1) => {
 }
 
 const maxMonth = (...months) => months.filter(Boolean).sort((a, b) => monthIndex(a) - monthIndex(b)).at(-1) || ''
+const minMonth = (...months) => months.filter(Boolean).sort((a, b) => monthIndex(a) - monthIndex(b))[0] || ''
+
+const referencePayrollMonth = computed(() => {
+  if (!form.value.ref_year || !form.value.ref_month) return ''
+  return `${form.value.ref_year}-${String(form.value.ref_month).padStart(2, '0')}`
+})
 
 const setRefMonth = (month) => {
   const normalized = monthValue(month)
@@ -130,8 +136,8 @@ const setCarryMonth = (month, clampToMinimum = false) => {
     return
   }
 
-  if (clampToMinimum && monthIndex(normalized) < monthIndex(minCarryToMonth.value)) {
-    normalized = minCarryToMonth.value
+  if (clampToMinimum && monthIndex(normalized) < monthIndex(carryToMonthMinimum.value)) {
+    normalized = carryToMonthMinimum.value
   }
 
   form.value.carry_to_year = Number(normalized.slice(0, 4))
@@ -154,7 +160,8 @@ const isRegularPayroll = (payroll) => {
   return cycle === 'regular' || salaryType === 'monthly'
 }
 
-const hasRegularPayrollForMonth = (month) => payrollOptions.value.some((payroll) => {
+const hasRegularPayrollForMonth = (month, ignoredPayrollId = null) => payrollOptions.value.some((payroll) => {
+  if (ignoredPayrollId && String(payroll.id) === String(ignoredPayrollId)) return false
   if (!isRegularPayroll(payroll)) return false
   return monthValue(payroll.salary_month) === monthValue(month)
 })
@@ -170,6 +177,8 @@ const minCarryToMonth = computed(() => {
 
   return month
 })
+
+const carryToMonthMinimum = computed(() => minMonth(referencePayrollMonth.value, minCarryToMonth.value) || minCarryToMonth.value)
 
 const payrollOptionLabel = (payroll) => {
   const cycle = payrollCycle(payroll)
@@ -422,12 +431,12 @@ const submit = async () => {
   if (!form.value.employee_id) return toast.error('Select an employee.')
   if (!form.value.payroll_id) return toast.error('Select a reference payroll month.')
   if (!form.value.carry_to_year || !form.value.carry_to_month) return toast.error('Select a carry month.')
-  if (monthIndex(carryToMonthInput.value) < monthIndex(minCarryToMonth.value)) {
-    setCarryMonth(minCarryToMonth.value)
-    return toast.error(`Carry month must be ${formatMonthLabel(minCarryToMonth.value)} or later.`)
+  if (monthIndex(carryToMonthInput.value) < monthIndex(carryToMonthMinimum.value)) {
+    setCarryMonth(carryToMonthMinimum.value)
+    return toast.error(`Carry month must be ${formatMonthLabel(carryToMonthMinimum.value)} or later.`)
   }
-  if (hasRegularPayrollForMonth(carryToMonthInput.value)) {
-    setCarryMonth(minCarryToMonth.value)
+  if (hasRegularPayrollForMonth(carryToMonthInput.value, form.value.payroll_id)) {
+    setCarryMonth(carryToMonthMinimum.value)
     return toast.error('Regular payroll already exists for that carry month. Select an open month.')
   }
   if (!form.value.adjustment_type) return toast.error('Select adjustment type.')
@@ -506,11 +515,11 @@ const submit = async () => {
               <input
                 v-model="carryToMonthInput"
                 type="month"
-                :min="minCarryToMonth"
+                :min="carryToMonthMinimum"
                 class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-100"
               />
               <p class="mt-1 text-xs text-slate-500">
-                Minimum open month: {{ formatMonthLabel(minCarryToMonth) }}
+                Minimum selectable month: {{ formatMonthLabel(carryToMonthMinimum) }}
               </p>
             </div>
           </div>
