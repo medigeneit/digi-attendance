@@ -197,8 +197,8 @@ const summaryMessageContext = (log) => ({
 
 /* ---------------- page UX: toast + banner ---------------- */
 const ui = ref({
-  toast: null, // {type:'success'|'error'|'info', text:string}
-  banner: null, // {type:'success'|'info', text:string}
+  toast: null,  // {type:'success'|'error'|'info', text:string}
+  banner: null, // {type:'success'|'info'|'error', text:string}
 })
 const toastClass = computed(() => {
   const t = ui.value.toast?.type
@@ -214,7 +214,7 @@ function showToast(type, text) {
 function showBanner(type, text, ms = 4000) {
   ui.value.banner = { type, text }
   window.clearTimeout(showBanner._b)
-  showBanner._b = window.setTimeout(() => (ui.value.banner = null), ms)
+  if (ms > 0) showBanner._b = window.setTimeout(() => (ui.value.banner = null), ms)
 }
 
 const handleAddonUpdated = ({ period, userId }) => {
@@ -234,11 +234,13 @@ const fetchAttendance = async () => {
     return
   }
 
+  ui.value.banner = null
   try {
     await attendanceStore.getMonthlyAttendanceSummaryReport(companyId, departmentId, line_type, employeeId, selectedMonth.value)
   } catch (error) {
-    console.error('Failed:', error)
-    showToast('error', 'Failed to load attendance data.')
+    const msg = error?.message || 'Failed to load attendance data.'
+    showToast('error', msg)
+    showBanner('error', msg, 0) // persistent until next fetch
   }
 }
 
@@ -419,15 +421,18 @@ onBeforeUnmount(() => {
       {{ ui.toast.text }}
     </div>
 
-    <!-- Banner (explains recalc result) -->
+    <!-- Banner (recalc result or API error) -->
     <div
       v-if="ui.banner"
-      class="sticky top-2 z-[80] rounded-2xl border px-4 py-2 text-sm shadow-sm"
-      :class="ui.banner.type === 'success'
-        ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-        : 'border-slate-200 bg-slate-50 text-slate-800'"
+      class="sticky top-2 z-[80] flex items-center justify-between gap-3 rounded-2xl border px-4 py-2 text-sm shadow-sm"
+      :class="{
+        'border-emerald-200 bg-emerald-50 text-emerald-800': ui.banner.type === 'success',
+        'border-rose-200 bg-rose-50 text-rose-800': ui.banner.type === 'error',
+        'border-slate-200 bg-slate-50 text-slate-800': ui.banner.type === 'info',
+      }"
     >
-      {{ ui.banner.text }}
+      <span>{{ ui.banner.text }}</span>
+      <button v-if="ui.banner.type === 'error'" class="ml-4 shrink-0 text-xs underline opacity-70 hover:opacity-100" @click="fetchAttendance">Retry</button>
     </div>
 
     <!-- Top Bar (compact + sticky) -->

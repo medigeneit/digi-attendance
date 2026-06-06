@@ -311,7 +311,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
       error.value = null
     } catch (err) {
       error.value = err?.response?.data?.message || 'Something went wrong'
-      console.error(error.value)
+      throw new Error(error.value)
     } finally {
       isLoading.value = false
     }

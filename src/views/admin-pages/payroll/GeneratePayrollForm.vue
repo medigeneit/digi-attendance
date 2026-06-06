@@ -142,6 +142,34 @@ const previewWarningSummaries = computed(() => {
 
   return summaries
 })
+const warningTypeMeta = {
+  missing_salary_structure: {
+    label: 'Missing Salary Structure',
+    tone: 'bg-red-50 text-red-700 border-red-200',
+  },
+  missing_bonus: {
+    label: 'Missing Bonus',
+    tone: 'bg-amber-50 text-amber-700 border-amber-200',
+  },
+  skipped_payroll: {
+    label: 'Skipped Payroll',
+    tone: 'bg-slate-50 text-slate-700 border-slate-200',
+  },
+}
+const warningTypeLabel = (type) => warningTypeMeta[type]?.label || 'Warning'
+const warningTypeClass = (type) => warningTypeMeta[type]?.tone || 'bg-orange-50 text-orange-700 border-orange-200'
+const previewWarningRows = computed(() =>
+  (previewWarnings.value || []).map((warning, index) => ({
+    key: `${warning.type || 'warning'}-${warning.employee_id || warning.employee_code || index}`,
+    type: warning.type || 'warning',
+    employee_name: warning.employee_name || warning.name || '-',
+    employee_code: warning.employee_code || warning.employee_no || '-',
+    department: warning.department || '-',
+    line_type: warning.line_type || '-',
+    salary_month: warning.salary_month || previewResult.value?.batch?.salary_month || form.value.salary_month || '-',
+    message: warning.message || 'Review this employee before generating payroll.',
+  })),
+)
 const generatedPayload = computed(() => generateResult.value?.data || generateResult.value || null)
 const generatedBatch = computed(() => generatedPayload.value?.batch || null)
 const generatedPayrolls = computed(() => [
@@ -647,13 +675,56 @@ const goToBatch = () => {
           </button>
         </div>
         <PayrollPreviewTable :items="previewItems" :mode="form.payroll_cycle" />
-        <div v-if="previewWarningSummaries.length" class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-          <p class="font-semibold">Warnings</p>
-          <ul class="mt-2 list-disc space-y-1 pl-5">
-            <li v-for="warning in previewWarningSummaries" :key="warning.key">
-              {{ warning.message }}
-            </li>
-          </ul>
+        <div v-if="previewWarningSummaries.length" class="overflow-hidden rounded-lg border border-amber-200 bg-white shadow-sm">
+          <div class="flex flex-wrap items-start justify-between gap-3 border-b border-amber-100 bg-amber-50 px-4 py-3">
+            <div>
+              <p class="text-sm font-bold text-amber-900">Warnings</p>
+              <p class="mt-0.5 text-xs text-amber-700">Review these employees before generating payroll.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <span
+                v-for="warning in previewWarningSummaries"
+                :key="warning.key"
+                class="rounded-full border border-amber-200 bg-white px-2.5 py-1 text-xs font-semibold text-amber-800"
+              >
+                {{ warning.message }}
+              </span>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[920px] text-sm">
+              <thead class="bg-slate-50 text-xs uppercase text-slate-500">
+                <tr>
+                  <th class="px-4 py-3 text-left">#</th>
+                  <th class="px-4 py-3 text-left">Employee</th>
+                  <th class="px-4 py-3 text-left">Emp ID</th>
+                  <th class="px-4 py-3 text-left">Department</th>
+                  <th class="px-4 py-3 text-left">Line Type</th>
+                  <th class="px-4 py-3 text-left">Type</th>
+                  <th class="px-4 py-3 text-left">Details</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <tr v-for="(warning, index) in previewWarningRows" :key="warning.key" class="align-top hover:bg-amber-50/40">
+                  <td class="px-4 py-3 text-slate-500">{{ index + 1 }}</td>
+                  <td class="px-4 py-3">
+                    <div class="font-semibold text-slate-900">{{ warning.employee_name }}</div>
+                    <div class="text-xs text-slate-400">Month: {{ warning.salary_month }}</div>
+                  </td>
+                  <td class="px-4 py-3 font-mono text-slate-600">{{ warning.employee_code }}</td>
+                  <td class="px-4 py-3 text-slate-600">{{ warning.department }}</td>
+                  <td class="px-4 py-3 text-slate-600">{{ warning.line_type }}</td>
+                  <td class="px-4 py-3">
+                    <span class="inline-flex rounded-full border px-2 py-1 text-xs font-semibold" :class="warningTypeClass(warning.type)">
+                      {{ warningTypeLabel(warning.type) }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-slate-700">{{ warning.message }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </template>
