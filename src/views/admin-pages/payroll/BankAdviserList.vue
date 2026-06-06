@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import * as XLSX from 'xlsx'
 import apiClient from '@/axios'
@@ -13,6 +13,7 @@ import { useCompanyBankAccountStore } from '@/stores/companyBankAccount'
 import { useUnitStore } from '@/stores/unit'
 
 const router = useRouter()
+const route = useRoute()
 
 const bankAccStore = useCompanyBankAccountStore()
 const unitStore    = useUnitStore()
@@ -24,6 +25,31 @@ const currentMonth    = () => new Date().toISOString().slice(0, 7)
 const salaryMonth     = ref(currentMonth())
 const filterBankId    = ref('')
 const filterUnitId    = ref('')
+const payrollCycle    = ref('regular')
+const sortBy          = ref('department')
+const sortDirection   = ref('asc')
+const payrollCycleOptions = [
+  { value: 'regular', label: 'Regular Monthly Payroll' },
+  { value: 'half_salary_advance', label: 'Half Salary Advance' },
+  { value: 'bonus_only', label: 'Bonus Only' },
+]
+const sortOptions = [
+  { value: 'department', label: 'Department' },
+  { value: 'designation_grade', label: 'Designation Grade' },
+  { value: 'joining_date', label: 'Joining Date' },
+]
+const sortDirectionOptions = [
+  { value: 'asc', label: 'ASC' },
+  { value: 'desc', label: 'DESC' },
+]
+const lineTypeOptions = [
+  { value: 'all',           label: 'All Types'    },
+  { value: 'executive',     label: 'Executive'    },
+  { value: 'support_staff', label: 'Support Staff' },
+  { value: 'doctor',        label: 'Doctor'       },
+  { value: 'academy_body',  label: 'Academy Body' },
+]
+const filterLineType = ref('executive')
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 const rows       = ref([])
@@ -53,6 +79,47 @@ const selectedBank = computed(() =>
 const selectedUnit = computed(() =>
   filterUnitId.value ? units.value.find(u => String(u.id) === filterUnitId.value) ?? null : null
 )
+const selectedPayrollCycle = computed(() =>
+  payrollCycleOptions.find(option => option.value === payrollCycle.value) || payrollCycleOptions[0]
+)
+const selectedSort = computed(() =>
+  sortOptions.find(option => option.value === sortBy.value) || sortOptions[0]
+)
+const selectedSortDirection = computed(() =>
+  sortDirectionOptions.find(option => option.value === sortDirection.value) || sortDirectionOptions[0]
+)
+const selectedLineType = computed(() =>
+  lineTypeOptions.find(o => o.value === filterLineType.value) || lineTypeOptions[1]
+)
+
+const queryValue = (key, fallback = '') => {
+  const value = route.query[key]
+  return Array.isArray(value) ? value[0] ?? fallback : value ?? fallback
+}
+
+function applyQueryFilters() {
+  const queryCycle    = queryValue('payroll_cycle', 'regular')
+  const queryLineType = queryValue('line_type', 'executive')
+  salaryMonth.value    = queryValue('salary_month', currentMonth())
+  filterBankId.value   = queryValue('bank_account_id', '')
+  filterUnitId.value   = queryValue('unit_id', '')
+  filterLineType.value = lineTypeOptions.some(o => o.value === queryLineType) ? queryLineType : 'executive'
+  payrollCycle.value   = payrollCycleOptions.some(option => option.value === queryCycle) ? queryCycle : 'regular'
+  sortBy.value         = sortOptions.some(option => option.value === queryValue('sort_by')) ? queryValue('sort_by') : 'department'
+  sortDirection.value  = sortDirectionOptions.some(option => option.value === queryValue('sort_direction')) ? queryValue('sort_direction') : 'asc'
+}
+
+function buildRouteQuery() {
+  return {
+    salary_month:   salaryMonth.value,
+    payroll_cycle:  payrollCycle.value || 'regular',
+    sort_by:        sortBy.value || 'department',
+    sort_direction: sortDirection.value || 'asc',
+    line_type:      filterLineType.value || 'executive',
+    ...(filterBankId.value ? { bank_account_id: filterBankId.value } : {}),
+    ...(filterUnitId.value ? { unit_id: filterUnitId.value } : {}),
+  }
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const toArray  = (d) => Array.isArray(d) ? d : Array.isArray(d?.data) ? d.data : []
@@ -132,7 +199,13 @@ async function fetchAllPages(url, params = {}) {
 }
 
 function buildParams() {
-  const p = { salary_month: salaryMonth.value }
+  const p = {
+    salary_month:   salaryMonth.value,
+    payroll_cycle:  payrollCycle.value || 'regular',
+    sort_by:        sortBy.value || 'department',
+    sort_direction: sortDirection.value || 'asc',
+    line_type:      filterLineType.value || 'executive',
+  }
   if (filterBankId.value) p.bank_account_id = filterBankId.value
   if (filterUnitId.value) p.unit_id         = filterUnitId.value
   return p
@@ -141,6 +214,7 @@ function buildParams() {
 async function load() {
   error.value = ''
   if (!salaryMonth.value) { error.value = 'Please select a month.'; return }
+  await router.replace({ query: buildRouteQuery() })
   loading.value = true
   try {
     rows.value = await fetchAllPages('/payroll-bank-advisers', buildParams())
@@ -154,7 +228,12 @@ async function load() {
 
 // ─── Filter label helpers for export headers ──────────────────────────────────
 function filterLines() {
-  const lines = [`Month : ${fmtMonthLabel(salaryMonth.value)}`]
+  const lines = [
+    `Month        : ${fmtMonthLabel(salaryMonth.value)}`,
+    `Payroll Type : ${selectedPayrollCycle.value.label}`,
+    `Employee Type: ${selectedLineType.value.label}`,
+    `Sort         : ${selectedSort.value.label} (${selectedSortDirection.value.label})`,
+  ]
   if (selectedBank.value) lines.push(`Bank  : ${selectedBank.value.bank_name}`)
   if (selectedUnit.value) lines.push(`Unit  : ${selectedUnit.value.short_name || selectedUnit.value.name}`)
   return lines
@@ -244,11 +323,16 @@ function downloadExcel() {
 }
 
 function clearFilters() {
-  filterBankId.value = ''
-  filterUnitId.value = ''
+  filterBankId.value   = ''
+  filterUnitId.value   = ''
+  filterLineType.value = 'executive'
+  payrollCycle.value   = 'regular'
+  sortBy.value         = 'department'
+  sortDirection.value  = 'asc'
 }
 
 onMounted(async () => {
+  applyQueryFilters()
   await Promise.all([
     bankAccStore.fetchCompanyBankAccounts(),
     unitStore.fetchUnits(),
@@ -332,6 +416,25 @@ onMounted(async () => {
           />
         </div>
 
+        <!-- Payroll Type -->
+        <div class="min-w-[190px] flex-1 max-w-xs">
+          <label class="mb-0.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            Payroll Type
+          </label>
+          <div class="relative">
+            <select
+              v-model="payrollCycle"
+              class="h-9 w-full appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-7 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              :class="payrollCycle !== 'regular' ? 'border-blue-300 bg-blue-50/30 font-semibold text-blue-800' : ''"
+            >
+              <option v-for="option in payrollCycleOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+            <i class="fas fa-chevron-down pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[8px] text-slate-400"></i>
+          </div>
+        </div>
+
         <!-- Bank Account -->
         <div class="min-w-[180px] flex-1 max-w-xs">
           <label class="mb-0.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">
@@ -373,6 +476,59 @@ onMounted(async () => {
           </div>
         </div>
 
+        <!-- Employee Type -->
+        <div class="min-w-[150px] flex-1 max-w-xs">
+          <label class="mb-0.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            Employee Type
+          </label>
+          <div class="relative">
+            <select
+              v-model="filterLineType"
+              class="h-9 w-full appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-7 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              :class="filterLineType !== 'all' ? 'border-teal-300 bg-teal-50/30 font-semibold text-teal-800' : ''"
+            >
+              <option v-for="o in lineTypeOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
+            </select>
+            <i class="fas fa-chevron-down pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[8px] text-slate-400"></i>
+          </div>
+        </div>
+
+        <!-- Sort By -->
+        <div class="min-w-[170px] flex-1 max-w-xs">
+          <label class="mb-0.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            Sort By
+          </label>
+          <div class="relative">
+            <select
+              v-model="sortBy"
+              class="h-9 w-full appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-7 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            >
+              <option v-for="option in sortOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+            <i class="fas fa-chevron-down pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[8px] text-slate-400"></i>
+          </div>
+        </div>
+
+        <!-- Sort Direction -->
+        <div class="w-[104px] shrink-0">
+          <label class="mb-0.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            Direction
+          </label>
+          <div class="relative">
+            <select
+              v-model="sortDirection"
+              class="h-9 w-full appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-7 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            >
+              <option v-for="option in sortDirectionOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+            <i class="fas fa-chevron-down pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[8px] text-slate-400"></i>
+          </div>
+        </div>
+
         <!-- Load -->
         <button
           class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-blue-600 px-4 text-xs font-bold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
@@ -385,7 +541,7 @@ onMounted(async () => {
 
         <!-- Clear (only when filters are active) -->
         <button
-          v-if="filterBankId || filterUnitId"
+          v-if="filterBankId || filterUnitId || filterLineType !== 'executive' || payrollCycle !== 'regular' || sortBy !== 'department' || sortDirection !== 'asc'"
           class="inline-flex h-9 items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-500 hover:bg-slate-50"
           @click="clearFilters"
         >
@@ -490,7 +646,8 @@ onMounted(async () => {
             <span class="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-semibold text-blue-600">
               {{ rows.length }} rows
             </span>
-            <span class="text-[11px] text-slate-400">{{ fmtMonthLabel(salaryMonth) }}</span>
+            <span class="text-[11px] text-slate-400">{{ fmtMonthLabel(salaryMonth) }} · {{ selectedPayrollCycle.label }}</span>
+            <span class="text-[11px] text-slate-400">Sort: {{ selectedSort.label }} {{ selectedSortDirection.label }}</span>
             <button
               type="button"
               class="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100"
@@ -503,7 +660,26 @@ onMounted(async () => {
         </div>
 
         <!-- Active filter tags -->
-        <div v-if="selectedBank || selectedUnit" class="flex flex-wrap gap-1.5 border-b border-slate-100 px-5 py-2">
+        <div v-if="selectedPayrollCycle || selectedBank || selectedUnit" class="flex flex-wrap gap-1.5 border-b border-slate-100 px-5 py-2">
+          <span
+            class="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-[11px] font-semibold text-blue-700"
+          >
+            <i class="far fa-calendar-check text-[9px]"></i>
+            {{ selectedPayrollCycle.label }}
+          </span>
+          <span
+            class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600"
+          >
+            <i class="far fa-sort-amount-down text-[9px]"></i>
+            {{ selectedSort.label }} {{ selectedSortDirection.label }}
+          </span>
+          <span
+            class="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold"
+            :class="filterLineType === 'all' ? 'border-slate-200 bg-slate-50 text-slate-500' : 'border-teal-200 bg-teal-50 text-teal-700'"
+          >
+            <i class="far fa-user-tag text-[9px]"></i>
+            {{ selectedLineType.label }}
+          </span>
           <span
             v-if="selectedBank"
             class="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-700"

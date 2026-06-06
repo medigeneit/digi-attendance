@@ -18,18 +18,15 @@ const MONTHS = [
 const now = new Date()
 
 // ─── Letter control state ─────────────────────────────────────────────────────
-const selMonth = ref(now.getMonth())
-const selYear  = ref(now.getFullYear())
-const dateDay  = ref(String(now.getDate()).padStart(2, '0'))
-const dateMon  = ref(String(now.getMonth() + 1).padStart(2, '0'))
-const dateYear = ref(String(now.getFullYear()))
+const letterDateInput = ref(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`)
 const serial   = ref('01')
 
 // ─── Pad (letterhead) config — persisted in localStorage ─────────────────────
 const PAD_KEY = 'salary-letter-pad'
 const pad = reactive({
-  headerHeight:  3.5,   // cm — empty space reserved for pre-printed header
-  footerHeight:  2.5,   // cm — empty space reserved for pre-printed footer
+  headerHeight:  4,   // cm — empty space reserved for pre-printed header
+  footerHeight:  2,   // cm — empty space reserved for pre-printed footer
+  fontSize:      14,
   repeatHeader:  false, // repeat intro text on every printed page
 })
 const showPadConfig = ref(false)
@@ -50,13 +47,8 @@ function updatePageStyle() {
     document.head.appendChild(pageStyleEl)
   }
   let css = `@page { margin-top: ${pad.headerHeight}cm; margin-bottom: ${pad.footerHeight}cm; }`
-  if (pad.repeatHeader) {
-    // position:fixed in print repeats the element on every page in Chrome/Edge/Firefox
-    css += `
-      @media print {
-        #ltr-intro { position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; background: white !important; }
-      }`
-  }
+  // position:fixed for repeat-header is applied via inline styles in handleBeforePrint
+  // so no CSS injection needed here for that case
   pageStyleEl.textContent = css
 }
 watch(pad, updatePageStyle, { deep: true })
@@ -69,41 +61,84 @@ const selectedBankAcc = ref(null)
 const activeBankAcc = computed(() => props.bankAccount || selectedBankAcc.value)
 const acName        = computed(() => activeBankAcc.value?.account_name   || '—')
 const acNumber      = computed(() => activeBankAcc.value?.account_number || '—')
-
 // Sync org name display in letter body from bank account
 const orgName = computed(() => activeBankAcc.value?.account_name || '—')
 
 watch(() => props.salaryMonth, (sm) => {
   if (!sm) return
   const [y, m] = sm.split('-').map(Number)
-  if (y) selYear.value  = y
-  if (m) selMonth.value = m - 1
+  if (!y || !m) return
+  const currentDay = String(letterDateInput.value || '').slice(8, 10) || '01'
+  letterDateInput.value = `${y}-${String(m).padStart(2, '0')}-${currentDay}`
 }, { immediate: true })
 
 // ─── Computed letter values ───────────────────────────────────────────────────
-const monthLabel   = computed(() => MONTHS[selMonth.value])
-const letterNo     = computed(() => `Salary ${monthLabel.value}'${selYear.value}/${String(serial.value).padStart(2,'00')}`)
-const subjectMonth = computed(() => `${monthLabel.value}' ${selYear.value}`)
-const letterDate   = computed(() =>
-  `${String(dateDay.value).padStart(2,'0')}.${String(dateMon.value).padStart(2,'0')}.${dateYear.value}`
-)
-const yearOpts = computed(() => {
-  const arr = []
-  for (let y = 2020; y <= now.getFullYear() + 3; y++) arr.push(y)
-  return arr
+const parsedLetterDate = computed(() => {
+  const [year, month, day] = String(letterDateInput.value || '').split('-').map(Number)
+  if (!year || !month || !day) {
+    return { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() }
+  }
+  return { year, month, day }
 })
+const monthLabel   = computed(() => MONTHS[parsedLetterDate.value.month - 1])
+const letterNo     = computed(() => `Salary ${monthLabel.value}'${parsedLetterDate.value.year}/${String(serial.value).padStart(2,'00')}`)
+const subjectMonth = computed(() => `${monthLabel.value}' ${parsedLetterDate.value.year}`)
+const letterDate   = computed(() =>
+  `${String(parsedLetterDate.value.day).padStart(2,'0')}.${String(parsedLetterDate.value.month).padStart(2,'0')}.${parsedLetterDate.value.year}`
+)
 
 // ─── Table data ───────────────────────────────────────────────────────────────
 const hasRows    = computed(() => props.employeeRows?.length > 0)
 const tableRows  = computed(() => props.employeeRows || [])
 const emptyCount = computed(() => hasRows.value ? 0 : 18)
 const tableTotal = computed(() => tableRows.value.reduce((s, r) => s + Number(r.amount || 0), 0))
+const tableTotalWords = computed(() => `${toTitleCase(numberToWords(Math.round(tableTotal.value)))} taka only.`)
 
 function fmtAmount(val) {
   const n = Number(val)
   return Number.isFinite(n)
     ? new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n)
     : '—'
+}
+
+function toTitleCase(value) {
+  return String(value || '').replace(/\w\S*/g, word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+}
+
+function numberToWords(num) {
+  const n = Number(num)
+  if (!Number.isFinite(n) || n <= 0) return 'zero'
+
+  const ones = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen']
+  const tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety']
+  const belowHundred = (value) => {
+    if (value < 20) return ones[value]
+    return `${tens[Math.floor(value / 10)]}${value % 10 ? ` ${ones[value % 10]}` : ''}`
+  }
+  const belowThousand = (value) => {
+    if (value < 100) return belowHundred(value)
+    return `${ones[Math.floor(value / 100)]} hundred${value % 100 ? ` ${belowHundred(value % 100)}` : ''}`
+  }
+
+  const parts = []
+  let rest = Math.floor(n)
+  const crore = Math.floor(rest / 10000000)
+  if (crore) {
+    parts.push(`${belowThousand(crore)} crore`)
+    rest %= 10000000
+  }
+  const lac = Math.floor(rest / 100000)
+  if (lac) {
+    parts.push(`${belowThousand(lac)} lac`)
+    rest %= 100000
+  }
+  const thousand = Math.floor(rest / 1000)
+  if (thousand) {
+    parts.push(`${belowThousand(thousand)} thousand`)
+    rest %= 1000
+  }
+  if (rest) parts.push(belowThousand(rest))
+  return parts.join(' ')
 }
 
 // ─── Column customization ─────────────────────────────────────────────────────
@@ -132,28 +167,152 @@ function blankCellValue(col, n) { return col.key === 'sl' ? n : '' }
 function doPrint() { window.print() }
 
 const modalRoot = ref(null)
+let printInsert = null
+
+function escHtml(val) {
+  return String(val ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+function buildRepeatHeaderInsert() {
+  const PX_PER_CM = 37.795
+  const A4_H = 1122.5  // 297mm at 96dpi
+
+  const pageContent = A4_H - pad.headerHeight * PX_PER_CM - pad.footerHeight * PX_PER_CM
+
+  // Measure rendered intro height (the <th colspan> in Mode B) + column header row
+  const introThEl = document.querySelector('#letter-print-area thead th[colspan]')
+  const introH = introThEl ? introThEl.getBoundingClientRect().height + 50 : 280
+
+  // Measure a data row's rendered height
+  const rowEl = document.querySelector('#letter-print-area tbody tr')
+  const rowH = rowEl ? rowEl.getBoundingClientRect().height : 34
+
+  // 10% buffer so rows don't overflow the page-break boundary
+  const rowsPerPage = Math.max(5, Math.floor((pageContent - introH) * 0.90 / rowH))
+
+  const cols = activeCols.value
+  const fontSize = Number(pad.fontSize) || 14
+
+  function thStyle(key) {
+    const base = `border:1px solid black;padding:8px 12px;font-weight:600;font-size:${fontSize}px;`
+    if (key === 'sl')         return base + 'text-align:center;width:40px;'
+    if (key === 'name')       return base + 'text-align:left;'
+    if (key === 'employeeId') return base + 'text-align:center;width:112px;'
+    if (key === 'accountNo')  return base + 'text-align:center;width:160px;'
+    if (key === 'amount')     return base + 'text-align:right;width:128px;'
+    return base + 'text-align:left;'
+  }
+  function tdStyle(key) {
+    const base = `border:1px solid black;padding:6px 12px;font-size:${fontSize}px;`
+    if (key === 'sl' || key === 'employeeId' || key === 'accountNo') return base + 'text-align:center;'
+    if (key === 'amount') return base + 'text-align:right;'
+    return base + 'text-align:left;'
+  }
+
+  const lNo  = escHtml(letterNo.value)
+  const lDt  = escHtml(letterDate.value)
+  const sMo  = escHtml(subjectMonth.value)
+  const aNm  = escHtml(acName.value)
+  const aNo  = escHtml(acNumber.value)
+
+  const introHtml = `<div style="padding:1rem 0 0.5rem;font-size:${fontSize}px;line-height:1.6;color:#000;">
+    <div style="display:flex;justify-content:space-between;margin-bottom:0.75rem;">
+      <div><b>Letter No: Salary</b> <u>${lNo}</u></div>
+      <div><b>Date:</b> <u>${lDt}</u></div>
+    </div>
+    <div style="font-weight:bold;margin-bottom:1rem;">
+      Subject: Request for transfer of salary for the month of <u>${sMo}</u> from ${aNm} A/C No. ${aNo}
+    </div>
+    <p style="margin-bottom:1rem;">Dear Sir/Madam</p>
+    <p style="margin-bottom:1rem;text-align:justify;line-height:1.6;">
+      With reference to the above mentioned subject you are requested to transfer the
+      amount in favor of the following Name and Account No. from
+      <b>${aNm}</b> (AC No.<b>${aNo}</b>).
+    </p>
+  </div>`
+
+  const colHeadersHtml = cols.map(col =>
+    `<th style="${thStyle(col.key)}">${col.key === 'name' ? 'Name of Officer' : escHtml(col.label)}</th>`
+  ).join('')
+
+  const employees = tableRows.value
+  const chunks = []
+  for (let i = 0; i < employees.length; i += rowsPerPage) chunks.push(employees.slice(i, i + rowsPerPage))
+  if (!chunks.length) chunks.push([])
+
+  let html = ''
+  for (let ci = 0; ci < chunks.length; ci++) {
+    const chunk = chunks[ci]
+    const isLast = ci === chunks.length - 1
+    const pageTotal = chunk.reduce((sum, emp) => sum + Number(emp.amount || 0), 0)
+    const pageTotalText = escHtml(fmtAmount(pageTotal))
+    const pageTotalWords = escHtml(`${toTitleCase(numberToWords(Math.round(pageTotal)))} taka only.`)
+
+    const bodyHtml = chunk.map((emp, li) => {
+      const gi = ci * rowsPerPage + li
+      return '<tr>' + cols.map(col =>
+        `<td style="${tdStyle(col.key)}">${escHtml(cellValue(col, emp, gi))}</td>`
+      ).join('') + '</tr>'
+    }).join('')
+
+    const tfoot = `<tfoot style="break-inside:avoid;page-break-inside:avoid;">
+        <tr style="font-weight:bold;">
+          <td colspan="${cols.length - 1}" style="border:1px solid black;padding:8px 16px;text-align:right;">Total</td>
+          <td style="border:1px solid black;padding:8px 16px;text-align:right;">${pageTotalText}</td>
+        </tr>
+        <tr>
+          <td colspan="${cols.length}" style="border:1px solid black;padding:8px 12px;font-size:${fontSize}px;line-height:1.5;">
+            <b>Inwords:</b> ${pageTotalWords}
+          </td>
+        </tr>
+      </tfoot>`
+
+    const sigHtml = isLast
+      ? `<div style="margin-top:3.5rem;display:flex;justify-content:flex-end;">
+          <div style="text-align:center;font-size:${fontSize}px;">
+            <div style="width:12rem;border-top:1px solid black;margin-bottom:0.25rem;"></div>
+            <p>Authorized Signature</p>
+          </div>
+        </div>`
+      : ''
+
+    html += `<div style="${isLast ? '' : 'page-break-after:always;'}font-family:'Times New Roman',Times,serif;color:#000;padding:0 2.5rem 1.5rem;">
+      ${introHtml}
+      <table style="width:100%;border-collapse:collapse;font-size:${fontSize}px;">
+        <thead><tr>${colHeadersHtml}</tr></thead>
+        <tbody>${bodyHtml}</tbody>
+        ${tfoot}
+      </table>
+      ${sigHtml}
+    </div>`
+  }
+
+  return html
+}
 
 function handleBeforePrint() {
   const el = modalRoot.value
   if (!el) return
-  // Strip scroll container so no scrollbar appears in print output
   el.style.setProperty('position', 'static', 'important')
   el.style.setProperty('inset', 'auto', 'important')
   el.style.setProperty('overflow', 'visible', 'important')
   el.style.setProperty('height', 'auto', 'important')
   el.style.setProperty('background-color', 'white', 'important')
   el.style.setProperty('z-index', 'auto', 'important')
-  // Hide the Vue app root so only the teleported letter prints
   const app = document.getElementById('app')
   if (app) app.style.setProperty('display', 'none', 'important')
-  // When repeating header: measure intro height and push body down to avoid overlap
+
   if (pad.repeatHeader) {
-    const introEl  = document.getElementById('ltr-intro')
-    const bodyCell = document.getElementById('ltr-body-cell')
-    if (introEl && bodyCell) {
-      const h = introEl.getBoundingClientRect().height
-      bodyCell.style.setProperty('padding-top', `${h}px`, 'important')
-    }
+    // Build a plain-HTML multi-page document and inject it into body.
+    // Each section has the full intro + N rows + page-break-after, so every
+    // printed page starts with the letter intro regardless of Chrome's thead behavior.
+    printInsert = document.createElement('div')
+    printInsert.id = 'letter-print-insert'
+    printInsert.style.background = 'white'
+    printInsert.innerHTML = buildRepeatHeaderInsert()
+    document.body.appendChild(printInsert)
+    // Hide the Vue-rendered modal — printInsert is what Chrome will print
+    el.style.setProperty('display', 'none', 'important')
   }
 }
 
@@ -166,11 +325,10 @@ function handleAfterPrint() {
   el.style.removeProperty('height')
   el.style.removeProperty('background-color')
   el.style.removeProperty('z-index')
+  el.style.removeProperty('display')
   const app = document.getElementById('app')
   if (app) app.style.removeProperty('display')
-  // Restore body cell padding
-  const bodyCell = document.getElementById('ltr-body-cell')
-  if (bodyCell) bodyCell.style.removeProperty('padding-top')
+  if (printInsert) { printInsert.remove(); printInsert = null }
 }
 
 onMounted(async () => {
@@ -222,32 +380,14 @@ onUnmounted(() => {
             </select>
           </div>
 
-          <!-- Month -->
+          <!-- Letter Date -->
           <div>
-            <label class="block text-[10px] text-slate-500 mb-0.5">Month</label>
-            <select v-model="selMonth" class="h-8 rounded border border-slate-200 bg-white px-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400">
-              <option v-for="(m,i) in MONTHS" :key="i" :value="i">{{ m }}</option>
-            </select>
-          </div>
-
-          <!-- Year -->
-          <div>
-            <label class="block text-[10px] text-slate-500 mb-0.5">Year</label>
-            <select v-model="selYear" class="h-8 rounded border border-slate-200 bg-white px-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400">
-              <option v-for="y in yearOpts" :key="y" :value="y">{{ y }}</option>
-            </select>
-          </div>
-
-          <!-- Date -->
-          <div>
-            <label class="block text-[10px] text-slate-500 mb-0.5">Date (DD . MM . YYYY)</label>
-            <div class="flex items-center gap-1">
-              <input v-model="dateDay"  type="number" min="1" max="31"   class="h-8 w-10 rounded border border-slate-200 px-1 text-center text-xs focus:outline-none focus:ring-1 focus:ring-blue-400" />
-              <span class="text-slate-300">.</span>
-              <input v-model="dateMon"  type="number" min="1" max="12"   class="h-8 w-10 rounded border border-slate-200 px-1 text-center text-xs focus:outline-none focus:ring-1 focus:ring-blue-400" />
-              <span class="text-slate-300">.</span>
-              <input v-model="dateYear" type="number" min="2020" max="2099" class="h-8 w-16 rounded border border-slate-200 px-1 text-center text-xs focus:outline-none focus:ring-1 focus:ring-blue-400" />
-            </div>
+            <label class="block text-[10px] text-slate-500 mb-0.5">Letter Date</label>
+            <input
+              v-model="letterDateInput"
+              type="date"
+              class="h-8 rounded border border-slate-200 bg-white px-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400"
+            />
           </div>
 
           <!-- Serial -->
@@ -350,6 +490,30 @@ onUnmounted(() => {
             </div>
           </div>
 
+          <!-- Font size -->
+          <div>
+            <label class="block text-[10px] text-slate-500 mb-0.5">
+              <i class="far fa-text-size text-violet-400 mr-1"></i>Font size (px)
+            </label>
+            <div class="flex items-center gap-1.5">
+              <button
+                type="button"
+                class="h-8 w-8 rounded border border-violet-300 bg-white text-sm font-bold text-violet-700 hover:bg-violet-50"
+                @click="pad.fontSize = Math.max(10, Number(pad.fontSize || 14) - 1)"
+              >-</button>
+              <input
+                v-model.number="pad.fontSize"
+                type="number" min="10" max="24" step="1"
+                class="h-8 w-16 rounded border border-violet-300 bg-white px-2 text-center text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-violet-400"
+              />
+              <button
+                type="button"
+                class="h-8 w-8 rounded border border-violet-300 bg-white text-sm font-bold text-violet-700 hover:bg-violet-50"
+                @click="pad.fontSize = Math.min(24, Number(pad.fontSize || 14) + 1)"
+              >+</button>
+            </div>
+          </div>
+
           <!-- Visual preview hint -->
           <div class="flex items-center gap-2 rounded-lg border border-violet-200 bg-white px-3 py-2">
             <div class="flex h-16 w-10 flex-col rounded border border-slate-300 overflow-hidden text-[7px] text-slate-400">
@@ -393,113 +557,137 @@ onUnmounted(() => {
       <div
         id="letter-print-area"
         class="mx-auto my-8 flex min-h-[1050px] w-full max-w-[760px] flex-col bg-white shadow-md print:my-0 print:min-h-screen print:max-w-none print:shadow-none print:w-full"
-        style="font-family: 'Times New Roman', Times, serif;"
+        :style="{ fontFamily: `'Times New Roman', Times, serif`, '--letter-font-size': `${Number(pad.fontSize) || 14}px` }"
       >
         <!-- Reserved space for pre-printed header (screen only — @page margin-top handles every page in print) -->
         <div class="print:hidden" :style="`height: ${pad.headerHeight}cm; min-height: ${pad.headerHeight}cm;`"></div>
 
-        <!-- ── Letter body (wrapper split into intro + data so intro can repeat on every page) ── -->
-        <div id="ltr-wrapper" class="flex-1">
+        <!-- ── Letter body ── -->
 
-          <!-- ─ Intro section: Letter No, Subject, Salutation, Body para ─ -->
-          <div id="ltr-intro">
-            <div id="ltr-intro-row">
-              <div id="ltr-intro-cell" class="px-10 pt-4">
-
-                <!-- Letter No + Date -->
-                <div class="mb-3 flex justify-between text-sm">
-                  <div>
-                    <span class="font-bold">Letter No: Salary </span>
-                    <span class="font-bold underline">{{ letterNo }}</span>
-                  </div>
-                  <div>
-                    <span class="font-bold">Date: </span>
-                    <span class="font-bold underline">{{ letterDate }}</span>
-                  </div>
+        <!-- MODE A: First page only — normal div layout -->
+        <template v-if="!pad.repeatHeader">
+          <div class="flex-1">
+            <div class="px-10 pt-4">
+              <div class="mb-3 flex justify-between text-sm">
+                <div><span class="font-bold">Letter No: Salary </span><span class="font-bold underline">{{ letterNo }}</span></div>
+                <div><span class="font-bold">Date: </span><span class="font-bold underline">{{ letterDate }}</span></div>
+              </div>
+              <div class="mb-4 text-sm font-bold leading-relaxed">
+                Subject: Request for transfer of salary for the month of
+                <span class="underline">{{ subjectMonth }}</span> from {{ acName }} A/C No. {{ acNumber }}
+              </div>
+              <p class="mb-4 text-sm">Dear Sir/Madam</p>
+              <p class="mb-6 text-justify text-sm leading-relaxed">
+                With reference to the above mentioned subject you are requested to transfer the
+                amount in favor of the following Name and Account No. from
+                <strong>{{ acName }}</strong> (AC No.<strong>{{ acNumber }}</strong>).
+              </p>
+            </div>
+            <div class="px-10 pb-6">
+              <table class="w-full border-collapse text-sm">
+                <thead><tr>
+                  <th v-for="col in activeCols" :key="col.key" class="border border-black px-3 py-2 font-semibold"
+                    :class="{ 'text-center w-10': col.key==='sl', 'text-left': col.key==='name', 'text-center w-28': col.key==='employeeId', 'text-center w-40': col.key==='accountNo', 'text-right w-32': col.key==='amount' }"
+                  >{{ col.key === 'name' ? 'Name of Officer' : col.label }}</th>
+                </tr></thead>
+                <tbody>
+                  <tr v-for="(emp,idx) in tableRows" :key="`e${idx}`">
+                    <td v-for="col in activeCols" :key="col.key" class="border border-black px-3 py-1.5"
+                      :class="{ 'text-center': col.key==='sl'||col.key==='employeeId'||col.key==='accountNo', 'text-right': col.key==='amount' }"
+                    >{{ cellValue(col,emp,idx) }}</td>
+                  </tr>
+                  <tr v-for="n in emptyCount" :key="`b${n}`">
+                    <td v-for="col in activeCols" :key="col.key" class="border border-black px-3 py-4"
+                      :class="{ 'text-center text-slate-400': col.key==='sl' }"
+                    >{{ blankCellValue(col,n) }}</td>
+                  </tr>
+                </tbody>
+                <tfoot style="break-inside: avoid; page-break-inside: avoid;">
+                  <tr class="font-bold">
+                    <td :colspan="activeCols.length-1" class="border border-black px-4 py-2 text-right">Total</td>
+                    <td class="border border-black px-4 py-2 text-right">{{ hasRows ? fmtAmount(tableTotal) : '' }}</td>
+                  </tr>
+                  <tr v-if="hasRows">
+                    <td :colspan="activeCols.length" class="border border-black px-4 py-2 text-sm leading-relaxed">
+                      <strong>Inwords:</strong> {{ tableTotalWords }}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+              <div class="mt-14 flex justify-end">
+                <div class="text-center text-sm">
+                  <div class="mb-1 w-48 border-t border-black"></div>
+                  <p>Authorized Signature</p>
                 </div>
-
-                <!-- Subject -->
-                <div class="mb-4 text-sm font-bold leading-relaxed">
-                  Subject: Request for transfer of salary for the month of
-                  <span class="underline">{{ subjectMonth }}</span> from
-                  {{ acName }} A/C No. {{ acNumber }}
-                </div>
-
-                <!-- Salutation -->
-                <p class="mb-4 text-sm">Dear Sir/Madam</p>
-
-                <!-- Body -->
-                <p class="mb-6 text-justify text-sm leading-relaxed">
-                  With reference to the above mentioned subject you are requested to transfer the
-                  amount in favor of the following Name and Account No. from
-                  <strong>{{ acName }}</strong> (AC No.<strong>{{ acNumber }}</strong>).
-                </p>
-
               </div>
             </div>
           </div>
+        </template>
 
-          <!-- ─ Data section: employee table + signature ─ -->
-          <div id="ltr-body">
-            <div id="ltr-body-row">
-              <div id="ltr-body-cell" class="px-10 pb-6">
-
-                <!-- Table -->
-                <table class="w-full border-collapse text-sm">
-                  <thead>
-                    <tr>
-                      <th
-                        v-for="col in activeCols" :key="col.key"
-                        class="border border-black px-3 py-2 font-semibold"
-                        :class="{
-                          'text-center w-10': col.key === 'sl',
-                          'text-left':        col.key === 'name',
-                          'text-center w-28': col.key === 'employeeId',
-                          'text-center w-40': col.key === 'accountNo',
-                          'text-right  w-32': col.key === 'amount',
-                        }"
-                      >{{ col.key === 'name' ? 'Name of Officer' : col.label }}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="(emp, idx) in tableRows" :key="`emp-${idx}`">
-                      <td
-                        v-for="col in activeCols" :key="col.key"
-                        class="border border-black px-3 py-1.5"
-                        :class="{
-                          'text-center': col.key === 'sl' || col.key === 'employeeId' || col.key === 'accountNo',
-                          'text-right':  col.key === 'amount',
-                        }"
-                      >{{ cellValue(col, emp, idx) }}</td>
-                    </tr>
-                    <tr v-for="n in emptyCount" :key="`blank-${n}`">
-                      <td
-                        v-for="col in activeCols" :key="col.key"
-                        class="border border-black px-3 py-4"
-                        :class="{ 'text-center text-slate-400': col.key === 'sl' }"
-                      >{{ blankCellValue(col, n) }}</td>
-                    </tr>
-                    <!-- Total row -->
-                    <tr class="font-bold">
-                      <td :colspan="activeCols.length - 1" class="border border-black px-4 py-2 text-right">Total</td>
-                      <td class="border border-black px-4 py-2 text-right">{{ hasRows ? fmtAmount(tableTotal) : '' }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-
-                <!-- Signature -->
-                <div class="mt-14 flex justify-end">
-                  <div class="text-center text-sm">
-                    <div class="mb-1 w-48 border-t border-black"></div>
-                    <p>Authorized Signature</p>
-                  </div>
-                </div>
-
+        <!-- MODE B: All pages — flat table: intro + column headers in <thead>, one <tr> per employee in <tbody>.
+             Browser repeats <thead> (intro + headers) on every page when <tbody> rows overflow. -->
+        <template v-else>
+          <div class="flex-1 px-10">
+            <table class="w-full text-sm" style="border-collapse: collapse;">
+              <thead>
+                <!-- Intro row: spans all columns -->
+                <tr>
+                  <th :colspan="activeCols.length" class="pt-4 pb-2 text-left font-normal align-top">
+                    <div class="mb-3 flex justify-between text-sm">
+                      <div><span class="font-bold">Letter No: Salary </span><span class="font-bold underline">{{ letterNo }}</span></div>
+                      <div><span class="font-bold">Date: </span><span class="font-bold underline">{{ letterDate }}</span></div>
+                    </div>
+                    <div class="mb-4 text-sm font-bold leading-relaxed">
+                      Subject: Request for transfer of salary for the month of
+                      <span class="underline">{{ subjectMonth }}</span> from {{ acName }} A/C No. {{ acNumber }}
+                    </div>
+                    <p class="mb-4 text-sm font-normal">Dear Sir/Madam</p>
+                    <p class="mb-4 text-justify text-sm font-normal leading-relaxed">
+                      With reference to the above mentioned subject you are requested to transfer the
+                      amount in favor of the following Name and Account No. from
+                      <strong>{{ acName }}</strong> (AC No.<strong>{{ acNumber }}</strong>).
+                    </p>
+                  </th>
+                </tr>
+                <!-- Column header row -->
+                <tr>
+                  <th v-for="col in activeCols" :key="col.key" class="border border-black px-3 py-2 font-semibold"
+                    :class="{ 'text-center w-10': col.key==='sl', 'text-left': col.key==='name', 'text-center w-28': col.key==='employeeId', 'text-center w-40': col.key==='accountNo', 'text-right w-32': col.key==='amount' }"
+                  >{{ col.key === 'name' ? 'Name of Officer' : col.label }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(emp,idx) in tableRows" :key="`e${idx}`">
+                  <td v-for="col in activeCols" :key="col.key" class="border border-black px-3 py-1.5"
+                    :class="{ 'text-center': col.key==='sl'||col.key==='employeeId'||col.key==='accountNo', 'text-right': col.key==='amount' }"
+                  >{{ cellValue(col,emp,idx) }}</td>
+                </tr>
+                <tr v-for="n in emptyCount" :key="`b${n}`">
+                  <td v-for="col in activeCols" :key="col.key" class="border border-black px-3 py-4"
+                    :class="{ 'text-center text-slate-400': col.key==='sl' }"
+                  >{{ blankCellValue(col,n) }}</td>
+                </tr>
+              </tbody>
+              <tfoot style="break-inside: avoid; page-break-inside: avoid;">
+                <tr class="font-bold">
+                  <td :colspan="activeCols.length-1" class="border border-black px-4 py-2 text-right">Total</td>
+                  <td class="border border-black px-4 py-2 text-right">{{ hasRows ? fmtAmount(tableTotal) : '' }}</td>
+                </tr>
+                <tr v-if="hasRows">
+                  <td :colspan="activeCols.length" class="border border-black px-4 py-2 text-sm leading-relaxed">
+                    <strong>Inwords:</strong> {{ tableTotalWords }}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+            <div class="mt-14 pb-6 flex justify-end">
+              <div class="text-center text-sm">
+                <div class="mb-1 w-48 border-t border-black"></div>
+                <p>Authorized Signature</p>
               </div>
             </div>
           </div>
-
-        </div>
+        </template>
 
         <!-- Reserved space for pre-printed footer (screen only — @page margin-bottom handles every page in print) -->
         <div class="print:hidden" :style="`height: ${pad.footerHeight}cm; min-height: ${pad.footerHeight}cm;`"></div>
@@ -510,6 +698,14 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+#letter-print-area :deep(.text-sm),
+#letter-print-area :deep(table),
+#letter-print-area :deep(th),
+#letter-print-area :deep(td),
+#letter-print-area .letter-text {
+  font-size: var(--letter-font-size) !important;
+}
+
 @media print {
   /* Strip the modal scroll container so no scrollbar appears in print output */
   .letter-modal-root {
