@@ -338,136 +338,98 @@ const activeFiltersCount = computed(() => {
 </script>
 
 <template>
-  <div class="min-h-screen space-y-4 p-4 md:p-6">
+  <div class="min-h-screen space-y-2 p-3 md:p-4">
 
-    <!-- ── Page Header ─────────────────────────────────── -->
-    <div class="rounded-3xl border border-slate-200 bg-gradient-to-r from-slate-50 via-white to-emerald-50 p-5 shadow-sm">
-      <div class="flex flex-wrap items-center justify-between gap-4">
-        <div class="flex items-center gap-4">
-          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
-            <i class="far fa-file-invoice-dollar text-xl"></i>
-          </div>
-          <div>
-            <h1 class="text-xl font-bold text-slate-900">Payroll Report</h1>
-            <p class="mt-0.5 text-sm text-slate-500">
-              Earnings, deductions &amp; net payable for
-              <span class="font-semibold text-emerald-700">{{ formatMonth(filters.salary_month) }}</span>
-            </p>
-          </div>
+    <!-- ── Compact Toolbar ────────────────────────────── -->
+    <div class="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 shadow-sm">
+      <div class="flex items-center gap-2.5">
+        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
+          <i class="far fa-file-invoice-dollar text-sm"></i>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <button class="btn-3" @click="router.push({ name: 'DoctorPayrollList' })">
-            <i class="far fa-user-md"></i> Doctor Payroll
-          </button>
-          <button class="btn-3" :disabled="loading || !list.length" @click="handleDownloadExcel">
-            <i class="far fa-file-excel"></i> Excel
-          </button>
-          <button class="btn-2" @click="goToGenerate">
-            <i class="far fa-plus"></i> Generate
-          </button>
+        <div class="leading-tight">
+          <span class="text-sm font-bold text-slate-800">Payroll Report</span>
+          <span class="ml-2 text-xs text-slate-400">{{ formatMonth(filters.salary_month) }}</span>
+          <span v-if="activeFiltersCount" class="ml-1.5 rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-bold text-indigo-600">
+            {{ activeFiltersCount }} filters
+          </span>
         </div>
       </div>
-    </div>
-
-    <!-- ── Filters ─────────────────────────────────────── -->
-    <div class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div class="mb-3 flex items-center justify-between gap-2">
-        <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-400">
-          <i class="far fa-filter text-slate-300"></i>
-          Filters
-          <span
-            v-if="activeFiltersCount"
-            class="rounded-full bg-indigo-100 px-2 py-0.5 text-indigo-600"
-          >{{ activeFiltersCount }} active</span>
-        </div>
-        <button class="btn-3 h-7 px-3 text-xs" @click="resetFilters">
-          <i class="far fa-undo text-[10px]"></i> Reset
+      <div class="flex items-center gap-1.5">
+        <button class="btn-3 h-7 px-3 text-xs" @click="router.push({ name: 'DoctorPayrollList' })">
+          <i class="far fa-user-md"></i> Doctor
+        </button>
+        <button class="btn-3 h-7 px-3 text-xs" :disabled="loading || !list.length" @click="handleDownloadExcel">
+          <i class="far fa-file-excel"></i> Excel
+        </button>
+        <button class="btn-2 h-7 px-3 text-xs" @click="goToGenerate">
+          <i class="far fa-plus"></i> Generate
         </button>
       </div>
+    </div>
 
-      <div class="space-y-3">
-        <EmployeeFilter
-          :company_id="filters.company_id"
-          :department_id="filters.department_id"
-          :employee_id="filters.employee_id"
-          :line_type="filters.line_type"
-          :with-type="true"
-          :with-employee="true"
-          @update:company_id="(v) => (filters.company_id = v)"
-          @update:department_id="(v) => (filters.department_id = v)"
-          @update:employee_id="(v) => (filters.employee_id = v)"
-          @update:line_type="(v) => (filters.line_type = v)"
-          @filter-change="onEmployeeFilterChange"
-        >
-          <FlexibleDatePicker
-            v-model="salaryMonthPeriod"
-            :show-year="false"
-            :show-month="true"
-            :show-date="false"
-            label="Month"
-            @change="handleSalaryMonthChange"
-          />
-        </EmployeeFilter>
+    <!-- ── Compact Filter Bar ─────────────────────────── -->
+    <div class="rounded-2xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
+      <EmployeeFilter
+        :company_id="filters.company_id"
+        :department_id="filters.department_id"
+        :employee_id="filters.employee_id"
+        :line_type="filters.line_type"
+        :with-type="true"
+        :with-employee="true"
+        @update:company_id="(v) => (filters.company_id = v)"
+        @update:department_id="(v) => (filters.department_id = v)"
+        @update:employee_id="(v) => (filters.employee_id = v)"
+        @update:line_type="(v) => (filters.line_type = v)"
+        @filter-change="onEmployeeFilterChange"
+      >
+        <FlexibleDatePicker
+          v-model="salaryMonthPeriod"
+          :show-year="false"
+          :show-month="true"
+          :show-date="false"
+          label="Month"
+          @change="handleSalaryMonthChange"
+        />
+      </EmployeeFilter>
 
-        <div class="flex flex-wrap items-end gap-3">
-          <div class="w-full sm:w-48">
-            <label class="mb-1 block text-xs font-medium text-slate-600">Payroll Cycle</label>
-            <select
-              v-model="filters.payroll_cycle"
-              class="erp-select"
-              @change="() => { filters.page = 1; load() }"
-            >
-              <option value="">All Cycles</option>
-              <option v-for="c in cycleOptions" :key="c.value" :value="c.value">{{ c.label }}</option>
-            </select>
-          </div>
-          <div class="w-full sm:w-48">
-            <label class="mb-1 block text-xs font-medium text-slate-600">Payment Status</label>
-            <select
-              v-model="filters.payment_status"
-              class="erp-select"
-              @change="() => { filters.page = 1; load() }"
-            >
-              <option value="">All Statuses</option>
-              <option v-for="s in statusOptions" :key="s" :value="s">{{ s }}</option>
-            </select>
-          </div>
-          <div class="w-full sm:w-24">
-            <label class="mb-1 block text-xs font-medium text-slate-600">Per Page</label>
-            <select
-              v-model="filters.per_page"
-              class="erp-select"
-              @change="() => { filters.page = 1; load() }"
-            >
-              <option :value="15">15</option>
-              <option :value="25">25</option>
-              <option :value="50">50</option>
-              <option :value="100">100</option>
-            </select>
-          </div>
-        </div>
+      <div class="mt-2 flex flex-wrap items-center gap-2">
+        <select v-model="filters.payroll_cycle" class="erp-select-sm" @change="() => { filters.page = 1; load() }">
+          <option value="">All Cycles</option>
+          <option v-for="c in cycleOptions" :key="c.value" :value="c.value">{{ c.label }}</option>
+        </select>
+        <select v-model="filters.payment_status" class="erp-select-sm" @change="() => { filters.page = 1; load() }">
+          <option value="">All Statuses</option>
+          <option v-for="s in statusOptions" :key="s" :value="s">{{ s }}</option>
+        </select>
+        <select v-model="filters.per_page" class="erp-select-sm w-20" @change="() => { filters.page = 1; load() }">
+          <option :value="15">15 / pg</option>
+          <option :value="25">25 / pg</option>
+          <option :value="50">50 / pg</option>
+          <option :value="100">100 / pg</option>
+        </select>
+        <button class="inline-flex h-7 items-center gap-1 rounded-lg border border-slate-200 px-2.5 text-xs text-slate-500 hover:bg-slate-50" @click="resetFilters">
+          <i class="far fa-undo text-[9px]"></i> Reset
+        </button>
       </div>
     </div>
 
-    <!-- ── Summary Cards ───────────────────────────────── -->
-    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <!-- ── Summary Strip ──────────────────────────────── -->
+    <div class="grid grid-cols-2 gap-2 xl:grid-cols-4">
       <div
         v-for="card in summaryCards"
         :key="card.label"
-        class="rounded-2xl border p-4 shadow-sm"
+        class="flex items-center gap-3 rounded-xl border px-3 py-2 shadow-sm"
         :class="card.tone"
       >
-        <div class="flex items-start justify-between gap-3">
-          <div class="flex-1 min-w-0">
-            <p class="text-xs font-semibold uppercase tracking-wider" :class="card.labelColor">{{ card.label }}</p>
-            <p class="mt-1.5 font-bold leading-none" :class="[card.valueColor, card.isCount ? 'text-4xl' : 'text-2xl font-mono']">
-              {{ card.isCount ? card.value : formatCompactCurrency(card.value) }}
-            </p>
-            <p class="mt-2 text-xs" :class="card.subColor">{{ card.sub }}</p>
-          </div>
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-base" :class="card.iconBg">
-            <i :class="`far ${card.icon}`"></i>
-          </div>
+        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm" :class="card.iconBg">
+          <i :class="`far ${card.icon}`"></i>
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="text-[10px] font-semibold uppercase tracking-wider truncate" :class="card.labelColor">{{ card.label }}</p>
+          <p class="font-bold leading-none" :class="[card.valueColor, card.isCount ? 'text-xl' : 'text-base font-mono']">
+            {{ card.isCount ? card.value : formatCompactCurrency(card.value) }}
+          </p>
+          <p class="text-[10px] truncate" :class="card.subColor">{{ card.sub }}</p>
         </div>
       </div>
     </div>
@@ -485,36 +447,33 @@ const activeFiltersCount = computed(() => {
     </div>
 
     <!-- ── Empty State ─────────────────────────────────── -->
-    <div v-else-if="!list.length" class="flex flex-col items-center justify-center rounded-3xl border border-slate-200 bg-white py-16 text-center shadow-sm">
-      <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-3xl text-slate-300">
+    <div v-else-if="!list.length" class="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white py-10 text-center shadow-sm">
+      <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-2xl text-slate-300">
         <i class="far fa-file-invoice-dollar"></i>
       </div>
-      <p class="mt-4 text-base font-semibold text-slate-600">No payrolls found</p>
-      <p class="mt-1 text-sm text-slate-400">Generate a payroll batch to create payroll records.</p>
-      <button class="btn-2 mt-6" @click="goToGenerate">
+      <p class="mt-3 text-sm font-semibold text-slate-600">No payrolls found</p>
+      <p class="mt-1 text-xs text-slate-400">Generate a payroll batch to create records.</p>
+      <button class="btn-2 mt-4 h-8 px-3 text-xs" @click="goToGenerate">
         <i class="far fa-plus"></i> Generate Payroll
       </button>
     </div>
 
     <!-- ── Data Table ──────────────────────────────────── -->
-    <div v-else class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+    <div v-else class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
       <!-- Table Header Bar -->
-      <div class="border-b border-slate-100 bg-slate-50/60 px-4 py-3">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 class="text-sm font-semibold text-slate-800">Detailed Payroll Breakdown</h2>
-            <p class="text-xs text-slate-500">Earnings &amp; deductions per employee · {{ formatMonth(filters.salary_month) }}</p>
-          </div>
-          <div class="flex items-center gap-2 text-xs">
-            <span class="rounded-lg border border-slate-200 bg-white px-2.5 py-1 font-medium text-slate-600">
-              <i class="far fa-users mr-1 text-slate-400"></i>
-              {{ pagination.total || list.length }} records
-            </span>
-            <span class="rounded-lg border border-slate-200 bg-white px-2.5 py-1 font-medium text-slate-600">
-              Page {{ filters.page }} / {{ pagination.last_page || 1 }}
-            </span>
-          </div>
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-slate-50/60 px-3 py-2">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-semibold text-slate-700">Detailed Payroll Breakdown</span>
+          <span class="text-[10px] text-slate-400">· {{ formatMonth(filters.salary_month) }}</span>
+        </div>
+        <div class="flex items-center gap-1.5 text-[11px] text-slate-500">
+          <span class="rounded border border-slate-200 bg-white px-2 py-0.5 font-medium">
+            {{ pagination.total || list.length }} records
+          </span>
+          <span class="rounded border border-slate-200 bg-white px-2 py-0.5 font-medium">
+            pg {{ filters.page }}/{{ pagination.last_page || 1 }}
+          </span>
         </div>
       </div>
 
@@ -710,30 +669,14 @@ const activeFiltersCount = computed(() => {
       </div>
 
       <!-- Table Footer Bar -->
-      <div class="border-t border-slate-100 bg-slate-50/50 px-4 py-2.5">
-        <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
-          <span>
-            Showing
-            <strong class="text-slate-700">{{ list.length }}</strong>
-            of
-            <strong class="text-slate-700">{{ pagination.total || list.length }}</strong>
-            records for
-            <strong class="text-slate-700">{{ formatMonth(filters.salary_month) }}</strong>
-          </span>
-          <div class="flex items-center gap-3">
-            <span class="flex items-center gap-1">
-              <span class="inline-block h-2.5 w-2.5 rounded-sm bg-emerald-200 ring-1 ring-emerald-300"></span>
-              Earnings
-            </span>
-            <span class="flex items-center gap-1">
-              <span class="inline-block h-2.5 w-2.5 rounded-sm bg-rose-200 ring-1 ring-rose-300"></span>
-              Deductions
-            </span>
-            <span class="flex items-center gap-1">
-              <span class="inline-block h-2.5 w-2.5 rounded-sm bg-indigo-200 ring-1 ring-indigo-300"></span>
-              Net Pay
-            </span>
-          </div>
+      <div class="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/50 px-3 py-1.5 text-[10px] text-slate-400">
+        <span>
+          Showing <strong class="text-slate-600">{{ list.length }}</strong> of <strong class="text-slate-600">{{ pagination.total || list.length }}</strong> · {{ formatMonth(filters.salary_month) }}
+        </span>
+        <div class="flex items-center gap-2.5">
+          <span class="flex items-center gap-1"><span class="inline-block h-2 w-2 rounded-sm bg-emerald-200 ring-1 ring-emerald-300"></span>Earnings</span>
+          <span class="flex items-center gap-1"><span class="inline-block h-2 w-2 rounded-sm bg-rose-200 ring-1 ring-rose-300"></span>Deductions</span>
+          <span class="flex items-center gap-1"><span class="inline-block h-2 w-2 rounded-sm bg-indigo-200 ring-1 ring-indigo-300"></span>Net Pay</span>
         </div>
       </div>
     </div>
@@ -789,5 +732,20 @@ const activeFiltersCount = computed(() => {
   outline: none;
   border-color: #818cf8;
   box-shadow: 0 0 0 3px rgb(99 102 241 / 0.15);
+}
+.erp-select-sm {
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+  background-color: #fff;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  color: #475569;
+  height: 1.75rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.erp-select-sm:focus {
+  outline: none;
+  border-color: #818cf8;
+  box-shadow: 0 0 0 2px rgb(99 102 241 / 0.15);
 }
 </style>
