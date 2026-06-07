@@ -43,7 +43,7 @@ const cycleOptions = [
   { value: 'bonus_only', label: 'Bonus Only' },
 ]
 
-const statusOptions = ['Pending', 'Generated', 'Reviewed', 'Approved', 'Paid', 'Locked', 'Cancelled', 'Partial']
+const statusOptions = ['Pending', 'Generated', 'Reviewed', 'Approved', 'Paid', 'Locked', 'Hold', 'Cancelled', 'Partial']
 
 const monthToPeriod = (value) => {
   const month = String(value || '').slice(0, 7)
@@ -73,34 +73,87 @@ const summaryCards = computed(() => {
   const totalGross = rows.reduce((sum, row) => sum + Number(row.gross_salary || 0), 0)
   const totalDeduction = rows.reduce((sum, row) => sum + Number(row.total_deduction || 0), 0)
   const totalNet = rows.reduce((sum, row) => sum + Number(row.net_salary || 0), 0)
+  const paidCount = rows.filter((r) => ['paid', 'locked'].includes(String(r.payment_status || '').toLowerCase())).length
 
   return [
     {
-      label: 'Payrolls',
+      label: 'Total Employees',
       value: rows.length,
-      tone: 'border-blue-200 bg-blue-50 text-blue-800',
-      formatter: (value) => value,
+      sub: `${paidCount} paid`,
+      icon: 'fa-users',
+      iconBg: 'bg-blue-100 text-blue-600',
+      tone: 'border-blue-200 bg-blue-50',
+      labelColor: 'text-blue-600',
+      valueColor: 'text-blue-900',
+      subColor: 'text-blue-500',
+      isCount: true,
     },
     {
-      label: 'Gross Total',
+      label: 'Gross Salary',
       value: totalGross,
-      tone: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-      formatter: (value) => formatCompactCurrency(value),
+      sub: `${rows.length} records`,
+      icon: 'fa-coins',
+      iconBg: 'bg-emerald-100 text-emerald-600',
+      tone: 'border-emerald-200 bg-emerald-50',
+      labelColor: 'text-emerald-600',
+      valueColor: 'text-emerald-900',
+      subColor: 'text-emerald-500',
+      isCount: false,
     },
     {
-      label: 'Deduction Total',
+      label: 'Total Deductions',
       value: totalDeduction,
-      tone: 'border-rose-200 bg-rose-50 text-rose-800',
-      formatter: (value) => formatCompactCurrency(value),
+      sub: `${formatCompactCurrency((totalDeduction / (totalGross || 1)) * 100)}% of gross`,
+      icon: 'fa-minus-circle',
+      iconBg: 'bg-rose-100 text-rose-600',
+      tone: 'border-rose-200 bg-rose-50',
+      labelColor: 'text-rose-600',
+      valueColor: 'text-rose-900',
+      subColor: 'text-rose-500',
+      isCount: false,
     },
     {
       label: 'Net Payable',
       value: totalNet,
-      tone: 'border-indigo-200 bg-indigo-50 text-indigo-800',
-      formatter: (value) => formatCompactCurrency(value),
+      sub: `${formatCompactCurrency((totalNet / (totalGross || 1)) * 100)}% of gross`,
+      icon: 'fa-wallet',
+      iconBg: 'bg-indigo-100 text-indigo-600',
+      tone: 'border-indigo-200 bg-indigo-50',
+      labelColor: 'text-indigo-600',
+      valueColor: 'text-indigo-900',
+      subColor: 'text-indigo-500',
+      isCount: false,
     },
   ]
 })
+
+const columnTotals = computed(() => {
+  const rows = list.value || []
+  const sum = (key) => rows.reduce((s, r) => s + toNumber(r[key]), 0)
+  return {
+    basic_salary: sum('basic_salary'),
+    house_rent: sum('house_rent'),
+    medical_allowance: sum('medical_allowance'),
+    conveyance_allowance: sum('conveyance_allowance'),
+    gross_salary: sum('gross_salary'),
+    other_allowance: rows.reduce((s, r) => s + getDisplayOtherAllowance(r), 0),
+    pf_allowance: rows.reduce((s, r) => s + getPfAllowanceAmount(r), 0),
+    arrear: rows.reduce((s, r) => s + getArrearAmount(r), 0),
+    bonus_amount: sum('bonus_amount'),
+    manual_addition: sum('manual_addition'),
+    total_earnings: rows.reduce((s, r) => s + getTotalEarnings(r), 0),
+    pf_deduction: sum('pf_deduction'),
+    meal_deduction: sum('meal_deduction'),
+    loan_deduction: sum('loan_deduction'),
+    security_money_deduction: sum('security_money_deduction'),
+    other_deduction: sum('other_deduction'),
+    advance_deduction: sum('advance_deduction'),
+    paycut_deduction: sum('paycut_deduction'),
+    total_deduction: sum('total_deduction'),
+    net_salary: sum('net_salary'),
+  }
+})
+
 const buildRouteQuery = () => {
   const params = { ...filters.value }
   delete params.default_payment_method
@@ -153,6 +206,7 @@ const resetFilters = () => {
   }
   load()
 }
+
 const applyRouteQueryToFilters = () => {
   const q = route.query
   filters.value = {
@@ -211,7 +265,6 @@ const formatCompactCurrency = (value) => {
   if (value === null || value === undefined || value === '') return '—'
   const num = parseFloat(value)
   if (isNaN(num)) return '—'
-
   return new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
@@ -220,30 +273,22 @@ const formatCompactCurrency = (value) => {
 
 const formatMonth = (value) => {
   if (!value) return '—'
-  return String(value).slice(0, 7)
+  const m = String(value).slice(0, 7)
+  if (!/^\d{4}-\d{2}$/.test(m)) return m
+  const [y, mo] = m.split('-').map(Number)
+  return new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' }).format(new Date(Date.UTC(y, mo - 1, 1)))
 }
+
 const formatDate = (value) => {
   if (!value) return '-'
-
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     const [year, month, day] = value.split('-').map(Number)
     const date = new Date(Date.UTC(year, month - 1, day))
-    return new Intl.DateTimeFormat('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      timeZone: 'UTC',
-    }).format(date)
+    return new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(date)
   }
-
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return '-'
-
-  return new Intl.DateTimeFormat('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(date)
+  return new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).format(date)
 }
 
 const toNumber = (value) => {
@@ -257,7 +302,6 @@ const allowanceRows = (payroll) =>
 const getAllowanceAmountByCode = (payroll, code) => {
   const targetCode = String(code || '').trim().toUpperCase()
   const targetName = String(code || '').trim().toLowerCase()
-
   return allowanceRows(payroll)
     .filter((row) => {
       const allowanceCode = String(row?.allowance_code || '').trim().toUpperCase()
@@ -280,21 +324,42 @@ const getTotalEarnings = (payroll) =>
 
 const isLockedPayroll = (payroll) =>
   ['paid', 'locked'].includes(String(payroll?.payment_status || payroll?.status || '').toLowerCase())
+
+const activeFiltersCount = computed(() => {
+  let count = 0
+  if (filters.value.company_id) count++
+  if (filters.value.department_id) count++
+  if (filters.value.employee_id) count++
+  if (filters.value.line_type && filters.value.line_type !== 'all') count++
+  if (filters.value.payment_status) count++
+  if (filters.value.payroll_cycle && filters.value.payroll_cycle !== 'regular') count++
+  return count
+})
 </script>
 
 <template>
-  <div class="space-y-4 p-4 md:p-6 min-w-0 w-full max-w-full overflow-x-hidden">
-    <div class="rounded-3xl border border-slate-200 bg-gradient-to-r from-slate-50 via-white to-blue-50 p-5 shadow-sm">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 class="title-md md:title-lg">Payroll Report List</h1>
-          <p class="mt-1 text-sm text-slate-500">Detailed earnings, deductions and payable amounts in one report view.</p>
+  <div class="min-h-screen space-y-4 p-4 md:p-6">
+
+    <!-- ── Page Header ─────────────────────────────────── -->
+    <div class="rounded-3xl border border-slate-200 bg-gradient-to-r from-slate-50 via-white to-emerald-50 p-5 shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
+            <i class="far fa-file-invoice-dollar text-xl"></i>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold text-slate-900">Payroll Report</h1>
+            <p class="mt-0.5 text-sm text-slate-500">
+              Earnings, deductions &amp; net payable for
+              <span class="font-semibold text-emerald-700">{{ formatMonth(filters.salary_month) }}</span>
+            </p>
+          </div>
         </div>
-        <div class="flex flex-wrap gap-2">
+        <div class="flex flex-wrap items-center gap-2">
           <button class="btn-3" @click="router.push({ name: 'DoctorPayrollList' })">
             <i class="far fa-user-md"></i> Doctor Payroll
           </button>
-          <button class="btn-3" @click="handleDownloadExcel" :disabled="loading || !list.length">
+          <button class="btn-3" :disabled="loading || !list.length" @click="handleDownloadExcel">
             <i class="far fa-file-excel"></i> Excel
           </button>
           <button class="btn-2" @click="goToGenerate">
@@ -304,8 +369,22 @@ const isLockedPayroll = (payroll) =>
       </div>
     </div>
 
-    <!-- Filters -->
-    <div class="rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
+    <!-- ── Filters ─────────────────────────────────────── -->
+    <div class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div class="mb-3 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-400">
+          <i class="far fa-filter text-slate-300"></i>
+          Filters
+          <span
+            v-if="activeFiltersCount"
+            class="rounded-full bg-indigo-100 px-2 py-0.5 text-indigo-600"
+          >{{ activeFiltersCount }} active</span>
+        </div>
+        <button class="btn-3 h-7 px-3 text-xs" @click="resetFilters">
+          <i class="far fa-undo text-[10px]"></i> Reset
+        </button>
+      </div>
+
       <div class="space-y-3">
         <EmployeeFilter
           :company_id="filters.company_id"
@@ -314,10 +393,10 @@ const isLockedPayroll = (payroll) =>
           :line_type="filters.line_type"
           :with-type="true"
           :with-employee="true"
-          @update:company_id="(value) => (filters.company_id = value)"
-          @update:department_id="(value) => (filters.department_id = value)"
-          @update:employee_id="(value) => (filters.employee_id = value)"
-          @update:line_type="(value) => (filters.line_type = value)"
+          @update:company_id="(v) => (filters.company_id = v)"
+          @update:department_id="(v) => (filters.department_id = v)"
+          @update:employee_id="(v) => (filters.employee_id = v)"
+          @update:line_type="(v) => (filters.line_type = v)"
           @filter-change="onEmployeeFilterChange"
         >
           <FlexibleDatePicker
@@ -332,221 +411,344 @@ const isLockedPayroll = (payroll) =>
 
         <div class="flex flex-wrap items-end gap-3">
           <div class="w-full sm:w-48">
-            <label class="block text-xs font-medium text-gray-600 mb-1">Payroll Cycle</label>
-            <select v-model="filters.payroll_cycle" @change="() => { filters.page = 1; load() }"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <label class="mb-1 block text-xs font-medium text-slate-600">Payroll Cycle</label>
+            <select
+              v-model="filters.payroll_cycle"
+              class="erp-select"
+              @change="() => { filters.page = 1; load() }"
+            >
               <option value="">All Cycles</option>
-              <option v-for="cycle in cycleOptions" :key="cycle.value" :value="cycle.value">{{ cycle.label }}</option>
+              <option v-for="c in cycleOptions" :key="c.value" :value="c.value">{{ c.label }}</option>
             </select>
           </div>
           <div class="w-full sm:w-48">
-            <label class="block text-xs font-medium text-gray-600 mb-1">Payment Status</label>
-            <select v-model="filters.payment_status" @change="() => { filters.page = 1; load() }"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <label class="mb-1 block text-xs font-medium text-slate-600">Payment Status</label>
+            <select
+              v-model="filters.payment_status"
+              class="erp-select"
+              @change="() => { filters.page = 1; load() }"
+            >
               <option value="">All Statuses</option>
-              <option v-for="status in statusOptions" :key="status" :value="status">{{ status }}</option>
+              <option v-for="s in statusOptions" :key="s" :value="s">{{ s }}</option>
             </select>
           </div>
-          <button class="btn-3 h-[42px]" @click="resetFilters">
-            <i class="far fa-undo"></i> Reset
-          </button>
+          <div class="w-full sm:w-24">
+            <label class="mb-1 block text-xs font-medium text-slate-600">Per Page</label>
+            <select
+              v-model="filters.per_page"
+              class="erp-select"
+              @change="() => { filters.page = 1; load() }"
+            >
+              <option :value="15">15</option>
+              <option :value="25">25</option>
+              <option :value="50">50</option>
+              <option :value="100">100</option>
+            </select>
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="grid gap-2.5 md:grid-cols-2 xl:grid-cols-4">
+    <!-- ── Summary Cards ───────────────────────────────── -->
+    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <div
         v-for="card in summaryCards"
         :key="card.label"
-        class="rounded-2xl border p-3 shadow-sm"
+        class="rounded-2xl border p-4 shadow-sm"
         :class="card.tone"
       >
-        <p class="text-xs font-semibold uppercase tracking-[0.18em] opacity-80">{{ card.label }}</p>
-        <p class="mt-1 text-lg font-bold">{{ card.formatter(card.value) }}</p>
-      </div>
-    </div>
-
-    <LoaderView v-if="loading" />
-
-    <div v-else-if="error"
-      class="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm flex items-center gap-2">
-      <i class="fas fa-exclamation-circle"></i> {{ error }}
-    </div>
-
-    <div v-else-if="!list.length" class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
-      <i class="fas fa-file-invoice-dollar text-4xl text-gray-300 mb-3"></i>
-      <p class="text-lg font-medium text-gray-500">No payrolls found</p>
-      <p class="text-sm text-gray-400 mt-1">Generate a payroll batch to create payroll records.</p>
-    </div>
-
-    <div
-      v-else
-      class="min-w-0 w-full max-w-full overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm"
-    >
-      <div class="border-b border-slate-100 px-4 py-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h2 class="text-base font-semibold text-slate-800">Detailed Payroll Report</h2>
-            <p class="text-sm text-slate-500">Reference-style breakdown for each employee.</p>
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-semibold uppercase tracking-wider" :class="card.labelColor">{{ card.label }}</p>
+            <p class="mt-1.5 font-bold leading-none" :class="[card.valueColor, card.isCount ? 'text-4xl' : 'text-2xl font-mono']">
+              {{ card.isCount ? card.value : formatCompactCurrency(card.value) }}
+            </p>
+            <p class="mt-2 text-xs" :class="card.subColor">{{ card.sub }}</p>
           </div>
-          <div class="flex flex-wrap items-center gap-2 text-xs">
-            <span class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 font-medium text-slate-600">
-              Month: {{ formatMonth(filters.salary_month) }}
-            </span>
-            <span class="text-slate-400">Rows: {{ pagination.total || list.length }}</span>
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-base" :class="card.iconBg">
+            <i :class="`far ${card.icon}`"></i>
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- ── Loading ─────────────────────────────────────── -->
+    <LoaderView v-if="loading" />
+
+    <!-- ── Error ───────────────────────────────────────── -->
+    <div
+      v-else-if="error"
+      class="flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+    >
+      <i class="fas fa-exclamation-circle shrink-0 text-red-400"></i>
+      {{ error }}
+    </div>
+
+    <!-- ── Empty State ─────────────────────────────────── -->
+    <div v-else-if="!list.length" class="flex flex-col items-center justify-center rounded-3xl border border-slate-200 bg-white py-16 text-center shadow-sm">
+      <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-3xl text-slate-300">
+        <i class="far fa-file-invoice-dollar"></i>
+      </div>
+      <p class="mt-4 text-base font-semibold text-slate-600">No payrolls found</p>
+      <p class="mt-1 text-sm text-slate-400">Generate a payroll batch to create payroll records.</p>
+      <button class="btn-2 mt-6" @click="goToGenerate">
+        <i class="far fa-plus"></i> Generate Payroll
+      </button>
+    </div>
+
+    <!-- ── Data Table ──────────────────────────────────── -->
+    <div v-else class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+
+      <!-- Table Header Bar -->
+      <div class="border-b border-slate-100 bg-slate-50/60 px-4 py-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-sm font-semibold text-slate-800">Detailed Payroll Breakdown</h2>
+            <p class="text-xs text-slate-500">Earnings &amp; deductions per employee · {{ formatMonth(filters.salary_month) }}</p>
+          </div>
+          <div class="flex items-center gap-2 text-xs">
+            <span class="rounded-lg border border-slate-200 bg-white px-2.5 py-1 font-medium text-slate-600">
+              <i class="far fa-users mr-1 text-slate-400"></i>
+              {{ pagination.total || list.length }} records
+            </span>
+            <span class="rounded-lg border border-slate-200 bg-white px-2.5 py-1 font-medium text-slate-600">
+              Page {{ filters.page }} / {{ pagination.last_page || 1 }}
+            </span>
+          </div>
+        </div>
+      </div>
+
       <div class="w-full overflow-x-auto overscroll-x-contain [scrollbar-width:thin]">
-      <table class="payroll-list-table min-w-[1520px] w-full table-fixed border-collapse text-[10px] leading-tight">
-        <colgroup>
-          <col class="w-[34px]" />
-          <col class="w-[112px]" />
-          <col class="w-[92px]" />
-          <col class="w-[74px]" />
-          <col class="w-[56px]" />
-          <col class="w-[56px]" />
-          <col class="w-[56px]" />
-          <col class="w-[56px]" />
-          <col class="w-[56px]" />
-          <col class="w-[56px]" />
-          <col class="w-[56px]" />
-          <col class="w-[56px]" />
-          <col class="w-[56px]" />
-          <col class="w-[56px]" />
-          <col class="w-[56px]" />
-          <col class="w-[56px]" />
-          <col class="w-[56px]" />
-          <col class="w-[56px]" />
-          <col class="w-[56px]" />
-          <col class="w-[56px]" />
-          <col class="w-[56px]" />
-          <col class="w-[56px]" />
-          <col class="w-[56px]" />
-          <col class="w-[72px]" />
-          <col class="w-[62px]" />
-          <col class="w-[56px]" />
-        </colgroup>
-        <thead class="sticky top-0 z-10 bg-slate-50 text-slate-700 text-[10px] uppercase">
-          <tr>
-            <th class="border border-slate-200 px-1 py-2 text-left" rowspan="2">#</th>
-            <th class="border border-slate-200 px-1 py-2 text-left" rowspan="2">Employee</th>
-            <th class="border border-slate-200 px-1 py-2 text-left" rowspan="2">Emp ID</th>
-            <th class="border border-slate-200 px-1 py-2 text-left" rowspan="2">Joining</th>
-            <!-- <th class="border border-slate-200 px-2 py-2 text-center" rowspan="2">Type</th> -->
-            <th class="border border-slate-200 bg-emerald-50 px-1 py-2 text-center" colspan="11">Earnings</th>
-            <th class="border border-slate-200 bg-rose-50 px-1 py-2 text-center" colspan="8">Deductions</th>
-            <th class="border border-slate-200 px-1 py-2 text-right" rowspan="2">Payable</th>
-            <th class="border border-slate-200 px-2 py-2 text-center min-w-[76px]" rowspan="2">Status</th>
-            <th class="border border-slate-200 px-2 py-2 text-center min-w-[52px]" rowspan="2">Actions</th>
-          </tr>
-          <tr>
-            <th class="border border-slate-200 px-1 py-1.5 text-right">Basic</th>
-            <th class="border border-slate-200 px-1 py-1.5 text-right">House</th>
-            <th class="border border-slate-200 px-1 py-1.5 text-right">Medical</th>
-            <th class="border border-slate-200 px-1 py-1.5 text-right">Conv.</th>
-            <th class="border border-slate-200 px-1 py-1.5 text-right">Gross</th>
-            <th class="border border-slate-200 px-1 py-1.5 text-right">Others</th>
-            <th class="border border-slate-200 px-1 py-1.5 text-right">PF</th>
-            <th class="border border-slate-200 px-1 py-1.5 text-right">Arrear</th>
-            <th class="border border-slate-200 px-1 py-1.5 text-right">Bonus</th>
-            <th class="border border-slate-200 px-1 py-1.5 text-right">OT/Add</th>
-            <th class="border border-slate-200 px-1 py-1.5 text-right">E.Total</th>
-            <th class="border border-slate-200 px-1 py-1.5 text-right">PF</th>
-            <th class="border border-slate-200 px-1 py-1.5 text-right">Meal</th>
-            <th class="border border-slate-200 px-1 py-1.5 text-right">Loan</th>
-            <th class="border border-slate-200 px-1 py-1.5 text-right">S.M</th>
-            <th class="border border-slate-200 px-1 py-1.5 text-right">Other</th>
-            <th class="border border-slate-200 px-1 py-1.5 text-right">Advance</th>
-            <th class="border border-slate-200 px-1 py-1.5 text-right">Paycut</th>
-            <th class="border border-slate-200 px-1 py-1.5 text-right">D.Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(p, i) in list" :key="p.id" class="odd:bg-white even:bg-slate-50/40 hover:bg-blue-50/40 transition-colors">
-            <td class="border border-slate-200 px-1 py-1.5 text-gray-400 text-[10px] whitespace-nowrap">{{ (filters.page - 1) * filters.per_page + i + 1 }}</td>
-            <td class="border border-slate-200 px-1 py-1.5 align-top w-[112px] max-w-[112px]">
-              <div class="truncate font-semibold text-slate-900 leading-tight" :title="p.user?.name || p.employee_name || '-'">{{ p.user?.name || p.employee_name || '-' }}</div>
-              <div class="mt-0.5 truncate text-[10px] text-slate-500" :title="p.user?.designation?.title || p.company_name || '-'">{{ p.user?.designation?.title || p.company_name || '-' }}</div>
-            </td>
-            <td class="emp-id-cell border border-slate-200 px-1 py-1.5 text-[10px] text-slate-700 whitespace-nowrap">
-              <span class="inline-flex rounded-md bg-slate-100 px-1.5 py-0.5 leading-none whitespace-nowrap">{{ p.user?.employee_id || p.employee_code || '-' }}</span>
-            </td>
-            <td class="border border-slate-200 px-1 py-1.5 text-[10px] text-slate-500 whitespace-nowrap">{{ formatDate(p.user?.joining_date || p.joining_date) }}</td>
-            <!-- <td class="border border-slate-200 px-2 py-2 text-center">
-              <span class="rounded-full bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700">{{ p.salary_type || '—' }}</span>
-            </td> -->
-            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono whitespace-nowrap">{{ formatCompactCurrency(p.basic_salary) }}</td>
-            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono whitespace-nowrap">{{ formatCompactCurrency(p.house_rent) }}</td>
-            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono whitespace-nowrap">{{ formatCompactCurrency(p.medical_allowance) }}</td>
-            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono whitespace-nowrap">{{ formatCompactCurrency(p.conveyance_allowance) }}</td>
-            <td class="border border-slate-200 px-1 py-1.5 text-right whitespace-nowrap">
-              <div class="font-mono font-semibold text-emerald-700">{{ formatCompactCurrency(p.gross_salary) }}</div>
-            </td>
-            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono whitespace-nowrap">{{ formatCompactCurrency(getDisplayOtherAllowance(p)) }}</td>
-            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-emerald-700 whitespace-nowrap">
-              {{ formatCompactCurrency(getPfAllowanceAmount(p)) }}
-            </td>
-            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-emerald-700 whitespace-nowrap">
-              {{ formatCompactCurrency(getArrearAmount(p)) }}
-            </td>
-            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-emerald-700 whitespace-nowrap">
-              {{ formatCompactCurrency(p.bonus_amount) }}
-            </td>
-            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono whitespace-nowrap">
-              {{ formatCompactCurrency(p.manual_addition) }}
-            </td>
-            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono font-semibold text-emerald-800 whitespace-nowrap">
-              {{ formatCompactCurrency(getTotalEarnings(p)) }}
-            </td>
-            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-rose-600 whitespace-nowrap">{{ formatCompactCurrency(p.pf_deduction) }}</td>
-            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-rose-600 whitespace-nowrap">{{ formatCompactCurrency(p.meal_deduction) }}</td>
-            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-rose-600 whitespace-nowrap">{{ formatCompactCurrency(p.loan_deduction) }}</td>
-            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-rose-600 whitespace-nowrap">{{ formatCompactCurrency(p.security_money_deduction) }}</td>
-            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-rose-600 whitespace-nowrap">{{ formatCompactCurrency(p.other_deduction) }}</td>
-            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-rose-600 whitespace-nowrap">{{ formatCompactCurrency(p.advance_deduction) }}</td>
-            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono text-rose-600 whitespace-nowrap">{{ formatCompactCurrency(p.paycut_deduction) }}</td>
-            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono font-semibold text-rose-700 whitespace-nowrap">{{ formatCompactCurrency(p.total_deduction) }}</td>
-            <td class="border border-slate-200 px-1 py-1.5 text-right font-mono font-bold text-blue-800 whitespace-nowrap">{{ formatCompactCurrency(p.net_salary) }}</td>
-            <td class="border border-slate-200 px-1 py-1.5 text-center whitespace-nowrap min-w-[76px]">
-              <div class="flex items-center justify-center gap-1">
-                <PayrollStatusBadge :status="p.payment_status" compact />
-                <!-- <button
-                  v-if="!isLockedPayroll(p)"
-                  @click="openPaymentModal(p)"
-                  class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-emerald-500 hover:bg-emerald-50 hover:text-emerald-700"
-                  title="Update Payment Status"
+        <table class="prl-table min-w-[1560px] w-full table-fixed border-collapse text-[10px] leading-tight">
+          <colgroup>
+            <col class="w-[32px]" />
+            <col class="w-[116px]" />
+            <col class="w-[78px]" />
+            <col class="w-[66px]" />
+            <!-- earnings ×11 -->
+            <col v-for="i in 11" :key="`e${i}`" class="w-[56px]" />
+            <!-- deductions ×8 -->
+            <col v-for="i in 8" :key="`d${i}`" class="w-[56px]" />
+            <!-- net + status + action -->
+            <col class="w-[68px]" />
+            <col class="w-[110px]" />
+            <col class="w-[44px]" />
+          </colgroup>
+
+          <thead class="sticky top-0 z-10">
+            <!-- Group Row -->
+            <tr class="text-[9px] font-bold uppercase tracking-wider">
+              <th class="border border-slate-200 bg-slate-100 px-1 py-2 text-slate-500" rowspan="2">#</th>
+              <th class="border border-slate-200 bg-slate-100 px-1.5 py-2 text-left text-slate-600" rowspan="2">Employee</th>
+              <th class="border border-slate-200 bg-slate-100 px-1 py-2 text-slate-500" rowspan="2">Emp ID</th>
+              <th class="border border-slate-200 bg-slate-100 px-1 py-2 text-slate-500" rowspan="2">Joining</th>
+              <th class="border border-emerald-300 bg-emerald-100 px-1 py-2 text-center text-emerald-700" colspan="11">
+                <i class="far fa-arrow-up mr-0.5 text-[8px]"></i> Earnings
+              </th>
+              <th class="border border-rose-300 bg-rose-100 px-1 py-2 text-center text-rose-700" colspan="8">
+                <i class="far fa-arrow-down mr-0.5 text-[8px]"></i> Deductions
+              </th>
+              <th class="border border-indigo-300 bg-indigo-100 px-1 py-2 text-center text-indigo-700" rowspan="2">
+                Net Pay
+              </th>
+              <th class="border border-slate-200 bg-slate-100 px-1 py-2 text-slate-500" rowspan="2">Status</th>
+              <th class="border border-slate-200 bg-slate-100 px-1 py-2 text-slate-500" rowspan="2">Act.</th>
+            </tr>
+
+            <!-- Sub-header Row -->
+            <tr class="text-[9px] font-semibold uppercase tracking-wider text-slate-600">
+              <!-- Earnings -->
+              <th class="border border-emerald-200 bg-emerald-50 px-1 py-1.5 text-right text-emerald-700">Basic</th>
+              <th class="border border-emerald-200 bg-emerald-50 px-1 py-1.5 text-right text-emerald-700">House</th>
+              <th class="border border-emerald-200 bg-emerald-50 px-1 py-1.5 text-right text-emerald-700">Med.</th>
+              <th class="border border-emerald-200 bg-emerald-50 px-1 py-1.5 text-right text-emerald-700">Conv.</th>
+              <th class="border border-emerald-200 bg-emerald-50 px-1 py-1.5 text-right font-bold text-emerald-800">Gross</th>
+              <th class="border border-emerald-200 bg-emerald-50 px-1 py-1.5 text-right text-emerald-700">Other</th>
+              <th class="border border-emerald-200 bg-emerald-50 px-1 py-1.5 text-right text-emerald-700">PF+</th>
+              <th class="border border-emerald-200 bg-emerald-50 px-1 py-1.5 text-right text-emerald-700">Arr.</th>
+              <th class="border border-emerald-200 bg-emerald-50 px-1 py-1.5 text-right text-emerald-700">Bonus</th>
+              <th class="border border-emerald-200 bg-emerald-50 px-1 py-1.5 text-right text-emerald-700">OT</th>
+              <th class="border border-emerald-200 bg-emerald-50 px-1 py-1.5 text-right font-bold text-emerald-900">E.Tot</th>
+              <!-- Deductions -->
+              <th class="border border-rose-200 bg-rose-50 px-1 py-1.5 text-right text-rose-700">PF−</th>
+              <th class="border border-rose-200 bg-rose-50 px-1 py-1.5 text-right text-rose-700">Meal</th>
+              <th class="border border-rose-200 bg-rose-50 px-1 py-1.5 text-right text-rose-700">Loan</th>
+              <th class="border border-rose-200 bg-rose-50 px-1 py-1.5 text-right text-rose-700">S.M.</th>
+              <th class="border border-rose-200 bg-rose-50 px-1 py-1.5 text-right text-rose-700">Other</th>
+              <th class="border border-rose-200 bg-rose-50 px-1 py-1.5 text-right text-rose-700">Adv.</th>
+              <th class="border border-rose-200 bg-rose-50 px-1 py-1.5 text-right text-rose-700">Cut</th>
+              <th class="border border-rose-200 bg-rose-50 px-1 py-1.5 text-right font-bold text-rose-900">D.Tot</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr
+              v-for="(p, i) in list"
+              :key="p.id"
+              class="group transition-colors duration-75 hover:bg-indigo-50/40"
+              :class="i % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'"
+            >
+              <!-- # -->
+              <td class="border border-slate-100 px-1 py-1.5 text-center text-slate-400">
+                {{ (filters.page - 1) * filters.per_page + i + 1 }}
+              </td>
+
+              <!-- Employee -->
+              <td class="border border-slate-100 px-1.5 py-1.5">
+                <div class="truncate font-semibold leading-tight text-slate-900" :title="p.user?.name || p.employee_name || '-'">
+                  {{ p.user?.name || p.employee_name || '-' }}
+                </div>
+                <div class="mt-0.5 truncate text-[9px] text-slate-400" :title="p.user?.designation?.title || p.company_name || '-'">
+                  {{ p.user?.designation?.title || p.company_name || '-' }}
+                </div>
+              </td>
+
+              <!-- Emp ID -->
+              <td class="border border-slate-100 px-1 py-1.5">
+                <span class="inline-flex rounded-md bg-slate-100 px-1.5 py-0.5 font-mono leading-none text-slate-700">
+                  {{ p.user?.employee_id || p.employee_code || '-' }}
+                </span>
+              </td>
+
+              <!-- Joining -->
+              <td class="border border-slate-100 px-1 py-1.5 text-[9px] text-slate-500">
+                {{ formatDate(p.user?.joining_date || p.joining_date) }}
+              </td>
+
+              <!-- ── Earnings ── -->
+              <td class="border border-emerald-100 bg-emerald-50/20 px-1 py-1.5 text-right font-mono text-slate-700">{{ formatCompactCurrency(p.basic_salary) }}</td>
+              <td class="border border-emerald-100 bg-emerald-50/20 px-1 py-1.5 text-right font-mono text-slate-700">{{ formatCompactCurrency(p.house_rent) }}</td>
+              <td class="border border-emerald-100 bg-emerald-50/20 px-1 py-1.5 text-right font-mono text-slate-700">{{ formatCompactCurrency(p.medical_allowance) }}</td>
+              <td class="border border-emerald-100 bg-emerald-50/20 px-1 py-1.5 text-right font-mono text-slate-700">{{ formatCompactCurrency(p.conveyance_allowance) }}</td>
+              <td class="border border-emerald-200 bg-emerald-50/40 px-1 py-1.5 text-right font-mono font-semibold text-emerald-800">{{ formatCompactCurrency(p.gross_salary) }}</td>
+              <td class="border border-emerald-100 bg-emerald-50/20 px-1 py-1.5 text-right font-mono text-slate-700">{{ formatCompactCurrency(getDisplayOtherAllowance(p)) }}</td>
+              <td class="border border-emerald-100 bg-emerald-50/20 px-1 py-1.5 text-right font-mono text-emerald-700">{{ formatCompactCurrency(getPfAllowanceAmount(p)) }}</td>
+              <td class="border border-emerald-100 bg-emerald-50/20 px-1 py-1.5 text-right font-mono text-emerald-700">{{ formatCompactCurrency(getArrearAmount(p)) }}</td>
+              <td class="border border-emerald-100 bg-emerald-50/20 px-1 py-1.5 text-right font-mono text-emerald-700">{{ formatCompactCurrency(p.bonus_amount) }}</td>
+              <td class="border border-emerald-100 bg-emerald-50/20 px-1 py-1.5 text-right font-mono text-slate-700">{{ formatCompactCurrency(p.manual_addition) }}</td>
+              <td class="border border-emerald-300 bg-emerald-100/60 px-1 py-1.5 text-right font-mono font-bold text-emerald-900">{{ formatCompactCurrency(getTotalEarnings(p)) }}</td>
+
+              <!-- ── Deductions ── -->
+              <td class="border border-rose-100 bg-rose-50/20 px-1 py-1.5 text-right font-mono text-rose-600">{{ formatCompactCurrency(p.pf_deduction) }}</td>
+              <td class="border border-rose-100 bg-rose-50/20 px-1 py-1.5 text-right font-mono text-rose-600">{{ formatCompactCurrency(p.meal_deduction) }}</td>
+              <td class="border border-rose-100 bg-rose-50/20 px-1 py-1.5 text-right font-mono text-rose-600">{{ formatCompactCurrency(p.loan_deduction) }}</td>
+              <td class="border border-rose-100 bg-rose-50/20 px-1 py-1.5 text-right font-mono text-rose-600">{{ formatCompactCurrency(p.security_money_deduction) }}</td>
+              <td class="border border-rose-100 bg-rose-50/20 px-1 py-1.5 text-right font-mono text-rose-600">{{ formatCompactCurrency(p.other_deduction) }}</td>
+              <td class="border border-rose-100 bg-rose-50/20 px-1 py-1.5 text-right font-mono text-rose-600">{{ formatCompactCurrency(p.advance_deduction) }}</td>
+              <td class="border border-rose-100 bg-rose-50/20 px-1 py-1.5 text-right font-mono text-rose-600">{{ formatCompactCurrency(p.paycut_deduction) }}</td>
+              <td class="border border-rose-300 bg-rose-100/60 px-1 py-1.5 text-right font-mono font-bold text-rose-800">{{ formatCompactCurrency(p.total_deduction) }}</td>
+
+              <!-- Net Pay -->
+              <td class="border border-indigo-200 bg-indigo-50/40 px-1 py-1.5 text-right font-mono font-bold text-indigo-800">
+                {{ formatCompactCurrency(p.net_salary) }}
+              </td>
+
+              <!-- Status -->
+              <td class="border border-slate-100 px-1.5 py-1.5 text-center">
+                <div class="flex flex-col items-center gap-1">
+                  <PayrollStatusBadge :status="p.payment_status" />
+                  <button
+                    v-if="!isLockedPayroll(p)"
+                    class="inline-flex h-4 items-center gap-0.5 rounded px-1.5 text-[9px] font-medium text-indigo-400 transition hover:bg-indigo-50 hover:text-indigo-600"
+                    title="Change payment status"
+                    @click="openPaymentModal(p)"
+                  >
+                    <i class="far fa-pencil text-[8px]"></i> Change
+                  </button>
+                  <span v-else class="text-[9px] text-slate-300">
+                    <i class="fas fa-lock text-[8px]"></i> Locked
+                  </span>
+                </div>
+              </td>
+
+              <!-- Actions -->
+              <td class="border border-slate-100 px-1 py-1.5 text-center">
+                <button
+                  class="inline-flex h-6 w-6 items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-500 transition hover:border-indigo-300 hover:bg-indigo-100 hover:text-indigo-700"
+                  title="View details"
+                  @click="router.push({ name: 'PayrollShow', params: { id: p.id } })"
                 >
-                  <i class="far fa-credit-card text-xs"></i>
+                  <i class="far fa-eye text-[10px]"></i>
                 </button>
-                <span
-                  v-else
-                  class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-slate-500"
-                  title="Paid/locked payroll cannot be modified. Create an adjustment instead."
-                >
-                  <i class="fas fa-lock text-xs"></i>
-                </span> -->
-              </div>
-            </td>
-            <td class="border border-slate-200 px-2 py-1.5 text-center whitespace-nowrap min-w-[52px]">
-              <div class="flex items-center justify-center gap-0.5">
-                <button @click="router.push({ name: 'PayrollShow', params: { id: p.id } })"
-                  class="p-0.5 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 rounded-md" title="View">
-                  <i class="far fa-eye text-xs"></i>
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+              </td>
+            </tr>
+          </tbody>
+
+          <!-- ── Totals Footer ── -->
+          <tfoot v-if="list.length">
+            <tr class="bg-slate-100 text-[10px] font-bold">
+              <td class="border border-slate-300 px-1 py-2 text-center text-slate-500" colspan="4">
+                Totals ({{ list.length }})
+              </td>
+              <!-- Earnings -->
+              <td class="border border-emerald-200 bg-emerald-100/80 px-1 py-2 text-right font-mono text-emerald-800">{{ formatCompactCurrency(columnTotals.basic_salary) }}</td>
+              <td class="border border-emerald-200 bg-emerald-100/80 px-1 py-2 text-right font-mono text-emerald-800">{{ formatCompactCurrency(columnTotals.house_rent) }}</td>
+              <td class="border border-emerald-200 bg-emerald-100/80 px-1 py-2 text-right font-mono text-emerald-800">{{ formatCompactCurrency(columnTotals.medical_allowance) }}</td>
+              <td class="border border-emerald-200 bg-emerald-100/80 px-1 py-2 text-right font-mono text-emerald-800">{{ formatCompactCurrency(columnTotals.conveyance_allowance) }}</td>
+              <td class="border border-emerald-300 bg-emerald-200/80 px-1 py-2 text-right font-mono text-emerald-900">{{ formatCompactCurrency(columnTotals.gross_salary) }}</td>
+              <td class="border border-emerald-200 bg-emerald-100/80 px-1 py-2 text-right font-mono text-emerald-800">{{ formatCompactCurrency(columnTotals.other_allowance) }}</td>
+              <td class="border border-emerald-200 bg-emerald-100/80 px-1 py-2 text-right font-mono text-emerald-800">{{ formatCompactCurrency(columnTotals.pf_allowance) }}</td>
+              <td class="border border-emerald-200 bg-emerald-100/80 px-1 py-2 text-right font-mono text-emerald-800">{{ formatCompactCurrency(columnTotals.arrear) }}</td>
+              <td class="border border-emerald-200 bg-emerald-100/80 px-1 py-2 text-right font-mono text-emerald-800">{{ formatCompactCurrency(columnTotals.bonus_amount) }}</td>
+              <td class="border border-emerald-200 bg-emerald-100/80 px-1 py-2 text-right font-mono text-emerald-800">{{ formatCompactCurrency(columnTotals.manual_addition) }}</td>
+              <td class="border border-emerald-300 bg-emerald-200/80 px-1 py-2 text-right font-mono text-emerald-900">{{ formatCompactCurrency(columnTotals.total_earnings) }}</td>
+              <!-- Deductions -->
+              <td class="border border-rose-200 bg-rose-100/80 px-1 py-2 text-right font-mono text-rose-800">{{ formatCompactCurrency(columnTotals.pf_deduction) }}</td>
+              <td class="border border-rose-200 bg-rose-100/80 px-1 py-2 text-right font-mono text-rose-800">{{ formatCompactCurrency(columnTotals.meal_deduction) }}</td>
+              <td class="border border-rose-200 bg-rose-100/80 px-1 py-2 text-right font-mono text-rose-800">{{ formatCompactCurrency(columnTotals.loan_deduction) }}</td>
+              <td class="border border-rose-200 bg-rose-100/80 px-1 py-2 text-right font-mono text-rose-800">{{ formatCompactCurrency(columnTotals.security_money_deduction) }}</td>
+              <td class="border border-rose-200 bg-rose-100/80 px-1 py-2 text-right font-mono text-rose-800">{{ formatCompactCurrency(columnTotals.other_deduction) }}</td>
+              <td class="border border-rose-200 bg-rose-100/80 px-1 py-2 text-right font-mono text-rose-800">{{ formatCompactCurrency(columnTotals.advance_deduction) }}</td>
+              <td class="border border-rose-200 bg-rose-100/80 px-1 py-2 text-right font-mono text-rose-800">{{ formatCompactCurrency(columnTotals.paycut_deduction) }}</td>
+              <td class="border border-rose-300 bg-rose-200/80 px-1 py-2 text-right font-mono text-rose-900">{{ formatCompactCurrency(columnTotals.total_deduction) }}</td>
+              <!-- Net -->
+              <td class="border border-indigo-300 bg-indigo-200/80 px-1 py-2 text-right font-mono text-indigo-900">{{ formatCompactCurrency(columnTotals.net_salary) }}</td>
+              <td class="border border-slate-300 bg-slate-100 px-1 py-2" colspan="2"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <!-- Table Footer Bar -->
+      <div class="border-t border-slate-100 bg-slate-50/50 px-4 py-2.5">
+        <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+          <span>
+            Showing
+            <strong class="text-slate-700">{{ list.length }}</strong>
+            of
+            <strong class="text-slate-700">{{ pagination.total || list.length }}</strong>
+            records for
+            <strong class="text-slate-700">{{ formatMonth(filters.salary_month) }}</strong>
+          </span>
+          <div class="flex items-center gap-3">
+            <span class="flex items-center gap-1">
+              <span class="inline-block h-2.5 w-2.5 rounded-sm bg-emerald-200 ring-1 ring-emerald-300"></span>
+              Earnings
+            </span>
+            <span class="flex items-center gap-1">
+              <span class="inline-block h-2.5 w-2.5 rounded-sm bg-rose-200 ring-1 ring-rose-300"></span>
+              Deductions
+            </span>
+            <span class="flex items-center gap-1">
+              <span class="inline-block h-2.5 w-2.5 rounded-sm bg-indigo-200 ring-1 ring-indigo-300"></span>
+              Net Pay
+            </span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <PaginationBar v-if="pagination.total > 0" :page="pagination.current_page || filters.page"
-      :per-page="pagination.per_page || filters.per_page" :total="pagination.total || list.length"
+    <!-- ── Pagination ───────────────────────────────────── -->
+    <PaginationBar
+      v-if="pagination.total > 0"
+      :page="pagination.current_page || filters.page"
+      :per-page="pagination.per_page || filters.per_page"
+      :total="pagination.total || list.length"
       :last-page="pagination.last_page || 1"
-      @page-change="(p) => { filters.page = p; load() }" />
+      @page-change="(p) => { filters.page = p; load() }"
+    />
 
+    <!-- ── Payment Status Modal ─────────────────────────── -->
     <PaymentStatusModal
       :show="showPaymentModal"
       :payroll-id="selectedPayroll?.id"
@@ -559,32 +761,33 @@ const isLockedPayroll = (payroll) =>
 </template>
 
 <style scoped>
-.payroll-list-table {
+.prl-table {
   table-layout: fixed;
 }
 
-.payroll-list-table th,
-.payroll-list-table td {
-  padding: 0.22rem 0.28rem !important;
-  line-height: 1 !important;
-}
-
-.payroll-list-table thead th,
-.payroll-list-table tbody td {
+.prl-table th,
+.prl-table td {
+  padding: 0.2rem 0.25rem !important;
+  line-height: 1.1 !important;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.payroll-list-table tbody td {
   white-space: nowrap;
 }
 
-.payroll-list-table td.emp-id-cell {
-  overflow: visible !important;
-  text-overflow: clip !important;
+.erp-select {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+  background-color: #fff;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: #334155;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
-
-.payroll-list-table .truncate {
-  min-width: 0;
+.erp-select:focus {
+  outline: none;
+  border-color: #818cf8;
+  box-shadow: 0 0 0 3px rgb(99 102 241 / 0.15);
 }
 </style>
