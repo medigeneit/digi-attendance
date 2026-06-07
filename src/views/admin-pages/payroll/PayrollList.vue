@@ -75,7 +75,7 @@ const handleSalaryMonthChange = () => {
 const summaryCards = computed(() => {
   const data = rows.value || []
   const totalGross = data.reduce((sum, row) => sum + Number(row.gross_salary || 0), 0)
-  const totalDeduction = data.reduce((sum, row) => sum + Number(row.total_deduction || 0), 0)
+  const totalDeduction = data.reduce((sum, row) => sum + getTotalDeductions(row), 0)
   const totalNet = data.reduce((sum, row) => sum + Number(row.net_salary || 0), 0)
   const paidCount = data.filter((r) => ['paid', 'locked'].includes(String(r.payment_status || '').toLowerCase())).length
 
@@ -150,9 +150,9 @@ const buildColumnTotals = (data) => {
     loan_deduction: sum('loan_deduction'),
     security_money_deduction: sum('security_money_deduction'),
     other_deduction: sum('other_deduction'),
-    advance_deduction: sum('advance_deduction'),
+    advance_deduction: data.reduce((s, r) => s + getTotalAdvanceAmount(r), 0),
     paycut_deduction: sum('paycut_deduction'),
-    total_deduction: sum('total_deduction'),
+    total_deduction: data.reduce((s, r) => s + getTotalDeductions(r), 0),
     net_salary: sum('net_salary'),
   }
 }
@@ -367,6 +367,9 @@ const getAllowanceAmountByCode = (payroll, code) => {
     .reduce((sum, row) => sum + toNumber(row?.amount), 0)
 }
 
+const getTotalAdvanceAmount = (payroll) =>
+  toNumber(payroll?.advance_deduction) + toNumber(payroll?.advance_adjusted_amount)
+
 const getArrearAmount = (payroll) => getAllowanceAmountByCode(payroll, 'ARREAR')
 const getPfAllowanceAmount = (payroll) => getAllowanceAmountByCode(payroll, 'PF')
 const getDisplayOtherAllowance = (payroll) =>
@@ -377,6 +380,15 @@ const getTotalEarnings = (payroll) =>
   toNumber(payroll?.other_allowance_total) +
   toNumber(payroll?.manual_addition) +
   toNumber(payroll?.bonus_amount)
+
+const getTotalDeductions = (payroll) =>
+  toNumber(payroll?.pf_deduction) +
+  toNumber(payroll?.meal_deduction) +
+  toNumber(payroll?.loan_deduction) +
+  toNumber(payroll?.security_money_deduction) +
+  toNumber(payroll?.other_deduction) +
+  getTotalAdvanceAmount(payroll) +
+  toNumber(payroll?.paycut_deduction)
 
 const isLockedPayroll = (payroll) =>
   ['paid', 'locked'].includes(String(payroll?.payment_status || payroll?.status || '').toLowerCase())
@@ -591,7 +603,7 @@ const activeFiltersCount = computed(() => {
               <th class="border border-rose-200 bg-rose-50 px-1 py-1.5 text-right text-rose-700">Loan</th>
               <th class="border border-rose-200 bg-rose-50 px-1 py-1.5 text-right text-rose-700">S.M.</th>
               <th class="border border-rose-200 bg-rose-50 px-1 py-1.5 text-right text-rose-700">Other</th>
-              <th class="border border-rose-200 bg-rose-50 px-1 py-1.5 text-right text-rose-700">Adv.</th>
+              <th class="border border-rose-200 bg-rose-50 px-1 py-1.5 text-right text-rose-700" title="Advance deduction + advance adjusted (combined)">Adv.</th>
               <th class="border border-rose-200 bg-rose-50 px-1 py-1.5 text-right text-rose-700">Cut</th>
               <th class="border border-rose-200 bg-rose-50 px-1 py-1.5 text-right font-bold text-rose-900">D.Tot</th>
             </tr>
@@ -656,9 +668,9 @@ const activeFiltersCount = computed(() => {
               <td class="border border-rose-100 bg-rose-50/20 px-1 py-1.5 text-right font-mono text-rose-600">{{ formatCompactCurrency(p.loan_deduction) }}</td>
               <td class="border border-rose-100 bg-rose-50/20 px-1 py-1.5 text-right font-mono text-rose-600">{{ formatCompactCurrency(p.security_money_deduction) }}</td>
               <td class="border border-rose-100 bg-rose-50/20 px-1 py-1.5 text-right font-mono text-rose-600">{{ formatCompactCurrency(p.other_deduction) }}</td>
-              <td class="border border-rose-100 bg-rose-50/20 px-1 py-1.5 text-right font-mono text-rose-600">{{ formatCompactCurrency(p.advance_deduction) }}</td>
+              <td class="border border-rose-100 bg-rose-50/20 px-1 py-1.5 text-right font-mono text-rose-600">{{ formatCompactCurrency(getTotalAdvanceAmount(p)) }}</td>
               <td class="border border-rose-100 bg-rose-50/20 px-1 py-1.5 text-right font-mono text-rose-600">{{ formatCompactCurrency(p.paycut_deduction) }}</td>
-              <td class="border border-rose-300 bg-rose-100/60 px-1 py-1.5 text-right font-mono font-bold text-rose-800">{{ formatCompactCurrency(p.total_deduction) }}</td>
+              <td class="border border-rose-300 bg-rose-100/60 px-1 py-1.5 text-right font-mono font-bold text-rose-800">{{ formatCompactCurrency(getTotalDeductions(p)) }}</td>
 
               <!-- Net Pay -->
               <td class="border border-indigo-200 bg-indigo-50/40 px-1 py-1.5 text-right font-mono font-bold text-indigo-800">
