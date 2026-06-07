@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { storeToRefs } from 'pinia'
 import { usePayrollManagementStore } from '@/stores/payrollManagement'
+import { useUnitStore } from '@/stores/unit'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import PaginationBar from '@/components/PaginationBar.vue'
@@ -15,14 +16,17 @@ const router = useRouter()
 const route = useRoute()
 const toast = useToast()
 const payrollStore = usePayrollManagementStore()
+const unitStore = useUnitStore()
 
 const { list, loading, error, pagination } = storeToRefs(payrollStore)
+const { units } = storeToRefs(unitStore)
 
 const getCurrentMonth = () => new Date().toISOString().slice(0, 7)
 
 const filters = ref({
   company_id: '',
   department_id: '',
+  unit_id: '',
   employee_id: '',
   line_type: 'all',
   salary_month: getCurrentMonth(),
@@ -195,6 +199,7 @@ const resetFilters = () => {
   filters.value = {
     company_id: '',
     department_id: '',
+    unit_id: '',
     employee_id: '',
     line_type: 'all',
     salary_month: getCurrentMonth(),
@@ -212,6 +217,7 @@ const applyRouteQueryToFilters = () => {
   filters.value = {
     company_id: String(q.company_id || ''),
     department_id: String(q.department_id || ''),
+    unit_id: String(q.unit_id || ''),
     employee_id: String(q.employee_id || q.user_id || ''),
     line_type: String(q.line_type || 'all'),
     salary_month: String(q.salary_month || getCurrentMonth()),
@@ -242,7 +248,7 @@ async function handleDownloadExcel() {
 
 onMounted(async () => {
   applyRouteQueryToFilters()
-  await load()
+  await Promise.all([unitStore.fetchUnits(), load()])
 })
 
 const openPaymentModal = (p) => {
@@ -329,6 +335,7 @@ const activeFiltersCount = computed(() => {
   let count = 0
   if (filters.value.company_id) count++
   if (filters.value.department_id) count++
+  if (filters.value.unit_id) count++
   if (filters.value.employee_id) count++
   if (filters.value.line_type && filters.value.line_type !== 'all') count++
   if (filters.value.payment_status) count++
@@ -393,6 +400,10 @@ const activeFiltersCount = computed(() => {
       </EmployeeFilter>
 
       <div class="mt-2 flex flex-wrap items-center gap-2">
+        <select v-model="filters.unit_id" class="erp-select-sm" @change="() => { filters.page = 1; load() }">
+          <option value="">All Units</option>
+          <option v-for="u in units" :key="u.id" :value="String(u.id)">{{ u.short_name || u.name }}</option>
+        </select>
         <select v-model="filters.payroll_cycle" class="erp-select-sm" @change="() => { filters.page = 1; load() }">
           <option value="">All Cycles</option>
           <option v-for="c in cycleOptions" :key="c.value" :value="c.value">{{ c.label }}</option>
