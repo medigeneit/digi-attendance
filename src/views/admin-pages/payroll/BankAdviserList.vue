@@ -25,6 +25,7 @@ const currentMonth    = () => new Date().toISOString().slice(0, 7)
 const salaryMonth     = ref(currentMonth())
 const filterBankId    = ref('')
 const filterUnitId    = ref('')
+const filterBranchName = ref('')
 const payrollCycle    = ref('regular')
 const sortBy          = ref('department')
 const sortDirection   = ref('asc')
@@ -37,6 +38,7 @@ const sortOptions = [
   { value: 'department', label: 'Department' },
   { value: 'designation_grade', label: 'Designation Grade' },
   { value: 'joining_date', label: 'Joining Date' },
+  { value: 'bank_branch', label: 'Bank Branch' },
 ]
 const sortDirectionOptions = [
   { value: 'asc', label: 'ASC' },
@@ -79,6 +81,10 @@ const selectedBank = computed(() =>
 const selectedUnit = computed(() =>
   filterUnitId.value ? units.value.find(u => String(u.id) === filterUnitId.value) ?? null : null
 )
+const branchOptions = computed(() =>
+  [...new Set(bankAccounts.value.map(b => b.branch_name).filter(Boolean))].sort()
+)
+const selectedBranch = computed(() => filterBranchName.value || null)
 const selectedPayrollCycle = computed(() =>
   payrollCycleOptions.find(option => option.value === payrollCycle.value) || payrollCycleOptions[0]
 )
@@ -103,6 +109,7 @@ function applyQueryFilters() {
   salaryMonth.value    = queryValue('salary_month', currentMonth())
   filterBankId.value   = queryValue('bank_account_id', '')
   filterUnitId.value   = queryValue('unit_id', '')
+  filterBranchName.value = queryValue('branch_name', '')
   filterLineType.value = lineTypeOptions.some(o => o.value === queryLineType) ? queryLineType : 'executive'
   payrollCycle.value   = payrollCycleOptions.some(option => option.value === queryCycle) ? queryCycle : 'regular'
   sortBy.value         = sortOptions.some(option => option.value === queryValue('sort_by')) ? queryValue('sort_by') : 'department'
@@ -118,12 +125,15 @@ function buildRouteQuery() {
     line_type:      filterLineType.value || 'executive',
     ...(filterBankId.value ? { bank_account_id: filterBankId.value } : {}),
     ...(filterUnitId.value ? { unit_id: filterUnitId.value } : {}),
+    ...(filterBranchName.value ? { branch_name: filterBranchName.value } : {}),
   }
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const toArray  = (d) => Array.isArray(d) ? d : Array.isArray(d?.data) ? d.data : []
-const getUnit  = (r) => r.unit_name || r.unit?.name || r.department_name || ''
+const getUnit   = (r) => r.unit_name || r.unit?.name || r.department_name || ''
+const getBranch = (r) => r.bank_account?.branch_name || ''
+const displayBranchName = (branch) => String(branch || '').trim().replace(/\s+Branch$/i, '')
 const fmtMoney = (v) => {
   const n = Number(v)
   return Number.isFinite(n)
@@ -148,6 +158,7 @@ const EXPORT_COLS = [
   { key: 'employee_name',   label: 'Name',         locked: true  },
   { key: 'employee_code',   label: 'Employee ID',  locked: false },
   { key: 'payable_account', label: 'Bank Name',    locked: false },
+  { key: 'branch',          label: 'Branch',       locked: false },
   { key: 'unit',            label: 'Unit',         locked: false },
   { key: 'account_name',    label: 'A/C Name',     locked: false },
   { key: 'account_number',  label: 'A/C Number',   locked: false },
@@ -167,6 +178,7 @@ function exportCellValue(col, row, idx) {
     case 'employee_name':   return row.employee_name   || '—'
     case 'employee_code':   return row.employee_code   || '—'
     case 'payable_account': return row.payable_account || '—'
+    case 'branch':          return getBranch(row)      || '—'
     case 'unit':            return getUnit(row)        || '—'
     case 'account_name':    return row.account_name    || '—'
     case 'account_number':  return row.account_number  || '—'
@@ -182,6 +194,8 @@ const letterRows = computed(() =>
     employeeId: r.employee_code  || '—',
     accountNo:  r.account_number || '—',
     amount:     r.payable_amount ?? '',
+    unit:       getUnit(r) || '—',
+    branch:     getBranch(r) || '—',
   }))
 )
 
@@ -208,6 +222,7 @@ function buildParams() {
   }
   if (filterBankId.value) p.bank_account_id = filterBankId.value
   if (filterUnitId.value) p.unit_id         = filterUnitId.value
+  if (filterBranchName.value) p.branch_name = filterBranchName.value
   return p
 }
 
@@ -235,6 +250,7 @@ function filterLines() {
     `Sort         : ${selectedSort.value.label} (${selectedSortDirection.value.label})`,
   ]
   if (selectedBank.value) lines.push(`Bank  : ${selectedBank.value.bank_name}`)
+  if (selectedBranch.value) lines.push(`Branch: ${displayBranchName(selectedBranch.value)}`)
   if (selectedUnit.value) lines.push(`Unit  : ${selectedUnit.value.short_name || selectedUnit.value.name}`)
   return lines
 }
@@ -325,6 +341,7 @@ function downloadExcel() {
 function clearFilters() {
   filterBankId.value   = ''
   filterUnitId.value   = ''
+  filterBranchName.value = ''
   filterLineType.value = 'executive'
   payrollCycle.value   = 'regular'
   sortBy.value         = 'department'
@@ -456,6 +473,24 @@ onMounted(async () => {
           </div>
         </div>
 
+        <!-- Bank Branch -->
+        <div class="min-w-[170px] flex-1 max-w-xs">
+          <label class="mb-0.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            Bank Branch
+          </label>
+          <div class="relative">
+            <select
+              v-model="filterBranchName"
+              class="h-9 w-full appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-7 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              :class="filterBranchName ? 'border-amber-300 bg-amber-50/30 font-semibold text-amber-800' : ''"
+            >
+              <option value="">All Branches</option>
+              <option v-for="b in branchOptions" :key="b" :value="b">{{ displayBranchName(b) }}</option>
+            </select>
+            <i class="fas fa-chevron-down pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[8px] text-slate-400"></i>
+          </div>
+        </div>
+
         <!-- Unit -->
         <div class="min-w-[160px] flex-1 max-w-xs">
           <label class="mb-0.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">
@@ -541,7 +576,7 @@ onMounted(async () => {
 
         <!-- Clear (only when filters are active) -->
         <button
-          v-if="filterBankId || filterUnitId || filterLineType !== 'executive' || payrollCycle !== 'regular' || sortBy !== 'department' || sortDirection !== 'asc'"
+          v-if="filterBankId || filterUnitId || filterBranchName || filterLineType !== 'executive' || payrollCycle !== 'regular' || sortBy !== 'department' || sortDirection !== 'asc'"
           class="inline-flex h-9 items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-500 hover:bg-slate-50"
           @click="clearFilters"
         >
@@ -688,6 +723,13 @@ onMounted(async () => {
             {{ selectedBank.bank_name }}
           </span>
           <span
+            v-if="selectedBranch"
+            class="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-700"
+          >
+            <i class="far fa-map-marker-alt text-[9px]"></i>
+            {{ displayBranchName(selectedBranch) }}
+          </span>
+          <span
             v-if="selectedUnit"
             class="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700"
           >
@@ -705,6 +747,7 @@ onMounted(async () => {
                 <th class="px-4 py-2.5 text-left">Employee</th>
                 <th class="px-3 py-2.5 text-left">ID</th>
                 <th class="px-3 py-2.5 text-left">Bank Name</th>
+                <th class="px-3 py-2.5 text-left">Branch</th>
                 <th v-if="hasUnits" class="px-3 py-2.5 text-left">Unit</th>
                 <th class="px-3 py-2.5 text-left">A/C Number</th>
                 <th class="px-3 py-2.5 text-right">Amount (BDT)</th>
@@ -731,6 +774,7 @@ onMounted(async () => {
                     {{ p.payable_account || '—' }}
                   </span>
                 </td>
+                <td class="px-3 py-2 text-slate-600">{{ getBranch(p) || '—' }}</td>
                 <td v-if="hasUnits" class="px-3 py-2 text-slate-600">{{ getUnit(p) || '—' }}</td>
                 <td class="px-3 py-2 font-mono text-slate-600">{{ p.account_number || '—' }}</td>
                 <td class="px-3 py-2 text-right font-mono font-semibold text-slate-800">{{ fmtMoney(p.payable_amount) }}</td>
@@ -748,7 +792,7 @@ onMounted(async () => {
             </tbody>
             <tfoot>
               <tr class="border-t-2 border-slate-200 bg-slate-50">
-                <td :colspan="hasUnits ? 6 : 5" class="px-4 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-slate-500">
+                <td :colspan="hasUnits ? 7 : 6" class="px-4 py-2.5 text-right text-xs font-bold uppercase tracking-wider text-slate-500">
                   Total
                 </td>
                 <td class="px-3 py-2.5 text-right font-mono text-sm font-extrabold text-emerald-700">

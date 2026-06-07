@@ -21,6 +21,7 @@ const showPaymentModal = ref(false)
 const activeTab = ref('breakdown')
 const audit = ref(null)
 const auditLoading = ref(false)
+const netPaymentUpdating = ref(false)
 
 onMounted(() => payrollStore.fetchItem(props.id))
 
@@ -50,6 +51,26 @@ const handlePaymentSubmit = async ({ id, payload }) => {
     showPaymentModal.value = false
   } catch (e) {
     toast.error(e.message || 'Update failed.')
+  }
+}
+
+const handleNetPaymentRecalculate = async () => {
+  const recalc = netPaymentRecalculation.value
+  if (!recalc?.can_update || netPaymentUpdating.value) return
+
+  const confirmed = window.confirm(
+    `Update stored net payment from ${formatCurrency(recalc.current_net_salary)} to ${formatCurrency(recalc.recalculated_net_salary)}?`,
+  )
+  if (!confirmed) return
+
+  netPaymentUpdating.value = true
+  try {
+    await payrollStore.recalculateNetPayment(props.id)
+    toast.success('Net payment updated.')
+  } catch (e) {
+    toast.error(e.message || 'Failed to update net payment.')
+  } finally {
+    netPaymentUpdating.value = false
   }
 }
 
@@ -333,6 +354,10 @@ const totalDeductionAmount = computed(() => toNum(deductionsData.value.total) ||
 const totalEarningsDisplay = computed(() => totalEarnings.value)
 const totalDeductionsDisplay = computed(() => totalDeductionAmount.value)
 const netSalaryAmount = computed(() => toNum(item.value?.net_payment ?? item.value?.net_salary))
+const netPaymentRecalculation = computed(() => item.value?.net_payment_recalculation || null)
+const canRecalculateNetPayment = computed(() => Boolean(
+  netPaymentRecalculation.value?.can_update && netPaymentRecalculation.value?.has_difference,
+))
 const payrollCycle = computed(() => item.value?.payroll_cycle || item.value?.settlement_mode || item.value?.payrollBatch?.payroll_cycle || item.value?.payroll_batch?.payroll_cycle || 'regular')
 const payrollCycleLabel = computed(() => item.value?.payroll_cycle_label || cycleLabels[payrollCycle.value] || formatKeyLabel(payrollCycle.value))
 const isAdvanceCycle = computed(() => ['half_salary_advance', 'half_month', 'advance'].includes(String(payrollCycle.value || '').toLowerCase()))
@@ -572,18 +597,47 @@ const formatRowAmount = (row) => {
 
       <!-- Payment Info -->
       <div v-if="activeTab === 'breakdown'" class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-        <div class="flex items-center justify-between mb-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
           <h3 class="font-bold text-blue-800 flex items-center gap-2">
             <i class="far fa-credit-card text-blue-500"></i> Payment Info
           </h3>
-          <button
-            class="btn-3 text-xs"
-            :disabled="isLockedPayroll"
-            :title="isLockedPayroll ? 'Paid/locked payroll cannot be modified. Create an adjustment instead.' : 'Update Payment Status'"
-            @click="showPaymentModal = true"
-          >
-            <i class="far" :class="isLockedPayroll ? 'fa-lock' : 'fa-edit'"></i> Update Status
-          </button>
+          <div class="flex flex-wrap items-center justify-end gap-2">
+            <button
+              v-if="canRecalculateNetPayment"
+              class="btn-2 text-xs"
+              :disabled="netPaymentUpdating"
+              title="Update stored net payment for reports, bank advice, Excel and PDF"
+              @click="handleNetPaymentRecalculate"
+            >
+              <i class="far" :class="netPaymentUpdating ? 'fa-spinner fa-spin' : 'fa-calculator'"></i>
+              {{ netPaymentUpdating ? 'Updating...' : 'Update Net Payment' }}
+            </button>
+            <button
+              class="btn-3 text-xs"
+              :disabled="isLockedPayroll"
+              :title="isLockedPayroll ? 'Paid/locked payroll cannot be modified. Create an adjustment instead.' : 'Update Payment Status'"
+              @click="showPaymentModal = true"
+            >
+              <i class="far" :class="isLockedPayroll ? 'fa-lock' : 'fa-edit'"></i> Update Status
+            </button>
+          </div>
+        </div>
+        <div
+          v-if="netPaymentRecalculation?.has_difference"
+          class="mb-3 grid gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 md:grid-cols-3"
+        >
+          <div>
+            <span class="block text-amber-700">Stored Net</span>
+            <strong class="font-mono">{{ formatCurrency(netPaymentRecalculation.current_net_salary) }}</strong>
+          </div>
+          <div>
+            <span class="block text-amber-700">Corrected Net</span>
+            <strong class="font-mono">{{ formatCurrency(netPaymentRecalculation.recalculated_net_salary) }}</strong>
+          </div>
+          <div>
+            <span class="block text-amber-700">Difference</span>
+            <strong class="font-mono">{{ formatCurrency(netPaymentRecalculation.difference) }}</strong>
+          </div>
         </div>
         <div class="grid grid-cols-2 md:grid-cols-6 gap-2 text-sm">
           <div class="rounded-lg bg-slate-50 border border-slate-200 p-2">

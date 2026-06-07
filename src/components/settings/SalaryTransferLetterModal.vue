@@ -2,6 +2,8 @@
 import { useCompanyBankAccountStore } from '@/stores/companyBankAccount'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import html2canvas from 'html2canvas'
+import jsPDF from 'jspdf'
 
 const props = defineProps({
   show:         { type: Boolean, default: false },
@@ -61,6 +63,13 @@ const selectedBankAcc = ref(null)
 const activeBankAcc = computed(() => props.bankAccount || selectedBankAcc.value)
 const acName        = computed(() => activeBankAcc.value?.account_name   || '—')
 const acNumber      = computed(() => activeBankAcc.value?.account_number || '—')
+const acBankName    = computed(() => activeBankAcc.value?.bank_name   || '')
+const acBranch      = computed(() => activeBankAcc.value?.branch_name || '')
+const acBranchDisplay = computed(() => {
+  const branch = String(acBranch.value || '').trim()
+  if (!branch) return ''
+  return /branch$/i.test(branch) ? branch : `${branch} Branch`
+})
 // Sync org name display in letter body from bank account
 const orgName = computed(() => activeBankAcc.value?.account_name || '—')
 
@@ -146,10 +155,11 @@ const ALL_COLS = [
   { key: 'sl',         label: 'Sl',           locked: true  },
   { key: 'name',       label: 'Name',         locked: true  },
   { key: 'employeeId', label: 'Emp. ID',       locked: false },
+  { key: 'unit',       label: 'Unit',         locked: false },
   { key: 'accountNo',  label: 'Account No.',  locked: false },
   { key: 'amount',     label: 'Amount (BDT)', locked: false },
 ]
-const colVis = reactive(Object.fromEntries(ALL_COLS.map(c => [c.key, c.key !== 'employeeId'])))
+const colVis = reactive(Object.fromEntries(ALL_COLS.map(c => [c.key, c.key !== 'employeeId' && c.key !== 'unit'])))
 const activeCols = computed(() => ALL_COLS.filter(c => colVis[c.key]))
 
 function cellValue(col, emp, idx) {
@@ -157,6 +167,7 @@ function cellValue(col, emp, idx) {
     case 'sl':         return idx + 1
     case 'name':       return emp.name       ?? '—'
     case 'employeeId': return emp.employeeId ?? '—'
+    case 'unit':       return emp.unit       ?? '—'
     case 'accountNo':  return emp.accountNo  ?? '—'
     case 'amount':     return fmtAmount(emp.amount)
     default:           return '—'
@@ -173,11 +184,20 @@ function escHtml(val) {
   return String(val ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
-function buildRepeatHeaderInsert() {
+// Returns an array of page-HTML strings. Rows are grouped so that employees
+// from two different bank branches never end up sharing the same printed page —
+// a branch change always forces a new page, in addition to the row-count limit.
+// `includePagePadding` bakes the pad's header/footer space into each page's
+// own box (needed for the PDF, which has no @page concept). Print already
+// reserves that space via the injected `@page` margin rule (updatePageStyle),
+// so it must stay false there to avoid doubling the spacing.
+function buildLetterPages(repeatIntro = true, includePagePadding = false) {
   const PX_PER_CM = 37.795
   const A4_H = 1122.5  // 297mm at 96dpi
 
-  const pageContent = A4_H - pad.headerHeight * PX_PER_CM - pad.footerHeight * PX_PER_CM
+  const headerPadPx = pad.headerHeight * PX_PER_CM
+  const footerPadPx = pad.footerHeight * PX_PER_CM
+  const pageContent = A4_H - headerPadPx - footerPadPx
 
   // Measure rendered intro height (the <th colspan> in Mode B) + column header row
   const introThEl = document.querySelector('#letter-print-area thead th[colspan]')
@@ -198,13 +218,14 @@ function buildRepeatHeaderInsert() {
     if (key === 'sl')         return base + 'text-align:center;width:40px;'
     if (key === 'name')       return base + 'text-align:left;'
     if (key === 'employeeId') return base + 'text-align:center;width:112px;'
+    if (key === 'unit')       return base + 'text-align:center;width:112px;'
     if (key === 'accountNo')  return base + 'text-align:center;width:160px;'
     if (key === 'amount')     return base + 'text-align:right;width:128px;'
     return base + 'text-align:left;'
   }
   function tdStyle(key) {
     const base = `border:1px solid black;padding:6px 12px;font-size:${fontSize}px;`
-    if (key === 'sl' || key === 'employeeId' || key === 'accountNo') return base + 'text-align:center;'
+    if (key === 'sl' || key === 'employeeId' || key === 'unit' || key === 'accountNo') return base + 'text-align:center;'
     if (key === 'amount') return base + 'text-align:right;'
     return base + 'text-align:left;'
   }
@@ -217,7 +238,7 @@ function buildRepeatHeaderInsert() {
 
   const introHtml = `<div style="padding:1rem 0 0.5rem;font-size:${fontSize}px;line-height:1.6;color:#000;">
     <div style="display:flex;justify-content:space-between;margin-bottom:0.75rem;">
-      <div><b>Letter No: Salary</b> <u>${lNo}</u></div>
+      <div><b>Letter No:</b> <u>${lNo}</u></div>
       <div><b>Date:</b> <u>${lDt}</u></div>
     </div>
     <div style="font-weight:bold;margin-bottom:1rem;">
@@ -235,21 +256,48 @@ function buildRepeatHeaderInsert() {
     `<th style="${thStyle(col.key)}">${col.key === 'name' ? 'Name of Officer' : escHtml(col.label)}</th>`
   ).join('')
 
+  // Group rows by bank branch first (regardless of incoming order), then
+  // paginate each branch's group on its own — so a page only ever holds
+  // employees from a single branch, and a branch's employees stay together
+  // across as many pages as it needs (never one employee per page).
   const employees = tableRows.value
+  const branchGroups = new Map()
+  employees.forEach((emp) => {
+    const key = emp.branch ?? ''
+    if (!branchGroups.has(key)) branchGroups.set(key, [])
+    branchGroups.get(key).push(emp)
+  })
+
   const chunks = []
-  for (let i = 0; i < employees.length; i += rowsPerPage) chunks.push(employees.slice(i, i + rowsPerPage))
+  branchGroups.forEach((group) => {
+    for (let i = 0; i < group.length; i += rowsPerPage) {
+      chunks.push(group.slice(i, i + rowsPerPage))
+    }
+  })
   if (!chunks.length) chunks.push([])
 
-  let html = ''
-  for (let ci = 0; ci < chunks.length; ci++) {
-    const chunk = chunks[ci]
-    const isLast = ci === chunks.length - 1
+  const sigBlockHtml = `<div style="margin-top:3.5rem;display:flex;align-items:flex-end;justify-content:space-between;">
+      <div style="font-size:${fontSize}px;line-height:1.5;">
+        ${acBankName.value ? `<p style="margin:0;">${escHtml(acBankName.value)}</p>` : ''}
+        ${acBranchDisplay.value ? `<p style="margin:0;">${escHtml(acBranchDisplay.value)}</p>` : ''}
+      </div>
+      <div style="text-align:center;font-size:${fontSize}px;">
+        <div style="width:12rem;border-top:1px solid black;margin-bottom:0.25rem;"></div>
+        <p style="margin:0;">Authorized Signature</p>
+      </div>
+    </div>`
+
+  let globalIdx = 0
+  return chunks.map((chunk, ci) => {
+    const isLast  = ci === chunks.length - 1
+    const isFirst = ci === 0
+    const introBlock = (repeatIntro || isFirst) ? introHtml : ''
     const pageTotal = chunk.reduce((sum, emp) => sum + Number(emp.amount || 0), 0)
     const pageTotalText = escHtml(fmtAmount(pageTotal))
     const pageTotalWords = escHtml(`${toTitleCase(numberToWords(Math.round(pageTotal)))} taka only.`)
 
-    const bodyHtml = chunk.map((emp, li) => {
-      const gi = ci * rowsPerPage + li
+    const bodyHtml = chunk.map((emp) => {
+      const gi = globalIdx++
       return '<tr>' + cols.map(col =>
         `<td style="${tdStyle(col.key)}">${escHtml(cellValue(col, emp, gi))}</td>`
       ).join('') + '</tr>'
@@ -267,17 +315,14 @@ function buildRepeatHeaderInsert() {
         </tr>
       </tfoot>`
 
-    const sigHtml = isLast
-      ? `<div style="margin-top:3.5rem;display:flex;justify-content:flex-end;">
-          <div style="text-align:center;font-size:${fontSize}px;">
-            <div style="width:12rem;border-top:1px solid black;margin-bottom:0.25rem;"></div>
-            <p>Authorized Signature</p>
-          </div>
-        </div>`
-      : ''
+    const sigHtml = isLast ? sigBlockHtml : ''
 
-    html += `<div style="${isLast ? '' : 'page-break-after:always;'}font-family:'Times New Roman',Times,serif;color:#000;padding:0 2.5rem 1.5rem;">
-      ${introHtml}
+    const pageBoxStyle = includePagePadding
+      ? `box-sizing:border-box;min-height:${A4_H}px;padding:${headerPadPx}px 2.5rem ${Math.max(footerPadPx, 24)}px;`
+      : 'padding:0 2.5rem 1.5rem;'
+
+    return `<div style="${isLast ? '' : 'page-break-after:always;'}${pageBoxStyle}font-family:'Times New Roman',Times,serif;color:#000;">
+      ${introBlock}
       <table style="width:100%;border-collapse:collapse;font-size:${fontSize}px;">
         <thead><tr>${colHeadersHtml}</tr></thead>
         <tbody>${bodyHtml}</tbody>
@@ -285,9 +330,54 @@ function buildRepeatHeaderInsert() {
       </table>
       ${sigHtml}
     </div>`
-  }
+  })
+}
 
-  return html
+function buildRepeatHeaderInsert() {
+  return buildLetterPages(true, false).join('')
+}
+
+// ─── PDF download ─────────────────────────────────────────────────────────────
+const downloadingPdf = ref(false)
+
+async function downloadLetterPDF() {
+  if (downloadingPdf.value || !hasRows.value) return
+  downloadingPdf.value = true
+  try {
+    const A4_W = 595.28
+    const A4_H = 841.89
+    // The downloaded PDF always repeats the letter intro on every page so each
+    // page reads as a self-contained document — independent of the "First page
+    // only / All pages" print preference (which only affects what's printed).
+    const pages = buildLetterPages(true, true)
+
+    const holder = document.createElement('div')
+    holder.style.position = 'fixed'
+    holder.style.left = '-10000px'
+    holder.style.top = '0'
+    holder.style.width = '794px'
+    holder.style.background = '#ffffff'
+    document.body.appendChild(holder)
+
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' })
+
+    try {
+      for (let i = 0; i < pages.length; i++) {
+        holder.innerHTML = pages[i]
+        const canvas = await html2canvas(holder, { scale: 2, useCORS: true, backgroundColor: '#ffffff' })
+        const imgData = canvas.toDataURL('image/png')
+        const imgH = Math.min((canvas.height * A4_W) / canvas.width, A4_H)
+        if (i > 0) doc.addPage()
+        doc.addImage(imgData, 'PNG', 0, 0, A4_W, imgH)
+      }
+    } finally {
+      holder.remove()
+    }
+
+    doc.save(`salary-transfer-letter-${props.salaryMonth || 'letter'}.pdf`)
+  } finally {
+    downloadingPdf.value = false
+  }
 }
 
 function handleBeforePrint() {
@@ -436,6 +526,16 @@ onUnmounted(() => {
             <i class="fas text-[8px]" :class="showPadConfig ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
           </button>
 
+          <!-- Download PDF -->
+          <button type="button"
+            class="inline-flex h-8 items-center gap-1.5 rounded-md border border-rose-200 bg-rose-50 px-3 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-50"
+            :disabled="downloadingPdf || !hasRows"
+            @click="downloadLetterPDF"
+          >
+            <i class="far text-[11px]" :class="downloadingPdf ? 'fa-spinner fa-spin' : 'fa-file-pdf'"></i>
+            {{ downloadingPdf ? 'Generating…' : 'PDF' }}
+          </button>
+
           <!-- Print -->
           <button type="button"
             class="inline-flex h-8 items-center gap-1.5 rounded-md bg-blue-600 px-4 text-xs font-semibold text-white hover:bg-blue-700"
@@ -569,7 +669,7 @@ onUnmounted(() => {
           <div class="flex-1">
             <div class="px-10 pt-4">
               <div class="mb-3 flex justify-between text-sm">
-                <div><span class="font-bold">Letter No: Salary </span><span class="font-bold underline">{{ letterNo }}</span></div>
+                <div><span class="font-bold">Letter No: </span><span class="font-bold underline">{{ letterNo }}</span></div>
                 <div><span class="font-bold">Date: </span><span class="font-bold underline">{{ letterDate }}</span></div>
               </div>
               <div class="mb-4 text-sm font-bold leading-relaxed">
@@ -587,13 +687,13 @@ onUnmounted(() => {
               <table class="w-full border-collapse text-sm">
                 <thead><tr>
                   <th v-for="col in activeCols" :key="col.key" class="border border-black px-3 py-2 font-semibold"
-                    :class="{ 'text-center w-10': col.key==='sl', 'text-left': col.key==='name', 'text-center w-28': col.key==='employeeId', 'text-center w-40': col.key==='accountNo', 'text-right w-32': col.key==='amount' }"
+                    :class="{ 'text-center w-10': col.key==='sl', 'text-left': col.key==='name', 'text-center w-28': col.key==='employeeId'||col.key==='unit', 'text-center w-40': col.key==='accountNo', 'text-right w-32': col.key==='amount' }"
                   >{{ col.key === 'name' ? 'Name of Officer' : col.label }}</th>
                 </tr></thead>
                 <tbody>
                   <tr v-for="(emp,idx) in tableRows" :key="`e${idx}`">
                     <td v-for="col in activeCols" :key="col.key" class="border border-black px-3 py-1.5"
-                      :class="{ 'text-center': col.key==='sl'||col.key==='employeeId'||col.key==='accountNo', 'text-right': col.key==='amount' }"
+                      :class="{ 'text-center': col.key==='sl'||col.key==='employeeId'||col.key==='unit'||col.key==='accountNo', 'text-right': col.key==='amount' }"
                     >{{ cellValue(col,emp,idx) }}</td>
                   </tr>
                   <tr v-for="n in emptyCount" :key="`b${n}`">
@@ -614,7 +714,11 @@ onUnmounted(() => {
                   </tr>
                 </tfoot>
               </table>
-              <div class="mt-14 flex justify-end">
+              <div class="mt-14 flex items-end justify-between">
+                <div class="text-sm leading-relaxed">
+                  <p v-if="acBankName">{{ acBankName }}</p>
+                  <p v-if="acBranchDisplay">{{ acBranchDisplay }}</p>
+                </div>
                 <div class="text-center text-sm">
                   <div class="mb-1 w-48 border-t border-black"></div>
                   <p>Authorized Signature</p>
@@ -634,7 +738,7 @@ onUnmounted(() => {
                 <tr>
                   <th :colspan="activeCols.length" class="pt-4 pb-2 text-left font-normal align-top">
                     <div class="mb-3 flex justify-between text-sm">
-                      <div><span class="font-bold">Letter No: Salary </span><span class="font-bold underline">{{ letterNo }}</span></div>
+                      <div><span class="font-bold">Letter No: </span><span class="font-bold underline">{{ letterNo }}</span></div>
                       <div><span class="font-bold">Date: </span><span class="font-bold underline">{{ letterDate }}</span></div>
                     </div>
                     <div class="mb-4 text-sm font-bold leading-relaxed">
@@ -652,7 +756,7 @@ onUnmounted(() => {
                 <!-- Column header row -->
                 <tr>
                   <th v-for="col in activeCols" :key="col.key" class="border border-black px-3 py-2 font-semibold"
-                    :class="{ 'text-center w-10': col.key==='sl', 'text-left': col.key==='name', 'text-center w-28': col.key==='employeeId', 'text-center w-40': col.key==='accountNo', 'text-right w-32': col.key==='amount' }"
+                    :class="{ 'text-center w-10': col.key==='sl', 'text-left': col.key==='name', 'text-center w-28': col.key==='employeeId'||col.key==='unit', 'text-center w-40': col.key==='accountNo', 'text-right w-32': col.key==='amount' }"
                   >{{ col.key === 'name' ? 'Name of Officer' : col.label }}</th>
                 </tr>
               </thead>
@@ -680,7 +784,11 @@ onUnmounted(() => {
                 </tr>
               </tfoot>
             </table>
-            <div class="mt-14 pb-6 flex justify-end">
+            <div class="mt-14 pb-6 flex items-end justify-between">
+              <div class="text-sm leading-relaxed">
+                <p v-if="acBankName">{{ acBankName }}</p>
+                <p v-if="acBranchDisplay">{{ acBranchDisplay }}</p>
+              </div>
               <div class="text-center text-sm">
                 <div class="mb-1 w-48 border-t border-black"></div>
                 <p>Authorized Signature</p>
