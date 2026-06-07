@@ -133,6 +133,7 @@ function buildRouteQuery() {
 const toArray  = (d) => Array.isArray(d) ? d : Array.isArray(d?.data) ? d.data : []
 const getUnit   = (r) => r.unit_name || r.unit?.name || r.department_name || ''
 const getBranch = (r) => r.bank_account?.branch_name || ''
+const getAccountHolderName = (r) => r.account_name || r.employee_name || ''
 const displayBranchName = (branch) => String(branch || '').trim().replace(/\s+Branch$/i, '')
 const fmtMoney = (v) => {
   const n = Number(v)
@@ -155,7 +156,7 @@ const hasUnits    = computed(() => uniqueUnits.value.length > 0)
 // ─── Export column definitions ───────────────────────────────────────────────
 const EXPORT_COLS = [
   { key: 'sl',              label: 'SL',           locked: true  },
-  { key: 'employee_name',   label: 'Name',         locked: true  },
+  { key: 'employee_name',   label: 'Account Holder Name', locked: true  },
   { key: 'employee_code',   label: 'Employee ID',  locked: false },
   { key: 'payable_account', label: 'Bank Name',    locked: false },
   { key: 'branch',          label: 'Branch',       locked: false },
@@ -175,7 +176,7 @@ const showColConfig = ref(false)
 function exportCellValue(col, row, idx) {
   switch (col.key) {
     case 'sl':              return idx + 1
-    case 'employee_name':   return row.employee_name   || '—'
+    case 'employee_name':   return getAccountHolderName(row) || '—'
     case 'employee_code':   return row.employee_code   || '—'
     case 'payable_account': return row.payable_account || '—'
     case 'branch':          return getBranch(row)      || '—'
@@ -190,7 +191,7 @@ function exportCellValue(col, row, idx) {
 // ─── Letter data ──────────────────────────────────────────────────────────────
 const letterRows = computed(() =>
   rows.value.map(r => ({
-    name:       r.employee_name  || '—',
+    name:       getAccountHolderName(r) || '—',
     employeeId: r.employee_code  || '—',
     accountNo:  r.account_number || '—',
     amount:     r.payable_amount ?? '',
@@ -744,7 +745,7 @@ onMounted(async () => {
             <thead>
               <tr class="border-b border-slate-200 bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500">
                 <th class="w-9 px-3 py-2.5 text-center">#</th>
-                <th class="px-4 py-2.5 text-left">Employee</th>
+                <th class="px-4 py-2.5 text-left">Account Holder</th>
                 <th class="px-3 py-2.5 text-left">ID</th>
                 <th class="px-3 py-2.5 text-left">Bank Name</th>
                 <th class="px-3 py-2.5 text-left">Branch</th>
@@ -762,7 +763,7 @@ onMounted(async () => {
                 :class="idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'"
               >
                 <td class="px-3 py-2 text-center text-slate-300 group-hover:text-slate-400">{{ idx + 1 }}</td>
-                <td class="px-4 py-2 font-semibold text-slate-900">{{ p.employee_name || '—' }}</td>
+                <td class="px-4 py-2 font-semibold text-slate-900">{{ getAccountHolderName(p) || '—' }}</td>
                 <td class="px-3 py-2">
                   <span class="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-slate-600 transition group-hover:bg-blue-100 group-hover:text-blue-700">
                     {{ p.employee_code || '—' }}

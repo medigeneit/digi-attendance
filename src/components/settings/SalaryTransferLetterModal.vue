@@ -253,7 +253,7 @@ function buildLetterPages(repeatIntro = true, includePagePadding = false) {
   </div>`
 
   const colHeadersHtml = cols.map(col =>
-    `<th style="${thStyle(col.key)}">${col.key === 'name' ? 'Name of Officer' : escHtml(col.label)}</th>`
+    `<th style="${thStyle(col.key)}">${col.key === 'name' ? 'Account Holder Name' : escHtml(col.label)}</th>`
   ).join('')
 
   // Group rows by bank branch first (regardless of incoming order), then
@@ -270,8 +270,17 @@ function buildLetterPages(repeatIntro = true, includePagePadding = false) {
 
   const chunks = []
   branchGroups.forEach((group) => {
-    for (let i = 0; i < group.length; i += rowsPerPage) {
-      chunks.push(group.slice(i, i + rowsPerPage))
+    if (group.length <= rowsPerPage) {
+      chunks.push(group)
+      return
+    }
+    // Spread a branch's rows evenly across the pages it needs, instead of
+    // always filling each page to capacity — filling to capacity can leave
+    // a near-empty trailing page (e.g. 16 rows on page 1, 1 row on page 2).
+    const pagesNeeded = Math.ceil(group.length / rowsPerPage)
+    const perPage = Math.ceil(group.length / pagesNeeded)
+    for (let i = 0; i < group.length; i += perPage) {
+      chunks.push(group.slice(i, i + perPage))
     }
   })
   if (!chunks.length) chunks.push([])
@@ -688,7 +697,7 @@ onUnmounted(() => {
                 <thead><tr>
                   <th v-for="col in activeCols" :key="col.key" class="border border-black px-3 py-2 font-semibold"
                     :class="{ 'text-center w-10': col.key==='sl', 'text-left': col.key==='name', 'text-center w-28': col.key==='employeeId'||col.key==='unit', 'text-center w-40': col.key==='accountNo', 'text-right w-32': col.key==='amount' }"
-                  >{{ col.key === 'name' ? 'Name of Officer' : col.label }}</th>
+                  >{{ col.key === 'name' ? 'Account Holder Name' : col.label }}</th>
                 </tr></thead>
                 <tbody>
                   <tr v-for="(emp,idx) in tableRows" :key="`e${idx}`">
@@ -757,7 +766,7 @@ onUnmounted(() => {
                 <tr>
                   <th v-for="col in activeCols" :key="col.key" class="border border-black px-3 py-2 font-semibold"
                     :class="{ 'text-center w-10': col.key==='sl', 'text-left': col.key==='name', 'text-center w-28': col.key==='employeeId'||col.key==='unit', 'text-center w-40': col.key==='accountNo', 'text-right w-32': col.key==='amount' }"
-                  >{{ col.key === 'name' ? 'Name of Officer' : col.label }}</th>
+                  >{{ col.key === 'name' ? 'Account Holder Name' : col.label }}</th>
                 </tr>
               </thead>
               <tbody>
