@@ -3,11 +3,11 @@ import { computed, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { storeToRefs } from 'pinia'
+import apiClient from '@/axios'
 import { usePayrollManagementStore } from '@/stores/payrollManagement'
 import { useUnitStore } from '@/stores/unit'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
-import PaginationBar from '@/components/PaginationBar.vue'
 import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import PayrollStatusBadge from '@/components/payroll/PayrollStatusBadge.vue'
 import PaymentStatusModal from '@/components/payroll/PaymentStatusModal.vue'
@@ -18,8 +18,11 @@ const toast = useToast()
 const payrollStore = usePayrollManagementStore()
 const unitStore = useUnitStore()
 
-const { list, loading, error, pagination } = storeToRefs(payrollStore)
 const { units } = storeToRefs(unitStore)
+
+const rows = ref([])
+const loading = ref(false)
+const error = ref('')
 
 const getCurrentMonth = () => new Date().toISOString().slice(0, 7)
 
@@ -33,8 +36,6 @@ const filters = ref({
   payroll_cycle: 'regular',
   payment_status: '',
   default_payment_method: '',
-  page: 1,
-  per_page: 15,
 })
 
 const showPaymentModal = ref(false)
@@ -68,21 +69,20 @@ const salaryMonthPeriod = computed({
 })
 
 const handleSalaryMonthChange = () => {
-  filters.value.page = 1
   load()
 }
 
 const summaryCards = computed(() => {
-  const rows = list.value || []
-  const totalGross = rows.reduce((sum, row) => sum + Number(row.gross_salary || 0), 0)
-  const totalDeduction = rows.reduce((sum, row) => sum + Number(row.total_deduction || 0), 0)
-  const totalNet = rows.reduce((sum, row) => sum + Number(row.net_salary || 0), 0)
-  const paidCount = rows.filter((r) => ['paid', 'locked'].includes(String(r.payment_status || '').toLowerCase())).length
+  const data = rows.value || []
+  const totalGross = data.reduce((sum, row) => sum + Number(row.gross_salary || 0), 0)
+  const totalDeduction = data.reduce((sum, row) => sum + Number(row.total_deduction || 0), 0)
+  const totalNet = data.reduce((sum, row) => sum + Number(row.net_salary || 0), 0)
+  const paidCount = data.filter((r) => ['paid', 'locked'].includes(String(r.payment_status || '').toLowerCase())).length
 
   return [
     {
       label: 'Total Employees',
-      value: rows.length,
+      value: data.length,
       sub: `${paidCount} paid`,
       icon: 'fa-users',
       iconBg: 'bg-blue-100 text-blue-600',
@@ -95,7 +95,7 @@ const summaryCards = computed(() => {
     {
       label: 'Gross Salary',
       value: totalGross,
-      sub: `${rows.length} records`,
+      sub: `${data.length} records`,
       icon: 'fa-coins',
       iconBg: 'bg-emerald-100 text-emerald-600',
       tone: 'border-emerald-200 bg-emerald-50',
@@ -131,21 +131,20 @@ const summaryCards = computed(() => {
   ]
 })
 
-const columnTotals = computed(() => {
-  const rows = list.value || []
-  const sum = (key) => rows.reduce((s, r) => s + toNumber(r[key]), 0)
+const buildColumnTotals = (data) => {
+  const sum = (key) => data.reduce((s, r) => s + toNumber(r[key]), 0)
   return {
     basic_salary: sum('basic_salary'),
     house_rent: sum('house_rent'),
     medical_allowance: sum('medical_allowance'),
     conveyance_allowance: sum('conveyance_allowance'),
     gross_salary: sum('gross_salary'),
-    other_allowance: rows.reduce((s, r) => s + getDisplayOtherAllowance(r), 0),
-    pf_allowance: rows.reduce((s, r) => s + getPfAllowanceAmount(r), 0),
-    arrear: rows.reduce((s, r) => s + getArrearAmount(r), 0),
+    other_allowance: data.reduce((s, r) => s + getDisplayOtherAllowance(r), 0),
+    pf_allowance: data.reduce((s, r) => s + getPfAllowanceAmount(r), 0),
+    arrear: data.reduce((s, r) => s + getArrearAmount(r), 0),
     bonus_amount: sum('bonus_amount'),
     manual_addition: sum('manual_addition'),
-    total_earnings: rows.reduce((s, r) => s + getTotalEarnings(r), 0),
+    total_earnings: data.reduce((s, r) => s + getTotalEarnings(r), 0),
     pf_deduction: sum('pf_deduction'),
     meal_deduction: sum('meal_deduction'),
     loan_deduction: sum('loan_deduction'),
@@ -156,6 +155,37 @@ const columnTotals = computed(() => {
     total_deduction: sum('total_deduction'),
     net_salary: sum('net_salary'),
   }
+}
+
+const columnTotals = computed(() => buildColumnTotals(rows.value || []))
+
+const getUnitLabel = (payroll) => payroll?.user?.unit?.short_name || payroll?.user?.unit?.name || 'Unassigned'
+
+const sortedRows = computed(() => {
+  return [...rows.value].sort((a, b) => {
+    const unitA = getUnitLabel(a).toLowerCase()
+    const unitB = getUnitLabel(b).toLowerCase()
+    if (unitA !== unitB) return unitA.localeCompare(unitB)
+    const nameA = (a.user?.name || a.employee_name || '').toLowerCase()
+    const nameB = (b.user?.name || b.employee_name || '').toLowerCase()
+    return nameA.localeCompare(nameB)
+  })
+})
+
+const groupedByUnit = computed(() => {
+  const groups = []
+  let current = null
+  let offset = 0
+  for (const p of sortedRows.value) {
+    const unitName = getUnitLabel(p)
+    if (!current || current.unitName !== unitName) {
+      current = { unitName, rows: [], offset }
+      groups.push(current)
+    }
+    current.rows.push(p)
+    offset++
+  }
+  return groups.map((g) => ({ ...g, totals: buildColumnTotals(g.rows) }))
 })
 
 const buildRouteQuery = () => {
@@ -183,7 +213,6 @@ const onEmployeeFilterChange = (payload = {}) => {
     department_id: payload.department_id || '',
     employee_id: payload.employee_id || '',
     line_type: payload.line_type || 'all',
-    page: 1,
   }
   load()
 }
@@ -206,8 +235,6 @@ const resetFilters = () => {
     payroll_cycle: 'regular',
     payment_status: '',
     default_payment_method: '',
-    page: 1,
-    per_page: 15,
   }
   load()
 }
@@ -224,22 +251,40 @@ const applyRouteQueryToFilters = () => {
     payroll_cycle: String(q.payroll_cycle || 'regular'),
     payment_status: String(q.payment_status || ''),
     default_payment_method: String(q.default_payment_method || ''),
-    page: Number(q.page) > 0 ? Number(q.page) : 1,
-    per_page: Number(q.per_page) > 0 ? Number(q.per_page) : 15,
   }
+}
+
+async function fetchAllPayrolls(params) {
+  const items = []
+  let page = 1
+  let lastPage = 1
+  do {
+    const { data } = await apiClient.get('/payrolls', { params: { ...params, page, per_page: 200 } })
+    const pageItems = Array.isArray(data?.data) ? data.data : []
+    items.push(...pageItems)
+    lastPage = data?.last_page ?? data?.meta?.last_page ?? 1
+    page++
+  } while (page <= lastPage)
+  return items
 }
 
 async function load() {
   await router.replace({ query: buildRouteQuery() })
-  await payrollStore.fetchList(buildApiParams())
+  loading.value = true
+  error.value = ''
+  try {
+    rows.value = await fetchAllPayrolls(buildApiParams())
+  } catch (e) {
+    error.value = e.message || 'Failed to load payrolls.'
+    rows.value = []
+  } finally {
+    loading.value = false
+  }
 }
 
 async function handleDownloadExcel() {
   try {
-    const params = buildApiParams()
-    delete params.page
-    delete params.per_page
-    await payrollStore.downloadExcel(params)
+    await payrollStore.downloadExcel(buildApiParams())
     toast.success('Payroll report downloaded.')
   } catch (e) {
     toast.error(e.message || 'Download failed.')
@@ -258,7 +303,12 @@ const openPaymentModal = (p) => {
 
 const handlePaymentSubmit = async ({ id, payload }) => {
   try {
-    await payrollStore.updatePaymentStatus(id, payload)
+    const res = await payrollStore.updatePaymentStatus(id, payload)
+    const updated = res?.data || res
+    const idx = rows.value.findIndex((r) => r.id === id)
+    if (idx !== -1) {
+      rows.value[idx] = { ...rows.value[idx], ...updated }
+    }
     toast.success('Payment status updated.')
     showPaymentModal.value = false
     selectedPayroll.value = null
@@ -365,7 +415,7 @@ const activeFiltersCount = computed(() => {
         <button class="btn-3 h-7 px-3 text-xs" @click="router.push({ name: 'DoctorPayrollList' })">
           <i class="far fa-user-md"></i> Doctor
         </button>
-        <button class="btn-3 h-7 px-3 text-xs" :disabled="loading || !list.length" @click="handleDownloadExcel">
+        <button class="btn-3 h-7 px-3 text-xs" :disabled="loading || !rows.length" @click="handleDownloadExcel">
           <i class="far fa-file-excel"></i> Excel
         </button>
         <button class="btn-2 h-7 px-3 text-xs" @click="goToGenerate">
@@ -400,23 +450,17 @@ const activeFiltersCount = computed(() => {
       </EmployeeFilter>
 
       <div class="mt-2 flex flex-wrap items-center gap-2">
-        <select v-model="filters.unit_id" class="erp-select-sm" @change="() => { filters.page = 1; load() }">
+        <select v-model="filters.unit_id" class="erp-select-sm" @change="load">
           <option value="">All Units</option>
           <option v-for="u in units" :key="u.id" :value="String(u.id)">{{ u.short_name || u.name }}</option>
         </select>
-        <select v-model="filters.payroll_cycle" class="erp-select-sm" @change="() => { filters.page = 1; load() }">
+        <select v-model="filters.payroll_cycle" class="erp-select-sm" @change="load">
           <option value="">All Cycles</option>
           <option v-for="c in cycleOptions" :key="c.value" :value="c.value">{{ c.label }}</option>
         </select>
-        <select v-model="filters.payment_status" class="erp-select-sm" @change="() => { filters.page = 1; load() }">
+        <select v-model="filters.payment_status" class="erp-select-sm" @change="load">
           <option value="">All Statuses</option>
           <option v-for="s in statusOptions" :key="s" :value="s">{{ s }}</option>
-        </select>
-        <select v-model="filters.per_page" class="erp-select-sm w-20" @change="() => { filters.page = 1; load() }">
-          <option :value="15">15 / pg</option>
-          <option :value="25">25 / pg</option>
-          <option :value="50">50 / pg</option>
-          <option :value="100">100 / pg</option>
         </select>
         <button class="inline-flex h-7 items-center gap-1 rounded-lg border border-slate-200 px-2.5 text-xs text-slate-500 hover:bg-slate-50" @click="resetFilters">
           <i class="far fa-undo text-[9px]"></i> Reset
@@ -458,7 +502,7 @@ const activeFiltersCount = computed(() => {
     </div>
 
     <!-- ── Empty State ─────────────────────────────────── -->
-    <div v-else-if="!list.length" class="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white py-10 text-center shadow-sm">
+    <div v-else-if="!rows.length" class="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white py-10 text-center shadow-sm">
       <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-2xl text-slate-300">
         <i class="far fa-file-invoice-dollar"></i>
       </div>
@@ -480,20 +524,21 @@ const activeFiltersCount = computed(() => {
         </div>
         <div class="flex items-center gap-1.5 text-[11px] text-slate-500">
           <span class="rounded border border-slate-200 bg-white px-2 py-0.5 font-medium">
-            {{ pagination.total || list.length }} records
+            {{ rows.length }} records
           </span>
           <span class="rounded border border-slate-200 bg-white px-2 py-0.5 font-medium">
-            pg {{ filters.page }}/{{ pagination.last_page || 1 }}
+            {{ groupedByUnit.length }} units
           </span>
         </div>
       </div>
 
       <div class="w-full overflow-x-auto overscroll-x-contain [scrollbar-width:thin]">
-        <table class="prl-table min-w-[1560px] w-full table-fixed border-collapse text-[10px] leading-tight">
+        <table class="prl-table min-w-[1620px] w-full table-fixed border-collapse text-[10px] leading-tight">
           <colgroup>
             <col class="w-[32px]" />
             <col class="w-[116px]" />
             <col class="w-[78px]" />
+            <col class="w-[64px]" />
             <col class="w-[66px]" />
             <!-- earnings ×11 -->
             <col v-for="i in 11" :key="`e${i}`" class="w-[56px]" />
@@ -511,6 +556,7 @@ const activeFiltersCount = computed(() => {
               <th class="border border-slate-200 bg-slate-100 px-1 py-2 text-slate-500" rowspan="2">#</th>
               <th class="border border-slate-200 bg-slate-100 px-1.5 py-2 text-left text-slate-600" rowspan="2">Employee</th>
               <th class="border border-slate-200 bg-slate-100 px-1 py-2 text-slate-500" rowspan="2">Emp ID</th>
+              <th class="border border-slate-200 bg-slate-100 px-1 py-2 text-slate-500" rowspan="2">Unit</th>
               <th class="border border-slate-200 bg-slate-100 px-1 py-2 text-slate-500" rowspan="2">Joining</th>
               <th class="border border-emerald-300 bg-emerald-100 px-1 py-2 text-center text-emerald-700" colspan="11">
                 <i class="far fa-arrow-up mr-0.5 text-[8px]"></i> Earnings
@@ -552,15 +598,16 @@ const activeFiltersCount = computed(() => {
           </thead>
 
           <tbody>
+            <template v-for="group in groupedByUnit" :key="group.unitName">
             <tr
-              v-for="(p, i) in list"
+              v-for="(p, i) in group.rows"
               :key="p.id"
               class="group transition-colors duration-75 hover:bg-indigo-50/40"
               :class="i % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'"
             >
               <!-- # -->
               <td class="border border-slate-100 px-1 py-1.5 text-center text-slate-400">
-                {{ (filters.page - 1) * filters.per_page + i + 1 }}
+                {{ group.offset + i + 1 }}
               </td>
 
               <!-- Employee -->
@@ -578,6 +625,11 @@ const activeFiltersCount = computed(() => {
                 <span class="inline-flex rounded-md bg-slate-100 px-1.5 py-0.5 font-mono leading-none text-slate-700">
                   {{ p.user?.employee_id || p.employee_code || '-' }}
                 </span>
+              </td>
+
+              <!-- Unit -->
+              <td class="border border-slate-100 px-1 py-1.5 text-slate-600">
+                {{ getUnitLabel(p) }}
               </td>
 
               <!-- Joining -->
@@ -642,13 +694,45 @@ const activeFiltersCount = computed(() => {
                 </button>
               </td>
             </tr>
+
+            <!-- ── Unit Subtotal ── -->
+            <tr class="bg-indigo-50/70 text-[10px] font-bold">
+              <td class="border border-indigo-200 px-1.5 py-1.5 text-left text-indigo-700" colspan="5">
+                <i class="far fa-sitemap mr-1 text-[9px]"></i>{{ group.unitName }} — Subtotal ({{ group.rows.length }})
+              </td>
+              <!-- Earnings -->
+              <td class="border border-emerald-200 bg-emerald-100/70 px-1 py-1.5 text-right font-mono text-emerald-800">{{ formatCompactCurrency(group.totals.basic_salary) }}</td>
+              <td class="border border-emerald-200 bg-emerald-100/70 px-1 py-1.5 text-right font-mono text-emerald-800">{{ formatCompactCurrency(group.totals.house_rent) }}</td>
+              <td class="border border-emerald-200 bg-emerald-100/70 px-1 py-1.5 text-right font-mono text-emerald-800">{{ formatCompactCurrency(group.totals.medical_allowance) }}</td>
+              <td class="border border-emerald-200 bg-emerald-100/70 px-1 py-1.5 text-right font-mono text-emerald-800">{{ formatCompactCurrency(group.totals.conveyance_allowance) }}</td>
+              <td class="border border-emerald-300 bg-emerald-200/70 px-1 py-1.5 text-right font-mono text-emerald-900">{{ formatCompactCurrency(group.totals.gross_salary) }}</td>
+              <td class="border border-emerald-200 bg-emerald-100/70 px-1 py-1.5 text-right font-mono text-emerald-800">{{ formatCompactCurrency(group.totals.other_allowance) }}</td>
+              <td class="border border-emerald-200 bg-emerald-100/70 px-1 py-1.5 text-right font-mono text-emerald-800">{{ formatCompactCurrency(group.totals.pf_allowance) }}</td>
+              <td class="border border-emerald-200 bg-emerald-100/70 px-1 py-1.5 text-right font-mono text-emerald-800">{{ formatCompactCurrency(group.totals.arrear) }}</td>
+              <td class="border border-emerald-200 bg-emerald-100/70 px-1 py-1.5 text-right font-mono text-emerald-800">{{ formatCompactCurrency(group.totals.bonus_amount) }}</td>
+              <td class="border border-emerald-200 bg-emerald-100/70 px-1 py-1.5 text-right font-mono text-emerald-800">{{ formatCompactCurrency(group.totals.manual_addition) }}</td>
+              <td class="border border-emerald-300 bg-emerald-200/70 px-1 py-1.5 text-right font-mono text-emerald-900">{{ formatCompactCurrency(group.totals.total_earnings) }}</td>
+              <!-- Deductions -->
+              <td class="border border-rose-200 bg-rose-100/70 px-1 py-1.5 text-right font-mono text-rose-800">{{ formatCompactCurrency(group.totals.pf_deduction) }}</td>
+              <td class="border border-rose-200 bg-rose-100/70 px-1 py-1.5 text-right font-mono text-rose-800">{{ formatCompactCurrency(group.totals.meal_deduction) }}</td>
+              <td class="border border-rose-200 bg-rose-100/70 px-1 py-1.5 text-right font-mono text-rose-800">{{ formatCompactCurrency(group.totals.loan_deduction) }}</td>
+              <td class="border border-rose-200 bg-rose-100/70 px-1 py-1.5 text-right font-mono text-rose-800">{{ formatCompactCurrency(group.totals.security_money_deduction) }}</td>
+              <td class="border border-rose-200 bg-rose-100/70 px-1 py-1.5 text-right font-mono text-rose-800">{{ formatCompactCurrency(group.totals.other_deduction) }}</td>
+              <td class="border border-rose-200 bg-rose-100/70 px-1 py-1.5 text-right font-mono text-rose-800">{{ formatCompactCurrency(group.totals.advance_deduction) }}</td>
+              <td class="border border-rose-200 bg-rose-100/70 px-1 py-1.5 text-right font-mono text-rose-800">{{ formatCompactCurrency(group.totals.paycut_deduction) }}</td>
+              <td class="border border-rose-300 bg-rose-200/70 px-1 py-1.5 text-right font-mono text-rose-900">{{ formatCompactCurrency(group.totals.total_deduction) }}</td>
+              <!-- Net -->
+              <td class="border border-indigo-300 bg-indigo-200/70 px-1 py-1.5 text-right font-mono text-indigo-900">{{ formatCompactCurrency(group.totals.net_salary) }}</td>
+              <td class="border border-indigo-200 bg-indigo-100/70 px-1 py-1.5" colspan="2"></td>
+            </tr>
+            </template>
           </tbody>
 
           <!-- ── Totals Footer ── -->
-          <tfoot v-if="list.length">
+          <tfoot v-if="rows.length">
             <tr class="bg-slate-100 text-[10px] font-bold">
-              <td class="border border-slate-300 px-1 py-2 text-center text-slate-500" colspan="4">
-                Totals ({{ list.length }})
+              <td class="border border-slate-300 px-1 py-2 text-center text-slate-500" colspan="5">
+                Grand Totals ({{ rows.length }})
               </td>
               <!-- Earnings -->
               <td class="border border-emerald-200 bg-emerald-100/80 px-1 py-2 text-right font-mono text-emerald-800">{{ formatCompactCurrency(columnTotals.basic_salary) }}</td>
@@ -682,7 +766,7 @@ const activeFiltersCount = computed(() => {
       <!-- Table Footer Bar -->
       <div class="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/50 px-3 py-1.5 text-[10px] text-slate-400">
         <span>
-          Showing <strong class="text-slate-600">{{ list.length }}</strong> of <strong class="text-slate-600">{{ pagination.total || list.length }}</strong> · {{ formatMonth(filters.salary_month) }}
+          Showing all <strong class="text-slate-600">{{ rows.length }}</strong> records across <strong class="text-slate-600">{{ groupedByUnit.length }}</strong> units · {{ formatMonth(filters.salary_month) }}
         </span>
         <div class="flex items-center gap-2.5">
           <span class="flex items-center gap-1"><span class="inline-block h-2 w-2 rounded-sm bg-emerald-200 ring-1 ring-emerald-300"></span>Earnings</span>
@@ -691,16 +775,6 @@ const activeFiltersCount = computed(() => {
         </div>
       </div>
     </div>
-
-    <!-- ── Pagination ───────────────────────────────────── -->
-    <PaginationBar
-      v-if="pagination.total > 0"
-      :page="pagination.current_page || filters.page"
-      :per-page="pagination.per_page || filters.per_page"
-      :total="pagination.total || list.length"
-      :last-page="pagination.last_page || 1"
-      @page-change="(p) => { filters.page = p; load() }"
-    />
 
     <!-- ── Payment Status Modal ─────────────────────────── -->
     <PaymentStatusModal
