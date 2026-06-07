@@ -117,12 +117,12 @@ defineExpose({ handleOpen })
               <p class="text-slate-600">No adjustments to apply for this month.</p>
             </div>
 
-            <!-- Approved Adjustments Section -->
+            <!-- Ready-to-apply adjustments section -->
             <template v-else>
               <div v-if="carryForwardAdjustments.length > 0" class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
                 <div class="mb-3 flex items-center gap-2">
                   <i class="fas fa-check-circle text-emerald-600"></i>
-                  <h3 class="font-semibold text-emerald-900">Carry Forward ({{ carryForwardAdjustments.length }})</h3>
+                  <h3 class="font-semibold text-emerald-900">Ready to Apply (Carry Forward) ({{ carryForwardAdjustments.length }})</h3>
                 </div>
                 <div class="space-y-2">
                   <div
@@ -244,7 +244,7 @@ defineExpose({ handleOpen })
               :disabled="loading"
             >
               <i class="far fa-cog"></i>
-              {{ loading ? 'Loading...' : 'Confirm & Generate' }}
+              {{ loading ? 'Loading...' : 'Confirm & Generate Payroll' }}
             </button>
           </div>
         </div>

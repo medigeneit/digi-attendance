@@ -35,9 +35,25 @@ const filters = ref({
   department_id: '',
   line_type: 'all',
   salary_month: currentMonth(),
+  payroll_cycle: '',
   page: 1,
   per_page: 15,
 })
+
+const payrollTypeOptions = [
+  { value: '', label: 'All Types' },
+  { value: 'regular', label: 'Regular Monthly Payroll' },
+  { value: 'half_salary_advance', label: 'Half Salary Advance' },
+  { value: 'bonus_only', label: 'Bonus Only' },
+  { value: 'final_settlement', label: 'Final Settlement' },
+]
+
+const payrollTypeLabels = payrollTypeOptions.reduce((labels, option) => {
+  if (option.value) labels[option.value] = option.label
+  return labels
+}, {})
+
+const payrollTypeLabel = (value, fallback = '') => payrollTypeLabels[String(value || '').toLowerCase()] || fallback || '—'
 
 const toMonthValue = (value) => {
   const v = String(value || '').trim()
@@ -81,6 +97,7 @@ const buildFilterParams = () => {
   if (!params.department_id) delete params.department_id
   if (!params.line_type || params.line_type === 'all') delete params.line_type
   if (!params.salary_month) delete params.salary_month
+  if (!params.payroll_cycle) delete params.payroll_cycle
 
   return params
 }
@@ -98,6 +115,7 @@ const hydrateFiltersFromQuery = () => {
     department_id: q.department_id ? String(q.department_id) : '',
     line_type: q.line_type ? String(q.line_type) : 'all',
     salary_month: toMonthValue(q.salary_month) || currentMonth(),
+    payroll_cycle: q.payroll_cycle ? String(q.payroll_cycle) : '',
     page: parseQueryInt(q.page, 1),
     per_page: parseQueryInt(q.per_page, 15),
   }
@@ -136,6 +154,7 @@ const resetFilters = () => {
     department_id: '',
     line_type: 'all',
     salary_month: currentMonth(),
+    payroll_cycle: '',
     page: 1,
     per_page: 15,
   }
@@ -418,7 +437,7 @@ const runConfirmedAction = async () => {
 
     <!-- Filters -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-      <div class="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_220px]">
+      <div class="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_440px]">
         <EmployeeFilter
           :company_id="filters.company_id"
           :department_id="filters.department_id"
@@ -431,7 +450,19 @@ const runConfirmedAction = async () => {
         />
       <div>
         
-        <div class="flex items-end justify-end gap-4">
+        <div class="flex flex-wrap items-end justify-end gap-4">
+          <div class="min-w-[210px]">
+            <label class="mb-1 block text-xs font-semibold uppercase text-slate-500">Payroll Type</label>
+            <select
+              v-model="filters.payroll_cycle"
+              class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+              @change="() => { filters.page = 1; load() }"
+            >
+              <option v-for="option in payrollTypeOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
           <FlexibleDatePicker
             v-model="salaryMonthPicker"
             label="Salary Month"
@@ -475,7 +506,7 @@ const runConfirmedAction = async () => {
             <th class="px-4 py-3 text-left">Department</th>
             <th class="px-4 py-3 text-left">Line Type</th>
             <th class="px-4 py-3 text-center">Salary Month</th>
-            <th class="px-4 py-3 text-center">Salary Type</th>
+            <th class="px-4 py-3 text-center">Payroll Type</th>
             <th class="px-4 py-3 text-center">Status</th>
             <th class="px-4 py-3 text-center">Client Sync</th>
             <th class="px-4 py-3 text-left">Prepared By</th>
@@ -493,8 +524,9 @@ const runConfirmedAction = async () => {
             <td class="px-4 py-3 text-gray-600">{{ lineTypeLabel(batch.line_type) }}</td>
             <td class="px-4 py-3 text-center">{{ batch.salary_month || '—' }}</td>
             <td class="px-4 py-3 text-center">
-              <span class="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-medium">
-                {{ batch.salary_type || '—' }}
+              <span class="inline-flex flex-col px-2 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-medium leading-tight">
+                <span>{{ payrollTypeLabel(batch.payroll_cycle, batch.salary_type) }}</span>
+                <span v-if="batch.salary_type" class="text-[10px] font-normal text-indigo-500">{{ batch.salary_type }}</span>
               </span>
             </td>
             <td class="px-4 py-3 text-center"><PayrollStatusBadge :status="batch.status || 'generated'" /></td>

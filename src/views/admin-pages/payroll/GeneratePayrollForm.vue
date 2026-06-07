@@ -155,6 +155,10 @@ const warningTypeMeta = {
     label: 'Skipped Payroll',
     tone: 'bg-slate-50 text-slate-700 border-slate-200',
   },
+  blocked_advance_recovery: {
+    label: 'Advance Not Finalized',
+    tone: 'bg-orange-50 text-orange-700 border-orange-200',
+  },
 }
 const warningTypeLabel = (type) => warningTypeMeta[type]?.label || 'Warning'
 const warningTypeClass = (type) => warningTypeMeta[type]?.tone || 'bg-orange-50 text-orange-700 border-orange-200'

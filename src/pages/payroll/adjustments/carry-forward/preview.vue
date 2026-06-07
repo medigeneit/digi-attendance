@@ -35,7 +35,7 @@ const applyNow = async () => {
   applying.value = true
   try {
     await store.applyCarryForward(year.value, monthNumber.value)
-    toast.success('Carry-forward applied successfully.')
+    toast.success('Ready adjustments applied to payroll.')
     await load()
   } catch (e) {
     toast.error(e.message || 'Carry-forward failed.')
@@ -56,7 +56,7 @@ onMounted(load)
       <button class="btn-3" @click="router.back()"><i class="far fa-arrow-left"></i></button>
       <div>
         <h1 class="text-2xl font-bold text-slate-900">Carry-Forward Preview</h1>
-        <p class="text-sm text-slate-500">Review approved adjustments before applying them to payroll.</p>
+        <p class="text-sm text-slate-500">Review ready-to-apply adjustments before posting them to payroll.</p>
       </div>
     </div>
 
@@ -75,7 +75,7 @@ onMounted(load)
         </button>
         <button v-if="canApply" class="btn-3" :disabled="loading || applying || !items.length" @click="applyNow">
           <i class="far" :class="applying ? 'fa-spinner fa-spin' : 'fa-play'"></i>
-          {{ applying ? 'Applying...' : 'Apply Now' }}
+          {{ applying ? 'Applying...' : 'Apply to Payroll' }}
         </button>
       </div>
     </div>
@@ -103,7 +103,7 @@ onMounted(load)
 
     <div v-else-if="!items.length" class="rounded-3xl border border-dashed border-slate-200 bg-white p-10 text-center text-slate-500">
       <i class="far fa-inbox text-3xl text-slate-300"></i>
-      <p class="mt-2 text-sm font-medium">No approved adjustments pending carry-forward.</p>
+      <p class="mt-2 text-sm font-medium">No ready-to-apply adjustments pending payroll application.</p>
     </div>
 
     <div v-else class="overflow-x-auto rounded-3xl border border-slate-200 bg-white shadow-sm">

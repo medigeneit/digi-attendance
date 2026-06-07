@@ -24,6 +24,13 @@ defineOptions({
 
 const defaultMonth = () => new Date().toISOString().slice(0, 7)
 const allowedTabs = ['all', 'pending', 'verified', 'approved', 'carried']
+const tabOptions = [
+  { value: 'all', label: 'All', icon: 'fa-list' },
+  { value: 'pending', label: 'Pending', icon: 'fa-clock' },
+  { value: 'verified', label: 'Verified', icon: 'fa-shield-check' },
+  { value: 'approved', label: 'Ready to Apply', icon: 'fa-check-circle' },
+  { value: 'carried', label: 'Applied', icon: 'fa-check-double' },
+]
 const routeSyncing = ref(false)
 const deletingIds = ref(new Set())
 
@@ -146,13 +153,64 @@ const counts = computed(() => {
   }
 })
 
-const summaryCards = computed(() => [
-  { label: 'All', value: counts.value.all, tone: 'border-slate-200 bg-white text-slate-800' },
-  { label: 'Pending', value: counts.value.pending, tone: 'border-amber-200 bg-amber-50 text-amber-800' },
-  { label: 'Verified', value: counts.value.verified, tone: 'border-blue-200 bg-blue-50 text-blue-800' },
-  { label: 'Approved', value: counts.value.approved, tone: 'border-emerald-200 bg-emerald-50 text-emerald-800' },
-  { label: 'Carried', value: counts.value.carried, tone: 'border-slate-200 bg-slate-50 text-slate-700' },
-])
+const summaryCards = computed(() => {
+  const rows = filteredByMonth.value
+  const totalAmount = rows.reduce((sum, r) => sum + Number(r.amount || 0), 0)
+  const pendingAmount = rows.filter((r) => r.status === 'pending').reduce((sum, r) => sum + Number(r.amount || 0), 0)
+  const approvedAmount = rows.filter((r) => r.status === 'approved').reduce((sum, r) => sum + Number(r.amount || 0), 0)
+  const carriedAmount = rows.filter((r) => r.status === 'carried').reduce((sum, r) => sum + Number(r.amount || 0), 0)
+
+  return [
+    {
+      label: 'Total Entries',
+      value: counts.value.all,
+      sub: formatCurrency(totalAmount),
+      subLabel: 'total amount',
+      tone: 'border-slate-200 bg-white',
+      labelColor: 'text-slate-500',
+      valueColor: 'text-slate-900',
+      subColor: 'text-slate-500',
+      icon: 'fa-layer-group',
+      iconBg: 'bg-slate-100 text-slate-500',
+    },
+    {
+      label: 'Pending',
+      value: counts.value.pending,
+      sub: formatCurrency(pendingAmount),
+      subLabel: 'awaiting review',
+      tone: 'border-amber-200 bg-amber-50',
+      labelColor: 'text-amber-700',
+      valueColor: 'text-amber-900',
+      subColor: 'text-amber-600',
+      icon: 'fa-clock',
+      iconBg: 'bg-amber-100 text-amber-600',
+    },
+    {
+      label: 'Ready to Apply',
+      value: counts.value.approved,
+      sub: formatCurrency(approvedAmount),
+      subLabel: 'approved amount',
+      tone: 'border-emerald-200 bg-emerald-50',
+      labelColor: 'text-emerald-700',
+      valueColor: 'text-emerald-900',
+      subColor: 'text-emerald-600',
+      icon: 'fa-check-circle',
+      iconBg: 'bg-emerald-100 text-emerald-600',
+    },
+    {
+      label: 'Applied',
+      value: counts.value.carried,
+      sub: formatCurrency(carriedAmount),
+      subLabel: 'carried forward',
+      tone: 'border-blue-200 bg-blue-50',
+      labelColor: 'text-blue-700',
+      valueColor: 'text-blue-900',
+      subColor: 'text-blue-600',
+      icon: 'fa-check-double',
+      iconBg: 'bg-blue-100 text-blue-600',
+    },
+  ]
+})
 
 const activeMonthLabel = computed(() => {
   if (!filters.value.month) return '-'
@@ -191,7 +249,7 @@ const approveRow = async (row) => {
 
   try {
     await adjustmentStore.verify(row.id, note)
-    toast.success('Adjustment approved.')
+    toast.success('Adjustment marked ready to apply.')
     await load()
   } catch (e) {
     toast.error(e.message || 'Approval failed.')
@@ -256,44 +314,63 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="space-y-3 p-3 md:p-4">
-    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 class="text-xl font-bold text-slate-900">Post-Payroll Adjustments</h1>
-          <p class="mt-0.5 text-xs text-slate-500">
-            Manage approved carry-forward adjustments for {{ activeMonthLabel }}.
-          </p>
+  <div class="min-h-screen space-y-4 p-4 md:p-6">
+
+    <!-- Page Header -->
+    <div class="rounded-3xl border border-slate-200 bg-gradient-to-r from-slate-50 via-white to-indigo-50 p-5 shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-600">
+            <i class="far fa-sliders-h text-xl"></i>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold text-slate-900">Post-Payroll Adjustments</h1>
+            <p class="mt-0.5 text-sm text-slate-500">
+              Manual payroll corrections for
+              <span class="font-semibold text-indigo-600">{{ activeMonthLabel }}</span>.
+              Ready items are applied through carry-forward.
+            </p>
+          </div>
         </div>
-        <div class="flex flex-wrap gap-2">
-          <button class="btn-3" @click="router.push({ name: 'PayrollAdjustmentCarryPreview' })">
-            <i class="far fa-eye"></i> Carry Preview
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            class="btn-3"
+            @click="router.push({ name: 'PayrollAdjustmentCarryPreview' })"
+          >
+            <i class="far fa-eye"></i>
+            Carry Preview
           </button>
-          <button v-if="canCreate" class="btn-2" @click="router.push({ name: 'PayrollAdjustmentCreate' })">
-            <i class="far fa-plus"></i> New Adjustment
+          <button
+            v-if="canCreate"
+            class="btn-2"
+            @click="router.push({ name: 'PayrollAdjustmentCreate' })"
+          >
+            <i class="far fa-plus"></i>
+            New Adjustment
           </button>
         </div>
       </div>
     </div>
 
-    
-
-    <div class="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-      <div class="grid items-end gap-3 lg:grid-cols-[1fr_auto]">
-        <div>
-          <label class="mb-1 block text-xs font-medium text-slate-600">Employee</label>
-          <EmployeeFilter
-            :company_id="filters.company_id"
-            :department_id="filters.department_id"
-            :employee_id="filters.employee_id"
-            :line_type="filters.line_type"
-            :with-type="true"
-            @update:company_id="filters.company_id = $event"
-            @update:department_id="filters.department_id = $event"
-            @update:employee_id="filters.employee_id = $event"
-            @update:line_type="filters.line_type = $event"
-            @filter-change="onEmployeeFilterChange"
-          >
+    <!-- Filters -->
+    <div class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-400">
+        <i class="far fa-filter text-slate-300"></i>
+        Filters
+      </div>
+      <div class="space-y-3">
+        <EmployeeFilter
+          :company_id="filters.company_id"
+          :department_id="filters.department_id"
+          :employee_id="filters.employee_id"
+          :line_type="filters.line_type"
+          :with-type="true"
+          @update:company_id="filters.company_id = $event"
+          @update:department_id="filters.department_id = $event"
+          @update:employee_id="filters.employee_id = $event"
+          @update:line_type="filters.line_type = $event"
+          @filter-change="onEmployeeFilterChange"
+        >
           <FlexibleDatePicker
             v-model="filterMonthPeriod"
             :show-year="false"
@@ -301,141 +378,241 @@ onMounted(() => {
             :show-date="false"
             label="Month"
           />
-          </EmployeeFilter> 
-        </div>
-        <div>
-          <button class="btn-1 h-9 px-4 text-xs" @click="load">
-            <i class="far fa-search"></i> Load
+        </EmployeeFilter>
+        <div class="flex items-center justify-end">
+          <button class="btn-1 h-9 px-5 text-xs" @click="load">
+            <i class="far fa-sync-alt"></i>
+            Reload
           </button>
         </div>
       </div>
     </div>
 
-    <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+    <!-- Summary Cards -->
+    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <button
         v-for="card in summaryCards"
         :key="card.label"
-        class="rounded-xl border px-3 py-2 text-left shadow-sm transition hover:-translate-y-0.5"
+        class="group rounded-2xl border p-4 text-left shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md"
         :class="card.tone"
-        @click="activeTab = card.label.toLowerCase()"
+        @click="activeTab = card.label === 'Total Entries' ? 'all' : (card.label === 'Ready to Apply' ? 'approved' : card.label.toLowerCase())"
       >
-        <div class="text-[10px] font-semibold uppercase tracking-wider opacity-70">{{ card.label }}</div>
-        <div class="text-lg font-bold">{{ card.value }}</div>
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-semibold uppercase tracking-wider" :class="card.labelColor">{{ card.label }}</p>
+            <p class="mt-1.5 text-3xl font-bold leading-none" :class="card.valueColor">{{ card.value }}</p>
+            <p class="mt-2 text-xs font-mono" :class="card.subColor">
+              {{ card.sub }}
+              <span class="opacity-70"> · {{ card.subLabel }}</span>
+            </p>
+          </div>
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-base" :class="card.iconBg">
+            <i :class="`far ${card.icon}`"></i>
+          </div>
+        </div>
       </button>
     </div>
 
-    <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div class="border-b border-slate-100 px-3 py-2">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex flex-wrap gap-2">
+    <!-- Table Card -->
+    <div class="rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+
+      <!-- Tab Bar -->
+      <div class="border-b border-slate-100 bg-slate-50/60 px-4 py-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap gap-1.5">
             <button
-              v-for="tab in ['all', 'pending', 'verified', 'approved', 'carried']"
-              :key="tab"
-              class="rounded-full border px-3 py-1 text-xs font-medium transition"
-              :class="activeTab === tab ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600'"
-              @click="activeTab = tab"
+              v-for="tab in tabOptions"
+              :key="tab.value"
+              class="inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition-all duration-100"
+              :class="activeTab === tab.value
+                ? 'border-indigo-400 bg-indigo-600 text-white shadow-sm'
+                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'"
+              @click="activeTab = tab.value"
             >
-              {{ tab.charAt(0).toUpperCase() + tab.slice(1) }}
-              <span class="ml-1 rounded-full bg-slate-100 px-1.5 py-0.5 text-[11px]">{{ counts[tab] }}</span>
+              <i :class="`far ${tab.icon} text-[10px]`"></i>
+              {{ tab.label }}
+              <span
+                class="rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none"
+                :class="activeTab === tab.value ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'"
+              >
+                {{ counts[tab.value] }}
+              </span>
             </button>
           </div>
-          <div class="text-xs text-slate-400">Rows: {{ visibleAdjustments.length }}</div>
+          <div class="flex items-center gap-2 text-xs text-slate-400">
+            <i class="far fa-table"></i>
+            <span>{{ visibleAdjustments.length }} record{{ visibleAdjustments.length !== 1 ? 's' : '' }}</span>
+          </div>
         </div>
       </div>
-      
 
+      <!-- Loading -->
       <LoaderView v-if="loading" />
 
-      <div v-else-if="error" class="m-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-        {{ error }}
+      <!-- Error -->
+      <div
+        v-else-if="error"
+        class="mx-4 my-4 flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+      >
+        <i class="far fa-exclamation-circle shrink-0 text-base text-red-400"></i>
+        <span>{{ error }}</span>
       </div>
 
-      <div v-else-if="!visibleAdjustments.length" class="p-12 text-center text-slate-500">
-        <i class="far fa-folder-open text-3xl text-slate-300"></i>
-        <p class="mt-2 text-sm font-medium">No adjustments found.</p>
-
-        <div class="flex justify-center p-4">
+      <!-- Empty State -->
+      <div v-else-if="!visibleAdjustments.length" class="flex flex-col items-center justify-center py-16 text-center">
+        <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-3xl text-slate-300">
+          <i class="far fa-folder-open"></i>
+        </div>
+        <p class="mt-4 text-base font-semibold text-slate-600">No adjustments found</p>
+        <p class="mt-1 text-sm text-slate-400">
+          {{ activeTab !== 'all' ? `No ${activeTab} adjustments for this period.` : 'No adjustments exist for the selected filters.' }}
+        </p>
+        <div class="mt-6 flex gap-2">
+          <button v-if="activeTab !== 'all'" class="btn-3" @click="activeTab = 'all'">
+            <i class="far fa-list"></i> View All
+          </button>
           <button v-if="canCreate" class="btn-2" @click="router.push({ name: 'PayrollAdjustmentCreate' })">
-              <i class="far fa-plus"></i> New Adjustment
-            </button>
+            <i class="far fa-plus"></i> New Adjustment
+          </button>
         </div>
       </div>
 
-      <div v-else class="overflow-x-auto">
-        <table class="min-w-[1100px] w-full border-collapse text-xs">
-          <thead class="bg-slate-50 text-slate-700">
-            <tr>
-              <th class="w-12 border border-slate-200 px-2 py-1.5 text-center">SL</th>
-              <th class="border border-slate-200 px-2 py-1.5 text-left">Employee</th>
-              <th class="border border-slate-200 px-2 py-1.5 text-left">Type</th>
-              <th class="border border-slate-200 px-2 py-1.5 text-right">Amount</th>
-              <th class="border border-slate-200 px-2 py-1.5 text-center">Ref Month</th>
-              <th class="border border-slate-200 px-2 py-1.5 text-center">Carry To</th>
-              <th class="border border-slate-200 px-2 py-1.5 text-center">Status</th>
-              <th class="w-[160px] border border-slate-200 px-2 py-1.5 text-center">Actions</th>
+      <!-- Table -->
+      <div v-else class="overflow-x-auto [scrollbar-width:thin]">
+        <table class="min-w-[1060px] w-full border-collapse text-xs">
+          <thead>
+            <tr class="bg-slate-50 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+              <th class="w-10 border-b border-r border-slate-200 px-3 py-2.5 text-center">#</th>
+              <th class="border-b border-r border-slate-200 px-3 py-2.5 text-left">Employee</th>
+              <th class="border-b border-r border-slate-200 px-3 py-2.5 text-left">Type / Reason</th>
+              <th class="border-b border-r border-slate-200 px-3 py-2.5 text-right">Amount</th>
+              <th class="border-b border-r border-slate-200 px-3 py-2.5 text-center">Ref Month</th>
+              <th class="border-b border-r border-slate-200 px-3 py-2.5 text-center">Carry To</th>
+              <th class="border-b border-r border-slate-200 px-3 py-2.5 text-center">Status</th>
+              <th class="w-36 border-b border-slate-200 px-3 py-2.5 text-center">Actions</th>
             </tr>
           </thead>
-          <tbody>
-            <tr v-for="(row, index) in visibleAdjustments" :key="row.id" class="odd:bg-white even:bg-slate-50/40">
-              <td class="border border-slate-200 px-2 py-1.5 text-center font-mono text-slate-500">
+          <tbody class="divide-y divide-slate-100">
+            <tr
+              v-for="(row, index) in visibleAdjustments"
+              :key="row.id"
+              class="group transition-colors hover:bg-indigo-50/30"
+              :class="index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'"
+            >
+              <!-- SL -->
+              <td class="border-r border-slate-100 px-3 py-2.5 text-center font-mono text-[11px] text-slate-400">
                 {{ index + 1 }}
               </td>
-              <td class="border border-slate-200 px-2 py-1.5">
-                <div class="font-semibold text-slate-900">{{ row.employee?.name || '-' }}</div>
-                <div class="text-xs text-slate-500">{{ row.employee?.employee_id || '-' }}</div>
+
+              <!-- Employee -->
+              <td class="border-r border-slate-100 px-3 py-2.5">
+                <div class="flex items-center gap-2.5">
+                  <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[10px] font-bold text-slate-500">
+                    {{ (row.employee?.name || '?').charAt(0).toUpperCase() }}
+                  </div>
+                  <div class="min-w-0">
+                    <div class="truncate font-semibold text-slate-900">{{ row.employee?.name || '-' }}</div>
+                    <div class="text-[10px] text-slate-400">{{ row.employee?.employee_id || '-' }}</div>
+                  </div>
+                </div>
               </td>
-              <td class="border border-slate-200 px-2 py-1.5">
-                <div class="capitalize text-slate-800">{{ row.adjustment_type?.replace(/_/g, ' ') }}</div>
-                <div class="text-xs text-slate-500 break-words">{{ row.reason }}</div>
+
+              <!-- Type / Reason -->
+              <td class="border-r border-slate-100 px-3 py-2.5">
+                <div class="font-medium capitalize text-slate-700">
+                  {{ row.adjustment_type?.replace(/_/g, ' ') || '-' }}
+                </div>
+                <div class="mt-0.5 max-w-[220px] truncate text-[10px] text-slate-400" :title="row.reason">
+                  {{ row.reason || '—' }}
+                </div>
               </td>
-              <td class="border border-slate-200 px-2 py-1.5 text-right font-mono font-semibold" :class="Number(row.amount) >= 0 ? 'text-emerald-700' : 'text-rose-700'">
-                {{ Number(row.amount) >= 0 ? '+' : '' }}{{ formatCurrency(row.amount) }}
+
+              <!-- Amount -->
+              <td class="border-r border-slate-100 px-3 py-2.5 text-right">
+                <span
+                  class="inline-flex items-center gap-0.5 rounded-lg px-2 py-1 font-mono text-xs font-bold"
+                  :class="Number(row.amount) >= 0
+                    ? 'bg-emerald-50 text-emerald-700'
+                    : 'bg-rose-50 text-rose-700'"
+                >
+                  {{ Number(row.amount) >= 0 ? '+' : '' }}{{ formatCurrency(row.amount) }}
+                </span>
               </td>
-              <td class="border border-slate-200 px-2 py-1.5 text-center font-mono text-slate-700">{{ row.ref_month_label }}</td>
-              <td class="border border-slate-200 px-2 py-1.5 text-center font-mono text-slate-700">{{ row.carry_to_label || '-' }}</td>
-              <td class="border border-slate-200 px-2 py-1.5 text-center"><AdjustmentStatusBadge :status="row.status" /></td>
-              <td class="border border-slate-200 px-2 py-1.5 align-middle">
-                <div class="flex h-8 items-center justify-center gap-1.5">
+
+              <!-- Ref Month -->
+              <td class="border-r border-slate-100 px-3 py-2.5 text-center">
+                <span class="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[11px] text-slate-600">
+                  {{ row.ref_month_label || '-' }}
+                </span>
+              </td>
+
+              <!-- Carry To -->
+              <td class="border-r border-slate-100 px-3 py-2.5 text-center">
+                <span
+                  v-if="row.carry_to_label"
+                  class="rounded-md bg-indigo-50 px-2 py-0.5 font-mono text-[11px] text-indigo-600"
+                >
+                  {{ row.carry_to_label }}
+                </span>
+                <span v-else class="text-slate-300">—</span>
+              </td>
+
+              <!-- Status -->
+              <td class="border-r border-slate-100 px-3 py-2.5 text-center">
+                <AdjustmentStatusBadge :status="row.status" />
+              </td>
+
+              <!-- Actions -->
+              <td class="px-3 py-2.5">
+                <div class="flex items-center justify-center gap-1">
+                  <!-- View -->
                   <button
-                    class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-blue-200 bg-blue-50 leading-none text-blue-700 transition hover:border-blue-300 hover:bg-blue-100"
-                    title="View"
-                    aria-label="View adjustment"
+                    class="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600"
+                    title="View details"
                     @click="openDetail(row)"
                   >
-                    <i class="far fa-eye block text-[11px] leading-none"></i>
+                    <i class="far fa-eye text-[11px]"></i>
                   </button>
+
+                  <!-- Approve -->
                   <button
                     v-if="canVerify && ['pending', 'verified'].includes(row.status)"
-                    class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-emerald-200 bg-emerald-50 leading-none text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100"
-                    title="Approve"
-                    aria-label="Approve adjustment"
+                    class="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-600 transition hover:border-emerald-300 hover:bg-emerald-100"
+                    title="Mark ready to apply"
                     @click="approveRow(row)"
                   >
-                    <i class="far fa-check-circle block text-[11px] leading-none"></i>
+                    <i class="far fa-check-circle text-[11px]"></i>
                   </button>
+
+                  <!-- Review (for non-verify roles) -->
                   <button
                     v-else-if="canReject && ['pending', 'verified'].includes(row.status)"
-                    class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-amber-200 bg-amber-50 leading-none text-amber-700 transition hover:border-amber-300 hover:bg-amber-100"
+                    class="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 text-amber-600 transition hover:border-amber-300 hover:bg-amber-100"
                     title="Review"
-                    aria-label="Review adjustment"
                     @click="openDetail(row)"
                   >
-                    <i class="far fa-clipboard-list block text-[11px] leading-none"></i>
+                    <i class="far fa-clipboard-list text-[11px]"></i>
                   </button>
+
                   <span v-else class="h-7 w-7 shrink-0"></span>
+
+                  <!-- Delete -->
                   <button
                     v-if="canDelete"
-                    class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-red-200 bg-red-50 leading-none text-red-700 transition hover:border-red-300 hover:bg-red-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-300"
+                    class="inline-flex h-7 w-7 items-center justify-center rounded-lg border transition disabled:cursor-not-allowed"
+                    :class="canDeleteRow(row)
+                      ? 'border-rose-200 bg-rose-50 text-rose-500 hover:border-rose-300 hover:bg-rose-100'
+                      : 'border-slate-100 bg-slate-50 text-slate-300'"
                     :disabled="!canDeleteRow(row) || isDeleting(row.id)"
                     :title="canDeleteRow(row) ? 'Delete' : 'Only pending or rejected adjustments can be deleted'"
-                    aria-label="Delete adjustment"
                     @click="deleteRow(row)"
                   >
                     <i
-                      class="block text-[11px] leading-none"
+                      class="text-[11px]"
                       :class="isDeleting(row.id) ? 'far fa-spinner fa-spin' : 'far fa-trash-alt'"
                     ></i>
                   </button>
+
                   <span v-else class="h-7 w-7 shrink-0"></span>
                 </div>
               </td>
@@ -443,6 +620,20 @@ onMounted(() => {
           </tbody>
         </table>
       </div>
+
+      <!-- Table Footer -->
+      <div v-if="visibleAdjustments.length" class="border-t border-slate-100 bg-slate-50/50 px-4 py-2.5">
+        <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+          <span>
+            Showing <strong class="text-slate-700">{{ visibleAdjustments.length }}</strong> adjustment{{ visibleAdjustments.length !== 1 ? 's' : '' }}
+            for <strong class="text-slate-700">{{ activeMonthLabel }}</strong>
+          </span>
+          <span v-if="activeTab !== 'all'" class="rounded-md bg-white border border-slate-200 px-2 py-0.5 text-slate-500">
+            Filtered: <strong>{{ tabOptions.find(t => t.value === activeTab)?.label }}</strong>
+          </span>
+        </div>
+      </div>
     </div>
+
   </div>
 </template>

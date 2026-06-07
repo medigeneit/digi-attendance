@@ -64,7 +64,7 @@ const load = async () => {
 const verify = async () => {
   try {
     await store.verify(props.id, approveNote.value)
-    toast.success('Adjustment approved.')
+    toast.success('Adjustment marked ready to apply.')
     approveNote.value = ''
     await load()
   } catch (e) {
@@ -126,7 +126,7 @@ onMounted(load)
           <div class="mt-1 text-2xl font-bold uppercase tracking-wide text-slate-950">
             Payroll Adjustment Slip
           </div>
-          <div class="mt-1 text-xs font-medium text-slate-600">For internal approval and record</div>
+          <div class="mt-1 text-xs font-medium text-slate-600">For internal authorization and payroll application record</div>
           <div class="absolute right-0 top-0 text-right text-[11px] text-slate-500">
             <div>Slip No.</div>
             <div class="font-semibold text-slate-900">#{{ item.id }}</div>
@@ -194,7 +194,7 @@ onMounted(load)
 
         <div class="no-print mt-4 flex flex-wrap gap-2">
           <button v-if="canVerify && ['pending', 'verified'].includes(item.status)" class="btn-2" @click="verify">
-            <i class="far fa-check-circle"></i> Approve
+            <i class="far fa-check-circle"></i> Mark Ready to Apply
           </button>
           <button v-if="canReject && ['pending', 'verified'].includes(item.status)" class="btn-3" @click="showRejectModal = true">
             <i class="far fa-times-circle"></i> Reject
@@ -202,17 +202,17 @@ onMounted(load)
         </div>
 
         <div v-if="canVerify && ['pending', 'verified'].includes(item.status)" class="no-print mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Approval Note</label>
+          <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Authorization Note</label>
           <textarea
             v-model="approveNote"
             rows="3"
             class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-100"
-            placeholder="Optional note for approval"
+            placeholder="Optional note for authorization"
           />
           <div class="mt-3 flex justify-end">
             <button class="btn-2" @click="verify">
               <i class="far fa-check"></i>
-              Approve with Note
+              Mark Ready with Note
             </button>
           </div>
         </div>
