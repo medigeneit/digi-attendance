@@ -279,7 +279,6 @@ function buildLetterPages(repeatIntro = true, includePagePadding = false) {
   })
   if (!chunks.length) chunks.push([])
 
-  let globalIdx = 0
   return chunks.map((chunk, ci) => {
     const isLast  = ci === chunks.length - 1
     const isFirst = ci === 0
@@ -288,10 +287,9 @@ function buildLetterPages(repeatIntro = true, includePagePadding = false) {
     const pageTotalText = escHtml(fmtAmount(pageTotal))
     const pageTotalWords = escHtml(`${toTitleCase(numberToWords(Math.round(pageTotal)))} taka only.`)
 
-    const bodyHtml = chunk.map((emp) => {
-      const gi = globalIdx++
+    const bodyHtml = chunk.map((emp, pageIdx) => {
       return '<tr>' + cols.map(col =>
-        `<td style="${tdStyle(col.key)}">${escHtml(cellValue(col, emp, gi))}</td>`
+        `<td style="${tdStyle(col.key)}">${escHtml(cellValue(col, emp, pageIdx))}</td>`
       ).join('') + '</tr>'
     }).join('')
 
@@ -323,7 +321,7 @@ function buildLetterPages(repeatIntro = true, includePagePadding = false) {
 }
 
 function buildRepeatHeaderInsert() {
-  return buildLetterPages(true, false).join('')
+  return buildLetterPages(pad.repeatHeader, false).join('')
 }
 
 // ─── PDF download ─────────────────────────────────────────────────────────────
@@ -381,18 +379,14 @@ function handleBeforePrint() {
   const app = document.getElementById('app')
   if (app) app.style.setProperty('display', 'none', 'important')
 
-  if (pad.repeatHeader) {
-    // Build a plain-HTML multi-page document and inject it into body.
-    // Each section has the full intro + N rows + page-break-after, so every
-    // printed page starts with the letter intro regardless of Chrome's thead behavior.
-    printInsert = document.createElement('div')
-    printInsert.id = 'letter-print-insert'
-    printInsert.style.background = 'white'
-    printInsert.innerHTML = buildRepeatHeaderInsert()
-    document.body.appendChild(printInsert)
+  // Build a controlled multi-page document so each printed page restarts SL at 1.
+  printInsert = document.createElement('div')
+  printInsert.id = 'letter-print-insert'
+  printInsert.style.background = 'white'
+  printInsert.innerHTML = buildRepeatHeaderInsert()
+  document.body.appendChild(printInsert)
     // Hide the Vue-rendered modal — printInsert is what Chrome will print
-    el.style.setProperty('display', 'none', 'important')
-  }
+  el.style.setProperty('display', 'none', 'important')
 }
 
 function handleAfterPrint() {
