@@ -21,6 +21,7 @@ const now = new Date()
 
 // ─── Letter control state ─────────────────────────────────────────────────────
 const letterDateInput = ref(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`)
+const serial = ref('01')
 
 // ─── Pad (letterhead) config — persisted in localStorage ─────────────────────
 const PAD_KEY = 'salary-letter-pad'
@@ -83,7 +84,7 @@ const parsedLetterDate = computed(() => {
   return { year, month, day }
 })
 const monthLabel   = computed(() => MONTHS[parsedLetterDate.value.month - 1])
-const letterNo     = computed(() => `Salary ${monthLabel.value}'${parsedLetterDate.value.year}`)
+const letterNo     = computed(() => `Salary ${monthLabel.value}'${parsedLetterDate.value.year}/${String(serial.value || '').padStart(2, '0')}`)
 const subjectMonth = computed(() => `${monthLabel.value}' ${parsedLetterDate.value.year}`)
 const letterDate   = computed(() =>
   `${String(parsedLetterDate.value.day).padStart(2,'0')}.${String(parsedLetterDate.value.month).padStart(2,'0')}.${parsedLetterDate.value.year}`
@@ -465,6 +466,17 @@ onUnmounted(() => {
               v-model="letterDateInput"
               type="date"
               class="h-8 rounded border border-slate-200 bg-white px-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400"
+            />
+          </div>
+
+          <!-- Serial -->
+          <div>
+            <label class="block text-[10px] text-slate-500 mb-0.5">Serial</label>
+            <input
+              v-model="serial"
+              type="text"
+              maxlength="4"
+              class="h-8 w-14 rounded border border-slate-200 px-2 text-center text-xs focus:outline-none focus:ring-1 focus:ring-blue-400"
             />
           </div>
 
