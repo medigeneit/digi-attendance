@@ -46,19 +46,19 @@ const printSheet = () => window.print()
     <transition name="fade">
       <div
         v-if="open"
-        class="fixed inset-0 z-[1050] flex items-start justify-center overflow-y-auto bg-black/60 px-4 py-6 print:static print:block print:overflow-visible print:bg-white print:p-0"
+        class="fixed inset-0 z-[1050] flex items-start justify-center overflow-y-auto bg-black/60 px-3 py-4 print:static print:block print:overflow-visible print:bg-white print:p-0"
         @click="close"
       >
         <div
-          class="salary-sheet-printable relative w-full max-w-4xl rounded-2xl border border-stone-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950 print:rounded-none print:border-0 print:shadow-none"
+          class="salary-sheet-printable relative w-full max-w-3xl rounded-xl border border-stone-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950 print:rounded-none print:border-0 print:shadow-none"
           role="dialog"
           aria-modal="true"
           @click.stop="stop"
         >
-          <div class="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950 print:hidden">
+          <div class="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 bg-white px-4 py-2.5 dark:border-slate-800 dark:bg-slate-950 print:hidden">
             <div>
-              <p class="text-xs font-semibold uppercase tracking-[0.3em] text-stone-500 dark:text-slate-400">Salary Slips</p>
-              <h2 class="text-lg font-semibold text-stone-900 dark:text-white">Monthly Salary Sheet</h2>
+              <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-stone-500 dark:text-slate-400">Salary Slips</p>
+              <h2 class="text-base font-semibold text-stone-900 dark:text-white">Monthly Salary Sheet</h2>
             </div>
             <div class="flex flex-wrap gap-2">
               <button

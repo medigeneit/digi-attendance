@@ -287,13 +287,13 @@ const salaryAdvanceLabel = computed(() =>
 const advanceAdjustedAmount = computed(() =>
   toNumber(currentPayroll.value?.advance_adjusted_amount ?? currentPayroll.value?.calculation_breakdown?.advance_adjusted_amount),
 )
-const paycutDeductionLabel = computed(() => {
+const attendanceDeductionAmount = computed(() => {
   const paycutAmount = toNumber(currentPayroll.value?.paycut_deduction)
   if (advanceAdjustedAmount.value > 0 && Math.abs(paycutAmount - advanceAdjustedAmount.value) < 1) {
-    return 'Half Salary Advance Adjustment'
+    return 0
   }
 
-  return 'Attendance Deduction'
+  return paycutAmount
 })
 
 const earningRows = computed(() => {
@@ -317,24 +317,24 @@ const earningRows = computed(() => {
 
   const manualAdditionBase = Math.max(0, toNumber(payroll.manual_addition) - contraEarningTotal.value)
   const rows = [
-    { label: 'Basic Salary', value: payroll.basic_salary },
-    { label: 'House Rent', value: payroll.house_rent },
-    { label: 'Medical', value: payroll.medical_allowance },
-    { label: 'Conveyance', value: payroll.conveyance_allowance },
-    { label: 'Gross', value: grossSalary.value, highlight: true },
+    { label: 'Basic Salary', value: payroll.basic_salary, totalable: false },
+    { label: 'House Rent', value: payroll.house_rent, totalable: false },
+    { label: 'Medical', value: payroll.medical_allowance, totalable: false },
+    { label: 'Conveyance', value: payroll.conveyance_allowance, totalable: false },
+    { label: 'Gross', value: grossSalary.value, highlight: true, totalable: true },
   ]
 
   const otherAllowanceTotal = toNumber(payroll.other_allowance_display_total ?? payroll.other_allowance_total)
 
-  rows.push({ label: 'Others Allowance', value: otherAllowanceTotal })
+  rows.push({ label: 'Others Allowance', value: otherAllowanceTotal, totalable: true })
   if (pfAllowanceTotal.value > 0) {
-    rows.push({ label: 'PF Allowance', value: pfAllowanceTotal.value })
+    rows.push({ label: 'PF Allowance', value: pfAllowanceTotal.value, totalable: true })
   }
-  if (bonusAmount.value > 0) rows.push({ label: 'Bonus', value: bonusAmount.value })
-  rows.push({ label: 'Arrear', value: toNumber(payroll.arrear) })
+  if (bonusAmount.value > 0) rows.push({ label: 'Bonus', value: bonusAmount.value, totalable: true })
+  rows.push({ label: 'Arrear', value: toNumber(payroll.arrear), totalable: true })
 
 
-  if (manualAdditionBase > 0) rows.push({ label: 'Manual Addition', value: manualAdditionBase })
+  if (manualAdditionBase > 0) rows.push({ label: 'Manual Addition', value: manualAdditionBase, totalable: true })
 
   rows.push(...contraEarningRows.value)
 
@@ -361,7 +361,7 @@ const deductionRows = computed(() => {
     { label: 'Others', value: otherDeductionBase },
     ...(advanceAdjustedAmount.value > 0 ? [{ label: 'Half Salary Advance Adjustment', value: advanceAdjustedAmount.value }] : []),
     { label: 'Advance', value: payroll.advance_deduction },
-    { label: paycutDeductionLabel.value, value: payroll.paycut_deduction },
+    { label: 'Attendance Deduction', value: attendanceDeductionAmount.value },
   ]
 
   rows.push(...contraDeductionRows.value)
@@ -377,19 +377,14 @@ const totalEarnings = computed(() => {
     return earningRows.value.reduce((sum, item) => sum + (item.reference ? 0 : toNumber(item.value)), 0)
   }
 
-  if (payroll.total_earnings !== undefined && payroll.total_earnings !== null) {
-    return toNumber(payroll.total_earnings)
-  }
-
-  return toNumber(payroll.net_salary) + toNumber(payroll.total_deduction)
+  return earningRows.value.reduce((sum, item) => {
+    if (item.totalable === false || item.reference) return sum
+    return sum + toNumber(item.value)
+  }, 0)
 })
 
 const totalDeductions = computed(() => {
   if (isAdvanceCycle.value || isBonusOnlyCycle.value) return 0
-
-  if (currentPayroll.value?.total_deduction !== undefined && currentPayroll.value?.total_deduction !== null) {
-    return toNumber(currentPayroll.value.total_deduction)
-  }
 
   return deductionRows.value.reduce((sum, item) => sum + toNumber(item.value), 0)
 })
@@ -445,11 +440,11 @@ const bankDetails = computed(() => {
   <section
     class="bg-slate-100 px-2 py-3 print:bg-white print:p-0 dark:bg-slate-950"
   >
-    <div v-if="currentPayroll" class="mx-auto max-w-[820px] bg-white shadow-xl ring-1 ring-slate-300 print:max-w-none print:shadow-none print:ring-0">
-      <div class="p-8 print:p-0">
+    <div v-if="currentPayroll" class="mx-auto max-w-[760px] bg-white shadow-lg ring-1 ring-slate-200 print:max-w-none print:shadow-none print:ring-0">
+      <div class="p-4 print:p-0 sm:p-5">
         <div
           v-if="slipPayrolls.length > 1"
-          class="mb-3 flex flex-wrap gap-2 print:hidden"
+          class="mb-3 flex flex-wrap gap-1.5 print:hidden"
         >
           <button
             v-for="payroll in slipPayrolls"
@@ -465,57 +460,62 @@ const bankDetails = computed(() => {
           </button>
         </div>
         <div class="salary-paper mx-auto">
-          <div class="text-center">
-            <div class="mt-1 text-[15px] font-medium text-slate-700">{{ companyName }}</div>
-            <div class="mt-1 text-[13px] text-slate-600">{{ slipTitle }}</div>
-            <div class="mt-1 text-[13px] text-slate-600">{{ payPeriodLabel }}</div>
+          <div class="salary-header">
+            <div>
+              <div class="text-[15px] font-semibold text-slate-900">{{ companyName }}</div>
+              <div class="mt-0.5 text-[12px] text-slate-500">{{ slipTitle }} | {{ payPeriodLabel }}</div>
+            </div>
+            <div class="net-summary">
+              <span class="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">Net Payment</span>
+              <strong class="font-mono text-[18px] text-slate-900">{{ formatMoney(netPayment) }}</strong>
+            </div>
           </div>
 
-          <div class="salary-info-grid mt-8 text-[13px] text-slate-800">
-            <div class="space-y-1">
-              <div class="flex gap-2">
+          <div class="salary-info-grid mt-4 text-[12px] text-slate-800">
+            <div class="space-y-0.5">
+              <div class="salary-info-row">
                 <span class="salary-info-label text-slate-600">Employee name</span>
                 <span>: {{ employeeName }}</span>
               </div>
-              <div class="flex gap-2">
+              <div class="salary-info-row">
                 <span class="salary-info-label text-slate-600">Date of Joining</span>
                 <span>: {{ formatDate(joiningDate) }}</span>
               </div>
-              <div class="flex gap-2">
+              <div class="salary-info-row">
                 <span class="salary-info-label text-slate-600">Employee ID</span>
                 <span>: {{ employeeId }}</span>
               </div>
             </div>
-            <div class="space-y-1">
-              <div class="flex gap-2">
+            <div class="space-y-0.5">
+              <div class="salary-info-row">
                 <span class="salary-info-label text-slate-600">Designation</span>
                 <span>: {{ designation }}</span>
               </div>
-              <div class="flex gap-2">
+              <div class="salary-info-row">
                 <span class="salary-info-label text-slate-600">Department</span>
                 <span>: {{ department }}</span>
               </div>
-              <div class="flex gap-2">
+              <div class="salary-info-row">
                 <span class="salary-info-label text-slate-600">Payroll Type</span>
                 <span>: {{ cycleLabel(currentPayroll) }}</span>
               </div>
             </div>
           </div>
 
-          <div class="mt-6 overflow-hidden border border-slate-700">
-            <table class="salary-slip-table w-full border-collapse text-[13px]">
+          <div class="mt-4 overflow-hidden border border-slate-700">
+            <table class="salary-slip-table w-full border-collapse text-[12px]">
               <thead>
                 <tr class="bg-slate-100 text-slate-900">
-                  <th class="border border-slate-700 px-3 py-2 text-center font-semibold">Earnings</th>
-                  <th class="border border-slate-700 px-3 py-2 text-center font-semibold">Amount</th>
-                  <th class="border border-slate-700 px-3 py-2 text-center font-semibold">Deductions</th>
-                  <th class="border border-slate-700 px-3 py-2 text-center font-semibold">Amount</th>
+                  <th class="border border-slate-700 px-2.5 py-1.5 text-center font-semibold">Earnings</th>
+                  <th class="border border-slate-700 px-2.5 py-1.5 text-center font-semibold">Amount</th>
+                  <th class="border border-slate-700 px-2.5 py-1.5 text-center font-semibold">Deductions</th>
+                  <th class="border border-slate-700 px-2.5 py-1.5 text-center font-semibold">Amount</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="index in salaryTableRowCount" :key="index">
                   <td
-                    class="border border-slate-700 px-3 py-2"
+                    class="border border-slate-700 px-2.5 py-1.5"
                     :class="[
                       earningRows[index - 1]?.highlight ? 'bg-slate-100 font-semibold' : '',
                       earningRows[index - 1]?.reference ? 'text-slate-600' : '',
@@ -524,7 +524,7 @@ const bankDetails = computed(() => {
                     {{ earningRows[index - 1]?.label || '' }}
                   </td>
                   <td
-                    class="border border-slate-700 px-3 py-2 text-right font-mono font-semibold"
+                    class="border border-slate-700 px-2.5 py-1.5 text-right font-mono font-semibold"
                     :class="[
                       earningRows[index - 1]?.highlight ? 'bg-slate-100' : '',
                       earningRows[index - 1]?.reference ? 'text-slate-600' : '',
@@ -532,24 +532,24 @@ const bankDetails = computed(() => {
                   >
                     {{ earningRows[index - 1] ? formatMoney(earningRows[index - 1].value) : '' }}
                   </td>
-                  <td class="border border-slate-700 px-3 py-2">{{ deductionRows[index - 1]?.label || '' }}</td>
-                  <td class="border border-slate-700 px-3 py-2 text-right font-mono font-semibold">
+                  <td class="border border-slate-700 px-2.5 py-1.5">{{ deductionRows[index - 1]?.label || '' }}</td>
+                  <td class="border border-slate-700 px-2.5 py-1.5 text-right font-mono font-semibold">
                     {{ deductionRows[index - 1] ? formatMoney(deductionRows[index - 1].value) : '' }}
                   </td>
                 </tr>
-                <tr class="font-semibold">
-                  <td class="border border-slate-700 px-3 py-2 text-right">Total Earnings</td>
-                  <td class="border border-slate-700 px-3 py-2 text-right font-mono">
+                <tr class="bg-slate-50 font-semibold">
+                  <td class="border border-slate-700 px-2.5 py-1.5 text-right">Total Earnings</td>
+                  <td class="border border-slate-700 px-2.5 py-1.5 text-right font-mono">
                     {{ formatMoney(totalEarnings) }}
                   </td>
-                  <td class="border border-slate-700 px-3 py-2 text-right">Total Deductions</td>
-                  <td class="border border-slate-700 px-3 py-2 text-right font-mono">
+                  <td class="border border-slate-700 px-2.5 py-1.5 text-right">Total Deductions</td>
+                  <td class="border border-slate-700 px-2.5 py-1.5 text-right font-mono">
                     {{ formatMoney(totalDeductions) }}
                   </td>
                 </tr>
                 <tr class="font-semibold">
-                  <td class="border border-slate-700 px-3 py-2 text-right" colspan="3">Net Payment</td>
-                  <td class="border border-slate-700 px-3 py-2 text-right font-mono">
+                  <td class="border border-slate-700 px-2.5 py-1.5 text-right" colspan="3">Net Payment</td>
+                  <td class="border border-slate-700 px-2.5 py-1.5 text-right font-mono">
                     {{ formatMoney(netPayment) }}
                   </td>
                 </tr>
@@ -557,26 +557,17 @@ const bankDetails = computed(() => {
             </table>
           </div>
 
-          <div class="mt-5">
-            <div class="salary-amount-box">
-              <div class="text-[15px] font-semibold text-slate-800">{{ numberToWords(netPayment) }}</div>
-              <div class="mt-1 text-[16px] font-bold text-slate-600">{{ formatMoney(netPayment) }}</div>
+          <div class="salary-footer mt-4">
+            <div class="min-w-0">
+              <div class="text-[12px] font-semibold text-slate-800">{{ numberToWords(netPayment) }}</div>
+              <div class="mt-0.5 text-[11px] text-slate-500">
+                Payment Method: {{ paymentMethod }}<span v-if="bankDetails"> | {{ bankDetails }}</span>
+              </div>
             </div>
-          </div>
-
-          <div class="salary-signature-grid mt-14">
-            <div>
-              <div class="salary-signature-line"></div>
-              <div class="mt-2 text-center text-sm text-slate-700">Employer Signature</div>
+            <div class="text-right">
+              <span class="block text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">Amount</span>
+              <strong class="font-mono text-[16px] text-slate-900">{{ formatMoney(netPayment) }}</strong>
             </div>
-            <div>
-              <div class="salary-signature-line"></div>
-              <div class="mt-2 text-center text-sm text-slate-700">Employee Signature</div>
-            </div>
-          </div>
-
-          <div class="mt-8 border-t border-slate-200 pt-3 text-center text-sm text-slate-600">
-            Payment Method: {{ paymentMethod }}<span v-if="bankDetails"> | {{ bankDetails }}</span>
           </div>
         </div>
       </div>
@@ -592,20 +583,46 @@ const bankDetails = computed(() => {
 
 <style scoped>
 .salary-paper {
-  width: 190mm;
-  min-height: 277mm;
-  padding: 0 6mm 6mm;
+  width: 100%;
+  max-width: 178mm;
+  padding: 0;
   color: #111827;
+}
+
+.salary-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 12px;
+}
+
+.net-summary {
+  flex: none;
+  min-width: 132px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  padding: 8px 10px;
+  text-align: right;
 }
 
 .salary-info-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 10mm;
+  gap: 12px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 12px;
+}
+
+.salary-info-row {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
 }
 
 .salary-info-label {
-  width: 7.5rem;
+  width: 6.75rem;
   flex: none;
 }
 
@@ -618,20 +635,14 @@ const bankDetails = computed(() => {
   word-break: break-word;
 }
 
-.salary-amount-box {
-  width: 75%;
-  text-align: left;
-}
-
-.salary-signature-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10mm;
-}
-
-.salary-signature-line {
-  border-top: 1px solid #6b7280;
-  margin-top: 4.5rem;
+.salary-footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  padding: 10px 12px;
 }
 
 @media (max-width: 767px) {
@@ -646,32 +657,28 @@ const bankDetails = computed(() => {
     gap: 12px;
   }
 
-  .salary-amount-box {
-    width: 100%;
+  .salary-header,
+  .salary-footer {
+    flex-direction: column;
   }
 
-  .salary-signature-grid {
-    grid-template-columns: 1fr;
-    gap: 8mm;
+  .net-summary {
+    width: 100%;
+    text-align: left;
+  }
+
+  .salary-info-row {
+    align-items: flex-start;
   }
 }
 
 @media print {
   .salary-paper {
-    width: auto;
-    min-height: auto;
+    max-width: none;
     padding: 0;
   }
 
   .salary-info-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .salary-amount-box {
-    width: 75%;
-  }
-
-  .salary-signature-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
