@@ -21,7 +21,6 @@ const now = new Date()
 
 // ─── Letter control state ─────────────────────────────────────────────────────
 const letterDateInput = ref(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`)
-const serial   = ref('01')
 
 // ─── Pad (letterhead) config — persisted in localStorage ─────────────────────
 const PAD_KEY = 'salary-letter-pad'
@@ -63,13 +62,7 @@ const selectedBankAcc = ref(null)
 const activeBankAcc = computed(() => props.bankAccount || selectedBankAcc.value)
 const acName        = computed(() => activeBankAcc.value?.account_name   || '—')
 const acNumber      = computed(() => activeBankAcc.value?.account_number || '—')
-const acBankName    = computed(() => activeBankAcc.value?.bank_name   || '')
 const acBranch      = computed(() => activeBankAcc.value?.branch_name || '')
-const acBranchDisplay = computed(() => {
-  const branch = String(acBranch.value || '').trim()
-  if (!branch) return ''
-  return /branch$/i.test(branch) ? branch : `${branch} Branch`
-})
 // Sync org name display in letter body from bank account
 const orgName = computed(() => activeBankAcc.value?.account_name || '—')
 
@@ -90,7 +83,7 @@ const parsedLetterDate = computed(() => {
   return { year, month, day }
 })
 const monthLabel   = computed(() => MONTHS[parsedLetterDate.value.month - 1])
-const letterNo     = computed(() => `Salary ${monthLabel.value}'${parsedLetterDate.value.year}/${String(serial.value).padStart(2,'00')}`)
+const letterNo     = computed(() => `Salary ${monthLabel.value}'${parsedLetterDate.value.year}`)
 const subjectMonth = computed(() => `${monthLabel.value}' ${parsedLetterDate.value.year}`)
 const letterDate   = computed(() =>
   `${String(parsedLetterDate.value.day).padStart(2,'0')}.${String(parsedLetterDate.value.month).padStart(2,'0')}.${parsedLetterDate.value.year}`
@@ -152,7 +145,7 @@ function numberToWords(num) {
 
 // ─── Column customization ─────────────────────────────────────────────────────
 const ALL_COLS = [
-  { key: 'sl',         label: 'Sl',           locked: true  },
+  { key: 'sl',         label: 'SL',           locked: true  },
   { key: 'name',       label: 'Name',         locked: true  },
   { key: 'employeeId', label: 'Emp. ID',       locked: false },
   { key: 'unit',       label: 'Unit',         locked: false },
@@ -285,17 +278,6 @@ function buildLetterPages(repeatIntro = true, includePagePadding = false) {
   })
   if (!chunks.length) chunks.push([])
 
-  const sigBlockHtml = `<div style="margin-top:3.5rem;display:flex;align-items:flex-end;justify-content:space-between;">
-      <div style="font-size:${fontSize}px;line-height:1.5;">
-        ${acBankName.value ? `<p style="margin:0;">${escHtml(acBankName.value)}</p>` : ''}
-        ${acBranchDisplay.value ? `<p style="margin:0;">${escHtml(acBranchDisplay.value)}</p>` : ''}
-      </div>
-      <div style="text-align:center;font-size:${fontSize}px;">
-        <div style="width:12rem;border-top:1px solid black;margin-bottom:0.25rem;"></div>
-        <p style="margin:0;">Authorized Signature</p>
-      </div>
-    </div>`
-
   let globalIdx = 0
   return chunks.map((chunk, ci) => {
     const isLast  = ci === chunks.length - 1
@@ -324,8 +306,6 @@ function buildLetterPages(repeatIntro = true, includePagePadding = false) {
         </tr>
       </tfoot>`
 
-    const sigHtml = isLast ? sigBlockHtml : ''
-
     const pageBoxStyle = includePagePadding
       ? `box-sizing:border-box;min-height:${A4_H}px;padding:${headerPadPx}px 2.5rem ${Math.max(footerPadPx, 24)}px;`
       : 'padding:0 2.5rem 1.5rem;'
@@ -337,7 +317,6 @@ function buildLetterPages(repeatIntro = true, includePagePadding = false) {
         <tbody>${bodyHtml}</tbody>
         ${tfoot}
       </table>
-      ${sigHtml}
     </div>`
   })
 }
@@ -487,12 +466,6 @@ onUnmounted(() => {
               type="date"
               class="h-8 rounded border border-slate-200 bg-white px-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400"
             />
-          </div>
-
-          <!-- Serial -->
-          <div>
-            <label class="block text-[10px] text-slate-500 mb-0.5">Serial</label>
-            <input v-model="serial" type="text" maxlength="4" class="h-8 w-14 rounded border border-slate-200 px-2 text-center text-xs focus:outline-none focus:ring-1 focus:ring-blue-400" />
           </div>
 
           <!-- Column toggles -->
@@ -723,16 +696,6 @@ onUnmounted(() => {
                   </tr>
                 </tfoot>
               </table>
-              <div class="mt-14 flex items-end justify-between">
-                <div class="text-sm leading-relaxed">
-                  <p v-if="acBankName">{{ acBankName }}</p>
-                  <p v-if="acBranchDisplay">{{ acBranchDisplay }}</p>
-                </div>
-                <div class="text-center text-sm">
-                  <div class="mb-1 w-48 border-t border-black"></div>
-                  <p>Authorized Signature</p>
-                </div>
-              </div>
             </div>
           </div>
         </template>
@@ -793,16 +756,6 @@ onUnmounted(() => {
                 </tr>
               </tfoot>
             </table>
-            <div class="mt-14 pb-6 flex items-end justify-between">
-              <div class="text-sm leading-relaxed">
-                <p v-if="acBankName">{{ acBankName }}</p>
-                <p v-if="acBranchDisplay">{{ acBranchDisplay }}</p>
-              </div>
-              <div class="text-center text-sm">
-                <div class="mb-1 w-48 border-t border-black"></div>
-                <p>Authorized Signature</p>
-              </div>
-            </div>
           </div>
         </template>
 
