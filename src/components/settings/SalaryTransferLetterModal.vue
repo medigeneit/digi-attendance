@@ -21,7 +21,7 @@ const now = new Date()
 
 // ─── Letter control state ─────────────────────────────────────────────────────
 const letterDateInput = ref(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`)
-const serial = ref('01')
+const serial = ref(String(now.getMonth() + 1).padStart(2, '0'))
 
 // ─── Pad (letterhead) config — persisted in localStorage ─────────────────────
 const PAD_KEY = 'salary-letter-pad'
@@ -73,6 +73,7 @@ watch(() => props.salaryMonth, (sm) => {
   if (!y || !m) return
   const currentDay = String(letterDateInput.value || '').slice(8, 10) || '01'
   letterDateInput.value = `${y}-${String(m).padStart(2, '0')}-${currentDay}`
+  serial.value = String(m).padStart(2, '0')
 }, { immediate: true })
 
 // ─── Computed letter values ───────────────────────────────────────────────────
