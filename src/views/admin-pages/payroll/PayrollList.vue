@@ -49,6 +49,7 @@ const cycleOptions = [
 ]
 
 const statusOptions = ['Pending', 'Generated', 'Reviewed', 'Approved', 'Paid', 'Locked', 'Hold', 'Cancelled', 'Partial']
+const paymentMethodOptions = ['Cash', 'Bank Transfer', 'bKash', 'Nagad', 'Rocket', 'Cheque', 'Other']
 
 const monthToPeriod = (value) => {
   const month = String(value || '').slice(0, 7)
@@ -144,6 +145,7 @@ const buildColumnTotals = (data) => {
     arrear: data.reduce((s, r) => s + getArrearAmount(r), 0),
     bonus_amount: sum('bonus_amount'),
     manual_addition: sum('manual_addition'),
+    paycut_deduction: data.reduce((s, r) => s - toNumber(r.paycut_deduction), 0),
     total_earnings: data.reduce((s, r) => s + getTotalEarnings(r), 0),
     pf_deduction: sum('pf_deduction'),
     meal_deduction: sum('meal_deduction'),
@@ -151,7 +153,6 @@ const buildColumnTotals = (data) => {
     security_money_deduction: sum('security_money_deduction'),
     other_deduction: sum('other_deduction'),
     advance_deduction: data.reduce((s, r) => s + getTotalAdvanceAmount(r), 0),
-    paycut_deduction: sum('paycut_deduction'),
     total_deduction: data.reduce((s, r) => s + getTotalDeductions(r), 0),
     net_salary: sum('net_salary'),
   }
@@ -190,14 +191,12 @@ const groupedByUnit = computed(() => {
 
 const buildRouteQuery = () => {
   const params = { ...filters.value }
-  delete params.default_payment_method
   Object.keys(params).forEach((k) => { if (!params[k]) delete params[k] })
   return params
 }
 
 const buildApiParams = () => {
   const params = { ...filters.value }
-  delete params.default_payment_method
   if (params.employee_id) {
     params.user_id = params.employee_id
   }
@@ -370,6 +369,7 @@ const EARNINGS_COLUMNS = [
   { key: 'arrear', label: 'Arr.', tone: 'highlight' },
   { key: 'bonus_amount', label: 'Bonus', tone: 'highlight' },
   { key: 'manual_addition', label: 'OT', tone: 'neutral' },
+  { key: 'paycut_deduction', label: 'Cut', tone: 'reduction' },
 ]
 
 const DEDUCTION_COLUMNS = [
@@ -379,7 +379,6 @@ const DEDUCTION_COLUMNS = [
   { key: 'security_money_deduction', label: 'S.M.' },
   { key: 'other_deduction', label: 'Other' },
   { key: 'advance_deduction', label: 'Adv.', title: 'Advance deduction + advance adjusted (combined)' },
-  { key: 'paycut_deduction', label: 'Cut' },
 ]
 
 const TOGGLEABLE_COLUMN_KEYS = [
@@ -457,17 +456,24 @@ const resetColumns = () => {
 const earningCellClass = (tone) => {
   if (tone === 'strong') return 'border border-emerald-200 bg-emerald-50/40 px-1 py-1.5 text-right font-mono font-semibold text-emerald-800'
   if (tone === 'highlight') return 'border border-emerald-100 bg-emerald-50/20 px-1 py-1.5 text-right font-mono text-emerald-700'
+  if (tone === 'reduction') return 'border border-emerald-100 bg-emerald-50/20 px-1 py-1.5 text-right font-mono text-rose-600'
   return 'border border-emerald-100 bg-emerald-50/20 px-1 py-1.5 text-right font-mono text-slate-700'
 }
 const earningHeadClass = (tone) => tone === 'strong'
   ? 'border border-emerald-200 bg-emerald-50 px-1 py-1.5 text-right font-bold text-emerald-800'
-  : 'border border-emerald-200 bg-emerald-50 px-1 py-1.5 text-right text-emerald-700'
+  : tone === 'reduction'
+    ? 'border border-emerald-200 bg-emerald-50 px-1 py-1.5 text-right text-rose-700'
+    : 'border border-emerald-200 bg-emerald-50 px-1 py-1.5 text-right text-emerald-700'
 const earningSubtotalClass = (tone) => tone === 'strong'
   ? 'border border-emerald-300 bg-emerald-200/70 px-1 py-1.5 text-right font-mono text-emerald-900'
-  : 'border border-emerald-200 bg-emerald-100/70 px-1 py-1.5 text-right font-mono text-emerald-800'
+  : tone === 'reduction'
+    ? 'border border-emerald-200 bg-emerald-100/70 px-1 py-1.5 text-right font-mono text-rose-700'
+    : 'border border-emerald-200 bg-emerald-100/70 px-1 py-1.5 text-right font-mono text-emerald-800'
 const earningGrandClass = (tone) => tone === 'strong'
   ? 'border border-emerald-300 bg-emerald-200/80 px-1 py-2 text-right font-mono text-emerald-900'
-  : 'border border-emerald-200 bg-emerald-100/80 px-1 py-2 text-right font-mono text-emerald-800'
+  : tone === 'reduction'
+    ? 'border border-emerald-200 bg-emerald-100/80 px-1 py-2 text-right font-mono text-rose-700'
+    : 'border border-emerald-200 bg-emerald-100/80 px-1 py-2 text-right font-mono text-emerald-800'
 
 const DEDUCTION_CELL_CLASS = 'border border-rose-100 bg-rose-50/20 px-1 py-1.5 text-right font-mono text-rose-600'
 const DEDUCTION_HEAD_CLASS = 'border border-rose-200 bg-rose-50 px-1 py-1.5 text-right text-rose-700'
@@ -501,7 +507,8 @@ const getTotalEarnings = (payroll) =>
   toNumber(payroll?.gross_salary) +
   toNumber(payroll?.other_allowance_total) +
   toNumber(payroll?.manual_addition) +
-  toNumber(payroll?.bonus_amount)
+  toNumber(payroll?.bonus_amount) -
+  toNumber(payroll?.paycut_deduction)
 
 const getTotalDeductions = (payroll) =>
   toNumber(payroll?.pf_deduction) +
@@ -509,8 +516,7 @@ const getTotalDeductions = (payroll) =>
   toNumber(payroll?.loan_deduction) +
   toNumber(payroll?.security_money_deduction) +
   toNumber(payroll?.other_deduction) +
-  getTotalAdvanceAmount(payroll) +
-  toNumber(payroll?.paycut_deduction)
+  getTotalAdvanceAmount(payroll)
 
 const isLockedPayroll = (payroll) =>
   ['paid', 'locked'].includes(String(payroll?.payment_status || payroll?.status || '').toLowerCase())
@@ -526,6 +532,7 @@ const earningGetters = {
   arrear: getArrearAmount,
   bonus_amount: (p) => toNumber(p?.bonus_amount),
   manual_addition: (p) => toNumber(p?.manual_addition),
+  paycut_deduction: (p) => -toNumber(p?.paycut_deduction),
 }
 
 const deductionGetters = {
@@ -535,7 +542,6 @@ const deductionGetters = {
   security_money_deduction: (p) => toNumber(p?.security_money_deduction),
   other_deduction: (p) => toNumber(p?.other_deduction),
   advance_deduction: getTotalAdvanceAmount,
-  paycut_deduction: (p) => toNumber(p?.paycut_deduction),
 }
 
 const earningValue = (payroll, key) => (earningGetters[key] ? earningGetters[key](payroll) : 0)
@@ -549,6 +555,7 @@ const activeFiltersCount = computed(() => {
   if (filters.value.employee_id) count++
   if (filters.value.line_type && filters.value.line_type !== 'all') count++
   if (filters.value.payment_status) count++
+  if (filters.value.default_payment_method) count++
   if (filters.value.payroll_cycle && filters.value.payroll_cycle !== 'regular') count++
   return count
 })
@@ -621,6 +628,10 @@ const activeFiltersCount = computed(() => {
         <select v-model="filters.payment_status" class="erp-select-sm" @change="load">
           <option value="">All Statuses</option>
           <option v-for="s in statusOptions" :key="s" :value="s">{{ s }}</option>
+        </select>
+        <select v-model="filters.default_payment_method" class="erp-select-sm" @change="load">
+          <option value="">All Payment Methods</option>
+          <option v-for="method in paymentMethodOptions" :key="method" :value="method">{{ method }}</option>
         </select>
         <button class="inline-flex h-7 items-center gap-1 rounded-lg border border-slate-200 px-2.5 text-xs text-slate-500 hover:bg-slate-50" @click="resetFilters">
           <i class="far fa-undo text-[9px]"></i> Reset

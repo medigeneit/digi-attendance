@@ -91,7 +91,6 @@ const deductionLabelMap = {
   loan_deduction: 'Loan Deduction',
   security_money_deduction: 'Security Money',
   other_deduction: 'Other Deduction',
-  paycut_deduction: 'Attendance Deduction',
 }
 
 const cycleLabels = {
@@ -281,7 +280,6 @@ const deductionFieldRows = computed(() => {
       label: 'Half Salary Advance Adjustment',
       amount: toNum(d.half_salary_advance_adjustment ?? item.value?.advance_adjusted_amount),
     },
-    { key: 'paycut_deduction', label: paycutDeductionLabel.value, amount: toNum(d.paycut) },
   ]
 
   const contraRows = contraEntries.value
@@ -326,12 +324,8 @@ const accountNumberDisplay = computed(() => {
 })
 
 const baseEarningRows = computed(() => [
-  { key: 'basic', label: 'Basic Salary', amount: toNum(earningsData.value.basic) },
-  { key: 'house_rent', label: 'House Rent', amount: toNum(earningsData.value.house_rent) },
-  { key: 'medical', label: 'Medical', amount: toNum(earningsData.value.medical) },
-  { key: 'conveyance', label: 'Conveyance', amount: toNum(earningsData.value.conveyance) },
+  { key: 'gross', label: 'Gross Salary', amount: toNum(earningsData.value.gross ?? item.value?.gross_salary) },
   { key: 'arrear', label: 'Arrear', amount: toNum(item.value?.arrear) },
-
 ])
 
 const grossSalaryBase = computed(() => baseEarningRows.value.reduce((sum, row) => sum + toNum(row.amount), 0))
@@ -393,13 +387,16 @@ const salaryAdvanceLabel = computed(() =>
 )
 const advanceAdjustedAmount = computed(() => toNum(item.value?.advance_adjusted_amount ?? item.value?.calculation_breakdown?.advance_adjusted_amount))
 const paycutDeductionLabel = computed(() => {
-  const paycutAmount = toNum(deductionsData.value.paycut ?? item.value?.paycut_deduction)
+  const paycutAmount = paycutReductionAmount.value
   if (advanceAdjustedAmount.value > 0 && Math.abs(paycutAmount - advanceAdjustedAmount.value) < 1) {
     return 'Half Salary Advance Adjustment'
   }
 
-  return deductionLabelMap.paycut_deduction || 'Attendance Deduction'
+  return 'Attendance Paycut'
 })
+const paycutReductionAmount = computed(() =>
+  toNum(earningsData.value.paycut_reduction ?? item.value?.paycut_deduction)
+)
 const deductionItemCount = computed(
   () =>
     normalizedDeductions.value.length +
@@ -445,6 +442,9 @@ const earningsTableRows = computed(() => {
       : []),
     ...(pfAllowanceAmount.value > 0
       ? [{ key: 'pf_allowance_display', label: 'PF Allowance', amount: pfAllowanceAmount.value }]
+      : []),
+    ...(paycutReductionAmount.value > 0
+      ? [{ key: 'paycut_reduction', label: paycutDeductionLabel.value, amount: -paycutReductionAmount.value, is_delta: true }]
       : []),
     ...earningContraRows.value.map((r) => ({ ...r, is_delta: true })),
     ...manualSettledFallbackEarningRows.value.map((r) => ({ ...r, is_delta: true })),

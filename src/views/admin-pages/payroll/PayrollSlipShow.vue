@@ -147,13 +147,16 @@ const salaryAdvanceLabel = computed(() =>
 )
 const advanceAdjustedAmount = computed(() => toNum(item.value?.advance_adjusted_amount ?? item.value?.calculation_breakdown?.advance_adjusted_amount))
 const paycutDeductionLabel = computed(() => {
-  const paycutAmount = toNum(item.value?.deductions?.paycut ?? item.value?.paycut_deduction)
+  const paycutAmount = paycutReductionAmount.value
   if (advanceAdjustedAmount.value > 0 && Math.abs(paycutAmount - advanceAdjustedAmount.value) < 1) {
     return 'Half Salary Advance Adjustment'
   }
 
-  return 'Attendance Deduction'
+  return 'Attendance Paycut'
 })
+const paycutReductionAmount = computed(() =>
+  toNum(item.value?.earnings?.paycut_reduction ?? item.value?.paycut_deduction)
+)
 const payPeriodLabel = computed(() => {
   if (item.value?.period_start && item.value?.period_end) {
     return `${formatDate(item.value.period_start)} - ${formatDate(item.value.period_end)}`
@@ -184,18 +187,19 @@ const earningsRows = computed(() => {
   }
 
   return [
-    { key: 'basic', label: 'Basic Salary', amount: toNum(raw.basic) },
-    { key: 'house_rent', label: 'House Rent', amount: toNum(raw.house_rent) },
-    { key: 'medical', label: 'Medical', amount: toNum(raw.medical) },
-    { key: 'conveyance', label: 'Conveyance', amount: toNum(raw.conveyance) },
-    { key: 'gross', label: 'Gross', amount: toNum(raw.gross), highlight: true },
+    { key: 'gross', label: 'Gross Salary', amount: toNum(raw.gross ?? item.value?.gross_salary), highlight: true },
     { key: 'others', label: 'Others', amount: toNum(raw.others) },
     ...(toNum(raw.bonus ?? item.value?.bonus_amount) > 0
       ? [{ key: 'bonus', label: 'Bonus', amount: toNum(raw.bonus ?? item.value?.bonus_amount) }]
       : []),
-    { key: 'pf_allowance', label: 'PF Allowance', amount: pfAllowance },
+    ...(pfAllowance > 0
+      ? [{ key: 'pf_allowance', label: 'PF Allowance', amount: pfAllowance }]
+      : []),
     { key: 'arrear', label: 'Arrear', amount: toNum(item.value?.arrear) },
-  ]
+    ...(paycutReductionAmount.value > 0
+      ? [{ key: 'paycut_reduction', label: paycutDeductionLabel.value, amount: -paycutReductionAmount.value, is_delta: true }]
+      : []),
+  ].filter((row) => toNum(row?.amount) !== 0)
 })
 
 const deductionRows = computed(() => {
@@ -215,7 +219,6 @@ const deductionRows = computed(() => {
       amount: toNum(raw.half_salary_advance_adjustment ?? item.value?.advance_adjusted_amount),
     },
     { key: 'advance', label: 'Advance', amount: toNum(raw.advance) },
-    { key: 'paycut', label: paycutDeductionLabel.value, amount: toNum(raw.paycut) },
   ]
 })
 
@@ -360,7 +363,8 @@ const formatRowAmount = (row) => {
   if (!row) return ''
   const amount = toNum(row.amount)
   if (row.is_delta) {
-    return `${formatMoney(Math.abs(amount))}`
+    const sign = amount >= 0 ? '+' : '-'
+    return `${sign} ${formatMoney(Math.abs(amount))}`
   }
   return formatMoney(amount)
 }
