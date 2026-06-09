@@ -287,7 +287,7 @@ const salaryAdvanceLabel = computed(() =>
 const advanceAdjustedAmount = computed(() =>
   toNumber(currentPayroll.value?.advance_adjusted_amount ?? currentPayroll.value?.calculation_breakdown?.advance_adjusted_amount),
 )
-const attendanceDeductionAmount = computed(() => {
+const paycutReductionAmount = computed(() => {
   const paycutAmount = toNumber(currentPayroll.value?.paycut_deduction)
   if (advanceAdjustedAmount.value > 0 && Math.abs(paycutAmount - advanceAdjustedAmount.value) < 1) {
     return 0
@@ -333,6 +333,9 @@ const earningRows = computed(() => {
   if (bonusAmount.value > 0) rows.push({ label: 'Bonus', value: bonusAmount.value, totalable: true })
   rows.push({ label: 'Arrear', value: toNumber(payroll.arrear), totalable: true })
 
+  if (paycutReductionAmount.value > 0) {
+    rows.push({ label: 'Attendance Paycut', value: -paycutReductionAmount.value, totalable: true })
+  }
 
   if (manualAdditionBase > 0) rows.push({ label: 'Manual Addition', value: manualAdditionBase, totalable: true })
 
@@ -361,7 +364,6 @@ const deductionRows = computed(() => {
     { label: 'Others', value: otherDeductionBase },
     ...(advanceAdjustedAmount.value > 0 ? [{ label: 'Half Salary Advance Adjustment', value: advanceAdjustedAmount.value }] : []),
     { label: 'Advance', value: payroll.advance_deduction },
-    { label: 'Attendance Deduction', value: attendanceDeductionAmount.value },
   ]
 
   rows.push(...contraDeductionRows.value)
