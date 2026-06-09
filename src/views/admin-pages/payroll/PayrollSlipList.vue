@@ -1,12 +1,13 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import apiClient from '@/axios'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 
 const router = useRouter()
+const route = useRoute()
 
 const currentMonth = () => new Date().toISOString().slice(0, 7)
 
@@ -145,7 +146,31 @@ const buildParams = () => ({
   ...(filters.value.payroll_cycle ? { payroll_cycle: filters.value.payroll_cycle } : {}),
 })
 
+const buildRouteQuery = () => {
+  const params = { ...filters.value }
+  Object.keys(params).forEach((key) => {
+    if (!params[key] || (key === 'line_type' && params[key] === 'all')) {
+      delete params[key]
+    }
+  })
+  return params
+}
+
+const applyRouteQueryToFilters = () => {
+  const query = route.query
+  filters.value = {
+    company_id: String(query.company_id || ''),
+    department_id: String(query.department_id || ''),
+    employee_id: String(query.employee_id || query.user_id || ''),
+    line_type: String(query.line_type || 'all'),
+    salary_month: String(query.salary_month || currentMonth()),
+    payment_status: String(query.payment_status || ''),
+    payroll_cycle: String(query.payroll_cycle || 'regular'),
+  }
+}
+
 async function loadSlipList() {
+  await router.replace({ query: buildRouteQuery() })
   error.value = ''
 
   if (!filters.value.salary_month) {
@@ -244,7 +269,10 @@ function resetFilters() {
   loadSlipList()
 }
 
-onMounted(loadSlipList)
+onMounted(() => {
+  applyRouteQueryToFilters()
+  loadSlipList()
+})
 </script>
 
 <template>

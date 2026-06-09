@@ -144,7 +144,7 @@ const buildColumnTotals = (data) => {
     pf_allowance: data.reduce((s, r) => s + getPfAllowanceAmount(r), 0),
     arrear: data.reduce((s, r) => s + getArrearAmount(r), 0),
     bonus_amount: sum('bonus_amount'),
-    manual_addition: sum('manual_addition'),
+    manual_addition: data.reduce((s, r) => s + getEarningAdjustmentAmount(r), 0),
     paycut_deduction: data.reduce((s, r) => s - toNumber(r.paycut_deduction), 0),
     total_earnings: data.reduce((s, r) => s + getTotalEarnings(r), 0),
     pf_deduction: sum('pf_deduction'),
@@ -501,22 +501,43 @@ const getTotalAdvanceAmount = (payroll) =>
 const getArrearAmount = (payroll) => getAllowanceAmountByCode(payroll, 'ARREAR')
 const getPfAllowanceAmount = (payroll) => getAllowanceAmountByCode(payroll, 'PF')
 const getDisplayOtherAllowance = (payroll) =>
-  Math.max(0, toNumber(payroll?.other_allowance_total) - getArrearAmount(payroll) - getPfAllowanceAmount(payroll))
+  payroll?.earnings && Object.prototype.hasOwnProperty.call(payroll.earnings, 'others')
+    ? toNumber(payroll.earnings.others)
+    : Math.max(0, toNumber(payroll?.other_allowance_total) - getArrearAmount(payroll) - getPfAllowanceAmount(payroll))
+
+const getEarningAdjustmentAmount = (payroll) => {
+  const adjustments = Array.isArray(payroll?.adjustments_applied) ? payroll.adjustments_applied : []
+  return adjustments.reduce((sum, adjustment) => {
+    const settlementType = String(adjustment?.settlement_type || 'carry_forward').toLowerCase()
+    if (settlementType !== 'carry_forward') return sum
+
+    const type = String(adjustment?.adjustment_type || '').toLowerCase()
+    const amount = toNumber(adjustment?.amount)
+    if (type === 'deduction') return sum
+    if (['overtime', 'paycut_reversal', 'bonus'].includes(type)) return sum + amount
+    if (type === 'other') return amount >= 0 ? sum + amount : sum
+    return amount >= 0 ? sum + amount : sum
+  }, 0)
+}
 
 const getTotalEarnings = (payroll) =>
-  toNumber(payroll?.gross_salary) +
-  toNumber(payroll?.other_allowance_total) +
-  toNumber(payroll?.manual_addition) +
-  toNumber(payroll?.bonus_amount) -
-  toNumber(payroll?.paycut_deduction)
+  payroll?.earnings && Object.prototype.hasOwnProperty.call(payroll.earnings, 'total')
+    ? toNumber(payroll.earnings.total)
+    : toNumber(payroll?.gross_salary) +
+      toNumber(payroll?.other_allowance_total) +
+      toNumber(payroll?.manual_addition) +
+      toNumber(payroll?.bonus_amount) -
+      toNumber(payroll?.paycut_deduction)
 
 const getTotalDeductions = (payroll) =>
-  toNumber(payroll?.pf_deduction) +
-  toNumber(payroll?.meal_deduction) +
-  toNumber(payroll?.loan_deduction) +
-  toNumber(payroll?.security_money_deduction) +
-  toNumber(payroll?.other_deduction) +
-  getTotalAdvanceAmount(payroll)
+  payroll?.deductions && Object.prototype.hasOwnProperty.call(payroll.deductions, 'total')
+    ? toNumber(payroll.deductions.total)
+    : toNumber(payroll?.pf_deduction) +
+      toNumber(payroll?.meal_deduction) +
+      toNumber(payroll?.loan_deduction) +
+      toNumber(payroll?.security_money_deduction) +
+      toNumber(payroll?.other_deduction) +
+      getTotalAdvanceAmount(payroll)
 
 const isLockedPayroll = (payroll) =>
   ['paid', 'locked'].includes(String(payroll?.payment_status || payroll?.status || '').toLowerCase())
@@ -531,7 +552,7 @@ const earningGetters = {
   pf_allowance: getPfAllowanceAmount,
   arrear: getArrearAmount,
   bonus_amount: (p) => toNumber(p?.bonus_amount),
-  manual_addition: (p) => toNumber(p?.manual_addition),
+  manual_addition: getEarningAdjustmentAmount,
   paycut_deduction: (p) => -toNumber(p?.paycut_deduction),
 }
 
