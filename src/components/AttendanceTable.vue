@@ -18,7 +18,7 @@
         <thead>
           <tr
             class="bg-gray-100 text-xs sticky z-20"
-            :class="authStore.isAdminMood ? 'md:top-28 top-0' : 'md:top-14 top-0'"
+            :class="authStore.isAdminMood ? 'md:top-32 top-0' : 'md:top-14 top-0'"
           >
             <th class="border p-1.5 text-slate-700">Date</th>
             <th class="border p-1.5 text-slate-700">Day</th>
