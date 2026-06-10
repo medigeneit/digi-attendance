@@ -349,22 +349,6 @@ const defaultAttendanceMessage = computed(() => {
             </span>
           </div>
 
-          <!-- Present rate bar -->
-          <div v-if="attendanceStore?.summary?.total_working_days" class="mt-3">
-            <div class="flex items-center justify-between mb-1 text-[11px] text-slate-500">
-              <span>Attendance Rate</span>
-              <span class="font-semibold" :class="presentRate >= 90 ? 'text-emerald-600' : presentRate >= 75 ? 'text-amber-600' : 'text-red-600'">
-                {{ presentRate }}%
-              </span>
-            </div>
-            <div class="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
-              <div
-                class="h-full rounded-full transition-all duration-500"
-                :class="presentRate >= 90 ? 'bg-emerald-500' : presentRate >= 75 ? 'bg-amber-500' : 'bg-red-500'"
-                :style="{ width: `${presentRate}%` }"
-              ></div>
-            </div>
-          </div>
 
           <div class="mt-3 grid gap-2 sm:grid-cols-2">
             <div class="rounded-xl border flex justify-between border-zinc-100 bg-zinc-50 px-3 py-2">
