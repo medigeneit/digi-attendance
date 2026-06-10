@@ -14,7 +14,7 @@ const authStore = useAuthStore()
 const error = ref('')
 const state = ref('')
 const rememberedEmailKey = 'login_remembered_email'
-const rememberedPasswordKey = 'login_remembered_password'
+const legacyRememberedPasswordKey = 'login_remembered_password'
 
 function encodeStoredValue(value) {
   return btoa(unescape(encodeURIComponent(value || '')))
@@ -36,14 +36,10 @@ onMounted(() => {
   }
 
   const rememberedEmail = decodeStoredValue(localStorage.getItem(rememberedEmailKey))
-  const rememberedPassword = decodeStoredValue(localStorage.getItem(rememberedPasswordKey))
+  localStorage.removeItem(legacyRememberedPasswordKey)
+
   if (rememberedEmail) {
     email.value = rememberedEmail
-  }
-  if (rememberedPassword) {
-    password.value = rememberedPassword
-  }
-  if (rememberedEmail || rememberedPassword) {
     rememberMe.value = true
   }
 })
@@ -52,14 +48,12 @@ const login = async () => {
   try {
     state.value = 'loading'
     error.value = ''
-    await authStore.login(email.value, password.value)
+    await authStore.login(email.value, password.value, rememberMe.value)
     if (!authStore.error) {
       if (rememberMe.value) {
         localStorage.setItem(rememberedEmailKey, encodeStoredValue(email.value))
-        localStorage.setItem(rememberedPasswordKey, encodeStoredValue(password.value))
       } else {
         localStorage.removeItem(rememberedEmailKey)
-        localStorage.removeItem(rememberedPasswordKey)
       }
       successMessage.value = 'Login Successful. Redirecting...'
       router.push('/dashboard')
