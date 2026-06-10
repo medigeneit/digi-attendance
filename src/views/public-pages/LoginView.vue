@@ -6,16 +6,45 @@ import { useRoute, useRouter } from 'vue-router'
 
 const email = ref('')
 const password = ref('')
+const rememberMe = ref(false)
 const successMessage = ref('')
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 const error = ref('')
 const state = ref('')
+const rememberedEmailKey = 'login_remembered_email'
+const rememberedPasswordKey = 'login_remembered_password'
+
+function encodeStoredValue(value) {
+  return btoa(unescape(encodeURIComponent(value || '')))
+}
+
+function decodeStoredValue(value) {
+  if (!value) return ''
+
+  try {
+    return decodeURIComponent(escape(atob(value)))
+  } catch {
+    return value
+  }
+}
 
 onMounted(() => {
   if (route.query.email) {
     email.value = route.query.email
+  }
+
+  const rememberedEmail = decodeStoredValue(localStorage.getItem(rememberedEmailKey))
+  const rememberedPassword = decodeStoredValue(localStorage.getItem(rememberedPasswordKey))
+  if (rememberedEmail) {
+    email.value = rememberedEmail
+  }
+  if (rememberedPassword) {
+    password.value = rememberedPassword
+  }
+  if (rememberedEmail || rememberedPassword) {
+    rememberMe.value = true
   }
 })
 
@@ -25,6 +54,13 @@ const login = async () => {
     error.value = ''
     await authStore.login(email.value, password.value)
     if (!authStore.error) {
+      if (rememberMe.value) {
+        localStorage.setItem(rememberedEmailKey, encodeStoredValue(email.value))
+        localStorage.setItem(rememberedPasswordKey, encodeStoredValue(password.value))
+      } else {
+        localStorage.removeItem(rememberedEmailKey)
+        localStorage.removeItem(rememberedPasswordKey)
+      }
       successMessage.value = 'Login Successful. Redirecting...'
       router.push('/dashboard')
     } else {
@@ -125,6 +161,16 @@ const login = async () => {
                     required
                   />
                 </div>
+                <label
+                  class="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-700"
+                >
+                  <input
+                    v-model="rememberMe"
+                    type="checkbox"
+                    class="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                  />
+                  <span>Remember me</span>
+                </label>
                 <div
                   v-if="error"
                   class="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700"

@@ -64,7 +64,10 @@ export const useAuthStore = defineStore('auth', () => {
     featurePermissions.value = {}
     featurePermissionsLoaded.value = false
     isAdminMood.value = false
-    localStorage.clear()
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('user')
+    localStorage.removeItem('admin_mode')
+    localStorage.removeItem('next')
   }
 
   async function checkPhone(phone) {

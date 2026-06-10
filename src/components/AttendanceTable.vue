@@ -54,7 +54,7 @@
           <!-- Date & Day -->
           <td class="border px-1.5 py-1 font-medium whitespace-nowrap">{{ log.date }}</td>
           <td class="border px-1.5 py-1 whitespace-nowrap"
-              :class="['Fri','Sat','Sun'].some(d => log.weekday?.startsWith(d)) ? 'text-red-600 font-semibold' : 'text-slate-600'"
+              :class="isStatusWeekend(log) || isStatusHoliday(log) ? 'text-red-600 font-semibold' : 'text-slate-600'"
           >{{ log.weekday }}</td>
 
           <!-- Shift Name + Exchange Status -->
