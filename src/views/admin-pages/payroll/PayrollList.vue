@@ -185,6 +185,7 @@ const COST_CENTER = 'Administrative'
 const getCostCenter = () => COST_CENTER
 const getUnitCode = (payroll) => payroll?.user?.unit?.short_name || 'Unassigned'
 const getProjectCode = (payroll) => payroll?.user?.unit?.project_code || '-'
+const getUnitName = (payroll) => payroll?.user?.unit?.name || '-'
 const getUnitLabel = (payroll) => getUnitCode(payroll)
 
 const sortedRows = computed(() => {
@@ -397,8 +398,9 @@ const toNumber = (value) => {
 const INFO_COLUMNS = [
   { key: 'emp_id', label: 'Emp ID' },
   { key: 'cost_center', label: 'Cost-Center' },
-  { key: 'unit', label: 'Unit Code' },
+  { key: 'unit_code', label: 'Unit Code' },
   { key: 'project_code', label: 'Project Code' },
+  { key: 'unit', label: 'Unit' },
   { key: 'joining', label: 'Joining' },
 ]
 
@@ -966,15 +968,16 @@ const activeFiltersCount = computed(() => {
 
       <div class="w-full overflow-x-auto overscroll-x-contain [scrollbar-width:thin]">
         <table
-          class="prl-table min-w-[1740px] w-full table-fixed border-collapse text-[10px] leading-tight"
+          class="prl-table min-w-[1810px] w-full table-fixed border-collapse text-[10px] leading-tight"
         >
           <colgroup>
             <col class="w-[32px]" />
             <col class="w-[116px]" />
             <col v-if="columnVisibility.emp_id" class="w-[78px]" />
             <col v-if="columnVisibility.cost_center" class="w-[82px]" />
-            <col v-if="columnVisibility.unit" class="w-[64px]" />
+            <col v-if="columnVisibility.unit_code" class="w-[64px]" />
             <col v-if="columnVisibility.project_code" class="w-[72px]" />
+            <col v-if="columnVisibility.unit" class="w-[72px]" />
             <col v-if="columnVisibility.joining" class="w-[66px]" />
             <!-- earnings (toggleable + E.Tot) -->
             <col v-for="col in visibleEarningsColumns" :key="`col-e-${col.key}`" class="w-[56px]" />
@@ -1019,7 +1022,7 @@ const activeFiltersCount = computed(() => {
                 Cost-Center
               </th>
               <th
-                v-if="columnVisibility.unit"
+                v-if="columnVisibility.unit_code"
                 class="border border-slate-200 bg-slate-100 px-1 py-2 text-slate-500"
                 rowspan="2"
               >
@@ -1031,6 +1034,13 @@ const activeFiltersCount = computed(() => {
                 rowspan="2"
               >
                 Project Code
+              </th>
+              <th
+                v-if="columnVisibility.unit"
+                class="border border-slate-200 bg-slate-100 px-1 py-2 text-slate-500"
+                rowspan="2"
+              >
+                Unit
               </th>
               <th
                 v-if="columnVisibility.joining"
@@ -1145,7 +1155,7 @@ const activeFiltersCount = computed(() => {
 
                 <!-- Unit Code -->
                 <td
-                  v-if="columnVisibility.unit"
+                  v-if="columnVisibility.unit_code"
                   class="border border-slate-100 px-1 py-1.5 text-slate-600"
                 >
                   {{ getUnitCode(p) }}
@@ -1157,6 +1167,14 @@ const activeFiltersCount = computed(() => {
                   class="border border-slate-100 px-1 py-1.5 text-slate-600"
                 >
                   {{ getProjectCode(p) }}
+                </td>
+
+                <!-- Unit -->
+                <td
+                  v-if="columnVisibility.unit"
+                  class="border border-slate-100 px-1 py-1.5 text-slate-600"
+                >
+                  {{ getUnitName(p) }}
                 </td>
 
                 <!-- Joining -->
