@@ -441,7 +441,7 @@ const earningsTableRows = computed(() => {
       ? [{ key: 'bonus', label: 'Bonus', amount: toNum(item.value?.bonus_amount ?? earningsData.value.bonus) }]
       : []),
     ...(pfAllowanceAmount.value > 0
-      ? [{ key: 'pf_allowance_display', label: 'PF Allowance', amount: pfAllowanceAmount.value }]
+      ? [{ key: 'pf_allowance_display', label: 'PF Office', amount: pfAllowanceAmount.value }]
       : []),
     ...(paycutReductionAmount.value > 0
       ? [{ key: 'paycut_reduction', label: paycutDeductionLabel.value, amount: -paycutReductionAmount.value, is_delta: true }]

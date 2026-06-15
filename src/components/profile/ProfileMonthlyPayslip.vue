@@ -328,7 +328,7 @@ const earningRows = computed(() => {
 
   rows.push({ label: 'Others Allowance', value: otherAllowanceTotal, totalable: true })
   if (pfAllowanceTotal.value > 0) {
-    rows.push({ label: 'PF Allowance', value: pfAllowanceTotal.value, totalable: true })
+    rows.push({ label: 'PF Office', value: pfAllowanceTotal.value, totalable: true })
   }
   if (bonusAmount.value > 0) rows.push({ label: 'Bonus', value: bonusAmount.value, totalable: true })
   rows.push({ label: 'Arrear', value: toNumber(payroll.arrear), totalable: true })

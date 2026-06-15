@@ -304,7 +304,7 @@ const slipEarningRows = computed(() => {
     ...(toNum(earnings.bonus ?? latestPayroll.value?.bonus_amount) > 0
       ? [{ key: 'bonus', label: 'Bonus', amount: toNum(earnings.bonus ?? latestPayroll.value?.bonus_amount) }]
       : []),
-    { key: 'pf_allowance', label: 'PF Allowance', amount: toNum(latestPayroll.value?.deductions?.pf_allowance) },
+    { key: 'pf_allowance', label: 'PF Office', amount: toNum(latestPayroll.value?.deductions?.pf_allowance) },
     ...(paycutReductionAmount.value > 0
       ? [{ key: 'paycut_reduction', label: paycutDeductionLabel.value, amount: -paycutReductionAmount.value }]
       : []),

@@ -1048,7 +1048,7 @@ const inputClass =
                 />
               </label>
               <p v-if="!usesBasicOnlySalaryPolicy" class="text-xs text-slate-500">
-                When enabled, the default PF allowance row remains locked; changing PF deduction changes net payment.
+                When enabled, the default PF Office row remains locked; changing PF deduction changes net payment.
               </p>
             </div>
           </div>

@@ -200,18 +200,22 @@ const earningsRows = computed(() => {
   }
 
   return [
+    { key: 'basic', label: 'Basic Salary', amount: toNum(raw.basic) },
+    { key: 'house_rent', label: 'House Rent Allowance', amount: toNum(raw.house_rent) },
+    { key: 'medical', label: 'Medical Allowance', amount: toNum(raw.medical) },
+    { key: 'conveyance', label: 'Conveyance Allowance', amount: toNum(raw.conveyance) },
     { key: 'gross', label: 'Gross Salary', amount: toNum(raw.gross ?? item.value?.gross_salary), highlight: true },
-    { key: 'others', label: 'Others', amount: toNum(raw.others) },
     ...(toNum(raw.bonus ?? item.value?.bonus_amount) > 0
       ? [{ key: 'bonus', label: 'Bonus', amount: toNum(raw.bonus ?? item.value?.bonus_amount) }]
       : []),
     ...(pfAllowance > 0
-      ? [{ key: 'pf_allowance', label: 'PF Allowance', amount: pfAllowance }]
+      ? [{ key: 'pf_allowance', label: 'PF Office', amount: pfAllowance }]
       : []),
     { key: 'arrear', label: 'Arrear', amount: toNum(item.value?.arrear) },
     ...(paycutReductionAmount.value > 0
       ? [{ key: 'paycut_reduction', label: paycutDeductionLabel.value, amount: -paycutReductionAmount.value, is_delta: true }]
       : []),
+    { key: 'others', label: 'Others', amount: toNum(raw.others) },
   ].filter((row) => toNum(row?.amount) !== 0)
 })
 
@@ -225,14 +229,14 @@ const deductionRows = computed(() => {
     { key: 'tax', label: 'Tax', amount: toNum(raw.tds) },
     { key: 'loan', label: 'Loan', amount: toNum(raw.loan) },
     ...(securityMoney > 0 ? [{ key: 'security_money', label: 'Security Money', amount: securityMoney }] : []),
-    { key: 'other', label: 'Others', amount: toNum(raw.other) },
     {
       key: 'half_salary_advance_adjustment',
       label: 'Half Salary Advance Adjustment',
       amount: toNum(raw.half_salary_advance_adjustment ?? item.value?.advance_adjusted_amount),
     },
     { key: 'advance', label: 'Advance', amount: toNum(raw.advance) },
-  ]
+    { key: 'other', label: 'Others', amount: toNum(raw.other) },
+  ].filter((row) => toNum(row?.amount) !== 0)
 })
 
 const totalEarnings = computed(() => toNum(item.value?.earnings?.total))
@@ -557,16 +561,16 @@ onUnmounted(() => {
               <table class="slip-table w-full border-collapse text-[12px]">
                 <thead>
                   <tr class="text-slate-950">
-                    <th class="border border-slate-300 px-3 py-2.5 text-left font-semibold">Earnings</th>
-                    <th class="border border-slate-300 px-3 py-2.5 text-right font-semibold">Amount</th>
-                    <th class="border border-slate-300 px-3 py-2.5 text-left font-semibold">Deductions</th>
-                    <th class="border border-slate-300 px-3 py-2.5 text-right font-semibold">Amount</th>
+                    <th class="border border-black px-3 py-2.5 text-left font-semibold">Earnings</th>
+                    <th class="border border-black px-3 py-2.5 text-right font-semibold">Amount</th>
+                    <th class="border border-black px-3 py-2.5 text-left font-semibold">Deductions</th>
+                    <th class="border border-black px-3 py-2.5 text-right font-semibold">Amount</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-for="index in slipRowCount" :key="index">
                     <td
-                      class="border border-slate-300 px-3 py-2"
+                      class="border border-black px-3 py-2"
                       :class="[
                         earningsRowsFinal[index - 1]?.highlight ? 'bg-emerald-50 font-semibold text-emerald-950' : '',
                         earningsRowsFinal[index - 1]?.reference ? 'text-slate-600' : '',
@@ -575,7 +579,7 @@ onUnmounted(() => {
                       {{ earningsRowsFinal[index - 1]?.label || '' }}
                     </td>
                     <td
-                      class="border border-slate-300 px-3 py-2 text-right font-mono font-semibold"
+                      class="border border-black px-3 py-2 text-right font-mono font-semibold"
                       :class="[
                         earningsRowsFinal[index - 1]?.highlight ? 'bg-emerald-50 text-emerald-950' : '',
                         earningsRowsFinal[index - 1]?.reference ? 'text-slate-600' : '',
@@ -583,26 +587,26 @@ onUnmounted(() => {
                     >
                       {{ formatRowAmount(earningsRowsFinal[index - 1]) }}
                     </td>
-                    <td class="border border-slate-300 px-3 py-2">
+                    <td class="border border-black px-3 py-2">
                       {{ deductionRowsFinal[index - 1]?.label || '' }}
                     </td>
-                    <td class="border border-slate-300 px-3 py-2 text-right font-mono font-semibold">
+                    <td class="border border-black px-3 py-2 text-right font-mono font-semibold">
                       {{ formatRowAmount(deductionRowsFinal[index - 1]) }}
                     </td>
                   </tr>
                   <tr class="font-bold text-slate-950">
-                    <td class="border border-slate-300 px-3 py-2.5 text-right">Total Earnings</td>
-                    <td class="border border-slate-300 px-3 py-2.5 text-right font-mono text-emerald-800">
+                    <td class="border border-black px-3 py-2.5 text-right">Total Earnings</td>
+                    <td class="border border-black px-3 py-2.5 text-right font-mono text-emerald-800">
                       {{ formatMoney(totalEarningsDisplay) }}
                     </td>
-                    <td class="border border-slate-300 px-3 py-2.5 text-right">Total Deductions</td>
-                    <td class="border border-slate-300 px-3 py-2.5 text-right font-mono text-red-800">
+                    <td class="border border-black px-3 py-2.5 text-right">Total Deductions</td>
+                    <td class="border border-black px-3 py-2.5 text-right font-mono text-red-800">
                       {{ formatMoney(totalDeductionsDisplay) }}
                     </td>
                   </tr>
                   <tr class="font-bold text-slate-950">
-                    <td class="border border-slate-300 px-3 py-3 text-right" colspan="3">Net Payment</td>
-                    <td class="border border-slate-300 px-3 py-3 text-right font-mono text-[15px]">
+                    <td class="border border-black px-3 py-3 text-right" colspan="3">Net Payment</td>
+                    <td class="border border-black px-3 py-3 text-right font-mono text-[15px]">
                       {{ formatMoney(netPayment) }}
                     </td>
                   </tr>
