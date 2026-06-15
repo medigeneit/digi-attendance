@@ -230,13 +230,16 @@ const salaryAdvanceLabel = computed(() =>
 )
 const advanceAdjustedAmount = computed(() => toNum(latestPayroll.value?.advance_adjusted_amount ?? latestPayroll.value?.calculation_breakdown?.advance_adjusted_amount))
 const paycutDeductionLabel = computed(() => {
-  const paycutAmount = toNum(latestPayroll.value?.deductions?.paycut ?? latestPayroll.value?.paycut_deduction)
+  const paycutAmount = paycutReductionAmount.value
   if (advanceAdjustedAmount.value > 0 && Math.abs(paycutAmount - advanceAdjustedAmount.value) < 1) {
     return 'Half Salary Advance Adjustment'
   }
 
-  return 'Attendance Deduction'
+  return 'Attendance Paycut'
 })
+const paycutReductionAmount = computed(() =>
+  toNum(latestPayroll.value?.earnings?.paycut_reduction ?? latestPayroll.value?.paycut_deduction)
+)
 
 const payrollGrossSalary = computed(() => {
   const payroll = latestPayroll.value || {}
@@ -302,6 +305,9 @@ const slipEarningRows = computed(() => {
       ? [{ key: 'bonus', label: 'Bonus', amount: toNum(earnings.bonus ?? latestPayroll.value?.bonus_amount) }]
       : []),
     { key: 'pf_allowance', label: 'PF Allowance', amount: toNum(latestPayroll.value?.deductions?.pf_allowance) },
+    ...(paycutReductionAmount.value > 0
+      ? [{ key: 'paycut_reduction', label: paycutDeductionLabel.value, amount: -paycutReductionAmount.value }]
+      : []),
     { key: 'arrear', label: 'Arrear', amount: toNum(latestPayroll.value?.arrear ?? latestPayroll.value?.arrear_amount) },
   ]
 
