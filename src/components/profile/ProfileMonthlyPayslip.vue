@@ -326,7 +326,6 @@ const earningRows = computed(() => {
 
   const otherAllowanceTotal = toNumber(payroll.other_allowance_display_total ?? payroll.other_allowance_total)
 
-  rows.push({ label: 'Others Allowance', value: otherAllowanceTotal, totalable: true })
   if (pfAllowanceTotal.value > 0) {
     rows.push({ label: 'PF Office', value: pfAllowanceTotal.value, totalable: true })
   }
@@ -337,11 +336,10 @@ const earningRows = computed(() => {
     rows.push({ label: 'Attendance Paycut', value: -paycutReductionAmount.value, totalable: true })
   }
 
-  if (manualAdditionBase > 0) rows.push({ label: 'Manual Addition', value: manualAdditionBase, totalable: true })
-
   rows.push(...contraEarningRows.value)
+  rows.push({ label: 'Others', value: otherAllowanceTotal + manualAdditionBase, totalable: true })
 
-  return rows
+  return rows.filter((row) => toNumber(row?.value) !== 0 || row.highlight || row.reference)
 })
 
 const deductionRows = computed(() => {
@@ -353,22 +351,19 @@ const deductionRows = computed(() => {
   const otherDeductionBase = Math.max(0, toNumber(payroll.other_deduction) - contraDeductionTotal.value)
   const securityMoneyDeduction = toNumber(payroll.security_money_deduction)
   const rows = [
-    {
-      label: 'PF Both',
-      value: toNumber(payroll.pf_deduction),
-    },
+    { label: 'PF Both', value: toNumber(payroll.pf_deduction) },
     { label: 'Meal Deduction', value: payroll.meal_deduction },
     { label: 'Tax', value: payroll.tax_deduction },
     { label: 'Loan', value: payroll.loan_deduction },
     ...(securityMoneyDeduction > 0 ? [{ label: 'Security Money', value: securityMoneyDeduction }] : []),
-    { label: 'Others', value: otherDeductionBase },
     ...(advanceAdjustedAmount.value > 0 ? [{ label: 'Half Salary Advance Adjustment', value: advanceAdjustedAmount.value }] : []),
     { label: 'Advance', value: payroll.advance_deduction },
   ]
 
   rows.push(...contraDeductionRows.value)
+  rows.push({ label: 'Others', value: otherDeductionBase })
 
-  return rows
+  return rows.filter((row) => toNumber(row?.value) !== 0)
 })
 
 const totalEarnings = computed(() => {
