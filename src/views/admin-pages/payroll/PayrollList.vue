@@ -48,8 +48,26 @@ const cycleOptions = [
   { value: 'bonus_only', label: 'Bonus Only' },
 ]
 
-const statusOptions = ['Pending', 'Generated', 'Reviewed', 'Approved', 'Paid', 'Locked', 'Hold', 'Cancelled', 'Partial']
-const paymentMethodOptions = ['Cash', 'Bank Transfer', 'bKash', 'Nagad', 'Rocket', 'Cheque', 'Other']
+const statusOptions = [
+  'Pending',
+  'Generated',
+  'Reviewed',
+  'Approved',
+  'Paid',
+  'Locked',
+  'Hold',
+  'Cancelled',
+  'Partial',
+]
+const paymentMethodOptions = [
+  'Cash',
+  'Bank Transfer',
+  'bKash',
+  'Nagad',
+  'Rocket',
+  'Cheque',
+  'Other',
+]
 
 const monthToPeriod = (value) => {
   const month = String(value || '').slice(0, 7)
@@ -78,7 +96,9 @@ const summaryCards = computed(() => {
   const totalGross = data.reduce((sum, row) => sum + Number(row.gross_salary || 0), 0)
   const totalDeduction = data.reduce((sum, row) => sum + getTotalDeductions(row), 0)
   const totalNet = data.reduce((sum, row) => sum + Number(row.net_salary || 0), 0)
-  const paidCount = data.filter((r) => ['paid', 'locked'].includes(String(r.payment_status || '').toLowerCase())).length
+  const paidCount = data.filter((r) =>
+    ['paid', 'locked'].includes(String(r.payment_status || '').toLowerCase()),
+  ).length
 
   return [
     {
@@ -160,7 +180,13 @@ const buildColumnTotals = (data) => {
 
 const columnTotals = computed(() => buildColumnTotals(rows.value || []))
 
-const getUnitLabel = (payroll) => payroll?.user?.unit?.short_name || payroll?.user?.unit?.name || 'Unassigned'
+const COST_CENTER = 'Administrative'
+
+const getCostCenter = () => COST_CENTER
+const getUnitCode = (payroll) => payroll?.user?.unit?.short_name || 'Unassigned'
+const getProjectCode = (payroll) => payroll?.user?.unit?.project_code || '-'
+const getUnitName = (payroll) => payroll?.user?.unit?.name || '-'
+const getUnitLabel = (payroll) => getUnitCode(payroll)
 
 const sortedRows = computed(() => {
   return [...rows.value].sort((a, b) => {
@@ -191,7 +217,9 @@ const groupedByUnit = computed(() => {
 
 const buildRouteQuery = () => {
   const params = { ...filters.value }
-  Object.keys(params).forEach((k) => { if (!params[k]) delete params[k] })
+  Object.keys(params).forEach((k) => {
+    if (!params[k]) delete params[k]
+  })
   return params
 }
 
@@ -201,7 +229,9 @@ const buildApiParams = () => {
     params.user_id = params.employee_id
   }
   delete params.employee_id
-  Object.keys(params).forEach((k) => { if (!params[k]) delete params[k] })
+  Object.keys(params).forEach((k) => {
+    if (!params[k]) delete params[k]
+  })
   return params
 }
 
@@ -258,7 +288,9 @@ async function fetchAllPayrolls(params) {
   let page = 1
   let lastPage = 1
   do {
-    const { data } = await apiClient.get('/payrolls', { params: { ...params, page, per_page: 200 } })
+    const { data } = await apiClient.get('/payrolls', {
+      params: { ...params, page, per_page: 200 },
+    })
     const pageItems = Array.isArray(data?.data) ? data.data : []
     items.push(...pageItems)
     lastPage = data?.last_page ?? data?.meta?.last_page ?? 1
@@ -331,7 +363,9 @@ const formatMonth = (value) => {
   const m = String(value).slice(0, 7)
   if (!/^\d{4}-\d{2}$/.test(m)) return m
   const [y, mo] = m.split('-').map(Number)
-  return new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' }).format(new Date(Date.UTC(y, mo - 1, 1)))
+  return new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' }).format(
+    new Date(Date.UTC(y, mo - 1, 1)),
+  )
 }
 
 const formatDate = (value) => {
@@ -339,11 +373,20 @@ const formatDate = (value) => {
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     const [year, month, day] = value.split('-').map(Number)
     const date = new Date(Date.UTC(year, month - 1, day))
-    return new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(date)
+    return new Intl.DateTimeFormat('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'UTC',
+    }).format(date)
   }
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return '-'
-  return new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).format(date)
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(date)
 }
 
 const toNumber = (value) => {
@@ -354,6 +397,9 @@ const toNumber = (value) => {
 // ── Column customization ──────────────────────────────────
 const INFO_COLUMNS = [
   { key: 'emp_id', label: 'Emp ID' },
+  { key: 'cost_center', label: 'Cost-Center' },
+  { key: 'unit_code', label: 'Unit Code' },
+  { key: 'project_code', label: 'Project Code' },
   { key: 'unit', label: 'Unit' },
   { key: 'joining', label: 'Joining' },
 ]
@@ -378,7 +424,11 @@ const DEDUCTION_COLUMNS = [
   { key: 'loan_deduction', label: 'Loan' },
   { key: 'security_money_deduction', label: 'S.M.' },
   { key: 'other_deduction', label: 'Other' },
-  { key: 'advance_deduction', label: 'Adv.', title: 'Advance deduction + advance adjusted (combined)' },
+  {
+    key: 'advance_deduction',
+    label: 'Adv.',
+    title: 'Advance deduction + advance adjusted (combined)',
+  },
 ]
 
 const TOGGLEABLE_COLUMN_KEYS = [
@@ -391,7 +441,9 @@ const COLUMN_VISIBILITY_STORAGE_KEY = 'payroll-list:column-visibility:v1'
 
 const defaultColumnVisibility = () => {
   const visibility = {}
-  TOGGLEABLE_COLUMN_KEYS.forEach((key) => { visibility[key] = true })
+  TOGGLEABLE_COLUMN_KEYS.forEach((key) => {
+    visibility[key] = true
+  })
   return visibility
 }
 
@@ -405,7 +457,9 @@ const loadColumnVisibility = () => {
         if (typeof saved[key] === 'boolean') defaults[key] = saved[key]
       })
     }
-  } catch (e) { /* ignore corrupt storage */ }
+  } catch (e) {
+    /* ignore corrupt storage */
+  }
   return defaults
 }
 
@@ -426,70 +480,105 @@ const handleColumnPickerOutsideClick = (event) => {
 onMounted(() => document.addEventListener('mousedown', handleColumnPickerOutsideClick))
 onUnmounted(() => document.removeEventListener('mousedown', handleColumnPickerOutsideClick))
 
-watch(columnVisibility, (val) => {
-  try {
-    localStorage.setItem(COLUMN_VISIBILITY_STORAGE_KEY, JSON.stringify(val))
-  } catch (e) { /* ignore storage errors */ }
-}, { deep: true })
+watch(
+  columnVisibility,
+  (val) => {
+    try {
+      localStorage.setItem(COLUMN_VISIBILITY_STORAGE_KEY, JSON.stringify(val))
+    } catch (e) {
+      /* ignore storage errors */
+    }
+  },
+  { deep: true },
+)
 
-const visibleEarningsColumns = computed(() => EARNINGS_COLUMNS.filter((c) => columnVisibility[c.key]))
-const visibleDeductionColumns = computed(() => DEDUCTION_COLUMNS.filter((c) => columnVisibility[c.key]))
+const visibleEarningsColumns = computed(() =>
+  EARNINGS_COLUMNS.filter((c) => columnVisibility[c.key]),
+)
+const visibleDeductionColumns = computed(() =>
+  DEDUCTION_COLUMNS.filter((c) => columnVisibility[c.key]),
+)
 
-const visibleColumnCount = computed(() => TOGGLEABLE_COLUMN_KEYS.filter((key) => columnVisibility[key]).length)
+const visibleColumnCount = computed(
+  () => TOGGLEABLE_COLUMN_KEYS.filter((key) => columnVisibility[key]).length,
+)
 
-const leadingColspan = computed(() =>
-  2 + INFO_COLUMNS.filter((c) => columnVisibility[c.key]).length)
+const leadingColspan = computed(
+  () => 2 + INFO_COLUMNS.filter((c) => columnVisibility[c.key]).length,
+)
 
 const toggleColumn = (key) => {
   columnVisibility[key] = !columnVisibility[key]
 }
 
 const showAllColumns = () => {
-  TOGGLEABLE_COLUMN_KEYS.forEach((key) => { columnVisibility[key] = true })
+  TOGGLEABLE_COLUMN_KEYS.forEach((key) => {
+    columnVisibility[key] = true
+  })
 }
 
 const resetColumns = () => {
   const defaults = defaultColumnVisibility()
-  TOGGLEABLE_COLUMN_KEYS.forEach((key) => { columnVisibility[key] = defaults[key] })
+  TOGGLEABLE_COLUMN_KEYS.forEach((key) => {
+    columnVisibility[key] = defaults[key]
+  })
 }
 
 const earningCellClass = (tone) => {
-  if (tone === 'strong') return 'border border-emerald-200 bg-emerald-50/40 px-1 py-1.5 text-right font-mono font-semibold text-emerald-800'
-  if (tone === 'highlight') return 'border border-emerald-100 bg-emerald-50/20 px-1 py-1.5 text-right font-mono text-emerald-700'
-  if (tone === 'reduction') return 'border border-emerald-100 bg-emerald-50/20 px-1 py-1.5 text-right font-mono text-rose-600'
+  if (tone === 'strong')
+    return 'border border-emerald-200 bg-emerald-50/40 px-1 py-1.5 text-right font-mono font-semibold text-emerald-800'
+  if (tone === 'highlight')
+    return 'border border-emerald-100 bg-emerald-50/20 px-1 py-1.5 text-right font-mono text-emerald-700'
+  if (tone === 'reduction')
+    return 'border border-emerald-100 bg-emerald-50/20 px-1 py-1.5 text-right font-mono text-rose-600'
   return 'border border-emerald-100 bg-emerald-50/20 px-1 py-1.5 text-right font-mono text-slate-700'
 }
-const earningHeadClass = (tone) => tone === 'strong'
-  ? 'border border-emerald-200 bg-emerald-50 px-1 py-1.5 text-right font-bold text-emerald-800'
-  : tone === 'reduction'
-    ? 'border border-emerald-200 bg-emerald-50 px-1 py-1.5 text-right text-rose-700'
-    : 'border border-emerald-200 bg-emerald-50 px-1 py-1.5 text-right text-emerald-700'
-const earningSubtotalClass = (tone) => tone === 'strong'
-  ? 'border border-emerald-300 bg-emerald-200/70 px-1 py-1.5 text-right font-mono text-emerald-900'
-  : tone === 'reduction'
-    ? 'border border-emerald-200 bg-emerald-100/70 px-1 py-1.5 text-right font-mono text-rose-700'
-    : 'border border-emerald-200 bg-emerald-100/70 px-1 py-1.5 text-right font-mono text-emerald-800'
-const earningGrandClass = (tone) => tone === 'strong'
-  ? 'border border-emerald-300 bg-emerald-200/80 px-1 py-2 text-right font-mono text-emerald-900'
-  : tone === 'reduction'
-    ? 'border border-emerald-200 bg-emerald-100/80 px-1 py-2 text-right font-mono text-rose-700'
-    : 'border border-emerald-200 bg-emerald-100/80 px-1 py-2 text-right font-mono text-emerald-800'
+const earningHeadClass = (tone) =>
+  tone === 'strong'
+    ? 'border border-emerald-200 bg-emerald-50 px-1 py-1.5 text-right font-bold text-emerald-800'
+    : tone === 'reduction'
+      ? 'border border-emerald-200 bg-emerald-50 px-1 py-1.5 text-right text-rose-700'
+      : 'border border-emerald-200 bg-emerald-50 px-1 py-1.5 text-right text-emerald-700'
+const earningSubtotalClass = (tone) =>
+  tone === 'strong'
+    ? 'border border-emerald-300 bg-emerald-200/70 px-1 py-1.5 text-right font-mono text-emerald-900'
+    : tone === 'reduction'
+      ? 'border border-emerald-200 bg-emerald-100/70 px-1 py-1.5 text-right font-mono text-rose-700'
+      : 'border border-emerald-200 bg-emerald-100/70 px-1 py-1.5 text-right font-mono text-emerald-800'
+const earningGrandClass = (tone) =>
+  tone === 'strong'
+    ? 'border border-emerald-300 bg-emerald-200/80 px-1 py-2 text-right font-mono text-emerald-900'
+    : tone === 'reduction'
+      ? 'border border-emerald-200 bg-emerald-100/80 px-1 py-2 text-right font-mono text-rose-700'
+      : 'border border-emerald-200 bg-emerald-100/80 px-1 py-2 text-right font-mono text-emerald-800'
 
-const DEDUCTION_CELL_CLASS = 'border border-rose-100 bg-rose-50/20 px-1 py-1.5 text-right font-mono text-rose-600'
-const DEDUCTION_HEAD_CLASS = 'border border-rose-200 bg-rose-50 px-1 py-1.5 text-right text-rose-700'
-const DEDUCTION_SUBTOTAL_CLASS = 'border border-rose-200 bg-rose-100/70 px-1 py-1.5 text-right font-mono text-rose-800'
-const DEDUCTION_GRAND_CLASS = 'border border-rose-200 bg-rose-100/80 px-1 py-2 text-right font-mono text-rose-800'
+const DEDUCTION_CELL_CLASS =
+  'border border-rose-100 bg-rose-50/20 px-1 py-1.5 text-right font-mono text-rose-600'
+const DEDUCTION_HEAD_CLASS =
+  'border border-rose-200 bg-rose-50 px-1 py-1.5 text-right text-rose-700'
+const DEDUCTION_SUBTOTAL_CLASS =
+  'border border-rose-200 bg-rose-100/70 px-1 py-1.5 text-right font-mono text-rose-800'
+const DEDUCTION_GRAND_CLASS =
+  'border border-rose-200 bg-rose-100/80 px-1 py-2 text-right font-mono text-rose-800'
 
 const allowanceRows = (payroll) =>
   Array.isArray(payroll?.other_allowance_breakdown) ? payroll.other_allowance_breakdown : []
 
 const getAllowanceAmountByCode = (payroll, code) => {
-  const targetCode = String(code || '').trim().toUpperCase()
-  const targetName = String(code || '').trim().toLowerCase()
+  const targetCode = String(code || '')
+    .trim()
+    .toUpperCase()
+  const targetName = String(code || '')
+    .trim()
+    .toLowerCase()
   return allowanceRows(payroll)
     .filter((row) => {
-      const allowanceCode = String(row?.allowance_code || '').trim().toUpperCase()
-      const allowanceName = String(row?.allowance_name || '').trim().toLowerCase()
+      const allowanceCode = String(row?.allowance_code || '')
+        .trim()
+        .toUpperCase()
+      const allowanceName = String(row?.allowance_name || '')
+        .trim()
+        .toLowerCase()
       return allowanceCode === targetCode || allowanceName === targetName
     })
     .reduce((sum, row) => sum + toNumber(row?.amount), 0)
@@ -503,7 +592,12 @@ const getPfAllowanceAmount = (payroll) => getAllowanceAmountByCode(payroll, 'PF'
 const getDisplayOtherAllowance = (payroll) =>
   payroll?.earnings && Object.prototype.hasOwnProperty.call(payroll.earnings, 'others')
     ? toNumber(payroll.earnings.others)
-    : Math.max(0, toNumber(payroll?.other_allowance_total) - getArrearAmount(payroll) - getPfAllowanceAmount(payroll))
+    : Math.max(
+        0,
+        toNumber(payroll?.other_allowance_total) -
+          getArrearAmount(payroll) -
+          getPfAllowanceAmount(payroll),
+      )
 
 const getEarningAdjustmentAmount = (payroll) => {
   const adjustments = Array.isArray(payroll?.adjustments_applied) ? payroll.adjustments_applied : []
@@ -540,7 +634,9 @@ const getTotalDeductions = (payroll) =>
       getTotalAdvanceAmount(payroll)
 
 const isLockedPayroll = (payroll) =>
-  ['paid', 'locked'].includes(String(payroll?.payment_status || payroll?.status || '').toLowerCase())
+  ['paid', 'locked'].includes(
+    String(payroll?.payment_status || payroll?.status || '').toLowerCase(),
+  )
 
 const earningGetters = {
   basic_salary: (p) => toNumber(p?.basic_salary),
@@ -566,7 +662,8 @@ const deductionGetters = {
 }
 
 const earningValue = (payroll, key) => (earningGetters[key] ? earningGetters[key](payroll) : 0)
-const deductionValue = (payroll, key) => (deductionGetters[key] ? deductionGetters[key](payroll) : 0)
+const deductionValue = (payroll, key) =>
+  deductionGetters[key] ? deductionGetters[key](payroll) : 0
 
 const activeFiltersCount = computed(() => {
   let count = 0
@@ -584,17 +681,23 @@ const activeFiltersCount = computed(() => {
 
 <template>
   <div class="min-h-screen space-y-2 p-3 md:p-4">
-
     <!-- ── Compact Toolbar ────────────────────────────── -->
-    <div class="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 shadow-sm">
+    <div
+      class="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 shadow-sm"
+    >
       <div class="flex items-center gap-2.5">
-        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
+        <div
+          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600"
+        >
           <i class="far fa-file-invoice-dollar text-sm"></i>
         </div>
         <div class="leading-tight">
           <span class="text-sm font-bold text-slate-800">Payroll Report</span>
           <span class="ml-2 text-xs text-slate-400">{{ formatMonth(filters.salary_month) }}</span>
-          <span v-if="activeFiltersCount" class="ml-1.5 rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-bold text-indigo-600">
+          <span
+            v-if="activeFiltersCount"
+            class="ml-1.5 rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-bold text-indigo-600"
+          >
             {{ activeFiltersCount }} filters
           </span>
         </div>
@@ -603,7 +706,11 @@ const activeFiltersCount = computed(() => {
         <button class="btn-3 h-7 px-3 text-xs" @click="router.push({ name: 'DoctorPayrollList' })">
           <i class="far fa-user-md"></i> Doctor
         </button>
-        <button class="btn-3 h-7 px-3 text-xs" :disabled="loading || !rows.length" @click="handleDownloadExcel">
+        <button
+          class="btn-3 h-7 px-3 text-xs"
+          :disabled="loading || !rows.length"
+          @click="handleDownloadExcel"
+        >
           <i class="far fa-file-excel"></i> Excel
         </button>
         <button class="btn-2 h-7 px-3 text-xs" @click="goToGenerate">
@@ -640,7 +747,9 @@ const activeFiltersCount = computed(() => {
       <div class="mt-2 flex flex-wrap items-center gap-2">
         <select v-model="filters.unit_id" class="erp-select-sm" @change="load">
           <option value="">All Units</option>
-          <option v-for="u in units" :key="u.id" :value="String(u.id)">{{ u.short_name || u.name }}</option>
+          <option v-for="u in units" :key="u.id" :value="String(u.id)">
+            {{ u.short_name || u.name }}
+          </option>
         </select>
         <select v-model="filters.payroll_cycle" class="erp-select-sm" @change="load">
           <option value="">All Cycles</option>
@@ -652,9 +761,14 @@ const activeFiltersCount = computed(() => {
         </select>
         <select v-model="filters.default_payment_method" class="erp-select-sm" @change="load">
           <option value="">All Payment Methods</option>
-          <option v-for="method in paymentMethodOptions" :key="method" :value="method">{{ method }}</option>
+          <option v-for="method in paymentMethodOptions" :key="method" :value="method">
+            {{ method }}
+          </option>
         </select>
-        <button class="inline-flex h-7 items-center gap-1 rounded-lg border border-slate-200 px-2.5 text-xs text-slate-500 hover:bg-slate-50" @click="resetFilters">
+        <button
+          class="inline-flex h-7 items-center gap-1 rounded-lg border border-slate-200 px-2.5 text-xs text-slate-500 hover:bg-slate-50"
+          @click="resetFilters"
+        >
           <i class="far fa-undo text-[9px]"></i> Reset
         </button>
       </div>
@@ -668,12 +782,23 @@ const activeFiltersCount = computed(() => {
         class="flex items-center gap-3 rounded-xl border px-3 py-2 shadow-sm"
         :class="card.tone"
       >
-        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm" :class="card.iconBg">
+        <div
+          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm"
+          :class="card.iconBg"
+        >
           <i :class="`far ${card.icon}`"></i>
         </div>
         <div class="min-w-0 flex-1">
-          <p class="text-[10px] font-semibold uppercase tracking-wider truncate" :class="card.labelColor">{{ card.label }}</p>
-          <p class="font-bold leading-none" :class="[card.valueColor, card.isCount ? 'text-xl' : 'text-base font-mono']">
+          <p
+            class="text-[10px] font-semibold uppercase tracking-wider truncate"
+            :class="card.labelColor"
+          >
+            {{ card.label }}
+          </p>
+          <p
+            class="font-bold leading-none"
+            :class="[card.valueColor, card.isCount ? 'text-xl' : 'text-base font-mono']"
+          >
             {{ card.isCount ? card.value : formatCompactCurrency(card.value) }}
           </p>
           <p class="text-[10px] truncate" :class="card.subColor">{{ card.sub }}</p>
@@ -694,8 +819,13 @@ const activeFiltersCount = computed(() => {
     </div>
 
     <!-- ── Empty State ─────────────────────────────────── -->
-    <div v-else-if="!rows.length" class="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white py-10 text-center shadow-sm">
-      <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-2xl text-slate-300">
+    <div
+      v-else-if="!rows.length"
+      class="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white py-10 text-center shadow-sm"
+    >
+      <div
+        class="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-2xl text-slate-300"
+      >
         <i class="far fa-file-invoice-dollar"></i>
       </div>
       <p class="mt-3 text-sm font-semibold text-slate-600">No payrolls found</p>
@@ -707,9 +837,10 @@ const activeFiltersCount = computed(() => {
 
     <!-- ── Data Table ──────────────────────────────────── -->
     <div v-else class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-
       <!-- Table Header Bar -->
-      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-slate-50/60 px-3 py-2">
+      <div
+        class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-slate-50/60 px-3 py-2"
+      >
         <div class="flex items-center gap-2">
           <span class="text-xs font-semibold text-slate-700">Detailed Payroll Breakdown</span>
           <span class="text-[10px] text-slate-400">· {{ formatMonth(filters.salary_month) }}</span>
@@ -731,7 +862,9 @@ const activeFiltersCount = computed(() => {
               @click="showColumnPicker = !showColumnPicker"
             >
               <i class="far fa-columns text-[10px]"></i> Columns
-              <span class="rounded-full bg-indigo-100 px-1 text-[9px] font-bold text-indigo-600">{{ visibleColumnCount }}/{{ TOGGLEABLE_COLUMN_KEYS.length }}</span>
+              <span class="rounded-full bg-indigo-100 px-1 text-[9px] font-bold text-indigo-600"
+                >{{ visibleColumnCount }}/{{ TOGGLEABLE_COLUMN_KEYS.length }}</span
+              >
             </button>
 
             <div
@@ -742,9 +875,25 @@ const activeFiltersCount = computed(() => {
               <div class="mb-2 flex items-center justify-between">
                 <span class="text-xs font-bold text-slate-700">Customize Columns</span>
                 <div class="flex items-center gap-2">
-                  <button type="button" class="text-[10px] font-semibold text-indigo-500 hover:text-indigo-700" @click="showAllColumns">Show all</button>
-                  <button type="button" class="text-[10px] font-semibold text-slate-400 hover:text-slate-600" @click="resetColumns">Reset</button>
-                  <button type="button" class="flex h-5 w-5 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-600" @click="showColumnPicker = false">
+                  <button
+                    type="button"
+                    class="text-[10px] font-semibold text-indigo-500 hover:text-indigo-700"
+                    @click="showAllColumns"
+                  >
+                    Show all
+                  </button>
+                  <button
+                    type="button"
+                    class="text-[10px] font-semibold text-slate-400 hover:text-slate-600"
+                    @click="resetColumns"
+                  >
+                    Reset
+                  </button>
+                  <button
+                    type="button"
+                    class="flex h-5 w-5 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                    @click="showColumnPicker = false"
+                  >
                     <i class="far fa-times text-[10px]"></i>
                   </button>
                 </div>
@@ -752,30 +901,65 @@ const activeFiltersCount = computed(() => {
 
               <div class="grid grid-cols-3 gap-3 text-[11px]">
                 <div>
-                  <p class="mb-1 text-[9px] font-bold uppercase tracking-wide text-slate-400">Employee Info</p>
-                  <label v-for="col in INFO_COLUMNS" :key="`pick-info-${col.key}`" class="flex cursor-pointer items-center gap-1.5 rounded px-1 py-0.5 hover:bg-slate-50">
-                    <input type="checkbox" class="h-3 w-3 rounded border-slate-300 text-indigo-500 focus:ring-indigo-300" :checked="columnVisibility[col.key]" @change="toggleColumn(col.key)" />
+                  <p class="mb-1 text-[9px] font-bold uppercase tracking-wide text-slate-400">
+                    Employee Info
+                  </p>
+                  <label
+                    v-for="col in INFO_COLUMNS"
+                    :key="`pick-info-${col.key}`"
+                    class="flex cursor-pointer items-center gap-1.5 rounded px-1 py-0.5 hover:bg-slate-50"
+                  >
+                    <input
+                      type="checkbox"
+                      class="h-3 w-3 rounded border-slate-300 text-indigo-500 focus:ring-indigo-300"
+                      :checked="columnVisibility[col.key]"
+                      @change="toggleColumn(col.key)"
+                    />
                     <span class="text-slate-600">{{ col.label }}</span>
                   </label>
                 </div>
                 <div>
-                  <p class="mb-1 text-[9px] font-bold uppercase tracking-wide text-emerald-500">Earnings</p>
-                  <label v-for="col in EARNINGS_COLUMNS" :key="`pick-earn-${col.key}`" class="flex cursor-pointer items-center gap-1.5 rounded px-1 py-0.5 hover:bg-emerald-50">
-                    <input type="checkbox" class="h-3 w-3 rounded border-slate-300 text-emerald-500 focus:ring-emerald-300" :checked="columnVisibility[col.key]" @change="toggleColumn(col.key)" />
+                  <p class="mb-1 text-[9px] font-bold uppercase tracking-wide text-emerald-500">
+                    Earnings
+                  </p>
+                  <label
+                    v-for="col in EARNINGS_COLUMNS"
+                    :key="`pick-earn-${col.key}`"
+                    class="flex cursor-pointer items-center gap-1.5 rounded px-1 py-0.5 hover:bg-emerald-50"
+                  >
+                    <input
+                      type="checkbox"
+                      class="h-3 w-3 rounded border-slate-300 text-emerald-500 focus:ring-emerald-300"
+                      :checked="columnVisibility[col.key]"
+                      @change="toggleColumn(col.key)"
+                    />
                     <span class="text-slate-600">{{ col.label }}</span>
                   </label>
                 </div>
                 <div>
-                  <p class="mb-1 text-[9px] font-bold uppercase tracking-wide text-rose-500">Deductions</p>
-                  <label v-for="col in DEDUCTION_COLUMNS" :key="`pick-ded-${col.key}`" class="flex cursor-pointer items-center gap-1.5 rounded px-1 py-0.5 hover:bg-rose-50" :title="col.title || ''">
-                    <input type="checkbox" class="h-3 w-3 rounded border-slate-300 text-rose-500 focus:ring-rose-300" :checked="columnVisibility[col.key]" @change="toggleColumn(col.key)" />
+                  <p class="mb-1 text-[9px] font-bold uppercase tracking-wide text-rose-500">
+                    Deductions
+                  </p>
+                  <label
+                    v-for="col in DEDUCTION_COLUMNS"
+                    :key="`pick-ded-${col.key}`"
+                    class="flex cursor-pointer items-center gap-1.5 rounded px-1 py-0.5 hover:bg-rose-50"
+                    :title="col.title || ''"
+                  >
+                    <input
+                      type="checkbox"
+                      class="h-3 w-3 rounded border-slate-300 text-rose-500 focus:ring-rose-300"
+                      :checked="columnVisibility[col.key]"
+                      @change="toggleColumn(col.key)"
+                    />
                     <span class="text-slate-600">{{ col.label }}</span>
                   </label>
                 </div>
               </div>
 
               <p class="mt-2 border-t border-slate-100 pt-2 text-[10px] text-slate-400">
-                <i class="far fa-info-circle mr-1"></i>Group totals (E.Tot / D.Tot), Net Pay, Status and Action columns always stay visible. Your selection is remembered on this device.
+                <i class="far fa-info-circle mr-1"></i>Group totals (E.Tot / D.Tot), Net Pay, Status
+                and Action columns always stay visible. Your selection is remembered on this device.
               </p>
             </div>
           </div>
@@ -783,18 +967,27 @@ const activeFiltersCount = computed(() => {
       </div>
 
       <div class="w-full overflow-x-auto overscroll-x-contain [scrollbar-width:thin]">
-        <table class="prl-table min-w-[1620px] w-full table-fixed border-collapse text-[10px] leading-tight">
+        <table
+          class="prl-table min-w-[1810px] w-full table-fixed border-collapse text-[10px] leading-tight"
+        >
           <colgroup>
             <col class="w-[32px]" />
             <col class="w-[116px]" />
             <col v-if="columnVisibility.emp_id" class="w-[78px]" />
-            <col v-if="columnVisibility.unit" class="w-[64px]" />
+            <col v-if="columnVisibility.cost_center" class="w-[82px]" />
+            <col v-if="columnVisibility.unit_code" class="w-[64px]" />
+            <col v-if="columnVisibility.project_code" class="w-[72px]" />
+            <col v-if="columnVisibility.unit" class="w-[72px]" />
             <col v-if="columnVisibility.joining" class="w-[66px]" />
             <!-- earnings (toggleable + E.Tot) -->
             <col v-for="col in visibleEarningsColumns" :key="`col-e-${col.key}`" class="w-[56px]" />
             <col class="w-[56px]" />
             <!-- deductions (toggleable + D.Tot) -->
-            <col v-for="col in visibleDeductionColumns" :key="`col-d-${col.key}`" class="w-[56px]" />
+            <col
+              v-for="col in visibleDeductionColumns"
+              :key="`col-d-${col.key}`"
+              class="w-[56px]"
+            />
             <col class="w-[56px]" />
             <!-- net + status + action -->
             <col class="w-[68px]" />
@@ -805,150 +998,346 @@ const activeFiltersCount = computed(() => {
           <thead class="sticky top-0 z-10">
             <!-- Group Row -->
             <tr class="text-[9px] font-bold uppercase tracking-wider">
-              <th class="border border-slate-200 bg-slate-100 px-1 py-2 text-slate-500" rowspan="2">#</th>
-              <th class="border border-slate-200 bg-slate-100 px-1.5 py-2 text-left text-slate-600" rowspan="2">Employee</th>
-              <th v-if="columnVisibility.emp_id" class="border border-slate-200 bg-slate-100 px-1 py-2 text-slate-500" rowspan="2">Emp ID</th>
-              <th v-if="columnVisibility.unit" class="border border-slate-200 bg-slate-100 px-1 py-2 text-slate-500" rowspan="2">Unit</th>
-              <th v-if="columnVisibility.joining" class="border border-slate-200 bg-slate-100 px-1 py-2 text-slate-500" rowspan="2">Joining</th>
-              <th class="border border-emerald-300 bg-emerald-100 px-1 py-2 text-center text-emerald-700" :colspan="visibleEarningsColumns.length + 1">
+              <th class="border border-slate-200 bg-slate-100 px-1 py-2 text-slate-500" rowspan="2">
+                #
+              </th>
+              <th
+                class="border border-slate-200 bg-slate-100 px-1.5 py-2 text-left text-slate-600"
+                rowspan="2"
+              >
+                Employee
+              </th>
+              <th
+                v-if="columnVisibility.emp_id"
+                class="border border-slate-200 bg-slate-100 px-1 py-2 text-slate-500"
+                rowspan="2"
+              >
+                Emp ID
+              </th>
+              <th
+                v-if="columnVisibility.cost_center"
+                class="border border-slate-200 bg-slate-100 px-1 py-2 text-slate-500"
+                rowspan="2"
+              >
+                Cost-Center
+              </th>
+              <th
+                v-if="columnVisibility.unit_code"
+                class="border border-slate-200 bg-slate-100 px-1 py-2 text-slate-500"
+                rowspan="2"
+              >
+                Unit Code
+              </th>
+              <th
+                v-if="columnVisibility.project_code"
+                class="border border-slate-200 bg-slate-100 px-1 py-2 text-slate-500"
+                rowspan="2"
+              >
+                Project Code
+              </th>
+              <th
+                v-if="columnVisibility.unit"
+                class="border border-slate-200 bg-slate-100 px-1 py-2 text-slate-500"
+                rowspan="2"
+              >
+                Unit
+              </th>
+              <th
+                v-if="columnVisibility.joining"
+                class="border border-slate-200 bg-slate-100 px-1 py-2 text-slate-500"
+                rowspan="2"
+              >
+                Joining
+              </th>
+              <th
+                class="border border-emerald-300 bg-emerald-100 px-1 py-2 text-center text-emerald-700"
+                :colspan="visibleEarningsColumns.length + 1"
+              >
                 <i class="far fa-arrow-up mr-0.5 text-[8px]"></i> Earnings
               </th>
-              <th class="border border-rose-300 bg-rose-100 px-1 py-2 text-center text-rose-700" :colspan="visibleDeductionColumns.length + 1">
+              <th
+                class="border border-rose-300 bg-rose-100 px-1 py-2 text-center text-rose-700"
+                :colspan="visibleDeductionColumns.length + 1"
+              >
                 <i class="far fa-arrow-down mr-0.5 text-[8px]"></i> Deductions
               </th>
-              <th class="border border-indigo-300 bg-indigo-100 px-1 py-2 text-center text-indigo-700" rowspan="2">
+              <th
+                class="border border-indigo-300 bg-indigo-100 px-1 py-2 text-center text-indigo-700"
+                rowspan="2"
+              >
                 Net Pay
               </th>
-              <th class="border border-slate-200 bg-slate-100 px-1 py-2 text-slate-500" rowspan="2">Status</th>
-              <th class="border border-slate-200 bg-slate-100 px-1 py-2 text-slate-500" rowspan="2">Act.</th>
+              <th class="border border-slate-200 bg-slate-100 px-1 py-2 text-slate-500" rowspan="2">
+                Status
+              </th>
+              <th class="border border-slate-200 bg-slate-100 px-1 py-2 text-slate-500" rowspan="2">
+                Act.
+              </th>
             </tr>
 
             <!-- Sub-header Row -->
             <tr class="text-[9px] font-semibold uppercase tracking-wider text-slate-600">
               <!-- Earnings -->
-              <th v-for="col in visibleEarningsColumns" :key="`th-e-${col.key}`" :class="earningHeadClass(col.tone)">{{ col.label }}</th>
-              <th class="border border-emerald-200 bg-emerald-50 px-1 py-1.5 text-right font-bold text-emerald-900">E.Tot</th>
+              <th
+                v-for="col in visibleEarningsColumns"
+                :key="`th-e-${col.key}`"
+                :class="earningHeadClass(col.tone)"
+              >
+                {{ col.label }}
+              </th>
+              <th
+                class="border border-emerald-200 bg-emerald-50 px-1 py-1.5 text-right font-bold text-emerald-900"
+              >
+                E.Tot
+              </th>
               <!-- Deductions -->
-              <th v-for="col in visibleDeductionColumns" :key="`th-d-${col.key}`" :class="DEDUCTION_HEAD_CLASS" :title="col.title || ''">{{ col.label }}</th>
-              <th class="border border-rose-200 bg-rose-50 px-1 py-1.5 text-right font-bold text-rose-900">D.Tot</th>
+              <th
+                v-for="col in visibleDeductionColumns"
+                :key="`th-d-${col.key}`"
+                :class="DEDUCTION_HEAD_CLASS"
+                :title="col.title || ''"
+              >
+                {{ col.label }}
+              </th>
+              <th
+                class="border border-rose-200 bg-rose-50 px-1 py-1.5 text-right font-bold text-rose-900"
+              >
+                D.Tot
+              </th>
             </tr>
           </thead>
 
           <tbody>
             <template v-for="group in groupedByUnit" :key="group.unitName">
-            <tr
-              v-for="(p, i) in group.rows"
-              :key="p.id"
-              class="group transition-colors duration-75 hover:bg-indigo-50/40"
-              :class="i % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'"
-            >
-              <!-- # -->
-              <td class="border border-slate-100 px-1 py-1.5 text-center text-slate-400">
-                {{ group.offset + i + 1 }}
-              </td>
+              <tr
+                v-for="(p, i) in group.rows"
+                :key="p.id"
+                class="group transition-colors duration-75 hover:bg-indigo-50/40"
+                :class="i % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'"
+              >
+                <!-- # -->
+                <td class="border border-slate-100 px-1 py-1.5 text-center text-slate-400">
+                  {{ group.offset + i + 1 }}
+                </td>
 
-              <!-- Employee -->
-              <td class="border border-slate-100 px-1.5 py-1.5">
-                <div class="truncate font-semibold leading-tight text-slate-900" :title="p.user?.name || p.employee_name || '-'">
-                  {{ p.user?.name || p.employee_name || '-' }}
-                </div>
-                <div class="mt-0.5 truncate text-[9px] text-slate-400" :title="p.user?.designation?.title || p.company_name || '-'">
-                  {{ p.user?.designation?.title || p.company_name || '-' }}
-                </div>
-              </td>
-
-              <!-- Emp ID -->
-              <td v-if="columnVisibility.emp_id" class="border border-slate-100 px-1 py-1.5">
-                <span class="inline-flex rounded-md bg-slate-100 px-1.5 py-0.5 font-mono leading-none text-slate-700">
-                  {{ p.user?.employee_id || p.employee_code || '-' }}
-                </span>
-              </td>
-
-              <!-- Unit -->
-              <td v-if="columnVisibility.unit" class="border border-slate-100 px-1 py-1.5 text-slate-600">
-                {{ getUnitLabel(p) }}
-              </td>
-
-              <!-- Joining -->
-              <td v-if="columnVisibility.joining" class="border border-slate-100 px-1 py-1.5 text-[9px] text-slate-500">
-                {{ formatDate(p.user?.joining_date || p.joining_date) }}
-              </td>
-
-              <!-- ── Earnings ── -->
-              <td v-for="col in visibleEarningsColumns" :key="`td-e-${p.id}-${col.key}`" :class="earningCellClass(col.tone)">{{ formatCompactCurrency(earningValue(p, col.key)) }}</td>
-              <td class="border border-emerald-300 bg-emerald-100/60 px-1 py-1.5 text-right font-mono font-bold text-emerald-900">{{ formatCompactCurrency(getTotalEarnings(p)) }}</td>
-
-              <!-- ── Deductions ── -->
-              <td v-for="col in visibleDeductionColumns" :key="`td-d-${p.id}-${col.key}`" :class="DEDUCTION_CELL_CLASS">{{ formatCompactCurrency(deductionValue(p, col.key)) }}</td>
-              <td class="border border-rose-300 bg-rose-100/60 px-1 py-1.5 text-right font-mono font-bold text-rose-800">{{ formatCompactCurrency(getTotalDeductions(p)) }}</td>
-
-              <!-- Net Pay -->
-              <td class="border border-indigo-200 bg-indigo-50/40 px-1 py-1.5 text-right font-mono font-bold text-indigo-800">
-                {{ formatCompactCurrency(p.net_salary) }}
-              </td>
-
-              <!-- Status -->
-              <td class="border border-slate-100 px-1.5 py-1.5 text-center">
-                <div class="flex flex-col items-center gap-1">
-                  <PayrollStatusBadge :status="p.payment_status" />
-                  <button
-                    v-if="!isLockedPayroll(p)"
-                    class="inline-flex h-4 items-center gap-0.5 rounded px-1.5 text-[9px] font-medium text-indigo-400 transition hover:bg-indigo-50 hover:text-indigo-600"
-                    title="Change payment status"
-                    @click="openPaymentModal(p)"
+                <!-- Employee -->
+                <td class="border border-slate-100 px-1.5 py-1.5">
+                  <div
+                    class="truncate font-semibold leading-tight text-slate-900"
+                    :title="p.user?.name || p.employee_name || '-'"
                   >
-                    <i class="far fa-pencil text-[8px]"></i> Change
-                  </button>
-                  <span v-else class="text-[9px] text-slate-300">
-                    <i class="fas fa-lock text-[8px]"></i> Locked
+                    {{ p.user?.name || p.employee_name || '-' }}
+                  </div>
+                  <div
+                    class="mt-0.5 truncate text-[9px] text-slate-400"
+                    :title="p.user?.designation?.title || p.company_name || '-'"
+                  >
+                    {{ p.user?.designation?.title || p.company_name || '-' }}
+                  </div>
+                </td>
+
+                <!-- Emp ID -->
+                <td v-if="columnVisibility.emp_id" class="border border-slate-100 px-1 py-1.5">
+                  <span
+                    class="inline-flex rounded-md bg-slate-100 px-1.5 py-0.5 font-mono leading-none text-slate-700"
+                  >
+                    {{ p.user?.employee_id || p.employee_code || '-' }}
                   </span>
-                </div>
-              </td>
+                </td>
 
-              <!-- Actions -->
-              <td class="border border-slate-100 px-1 py-1.5 text-center">
-                <button
-                  class="inline-flex h-6 w-6 items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-500 transition hover:border-indigo-300 hover:bg-indigo-100 hover:text-indigo-700"
-                  title="View details"
-                  @click="router.push({ name: 'PayrollShow', params: { id: p.id } })"
+                <!-- Cost-Center -->
+                <td
+                  v-if="columnVisibility.cost_center"
+                  class="border border-slate-100 px-1 py-1.5 text-slate-600"
                 >
-                  <i class="far fa-eye text-[10px]"></i>
-                </button>
-              </td>
-            </tr>
+                  {{ getCostCenter(p) }}
+                </td>
 
-            <!-- ── Unit Subtotal ── -->
-            <tr class="bg-indigo-50/70 text-[10px] font-bold">
-              <td class="border border-indigo-200 px-1.5 py-1.5 text-left text-indigo-700" :colspan="leadingColspan">
-                <i class="far fa-sitemap mr-1 text-[9px]"></i>{{ group.unitName }} — Subtotal ({{ group.rows.length }})
-              </td>
-              <!-- Earnings -->
-              <td v-for="col in visibleEarningsColumns" :key="`sub-e-${group.unitName}-${col.key}`" :class="earningSubtotalClass(col.tone)">{{ formatCompactCurrency(group.totals[col.key]) }}</td>
-              <td class="border border-emerald-300 bg-emerald-200/70 px-1 py-1.5 text-right font-mono text-emerald-900">{{ formatCompactCurrency(group.totals.total_earnings) }}</td>
-              <!-- Deductions -->
-              <td v-for="col in visibleDeductionColumns" :key="`sub-d-${group.unitName}-${col.key}`" :class="DEDUCTION_SUBTOTAL_CLASS">{{ formatCompactCurrency(group.totals[col.key]) }}</td>
-              <td class="border border-rose-300 bg-rose-200/70 px-1 py-1.5 text-right font-mono text-rose-900">{{ formatCompactCurrency(group.totals.total_deduction) }}</td>
-              <!-- Net -->
-              <td class="border border-indigo-300 bg-indigo-200/70 px-1 py-1.5 text-right font-mono text-indigo-900">{{ formatCompactCurrency(group.totals.net_salary) }}</td>
-              <td class="border border-indigo-200 bg-indigo-100/70 px-1 py-1.5" colspan="2"></td>
-            </tr>
+                <!-- Unit Code -->
+                <td
+                  v-if="columnVisibility.unit_code"
+                  class="border border-slate-100 px-1 py-1.5 text-slate-600"
+                >
+                  {{ getUnitCode(p) }}
+                </td>
+
+                <!-- Project Code -->
+                <td
+                  v-if="columnVisibility.project_code"
+                  class="border border-slate-100 px-1 py-1.5 text-slate-600"
+                >
+                  {{ getProjectCode(p) }}
+                </td>
+
+                <!-- Unit -->
+                <td
+                  v-if="columnVisibility.unit"
+                  class="border border-slate-100 px-1 py-1.5 text-slate-600"
+                >
+                  {{ getUnitName(p) }}
+                </td>
+
+                <!-- Joining -->
+                <td
+                  v-if="columnVisibility.joining"
+                  class="border border-slate-100 px-1 py-1.5 text-[9px] text-slate-500"
+                >
+                  {{ formatDate(p.user?.joining_date || p.joining_date) }}
+                </td>
+
+                <!-- ── Earnings ── -->
+                <td
+                  v-for="col in visibleEarningsColumns"
+                  :key="`td-e-${p.id}-${col.key}`"
+                  :class="earningCellClass(col.tone)"
+                >
+                  {{ formatCompactCurrency(earningValue(p, col.key)) }}
+                </td>
+                <td
+                  class="border border-emerald-300 bg-emerald-100/60 px-1 py-1.5 text-right font-mono font-bold text-emerald-900"
+                >
+                  {{ formatCompactCurrency(getTotalEarnings(p)) }}
+                </td>
+
+                <!-- ── Deductions ── -->
+                <td
+                  v-for="col in visibleDeductionColumns"
+                  :key="`td-d-${p.id}-${col.key}`"
+                  :class="DEDUCTION_CELL_CLASS"
+                >
+                  {{ formatCompactCurrency(deductionValue(p, col.key)) }}
+                </td>
+                <td
+                  class="border border-rose-300 bg-rose-100/60 px-1 py-1.5 text-right font-mono font-bold text-rose-800"
+                >
+                  {{ formatCompactCurrency(getTotalDeductions(p)) }}
+                </td>
+
+                <!-- Net Pay -->
+                <td
+                  class="border border-indigo-200 bg-indigo-50/40 px-1 py-1.5 text-right font-mono font-bold text-indigo-800"
+                >
+                  {{ formatCompactCurrency(p.net_salary) }}
+                </td>
+
+                <!-- Status -->
+                <td class="border border-slate-100 px-1.5 py-1.5 text-center">
+                  <div class="flex flex-col items-center gap-1">
+                    <PayrollStatusBadge :status="p.payment_status" />
+                    <button
+                      v-if="!isLockedPayroll(p)"
+                      class="inline-flex h-4 items-center gap-0.5 rounded px-1.5 text-[9px] font-medium text-indigo-400 transition hover:bg-indigo-50 hover:text-indigo-600"
+                      title="Change payment status"
+                      @click="openPaymentModal(p)"
+                    >
+                      <i class="far fa-pencil text-[8px]"></i> Change
+                    </button>
+                    <span v-else class="text-[9px] text-slate-300">
+                      <i class="fas fa-lock text-[8px]"></i> Locked
+                    </span>
+                  </div>
+                </td>
+
+                <!-- Actions -->
+                <td class="border border-slate-100 px-1 py-1.5 text-center">
+                  <button
+                    class="inline-flex h-6 w-6 items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-500 transition hover:border-indigo-300 hover:bg-indigo-100 hover:text-indigo-700"
+                    title="View details"
+                    @click="router.push({ name: 'PayrollShow', params: { id: p.id } })"
+                  >
+                    <i class="far fa-eye text-[10px]"></i>
+                  </button>
+                </td>
+              </tr>
+
+              <!-- ── Unit Subtotal ── -->
+              <tr class="bg-indigo-50/70 text-[10px] font-bold">
+                <td
+                  class="border border-indigo-200 px-1.5 py-1.5 text-left text-indigo-700"
+                  :colspan="leadingColspan"
+                >
+                  <i class="far fa-sitemap mr-1 text-[9px]"></i>{{ group.unitName }} — Subtotal ({{
+                    group.rows.length
+                  }})
+                </td>
+                <!-- Earnings -->
+                <td
+                  v-for="col in visibleEarningsColumns"
+                  :key="`sub-e-${group.unitName}-${col.key}`"
+                  :class="earningSubtotalClass(col.tone)"
+                >
+                  {{ formatCompactCurrency(group.totals[col.key]) }}
+                </td>
+                <td
+                  class="border border-emerald-300 bg-emerald-200/70 px-1 py-1.5 text-right font-mono text-emerald-900"
+                >
+                  {{ formatCompactCurrency(group.totals.total_earnings) }}
+                </td>
+                <!-- Deductions -->
+                <td
+                  v-for="col in visibleDeductionColumns"
+                  :key="`sub-d-${group.unitName}-${col.key}`"
+                  :class="DEDUCTION_SUBTOTAL_CLASS"
+                >
+                  {{ formatCompactCurrency(group.totals[col.key]) }}
+                </td>
+                <td
+                  class="border border-rose-300 bg-rose-200/70 px-1 py-1.5 text-right font-mono text-rose-900"
+                >
+                  {{ formatCompactCurrency(group.totals.total_deduction) }}
+                </td>
+                <!-- Net -->
+                <td
+                  class="border border-indigo-300 bg-indigo-200/70 px-1 py-1.5 text-right font-mono text-indigo-900"
+                >
+                  {{ formatCompactCurrency(group.totals.net_salary) }}
+                </td>
+                <td class="border border-indigo-200 bg-indigo-100/70 px-1 py-1.5" colspan="2"></td>
+              </tr>
             </template>
           </tbody>
 
           <!-- ── Totals Footer ── -->
           <tfoot v-if="rows.length">
             <tr class="bg-slate-100 text-[10px] font-bold">
-              <td class="border border-slate-300 px-1 py-2 text-center text-slate-500" :colspan="leadingColspan">
+              <td
+                class="border border-slate-300 px-1 py-2 text-center text-slate-500"
+                :colspan="leadingColspan"
+              >
                 Grand Totals ({{ rows.length }})
               </td>
               <!-- Earnings -->
-              <td v-for="col in visibleEarningsColumns" :key="`grand-e-${col.key}`" :class="earningGrandClass(col.tone)">{{ formatCompactCurrency(columnTotals[col.key]) }}</td>
-              <td class="border border-emerald-300 bg-emerald-200/80 px-1 py-2 text-right font-mono text-emerald-900">{{ formatCompactCurrency(columnTotals.total_earnings) }}</td>
+              <td
+                v-for="col in visibleEarningsColumns"
+                :key="`grand-e-${col.key}`"
+                :class="earningGrandClass(col.tone)"
+              >
+                {{ formatCompactCurrency(columnTotals[col.key]) }}
+              </td>
+              <td
+                class="border border-emerald-300 bg-emerald-200/80 px-1 py-2 text-right font-mono text-emerald-900"
+              >
+                {{ formatCompactCurrency(columnTotals.total_earnings) }}
+              </td>
               <!-- Deductions -->
-              <td v-for="col in visibleDeductionColumns" :key="`grand-d-${col.key}`" :class="DEDUCTION_GRAND_CLASS">{{ formatCompactCurrency(columnTotals[col.key]) }}</td>
-              <td class="border border-rose-300 bg-rose-200/80 px-1 py-2 text-right font-mono text-rose-900">{{ formatCompactCurrency(columnTotals.total_deduction) }}</td>
+              <td
+                v-for="col in visibleDeductionColumns"
+                :key="`grand-d-${col.key}`"
+                :class="DEDUCTION_GRAND_CLASS"
+              >
+                {{ formatCompactCurrency(columnTotals[col.key]) }}
+              </td>
+              <td
+                class="border border-rose-300 bg-rose-200/80 px-1 py-2 text-right font-mono text-rose-900"
+              >
+                {{ formatCompactCurrency(columnTotals.total_deduction) }}
+              </td>
               <!-- Net -->
-              <td class="border border-indigo-300 bg-indigo-200/80 px-1 py-2 text-right font-mono text-indigo-900">{{ formatCompactCurrency(columnTotals.net_salary) }}</td>
+              <td
+                class="border border-indigo-300 bg-indigo-200/80 px-1 py-2 text-right font-mono text-indigo-900"
+              >
+                {{ formatCompactCurrency(columnTotals.net_salary) }}
+              </td>
               <td class="border border-slate-300 bg-slate-100 px-1 py-2" colspan="2"></td>
             </tr>
           </tfoot>
@@ -956,14 +1345,31 @@ const activeFiltersCount = computed(() => {
       </div>
 
       <!-- Table Footer Bar -->
-      <div class="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/50 px-3 py-1.5 text-[10px] text-slate-400">
+      <div
+        class="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/50 px-3 py-1.5 text-[10px] text-slate-400"
+      >
         <span>
-          Showing all <strong class="text-slate-600">{{ rows.length }}</strong> records across <strong class="text-slate-600">{{ groupedByUnit.length }}</strong> units · {{ formatMonth(filters.salary_month) }}
+          Showing all <strong class="text-slate-600">{{ rows.length }}</strong> records across
+          <strong class="text-slate-600">{{ groupedByUnit.length }}</strong> units ·
+          {{ formatMonth(filters.salary_month) }}
         </span>
         <div class="flex items-center gap-2.5">
-          <span class="flex items-center gap-1"><span class="inline-block h-2 w-2 rounded-sm bg-emerald-200 ring-1 ring-emerald-300"></span>Earnings</span>
-          <span class="flex items-center gap-1"><span class="inline-block h-2 w-2 rounded-sm bg-rose-200 ring-1 ring-rose-300"></span>Deductions</span>
-          <span class="flex items-center gap-1"><span class="inline-block h-2 w-2 rounded-sm bg-indigo-200 ring-1 ring-indigo-300"></span>Net Pay</span>
+          <span class="flex items-center gap-1"
+            ><span
+              class="inline-block h-2 w-2 rounded-sm bg-emerald-200 ring-1 ring-emerald-300"
+            ></span
+            >Earnings</span
+          >
+          <span class="flex items-center gap-1"
+            ><span class="inline-block h-2 w-2 rounded-sm bg-rose-200 ring-1 ring-rose-300"></span
+            >Deductions</span
+          >
+          <span class="flex items-center gap-1"
+            ><span
+              class="inline-block h-2 w-2 rounded-sm bg-indigo-200 ring-1 ring-indigo-300"
+            ></span
+            >Net Pay</span
+          >
         </div>
       </div>
     </div>
@@ -973,10 +1379,14 @@ const activeFiltersCount = computed(() => {
       :show="showPaymentModal"
       :payroll-id="selectedPayroll?.id"
       :current-status="selectedPayroll?.payment_status"
-      @close="() => { showPaymentModal = false; selectedPayroll = null }"
+      @close="
+        () => {
+          showPaymentModal = false
+          selectedPayroll = null
+        }
+      "
       @submit="handlePaymentSubmit"
     />
-
   </div>
 </template>
 
@@ -1003,7 +1413,9 @@ const activeFiltersCount = computed(() => {
   font-size: 0.875rem;
   color: #334155;
   box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 .erp-select:focus {
   outline: none;
@@ -1018,7 +1430,9 @@ const activeFiltersCount = computed(() => {
   font-size: 0.75rem;
   color: #475569;
   height: 1.75rem;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 .erp-select-sm:focus {
   outline: none;

@@ -13,6 +13,7 @@ const unitForm = reactive({
   id: null,
   name: '',
   short_name: '',
+  project_code: '',
   status: 'Active',
 })
 
@@ -21,6 +22,7 @@ const resetForm = () => {
   unitForm.id = null
   unitForm.name = ''
   unitForm.short_name = ''
+  unitForm.project_code = ''
   unitForm.status = 'Active'
 }
 
@@ -32,6 +34,7 @@ watch(
       unitForm.id = newUnit.id || null
       unitForm.name = newUnit.name || ''
       unitForm.short_name = newUnit.short_name || ''
+      unitForm.project_code = newUnit.project_code || ''
       unitForm.status = newUnit.status || 'Active'
     } else {
       resetForm()
@@ -58,24 +61,35 @@ const handleSubmit = () => {
       </h2>
       <form @submit.prevent="handleSubmit">
         <div class="mb-4">
-          <label for="unit_name" class="block text-sm font-medium mb-2">Name</label>
-          <input
-            id="unit_name"
-            v-model="unitForm.name"
-            type="text"
-            class="w-full border rounded px-3 py-2"
-            placeholder="Enter unit name"
-            required
-          />
-        </div>
-        <div class="mb-4">
-          <label for="unit_short_name" class="block text-sm font-medium mb-2">Short Name</label>
+          <label for="unit_short_name" class="block text-sm font-medium mb-2">Unit Code</label>
           <input
             id="unit_short_name"
             v-model="unitForm.short_name"
             type="text"
             class="w-full border rounded px-3 py-2"
-            placeholder="Enter short name"
+            placeholder="Enter unit code"
+            required
+          />
+        </div>
+        <div class="mb-4">
+          <label for="unit_project_code" class="block text-sm font-medium mb-2">Project Code</label>
+          <input
+            id="unit_project_code"
+            v-model="unitForm.project_code"
+            type="text"
+            class="w-full border rounded px-3 py-2"
+            placeholder="Enter project code"
+            required
+          />
+        </div>
+        <div class="mb-4">
+          <label for="unit_name" class="block text-sm font-medium mb-2">Project Name</label>
+          <input
+            id="unit_name"
+            v-model="unitForm.name"
+            type="text"
+            class="w-full border rounded px-3 py-2"
+            placeholder="Enter project name"
             required
           />
         </div>
