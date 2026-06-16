@@ -128,7 +128,8 @@ const filters = reactive({
   line_type: String(route.query.line_type ?? 'all'),
   status: String(route.query.status ?? 'active'), // 'all' | 'active' | 'in_active'
   employee_id: String(route.query.employee_id ?? ''),
-  q: String(route.query.q ?? '')
+  q: String(route.query.q ?? ''),
+  no_unit: route.query.no_unit === '1',
 })
 
 /* ------------ query sync (debounced) ------------ */
@@ -141,6 +142,7 @@ const normalizedQuery = computed(() => {
   if (filters.status && filters.status !== 'all') q.status = filters.status
   if (filters.employee_id) q.employee_id = filters.employee_id
   if (filters.q) q.q = filters.q
+  if (filters.no_unit) q.no_unit = '1'
   if (route.query.action) q.action = route.query.action
   return q
 })
@@ -202,6 +204,8 @@ const statusMatches = (u) => {
   return filters.status === 'active' ? !inactive : inactive
 }
 
+const hasNoUnit = (u) => !u?.unit_id && !u?.unit?.id
+
 /* Base filtered list (before grouping) */
 const filteredUsers = computed(() => {
   const list = Array.isArray(storeUsers.value) ? storeUsers.value : []
@@ -212,6 +216,7 @@ const filteredUsers = computed(() => {
     if (filters.employee_id && String(u?.id) !== String(filters.employee_id)) return false
     if (!statusMatches(u)) return false
     if (!matchesQuickSearch(u, filters.q)) return false
+    if (filters.no_unit && !hasNoUnit(u)) return false
     return true
   })
 })
@@ -219,10 +224,12 @@ const filteredUsers = computed(() => {
 /* Summary chips */
 const summary = computed(() => {
   const list = filteredUsers.value
+  const allList = Array.isArray(storeUsers.value) ? storeUsers.value : []
   const total = list.length
   const active = list.filter((u) => Number(u?.is_active ?? 0) === 1).length
   const withShift = list.filter((u) => hasShift(u)).length
   const withWeekend = list.filter((u) => hasWeekend(u)).length
+  const withoutUnit = allList.filter((u) => hasNoUnit(u) && statusMatches(u)).length
   return {
     total,
     active,
@@ -230,7 +237,8 @@ const summary = computed(() => {
     withShift,
     withoutShift: total - withShift,
     withWeekend,
-    withoutWeekend: total - withWeekend
+    withoutWeekend: total - withWeekend,
+    withoutUnit,
   }
 })
 
@@ -250,7 +258,7 @@ const TABLE_COLUMNS = [
   { key: 'employeeId', label: 'Employee ID', defaultVisible: false },
   { key: 'department', label: 'Department', defaultVisible: false },
   { key: 'designation', label: 'Designation', defaultVisible: false },
-  { key: 'unit', label: 'Unit', defaultVisible: false },
+  { key: 'unit', label: 'Unit', defaultVisible: true },
   { key: 'lineType', label: 'Line Type', defaultVisible: false },
   { key: 'contact', label: 'Contact', defaultVisible: false },
   { key: 'phone', label: 'Phone' },
@@ -533,6 +541,7 @@ function resetFilters() {
   filters.status = 'active'
   filters.employee_id = ''
   filters.q = ''
+  filters.no_unit = false
 }
 
 watch(showExitModal, (open) => {
@@ -635,6 +644,25 @@ onBeforeUnmount(() => {
               @click.prevent="filters.status = 'in_active'"
             >Inactive</button>
           </div>
+
+          <!-- No Unit filter toggle -->
+          <button
+            type="button"
+            class="inline-flex h-8 items-center gap-1.5 rounded-md border px-3 text-xs font-semibold transition"
+            :class="filters.no_unit
+              ? 'border-orange-400 bg-orange-500 text-white shadow-sm'
+              : 'border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100'"
+            :title="filters.no_unit ? 'Showing only employees without unit' : 'Filter: no unit assigned'"
+            @click.prevent="filters.no_unit = !filters.no_unit"
+          >
+            <i class="far fa-exclamation-triangle text-[10px]"></i>
+            No Unit
+            <span
+              v-if="summary.withoutUnit > 0"
+              class="inline-flex h-4 min-w-[18px] items-center justify-center rounded-full px-1 text-[9px] font-bold"
+              :class="filters.no_unit ? 'bg-white/30 text-white' : 'bg-orange-200 text-orange-800'"
+            >{{ summary.withoutUnit }}</span>
+          </button>
         </EmployeeFilter>
 
         <!-- Quick search + Reset -->
@@ -694,7 +722,7 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- summary chips -->
-      <div class="grid gap-px bg-slate-100 text-xs sm:grid-cols-2 lg:grid-cols-7">
+      <div class="grid gap-px bg-slate-100 text-xs sm:grid-cols-2 lg:grid-cols-8">
         <div class="bg-white px-3 py-2"><div class="text-[10px] font-bold uppercase text-slate-400">Total</div><div class="text-base font-semibold text-slate-950">{{ summary.total }}</div></div>
         <div class="bg-white px-3 py-2"><div class="text-[10px] font-bold uppercase text-slate-400">Active</div><div class="text-base font-semibold text-emerald-700">{{ summary.active }}</div></div>
         <div class="bg-white px-3 py-2"><div class="text-[10px] font-bold uppercase text-slate-400">Inactive</div><div class="text-base font-semibold text-rose-700">{{ summary.inactive }}</div></div>
@@ -702,6 +730,16 @@ onBeforeUnmount(() => {
         <div class="bg-white px-3 py-2"><div class="text-[10px] font-bold uppercase text-slate-400">No Shift</div><div class="text-base font-semibold text-slate-700">{{ summary.withoutShift }}</div></div>
         <div class="bg-white px-3 py-2"><div class="text-[10px] font-bold uppercase text-slate-400">Weekend</div><div class="text-base font-semibold text-emerald-700">{{ summary.withWeekend }}</div></div>
         <div class="bg-white px-3 py-2"><div class="text-[10px] font-bold uppercase text-slate-400">No Weekend</div><div class="text-base font-semibold text-slate-700">{{ summary.withoutWeekend }}</div></div>
+        <button
+          type="button"
+          class="px-3 py-2 text-left transition"
+          :class="filters.no_unit ? 'bg-orange-500' : 'bg-white hover:bg-orange-50'"
+          :title="filters.no_unit ? 'Click to clear No Unit filter' : 'Click to filter employees without unit'"
+          @click="filters.no_unit = !filters.no_unit"
+        >
+          <div class="text-[10px] font-bold uppercase" :class="filters.no_unit ? 'text-orange-100' : 'text-orange-500'">No Unit</div>
+          <div class="text-base font-semibold" :class="filters.no_unit ? 'text-white' : 'text-orange-600'">{{ summary.withoutUnit }}</div>
+        </button>
       </div>
     </div>
 
@@ -829,7 +867,11 @@ onBeforeUnmount(() => {
                 <tr
                   v-for="(user, index) in users"
                   :key="user.id"
-                  :class="['border-b border-slate-100 text-[11px] hover:bg-blue-50/60', isInactiveUser(user) ? 'opacity-70' : '']"
+                  :class="[
+                    'border-b border-slate-100 text-[11px]',
+                    isInactiveUser(user) ? 'opacity-70' : '',
+                    hasNoUnit(user) ? 'bg-orange-50/60 hover:bg-orange-50' : 'hover:bg-blue-50/60',
+                  ]"
                 >
                   <td v-if="isTableColumnVisible('sl')" class="px-2 py-1.5 text-center font-semibold text-slate-500">{{ index + 1 }}</td>
 
@@ -863,7 +905,10 @@ onBeforeUnmount(() => {
                     {{ user?.designation?.title || '-' }}
                   </td>
                   <td v-if="isTableColumnVisible('unit')" class="whitespace-nowrap px-2 py-1.5">
-                    {{ user?.unit?.name || '-' }}
+                    <span v-if="user?.unit?.name">{{ user.unit.name }}</span>
+                    <span v-else class="inline-flex items-center gap-1 rounded border border-orange-200 bg-orange-50 px-1.5 py-0.5 text-[10px] font-semibold text-orange-600">
+                      <i class="far fa-exclamation-triangle text-[9px]"></i> Not Assigned
+                    </span>
                   </td>
                   <td v-if="isTableColumnVisible('lineType')" class="whitespace-nowrap px-2 py-1.5">
                     {{ user?.type || '-' }}
