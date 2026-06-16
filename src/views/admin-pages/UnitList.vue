@@ -32,7 +32,7 @@ const visibleUnits = computed(() =>
     if (filters.value.status && unit.status !== filters.value.status) return false
     if (!searchText.value) return true
 
-    return [unit.short_name, unit.project_code, unit.name, unit.status]
+    return [unit.short_name, unit.name, unit.project_code, unit.project_name, unit.status]
       .filter(Boolean)
       .join(' ')
       .toLowerCase()
@@ -142,7 +142,7 @@ onMounted(async () => {
             <h1 class="text-base font-semibold leading-tight text-slate-900">
               Unit Project Mapping
             </h1>
-            <div class="text-[11px] leading-tight text-slate-500">Unit, project code/name</div>
+            <div class="text-[11px] leading-tight text-slate-500">Unit name, project code/name</div>
           </div>
         </div>
 
@@ -181,7 +181,7 @@ onMounted(async () => {
               v-model="filters.q"
               type="text"
               class="h-8 w-full border border-slate-200 bg-white pl-8 pr-2 text-xs text-slate-800 outline-none focus:border-slate-400"
-              placeholder="Unit code, project code, project name..."
+              placeholder="Unit code, unit name, project code, project name..."
             />
           </div>
         </div>
@@ -214,6 +214,7 @@ onMounted(async () => {
             <tr class="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500">
               <th class="w-12 px-2 py-1.5 text-left font-semibold">#</th>
               <th class="w-32 px-2 py-1.5 text-left font-semibold">Unit Code</th>
+              <th class="w-40 px-2 py-1.5 text-left font-semibold">Unit Name</th>
               <th class="w-28 px-2 py-1.5 text-left font-semibold">Project Code</th>
               <th class="px-2 py-1.5 text-left font-semibold">Project Name</th>
               <th class="w-24 px-2 py-1.5 text-center font-semibold">Status</th>
@@ -222,7 +223,7 @@ onMounted(async () => {
           </thead>
           <tbody class="text-xs text-slate-700">
             <tr v-if="unitStore.loading">
-              <td colspan="6" class="py-8">
+              <td colspan="7" class="py-8">
                 <LoaderView />
               </td>
             </tr>
@@ -245,6 +246,13 @@ onMounted(async () => {
                     {{ row.unitCodeRowspan }} project{{ row.unitCodeRowspan > 1 ? 's' : '' }}
                   </div>
                 </td>
+                <td
+                  v-if="row.isFirstUnitCodeRow"
+                  :rowspan="row.unitCodeRowspan"
+                  class="border-r border-slate-100 bg-white px-2 py-1.5 align-middle"
+                >
+                  <div class="font-medium text-slate-900">{{ row.unit.name || '-' }}</div>
+                </td>
                 <td class="px-2 py-1.5 align-top">
                   <span
                     class="inline-flex min-w-8 items-center justify-center border border-slate-200 bg-white px-1.5 py-0.5 font-mono text-[11px] font-semibold text-slate-700"
@@ -253,7 +261,7 @@ onMounted(async () => {
                   </span>
                 </td>
                 <td class="px-2 py-1.5 align-top">
-                  <div class="font-medium text-slate-900">{{ row.unit.name }}</div>
+                  <div class="font-medium text-slate-900">{{ row.unit.project_name || '-' }}</div>
                 </td>
                 <td class="px-2 py-1.5 text-center align-top">
                   <span
@@ -296,7 +304,7 @@ onMounted(async () => {
               </tr>
             </template>
             <tr v-else>
-              <td colspan="6" class="py-8 text-center">
+              <td colspan="7" class="py-8 text-center">
                 <div class="mx-auto max-w-md">
                   <div class="text-2xl text-slate-300"><i class="far fa-folder-open"></i></div>
                   <div class="mt-1 text-xs font-semibold text-slate-800">
@@ -340,7 +348,7 @@ onMounted(async () => {
     <DeleteModal
       :show="showDeleteModal"
       :title="'Delete Unit'"
-      :message="`Are you sure you want to delete ${selectedUnit?.name}?`"
+      :message="`Are you sure you want to delete ${selectedUnit?.name || selectedUnit?.short_name}?`"
       @close="closeDeleteModal"
       @confirm="handleDelete"
     />

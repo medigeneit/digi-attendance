@@ -14,6 +14,7 @@ const unitForm = reactive({
   name: '',
   short_name: '',
   project_code: '',
+  project_name: '',
   status: 'Active',
 })
 
@@ -23,6 +24,7 @@ const resetForm = () => {
   unitForm.name = ''
   unitForm.short_name = ''
   unitForm.project_code = ''
+  unitForm.project_name = ''
   unitForm.status = 'Active'
 }
 
@@ -35,6 +37,7 @@ watch(
       unitForm.name = newUnit.name || ''
       unitForm.short_name = newUnit.short_name || ''
       unitForm.project_code = newUnit.project_code || ''
+      unitForm.project_name = newUnit.project_name || ''
       unitForm.status = newUnit.status || 'Active'
     } else {
       resetForm()
@@ -72,6 +75,17 @@ const handleSubmit = () => {
           />
         </div>
         <div class="mb-4">
+          <label for="unit_name" class="block text-sm font-medium mb-2">Unit Name</label>
+          <input
+            id="unit_name"
+            v-model="unitForm.name"
+            type="text"
+            class="w-full border rounded px-3 py-2"
+            placeholder="Enter unit name"
+            required
+          />
+        </div>
+        <div class="mb-4">
           <label for="unit_project_code" class="block text-sm font-medium mb-2">Project Code</label>
           <input
             id="unit_project_code"
@@ -83,10 +97,10 @@ const handleSubmit = () => {
           />
         </div>
         <div class="mb-4">
-          <label for="unit_name" class="block text-sm font-medium mb-2">Project Name</label>
+          <label for="unit_project_name" class="block text-sm font-medium mb-2">Project Name</label>
           <input
-            id="unit_name"
-            v-model="unitForm.name"
+            id="unit_project_name"
+            v-model="unitForm.project_name"
             type="text"
             class="w-full border rounded px-3 py-2"
             placeholder="Enter project name"
