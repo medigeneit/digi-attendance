@@ -7,6 +7,7 @@ import { computed } from 'vue'
 import AcceptAndRejectHandler from '../applications/AcceptAndRejectHandler.vue'
 import DeleteOvertime from './DeleteOvertime.vue'
 import DisplayFormattedWorkingHours from './DisplayFormattedWorkingHours.vue'
+import OvertimeApprovalChain from './OvertimeApprovalChain.vue'
 import UpdateApprovalTime from './UpdateApprovalTime.vue'
 
 const authStore = useAuthStore()
@@ -143,6 +144,9 @@ const totalApprovedHours = computed(() =>
         </p> 
       </div> 
     </div>
+
+    <!-- Approval chain -->
+    <OvertimeApprovalChain :overtimes="rows" />
 
     <!-- Table card -->
     <div class="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
