@@ -16,6 +16,11 @@ export const useNotificationStore = defineStore('notification', () => {
   const approvalPermissions = ref({})
   const applicationApprovalPermissions = ref([])
 
+  const normalizeApplicationId = (applicationId) => {
+    const id = Number(applicationId)
+    return Number.isInteger(id) && id > 0 ? id : null
+  }
+
   const icons = ref({
     leave_applications: 'fas fa-file-alt',
     short_leave_applications: 'fas fa-clock',
@@ -77,8 +82,15 @@ export const useNotificationStore = defineStore('notification', () => {
     error.value = null
 
     try {
+      const id = normalizeApplicationId(applicationId)
+
+      if (!id) {
+        approvalPermissions.value = {}
+        return
+      }
+
       const response = await apiClient.get(
-        `/pending-notifications/${notificationType}/${applicationId}/permissions`,
+        `/pending-notifications/${notificationType}/${id}/permissions`,
       )
 
       approvalPermissions.value = response.data || {}

@@ -96,7 +96,7 @@ export const useOvertimeStore = defineStore('overtime', () => {
     try {
       const response = await apiClient.get(`/overtimes/${id}`)
 
-      overtime.value = response.data || {}
+      overtime.value = response.data?.data || response.data?.overtime || response.data || {}
 
       const notificationStore = useNotificationStore()
 

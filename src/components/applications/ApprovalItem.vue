@@ -29,21 +29,23 @@ const title = computed(() => {
 })
 
 const approvalKey = computed(() => {
-  let key = ''
-
   switch (type) {
     case 'overtime_applications':
-      key = 'overtime_approval'
-      break
+      return 'overtime_approval'
     case 'leave_applications':
-      key = 'leave_approval'
-      break
+      return 'leave_approval'
+    case 'manual_attendance_applications':
+      return 'manual_attendance_approval'
+    case 'short_leave_applications':
+      return 'short_leave_approval'
+    case 'shift':
+    case 'offday':
+    case 'shift_exchange_applications':
+    case 'offday_exchange_applications':
+      return 'exchange_approval'
     default:
-      key = 'other_approval'
-      break
+      return 'other_approval'
   }
-
-  return key
 })
 
 const itemUser = computed(() => application?.[`${item}_user`])

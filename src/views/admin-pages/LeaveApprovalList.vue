@@ -16,11 +16,13 @@ const leaveApprovalStore = useLeaveApprovalStore()
 const toast = useToast()
 
 const fallbackApplicationTypes = [
-  { name: 'Leave', code: 'leave', approval_group: 'leave', sort_order: 1 },
-  { name: 'Short Leave', code: 'short_leave', approval_group: 'other', sort_order: 2 },
-  { name: 'Manual Attendance', code: 'manual_attendance', approval_group: 'other', sort_order: 3 },
-  { name: 'Overtime', code: 'overtime', approval_group: 'other', sort_order: 4 },
-  { name: 'Offboarding', code: 'offboarding', approval_group: 'other', sort_order: 5 },
+  { name: 'Leave',              code: 'leave',              approval_group: 'leave',  sort_order: 1 },
+  { name: 'Short Leave',        code: 'short_leave',        approval_group: 'other',  sort_order: 2 },
+  { name: 'Manual Attendance',  code: 'manual_attendance',  approval_group: 'other',  sort_order: 3 },
+  { name: 'Overtime',           code: 'overtime',           approval_group: 'other',  sort_order: 4 },
+  { name: 'Offboarding',        code: 'offboarding',        approval_group: 'other',  sort_order: 5 },
+  { name: 'Shift Exchange',     code: 'shift',              approval_group: 'other',  sort_order: 6 },
+  { name: 'Offday Exchange',    code: 'offday',             approval_group: 'other',  sort_order: 7 },
 ]
 
 const routeApplicationCode = () => {
@@ -41,18 +43,27 @@ const approvalUsers = ref([])
 const inlinePopoverPosition = ref({ top: 0, left: 0 })
 
 const search = ref('')
-const selectedCompanyId = ref('')
-const selectedDepartmentId = ref('')
+const selectedCompanyId = ref(route.query.company_id || '')
+const selectedDepartmentId = ref(route.query.department_id || '')
 
 const toolbarRef = ref(null)
 const toolbarH = ref(0)
 
 const applicationTypes = computed(() => {
-  const items = leaveApprovalStore.applicationTypes?.length
-    ? leaveApprovalStore.applicationTypes
-    : fallbackApplicationTypes
+  const apiTypes = leaveApprovalStore.applicationTypes || []
+  const itemsByCode = new Map()
 
-  return [...items].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+  fallbackApplicationTypes.forEach((type) => {
+    itemsByCode.set(type.code, type)
+  })
+
+  apiTypes.forEach((type) => {
+    if (type?.code) {
+      itemsByCode.set(type.code, type)
+    }
+  })
+
+  return [...itemsByCode.values()].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
 })
 
 const selectedApplicationType = computed(() => {
@@ -62,16 +73,58 @@ const selectedApplicationType = computed(() => {
     || fallbackApplicationTypes[0]
 })
 
-const approvalGroup = computed(() => selectedApplicationType.value?.approval_group || 'leave')
+const approvalGroup = computed(() => {
+  const group = selectedApplicationType.value?.approval_group
+  if (!group || group === 'other') return selectedApplicationCode.value
+  return group
+})
+
+// Backend type field only accepts 'leave' or 'other' — not the specific code
+const backendType = computed(() => {
+  const group = selectedApplicationType.value?.approval_group
+  if (!group || group === 'other') return 'other'
+  return group  // 'leave'
+})
 const pageTitle = computed(() => `${selectedApplicationType.value?.name || 'Approval'} Approval Rules`)
 
-const approverColumns = [
-  { key: 'in_charge', field: 'in_charge_user_id', label: 'Incharge' },
-  { key: 'coordinator', field: 'coordinator_user_id', label: 'Co-ordinator' },
+// All possible step definitions (canonical order)
+const ALL_APPROVER_COLUMNS = [
+  { key: 'in_charge',         field: 'in_charge_user_id',         label: 'In Charge' },
+  { key: 'coordinator',       field: 'coordinator_user_id',       label: 'Co-ordinator' },
   { key: 'operational_admin', field: 'operational_admin_user_id', label: 'Operational Admin' },
-  { key: 'recommend_by', field: 'recommend_by_user_id', label: 'Recommendation By' },
-  { key: 'approved_by', field: 'approved_by_user_id', label: 'Approved By' },
+  { key: 'recommend_by',      field: 'recommend_by_user_id',      label: 'Recommend By' },
+  { key: 'approved_by',       field: 'approved_by_user_id',       label: 'Approved By' },
 ]
+
+// Per-type column definitions — controls both the table columns and the modal fields
+const TYPE_COLUMNS = {
+  leave: [
+    'in_charge', 'coordinator', 'operational_admin', 'recommend_by', 'approved_by',
+  ],
+  short_leave: [
+    'in_charge', 'coordinator', 'operational_admin', 'recommend_by', 'approved_by',
+  ],
+  manual_attendance: [
+    'in_charge', 'coordinator', 'operational_admin', 'recommend_by', 'approved_by',
+  ],
+  overtime: [
+    'in_charge', 'coordinator', 'operational_admin', 'recommend_by', 'approved_by',
+  ],
+  offboarding: [
+    'in_charge', 'coordinator', 'operational_admin', 'approved_by',
+  ],
+  shift: [
+    'in_charge', 'coordinator', 'operational_admin', 'recommend_by', 'approved_by',
+  ],
+  offday: [
+    'in_charge', 'coordinator', 'operational_admin', 'recommend_by', 'approved_by',
+  ],
+}
+
+const approverColumns = computed(() => {
+  const keys = TYPE_COLUMNS[selectedApplicationCode.value] || TYPE_COLUMNS.leave
+  return ALL_APPROVER_COLUMNS.filter((col) => keys.includes(col.key))
+})
 
 const formatDateTime = (value) => {
   if (!value) return 'Not updated yet'
@@ -150,18 +203,23 @@ const fetchApprovalUsers = async () => {
   approvalUsers.value = response.data || []
 }
 
-const buildApprovalPayload = (approval, column, user) => ({
-  name: approval.name,
-  type: approval.type || approvalGroup.value,
-  department_id: approval.department_id || approval.department?.id || null,
-  in_charge_user_id: approval.in_charge_user_id || null,
-  coordinator_user_id: approval.coordinator_user_id || null,
-  operational_admin_user_id: approval.operational_admin_user_id || null,
-  recommend_by_user_id: approval.recommend_by_user_id || null,
-  approved_by_user_id: approval.approved_by_user_id || null,
-  change_note: approval.change_note || '',
-  [column.field]: user?.id || null,
-})
+const buildApprovalPayload = (approval, column, user) => {
+  const base = {
+    name: approval.name,
+    type: backendType.value,
+    application_code: selectedApplicationCode.value,
+    department_id: approval.department_id || approval.department?.id || null,
+    change_note: approval.change_note || '',
+  }
+  // Read resolved user IDs from approval_steps (handles type_configs overrides correctly).
+  // Fall back to the raw root field so shared rules without type_configs also work.
+  ALL_APPROVER_COLUMNS.forEach((col) => {
+    const step = (approval.approval_steps || []).find((s) => s.key === col.key)
+    base[col.field] = step?.user_id ?? approval[col.field] ?? null
+  })
+  base[column.field] = user?.id || null
+  return base
+}
 
 const assignApprover = async (approval, column, user) => {
   if (!approval?.id || !user?.id) return
@@ -198,6 +256,15 @@ const loadRules = async () => {
 const onEmployeeFilterChange = async (payload = {}) => {
   selectedCompanyId.value = payload.company_id || ''
   selectedDepartmentId.value = payload.department_id || ''
+  await router.replace({
+    name: route.name,
+    params: route.params,
+    query: {
+      ...route.query,
+      company_id: selectedCompanyId.value || undefined,
+      department_id: selectedDepartmentId.value || undefined,
+    },
+  })
   await loadRules()
 }
 
@@ -301,7 +368,8 @@ const handleDelete = async () => {
 const handleSave = async (leaveApproval) => {
   const payload = {
     ...leaveApproval,
-    type: leaveApproval.type || approvalGroup.value,
+    type: backendType.value,
+    application_code: selectedApplicationCode.value,
   }
 
   const action = payload.id ? 'updateLeaveApproval' : 'createLeaveApproval'
@@ -322,13 +390,25 @@ const handleSave = async (leaveApproval) => {
 }
 
 watch(
-  () => [route.name, route.params.type, route.query.type],
-  async () => {
+  () => [route.name, route.params.type, route.query.type, route.query.company_id, route.query.department_id],
+  async ([, , , companyId, deptId]) => {
     const nextCode = routeApplicationCode()
-    if (selectedApplicationCode.value === nextCode) return
+    let changed = false
 
-    selectedApplicationCode.value = nextCode
-    await loadRules()
+    if (selectedApplicationCode.value !== nextCode) {
+      selectedApplicationCode.value = nextCode
+      changed = true
+    }
+
+    const nextCompany = companyId || ''
+    const nextDept = deptId || ''
+    if (selectedCompanyId.value !== nextCompany || selectedDepartmentId.value !== nextDept) {
+      selectedCompanyId.value = nextCompany
+      selectedDepartmentId.value = nextDept
+      changed = true
+    }
+
+    if (changed) await loadRules()
   },
 )
 
@@ -344,48 +424,61 @@ onMounted(async () => {
 onUnmounted(() => {
   window.removeEventListener('resize', measureToolbar)
 })
+
+const TAB_ICONS = {
+  leave:               'fas fa-file-alt',
+  short_leave:         'fas fa-clock',
+  manual_attendance:   'fas fa-user-clock',
+  overtime:            'fas fa-hourglass-half',
+  offboarding:         'fas fa-sign-out-alt',
+  shift:               'fas fa-exchange-alt',
+  offday:              'fas fa-calendar-times',
+}
+const tabIcon = (code) => TAB_ICONS[code] || 'fas fa-circle'
+
+const configuredCount = (approval) =>
+  approverColumns.value.filter((col) => approverName(approval, col.key)).length
 </script>
 
 <template>
-  <div class="space-y-4 p-2 md:p-4">
-    <div ref="toolbarRef" class="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-200">
-      <div class="p-3 space-y-6">
-        <HeaderWithButtons title="Approval Rules" @add="openAddModal" />
+  <div class="pb-8">
 
-        <div class="flex flex-wrap gap-2">
-          <button
-            v-for="type in applicationTypes"
-            :key="type.code"
-            type="button"
-            class="px-3 py-2 rounded border text-sm font-medium"
-            :class="selectedApplicationCode === type.code
-              ? 'border-blue-500 bg-blue-50 text-blue-700'
-              : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'"
-            @click="selectApplication(type.code)"
-          >
-            {{ type.name }}
-          </button>
+    <!-- ── Sticky toolbar ── -->
+    <div ref="toolbarRef" class="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
+
+      <!-- Page header -->
+      <div class="flex items-center justify-between gap-3 px-4 py-3">
+        <div>
+          <h1 class="title-lg leading-tight">Approval Rules</h1>
+          <p class="text-xs text-gray-400 mt-0.5">
+            <i class="fas fa-layer-group mr-1"></i>{{ pageTitle }}
+          </p>
         </div>
+        <button class="btn-2 py-1.5" @click="openAddModal">
+          <i class="fas fa-plus text-xs"></i>
+          <span class="hidden sm:inline">Add New</span>
+        </button>
+      </div>
 
-        <!-- <div class="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 class="text-xl font-semibold text-gray-900">{{ pageTitle }}</h2>
-            <span
-              v-if="approvalGroup === 'other'"
-              class="inline-flex mt-1 rounded border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700"
-            >
-              Using existing Other approval rules
-            </span>
-          </div>
+      <!-- Tab bar -->
+      <div class="flex overflow-x-auto scrollbar-hide border-t border-gray-100 px-2 gap-0.5">
+        <button
+          v-for="type in applicationTypes"
+          :key="type.code"
+          type="button"
+          class="shrink-0 flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-all duration-150 whitespace-nowrap"
+          :class="selectedApplicationCode === type.code
+            ? 'border-blue-600 text-blue-700'
+            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+          @click="selectApplication(type.code)"
+        >
+          <i :class="tabIcon(type.code)" class="text-[11px]"></i>
+          {{ type.name }}
+        </button>
+      </div>
 
-          <input
-            v-model="search"
-            type="text"
-            placeholder="Search rules or approvers"
-            class="w-full md:w-72 rounded border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
-          />
-        </div> -->
-
+      <!-- Filters -->
+      <div class="px-4 py-2 bg-gray-50 border-t border-gray-100">
         <EmployeeFilter
           v-model:company_id="selectedCompanyId"
           v-model:department_id="selectedDepartmentId"
@@ -396,93 +489,159 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <div v-if="leaveApprovalStore.loading" class="bg-white rounded-lg p-6 border border-gray-100 shadow-sm flex justify-center">
-      <LoaderView class="shadow-none" />
-    </div>
+    <!-- ── Body ── -->
+    <div class="px-2 md:px-4 pt-4 space-y-4">
 
-    <div v-else-if="filteredApprovals.length" class="bg-white rounded-lg border border-gray-300 shadow-sm">
-      <div class="overflow-x-auto overflow-y-visible">
-        <table class="min-w-[980px] w-full border-collapse text-sm">
-          <thead>
-            <tr class="bg-gray-50 text-gray-800">
-              <th class="border border-gray-400 px-3 py-2 text-left font-semibold">Department</th>
-              <th class="border border-gray-400 px-3 py-2 text-left font-semibold">Rule Name</th>
-              <th
-                v-for="column in approverColumns"
-                :key="column.key"
-                class="border border-gray-400 px-3 py-2 text-center font-semibold"
-              >
-                {{ column.label }}
-              </th>
-              <th class="border border-gray-400 px-3 py-2 text-left font-semibold">Last Update</th>
-              <th class="border border-gray-400 px-3 py-2 text-center font-semibold">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="approval in filteredApprovals"
-              :key="approval.id"
-              class="hover:bg-blue-50"
-              :title="`${approval?.name || 'Approval rule'} | Updated ${formatDateTime(approval?.updated_at)} by ${updatedByName(approval)}`"
-            >
-              <td class="border border-gray-400 px-3 py-2 font-medium text-gray-900">
-                {{ approval?.department?.name || 'Unassigned Department' }}
-              </td>
-              <td class="border border-gray-400 px-3 py-2 text-gray-800">
-                {{ approval?.name || 'Unnamed rule' }}
-              </td>
-              <td
-                v-for="column in approverColumns"
-                :key="`${approval.id}-${column.key}`"
-                class="relative border border-gray-400 px-3 py-2 text-center text-gray-800"
-              >
-                <span v-if="approverName(approval, column.key)">
-                  {{ approverName(approval, column.key) }}
-                </span>
-                <template v-else>
-                  <button
-                    type="button"
-                    class="inline-flex rounded border border-red-400 px-4 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
-                    :title="`Add ${column.label}`"
-                    @click.stop="openInlineAssign(approval, column, $event)"
-                  >
-                    Add
-                  </button>
-                </template>
-              </td>
-              <td class="border border-gray-400 px-3 py-2 text-gray-800">
-                <div class="whitespace-nowrap text-sm">
-                  {{ formatDateTime(approval?.updated_at) }}
-                </div>
-                <div class="mt-1 text-xs text-gray-500">
-                  by {{ updatedByName(approval) }}
-                </div>
-              </td>
-              <td class="border border-gray-400 px-3 py-2">
-                <div class="flex justify-center gap-2">
-                  <button class="rounded border border-blue-200 px-2 py-1 text-xs text-blue-700 hover:bg-blue-50" @click="openEditModal(approval)">
-                    Edit
-                  </button>
-                  <button class="rounded border border-red-200 px-2 py-1 text-xs text-red-700 hover:bg-red-50" @click="openDeleteModal(approval)">
-                    <i class="fas fa-trash"></i>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <!-- How it works note -->
+      <div class="rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-3 text-xs text-blue-800 space-y-1.5">
+        <p class="font-semibold text-blue-900 flex items-center gap-1.5">
+          <i class="fas fa-info-circle text-blue-500"></i>
+          How Approval Rules Work
+        </p>
+        <ul class="space-y-1 pl-4 list-disc text-blue-700">
+          <li>
+            <strong>Snapshot at submission:</strong> When an application is submitted, the current approvers are <em>captured (snapshot)</em>.
+            Changing a rule later does <strong>not</strong> affect already-submitted applications.
+          </li>
+          <li>
+            <strong>Per-type override:</strong> Short Leave, Manual Attendance, Overtime, Shift Exchange, and Offday Exchange each store
+            their own approver set inside the same shared rule record. Editing one tab only changes that type's approvers.
+          </li>
+          <li>
+            <strong>Root vs. type-specific:</strong> If no per-type override is set, the application falls back to the rule's root approvers.
+            Set an override here to give a type its own distinct approval chain.
+          </li>
+          <li>
+            <strong>Shift / Offday Exchange:</strong> Use the <em>Shift Exchange</em> and <em>Offday Exchange</em> tabs above to configure
+            separate approvers for each exchange type within the same rule.
+          </li>
+        </ul>
       </div>
+
+      <!-- Loading -->
+      <div v-if="leaveApprovalStore.loading" class="flex justify-center py-16">
+        <LoaderView class="shadow-none" />
+      </div>
+
+      <!-- Table -->
+      <div v-else-if="filteredApprovals.length" class="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+        <div class="overflow-x-auto overflow-y-visible">
+          <table class="min-w-[980px] w-full text-sm">
+            <thead>
+              <tr class="bg-gray-50 border-b border-gray-200">
+                <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 w-36">Department</th>
+                <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Rule Name</th>
+                <th
+                  v-for="col in approverColumns"
+                  :key="col.key"
+                  class="px-3 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-gray-500"
+                >
+                  {{ col.label }}
+                </th>
+                <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 w-40">Last Update</th>
+                <th class="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-gray-500 w-24">Actions</th>
+              </tr>
+            </thead>
+
+            <tbody class="divide-y divide-gray-100">
+              <tr
+                v-for="approval in filteredApprovals"
+                :key="approval.id"
+                class="hover:bg-blue-50/30 transition-colors group"
+              >
+                <!-- Department -->
+                <td class="px-4 py-2.5">
+                  <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-200">
+                    {{ approval?.department?.name || '—' }}
+                  </span>
+                </td>
+
+                <!-- Rule name + completeness -->
+                <td class="px-4 py-2.5">
+                  <p class="font-medium text-gray-900 leading-tight">{{ approval?.name || 'Unnamed rule' }}</p>
+                  <p class="text-[10px] text-gray-400 mt-0.5">
+                    <i class="fas fa-check-circle text-emerald-400 mr-0.5"></i>
+                    {{ configuredCount(approval) }}/{{ approverColumns.length }} configured
+                  </p>
+                </td>
+
+                <!-- Approver cells -->
+                <td
+                  v-for="col in approverColumns"
+                  :key="`${approval.id}-${col.key}`"
+                  class="relative px-3 py-2.5 text-center"
+                >
+                  <span
+                    v-if="approverName(approval, col.key)"
+                    class="inline-flex items-center gap-1 text-xs font-medium text-gray-800"
+                  >
+                    <i class="fas fa-user-check text-emerald-500 text-[9px] shrink-0"></i>
+                    {{ approverName(approval, col.key) }}
+                  </span>
+                  <button
+                    v-else
+                    type="button"
+                    class="inline-flex items-center gap-1 rounded-full border border-dashed border-gray-300 px-2.5 py-0.5 text-[11px] text-gray-400 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
+                    :title="`Assign ${col.label}`"
+                    @click.stop="openInlineAssign(approval, col, $event)"
+                  >
+                    <i class="fas fa-plus text-[9px]"></i> Add
+                  </button>
+                </td>
+
+                <!-- Last update -->
+                <td class="px-4 py-2.5">
+                  <p class="text-xs text-gray-700 whitespace-nowrap">{{ formatDateTime(approval?.updated_at) }}</p>
+                  <p class="text-[10px] text-gray-400 mt-0.5 truncate max-w-[140px]">by {{ updatedByName(approval) }}</p>
+                </td>
+
+                <!-- Actions -->
+                <td class="px-4 py-2.5">
+                  <div class="flex items-center justify-center gap-1.5">
+                    <button
+                      class="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100 transition-colors"
+                      @click="openEditModal(approval)"
+                      title="Edit"
+                    >
+                      <i class="far fa-edit text-[10px]"></i>
+                      <span>Edit</span>
+                    </button>
+                    <button
+                      class="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-red-100 bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
+                      @click="openDeleteModal(approval)"
+                      title="Delete"
+                    >
+                      <i class="fas fa-trash text-[10px]"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div v-else class="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 bg-white py-16 text-center shadow-sm">
+        <div class="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+          <i class="fas fa-shield-alt text-2xl text-gray-300"></i>
+        </div>
+        <p class="font-semibold text-gray-800">No rules for {{ selectedApplicationType?.name }}</p>
+        <p class="mt-1 text-sm text-gray-400">Configure who approves these applications.</p>
+        <button class="btn-2 mt-5 py-1.5" @click="openAddModal">
+          <i class="fas fa-plus text-xs"></i> Add Rule
+        </button>
+      </div>
+
     </div>
 
-    <div v-else class="bg-white rounded-lg border border-dashed border-gray-300 shadow-sm p-6 text-center">
-      <div class="font-semibold text-gray-900">No approval rules found</div>
-      <div class="text-sm text-gray-500">Add an approval rule or adjust the filters.</div>
-    </div>
-
+    <!-- ── Modals (logic unchanged) ── -->
     <LeaveApprovalModal
       :show="showLeaveApprovalModal"
       :leaveApproval="selectedLeaveApproval"
       :approvalType="approvalGroup"
+      :typeName="selectedApplicationType?.name"
+      :columns="approverColumns"
       @close="closeLeaveApprovalModal"
       @save="handleSave"
     />
@@ -490,11 +649,12 @@ onUnmounted(() => {
     <DeleteModal
       :show="showDeleteModal"
       title="Delete Approval Rule"
-      :message="`Are you sure you want to delete ${selectedLeaveApproval?.name}?`"
+      :message="`Are you sure you want to delete '${selectedLeaveApproval?.name}'?`"
       @close="closeDeleteModal"
       @confirm="handleDelete"
     />
 
+    <!-- ── Inline assign popover ── -->
     <Teleport to="body">
       <div
         v-if="activeAssignment"
@@ -502,59 +662,68 @@ onUnmounted(() => {
         @click="closeInlineAssign"
       >
         <div
-          class="absolute w-[340px] rounded-lg border border-gray-200 bg-white p-2 text-left shadow-xl"
+          class="absolute w-[340px] rounded-xl border border-gray-200 bg-white shadow-2xl overflow-hidden"
           :style="{ top: `${inlinePopoverPosition.top}px`, left: `${inlinePopoverPosition.left}px` }"
           @click.stop
         >
-          <div class="mb-2 flex items-center justify-between gap-2">
+          <!-- Popover header -->
+          <div class="flex items-center justify-between gap-2 px-3 py-2.5 bg-gray-50 border-b border-gray-100">
             <div class="min-w-0">
-              <div class="truncate text-xs font-semibold text-gray-700">
-                Add {{ activeAssignment.column.label }}
-              </div>
-              <div class="truncate text-[11px] text-gray-400">
-                {{ activeAssignment.approval.department?.name || 'Unassigned Department' }} - {{ activeAssignment.approval.name }}
-              </div>
+              <p class="truncate text-xs font-semibold text-gray-800">
+                <i class="fas fa-user-plus text-blue-500 mr-1"></i>
+                Assign {{ activeAssignment.column.label }}
+              </p>
+              <p class="truncate text-[11px] text-gray-400 mt-0.5">
+                {{ activeAssignment.approval.department?.name || '—' }} · {{ activeAssignment.approval.name }}
+              </p>
             </div>
             <button
               type="button"
-              class="rounded px-2 py-1 text-xs text-gray-500 hover:bg-gray-100"
+              class="shrink-0 rounded-md px-2 py-1 text-xs text-gray-500 hover:bg-gray-200 transition-colors"
               @click="closeInlineAssign"
             >
-              Cancel
+              <i class="fas fa-times"></i>
             </button>
           </div>
 
-          <input
-            v-model="inlineSearch"
-            type="text"
-            class="w-full rounded border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
-            placeholder="Search name, ID, department"
-            autofocus
-            @keydown.esc="closeInlineAssign"
-          />
+          <!-- Search -->
+          <div class="px-3 pt-2.5 pb-1.5">
+            <input
+              v-model="inlineSearch"
+              type="text"
+              class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400"
+              placeholder="Search by name, ID or department…"
+              autofocus
+              @keydown.esc="closeInlineAssign"
+            />
+          </div>
 
-          <div class="mt-2 max-h-64 overflow-y-auto rounded border border-gray-100">
+          <!-- User list -->
+          <div class="max-h-60 overflow-y-auto">
             <button
               v-for="user in filteredInlineUsers"
               :key="user.id"
               type="button"
-              class="block w-full border-b border-gray-100 px-3 py-2 text-left hover:bg-blue-50 last:border-b-0"
+              class="flex items-center gap-2.5 w-full border-b border-gray-50 px-3 py-2 text-left hover:bg-blue-50 transition-colors last:border-b-0"
               @click="assignApprover(activeAssignment.approval, activeAssignment.column, user)"
             >
-              <div class="truncate text-sm font-medium text-gray-900">
-                {{ user.name }}
+              <div class="w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-[11px] shrink-0">
+                {{ (user.name || '?')[0].toUpperCase() }}
               </div>
-              <div class="truncate text-xs text-gray-500">
-                {{ userMeta(user) || `#${user.id}` }}
+              <div class="min-w-0">
+                <p class="truncate text-sm font-medium text-gray-900">{{ user.name }}</p>
+                <p class="truncate text-[11px] text-gray-400">{{ userMeta(user) || `#${user.id}` }}</p>
               </div>
             </button>
 
-            <div v-if="!filteredInlineUsers.length" class="px-3 py-3 text-center text-sm text-gray-500">
+            <div v-if="!filteredInlineUsers.length" class="px-4 py-6 text-center text-sm text-gray-400">
+              <i class="fas fa-search mb-2 text-gray-300 text-lg block"></i>
               No user found
             </div>
           </div>
         </div>
       </div>
     </Teleport>
+
   </div>
 </template>
