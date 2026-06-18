@@ -56,6 +56,9 @@ const approvalSteps = computed(() => {
   return steps
 })
 
+const handoverStep  = computed(() => approvalSteps.value.find(s => s.key === 'handover') ?? null)
+const otherSteps    = computed(() => approvalSteps.value.filter(s => s.key !== 'handover'))
+
 const fmtDate = (v) => {
   if (!v) return '—'
   try {
@@ -154,12 +157,22 @@ const fileUploadLink = async (event) => {
         <span class="font-semibold text-gray-800 w-full">{{ shortLeave.reason }}</span>
       </div>
 
-      <!-- Employee signature block -->
-      <div class="pt-4">
-        <hr class="w-44 border-black" />
-        <p class="text-lg font-bold text-blue-700 mt-0.5">{{ shortLeave.user?.name }}</p>
-        <p class="text-sm text-gray-600">{{ shortLeave.user?.designation?.title }}</p>
-        <p class="text-sm text-gray-500">{{ shortLeave.user?.department?.name }}</p>
+      <!-- Employee signature block + Handover (above the hr) -->
+      <div class="grid grid-cols-2 gap-x-4 items-end pt-4">
+        <div>
+          <hr class="w-44 border-black" />
+          <p class="text-lg font-bold text-blue-700 mt-0.5">{{ shortLeave.user?.name }}</p>
+          <p class="text-sm text-gray-600">{{ shortLeave.user?.designation?.title }}</p>
+          <p class="text-sm text-gray-500">{{ shortLeave.user?.department?.name }}</p>
+        </div>
+        <div v-if="handoverStep">
+          <ApprovalItem
+            :application="shortLeave"
+            type="short_leave_applications"
+            item="handover"
+            :onAction="onAction"
+          />
+        </div>
       </div>
 
       <!-- Rejection details -->
@@ -193,13 +206,13 @@ const fileUploadLink = async (event) => {
         </span>
       </div>
 
-      <!-- Dynamic approval items — only configured steps -->
+      <!-- Other approval items (in_charge, operational_admin, recommend_by, approved_by) -->
       <div
-        v-if="approvalSteps.length"
+        v-if="otherSteps.length"
         class="grid grid-cols-2 gap-x-4 gap-y-14 pt-6 items-end"
       >
         <ApprovalItem
-          v-for="step in approvalSteps"
+          v-for="step in otherSteps"
           :key="step.key"
           :application="shortLeave"
           type="short_leave_applications"

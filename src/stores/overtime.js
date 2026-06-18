@@ -7,6 +7,7 @@ export const useOvertimeStore = defineStore('overtime', () => {
   const overtimes = ref([])
   const reports = ref([])
   const overtime = ref(null)
+  const duplicateOvertime = ref(null)
   const loading = ref(false)
   const error = ref(null)
   const selectedMonth = ref(new Date().toISOString().substring(0, 7))
@@ -76,12 +77,17 @@ export const useOvertimeStore = defineStore('overtime', () => {
   const createOvertime = async (data = {}) => {
     loading.value = true
     error.value = null
+    duplicateOvertime.value = null
     try {
       const response = await apiClient.post('/user-overtimes', data)
       overtimes.value.push(response.data.overtime)
       return response.data.overtime
     } catch (err) {
-      error.value = err.response?.data?.message || 'Failed to create overtime'
+      duplicateOvertime.value = err.response?.status === 409 ? err.response?.data?.overtime || null : null
+      error.value =
+        err.response?.data?.message ||
+        err.response?.data?.errors?.date?.[0] ||
+        'Failed to create overtime'
       console.error('Error creating overtime:', err)
       throw new Error(error.value)
     } finally {
@@ -231,6 +237,7 @@ export const useOvertimeStore = defineStore('overtime', () => {
     overtimes,
     reports,
     overtime,
+    duplicateOvertime,
     loading,
     error,
     selectedMonth,

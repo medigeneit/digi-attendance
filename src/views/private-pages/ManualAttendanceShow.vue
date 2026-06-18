@@ -52,7 +52,9 @@ const fmtDate = (v) => {
 const fmtTime = (v) => {
   if (!v) return '—'
   try {
-    return new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' }).format(new Date(v))
+    const d = new Date(String(v).replace(' ', 'T'))
+    if (Number.isNaN(d.getTime())) return 'â€”'
+    return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
   } catch { return '—' }
 }
 
