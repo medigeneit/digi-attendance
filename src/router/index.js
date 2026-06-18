@@ -1507,8 +1507,6 @@ const router = createRouter({
           component: () => import('@/views/admin-pages/LifecycleDetailPage.vue'),
           meta: {
             requiresAuth: true,
-            roles: ['admin', 'super_admin', 'developer'],
-            feature: 'lifecycle.view',
             title: 'Lifecycle Detail',
           },
         },

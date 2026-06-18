@@ -1043,7 +1043,7 @@ async function save() {
           <div v-if="uploading.assessment_form_attachment" class="mt-2 text-xs text-gray-500">Uploading...</div>
         </div>
 
-        <div v-if="canManageProbation" class="rounded-lg border border-slate-200 bg-slate-50/60 p-2">
+        <div v-if="canManageProbation || isCurrentUserAssignedReviewer" class="rounded-lg border border-slate-200 bg-slate-50/60 p-2">
           <div class="mb-2 inline-flex rounded bg-violet-100 px-2 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-violet-800">
             Probation Decision
           </div>
@@ -1051,7 +1051,7 @@ async function save() {
             <label class="block">
               <span class="mb-1 block text-sm font-medium text-gray-700">Recommendation</span>
               <select v-model="form.payload.recommendation" class="w-full rounded-lg border bg-white px-2.5 py-1.5 text-sm">
-                <option value="">Select</option>
+                <option value="">— Not set —</option>
                 <option v-for="option in recommendationOptions" :key="option.value" :value="option.value">
                   {{ option.label }}
                 </option>
