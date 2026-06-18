@@ -394,17 +394,11 @@ const formatDate = (ts) => {
   <Teleport to="body">
     <div
       v-if="showModal"
-      class="fixed inset-0 z-[1000] bg-black bg-opacity-50 flex items-center justify-center"
+      class="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 p-3"
     >
       <div
-        class="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-lg p-4 relative"
+        class="w-full max-w-7xl overflow-hidden rounded-lg bg-white shadow-2xl"
       >
-        <button
-          class="absolute top-2 right-2 text-gray-500 hover:text-red-500 text-xl font-bold"
-          @click="showModal = false"
-        >
-          &times;
-        </button>
         <LeaveApplicationForm
           :userInfo="user"
           @close="showModal = false"
