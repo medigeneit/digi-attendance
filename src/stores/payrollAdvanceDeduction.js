@@ -16,6 +16,24 @@ export const usePayrollAdvanceDeductionStore = defineStore('payrollAdvanceDeduct
     return e
   }
 
+  const currentItem = ref(null)
+
+  const fetchOne = async (id) => {
+    loading.value = true
+    error.value = null
+    try {
+      const res = await apiClient.get(`/payroll-advance-deductions/${id}`)
+      currentItem.value = res.data?.data || res.data || null
+      return currentItem.value
+    } catch (err) {
+      const e = toError(err, 'Failed to fetch advance deduction')
+      error.value = e.message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
   const fetchList = async (params = {}) => {
     loading.value = true
     error.value = null
@@ -72,9 +90,11 @@ export const usePayrollAdvanceDeductionStore = defineStore('payrollAdvanceDeduct
 
   return {
     list,
+    currentItem,
     loading,
     error,
     pagination,
+    fetchOne,
     fetchList,
     createBulk,
     deleteItem,

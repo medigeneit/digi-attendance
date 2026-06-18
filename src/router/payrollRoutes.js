@@ -71,6 +71,13 @@ export const payrollRoutes = [
     meta: payrollMeta('Bulk Advance Deduction', 'payroll.advance_deductions.manage'),
   },
   {
+    path: '/payroll/advance-deductions/:id',
+    name: 'PayrollAdvanceDeductionShow',
+    component: () => import('@/views/admin-pages/payroll/PayrollAdvanceDeductionShow.vue'),
+    props: true,
+    meta: payrollMeta('Advance Deduction Slip', 'payroll.advance_deductions.view'),
+  },
+  {
     path: '/payroll/arrear-entries/create',
     name: 'PayrollArrearEntryCreate',
     component: () => import('@/views/admin-pages/payroll/PayrollArrearEntryCreate.vue'),
