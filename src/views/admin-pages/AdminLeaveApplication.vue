@@ -131,22 +131,62 @@ const formatDate = (ts) => {
   const d = new Date(ts)
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 }
+
+const leaveTypeLabel = (application) => {
+  const labels = [
+    ...new Set(application?.leave_days?.map((leaveDay) => leaveDay?.leave_type?.name).filter(Boolean)),
+  ]
+  return labels.length ? labels.join(', ') : 'N/A'
+}
+
+const statusClass = (status) => {
+  const value = String(status || '').toLowerCase()
+  if (value === 'approved') return 'bg-emerald-50 text-emerald-700 ring-emerald-200'
+  if (value === 'rejected') return 'bg-rose-50 text-rose-700 ring-rose-200'
+  if (value === 'pending') return 'bg-amber-50 text-amber-700 ring-amber-200'
+  return 'bg-slate-50 text-slate-600 ring-slate-200'
+}
+
 </script>
 
 <template>
-  <div class="space-y-2 px-4 overflow-x-hidden">
-    <div class="flex flex-wrap items-center justify-between gap-2">
-      <button class="btn-3 order-1" @click="goBack">
-        <i class="far fa-arrow-left"></i>
-        <span class="hidden sm:inline">Back</span>
-      </button>
+  <div class="min-h-screen bg-slate-50 px-3 py-3 text-slate-800 md:px-5">
+    <header class="mb-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <button
+          class="inline-flex h-9 items-center gap-2 rounded border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 shadow-sm hover:bg-slate-50"
+          @click="goBack"
+        >
+          <i class="far fa-arrow-left text-blue-600"></i>
+          Back
+        </button>
+        <div>
+          <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-600">HRD</p>
+          <h1 class="text-xl font-bold text-slate-900 md:text-2xl">Annual Leave History</h1>
+        </div>
+      </div>
 
-      <h1 class="title-md md:title-lg flex-wrap text-center">Annual Leave History</h1>
-    </div>
+      <div v-if="filters?.employee_id" class="flex flex-wrap items-center gap-2">
+        <button
+          @click="openAddModal"
+          type="button"
+          class="inline-flex h-9 items-center gap-2 rounded bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50"
+        >
+          <i class="far fa-sliders-h text-blue-600"></i>
+          Set Balance
+        </button>
+        <button
+          @click="showModal = true"
+          type="button"
+          class="inline-flex h-9 items-center gap-2 rounded bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+        >
+          <i class="far fa-plus"></i>
+          Add Application
+        </button>
+      </div>
+    </header>
 
-    <div
-      class="flex flex-wrap gap-2 p-3 rounded-2xl border border-white/20 bg-white/60 backdrop-blur-md shadow-sm supports-[backdrop-filter]:bg-white/50 sticky top-14 z-50 w-full"
-    >
+    <section class="sticky top-14 z-50 mb-3 rounded border border-slate-200 bg-white p-3 shadow-sm">
       <EmployeeFilter
         v-model:company_id="filters.company_id"
         v-model:department_id="filters.department_id"
@@ -165,226 +205,187 @@ const formatDate = (ts) => {
           label="Year"
         />
       </EmployeeFilter>
-    </div>
+    </section>
 
-    <div v-if="leaveApplicationStore.loading" class="text-center py-4">
+    <div v-if="leaveApplicationStore.loading" class="rounded border border-slate-200 bg-white py-16 text-center shadow-sm">
       <LoaderView />
     </div>
 
-    <div v-else class="space-y-4">
-      <div v-if="filters?.employee_id" class="mt-6 mb-6 space-y-6">
-        <!-- Section Title -->
-        <!-- <h2 class="text-xl font-bold text-gray-800 text-center">Employee Overview</h2> -->
+    <div v-else-if="!filters?.employee_id" class="rounded border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
+      <div class="mx-auto flex h-12 w-12 items-center justify-center rounded bg-blue-50 text-blue-600">
+        <i class="far fa-user-search text-xl"></i>
+      </div>
+      <h2 class="mt-3 text-base font-bold text-slate-800">Select an employee</h2>
+      <p class="mt-1 text-sm text-slate-500">Use the filters above to load annual leave history and balances.</p>
+    </div>
 
-        <!-- Grid for Info and Leave -->
-        <div class="flex flex-col gap-6 md:flex-row">
-          <SelectedEmployeeCard :user="user" class="grow" />
+    <div v-else class="space-y-3">
+      <section class="grid gap-3 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <SelectedEmployeeCard :user="user" class="min-h-[128px] rounded border border-slate-200 bg-white shadow-sm" />
 
-          <!-- Leave Balance Card -->
-          <div class="bg-white border rounded-lg md:p-4 shadow">
-            <div class="flex justify-between items-center py-2 px-4 md:px-0">
-              <h3 class="text-sm md:text-lg font-semibold text-gray-700">Leave Balance</h3>
-              <button @click="openAddModal" type="button" class="btn-2 text-xs md:text-sm">
-                Set Leave Balance
-              </button>
+        <div class="rounded border border-slate-200 bg-white shadow-sm">
+          <div class="flex items-center justify-between border-b border-slate-100 px-3 py-2">
+            <div>
+              <h2 class="text-sm font-bold text-slate-800">Leave Balance</h2>
+              <p class="text-[11px] text-slate-500">{{ periodYear }} entitlement and usage</p>
             </div>
-            <div class="overflow-x-auto">
-              <table class="min-w-full text-sm text-left text-gray-700 border">
-                <thead class="bg-gray-100 text-[11px] md:text-xs uppercase">
-                  <tr>
-                    <th class="px-3 sm:px-4 py-2 text-left">Type</th>
-                    <th class="px-1 sm:px-4 py-2 text-center">Total</th>
-                    <th class="px-1 sm:px-4 py-2 text-center">Used</th>
-                    <th class="px-1 sm:px-4 py-2 text-center">Pending</th>
-                    <th class="px-1 sm:px-4 py-2 text-center">Remaining</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr
-                    v-for="leave in userLeaveBalance"
-                    :key="leave.id"
-                    class="border-t hover:bg-gray-50"
-                  >
-                    <td class="px-3 sm:px-4 py-1 text-left font-medium">{{ leave.name }}</td>
-                    <td class="px-1 sm:px-4 py-1 text-center">{{ leave.annual_quota }}</td>
-                    <td class="px-1 sm:px-4 py-1 text-center">{{ leave.used_days }}</td>
-                    <td class="px-1 sm:px-4 py-1 text-center">{{ leave?.pending_days }}</td>
-                    <td class="px-1 sm:px-4 py-1 text-center">{{ leave.remaining_days }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[390px] text-xs">
+              <thead class="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th class="px-3 py-2 text-left">Type</th>
+                  <th class="px-2 py-2 text-center">Total</th>
+                  <th class="px-2 py-2 text-center">Used</th>
+                  <th class="px-2 py-2 text-center">Pending</th>
+                  <th class="px-2 py-2 text-center">Remaining</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <tr v-for="leave in userLeaveBalance" :key="leave.id" class="hover:bg-slate-50">
+                  <td class="px-3 py-2 font-semibold text-slate-800">{{ leave.name }}</td>
+                  <td class="px-2 py-2 text-center font-mono">{{ leave.annual_quota }}</td>
+                  <td class="px-2 py-2 text-center font-mono text-rose-600">{{ leave.used_days }}</td>
+                  <td class="px-2 py-2 text-center font-mono text-amber-600">{{ leave?.pending_days }}</td>
+                  <td class="px-2 py-2 text-center font-mono font-bold text-emerald-700">{{ leave.remaining_days }}</td>
+                </tr>
+                <tr v-if="!userLeaveBalance?.length">
+                  <td colspan="5" class="px-3 py-5 text-center text-slate-500">No balance configured</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- Mobile cards -->
-      <div class="grid gap-3 md:hidden">
-        <div
-          v-for="(application, index) in filteredLeaveApplications"
-          :key="index"
-          class="bg-white border rounded-lg shadow-sm p-3 space-y-2 break-words"
-        >
-          <div class="flex items-center justify-between text-xs text-gray-500 px-1">
-            <div class="font-semibold text-gray-800">#{{ index + 1 }}</div>
-            <div>{{ formatDate(application?.created_at) }}</div>
+      <section class="overflow-hidden rounded border border-slate-200 bg-white shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-3 py-2">
+          <div>
+            <h2 class="text-sm font-bold text-slate-800">Application Register</h2>
+            <p class="text-[11px] text-slate-500">{{ periodYear }} records for selected employee</p>
           </div>
-          <div class="text-sm text-gray-700">
-            <div class="flex justify-between bg-gray-50 p-1">
-              <span class="text-gray-500">Last Working</span>
-              <span class="font-medium">{{ formatDate(application?.last_working_date) }}</span>
-            </div>
-            <div class="flex justify-between p-1">
-              <span class="text-gray-500">Resumption</span>
-              <span class="font-medium">{{ formatDate(application?.resumption_date) }}</span>
-            </div>
-            <div class="flex justify-between bg-gray-50 p-1">
-              <span class="text-gray-500">Period</span>
-              <span class="font-medium">{{ application?.leave_period }}</span>
-            </div>
-            <div class="flex justify-between p-1">
-              <span class="text-gray-500">Total Days</span>
-              <span
-                class="font-medium"
-                v-html="application?.duration || application?.total_leave_days"
-              ></span>
-            </div>
-            <div class="flex justify-between bg-gray-50 p-1">
-              <span class="text-gray-500">Type</span>
-              <span class="font-medium">
-                {{
-                  [
-                    ...new Set(
-                      application?.leave_days?.map((leave_day) => leave_day?.leave_type?.name),
-                    ),
-                  ].join(',')
-                }}
+          <button
+            @click="showModal = true"
+            type="button"
+            class="inline-flex h-8 items-center gap-2 rounded bg-blue-600 px-3 text-xs font-bold text-white hover:bg-blue-700"
+          >
+            <i class="far fa-plus"></i>
+            Add Application
+          </button>
+        </div>
+
+        <div class="hidden overflow-x-auto md:block">
+          <table class="w-full min-w-[1060px] text-xs">
+            <thead class="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-500">
+              <tr>
+                <th class="w-10 px-3 py-2 text-center">#</th>
+                <th class="px-3 py-2 text-left">Created</th>
+                <th class="px-3 py-2 text-left">Last Working</th>
+                <th class="px-3 py-2 text-left">Resumption</th>
+                <th class="px-3 py-2 text-left">Leave Period</th>
+                <th class="px-3 py-2 text-left">Total Days</th>
+                <th class="px-3 py-2 text-left">Type</th>
+                <th class="px-3 py-2 text-center">Status</th>
+                <th class="w-32 px-3 py-2 text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr
+                v-for="(application, index) in filteredLeaveApplications"
+                :key="application?.id || index"
+                class="hover:bg-blue-50/60"
+              >
+                <td class="px-3 py-2 text-center font-mono text-slate-500">{{ index + 1 }}</td>
+                <td class="px-3 py-2 font-medium">{{ formatDate(application?.created_at) }}</td>
+                <td class="px-3 py-2">{{ formatDate(application?.last_working_date) }}</td>
+                <td class="px-3 py-2">{{ formatDate(application?.resumption_date) }}</td>
+                <td class="px-3 py-2 font-medium text-slate-700">{{ application?.leave_period || '-' }}</td>
+                <td class="px-3 py-2 font-mono text-slate-700" v-html="application?.duration || application?.total_leave_days || '-'"></td>
+                <td class="px-3 py-2">
+                  <span class="rounded bg-slate-100 px-2 py-1 font-semibold text-slate-700">{{ leaveTypeLabel(application) }}</span>
+                </td>
+                <td class="px-3 py-2 text-center">
+                  <span class="inline-flex rounded-full px-2 py-1 text-[11px] font-bold ring-1" :class="statusClass(application?.status)">
+                    {{ application?.status || 'Draft' }}
+                  </span>
+                </td>
+                <td class="px-3 py-2">
+                  <div class="flex justify-center gap-1">
+                    <RouterLink
+                      :to="{ name: 'LeaveApplicationShow', params: { id: application?.id } }"
+                      class="inline-flex h-8 w-8 items-center justify-center rounded bg-slate-100 text-slate-700 hover:bg-blue-100 hover:text-blue-700"
+                      target="_blank"
+                      title="View"
+                    >
+                      <i class="far fa-eye"></i>
+                    </RouterLink>
+                    <RouterLink
+                      v-if="!['Approved', 'Rejected'].includes(application?.status)"
+                      :to="{ name: 'LeaveApplicationEdit', params: { id: application?.id } }"
+                      class="inline-flex h-8 w-8 items-center justify-center rounded bg-slate-100 text-orange-600 hover:bg-orange-100"
+                      target="_blank"
+                      title="Edit"
+                    >
+                      <i class="far fa-edit"></i>
+                    </RouterLink>
+                    <button
+                      @click="deleteApplication(application?.id)"
+                      class="inline-flex h-8 w-8 items-center justify-center rounded bg-slate-100 text-rose-600 hover:bg-rose-100"
+                      title="Delete"
+                    >
+                      <i class="far fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr v-if="!filteredLeaveApplications.length">
+                <td colspan="9" class="px-3 py-10 text-center text-slate-500">No application found for {{ periodYear }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="grid gap-2 p-3 md:hidden">
+          <article
+            v-for="(application, index) in filteredLeaveApplications"
+            :key="application?.id || index"
+            class="rounded border border-slate-200 bg-white p-3 shadow-sm"
+          >
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <p class="font-semibold text-slate-900">{{ leaveTypeLabel(application) }}</p>
+                <p class="text-xs text-slate-500">{{ formatDate(application?.last_working_date) }} to {{ formatDate(application?.resumption_date) }}</p>
+              </div>
+              <span class="rounded-full px-2 py-1 text-[11px] font-bold ring-1" :class="statusClass(application?.status)">
+                {{ application?.status || 'Draft' }}
               </span>
             </div>
-            <div class="flex justify-between p-1">
-              <span class="text-gray-500">Status</span>
-              <span class="font-semibold text-blue-700">{{ application?.status || 'N/A' }}</span>
+            <div class="mt-3 grid grid-cols-2 gap-2 text-xs">
+              <div class="rounded bg-slate-50 p-2">
+                <p class="text-slate-400">Created</p>
+                <p class="font-semibold">{{ formatDate(application?.created_at) }}</p>
+              </div>
+              <div class="rounded bg-slate-50 p-2">
+                <p class="text-slate-400">Total</p>
+                <p class="font-semibold" v-html="application?.duration || application?.total_leave_days || '-'"></p>
+              </div>
+              <div class="col-span-2 rounded bg-slate-50 p-2">
+                <p class="text-slate-400">Leave Period</p>
+                <p class="font-semibold">{{ application?.leave_period || '-' }}</p>
+              </div>
             </div>
-          </div>
-          <div class="flex justify-end gap-2 px-1">
-            <RouterLink
-              :to="{ name: 'LeaveApplicationShow', params: { id: application?.id } }"
-              class="btn-2 px-3 py-1 text-xs"
-              target="_blank"
-            >
-              View
-            </RouterLink>
-            <RouterLink
-              v-if="!['Approved', 'Rejected'].includes(application?.status)"
-              :to="{ name: 'LeaveApplicationEdit', params: { id: application?.id } }"
-              class="btn-3 px-3 py-1 text-xs"
-              target="_blank"
-            >
-              Edit
-            </RouterLink>
-            <button
-              @click="deleteApplication(application?.id)"
-              class="btn-3 px-3 py-1 text-xs text-red-600"
-            >
-              Delete
-            </button>
+            <div class="mt-3 flex justify-end gap-2">
+              <RouterLink :to="{ name: 'LeaveApplicationShow', params: { id: application?.id } }" class="btn-2 px-3 py-1 text-xs" target="_blank">View</RouterLink>
+              <RouterLink v-if="!['Approved', 'Rejected'].includes(application?.status)" :to="{ name: 'LeaveApplicationEdit', params: { id: application?.id } }" class="btn-3 px-3 py-1 text-xs" target="_blank">Edit</RouterLink>
+              <button @click="deleteApplication(application?.id)" class="btn-3 px-3 py-1 text-xs text-rose-600">Delete</button>
+            </div>
+          </article>
+          <div v-if="!filteredLeaveApplications.length" class="rounded border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
+            No application found for {{ periodYear }}
           </div>
         </div>
-        <div v-if="!filteredLeaveApplications.length" class="text-center text-red-500 text-sm">
-          No application found
-        </div>
-      </div>
-
-      <div class="overflow-x-auto hidden md:block">
-        <table
-          class="min-w-full table-auto border-collapse border border-gray-200 bg-white rounded-md text-sm"
-        >
-          <thead>
-            <tr class="bg-gray-200">
-              <th class="border border-gray-300 px-2 py-1 text-center">#</th>
-              <th class="border border-gray-300 px-2 py-1 text-center">Created Date</th>
-              <th class="border border-gray-300 px-2 py-1 text-center">Last Working Day</th>
-              <th class="border border-gray-300 px-2 py-1 text-center">Resumption Date</th>
-              <th class="border border-gray-300 px-2 py-1 text-center">Leave Period</th>
-              <th class="border border-gray-300 px-2 py-1 text-center">Total Days</th>
-              <th class="border border-gray-300 px-2 py-1 text-center">Leave Type</th>
-              <th class="border border-gray-300 px-2 py-1 text-center">Status</th>
-              <th class="border border-gray-300 px-2 py-1 text-center">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="(application, index) in filteredLeaveApplications"
-              :key="index"
-              class="border-b border-gray-200 hover:bg-blue-200"
-            >
-              <td class="border border-gray-300 px-2 py-2">{{ index + 1 }}</td>
-              <td class="border border-gray-300 px-2 py-2 text-center">
-                {{ formatDate(application?.created_at) }}
-              </td>
-              <td class="border border-gray-300 px-2 py-2 text-center">
-                {{ formatDate(application?.last_working_date) }}
-              </td>
-              <td class="border border-gray-300 px-2 py-2 text-center">
-                {{ formatDate(application?.resumption_date) }}
-              </td>
-              <td class="border border-gray-300 px-2 py-2">{{ application?.leave_period }}</td>
-              <td class="border border-gray-300 px-2 py-2">
-                <div v-html="application?.duration || application?.total_leave_days"></div>
-              </td>
-              <td class="border border-gray-300 px-2 py-2 text-center">
-                {{
-                  [
-                    ...new Set(
-                      application?.leave_days?.map((leave_day) => leave_day?.leave_type?.name),
-                    ),
-                  ].join(',')
-                }}
-              </td>
-              <td class="border border-gray-300 px-2 py-2">
-                {{ application?.status || 'N/A' }}
-              </td>
-              <td class="border border-gray-300 px-2">
-                <div class="flex justify-center gap-2">
-                  <RouterLink
-                    :to="{ name: 'LeaveApplicationShow', params: { id: application?.id } }"
-                    class="btn-icon"
-                    target="_blank"
-                  >
-                    <i class="far fa-eye"></i>
-                  </RouterLink>
-                  <RouterLink
-                    v-if="!['Approved', 'Rejected'].includes(application?.status)"
-                    :to="{ name: 'LeaveApplicationEdit', params: { id: application?.id } }"
-                    class="btn-icon"
-                    target="_blank"
-                  >
-                    <i class="far fa-edit text-orange-600"></i>
-                  </RouterLink>
-                  <button @click="deleteApplication(application?.id)" class="btn-icon text-red-500">
-                    <i class="far fa-trash"></i>
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr v-if="!filteredLeaveApplications.length">
-              <td colspan="10" class="p-1 text-center text-red-500">No application found</td>
-            </tr>
-          </tbody>
-          <tfoot>
-            <tr v-if="filters?.employee_id">
-              <th class="text-center py-2" colspan="10">
-                <button
-                  @click="showModal = true"
-                  class="text-white font-semibold px-4 py-2 rounded-full shadow-md bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 transition"
-                >
-                  + Add Application
-                </button>
-              </th>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
+      </section>
     </div>
   </div>
 

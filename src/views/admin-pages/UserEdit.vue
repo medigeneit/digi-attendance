@@ -106,6 +106,17 @@ const computedShifts = computed(() => {
   return m[currentCompany.value.id] || m[currentCompany.value.name] || []
 })
 
+const unitOptionLabel = (unit) => {
+  const unitName = unit?.name || 'Unit'
+  const projectName = unit?.project_name || unit?.project?.name || ''
+  const projectCode = unit?.project_code || unit?.project?.code || ''
+  const projectLabel = [projectName, projectCode && projectCode !== projectName ? projectCode : '']
+    .filter(Boolean)
+    .join(' / ')
+
+  return projectLabel ? `${unitName} - ${projectLabel}` : unitName
+}
+
 /* ------------------------------ VALIDATION ------------------------------- */
 const errors = reactive({})
 
@@ -408,7 +419,9 @@ function clearWeekend() {
               <label for="unit">Unit</label>
               <select id="unit" v-model="form.unit_id" class="input-light">
                 <option value="">Select a unit</option>
-                <option v-for="unit in units" :key="unit?.id" :value="unit?.id">{{ unit?.name }}</option>
+                <option v-for="unit in units" :key="unit?.id" :value="unit?.id">
+                  {{ unitOptionLabel(unit) }}
+                </option>
               </select>
             </div>
 
