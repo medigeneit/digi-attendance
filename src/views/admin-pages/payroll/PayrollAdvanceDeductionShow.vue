@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { storeToRefs } from 'pinia'
@@ -18,12 +18,18 @@ const toast   = useToast()
 const store   = usePayrollAdvanceDeductionStore()
 const authStore = useAuthStore()
 const { currentItem: item, loading, error } = storeToRefs(store)
+const approveNote = ref('')
+const rejectReason = ref('')
+const rejectBusy = ref(false)
+const showRejectModal = ref(false)
 
 // ─── Permissions (same as adjustment list) ────────────────────────────────
 const userRole = computed(() => String(authStore.user?.role || '').toLowerCase())
 const canDelete = computed(() =>
-  ['super_admin', 'developer'].includes(userRole.value) && item.value?.status === 'pending'
+  ['super_admin', 'developer'].includes(userRole.value) && paymentStatus.value === 'pending' && !item.value?.payroll_id
 )
+const canVerify = computed(() => Boolean(item.value?.can_verify))
+const canReject = computed(() => Boolean(item.value?.can_verify))
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
@@ -43,14 +49,25 @@ const monthLabel = (value) => {
 }
 
 const statusCfg = (status) => {
-  if (status === 'applied') return { label: 'Applied',  cls: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' }
-  if (status === 'pending') return { label: 'Pending',  cls: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' }
-  return                           { label: status,     cls: 'bg-slate-50 text-slate-700 ring-1 ring-slate-200'  }
+  if (status === 'approved') return { label: 'Approved', cls: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200', dot: 'bg-emerald-400' }
+  if (status === 'rejected') return { label: 'Rejected', cls: 'bg-rose-50 text-rose-700 ring-1 ring-rose-200', dot: 'bg-rose-400' }
+  if (status === 'pending') return { label: 'Pending', cls: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',     dot: 'bg-amber-400'   }
+  return                           { label: status,    cls: 'bg-slate-50 text-slate-700 ring-1 ring-slate-200',     dot: 'bg-slate-400'   }
 }
+const paymentStatus = computed(() =>
+  item.value?.payment_status || (item.value?.status === 'rejected' ? 'rejected' : (item.value?.approved_at ? 'approved' : 'pending'))
+)
 
 const creatorName = computed(() =>
   item.value?.creator?.name || '-'
 )
+const authorizedByName = computed(() =>
+  item.value?.approved_by?.name || item.value?.approved_by_name || '-'
+)
+const rejectedByName = computed(() =>
+  item.value?.rejected_by?.name || item.value?.rejected_by_name || '-'
+)
+const payrollApplied = computed(() => Boolean(item.value?.payroll_id || item.value?.payroll || item.value?.status === 'applied'))
 
 // ─── Load ──────────────────────────────────────────────────────────────────
 
@@ -70,6 +87,37 @@ const deleteEntry = async () => {
     router.push({ name: 'PayrollAdvanceDeductionList' })
   } catch (e) {
     toast.error(e.message || 'Failed to delete.')
+  }
+}
+
+const approveEntry = async () => {
+  try {
+    await store.approve(props.id || route.params.id, approveNote.value)
+    toast.success('Advance deduction approved.')
+    approveNote.value = ''
+    await load()
+  } catch (e) {
+    toast.error(e.message || 'Approval failed.')
+  }
+}
+
+const rejectEntry = async () => {
+  if (!rejectReason.value.trim()) {
+    toast.error('Please enter a rejection reason.')
+    return
+  }
+
+  rejectBusy.value = true
+  try {
+    await store.reject(props.id || route.params.id, rejectReason.value)
+    toast.success('Advance deduction rejected.')
+    rejectReason.value = ''
+    showRejectModal.value = false
+    await load()
+  } catch (e) {
+    toast.error(e.message || 'Reject failed.')
+  } finally {
+    rejectBusy.value = false
   }
 }
 
@@ -111,10 +159,10 @@ onMounted(load)
               <h1 class="text-base font-bold leading-none text-slate-900">Advance Slip</h1>
               <span
                 v-if="item"
-                :class="['inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold', statusCfg(item.status).cls]"
+                :class="['inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold', statusCfg(paymentStatus).cls]"
               >
-                <span :class="['h-1 w-1 rounded-full', statusCfg(item.status).dot]"></span>
-                {{ statusCfg(item.status).label }}
+                <span :class="['h-1 w-1 rounded-full', statusCfg(paymentStatus).dot]"></span>
+                {{ statusCfg(paymentStatus).label }}
               </span>
             </div>
           </div>
@@ -199,11 +247,24 @@ onMounted(load)
         </div>
 
         <!-- Status + Date -->
-        <div class="mt-4 flex items-center justify-between">
+        <div class="mt-4 flex flex-wrap items-center justify-between gap-2">
           <div class="flex items-center gap-2">
-            <span class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Status</span>
-            <span :class="['inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold', statusCfg(item.status).cls]">
-              {{ statusCfg(item.status).label }}
+            <span class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Payment Status</span>
+            <span :class="['inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold', statusCfg(paymentStatus).cls]">
+              {{ statusCfg(paymentStatus).label }}
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Payroll Deduction</span>
+            <span
+              :class="[
+                'inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold',
+                payrollApplied
+                  ? 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200'
+                  : 'bg-slate-50 text-slate-600 ring-1 ring-slate-200',
+              ]"
+            >
+              {{ payrollApplied ? 'Applied to Payroll' : 'Not Applied' }}
             </span>
           </div>
           <div class="text-right text-[11px] text-slate-500">
@@ -257,6 +318,22 @@ onMounted(load)
                 <th>Reason / Note</th>
                 <td colspan="3" class="whitespace-pre-wrap">{{ item.reason || item.note || '-' }}</td>
               </tr>
+              <tr v-if="item.approved_by || item.approved_at">
+                <th>Authorized By</th>
+                <td>{{ authorizedByName }}</td>
+                <th>Authorized At</th>
+                <td>{{ formatDate(item.approved_at) }}</td>
+              </tr>
+              <tr v-if="paymentStatus === 'rejected'">
+                <th>Rejected By</th>
+                <td>{{ rejectedByName }}</td>
+                <th>Rejected At</th>
+                <td>{{ formatDate(item.rejected_at) }}</td>
+              </tr>
+              <tr v-if="paymentStatus === 'rejected'">
+                <th>Reject Reason</th>
+                <td colspan="3" class="whitespace-pre-wrap">{{ item.rejected_reason || '-' }}</td>
+              </tr>
               <tr v-if="item.payroll">
                 <th>Applied To Payroll</th>
                 <td colspan="3">
@@ -270,6 +347,31 @@ onMounted(load)
           </table>
         </div>
 
+        <div class="no-print mt-4 flex flex-wrap gap-2">
+          <button v-if="canVerify && paymentStatus === 'pending'" class="btn-2" @click="approveEntry">
+            <i class="far fa-check-circle"></i> Approve
+          </button>
+          <button v-if="canReject && paymentStatus === 'pending'" class="btn-3" @click="showRejectModal = true">
+            <i class="far fa-times-circle"></i> Reject
+          </button>
+        </div>
+
+        <div v-if="canVerify && paymentStatus === 'pending'" class="no-print mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Authorization Note</label>
+          <textarea
+            v-model="approveNote"
+            rows="3"
+            class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-100"
+            placeholder="Optional note for authorization"
+          />
+          <div class="mt-3 flex justify-end">
+            <button class="btn-2" @click="approveEntry">
+              <i class="far fa-check"></i>
+              Approve with Note
+            </button>
+          </div>
+        </div>
+
         <!-- Signature grid -->
         <div class="signature-grid mt-8 grid grid-cols-3 gap-6">
           <div class="text-center">
@@ -280,7 +382,7 @@ onMounted(load)
             </div>
           </div>
           <div class="text-center">
-            <div class="signature-name mt-1 text-sm font-semibold text-slate-900">&nbsp;</div>
+            <div class="signature-name mt-1 text-sm font-semibold text-slate-900">{{ authorizedByName }}</div>
             <div class="signature-line mx-auto"></div>
             <div class="signature-label mt-1 text-xs font-bold uppercase tracking-wide text-slate-700">
               Authorized By
@@ -309,6 +411,26 @@ onMounted(load)
       <i class="far fa-file-times text-4xl text-slate-200"></i>
       <p class="mt-3 text-base font-semibold">Record not found</p>
       <button class="mt-4 btn-3" @click="router.back()">Go Back</button>
+    </div>
+
+    <div v-if="showRejectModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4">
+      <div class="w-full max-w-lg rounded-3xl bg-white p-5 shadow-2xl">
+        <h3 class="text-lg font-semibold text-slate-900">Reject Advance Deduction</h3>
+        <p class="mt-1 text-sm text-slate-500">Provide a clear rejection reason.</p>
+        <textarea
+          v-model="rejectReason"
+          rows="4"
+          class="mt-4 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-100"
+          placeholder="Reason for rejection"
+        />
+        <div class="mt-4 flex justify-end gap-2">
+          <button class="btn-3" @click="showRejectModal = false">Cancel</button>
+          <button class="btn-2" :disabled="rejectBusy" @click="rejectEntry">
+            <i class="far" :class="rejectBusy ? 'fa-spinner fa-spin' : 'fa-paper-plane'"></i>
+            {{ rejectBusy ? 'Rejecting...' : 'Reject' }}
+          </button>
+        </div>
+      </div>
     </div>
 
   </div>

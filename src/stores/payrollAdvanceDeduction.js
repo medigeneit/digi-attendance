@@ -18,13 +18,24 @@ export const usePayrollAdvanceDeductionStore = defineStore('payrollAdvanceDeduct
 
   const currentItem = ref(null)
 
+  const syncCurrentItem = (payload) => {
+    const data = payload?.data || payload || null
+    currentItem.value = data
+      ? {
+          ...data,
+          approval_access: payload?.approval_access || data.approval_access || [],
+          can_verify: Boolean(payload?.can_verify ?? data.can_verify),
+        }
+      : null
+    return currentItem.value
+  }
+
   const fetchOne = async (id) => {
     loading.value = true
     error.value = null
     try {
       const res = await apiClient.get(`/payroll-advance-deductions/${id}`)
-      currentItem.value = res.data?.data || res.data || null
-      return currentItem.value
+      return syncCurrentItem(res.data)
     } catch (err) {
       const e = toError(err, 'Failed to fetch advance deduction')
       error.value = e.message
@@ -88,6 +99,36 @@ export const usePayrollAdvanceDeductionStore = defineStore('payrollAdvanceDeduct
     }
   }
 
+  const approve = async (id, note = '') => {
+    loading.value = true
+    error.value = null
+    try {
+      const res = await apiClient.patch(`/payroll-advance-deductions/${id}/approve`, { note })
+      return syncCurrentItem(res.data)
+    } catch (err) {
+      const e = toError(err, 'Failed to approve advance deduction')
+      error.value = e.message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const reject = async (id, reason = '') => {
+    loading.value = true
+    error.value = null
+    try {
+      const res = await apiClient.patch(`/payroll-advance-deductions/${id}/reject`, { reason })
+      return syncCurrentItem(res.data)
+    } catch (err) {
+      const e = toError(err, 'Failed to reject advance deduction')
+      error.value = e.message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     list,
     currentItem,
@@ -98,5 +139,7 @@ export const usePayrollAdvanceDeductionStore = defineStore('payrollAdvanceDeduct
     fetchList,
     createBulk,
     deleteItem,
+    approve,
+    reject,
   }
 })

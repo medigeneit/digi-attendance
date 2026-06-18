@@ -62,20 +62,20 @@ export const payrollRoutes = [
     path: '/payroll/advance-deductions',
     name: 'PayrollAdvanceDeductionList',
     component: () => import('@/views/admin-pages/payroll/PayrollAdvanceDeductionList.vue'),
-    meta: payrollMeta('Advance Deductions', 'payroll.advance_deductions.view'),
+    meta: payrollMeta('Advance Deductions', 'payroll.advance_deductions.view', PAYROLL_ADJUSTMENT_ROLES),
   },
   {
     path: '/payroll/advance-deductions/create',
     name: 'PayrollAdvanceDeductionCreate',
     component: () => import('@/views/admin-pages/payroll/PayrollAdvanceDeductionCreate.vue'),
-    meta: payrollMeta('Bulk Advance Deduction', 'payroll.advance_deductions.manage'),
+    meta: payrollMeta('Bulk Advance Deduction', 'payroll.advance_deductions.manage', PAYROLL_ADJUSTMENT_ROLES),
   },
   {
     path: '/payroll/advance-deductions/:id',
     name: 'PayrollAdvanceDeductionShow',
     component: () => import('@/views/admin-pages/payroll/PayrollAdvanceDeductionShow.vue'),
     props: true,
-    meta: payrollMeta('Advance Deduction Slip', 'payroll.advance_deductions.view'),
+    meta: payrollMeta('Advance Deduction Slip', 'payroll.advance_deductions.view', PAYROLL_ADJUSTMENT_ROLES),
   },
   {
     path: '/payroll/arrear-entries/create',

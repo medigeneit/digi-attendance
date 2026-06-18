@@ -58,7 +58,8 @@ const salaryMonthPeriod = computed({
 
 const statusTabs = [
   { value: 'pending', label: 'Pending', dot: 'bg-amber-400'  },
-  { value: 'applied', label: 'Applied', dot: 'bg-emerald-400' },
+  { value: 'approved', label: 'Approved', dot: 'bg-emerald-400' },
+  { value: 'rejected', label: 'Rejected', dot: 'bg-rose-400' },
   { value: '',        label: 'All',     dot: 'bg-slate-400'  },
 ]
 
@@ -130,7 +131,7 @@ const resetFilters = () => {
 }
 
 const deleteEntry = async (item) => {
-  if (!item?.id || item.status === 'applied') return
+  if (!item?.id || paymentStatus(item) !== 'pending' || item.payroll_id) return
   if (!confirm(`Delete advance for ${employeeName(item)}?`)) return
   deletingId.value = item.id
   try {
@@ -149,11 +150,11 @@ const pageChanged = (page) => { filters.value.page = page; load() }
 // ─── Stats ────────────────────────────────────────────────────────────────
 
 const pendingTotal = computed(() =>
-  list.value.filter(i => i.status !== 'applied').reduce((s, i) => s + toNum(i.amount), 0))
-const appliedTotal = computed(() =>
-  list.value.filter(i => i.status === 'applied').reduce((s, i) => s + toNum(i.amount), 0))
-const pendingCount = computed(() => list.value.filter(i => i.status !== 'applied').length)
-const appliedCount = computed(() => list.value.filter(i => i.status === 'applied').length)
+  list.value.filter(i => paymentStatus(i) === 'pending').reduce((s, i) => s + toNum(i.amount), 0))
+const approvedTotal = computed(() =>
+  list.value.filter(i => paymentStatus(i) === 'approved').reduce((s, i) => s + toNum(i.amount), 0))
+const pendingCount = computed(() => list.value.filter(i => paymentStatus(i) === 'pending').length)
+const approvedCount = computed(() => list.value.filter(i => paymentStatus(i) === 'approved').length)
 
 const monthLabel = computed(() => {
   const raw = filters.value.carry_on_month
@@ -168,10 +169,13 @@ const employeeName   = (r) => r.employee?.name || r.user?.name || r.employee_nam
 const employeeCode   = (r) => r.employee?.employee_id || r.employee_id || ''
 const companyName    = (r) => r.employee?.company?.name || r.company?.name || '—'
 const departmentName = (r) => r.employee?.department?.name || r.department?.name || '—'
+const paymentStatus = (r) => r.payment_status || (r.status === 'rejected' ? 'rejected' : (r.approved_at ? 'approved' : 'pending'))
 
 const statusCfg = (s) =>
-  s === 'applied'
-    ? { label: 'Applied', cls: 'text-emerald-700 bg-emerald-50 ring-1 ring-emerald-200', dot: 'bg-emerald-400', border: 'border-l-emerald-400' }
+  s === 'approved'
+    ? { label: 'Approved', cls: 'text-emerald-700 bg-emerald-50 ring-1 ring-emerald-200', dot: 'bg-emerald-400', border: 'border-l-emerald-400' }
+    : s === 'rejected'
+      ? { label: 'Rejected', cls: 'text-rose-700 bg-rose-50 ring-1 ring-rose-200', dot: 'bg-rose-400', border: 'border-l-rose-400' }
     : { label: 'Pending', cls: 'text-amber-700  bg-amber-50  ring-1 ring-amber-200',     dot: 'bg-amber-400',   border: 'border-l-amber-300'   }
 
 // ─── Quick-Add modal ──────────────────────────────────────────────────────
@@ -256,8 +260,8 @@ const saveSingle = async () => {
               </span>
               <span class="text-slate-300">|</span>
               <span class="text-emerald-600">
-                <span class="font-bold">{{ appliedCount }}</span> applied ·
-                <span class="font-bold font-mono">{{ formatCurrency(appliedTotal) }}</span>
+                <span class="font-bold">{{ approvedCount }}</span> approved ·
+                <span class="font-bold font-mono">{{ formatCurrency(approvedTotal) }}</span>
               </span>
             </div>
           </div>
@@ -372,7 +376,7 @@ const saveSingle = async () => {
               <th class="border-b border-slate-200 px-3 py-2 text-center">Month</th>
               <th class="border-b border-slate-200 px-3 py-2 text-right">Amount</th>
               <th class="border-b border-slate-200 px-3 py-2 text-left">Note</th>
-              <th class="border-b border-slate-200 px-3 py-2 text-center">Status</th>
+              <th class="border-b border-slate-200 px-3 py-2 text-center">Payment Status</th>
               <th class="w-16 border-b border-slate-200 px-3 py-2 text-center">Actions</th>
             </tr>
           </thead>
@@ -419,7 +423,7 @@ const saveSingle = async () => {
               :key="item.id"
               :class="[
                 'group border-b border-slate-100 border-l-2 transition hover:bg-rose-50/20',
-                statusCfg(item.status).border,
+                statusCfg(paymentStatus(item)).border,
                 idx % 2 === 1 ? 'bg-slate-50/30' : 'bg-white',
               ]"
             >
@@ -446,10 +450,13 @@ const saveSingle = async () => {
                 {{ item.reason || item.note || '—' }}
               </td>
               <td class="px-3 py-2 text-center">
-                <span :class="['inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold', statusCfg(item.status).cls]">
-                  <span :class="['h-1 w-1 rounded-full', statusCfg(item.status).dot]"></span>
-                  {{ statusCfg(item.status).label }}
+                <span :class="['inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold', statusCfg(paymentStatus(item)).cls]">
+                  <span :class="['h-1 w-1 rounded-full', statusCfg(paymentStatus(item)).dot]"></span>
+                  {{ statusCfg(paymentStatus(item)).label }}
                 </span>
+                <div v-if="item.status === 'applied' || item.payroll_id" class="mt-1 text-[10px] font-semibold text-indigo-600">
+                  Payroll applied
+                </div>
               </td>
               <td class="px-3 py-2">
                 <div class="flex items-center justify-center gap-1">
@@ -462,7 +469,7 @@ const saveSingle = async () => {
                   </RouterLink>
                   <button
                     type="button"
-                    :disabled="item.status === 'applied' || deletingId === item.id"
+                    :disabled="paymentStatus(item) !== 'pending' || item.payroll_id || deletingId === item.id"
                     class="inline-flex h-6 w-6 items-center justify-center rounded border border-rose-100 text-rose-400 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-30"
                     title="Delete"
                     @click="deleteEntry(item)"
@@ -517,7 +524,7 @@ const saveSingle = async () => {
           class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4"
           @mousedown.self="closeModal"
         >
-          <div class="w-full max-w-sm rounded-xl bg-white shadow-2xl ring-1 ring-slate-200">
+          <div class="w-full max-w-md rounded-xl bg-white shadow-2xl ring-1 ring-slate-200">
 
             <!-- Modal header -->
             <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
@@ -535,7 +542,7 @@ const saveSingle = async () => {
             </div>
 
             <!-- Modal body -->
-            <div class="space-y-3 px-4 py-4">
+            <div class="advance-add-form space-y-4 px-4 py-4">
               <div>
                 <MultiselectDropdown
                   v-model="selectedEmp"
@@ -550,8 +557,8 @@ const saveSingle = async () => {
                 <p v-if="singleErrors.emp" class="mt-1 text-[11px] text-rose-600">{{ singleErrors.emp }}</p>
               </div>
 
-              <div class="grid grid-cols-2 gap-3">
-                <div>
+              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div class="advance-month-control min-w-0">
                   <FlexibleDatePicker
                     v-model="singleMonthPeriod"
                     :show-year="false"
@@ -562,8 +569,8 @@ const saveSingle = async () => {
                   <p v-if="singleErrors.month" class="mt-1 text-[11px] text-rose-600">{{ singleErrors.month }}</p>
                 </div>
 
-                <div>
-                  <label class="mb-1 block text-[11px] font-semibold text-slate-600">Amount</label>
+                <div class="relative min-w-0">
+                  <label class="top-label -top-1">Amount</label>
                   <div class="relative">
                     <span class="absolute inset-y-0 left-2.5 flex items-center text-xs text-slate-400">৳</span>
                     <input
@@ -572,20 +579,20 @@ const saveSingle = async () => {
                       min="0"
                       step="0.01"
                       placeholder="0.00"
-                      class="w-full rounded-lg border border-slate-200 bg-white py-2 pl-7 pr-2.5 text-sm text-slate-800 focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-100"
+                      class="h-11 w-full rounded-lg border border-slate-200 bg-white py-2 pl-7 pr-2.5 text-sm text-slate-800 shadow-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-100"
                     />
                   </div>
                   <p v-if="singleErrors.amount" class="mt-1 text-[11px] text-rose-600">{{ singleErrors.amount }}</p>
                 </div>
               </div>
 
-              <div>
-                <label class="mb-1 block text-[11px] font-semibold text-slate-600">Note <span class="font-normal text-slate-400">(optional)</span></label>
+              <div class="relative">
+                <label class="top-label -top-1">Note <span class="font-normal text-slate-400">(optional)</span></label>
                 <input
                   v-model.trim="singleForm.note"
                   type="text"
                   placeholder="e.g. Salary advance recovery"
-                  class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-100"
+                  class="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-100"
                 />
               </div>
             </div>
@@ -609,3 +616,44 @@ const saveSingle = async () => {
     </Teleport>
   </div>
 </template>
+
+<style scoped>
+.advance-add-form :deep(.top-label) {
+  color: rgb(37 99 235);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.advance-add-form :deep(.smart-multi.multiselect) {
+  min-height: 2.75rem;
+  border-color: rgb(226 232 240);
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px 0 rgb(15 23 42 / 0.05);
+}
+
+.advance-add-form :deep(.smart-multi .multiselect__tags) {
+  min-height: 2.5rem;
+}
+
+.advance-add-form :deep(.multiselect__placeholder),
+.advance-add-form input::placeholder {
+  color: rgb(148 163 184);
+}
+
+.advance-month-control :deep(> .flex) {
+  width: 100%;
+}
+
+.advance-month-control :deep(.inline-flex.items-center.gap-1) {
+  min-height: 2.75rem;
+  width: 100%;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px 0 rgb(15 23 42 / 0.05);
+}
+
+.advance-month-control :deep(button:not([aria-label])) {
+  flex: 1 1 auto;
+  justify-content: center;
+  min-width: 0;
+}
+</style>
