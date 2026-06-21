@@ -22,6 +22,7 @@ const selectedRoleKey   = ref('admin')
 const selectedUserId    = ref(null)
 const selectedConfigured= ref(false)
 const featureMatrix     = ref({})
+const explicitMatrix    = ref({})   // user_feature_permissions DB rows only — no auto-access
 const savedOk           = ref(false)
 const dirty             = ref(false)
 const expandedModules   = ref({})
@@ -84,8 +85,10 @@ const ACTION_ORDER = [
   'Reports',
   'Adjust',
   'Export',
+  'Forward',
   'Delete',
   'Permissions',
+  'View All Companies Data',
 ]
 
 const ACTION_COLORS = {
@@ -101,9 +104,14 @@ const ACTION_COLORS = {
   Review: 'text-amber-700 bg-amber-50 border-amber-100',
   Reports: 'text-indigo-700 bg-indigo-50 border-indigo-100',
   Adjust: 'text-orange-700 bg-orange-50 border-orange-100',
+  Forward: 'text-indigo-700 bg-indigo-50 border-indigo-100',
   Delete: 'text-red-700 bg-red-50 border-red-100',
   Permissions: 'text-violet-700 bg-violet-50 border-violet-100',
+  'View All Companies Data': 'text-purple-700 bg-purple-50 border-purple-100',
 }
+
+// Forwarding requires an explicit user grant; privileged-role bypass is ignored.
+const EXPLICIT_ONLY_ACTIONS = ['Forward']
 
 // ─── Super-admin auto-access ──────────────────────────────────────────────────
 const AUTO_ACCESS_ROLES = ['super_admin', 'developer']
@@ -244,6 +252,7 @@ function inferActionFromKey(key = '') {
     reports: 'Reports',
     adjust: 'Adjust',
     export: 'Export',
+    forward: 'Forward',
     delete: 'Delete',
     permissions: 'Permissions',
   }
@@ -333,13 +342,14 @@ function setRow(row, value) {
 }
 
 // ─── Data operations ──────────────────────────────────────────────────────────
-const normalizeMatrix = (effective = {}) => {
+const normalizeMatrix = (effective = {}, permissions = {}) => {
   const matrix = { ...effective }
   catalogKeys.value.forEach((k) => {
     if (!Object.prototype.hasOwnProperty.call(matrix, k)) matrix[k] = true
   })
   hydratingMatrix.value = true
-  featureMatrix.value = matrix
+  featureMatrix.value  = matrix
+  explicitMatrix.value = { ...permissions }   // raw DB rows — undefined = not granted
   dirty.value = false
   nextTick(() => {
     hydratingMatrix.value = false
@@ -353,7 +363,7 @@ const loadUserPermissions = async (userId) => {
   dirty.value   = false
   const data = await userPermissionStore.fetchUserFeaturePermissions(userId)
   selectedConfigured.value = !!data?.configured
-  normalizeMatrix(data?.effective || {})
+  normalizeMatrix(data?.effective || {}, data?.permissions || {})
 }
 
 const loadRolePermissions = async (role) => {
@@ -362,17 +372,47 @@ const loadRolePermissions = async (role) => {
   dirty.value = false
   const data = await userPermissionStore.fetchRoleFeaturePermissions(role)
   selectedConfigured.value = !!data?.configured
-  normalizeMatrix(data?.effective || {})
+  normalizeMatrix(data?.effective || {}, data?.permissions || {})
 }
 
+// Forward keys are explicit-only — super_admin auto-access does NOT apply.
+const EXPLICIT_ONLY_KEYS = computed(() =>
+  (featureCatalog.value || [])
+    .flatMap((m) => m.items || [])
+    .filter((item) => EXPLICIT_ONLY_ACTIONS.includes(inferActionFromKey(item.key)))
+    .map((item) => item.key)
+)
+
+// Explicit items grouped with module context, for the Explicit Grants panel
+const explicitItems = computed(() =>
+  (featureCatalog.value || []).flatMap((mod) =>
+    (mod.items || [])
+      .filter((item) => EXPLICIT_ONLY_ACTIONS.includes(inferActionFromKey(item.key)))
+      .map((item) => ({
+        key: item.key,
+        label: item.label,
+        action: inferActionFromKey(item.key),
+        module: mod.label,
+        moduleKey: mod.key,
+      }))
+  )
+)
+
 const saveFeatureAccess = async () => {
-  const payload = catalogKeys.value.map((k) => ({ key: k, allowed: featureMatrix.value[k] !== false }))
+  const payload = catalogKeys.value.map((k) => ({
+    key: k,
+    // Explicit-only actions are user grants. Role-level grants must never imply
+    // that a user can perform these sensitive actions.
+    allowed: EXPLICIT_ONLY_KEYS.value.includes(k)
+      ? mode.value === 'user' && explicitMatrix.value[k] === true
+      : featureMatrix.value[k] !== false,
+  }))
 
   if (mode.value === 'role') {
     if (!selectedRoleKey.value) return
     const data = await userPermissionStore.updateRoleFeaturePermissions(selectedRoleKey.value, payload)
     selectedConfigured.value = !!data?.configured
-    normalizeMatrix(data?.effective || featureMatrix.value)
+    normalizeMatrix(data?.effective || featureMatrix.value, data?.permissions || {})
     savedOk.value = true
     dirty.value = false
     setTimeout(() => { savedOk.value = false }, 3000)
@@ -382,7 +422,7 @@ const saveFeatureAccess = async () => {
   if (!selectedUser.value?.id) return
   const data = await userPermissionStore.updateUserFeaturePermissions(selectedUser.value.id, payload)
   selectedConfigured.value = !!data?.configured
-  normalizeMatrix(data?.effective || featureMatrix.value)
+  normalizeMatrix(data?.effective || featureMatrix.value, data?.permissions || {})
   if (Number(selectedUser.value.id) === Number(currentUserId.value)) {
     await authStore.fetchFeaturePermissions(true)
   }
@@ -428,465 +468,325 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50 px-3 py-3 md:px-5">
-    <section class="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
+  <!-- Full-viewport split layout -->
+  <div class="flex h-screen overflow-hidden bg-slate-100">
 
-      <!-- ── Page header ──────────────────────────────────────────────────── -->
-      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
-        <div>
-          <div class="text-[10px] font-bold uppercase tracking-[0.24em] text-blue-700">Settings</div>
-          <h1 class="mt-0.5 text-xl font-semibold text-slate-950">Feature Permissions</h1>
-          <p class="mt-0.5 text-xs text-slate-500">
-            Assign role templates or customize individual user feature access.
-          </p>
-        </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <span class="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
-            {{ roleList.length }} roles
-          </span>
-          <span class="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
-            {{ userList.length }} users
-          </span>
-          <span class="rounded-md bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700">
-            {{ totalFeatureCount }} actions
-          </span>
-          <span
-            class="rounded-md px-2.5 py-1 text-[11px] font-semibold"
-            :class="selectedConfigured ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'"
-          >
-            <i :class="selectedConfigured ? 'far fa-shield-check' : 'far fa-unlock'" class="mr-1"></i>
-            {{ selectedConfigured ? 'Configured' : 'Legacy open' }}
-          </span>
+    <!-- ══ LEFT SIDEBAR ══════════════════════════════════════════════════════ -->
+    <aside class="flex w-64 shrink-0 flex-col border-r border-slate-200 bg-white">
+
+      <!-- Header -->
+      <div class="border-b border-slate-100 px-3 py-2.5">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Settings</p>
+        <h1 class="text-sm font-bold text-slate-900">Feature Permissions</h1>
+      </div>
+
+      <!-- Mode toggle -->
+      <div class="border-b border-slate-100 px-3 py-2">
+        <div class="grid grid-cols-2 rounded-lg border border-slate-200 bg-slate-100 p-0.5">
+          <button type="button"
+            class="rounded-md py-1.5 text-[11px] font-semibold transition"
+            :class="mode === 'role' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+            @click="mode = 'role'">By Role</button>
+          <button type="button"
+            class="rounded-md py-1.5 text-[11px] font-semibold transition"
+            :class="mode === 'user' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+            @click="mode = 'user'">By User</button>
         </div>
       </div>
 
-      <!-- ── Two-panel layout ─────────────────────────────────────────────── -->
-      <div class="flex min-h-[700px] flex-col lg:flex-row lg:divide-x lg:divide-slate-100">
+      <!-- Search (user mode) -->
+      <div v-if="mode === 'user'" class="border-b border-slate-100 px-3 py-2 space-y-1.5">
+        <div class="relative">
+          <i class="far fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400"></i>
+          <input v-model="q" type="search" placeholder="Search…"
+            class="w-full rounded border border-slate-200 bg-slate-50 py-1.5 pl-7 pr-2 text-[11px] focus:outline-none focus:ring-1 focus:ring-blue-400" />
+        </div>
+        <select v-model="selectedRole"
+          class="w-full rounded border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] text-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-400">
+          <option value="all">All roles</option>
+          <option v-for="r in roleList" :key="r.key" :value="r.key">{{ r.label }}</option>
+        </select>
+      </div>
 
-        <!-- Left: User list ──────────────────────────────────────────────── -->
-        <aside class="w-full shrink-0 bg-slate-50/50 lg:w-72 xl:w-80">
+      <!-- List -->
+      <div class="flex-1 overflow-y-auto py-1">
 
-          <div class="border-b border-slate-100 p-3">
-            <div class="grid grid-cols-2 rounded-md border border-slate-200 bg-slate-100 p-1">
-              <button
-                type="button"
-                class="rounded px-3 py-1.5 text-xs font-semibold transition"
-                :class="mode === 'role' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'"
-                @click="mode = 'role'"
-              >
-                By Role
-              </button>
-              <button
-                type="button"
-                class="rounded px-3 py-1.5 text-xs font-semibold transition"
-                :class="mode === 'user' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'"
-                @click="mode = 'user'"
-              >
-                By User
-              </button>
+        <!-- Role list -->
+        <template v-if="mode === 'role'">
+          <button v-for="role in roleList" :key="role.key" type="button"
+            class="flex w-full items-center gap-2.5 px-3 py-2 text-left transition hover:bg-slate-50"
+            :class="selectedRoleKey === role.key ? 'bg-blue-50' : ''"
+            @click="selectedRoleKey = role.key">
+            <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold uppercase"
+              :class="roleColor(role.key)">{{ role.label.slice(0, 2) }}</div>
+            <div class="min-w-0 flex-1">
+              <div class="truncate text-[12px] font-semibold" :class="selectedRoleKey === role.key ? 'text-blue-700' : 'text-slate-800'">{{ role.label }}</div>
+              <div class="text-[10px] text-slate-400">{{ role.count }} users</div>
+            </div>
+            <div v-if="selectedRoleKey === role.key" class="h-1.5 w-1.5 rounded-full bg-blue-500"></div>
+          </button>
+        </template>
+
+        <!-- User list -->
+        <template v-else>
+          <div v-if="usersLoading" class="py-6 text-center text-[11px] text-slate-400">
+            <i class="far fa-spinner fa-spin mr-1"></i>Loading…
+          </div>
+          <button v-for="user in userList" :key="user.id" type="button"
+            class="flex w-full items-center gap-2 px-3 py-1.5 text-left transition hover:bg-slate-50"
+            :class="Number(selectedUserId) === Number(user.id) ? 'bg-blue-50' : ''"
+            @click="selectedUserId = user.id">
+            <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[10px] font-bold uppercase text-slate-600">
+              {{ (user.name || '?').slice(0, 2) }}
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-1">
+                <span class="truncate text-[11px] font-semibold" :class="Number(selectedUserId) === Number(user.id) ? 'text-blue-700' : 'text-slate-800'">{{ user.name }}</span>
+                <span class="shrink-0 rounded px-1 text-[8px] font-bold uppercase" :class="roleColor(user.role)">{{ user.role }}</span>
+              </div>
+              <div class="truncate text-[10px] text-slate-400">
+                {{ user.employee_id || '' }}{{ user.department?.name ? ` · ${user.department.name}` : '' }}
+              </div>
+            </div>
+          </button>
+        </template>
+      </div>
+
+      <!-- Footer stats -->
+      <div class="border-t border-slate-100 px-3 py-2 flex items-center gap-2 text-[10px] text-slate-400">
+        <span>{{ roleList.length }} roles</span>
+        <span>·</span>
+        <span>{{ userList.length }} users</span>
+        <span>·</span>
+        <span class="text-blue-500 font-semibold">{{ totalFeatureCount }} actions</span>
+      </div>
+    </aside>
+
+    <!-- ══ RIGHT PANEL ═══════════════════════════════════════════════════════ -->
+    <main class="flex flex-1 flex-col overflow-hidden">
+
+      <!-- No selection -->
+      <div v-if="mode === 'user' && !selectedUser" class="flex flex-1 items-center justify-center">
+        <div class="text-center">
+          <i class="far fa-user-lock text-4xl text-slate-200"></i>
+          <p class="mt-3 text-sm text-slate-400">Select a user to configure permissions.</p>
+        </div>
+      </div>
+
+      <template v-else>
+
+        <!-- ── Compact header bar ─────────────────────────────────────────── -->
+        <div class="flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-2">
+
+          <!-- Avatar + name -->
+          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[11px] font-bold uppercase text-slate-600">
+            {{ selectedInitials }}
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2">
+              <span class="text-[13px] font-bold text-slate-900">{{ selectedTitle }}</span>
+              <span v-if="mode === 'user'" class="rounded px-1.5 py-0.5 text-[9px] font-bold uppercase" :class="roleColor(selectedUser.role)">
+                {{ selectedUser.role }}
+              </span>
+              <span v-if="selectedAutoAccess" class="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-bold text-purple-700">
+                <i class="far fa-crown text-[9px]"></i> Auto full access
+              </span>
+              <span v-else-if="selectedConfigured" class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                <i class="far fa-shield-check text-[9px]"></i> Configured
+              </span>
+              <span v-else class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                <i class="far fa-unlock text-[9px]"></i> Legacy open
+              </span>
+            </div>
+            <div class="text-[10px] text-slate-400">
+              {{ selectedSubtitle }}
+              <span v-if="mode === 'user' && selectedUser.department?.name"> · {{ selectedUser.department.name }}</span>
             </div>
           </div>
 
-          <div v-if="mode === 'role'" class="max-h-[620px] space-y-1 overflow-y-auto p-2">
-            <button
-              v-for="role in roleList"
-              :key="role.key"
-              type="button"
-              class="group w-full rounded-md border px-3 py-2 text-left transition"
-              :class="selectedRoleKey === role.key
-                ? 'border-blue-400 bg-blue-50 shadow-sm'
-                : 'border-transparent bg-white hover:border-slate-200 hover:bg-white'"
-              @click="selectedRoleKey = role.key"
-            >
-              <div class="flex items-center gap-2.5">
-                <div
-                  class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold uppercase"
-                  :class="roleColor(role.key)"
-                >
-                  {{ role.label.slice(0, 2) }}
-                </div>
-                <div class="min-w-0 flex-1">
-                  <div class="truncate text-[12px] font-semibold text-slate-900">{{ role.label }}</div>
-                  <div class="text-[10px] text-slate-400">{{ role.count }} users inherit this template</div>
-                </div>
-                <span
-                  class="h-1.5 w-1.5 shrink-0 rounded-full"
-                  :class="selectedRoleKey === role.key ? 'bg-blue-500' : 'bg-slate-200 group-hover:bg-slate-300'"
-                ></span>
+          <!-- Progress + save -->
+          <div class="flex items-center gap-2 shrink-0">
+            <div class="flex items-center gap-1.5">
+              <div class="relative h-1.5 w-20 overflow-hidden rounded-full bg-slate-200">
+                <div class="absolute inset-y-0 left-0 rounded-full bg-emerald-500 transition-all"
+                  :style="{ width: `${totalFeatureCount ? (configuredCount / totalFeatureCount) * 100 : 0}%` }"></div>
               </div>
+              <span class="text-[11px] font-semibold text-slate-600">{{ configuredCount }}/{{ totalFeatureCount }}</span>
+            </div>
+            <button
+              v-if="mode === 'user' || !selectedAutoAccess"
+              :disabled="permLoading || !dirty"
+              class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white transition disabled:opacity-40"
+              :class="savedOk ? 'bg-emerald-600' : dirty ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-300'"
+              @click="saveFeatureAccess">
+              <i :class="permLoading ? 'far fa-spinner fa-spin' : savedOk ? 'far fa-check' : 'far fa-save'"></i>
+              {{ permLoading ? 'Saving…' : savedOk ? 'Saved' : 'Save' }}
             </button>
           </div>
+        </div>
 
-          <!-- Search + role filter -->
-          <div v-if="mode === 'user'" class="space-y-2 border-b border-slate-100 p-3">
-            <div class="relative">
-              <i class="far fa-search absolute left-3 top-1/2 -translate-y-1/2 text-[11px] text-slate-400"></i>
-              <input
-                v-model="q"
-                type="search"
-                placeholder="Search name, ID, department…"
-                class="w-full rounded-md border border-slate-200 bg-white py-1.5 pl-8 pr-3 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-400"
-              />
-            </div>
-            <select
-              v-model="selectedRole"
-              class="w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400"
-            >
-              <option value="all">All roles</option>
-              <option v-for="role in roleList" :key="role.key" :value="role.key">{{ role.label }}</option>
-            </select>
-          </div>
+        <!-- ── Scrollable body ────────────────────────────────────────────── -->
+        <div class="flex-1 overflow-y-auto">
 
-          <!-- User rows -->
-          <div v-if="mode === 'user'" class="max-h-[620px] overflow-y-auto p-2 space-y-1">
-            <div v-if="usersLoading" class="py-8 text-center text-xs text-slate-400">
-              <i class="far fa-spinner fa-spin mr-1"></i> Loading users…
+          <!-- ── Explicit Grants (user mode only) ──────────────────────── -->
+          <div v-if="explicitItems.length && mode === 'user'"
+            class="border-b border-slate-200 bg-indigo-50/40 px-4 py-3">
+            <div class="mb-2 flex items-center gap-1.5">
+              <i class="far fa-lock text-[11px] text-indigo-600"></i>
+              <span class="text-[11px] font-bold text-indigo-800">Explicit Grants</span>
+              <span class="text-[10px] text-slate-400">— bypasses role & auto-access, must be granted per user</span>
             </div>
-            <div v-else-if="!userList.length" class="py-8 text-center text-xs text-slate-400">
-              No users found.
-            </div>
-
-            <button
-              v-for="user in userList"
-              :key="user.id"
-              type="button"
-              class="group w-full rounded-md border px-3 py-2 text-left transition"
-              :class="Number(selectedUserId) === Number(user.id)
-                ? 'border-blue-400 bg-blue-50 shadow-sm'
-                : 'border-transparent bg-white hover:border-slate-200 hover:bg-white'"
-              @click="selectedUserId = user.id"
-            >
-              <div class="flex items-center gap-2.5">
-                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[11px] font-bold uppercase text-slate-600">
-                  {{ (user.name || '?').slice(0, 2) }}
+            <div class="flex flex-wrap gap-2">
+              <div v-for="item in explicitItems" :key="item.key"
+                class="flex items-center gap-2 rounded-lg border px-3 py-1.5 transition"
+                :class="explicitMatrix[item.key] === true
+                  ? 'border-indigo-300 bg-indigo-100'
+                  : 'border-slate-200 bg-white hover:border-slate-300'">
+                <div>
+                  <span class="text-[9px] font-bold uppercase" :class="actionColor(item.action)">{{ item.action }}</span>
+                  <span class="ml-1 text-[10px] text-slate-500">{{ (item.label.split(':')[0] || item.label).trim() }}</span>
+                  <span class="ml-1 text-[9px] text-slate-400">{{ item.module }}</span>
                 </div>
-                <div class="min-w-0 flex-1">
-                  <div class="flex items-center gap-1.5">
-                    <span class="truncate text-[12px] font-semibold text-slate-900">{{ user.name }}</span>
-                    <span
-                      class="shrink-0 rounded px-1 py-0.5 text-[9px] font-bold uppercase tracking-wide"
-                      :class="roleColor(user.role)"
-                    >{{ user.role }}</span>
-                  </div>
-                  <div class="flex items-center gap-1.5 text-[10px] text-slate-400">
-                    <span v-if="user.employee_id" class="font-mono">{{ user.employee_id }}</span>
-                    <span v-if="user.department?.name" class="truncate">· {{ user.department.name }}</span>
-                  </div>
-                </div>
-                <span
-                  class="h-1.5 w-1.5 shrink-0 rounded-full"
-                  :class="Number(selectedUserId) === Number(user.id) ? 'bg-blue-500' : 'bg-slate-200 group-hover:bg-slate-300'"
-                ></span>
+                <button type="button"
+                  class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors"
+                  :class="explicitMatrix[item.key] === true ? 'bg-indigo-600' : 'bg-slate-300'"
+                  @click="explicitMatrix[item.key] = !(explicitMatrix[item.key] === true); dirty = true">
+                  <span class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition"
+                    :class="explicitMatrix[item.key] === true ? 'translate-x-4' : 'translate-x-0'"></span>
+                </button>
               </div>
-            </button>
+            </div>
           </div>
-        </aside>
 
-        <!-- Right: Permission matrix ─────────────────────────────────────── -->
-        <main class="min-w-0 flex-1">
-
-          <!-- No selection state -->
-          <div v-if="mode === 'user' && !selectedUser" class="flex h-full items-center justify-center p-10 text-center">
+          <!-- ── Auto-access notice ─────────────────────────────────────── -->
+          <div v-if="selectedAutoAccess"
+            class="mx-4 mt-4 flex items-center gap-3 rounded-xl border border-purple-200 bg-purple-50 px-4 py-3">
+            <i class="far fa-crown text-lg text-purple-500"></i>
             <div>
-              <i class="far fa-user-lock text-3xl text-slate-300"></i>
-              <p class="mt-3 text-sm font-medium text-slate-500">Select a user to configure feature access.</p>
+              <p class="text-[12px] font-bold text-purple-900">Automatic Full Access</p>
+              <p class="text-[11px] text-purple-600">{{ selectedTitle }} inherits all {{ totalFeatureCount }} feature permissions automatically. The matrix below is not applied.</p>
             </div>
           </div>
 
-          <template v-else>
-            <!-- Sticky action bar -->
-            <div class="sticky top-0 z-10 border-b border-slate-100 bg-white/95 backdrop-blur-sm">
-              <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+          <!-- ── Permission matrix ──────────────────────────────────────── -->
+          <template v-if="!selectedAutoAccess">
 
-                <!-- User info -->
-                <div class="flex items-center gap-3">
-                  <div class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-200 text-sm font-bold uppercase text-slate-600">
-                    {{ selectedInitials }}
-                  </div>
-                  <div>
-                    <div class="flex items-center gap-2">
-                      <span class="text-sm font-semibold text-slate-900">{{ selectedTitle }}</span>
-                      <span
-                        v-if="mode === 'user'"
-                        class="rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide"
-                        :class="roleColor(selectedUser.role)"
-                      >{{ selectedUser.role }}</span>
-                    </div>
-                    <div class="text-[10px] text-slate-400">
-                      {{ selectedSubtitle }}
-                      <span v-if="mode === 'user' && selectedUser.department?.name"> · {{ selectedUser.department.name }}</span>
-                    </div>
-                  </div>
-                </div>
-
-              <!-- Actions -->
-              <div class="flex flex-wrap items-center gap-2">
-                  <!-- Progress pill -->
-                  <div class="flex items-center gap-1.5 rounded-md bg-slate-100 px-2.5 py-1">
-                    <div class="relative h-1.5 w-16 overflow-hidden rounded-full bg-slate-200">
-                      <div
-                        class="absolute inset-y-0 left-0 rounded-full bg-emerald-500 transition-all"
-                        :style="{ width: `${totalFeatureCount ? (configuredCount / totalFeatureCount) * 100 : 0}%` }"
-                      ></div>
-                    </div>
-                    <span class="text-[11px] font-semibold text-slate-600">
-                      {{ configuredCount }}/{{ totalFeatureCount }}
-                    </span>
-                  </div>
-
-                  <template v-if="!selectedAutoAccess">
-                    <button
-                      class="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
-                      @click="expandAll"
-                    >
-                      <i class="far fa-list mr-1"></i>Expand
-                    </button>
-                    <button
-                      class="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
-                      @click="collapseAll"
-                    >
-                      <i class="far fa-compress-alt mr-1"></i>Collapse
-                    </button>
-                    <button
-                      class="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
-                      @click="setAll(true)"
-                    >
-                      <i class="far fa-check-double mr-1"></i>Allow all
-                    </button>
-                    <button
-                      class="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
-                      @click="setAll(false)"
-                    >
-                      <i class="far fa-ban mr-1"></i>Block all
-                    </button>
-                    <button
-                      class="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[11px] font-semibold text-white transition disabled:opacity-50"
-                      :class="savedOk ? 'bg-emerald-600' : dirty ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-800 hover:bg-slate-700'"
-                      :disabled="permLoading"
-                      @click="saveFeatureAccess"
-                    >
-                      <i :class="permLoading ? 'far fa-spinner fa-spin' : savedOk ? 'far fa-check' : 'far fa-save'"></i>
-                      {{ permLoading ? 'Saving…' : savedOk ? 'Saved' : dirty ? 'Save changes' : 'Save access' }}
-                    </button>
-                  </template>
-                  <span
-                    v-else
-                    class="rounded-md bg-purple-50 px-2.5 py-1.5 text-[11px] font-semibold text-purple-600"
-                  >
-                    <i class="far fa-crown mr-1"></i>Auto full access
-                  </span>
-                </div>
+            <!-- Matrix toolbar -->
+            <div class="flex items-center gap-2 border-b border-slate-200 bg-white px-4 py-2">
+              <div class="relative">
+                <i class="far fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400"></i>
+                <input v-model="permissionQ" type="search" placeholder="Search…"
+                  class="w-48 rounded border border-slate-200 bg-slate-50 py-1 pl-7 pr-2 text-[11px] focus:outline-none focus:ring-1 focus:ring-blue-400" />
               </div>
-
-              <!-- Auto-access banner for super_admin / developer -->
-              <div
-                v-if="selectedAutoAccess"
-                class="flex items-center gap-2 border-t border-purple-100 bg-purple-50 px-4 py-2 text-[11px] text-purple-700"
-              >
-                <i class="far fa-crown text-sm"></i>
-                <span>
-                  <strong>{{ mode === 'role' ? selectedTitle : (selectedUser.role === 'developer' ? 'Developer' : 'Super Admin') }}</strong>
-                  has automatic full access. Configuration matrix is not applied.
-                </span>
-              </div>
-
-              <!-- Status strip (admin users only) -->
-              <div
-                v-else
-                class="flex items-center gap-2 border-t px-4 py-1.5 text-[11px]"
-                :class="savedOk
-                  ? 'border-emerald-100 bg-emerald-50 text-emerald-700'
-                  : dirty
-                    ? 'border-blue-100 bg-blue-50 text-blue-700'
-                    : selectedConfigured
-                      ? 'border-slate-100 bg-white text-slate-500'
-                      : 'border-amber-100 bg-amber-50 text-amber-700'"
-              >
-                <i :class="savedOk ? 'far fa-check-circle' : dirty ? 'far fa-circle-dot' : selectedConfigured ? 'far fa-shield-check' : 'far fa-triangle-exclamation'"></i>
-                <span v-if="savedOk">Feature permissions saved successfully.</span>
-                <span v-else-if="dirty">You have unsaved changes.</span>
-                <span v-else-if="selectedConfigured && mode === 'role'">Role template is configured. Users with this role inherit it.</span>
-                <span v-else-if="selectedConfigured">User override active. This user differs from the role template.</span>
-                <span v-else-if="mode === 'role'">Legacy open role: all features are allowed until you save this role template.</span>
-                <span v-else>User inherits role template. Save here only for user-specific customization.</span>
-              </div>
-
-              <div class="border-t border-slate-100 bg-slate-50/60 px-4 py-3">
-                <div class="relative max-w-md">
-                  <i class="far fa-search absolute left-3 top-1/2 -translate-y-1/2 text-[11px] text-slate-400"></i>
-                  <input
-                    v-model="permissionQ"
-                    type="search"
-                    placeholder="Search menu item, action, or permission key..."
-                    class="w-full rounded-md border border-slate-200 bg-white py-2 pl-8 pr-3 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-400"
-                  />
-                </div>
-              </div>
+              <button class="rounded border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 hover:bg-slate-50" @click="expandAll">Expand all</button>
+              <button class="rounded border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 hover:bg-slate-50" @click="collapseAll">Collapse</button>
+              <button class="rounded border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700 hover:bg-emerald-100" @click="setAll(true)">Allow all</button>
+              <button class="rounded border border-rose-200 bg-rose-50 px-2 py-1 text-[10px] font-semibold text-rose-600 hover:bg-rose-100" @click="setAll(false)">Block all</button>
             </div>
 
-            <!-- Module permission cards -->
-            <div
-              class="space-y-3 p-4"
-              :class="selectedAutoAccess ? 'pointer-events-none opacity-60' : ''"
-            >
-              <section
-                v-for="mod in visibleModules"
-                :key="mod.key"
-                class="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm"
-                :class="moduleChecked(mod) ? 'border-emerald-200' : ''"
-              >
-                <!-- Module header -->
-                <div class="flex items-center gap-3 border-b border-slate-100 bg-slate-50/70 px-3 py-2.5">
-                  <span
-                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-sm"
-                    :class="moduleColor(mod.key)"
-                  >
+            <!-- Module sections -->
+            <div class="space-y-0 divide-y divide-slate-100">
+              <section v-for="mod in visibleModules" :key="mod.key">
+
+                <!-- Module row -->
+                <div class="flex items-center gap-2.5 px-4 py-2 hover:bg-slate-50 cursor-pointer"
+                  @click="toggleModuleExpanded(mod.key)">
+                  <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded text-[11px]" :class="moduleColor(mod.key)">
                     <i :class="moduleIcon(mod.key)"></i>
                   </span>
+                  <span class="flex-1 text-[12px] font-semibold text-slate-800">{{ mod.label }}</span>
 
-                  <div class="min-w-0 flex-1">
-                    <div class="flex items-center gap-2">
-                      <span class="text-[13px] font-semibold text-slate-900">{{ mod.label }}</span>
-                      <code class="rounded bg-slate-100 px-1 py-0.5 text-[9px] text-slate-400">{{ mod.key }}</code>
+                  <!-- Progress bar -->
+                  <div class="flex items-center gap-1.5">
+                    <div class="relative h-1 w-16 overflow-hidden rounded-full bg-slate-200">
+                      <div class="absolute inset-y-0 left-0 rounded-full transition-all"
+                        :class="moduleChecked(mod) ? 'bg-emerald-500' : modulePartial(mod) ? 'bg-amber-400' : 'bg-slate-300'"
+                        :style="{ width: `${mod.items?.length ? (moduleAllowedCount(mod) / mod.items.length) * 100 : 0}%` }"></div>
                     </div>
-                    <div class="mt-1 flex items-center gap-2">
-                      <div class="relative h-1 w-20 overflow-hidden rounded-full bg-slate-200">
-                        <div
-                          class="absolute inset-y-0 left-0 rounded-full transition-all"
-                          :class="moduleChecked(mod) ? 'bg-emerald-500' : modulePartial(mod) ? 'bg-amber-400' : 'bg-slate-300'"
-                          :style="{ width: `${mod.items?.length ? (moduleAllowedCount(mod) / mod.items.length) * 100 : 0}%` }"
-                        ></div>
-                      </div>
-                      <span class="text-[10px] text-slate-400">{{ moduleAllowedCount(mod) }}/{{ mod.items?.length || 0 }}</span>
-                    </div>
+                    <span class="text-[10px] text-slate-400">{{ moduleAllowedCount(mod) }}/{{ mod.items?.length || 0 }}</span>
                   </div>
 
-                  <span class="hidden rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-500 sm:inline-flex">
-                    {{ moduleAllowedCount(mod) }}/{{ mod.items?.length || 0 }} allowed
-                  </span>
-
-                  <button
-                    class="rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-blue-700 hover:bg-blue-50"
-                    @click="toggleModuleExpanded(mod.key)"
-                  >
-                    <i :class="expandedModules[mod.key] ? 'far fa-chevron-up' : 'far fa-chevron-down'" class="mr-1"></i>
-                    {{ expandedModules[mod.key] ? 'Hide' : 'Expand' }}
-                  </button>
-
-                  <!-- Module-level toggle -->
-                  <button
-                    class="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus:outline-none"
+                  <!-- Module toggle -->
+                  <button type="button"
+                    class="relative inline-flex h-4 w-8 shrink-0 items-center rounded-full transition-colors"
                     :class="moduleChecked(mod) ? 'bg-emerald-500' : modulePartial(mod) ? 'bg-amber-400' : 'bg-slate-200'"
-                    :title="moduleChecked(mod) ? 'Block all in module' : 'Allow all in module'"
-                    @click="toggleModule(mod, !moduleChecked(mod))"
-                  >
-                    <span
-                      class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
-                      :class="moduleChecked(mod) ? 'translate-x-4' : 'translate-x-0.5'"
-                    ></span>
+                    @click.stop="toggleModule(mod, !moduleChecked(mod))">
+                    <span class="inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform"
+                      :class="moduleChecked(mod) ? 'translate-x-4' : 'translate-x-0.5'"></span>
                   </button>
+
+                  <i :class="['far text-[10px] text-slate-400 w-3', expandedModules[mod.key] ? 'fa-chevron-up' : 'fa-chevron-down']"></i>
                 </div>
 
-                <!-- Permission matrix -->
-                <div v-if="expandedModules[mod.key]" class="overflow-x-auto">
+                <!-- Permission table -->
+                <div v-if="expandedModules[mod.key]" class="overflow-x-auto border-t border-slate-100 bg-slate-50/40">
                   <table class="min-w-full border-collapse text-left">
-                    <thead class="bg-white">
-                      <tr class="border-b border-slate-100">
-                        <th class="sticky left-0 z-[1] min-w-[230px] bg-white px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                          Menu item
+                    <thead>
+                      <tr class="border-b border-slate-100 bg-white">
+                        <th class="sticky left-0 z-[1] min-w-[200px] bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-400">Menu Item</th>
+                        <th v-for="action in moduleActions(mod)" :key="action"
+                          class="min-w-[80px] px-2 py-2 text-center text-[10px] font-bold uppercase tracking-wide">
+                          <span class="inline-flex rounded-full border px-1.5 py-0.5 text-[9px]" :class="actionColor(action)">{{ action }}</span>
                         </th>
-                        <th
-                          v-for="action in moduleActions(mod)"
-                          :key="action"
-                          class="min-w-[96px] px-3 py-3 text-center text-[11px] font-semibold uppercase tracking-wide"
-                        >
-                          <span
-                            class="inline-flex rounded-full border px-2 py-1"
-                            :class="actionColor(action)"
-                          >
-                            {{ action }}
-                          </span>
-                        </th>
-                        <th class="min-w-[90px] px-3 py-3 text-right text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                          Row
-                        </th>
+                        <th class="min-w-[60px] px-2 py-2 text-right text-[10px] font-bold uppercase tracking-wide text-slate-400">Row</th>
                       </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
-                      <tr
-                        v-for="row in filteredRows(mod)"
-                        :key="row.label"
-                        class="transition hover:bg-slate-50"
-                      >
-                        <td class="sticky left-0 z-[1] bg-white px-4 py-3 align-middle">
-                          <div class="flex items-center gap-2">
-                            <span
-                              class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[12px]"
-                              :class="moduleColor(mod.key)"
-                            >
-                              <i :class="moduleIcon(mod.key)"></i>
-                            </span>
-                            <div class="min-w-0">
-                              <div class="truncate text-[12px] font-semibold text-slate-900">{{ row.label }}</div>
-                              <code class="block truncate text-[10px] text-slate-400">{{ row.code }}</code>
-                            </div>
-                          </div>
+                      <tr v-for="row in filteredRows(mod)" :key="row.label" class="hover:bg-white transition">
+                        <td class="sticky left-0 z-[1] bg-transparent px-4 py-2 align-middle">
+                          <div class="text-[11px] font-semibold text-slate-800">{{ row.label }}</div>
+                          <code class="text-[9px] text-slate-400">{{ row.code }}</code>
                         </td>
-                        <td
-                          v-for="action in moduleActions(mod)"
-                          :key="`${row.label}-${action}`"
-                          class="px-3 py-3 text-center align-middle"
-                        >
-                          <button
-                            v-if="row.actions[action]"
-                            type="button"
-                            class="inline-flex h-5 w-5 items-center justify-center rounded border transition"
-                            :class="featureMatrix[row.actions[action].key] !== false
-                              ? action === 'Delete'
-                                ? 'border-red-600 bg-red-600 text-white'
-                                : 'border-emerald-600 bg-emerald-600 text-white'
-                              : 'border-slate-300 bg-white text-transparent hover:border-slate-400'"
-                            :title="`${row.label} - ${action}`"
-                            @click="togglePermission(row.actions[action].key)"
-                          >
-                            <i class="far fa-check text-[10px]"></i>
+                        <td v-for="action in moduleActions(mod)" :key="`${row.label}-${action}`"
+                          class="px-2 py-2 text-center align-middle">
+                          <!-- Explicit-only -->
+                          <button v-if="row.actions[action] && EXPLICIT_ONLY_ACTIONS.includes(action)"
+                            type="button" :disabled="mode !== 'user'"
+                            class="inline-flex h-4 w-4 items-center justify-center rounded border transition"
+                            :class="mode === 'user' && explicitMatrix[row.actions[action].key] === true
+                              ? 'border-indigo-600 bg-indigo-600 text-white'
+                              : mode === 'user' ? 'border-slate-300 bg-white text-transparent hover:border-indigo-400'
+                              : 'cursor-not-allowed border-slate-200 bg-slate-50'"
+                            :title="explicitMatrix[row.actions[action].key] === true ? 'Explicitly granted' : 'Click to grant explicitly'"
+                            @click="explicitMatrix[row.actions[action].key] = !(explicitMatrix[row.actions[action].key] === true); dirty = true">
+                            <i class="far fa-check text-[8px]"></i>
                           </button>
-                          <span v-else class="inline-flex h-5 w-5 items-center justify-center rounded border border-transparent text-[11px] text-slate-300">
-                            -
-                          </span>
-                        </td>
-                        <td class="px-3 py-3 text-right align-middle">
-                          <button
+                          <!-- Regular -->
+                          <button v-else-if="row.actions[action]"
                             type="button"
-                            class="rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 hover:bg-slate-50"
-                            @click="setRow(row, rowAllowedCount(row) !== Object.keys(row.actions).length)"
-                          >
+                            class="inline-flex h-4 w-4 items-center justify-center rounded border transition"
+                            :class="featureMatrix[row.actions[action].key] !== false
+                              ? action === 'Delete' ? 'border-red-500 bg-red-500 text-white' : 'border-emerald-500 bg-emerald-500 text-white'
+                              : 'border-slate-300 bg-white text-transparent hover:border-slate-400'"
+                            @click="togglePermission(row.actions[action].key)">
+                            <i class="far fa-check text-[8px]"></i>
+                          </button>
+                          <span v-else class="text-[11px] text-slate-200">—</span>
+                        </td>
+                        <td class="px-2 py-2 text-right align-middle">
+                          <button type="button"
+                            class="rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[9px] font-semibold text-slate-500 hover:bg-slate-50"
+                            @click="setRow(row, rowAllowedCount(row) !== Object.keys(row.actions).length)">
                             {{ rowAllowedCount(row) }}/{{ Object.keys(row.actions).length }}
                           </button>
                         </td>
                       </tr>
                     </tbody>
                   </table>
-
-                  <div
-                    v-if="!filteredRows(mod).length"
-                    class="border-t border-slate-100 px-4 py-8 text-center text-xs text-slate-400"
-                  >
-                    No permissions match your search.
+                  <div v-if="!filteredRows(mod).length" class="py-4 text-center text-[11px] text-slate-400">
+                    No matches.
                   </div>
                 </div>
               </section>
 
-              <div
-                v-if="!visibleModules.length"
-                class="rounded-md border border-dashed border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-400"
-              >
+              <div v-if="!visibleModules.length" class="px-4 py-8 text-center text-[11px] text-slate-400">
                 No modules match your search.
               </div>
             </div>
           </template>
-        </main>
-      </div>
-    </section>
+
+        </div><!-- scrollable body end -->
+      </template>
+    </main>
   </div>
 </template>
