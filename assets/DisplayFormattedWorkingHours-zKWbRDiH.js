@@ -1,0 +1,1 @@
+import{f as s}from"./overtime-Cih2x63q.js";import{z as a,c as e,o as n,t as c}from"./index-Cky6b2pS.js";const l={__name:"DisplayFormattedWorkingHours",props:["workingHours"],setup(o){const r=o,t=a(()=>s(r.workingHours));return(p,m)=>(n(),e("span",null,c(t.value),1))}};export{l as _};
