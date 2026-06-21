@@ -6,10 +6,10 @@ import { storeToRefs } from 'pinia'
 const notificationStore = useNotificationStore()
 
 const { icons, count_notifications, total_notifications } = storeToRefs(notificationStore)
-const applicationFeedbackCount = computed(
-  () => count_notifications.value?.application_feedback || 0,
-)
-const probationCount = computed(() => count_notifications.value?.probation || 0)
+const applicationFeedbackCount    = computed(() => count_notifications.value?.application_feedback || 0)
+const probationCount              = computed(() => count_notifications.value?.probation || 0)
+const advanceDeductionCount       = computed(() => count_notifications.value?.payroll_advance_deductions || 0)
+const payrollAdjustmentCount      = computed(() => count_notifications.value?.payroll_adjustments || 0)
 
 const emits = defineEmits(['close'])
 </script>
@@ -176,6 +176,36 @@ const emits = defineEmits(['close'])
         </span>
         <span class="text-xs bg-violet-500 text-white rounded-full px-2 py-0.5 font-semibold">
           {{ applicationFeedbackCount }}
+        </span>
+      </RouterLink>
+
+      <RouterLink
+        v-if="advanceDeductionCount"
+        :to="{ name: 'MyPayrollNotifications', query: { type: 'payroll_advance_deductions' } }"
+        @click="emits('close')"
+        class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
+      >
+        <span class="text-sm text-gray-700">
+          <i class="far fa-hand-holding-usd mr-2 text-rose-600"></i>
+          Advance Deductions
+        </span>
+        <span class="text-xs bg-rose-500 text-white rounded-full px-2 py-0.5 font-semibold">
+          {{ advanceDeductionCount }}
+        </span>
+      </RouterLink>
+
+      <RouterLink
+        v-if="payrollAdjustmentCount"
+        :to="{ name: 'MyPayrollNotifications', query: { type: 'payroll_adjustments' } }"
+        @click="emits('close')"
+        class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex justify-between"
+      >
+        <span class="text-sm text-gray-700">
+          <i class="far fa-sliders-h mr-2 text-blue-600"></i>
+          Payroll Adjustments
+        </span>
+        <span class="text-xs bg-blue-500 text-white rounded-full px-2 py-0.5 font-semibold">
+          {{ payrollAdjustmentCount }}
         </span>
       </RouterLink>
 

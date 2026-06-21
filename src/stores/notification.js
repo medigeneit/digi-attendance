@@ -26,6 +26,8 @@ export const useNotificationStore = defineStore('notification', () => {
     probation: 'fas fa-flask',
     application_feedback: 'fas fa-comments',
     discipline_attachments: 'fas fa-file-signature',
+    payroll_advance_deductions: 'fas fa-money-bill-wave',
+    payroll_adjustments: 'fas fa-sliders-h',
   })
 
   const total_notifications = computed(() => {
