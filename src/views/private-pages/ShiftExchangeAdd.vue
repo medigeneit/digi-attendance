@@ -62,7 +62,6 @@ const submitShiftExchange = async () => {
 
   try {
     const payload = {
-      user_id: authStore?.user?.id,
       current_shift_id: authStore?.user?.current_shift?.shift_id,
       shift_id: form.value.shift_id,
       exchange_type: form.value.exchange_type,
@@ -75,7 +74,7 @@ const submitShiftExchange = async () => {
     const newExchange = await exchangeStore.createExchange(payload)
     router.push({ name: 'ExchangeShiftShow', params: { id: newExchange.id } })
   } catch (err) {
-    error.value = err.message || 'Failed to submit shift exchange request'
+    error.value = err.response?.data?.message || 'Failed to submit shift exchange request'
   } finally {
     submitLoading.value = false
   }

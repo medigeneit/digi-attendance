@@ -81,6 +81,7 @@ export const useExchangeStore = defineStore('exchange', () => {
       return response?.data?.data
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to create exchange'
+      throw err
     } finally {
       loading.value = false
     }
