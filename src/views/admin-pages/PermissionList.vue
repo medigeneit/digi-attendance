@@ -14,7 +14,7 @@ const companyId = ref('all')
 const onlyAllDept = ref(false)
 
 const goBack = () => router.back()
-const editPermission = (id) => router.push({ name: 'PermissionEdit', params: { id } })
+const editPermission = (userId) => router.push({ name: 'PermissionEdit', params: { id: userId } })
 
 const deletePermission = async (id) => {
   if (!confirm('Delete this permission?')) return
@@ -200,8 +200,7 @@ const deptChips = (perm) => {
             </tr>
 
             <template v-else>
-              <template v-for="r in filteredRows" :key="r.perm.id">
-                <tr class="hover:bg-slate-50/60">
+              <tr v-for="r in filteredRows" :key="r.perm.id" class="hover:bg-slate-50/60">
                   <td class="whitespace-nowrap px-4 py-3 text-slate-500">
                     {{ serialByRowKey.get(r.perm.id) }}
                   </td>
@@ -251,7 +250,7 @@ const deptChips = (perm) => {
                       <button
                         class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50"
                         title="Edit"
-                        @click="editPermission(r.perm.id)"
+                        @click="editPermission(r.user.id)"
                       >
                         <i class="far fa-pencil-alt"></i>
                       </button>
@@ -265,7 +264,6 @@ const deptChips = (perm) => {
                     </div>
                   </td>
                 </tr>
-              </template>
 
               <tr v-if="!filteredRows.length">
                 <td colspan="5" class="px-4 py-12 text-center">
