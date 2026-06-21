@@ -28,8 +28,21 @@ const userRole = computed(() => String(authStore.user?.role || '').toLowerCase()
 const canDelete = computed(() =>
   ['super_admin', 'developer'].includes(userRole.value) && paymentStatus.value === 'pending' && !item.value?.payroll_id
 )
-const canVerify = computed(() => Boolean(item.value?.can_verify))
-const canReject = computed(() => Boolean(item.value?.can_verify))
+const canVerify  = computed(() => Boolean(item.value?.can_verify))
+const canReject  = computed(() => Boolean(item.value?.can_verify))
+const canForward = computed(() => {
+  if (paymentStatus.value !== 'pending') return false
+  if (item.value?.forwarded_by_user_id) return false
+  if (item.value?.created_by_user_id === authStore.user?.id) return false
+  const role = String(authStore.user?.role || '')
+  // super_admin/developer: must have explicit user-level grant (role bypass prevented)
+  if (['super_admin', 'developer'].includes(role)) {
+    return authStore.canExplicit('payroll.advance_deductions.forward')
+  }
+  // admin/hr/etc.: role template or user-specific grant both work
+  return authStore.canFeature('payroll.advance_deductions.forward')
+})
+const forwardedByName = computed(() => item.value?.forwarded_by?.name || '-')
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
@@ -87,6 +100,22 @@ const deleteEntry = async () => {
     router.push({ name: 'PayrollAdvanceDeductionList' })
   } catch (e) {
     toast.error(e.message || 'Failed to delete.')
+  }
+}
+
+const forwardBusy = ref(false)
+const forwardEntry = async () => {
+  if (!confirm('Forward this advance deduction?')) return
+  forwardBusy.value = true
+  try {
+    const { default: apiClient } = await import('@/axios')
+    await apiClient.patch(`/payroll-advance-deductions/${props.id || route.params.id}/forward`)
+    toast.success('Forwarded successfully.')
+    await load()
+  } catch (e) {
+    toast.error(e.response?.data?.message || e.message || 'Forward failed.')
+  } finally {
+    forwardBusy.value = false
   }
 }
 
@@ -348,15 +377,38 @@ onMounted(load)
         </div>
 
         <div class="no-print mt-4 flex flex-wrap gap-2">
-          <button v-if="canVerify && paymentStatus === 'pending'" class="btn-2" @click="approveEntry">
+          <button
+            v-if="canForward"
+            class="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100"
+            :disabled="forwardBusy"
+            @click="forwardEntry"
+          >
+            <i :class="['far text-[10px]', forwardBusy ? 'fa-spinner fa-spin' : 'fa-share']"></i>
+            {{ forwardBusy ? 'Forwarding...' : 'Forward' }}
+          </button>
+          <button
+            v-if="canVerify && paymentStatus === 'pending' && item?.forwarded_by_user_id"
+            class="btn-2"
+            @click="approveEntry"
+          >
             <i class="far fa-check-circle"></i> Approve
           </button>
-          <button v-if="canReject && paymentStatus === 'pending'" class="btn-3" @click="showRejectModal = true">
+          <button
+            v-if="canReject && paymentStatus === 'pending' && item?.forwarded_by_user_id"
+            class="btn-3"
+            @click="showRejectModal = true"
+          >
             <i class="far fa-times-circle"></i> Reject
           </button>
+          <span
+            v-if="canVerify && paymentStatus === 'pending' && !item?.forwarded_by_user_id"
+            class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-400"
+          >
+            <i class="far fa-lock text-[10px]"></i> Waiting for forward
+          </span>
         </div>
 
-        <div v-if="canVerify && paymentStatus === 'pending'" class="no-print mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <div v-if="canVerify && paymentStatus === 'pending' && item?.forwarded_by_user_id" class="no-print mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
           <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Authorization Note</label>
           <textarea
             v-model="approveNote"
@@ -372,28 +424,27 @@ onMounted(load)
           </div>
         </div>
 
-        <!-- Signature grid -->
-        <div class="signature-grid mt-8 grid grid-cols-3 gap-6">
+        <!-- Signature grid — hierarchy: Prepared → Forwarded → Authorized → Received -->
+        <div class="signature-grid mt-8 grid grid-cols-4 gap-4">
           <div class="text-center">
             <div class="signature-name mt-1 text-sm font-semibold text-slate-900">{{ creatorName }}</div>
             <div class="signature-line mx-auto"></div>
-            <div class="signature-label mt-1 text-xs font-bold uppercase tracking-wide text-slate-700">
-              Prepared By
-            </div>
+            <div class="signature-label mt-1 text-xs font-bold uppercase tracking-wide text-slate-700">Prepared By</div>
+          </div>
+          <div class="text-center">
+            <div class="signature-name mt-1 text-sm font-semibold text-slate-900">{{ forwardedByName }}</div>
+            <div class="signature-line mx-auto"></div>
+            <div class="signature-label mt-1 text-xs font-bold uppercase tracking-wide text-slate-700">Forwarded By</div>
           </div>
           <div class="text-center">
             <div class="signature-name mt-1 text-sm font-semibold text-slate-900">{{ authorizedByName }}</div>
             <div class="signature-line mx-auto"></div>
-            <div class="signature-label mt-1 text-xs font-bold uppercase tracking-wide text-slate-700">
-              Authorized By
-            </div>
+            <div class="signature-label mt-1 text-xs font-bold uppercase tracking-wide text-slate-700">Authorized By</div>
           </div>
           <div class="text-center">
             <div class="signature-name mt-1 text-sm font-semibold text-slate-900">&nbsp;</div>
             <div class="signature-line mx-auto"></div>
-            <div class="signature-label mt-1 text-xs font-bold uppercase tracking-wide text-slate-700">
-              Received By
-            </div>
+            <div class="signature-label mt-1 text-xs font-bold uppercase tracking-wide text-slate-700">Received By</div>
           </div>
         </div>
 
