@@ -53,7 +53,15 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   }
 
-  const getDateRangeAttendanceSummary = async (startDate, endDate, companyId, line_type, userId, ignorePermission = false) => {
+  const getDateRangeAttendanceSummary = async (
+    startDate,
+    endDate,
+    companyId,
+    line_type,
+    userId,
+    ignorePermission = false,
+    departmentId = null,
+  ) => {
     if (!companyId || !startDate || !endDate) {
       error.value = 'Company, Start Date, and End Date are required'
       return
@@ -65,6 +73,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
       const response = await apiClient.get(`/attendance/date-range-summary`, {
         params: {
           company_id: companyId,
+          department_id: departmentId || undefined,
           line_type: line_type || 'all',
           start_date: startDate,
           end_date: endDate,
@@ -90,6 +99,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     companyId,
     line_type = 'all',
     userId = null,
+    departmentId = null,
   ) => {
     if (!companyId || !startDate || !endDate) {
       error.value = 'Company, Start Date, and End Date are required'
@@ -102,6 +112,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
       const response = await apiClient.get('/attendance/date-range-summary?flag=excel', {
         params: {
           company_id: companyId,
+          department_id: departmentId || undefined,
           start_date: startDate,
           end_date: endDate,
           employee_id: userId || undefined,
