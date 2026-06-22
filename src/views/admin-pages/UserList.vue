@@ -173,6 +173,7 @@ watch(
 
 async function fetchFromRoute() {
   await userStore.fetchUsers({
+    include_inactive: 1,
     company_id: route.query.company,
     department_id: route.query.department,
     line_type: route.query.line_type,

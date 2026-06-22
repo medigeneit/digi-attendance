@@ -42,6 +42,7 @@ export const useUserStore = defineStore('user', () => {
       isLoading.value = true
       const response = await apiClient.get('/users', {
         params: {
+          include_inactive: 1,
           flag: 'excel',
           company_id: payload.data.company_id,
           department_id: payload.data.department_id,

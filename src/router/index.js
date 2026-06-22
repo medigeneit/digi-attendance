@@ -1083,6 +1083,12 @@ const router = createRouter({
           meta: { requiresAuth: true, title: 'Application Feedback Notifications' },
         },
         {
+          path: '/notifications/payroll',
+          name: 'MyPayrollNotifications',
+          component: () => import('@/views/private-pages/MyPayrollNotifications.vue'),
+          meta: { requiresAuth: true, title: 'Payroll Notifications' },
+        },
+        {
           path: '/task-notifications/:type',
           name: 'MyTaskNotificationList',
           component: () => import('@/views/private-pages/MyTaskNotificationList.vue'),
@@ -1507,8 +1513,6 @@ const router = createRouter({
           component: () => import('@/views/admin-pages/LifecycleDetailPage.vue'),
           meta: {
             requiresAuth: true,
-            roles: ['admin', 'super_admin', 'developer'],
-            feature: 'lifecycle.view',
             title: 'Lifecycle Detail',
           },
         },

@@ -14,7 +14,8 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
   const token = ref(null)
   const error = ref(null)
-  const featurePermissions = ref({})
+  const featurePermissions = ref({})          // effective (includes role + super_admin bypass)
+  const explicitPermissions = ref({})         // user_feature_permissions only — no role bypass
   const featurePermissionsLoaded = ref(false)
 
   const isAuthenticated = computed(() => !!token.value)
@@ -62,6 +63,7 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
     token.value = null
     featurePermissions.value = {}
+    explicitPermissions.value = {}
     featurePermissionsLoaded.value = false
     isAdminMood.value = false
     localStorage.removeItem('auth_token')
@@ -114,6 +116,7 @@ export const useAuthStore = defineStore('auth', () => {
         },
       })
       featurePermissions.value = response.data?.data?.effective || {}
+      explicitPermissions.value = response.data?.data?.permissions || {}
       featurePermissionsLoaded.value = true
       return featurePermissions.value
     } catch (err) {
@@ -131,6 +134,14 @@ export const useAuthStore = defineStore('auth', () => {
     if (['super_admin', 'developer'].includes(currentUser?.role)) return true
     if (!featurePermissionsLoaded.value) return true
     return featurePermissions.value[permissionKey] !== false
+  }
+
+  // Explicit check — no super_admin/developer bypass.
+  // Only true if explicitly granted in user_feature_permissions.
+  function canExplicit(permissionKey) {
+    if (!permissionKey) return false
+    if (!featurePermissionsLoaded.value) return false
+    return explicitPermissions.value[permissionKey] === true
   }
 
   async function updateProfile(payload) {
@@ -212,6 +223,8 @@ export const useAuthStore = defineStore('auth', () => {
     fetchUser,
     fetchFeaturePermissions,
     canFeature,
+    canExplicit,
+    explicitPermissions,
     updateProfile,
     uploadProfilePhoto,
     changePassword,

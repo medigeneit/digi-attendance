@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import apiClient from '@/axios'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
+import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import { useAdjustmentStore } from '@/stores/adjustmentStore'
 import { formatCurrency } from '@/utils/currency'
@@ -466,6 +467,25 @@ watch(
   },
 )
 
+// ─── FlexibleDatePicker binding for Carry To Month ───────────────────────────
+const carryToMonthPeriod = computed({
+  get: () => {
+    const yr = form.value.carry_to_year
+    const mo = form.value.carry_to_month
+    if (yr && mo) return { year: Number(yr), month: Number(mo), day: 1 }
+    const min = carryToMonthMinimum.value
+    if (min) {
+      const [y, m] = min.split('-')
+      return { year: Number(y), month: Number(m), day: 1 }
+    }
+    const now = new Date()
+    return { year: now.getFullYear(), month: now.getMonth() + 1, day: 1 }
+  },
+  set: (v) => {
+    if (v?.year && v?.month) setCarryMonth(`${v.year}-${String(v.month).padStart(2, '0')}`, true)
+  },
+})
+
 const submit = async () => {
   if (!form.value.employee_id) return toast.error('Select an employee.')
   if (!form.value.payroll_id) return toast.error('Select a reference payroll month.')
@@ -528,10 +548,10 @@ const submit = async () => {
           <div>
             <label class="mb-1 block text-xs font-medium text-slate-600">Employee</label>
             <EmployeeFilter
-              v-model:company_id="employeeFilters.company_id"
-              v-model:department_id="employeeFilters.department_id"
-              v-model:employee_id="employeeFilters.employee_id"
-              v-model:line_type="employeeFilters.line_type"
+              :company_id="employeeFilters.company_id"
+              :department_id="employeeFilters.department_id"
+              :employee_id="employeeFilters.employee_id"
+              :line_type="employeeFilters.line_type"
               :with-type="true"
               @filter-change="onEmployeeFilterChange"
             />
@@ -553,12 +573,13 @@ const submit = async () => {
               </select>
             </div>
             <div>
-              <label class="mb-1 block text-xs font-medium text-slate-600">Carry To Month</label>
-              <input
-                v-model="carryToMonthInput"
-                type="month"
-                :min="carryToMonthMinimum"
-                class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-100"
+              <FlexibleDatePicker
+                v-model="carryToMonthPeriod"
+                :show-year="false"
+                :show-month="true"
+                :show-date="false"
+                label="Carry To Month"
+                :show-summary="false"
               />
               <p class="mt-1 text-xs text-slate-500">
                 Minimum selectable month: {{ formatMonthLabel(carryToMonthMinimum) }}

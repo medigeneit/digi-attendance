@@ -4,6 +4,7 @@ import { ref } from 'vue'
 
 export const useAdjustmentStore = defineStore('adjustment', () => {
   const adjustments = ref([])
+  const pagination = ref({})
   const carryPreview = ref({})
   const item = ref(null)
   const loading = ref(false)
@@ -49,10 +50,15 @@ export const useAdjustmentStore = defineStore('adjustment', () => {
     error.value = null
     try {
       const params = { ...filters }
-      // Backend validates per_page max=100.
       if (!params.per_page) params.per_page = 100
       const res = await apiClient.get('/payroll-adjustments', { params })
       adjustments.value = normalizeList(res.data)
+      if (res.data?.data && Array.isArray(res.data.data)) {
+        const { data: _, ...rest } = res.data
+        pagination.value = rest
+      } else {
+        pagination.value = {}
+      }
       return res.data
     } catch (err) {
       setError(err, 'Failed to fetch payroll adjustments')
@@ -182,6 +188,7 @@ export const useAdjustmentStore = defineStore('adjustment', () => {
 
   return {
     adjustments,
+    pagination,
     carryPreview,
     item,
     loading,

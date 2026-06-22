@@ -88,6 +88,35 @@ export const useUserPermissionStore = defineStore('permission', () => {
     }
   };
 
+  const fetchPermissionsByUser = async (userId) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await apiClient.get(`/permissions/user/${userId}`);
+      return response?.data?.data || [];
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Permission load failed';
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const syncUserPermissions = async (userId, companies) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await apiClient.put(`/permissions/user/${userId}`, { companies });
+      await fetchUserPermissions();
+      return response?.data?.data || [];
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Permission sync failed';
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
   const fetchFeatureCatalog = async () => {
     loading.value = true;
     error.value = null;
@@ -178,6 +207,8 @@ export const useUserPermissionStore = defineStore('permission', () => {
     createPermission,
     updatePermission,
     deletePermission,
+    fetchPermissionsByUser,
+    syncUserPermissions,
     fetchFeatureCatalog,
     fetchRoleFeaturePermissions,
     updateRoleFeaturePermissions,
