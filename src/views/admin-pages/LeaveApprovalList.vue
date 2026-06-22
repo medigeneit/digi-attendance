@@ -35,6 +35,7 @@ const routeApplicationCode = () => {
 const selectedApplicationCode = ref(routeApplicationCode())
 const showLeaveApprovalModal = ref(false)
 const showDeleteModal = ref(false)
+const showResetModal = ref(false)
 const selectedLeaveApproval = ref(null)
 const activeInlineCell = ref(null)
 const activeAssignment = ref(null)
@@ -203,23 +204,15 @@ const fetchApprovalUsers = async () => {
   approvalUsers.value = response.data || []
 }
 
-const buildApprovalPayload = (approval, column, user) => {
-  const base = {
-    name: approval.name,
-    type: backendType.value,
-    application_code: selectedApplicationCode.value,
-    department_id: approval.department_id || approval.department?.id || null,
-    change_note: approval.change_note || '',
-  }
-  // Read resolved user IDs from approval_steps (handles type_configs overrides correctly).
-  // Fall back to the raw root field so shared rules without type_configs also work.
-  ALL_APPROVER_COLUMNS.forEach((col) => {
-    const step = (approval.approval_steps || []).find((s) => s.key === col.key)
-    base[col.field] = step?.user_id ?? approval[col.field] ?? null
-  })
-  base[column.field] = user?.id || null
-  return base
-}
+// Inline single-field assign: only send the ONE field being changed.
+// Sending all fields would copy inherited ROOT values into type_configs[code].
+const buildApprovalPayload = (approval, column, user) => ({
+  name: approval.name,
+  type: backendType.value,
+  application_code: selectedApplicationCode.value,
+  department_id: approval.department_id || approval.department?.id || null,
+  [column.field]: user?.id || null,
+})
 
 const assignApprover = async (approval, column, user) => {
   if (!approval?.id || !user?.id) return
@@ -338,6 +331,19 @@ const closeLeaveApprovalModal = () => {
   showLeaveApprovalModal.value = false
 }
 
+const isLeaveTab = computed(() => selectedApplicationCode.value === 'leave')
+
+// A rule is "empty" when it has no approver assigned anywhere —
+// neither in root fields nor in any type_configs override.
+// Empty rules are safe to delete from any tab.
+const isRuleEmpty = (approval) => {
+  const hasRoot = ALL_APPROVER_COLUMNS.some((col) => approval[col.field])
+  const hasType = Object.values(approval.type_configs || {}).some((cfg) =>
+    ALL_APPROVER_COLUMNS.some((col) => cfg?.[col.field]),
+  )
+  return !hasRoot && !hasType
+}
+
 const openDeleteModal = (leaveApproval) => {
   selectedLeaveApproval.value = leaveApproval
   showDeleteModal.value = true
@@ -345,6 +351,31 @@ const openDeleteModal = (leaveApproval) => {
 
 const closeDeleteModal = () => {
   showDeleteModal.value = false
+}
+
+const openResetModal = (leaveApproval) => {
+  selectedLeaveApproval.value = leaveApproval
+  showResetModal.value = true
+}
+
+const closeResetModal = () => {
+  showResetModal.value = false
+}
+
+const handleReset = async () => {
+  if (!selectedLeaveApproval.value?.id) return
+  try {
+    await leaveApprovalStore.resetTypeConfig(
+      selectedLeaveApproval.value.id,
+      selectedApplicationCode.value,
+    )
+    toast.success(`${selectedApplicationType.value?.name} override cleared — now falls back to root approvers.`)
+    await loadRules()
+  } catch {
+    toast.error('Failed to reset type config.')
+  } finally {
+    closeResetModal()
+  }
 }
 
 const handleDelete = async () => {
@@ -606,12 +637,26 @@ const configuredCount = (approval) =>
                       <i class="far fa-edit text-[10px]"></i>
                       <span>Edit</span>
                     </button>
+
+                    <!-- Delete: rule has no approvers at all (safe to remove from any tab) -->
                     <button
+                      v-if="isRuleEmpty(approval)"
                       class="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-red-100 bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
                       @click="openDeleteModal(approval)"
-                      title="Delete"
+                      title="Delete empty rule"
                     >
                       <i class="fas fa-trash text-[10px]"></i>
+                    </button>
+
+                    <!-- Reset: non-leave tab + rule has approvers — clears type-specific override -->
+                    <button
+                      v-else-if="!isLeaveTab"
+                      class="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100 transition-colors"
+                      @click="openResetModal(approval)"
+                      :title="`Reset ${selectedApplicationType?.name} override to root defaults`"
+                    >
+                      <i class="fas fa-undo text-[10px]"></i>
+                      <span>Reset</span>
                     </button>
                   </div>
                 </td>
@@ -652,6 +697,15 @@ const configuredCount = (approval) =>
       :message="`Are you sure you want to delete '${selectedLeaveApproval?.name}'?`"
       @close="closeDeleteModal"
       @confirm="handleDelete"
+    />
+
+    <!-- Reset type-config confirmation -->
+    <DeleteModal
+      :show="showResetModal"
+      title="Reset Type Override"
+      :message="`Reset the '${selectedApplicationType?.name}' override for '${selectedLeaveApproval?.name}'? It will fall back to the rule's root approvers. Already-submitted applications are not affected.`"
+      @close="closeResetModal"
+      @confirm="handleReset"
     />
 
     <!-- ── Inline assign popover ── -->

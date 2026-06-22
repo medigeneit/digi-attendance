@@ -99,6 +99,23 @@ export const useLeaveApprovalStore = defineStore('leaveApproval', () => {
     }
   }
 
+  const resetTypeConfig = async (id, applicationCode) => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await apiClient.post(`/leave-approvals/${id}/reset-type-config`, {
+        application_code: applicationCode,
+      })
+      return response.data
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to reset type config.'
+      console.error('Error resetting type config:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   const deleteLeaveApproval = async (id) => {
     loading.value = true
     error.value = null
@@ -126,6 +143,7 @@ export const useLeaveApprovalStore = defineStore('leaveApproval', () => {
     fetchLeaveApproval,
     createLeaveApproval,
     updateLeaveApproval,
+    resetTypeConfig,
     deleteLeaveApproval,
   }
 })
