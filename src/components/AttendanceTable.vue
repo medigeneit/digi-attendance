@@ -120,11 +120,11 @@
 
             <!-- Late -->
             <td class="att-cell">
-              <div v-if="log.late_duration" class="flex flex-col items-center gap-0.5">
-                <span class="text-rose-600 font-medium text-[11px]">{{ log.late_duration }}</span>
+              <div v-if="log.late_duration" class="flex items-center justify-center gap-1.5 flex-wrap">
+                <span class="text-rose-600 font-medium text-[11px] whitespace-nowrap">{{ log.late_duration }}</span>
                 <router-link v-if="log.first_short_leave"
                   :to="{ name: 'ShortLeaveShow', params: { id: log.first_short_leave_id } }"
-                  class="att-link" :class="linkColor(log.first_short_leave)">{{ log.first_short_leave }}</router-link>
+                  class="att-link whitespace-nowrap" :class="linkColor(log.first_short_leave)">{{ log.first_short_leave }}</router-link>
                 <router-link v-else-if="applyApplication"
                   :to="{ name: 'ShortLeaveAdd', query: { type: 'Delay', start_time: log.shift_start_time, end_time: log.entry_time } }"
                   class="att-action-btn">Apply</router-link>
@@ -134,11 +134,11 @@
 
             <!-- Early -->
             <td class="att-cell">
-              <div v-if="log.early_leave_duration" class="flex flex-col items-center gap-0.5">
-                <span class="text-amber-600 font-medium text-[11px]">{{ log.early_leave_duration }}</span>
+              <div v-if="log.early_leave_duration" class="flex items-center justify-center gap-1.5 flex-wrap">
+                <span class="text-amber-600 font-medium text-[11px] whitespace-nowrap">{{ log.early_leave_duration }}</span>
                 <router-link v-if="log.last_short_leave"
                   :to="{ name: 'ShortLeaveShow', params: { id: log.last_short_leave_id } }"
-                  class="att-link" :class="linkColor(log.last_short_leave)">{{ log.last_short_leave }}</router-link>
+                  class="att-link whitespace-nowrap" :class="linkColor(log.last_short_leave)">{{ log.last_short_leave }}</router-link>
                 <router-link v-else-if="applyApplication"
                   :to="{ name: 'ShortLeaveAdd', query: { type: 'Early', start_time: log.exit_time, end_time: log.shift_end_time } }"
                   class="att-action-btn">Apply</router-link>
