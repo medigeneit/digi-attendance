@@ -5,17 +5,17 @@
     <div class="att-scroll">
       <table class="att-table" :class="{ 'att-table--balanced': minimalDecorations }">
         <colgroup v-if="minimalDecorations">
-          <col style="width: 7%" />
-          <col style="width: 6%" />
-          <col style="width: 14%" />
-          <col style="width: 7%" />
-          <col style="width: 7%" />
-          <col style="width: 6%" />
-          <col style="width: 11%" />
-          <col style="width: 7%" />
-          <col style="width: 6%" />
-          <col style="width: 6%" />
-          <col style="width: 23%" />
+          <col style="width: 7%" />   <!-- Date -->
+          <col style="width: 5%" />   <!-- Day -->
+          <col style="width: 13%" />  <!-- Shift -->
+          <col style="width: 7%" />   <!-- Entry -->
+          <col style="width: 7%" />   <!-- Exit -->
+          <col style="width: 5%" />   <!-- Hrs -->
+          <col style="width: 9%" />   <!-- OT -->
+          <col style="width: 6%" />   <!-- Appr OT -->
+          <col style="width: 9%" />   <!-- Late ↑ -->
+          <col style="width: 9%" />   <!-- Early ↑ -->
+          <col style="width: 23%" />  <!-- Status -->
         </colgroup>
         <thead>
           <tr class="att-thead top-0">
@@ -27,8 +27,8 @@
             <th class="w-20">Hrs</th>
             <th class="w-20">OT</th>
             <th class="w-20">Appr OT</th>
-            <th class="w-20">Late</th>
-            <th class="w-20">Early</th>
+            <th class="w-32">Late</th>
+            <th class="w-32">Early</th>
             <th class="w-36">Status</th>
           </tr>
         </thead>
@@ -315,7 +315,7 @@ const exchangeTagColor = (s) => ({
 /* ── Table ── */
 .att-table {
   width: 100%;
-  min-width: 860px;
+  min-width: 920px;
   border-collapse: collapse;
   font-size: 11px;
 }
