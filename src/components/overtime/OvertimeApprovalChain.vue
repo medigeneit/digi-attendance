@@ -26,16 +26,31 @@ const STEP_DEFS = [
 const firstOvertime = computed(() => props.overtimes[0] ?? null)
 const rule = computed(() => firstOvertime.value?.user?.overtime_approval ?? null)
 
+// overtime_approval already has fully-resolved values from the backend (configFor + per-overtime
+// assigned_in_charge). Read them directly — no need to re-merge type_configs here.
+const resolvedConfig = computed(() => {
+  const r = rule.value
+  if (!r) return {}
+  return {
+    in_charge_user_id:         r.in_charge_user_id,
+    coordinator_user_id:       r.coordinator_user_id,
+    operational_admin_user_id: r.operational_admin_user_id,
+    recommend_by_user_id:      r.recommend_by_user_id,
+    approved_by_user_id:       r.approved_by_user_id,
+  }
+})
+
 const steps = computed(() => {
   if (!rule.value) return []
-  const r = rule.value
+  const r   = rule.value
+  const cfg = resolvedConfig.value
   return STEP_DEFS
     .map((def) => ({
       ...def,
-      user:   r[`${def.key}_user`],
-      userId: r[`${def.key}_user_id`],
+      userId: cfg[`${def.key}_user_id`] ?? null,
+      user:   r[`${def.key}_user`] ?? null,
     }))
-    .filter((s) => s.userId || s.user?.id)
+    .filter((s) => s.userId)
 })
 
 const stepStatus = (key) => {
@@ -97,35 +112,36 @@ const statusBadgeClass = (key) => {
       <i class="fas fa-sitemap mr-1"></i> Approval Chain
     </p>
 
-    <div class="flex flex-wrap items-start gap-y-3">
+    <div class="flex flex-wrap items-center gap-1.5">
+      <!-- eslint-disable-next-line vue/no-v-for-template-key -->
       <template v-for="(step, index) in steps" :key="step.key">
         <!-- Step card -->
         <div
-          class="flex flex-col items-center text-center rounded-xl border px-3 py-2.5 min-w-[90px] flex-1 transition-all"
+          class="flex flex-col items-center text-center rounded-lg border px-2.5 py-2 w-[100px] shrink-0 transition-all"
           :class="cardClass(step.key)"
         >
           <!-- Circle indicator -->
           <div
-            class="flex items-center justify-center w-7 h-7 rounded-full border-2 text-[11px] font-bold mb-1.5"
+            class="flex items-center justify-center w-6 h-6 rounded-full border-2 text-[10px] font-bold mb-1"
             :class="circleClass(step.key)"
           >
-            <i v-if="statusIcon(step.key)" :class="statusIcon(step.key)" class="text-[10px]"></i>
+            <i v-if="statusIcon(step.key)" :class="statusIcon(step.key)" class="text-[9px]"></i>
             <span v-else>{{ index + 1 }}</span>
           </div>
 
           <!-- Role label -->
-          <p class="text-[10px] font-semibold text-gray-500 uppercase tracking-wide leading-tight">
+          <p class="text-[9px] font-semibold text-gray-500 uppercase tracking-wide leading-tight">
             {{ step.label }}
           </p>
 
           <!-- Person name -->
-          <p class="text-xs font-semibold text-gray-900 leading-tight mt-0.5 max-w-[120px]">
+          <p class="text-[11px] font-semibold text-gray-900 leading-tight mt-0.5 w-full truncate">
             {{ step.user?.name || '—' }}
           </p>
 
           <!-- Status badge -->
           <span
-            class="mt-1.5 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium ring-1 ring-inset whitespace-nowrap"
+            class="mt-1 inline-flex items-center rounded-full px-1.5 py-px text-[9px] font-medium ring-1 ring-inset whitespace-nowrap"
             :class="statusBadgeClass(step.key)"
           >
             {{ statusLabel(step.key) }}
@@ -134,19 +150,18 @@ const statusBadgeClass = (key) => {
           <!-- "Your turn" chip -->
           <span
             v-if="canActAtStep(step.key) && stepStatus(step.key) !== 'approved'"
-            class="mt-1 inline-flex items-center gap-0.5 rounded-full bg-blue-600 px-1.5 py-0.5 text-[10px] font-semibold text-white"
+            class="mt-0.5 inline-flex items-center gap-0.5 rounded-full bg-blue-600 px-1.5 py-px text-[9px] font-semibold text-white"
           >
-            <i class="fas fa-user-check text-[9px]"></i> Your turn
+            <i class="fas fa-user-check text-[8px]"></i> Your turn
           </span>
         </div>
 
         <!-- Arrow connector -->
-        <div
+        <i
           v-if="index < steps.length - 1"
-          class="flex items-start justify-center pt-4 px-1 text-gray-300 self-start"
-        >
-          <i class="fas fa-chevron-right text-xs"></i>
-        </div>
+          :key="`arr-${step.key}`"
+          class="fas fa-chevron-right text-[10px] text-gray-300 shrink-0"
+        ></i>
       </template>
     </div>
   </div>

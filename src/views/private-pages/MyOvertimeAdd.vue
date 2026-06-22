@@ -21,6 +21,7 @@ const todoDateStore = useTodoDateStore()
 
 const loading = ref(false)
 const attendanceLog = ref({})
+const existingOvertime = ref(null)
 
 const HOUR_MIN = 1
 const HOUR_MAX = 24
@@ -104,6 +105,7 @@ const getMonthFromDate = (date) => {
 
 /* ---------------- data fetchers ---------------- */
 const fetchAttendance = async () => {
+  existingOvertime.value = null
   if (!form.value.date) return
   const userId = authStore.user?.id
   if (!userId) return
@@ -113,6 +115,9 @@ const fetchAttendance = async () => {
   try {
     await attendanceStore.getMonthlyAttendanceByShift(userId, month)
     attendanceLog.value = await attendanceStore.getUserDailyLogsByDate(userId, form.value.date)
+    await overtimeStore.fetchUserOvertimes({ month })
+    existingOvertime.value =
+      overtimeStore.overtimes?.find((overtime) => overtime?.date === form.value.date) || null
   } finally {
     loading.value = false
   }
@@ -158,9 +163,19 @@ const goBack = () => {
 }
 
 const submit = async () => {
+  if (existingOvertime.value) return
   await overtimeStore.createOvertime(form.value)
   router.push({ name: 'MyOvertimeList' })
 }
+
+watch(
+  () => overtimeStore.duplicateOvertime,
+  (duplicate) => {
+    if (duplicate?.date === form.value.date) {
+      existingOvertime.value = duplicate
+    }
+  },
+)
 
 /* ---------------- lifecycle ---------------- */
 onMounted(async () => {
@@ -319,10 +334,26 @@ watch(
 
       <hr />
 
+      <div
+        v-if="existingOvertime"
+        class="rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
+      >
+        <div class="font-semibold">Overtime request already exists for this date.</div>
+        <div class="mt-1">
+          Status: <span class="font-medium">{{ existingOvertime.status || 'Pending' }}</span>
+        </div>
+        <RouterLink
+          :to="{ name: 'MyOvertimeShow', params: { id: existingOvertime.id } }"
+          class="mt-2 inline-flex text-sky-700 underline"
+        >
+          View existing request
+        </RouterLink>
+      </div>
+
       <div v-if="overtimeStore.error" class="text-red-500 text-sm">{{ overtimeStore.error }}</div>
 
       <div class="flex justify-center">
-        <button type="submit" class="btn-2">Submit</button>
+        <button type="submit" class="btn-2" :disabled="!!existingOvertime">Submit</button>
       </div>
     </form>
   </div>
