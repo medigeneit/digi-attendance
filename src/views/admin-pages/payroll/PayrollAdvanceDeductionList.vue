@@ -10,12 +10,16 @@ import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import { formatCurrency, toNum } from '@/utils/currency'
 import { usePayrollAdvanceDeductionStore } from '@/stores/payrollAdvanceDeduction'
 import { useUserStore } from '@/stores/user'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const router = useRouter()
 const toast  = useToast()
-const store  = usePayrollAdvanceDeductionStore()
+const store     = usePayrollAdvanceDeductionStore()
 const userStore = useUserStore()
+const authStore = useAuthStore()
+
+const canManage = computed(() => authStore.canFeature('payroll.advance_deductions.manage'))
 const { list, loading, error, pagination } = storeToRefs(store)
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -279,6 +283,7 @@ const saveSingle = async () => {
             <i :class="['far text-[10px] ml-0.5', showFilters ? 'fa-chevron-up' : 'fa-chevron-down']"></i>
           </button>
           <button
+            v-if="canManage"
             type="button"
             class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
             @click="router.push({ name: 'PayrollAdvanceDeductionCreate', query: buildFilterParams() })"
@@ -287,6 +292,7 @@ const saveSingle = async () => {
             Bulk
           </button>
           <button
+            v-if="canManage"
             type="button"
             class="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700"
             @click="openModal"
@@ -488,7 +494,7 @@ const saveSingle = async () => {
                 </div>
                 <p class="mt-3 text-sm font-semibold text-slate-500">No records found</p>
                 <p class="text-xs text-slate-400">Try a different month or status tab</p>
-                <button type="button" class="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-rose-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-rose-700" @click="openModal">
+                <button v-if="canManage" type="button" class="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-rose-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-rose-700" @click="openModal">
                   <i class="far fa-plus"></i> Add Advance
                 </button>
               </td>
