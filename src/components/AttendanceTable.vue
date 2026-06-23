@@ -352,6 +352,12 @@ const exchangeTagColor = (s) => ({
 /* Weekend / Holiday: only the text changes, no row color */
 .att-row--weekend td { color: #94a3b8; }
 .att-row--holiday td { color: #7c3aed22; }
+.att-row--holiday .att-cell--date,
+.att-row--holiday td:nth-child(2),
+.att-row--holiday td:nth-child(n + 4):nth-child(-n + 10),
+.att-row--holiday td:nth-child(n + 4):nth-child(-n + 10) * {
+  color: #000;
+}
 
 /* ── Cells ── */
 .att-cell {
