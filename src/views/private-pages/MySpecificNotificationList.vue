@@ -77,11 +77,31 @@ const specifications = {
   shift_exchange_applications: 'ExchangeShiftShow',
   offday_exchange_applications: 'ExchangeOffdayShow',
   manual_attendance_applications: 'ManualAttendanceShow',
-  overtime_applications: 'MyOvertimeShow',
+  overtime_applications: 'OvertimeList',
   discipline_attachments: 'DisciplineAttachmentDetails',
 }
 
-// DisciplineAttachmentDetails
+const notificationLink = (notification) => {
+  const routeName = specifications[route.params.type]
+
+  if (route.params.type === 'overtime_applications') {
+    return {
+      name: routeName,
+      query: {
+        company_id: notification.company_id,
+        department_id: notification.department_id,
+        line_type: 'all',
+        employee_id: notification.user_id,
+        date: notification.month,
+      },
+    }
+  }
+
+  return {
+    name: routeName,
+    params: { id: getNotificationId(notification) },
+  }
+}
 
 const formattedType = computed(() => {
   if (!route.params.type) return ''
@@ -142,10 +162,7 @@ const formattedType = computed(() => {
               </a>
               <RouterLink
                 v-if="getNotificationId(notification)"
-                :to="{
-                  name: specifications[route.params.type],
-                  params: { id: getNotificationId(notification) },
-                }"
+                :to="notificationLink(notification)"
                 class="btn-1 px-3"
               >
                 <i class="far fa-eye"></i>
