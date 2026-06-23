@@ -319,11 +319,10 @@ const defaultAttendanceMessage = computed(() => {
       </div>
     </section>
     <div class="overview-area text-slate-700">
-      <div class="grid items-stretch gap-2 text-sm lg:grid-cols-[minmax(280px,0.68fr)_minmax(0,1.7fr)]">
+      <div class="overview-grid">
         <!-- LEFT: Employee profile + actions -->
         <section v-if="hasSelection" class="employee-panel ep-flex">
-          <!-- Top: avatar + name -->
-          <div class="flex items-center gap-2.5">
+          <div class="ep-identity">
             <div class="employee-avatar">
               <img v-if="selectedUser?.photo" :src="selectedUser.photo" :alt="selectedUser?.name" />
               <span v-else>{{ employeeInitials }}</span>
@@ -334,7 +333,6 @@ const defaultAttendanceMessage = computed(() => {
             </div>
           </div>
 
-          <!-- Middle: employee meta -->
           <dl class="ep-meta">
             <div><dt>Employee ID</dt><dd class="font-mono">{{ selectedUser?.employee_id || '—' }}</dd></div>
             <div><dt>Phone</dt><dd>{{ selectedUser?.phone || '—' }}</dd></div>
@@ -342,7 +340,6 @@ const defaultAttendanceMessage = computed(() => {
             <div><dt>Joining date</dt><dd>{{ selectedUser?.joining_date || '—' }}</dd></div>
           </dl>
 
-          <!-- Bottom: actions pushed to bottom -->
           <div class="ep-actions">
             <UserMessageSender
               :user-id="employeeMessageUserId"
@@ -370,7 +367,6 @@ const defaultAttendanceMessage = computed(() => {
         <!-- RIGHT: Summary stats -->
         <section v-if="hasSelection" class="summary-panel">
 
-          <!-- Row 1: Title only (no buttons, they're on the left) -->
           <div class="sp-header">
             <div>
               <h2 class="sp-title">Monthly summary</h2>
@@ -379,9 +375,12 @@ const defaultAttendanceMessage = computed(() => {
                 Holiday {{ attendanceStore?.summary?.total_holiday_days || 0 }}d
               </p>
             </div>
+            <div class="sp-rate" :title="`${presentRate}% attendance rate`">
+              <div class="sp-bar"><span class="sp-bar__fill" :style="{ width: `${Math.min(100, presentRate)}%` }"></span></div>
+              <span>{{ presentRate }}%</span>
+            </div>
           </div>
 
-          <!-- Row 2: Day stats grid -->
           <div class="sp-stats">
             <div class="sp-stat">
               <span class="sp-stat__num">{{ attendanceStore?.summary?.total_working_days || 0 }}</span>
@@ -401,13 +400,6 @@ const defaultAttendanceMessage = computed(() => {
             </div>
           </div>
 
-          <!-- Row 3: Progress bar -->
-          <div class="sp-bar-row">
-            <div class="sp-bar"><span class="sp-bar__fill" :style="{ width: `${Math.min(100, presentRate)}%` }"></span></div>
-            <span class="sp-bar__pct">{{ presentRate }}%</span>
-          </div>
-
-          <!-- Row 4: Hour metrics -->
           <div class="sp-hours">
             <div class="sp-hour">
               <span class="sp-hour__lbl">Working / Shift</span>
@@ -477,65 +469,71 @@ const defaultAttendanceMessage = computed(() => {
 .overview-area {
   @apply bg-slate-50/60 p-1.5;
 }
+.overview-grid {
+  display: grid;
+  grid-template-columns: minmax(300px, .72fr) minmax(0, 1.65fr);
+  align-items: stretch;
+  gap: 6px;
+  font-size: 12px;
+}
 .employee-panel, .summary-panel {
-  @apply rounded-lg border border-slate-200 bg-white p-2 shadow-none;
+  @apply rounded-lg border border-slate-200 bg-white shadow-none;
+  min-width: 0;
 }
 
-/* Employee panel flex layout — pushes actions to bottom */
-.ep-flex          { display: flex; flex-direction: column; gap: 8px; }
-.ep-meta          { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; border-top: 1px solid #f1f5f9; padding-top: 8px; font-size: 10px; flex: 1; }
-.ep-meta dt       { color: #94a3b8; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
-.ep-meta dd       { font-weight: 600; color: #334155; margin-top: 1px; }
-.ep-actions       { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; border-top: 1px solid #f1f5f9; padding-top: 8px; margin-top: auto; }
+/* Compact employee card */
+.ep-flex {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "identity actions" "meta meta";
+  align-content: start;
+  column-gap: 8px;
+  padding: 8px;
+}
+.ep-identity { grid-area: identity; display: flex; min-width: 0; align-items: center; gap: 8px; }
+.ep-meta { grid-area: meta; }
+.ep-actions { grid-area: actions; display: flex; align-items: center; gap: 5px; }
 .employee-avatar { @apply flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-slate-100 text-xs font-bold text-slate-700 ring-1 ring-slate-200; }
 .employee-avatar img { @apply h-full w-full object-cover; }
-.employee-panel > div:first-child { @apply gap-2; }
 .employee-panel h2 { @apply text-[13px] leading-tight; }
 .employee-panel p { @apply text-[10px]; }
 .employee-panel dl {
-  @apply mt-1.5 grid grid-cols-4 gap-px overflow-hidden rounded-md border border-slate-100 bg-slate-100 text-[10px];
+  @apply mt-2 grid grid-cols-4 gap-px overflow-hidden rounded-md border border-slate-100 bg-slate-100 text-[10px];
 }
 .employee-panel dl > div {
-  @apply bg-white px-2 py-1;
+  @apply min-w-0 bg-white px-2 py-1;
 }
 .employee-panel dt {
   @apply text-[8px] font-semibold uppercase tracking-wide text-slate-400;
 }
 .employee-panel dd {
-  @apply font-medium leading-tight text-slate-700;
+  @apply truncate font-medium leading-tight text-slate-700;
 }
-/* ── Summary panel inner layout ── */
-
-/* Row 1: header */
-.sp-header        { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.summary-panel { padding: 8px; }
+.sp-header        { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 5px; }
 .sp-title         { font-size: 12px; font-weight: 700; color: #0f172a; line-height: 1.3; }
 .sp-sub           { font-size: 10px; color: #94a3b8; margin-top: 1px; }
-.sp-actions       { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .sp-link-btn      { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; border: 1px solid #e2e8f0; background: white; color: #475569; font-size: 10px; font-weight: 600; text-decoration: none; white-space: nowrap; }
 .sp-link-btn:hover { background: #f8fafc; }
 
-/* Row 2: day stats */
-.sp-stats         { display: grid; grid-template-columns: repeat(4, 1fr); border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; margin-bottom: 6px; }
-.sp-stat          { display: flex; flex-direction: column; align-items: center; padding: 6px 4px; background: white; border-right: 1px solid #f1f5f9; }
+.sp-rate          { display: flex; width: min(28%, 190px); flex-shrink: 0; align-items: center; gap: 7px; color: #64748b; font-size: 9px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.sp-stats         { display: grid; grid-template-columns: repeat(4, 1fr); border-radius: 7px; overflow: hidden; border: 1px solid #e2e8f0; }
+.sp-stat          { display: flex; flex-direction: row; align-items: baseline; justify-content: center; gap: 6px; padding: 5px 4px; background: white; border-right: 1px solid #f1f5f9; }
 .sp-stat:last-child { border-right: none; }
-.sp-stat__num     { font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; color: #1e293b; line-height: 1.1; }
+.sp-stat__num     { font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; color: #1e293b; line-height: 1; }
 .sp-stat__lbl     { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: #94a3b8; margin-top: 2px; }
 .sp-stat--success .sp-stat__num { color: #059669; }
 .sp-stat--warn    .sp-stat__num { color: #d97706; }
 .sp-stat--danger  .sp-stat__num { color: #e11d48; }
 
-/* Row 3: rate bar */
-.sp-bar-row       { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
 .sp-bar           { flex: 1; height: 4px; background: #f1f5f9; border-radius: 999px; overflow: hidden; }
 .sp-bar__fill     { display: block; height: 100%; background: #334155; border-radius: 999px; transition: width .4s ease; }
-.sp-bar__pct      { font-size: 9px; font-weight: 700; font-variant-numeric: tabular-nums; color: #64748b; white-space: nowrap; }
 
-/* Row 4: hour metrics */
-.sp-hours         { display: flex; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 6px; }
-.sp-hour          { display: flex; flex-direction: column; gap: 1px; flex: 1; }
+.sp-hours         { display: flex; align-items: center; padding-top: 5px; }
+.sp-hour          { display: flex; align-items: baseline; gap: 6px; flex: 1; }
 .sp-hour__lbl     { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: #94a3b8; }
-.sp-hour__val     { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; color: #334155; }
-.sp-hour__sep     { width: 1px; height: 28px; background: #e2e8f0; margin: 0 12px; flex-shrink: 0; }
+.sp-hour__val     { font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; color: #334155; }
+.sp-hour__sep     { width: 1px; height: 16px; background: #e2e8f0; margin: 0 10px; flex-shrink: 0; }
 .empty-state { @apply flex min-h-[260px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white text-center; }
 .empty-state > i { @apply mb-3 text-2xl text-slate-300; }
 .empty-state h2 { @apply text-sm font-semibold text-slate-700; }
@@ -571,10 +569,30 @@ const defaultAttendanceMessage = computed(() => {
 .table-body :deep(.att-legend) {
   display: none;
 }
+.table-body :deep(.att-table) {
+  font-size: 12px;
+}
+.table-body :deep(.att-thead th) {
+  font-size: 10px;
+}
+.table-body :deep(.att-cell),
+.table-body :deep(.att-cell--date),
+.table-body :deep(.att-status) {
+  font-size: 11px;
+}
 
 @media (max-width: 640px) {
   .attendance-page { @apply p-2; }
   .month-chip { @apply max-w-[130px] truncate; }
+  .ep-flex { grid-template-areas: "identity identity" "meta meta" "actions actions"; }
+  .ep-actions { padding-top: 6px; }
+  .employee-panel dl { @apply grid-cols-2; }
+  .sp-stat { flex-direction: column; align-items: center; gap: 1px; }
+  .sp-hours { align-items: stretch; }
+  .sp-hour { flex-direction: column; gap: 1px; }
+}
+@media (max-width: 900px) {
+  .overview-grid { grid-template-columns: 1fr; }
 }
 @media (min-width: 640px) {
   .attendance-page { height: calc(100dvh - 88px); }

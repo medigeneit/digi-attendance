@@ -22,6 +22,7 @@ const holidayStore = useHolidayStore()
 const { userLeaveBalance } = storeToRefs(userStore)
 const selectUser = ref('')
 const isDirectApprove = ref(true)
+const skipWplRule = ref(false)
 
 const form = ref({
   last_working_date: '',
@@ -102,6 +103,8 @@ const getNonWorkingType = (day) => {
 }
 
 const wplPeriodMeta = computed(() => {
+  if (skipWplRule.value) return {}
+
   const meta = {}
   let index = 0
 
@@ -262,6 +265,11 @@ watchEffect(async () => {
       const nonWorkingType = getNonWorkingType(day)
       const wplMeta = wplPeriodMeta.value[index]
 
+      if (skipWplRule.value && nonWorkingType) {
+        selectedLeaveTypes.value[index] = nonWorkingType
+        return
+      }
+
       if (nonWorkingType && wplMeta?.typeId) {
         selectedLeaveTypes.value[index] = wplMeta.typeId
         return
@@ -318,6 +326,7 @@ const submitLeaveApplication = async () => {
       leave_days: leaveDaysPayload,
       json_data: leaveDaysJson,
       is_direct_approve: isDirectApprove.value,
+      skip_wpl_rule: skipWplRule.value,
     }
 
     const newApplication = await leaveApplicationStore.storeAdminLeaveApplication(payload)
@@ -432,12 +441,34 @@ const goBack = () => {
             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-3 py-2">
               <div>
                 <h2 class="text-xs font-bold uppercase tracking-wide text-slate-600">Day Classification</h2>
-                <p class="mt-0.5 text-[11px] text-slate-400">WPL 5+ working-day period includes adjacent weekend/holiday in the same WPL period.</p>
+                <p class="mt-0.5 text-[11px] text-slate-400">
+                  {{ skipWplRule
+                    ? 'Admin override active: weekend/holiday will not be converted to WPL.'
+                    : 'WPL 5+ working-day period includes adjacent weekend/holiday in the same WPL period.' }}
+                </p>
               </div>
-              <div class="flex flex-wrap gap-2 text-[11px]">
+              <div class="flex flex-wrap items-center gap-2 text-[11px]">
+                <label
+                  class="inline-flex cursor-pointer items-center gap-2 rounded border px-2.5 py-1 font-bold transition"
+                  :class="skipWplRule
+                    ? 'border-amber-300 bg-amber-50 text-amber-800'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-amber-200'"
+                  title="Admin override: do not include adjacent weekends or holidays in a 5+ day WPL period"
+                >
+                  <input v-model="skipWplRule" type="checkbox" class="h-3.5 w-3.5 rounded text-amber-600" />
+                  Skip WPL rule
+                </label>
                 <span class="rounded bg-slate-100 px-2 py-1 font-semibold text-slate-600">{{ leaveStats.assigned }} assigned</span>
                 <span class="rounded bg-amber-50 px-2 py-1 font-semibold text-amber-700">{{ leaveStats.pending }} pending</span>
               </div>
+            </div>
+
+            <div
+              v-if="skipWplRule"
+              class="border-b border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-medium text-amber-800"
+            >
+              <i class="far fa-exclamation-triangle mr-1 text-amber-600"></i>
+              Admin override enabled. Only explicitly selected WPL working days will be deducted.
             </div>
 
             <div
