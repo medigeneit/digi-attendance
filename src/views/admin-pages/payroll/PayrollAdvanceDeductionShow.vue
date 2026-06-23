@@ -33,7 +33,6 @@ const canReject  = computed(() => Boolean(item.value?.can_verify))
 const canForward = computed(() => {
   if (paymentStatus.value !== 'pending') return false
   if (item.value?.forwarded_by_user_id) return false
-  if (item.value?.created_by_user_id === authStore.user?.id) return false
   const role = String(authStore.user?.role || '')
   // super_admin/developer: must have explicit user-level grant (role bypass prevented)
   if (['super_admin', 'developer'].includes(role)) {
