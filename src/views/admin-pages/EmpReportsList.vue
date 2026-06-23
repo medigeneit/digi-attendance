@@ -24,12 +24,9 @@ const filterStatus       = ref('active')
 const filterSearch       = ref('')
 const filterJoiningYear  = ref('')
 const filterHasBlood     = ref(false)
-const sortBy             = ref('grade_joining_department')
-const sortDir            = ref('asc')
+const sortDir = ref('asc')
 
 const SORT_OPTIONS = [
-  { value: 'grade_joining_department', label: 'Grade + Joining Date + Department' },
-  { value: 'grade_joining', label: 'Grade + Joining Date' },
   { value: 'grade', label: 'Grade' },
   { value: 'joining_date', label: 'Joining Date' },
   { value: 'department', label: 'Department' },
@@ -41,6 +38,40 @@ const SORT_OPTIONS = [
   { value: 'status', label: 'Status' },
   { value: 'last_working_date', label: 'Last Working Date' },
 ]
+const selectedSortOptions = ref([
+  SORT_OPTIONS.find((option) => option.value === 'grade'),
+  SORT_OPTIONS.find((option) => option.value === 'joining_date'),
+  SORT_OPTIONS.find((option) => option.value === 'department'),
+])
+const sortMenuOpen = ref(false)
+
+const isSortSelected = (value) =>
+  selectedSortOptions.value.some((option) => option.value === value)
+
+const toggleSortOption = (option) => {
+  const index = selectedSortOptions.value.findIndex((item) => item.value === option.value)
+  if (index >= 0) {
+    if (selectedSortOptions.value.length === 1) return
+    selectedSortOptions.value.splice(index, 1)
+    return
+  }
+  selectedSortOptions.value.push(option)
+}
+
+const moveSortOption = (index, offset) => {
+  const target = index + offset
+  if (target < 0 || target >= selectedSortOptions.value.length) return
+  const next = [...selectedSortOptions.value]
+  ;[next[index], next[target]] = [next[target], next[index]]
+  selectedSortOptions.value = next
+}
+
+const resetSortOptions = () => {
+  selectedSortOptions.value = ['grade', 'joining_date', 'department']
+    .map((value) => SORT_OPTIONS.find((option) => option.value === value))
+  sortDir.value = 'asc'
+  sortMenuOpen.value = false
+}
 
 // ─── Year options ─────────────────────────────────────────────────────────────
 const currentYear   = new Date().getFullYear()
@@ -176,7 +207,7 @@ function cellValue(row, key, idx) {
 // ─── Build API params ─────────────────────────────────────────────────────────
 function buildParams() {
   const p = {
-    sort_by:  sortBy.value,
+    sort_by:  selectedSortOptions.value.map((option) => option.value),
     sort_dir: sortDir.value,
   }
   const lt = filterLineType.value
@@ -192,6 +223,7 @@ function buildParams() {
 
   const st = filterStatus.value
   if (st) p.status = st
+  else p.include_inactive = 1
 
   const q = filterSearch.value
   if (q) p.q = q
@@ -231,11 +263,12 @@ function applyPreset(preset) {
 async function downloadPreset(preset) {
   if (!canExportReports.value) return
   const params = {
-    sort_by: sortBy.value,
+    sort_by: selectedSortOptions.value.map((option) => option.value),
     sort_dir: sortDir.value,
   }
   if (preset.p.line_type && preset.p.line_type !== 'all') params.line_type = preset.p.line_type
-  if (preset.p.status)   params.status    = preset.p.status
+  if (preset.p.status) params.status = preset.p.status
+  else params.include_inactive = 1
   if (preset.key === 'year_joining' && presetYearJoining.value) params.joining_year = presetYearJoining.value
   if (preset.p.has_blood) params.has_blood = 1
   await empStore.downloadUsersExcel(params, `${preset.key}-report.xlsx`)
@@ -295,8 +328,8 @@ watch(filterStatus,      schedulePreview)
 watch(filterJoiningYear, schedulePreview)
 watch(filterHasBlood,    schedulePreview)
 watch(filterSearch,      schedulePreview)
-watch(sortBy,            schedulePreview)
-watch(sortDir,           schedulePreview)
+watch(selectedSortOptions, schedulePreview, { deep: true })
+watch(sortDir,             schedulePreview)
 watch(presetYearJoining, (year) => {
   if (activePresetKey.value !== 'year_joining') return
   filterJoiningYear.value = year || ''
@@ -461,27 +494,123 @@ onMounted(() => {
 
           <!-- Sorting -->
           <div class="space-y-2 rounded-md border border-slate-100 bg-slate-50 p-2">
-            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Sorting</div>
-            <div>
-              <label class="mb-0.5 block text-[11px] text-slate-500">Sort By</label>
-              <select
-                v-model="sortBy"
-                class="w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400"
+            <div class="flex items-center justify-between gap-2">
+              <div>
+                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Sorting</div>
+                <div class="mt-0.5 text-[10px] text-slate-400">Top field has highest priority</div>
+              </div>
+              <button
+                type="button"
+                class="rounded px-1.5 py-0.5 text-[10px] font-semibold text-blue-600 hover:bg-blue-50"
+                @click="resetSortOptions"
               >
-                <option v-for="option in SORT_OPTIONS" :key="option.value" :value="option.value">
-                  {{ option.label }}
-                </option>
-              </select>
+                Reset
+              </button>
             </div>
+
             <div>
-              <label class="mb-0.5 block text-[11px] text-slate-500">Direction</label>
-              <select
-                v-model="sortDir"
-                class="w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400"
+              <label class="mb-1 block text-[11px] font-medium text-slate-600">Sort By</label>
+              <button
+                type="button"
+                class="flex w-full items-center gap-2 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-left shadow-sm transition hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                :aria-expanded="sortMenuOpen"
+                @click="sortMenuOpen = !sortMenuOpen"
               >
-                <option value="asc">Ascending</option>
-                <option value="desc">Descending</option>
-              </select>
+                <span class="min-w-0 flex-1 truncate text-[11px] text-slate-500">Select sort fields</span>
+                <span class="rounded-full bg-blue-50 px-1.5 py-0.5 text-[9px] font-bold text-blue-700">
+                  {{ selectedSortOptions.length }} selected
+                </span>
+                <i class="far fa-chevron-down text-[10px] text-slate-400 transition" :class="{ 'rotate-180': sortMenuOpen }"></i>
+              </button>
+
+              <div class="mt-1.5 flex flex-wrap gap-1">
+                <span
+                  v-for="(option, index) in selectedSortOptions"
+                  :key="`chip-${option.value}`"
+                  class="inline-flex max-w-full items-center gap-1 rounded-md border border-blue-100 bg-blue-50 px-1.5 py-1 text-[10px] font-medium text-slate-700"
+                >
+                  <span class="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded bg-blue-600 font-mono text-[8px] font-bold text-white">
+                    {{ index + 1 }}
+                  </span>
+                  <span class="truncate">{{ option.label }}</span>
+                  <button
+                    type="button"
+                    class="ml-0.5 text-slate-400 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-30"
+                    :disabled="selectedSortOptions.length === 1"
+                    title="Remove sort field"
+                    @click="toggleSortOption(option)"
+                  >
+                    <i class="far fa-times text-[8px]"></i>
+                  </button>
+                </span>
+              </div>
+
+              <div v-if="sortMenuOpen" class="mt-1 overflow-hidden rounded-md border border-slate-200 bg-white shadow-lg">
+                <div class="border-b border-slate-100 bg-slate-50 px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                  Selected priority
+                </div>
+                <div class="divide-y divide-slate-100">
+                  <div
+                    v-for="(option, index) in selectedSortOptions"
+                    :key="`selected-${option.value}`"
+                    class="flex items-center gap-1.5 px-2 py-1.5"
+                  >
+                    <span class="flex h-4 w-4 shrink-0 items-center justify-center rounded bg-blue-600 font-mono text-[9px] font-bold text-white">
+                      {{ index + 1 }}
+                    </span>
+                    <span class="min-w-0 flex-1 truncate text-[11px] font-medium text-slate-700">{{ option.label }}</span>
+                    <button type="button" class="sort-icon-btn" :disabled="index === 0" title="Move up" @click="moveSortOption(index, -1)">
+                      <i class="far fa-arrow-up"></i>
+                    </button>
+                    <button type="button" class="sort-icon-btn" :disabled="index === selectedSortOptions.length - 1" title="Move down" @click="moveSortOption(index, 1)">
+                      <i class="far fa-arrow-down"></i>
+                    </button>
+                    <button
+                      type="button"
+                      class="sort-icon-btn hover:!text-rose-600"
+                      :disabled="selectedSortOptions.length === 1"
+                      title="Remove"
+                      @click="toggleSortOption(option)"
+                    >
+                      <i class="far fa-times"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="max-h-44 overflow-y-auto border-t border-slate-200 p-1">
+                  <button
+                    v-for="option in SORT_OPTIONS"
+                    :key="option.value"
+                    type="button"
+                    class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[11px] hover:bg-slate-50"
+                    @click="toggleSortOption(option)"
+                  >
+                    <span
+                      class="flex h-4 w-4 items-center justify-center rounded border"
+                      :class="isSortSelected(option.value) ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-300 bg-white text-transparent'"
+                    >
+                      <i class="far fa-check text-[9px]"></i>
+                    </span>
+                    <span :class="isSortSelected(option.value) ? 'font-semibold text-slate-800' : 'text-slate-600'">{{ option.label }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label class="mb-1 block text-[11px] font-medium text-slate-600">Direction</label>
+              <div class="grid grid-cols-2 rounded-md border border-slate-300 bg-white p-0.5">
+                <button
+                  v-for="direction in [{ value: 'asc', label: 'Ascending', icon: 'fa-arrow-up' }, { value: 'desc', label: 'Descending', icon: 'fa-arrow-down' }]"
+                  :key="direction.value"
+                  type="button"
+                  class="flex items-center justify-center gap-1 rounded px-1.5 py-1 text-[10px] font-semibold transition"
+                  :class="sortDir === direction.value ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50'"
+                  @click="sortDir = direction.value"
+                >
+                  <i class="far" :class="direction.icon"></i>{{ direction.label }}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -632,6 +761,10 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.sort-icon-btn {
+  @apply flex h-5 w-5 shrink-0 items-center justify-center rounded text-[9px] text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-25;
+}
+
 @media print {
   .print\:hidden { display: none !important; }
   .print\:block  { display: block !important; }

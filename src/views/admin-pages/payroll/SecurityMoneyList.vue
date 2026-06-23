@@ -394,7 +394,6 @@ onMounted(fetchList)
         <thead>
           <tr>
             <th class="employee-col text-left">Employee</th>
-            <th class="text-left">Reference</th>
             <th class="text-right">Principal</th>
             <th class="text-right">Per month</th>
             <th class="min-w-[170px] text-left">Recovery progress</th>
@@ -418,7 +417,6 @@ onMounted(fetchList)
                 </div>
               </div>
             </td>
-            <td><p class="max-w-[160px] truncate font-medium text-slate-700" :title="item.title">{{ item.title }}</p><p class="font-mono text-[10px] text-slate-400">#SM-{{ item.id }}</p></td>
             <td class="money-cell">{{ formatCurrency(item.amount) }}</td>
             <td class="money-cell text-slate-600">{{ formatCurrency(item.installment_amount) }}</td>
             <td>
@@ -441,7 +439,7 @@ onMounted(fetchList)
             </td>
           </tr>
           <tr v-if="!list.length">
-            <td colspan="9" class="px-3 py-8 text-center text-slate-400">No security money records found.</td>
+            <td colspan="8" class="px-3 py-8 text-center text-slate-400">No security money records found.</td>
           </tr>
         </tbody>
       </table>
