@@ -92,7 +92,6 @@ const notificationLink = (notification) => {
         department_id: notification.department_id,
         line_type: 'all',
         employee_id: notification.user_id,
-        date: notification.month,
       },
     }
   }
