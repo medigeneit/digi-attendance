@@ -79,8 +79,8 @@ const initials = computed(() =>
           <span v-else class="text-xs font-bold text-slate-600">{{ initials }}</span>
         </div>
         <div class="min-w-0">
-          <p class="truncate text-sm font-semibold text-slate-900 leading-tight">{{ u.name || '…' }}</p>
-          <p class="truncate text-[10px] text-slate-400">
+          <p class="truncate text-base font-semibold text-slate-900 leading-tight">{{ u.name || '…' }}</p>
+          <p class="truncate text-xs text-slate-400">
             {{ u.designation?.title }}<template v-if="u.designation?.title && u.department?.name"> · </template>{{ u.department?.name }}
           </p>
         </div>
@@ -239,7 +239,7 @@ const initials = computed(() =>
   border-radius: 7px;
   background: #1d4ed8;
   color: white;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   border: none;
   cursor: pointer;
@@ -263,7 +263,7 @@ const initials = computed(() =>
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .08em;
@@ -282,14 +282,14 @@ const initials = computed(() =>
   padding: 4px 14px;
 }
 .my-att__stat-val {
-  font-size: 17px;
+  font-size: 19px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: #0f172a;
   line-height: 1.2;
 }
 .my-att__stat-lbl {
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: .06em;
@@ -323,7 +323,7 @@ const initials = computed(() =>
   transition: width .4s ease;
 }
 .my-att__rate-label {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: #64748b;
@@ -342,7 +342,7 @@ const initials = computed(() =>
   align-items: center;
   gap: 6px;
   padding: 7px 12px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   color: #64748b;
   cursor: pointer;
@@ -366,14 +366,14 @@ const initials = computed(() =>
   padding: 6px 10px;
 }
 .my-att__meta-grid span {
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: .06em;
   color: #94a3b8;
 }
 .my-att__meta-grid strong {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   color: #334155;
 }
@@ -402,6 +402,17 @@ const initials = computed(() =>
   min-height: 0;
   height: 100%;
   flex-direction: column;
+}
+.my-att__table-wrap :deep(.att-table) {
+  font-size: 14px;
+}
+.my-att__table-wrap :deep(.att-thead th) {
+  font-size: 12px;
+}
+.my-att__table-wrap :deep(.att-cell),
+.my-att__table-wrap :deep(.att-cell--date),
+.my-att__table-wrap :deep(.att-status) {
+  font-size: 13px;
 }
 
 @media (min-width: 640px) {
