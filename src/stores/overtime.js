@@ -64,8 +64,13 @@ export const useOvertimeStore = defineStore('overtime', () => {
     error.value = null
     try {
       const response = await apiClient.get(`/${overtimeApplicationId}/user-overtimes`)
-      overtimes.value = response.data
-      selectedMonth.value = new Date(overtimes.value[0].date).toISOString().substring(0, 7)
+      const responseData = response.data?.data ?? response.data
+      overtimes.value = Array.isArray(responseData) ? responseData : []
+
+      const firstOvertimeDate = overtimes.value[0]?.date
+      if (firstOvertimeDate) {
+        selectedMonth.value = String(firstOvertimeDate).substring(0, 7)
+      }
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch overtimes'
       console.error('Error fetching overtimes:', err)
