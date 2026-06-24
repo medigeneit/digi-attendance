@@ -695,6 +695,40 @@ const router = createRouter({
         },
 
         {
+          path: '/sms-campaigns',
+          name: 'SmsCampaignList',
+          component: () => import('@/views/admin-pages/SmsCampaignList.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            feature: 'sms.view',
+            title: 'Bulk SMS Campaigns',
+          },
+        },
+        {
+          path: '/sms-campaigns-add',
+          name: 'SmsCampaignAdd',
+          component: () => import('@/views/admin-pages/SmsCampaignAdd.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            feature: 'sms.manage',
+            title: 'New Bulk SMS Campaign',
+          },
+        },
+        {
+          path: '/sms-campaigns/:id',
+          name: 'SmsCampaignShow',
+          component: () => import('@/views/admin-pages/SmsCampaignShow.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            feature: 'sms.view',
+            title: 'Bulk SMS Campaign',
+          },
+        },
+
+        {
           path: '/reports',
           name: 'ReportView',
           component: () => import('@/views/admin-pages/ReportView.vue'),

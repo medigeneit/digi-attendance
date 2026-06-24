@@ -274,6 +274,7 @@ const rowStatus = (log) => {
 
 const rowMod = (log) => ({
   'att-row--today':   isToday(log.date),
+  'att-row--absent':  isStatusAbsent(log),
   'att-row--weekend': !isToday(log.date) && isStatusWeekend(log),
   'att-row--holiday': !isToday(log.date) && isStatusHoliday(log),
 })
@@ -345,12 +346,18 @@ const exchangeTagColor = (s) => ({
   border-bottom: 1px solid #f1f5f9;
   transition: background .1s;
 }
-.att-row:hover        { background: #f8fafc; }
+.att-row:hover        { background: #cacdcf; }
 .att-row--today       { background: #eff6ff; border-bottom-color: #bfdbfe; }
-.att-row--today:hover { background: #dbeafe; }
+.att-row--today:hover { background: #528cd8; }
 /* Weekend / Holiday: only the text changes, no row color */
 .att-row--weekend td { color: #94a3b8; }
 .att-row--holiday td { color: #7c3aed22; }
+.att-row--holiday .att-cell--date,
+.att-row--holiday td:nth-child(2),
+.att-row--holiday td:nth-child(n + 4):nth-child(-n + 10),
+.att-row--holiday td:nth-child(n + 4):nth-child(-n + 10) * {
+  color: #000;
+}
 
 /* ── Cells ── */
 .att-cell {
@@ -373,12 +380,11 @@ const exchangeTagColor = (s) => ({
   border-left: 3px solid transparent;
   white-space: nowrap;
 }
-.att-cell--date[data-s="present"]  { border-left-color: #10b981; }
-.att-cell--date[data-s="absent"]   { border-left-color: #f43f5e; }
-.att-cell--date[data-s="today"]    { border-left-color: #3b82f6; }
+/* .att-cell--date[data-s="present"]  { border-left-color: #10b981; } */
+/* .att-cell--date[data-s="today"]    { border-left-color: #3b82f6; }
 .att-cell--date[data-s="weekend"]  { border-left-color: #cbd5e1; }
 .att-cell--date[data-s="holiday"]  { border-left-color: #8b5cf6; }
-.att-cell--date[data-s="leave"]    { border-left-color: #f59e0b; }
+.att-cell--date[data-s="leave"]    { border-left-color: #f59e0b; } */
 
 /* ── Status text — no pill/badge, just colored text ── */
 .att-status {
@@ -389,6 +395,11 @@ const exchangeTagColor = (s) => ({
 .att-status--present { color: #059669; }
 .att-status--absent  { color: #e11d48; }
 .att-status--dim     { color: #94a3b8; font-weight: 500; }
+
+.att-row--absent td,
+.att-row--absent td * {
+  color: #f43f5e;
+}
 .att-status--holiday { color: #7c3aed; font-weight: 500; }
 .att-status--leave   { color: #d97706; font-weight: 600; }
 
