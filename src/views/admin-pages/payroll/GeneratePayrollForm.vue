@@ -600,7 +600,7 @@ const goToBatch = () => {
                     @click="router.back()"
                   >Cancel</button>
                   <button
-                    class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50"
+                    class="btn-2 rounded-lg py-1"
                     :disabled="loading"
                     @click="handlePreview"
                   >
@@ -613,7 +613,7 @@ const goToBatch = () => {
                     :disabled="loading"
                     @click="generateDoctorOnly"
                   ><i class="far fa-user-md text-[10px]"></i> Gen Doctor</button>
-                  <button
+                  <!-- <button
                     v-else
                     class="inline-flex h-8 items-center gap-1.5 rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-50"
                     :disabled="loading || hasSnapshotIssue"
@@ -621,7 +621,7 @@ const goToBatch = () => {
                   >
                     <i class="far text-[10px]" :class="loading ? 'fa-spinner fa-spin' : 'fa-check-circle'"></i>
                     Generate
-                  </button>
+                  </button> -->
                 </div>
               </div>
 
