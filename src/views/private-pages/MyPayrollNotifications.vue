@@ -21,6 +21,9 @@ const actioningId   = ref(null)
 // Per-card note state: { [notifId]: { open: bool, text: string } }
 const noteState = ref({})
 
+// Per-card forward note state (separate from approve note)
+const forwardNoteState = ref({})
+
 const type = computed(() => route.query.type || '')
 
 const title = computed(() => {
@@ -29,10 +32,10 @@ const title = computed(() => {
   return 'Payroll'
 })
 
-const isAdvanceDeduction = (n) => n.notification_type === 'payroll_advance_deduction_created'
-const isAdjustment       = (n) => n.notification_type === 'payroll_adjustment_created'
+const isAdvanceDeduction = (n) => n.notification_type?.startsWith('payroll_advance_deduction')
+const isAdjustment       = (n) => n.notification_type?.startsWith('payroll_adjustment')
 const isForwarded        = (n) => n.notification_type?.includes('forwarded')
-const entryId = (n) => isAdvanceDeduction(n) ? n.advance_deduction_id : n.adjustment_id
+const entryId = (n) => n.advance_deduction_id || (isAdjustment(n) ? n.adjustment_id : null)
 
 const showRoute = (n) => isAdvanceDeduction(n)
   ? { name: 'PayrollAdvanceDeductionShow', params: { id: entryId(n) } }
@@ -70,6 +73,33 @@ const toggleNote = (notifId) => {
 }
 const getNote = (notifId) => noteState.value[notifId]?.text || ''
 
+// ── Forward Advance Deduction ──────────────────────────────────────────────
+const toggleForwardNote = (notifId) => {
+  if (!forwardNoteState.value[notifId]) forwardNoteState.value[notifId] = { open: false, text: '' }
+  forwardNoteState.value[notifId].open = !forwardNoteState.value[notifId].open
+  // Close approve note if open
+  if (noteState.value[notifId]?.open) noteState.value[notifId].open = false
+}
+const getForwardNote = (notifId) => forwardNoteState.value[notifId]?.text || ''
+
+const forwardAdvanceDeduction = async (n) => {
+  const id = entryId(n)
+  if (!id) return
+  actioningId.value = n.id
+  try {
+    const note = getForwardNote(n.id)
+    await apiClient.patch(`/payroll-advance-deductions/${id}/forward`, {
+      note: note.trim() || undefined,
+    })
+    toast.success('Forwarded successfully.')
+    await removeAndRead(n)
+  } catch (e) {
+    toast.error(e.response?.data?.message || e.message || 'Forward failed.')
+  } finally {
+    actioningId.value = null
+  }
+}
+
 // ── Approve Advance Deduction ──────────────────────────────────────────────
 const approveAdvanceDeduction = async (n) => {
   const id = entryId(n)
@@ -82,6 +112,25 @@ const approveAdvanceDeduction = async (n) => {
     await removeAndRead(n)
   } catch (e) {
     toast.error(e.message || 'Approval failed.')
+  } finally {
+    actioningId.value = null
+  }
+}
+
+// ── Forward Adjustment ─────────────────────────────────────────────────────
+const forwardAdjustment = async (n) => {
+  const id = entryId(n)
+  if (!id) return
+  actioningId.value = n.id
+  try {
+    const note = getForwardNote(n.id)
+    await apiClient.patch(`/payroll-adjustments/${id}/forward`, {
+      note: note.trim() || undefined,
+    })
+    toast.success('Forwarded successfully.')
+    await removeAndRead(n)
+  } catch (e) {
+    toast.error(e.response?.data?.message || e.message || 'Forward failed.')
   } finally {
     actioningId.value = null
   }
@@ -200,54 +249,56 @@ onMounted(async () => {
           >
             <div class="flex items-start gap-3 px-4 py-3">
 
-              <!-- Icon -->
-              <div
-                class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm"
-                :class="isAdvanceDeduction(n) ? 'bg-rose-100 text-rose-600' : 'bg-indigo-100 text-indigo-600'"
-              >
-                <i :class="isAdvanceDeduction(n) ? 'far fa-money-bill-alt' : 'far fa-sliders-h'"></i>
-              </div>
-
+    
               <!-- Body -->
               <div class="min-w-0 flex-1 space-y-1">
 
-                <!-- Top: badge + time -->
+                <!-- Top: badge + employee info + time -->
                 <div class="flex items-center justify-between gap-2">
-                  <div class="flex items-center gap-1.5">
-                    <span
-                      class="rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide"
-                      :class="isAdvanceDeduction(n) ? 'bg-rose-100 text-rose-700' : 'bg-indigo-100 text-indigo-700'"
-                    >
-                      {{ isAdvanceDeduction(n) ? 'Advance' : 'Adjustment' }}
-                    </span>
-                    <span v-if="isForwarded(n)" class="rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide bg-amber-100 text-amber-700">
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <span v-if="isForwarded(n)" class="shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide bg-amber-100 text-amber-700">
                       Forwarded
                     </span>
-                    <span v-if="!n.read_at" class="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
+                    <!-- Employee info -->
+                    <span v-if="n.employee_name" class="flex min-w-0 items-center gap-1 pl-0.5">
+                      <span class="truncate text-[14px] font-semibold text-slate-700">{{ n.employee_name }}</span>
+                    </span>
                   </div>
                   <span class="shrink-0 text-[10px] text-slate-400">{{ formatDate(n.created_at) }}</span>
                 </div>
 
-                <!-- Message -->
-                <p class="text-[12px] text-slate-700 leading-snug">{{ n.message }}</p>
-
-                <!-- Meta chips -->
-                <div class="flex flex-wrap items-center gap-2 text-[10px] text-slate-500">
-                  <span v-if="n.employee_name" class="flex items-center gap-1">
-                    <i class="far fa-user text-slate-400"></i>{{ n.employee_name }}
+                <!-- Amount highlight -->
+                <div v-if="n.amount !== undefined" class="flex items-center gap-2">
+                  <span class="inline-flex items-center gap-1.5 rounded-lg bg-rose-50 px-2.5 py-1 text-sm font-bold text-rose-700 ring-1 ring-rose-200">
+                    <i class="far fa-money-bill-alt text-[11px]"></i>
+                    {{ formatCurrency(n.amount) }}
                   </span>
-                  <span v-if="n.amount !== undefined" class="flex items-center gap-1 font-mono font-semibold text-slate-700">
-                    <i class="far fa-money-bill-alt text-slate-400"></i>{{ formatCurrency(n.amount) }}
-                  </span>
-                  <span v-if="n.carry_on_month || n.ref_month" class="flex items-center gap-1">
-                    <i class="far fa-calendar-alt text-slate-400"></i>{{ n.carry_on_month || n.ref_month }}
-                  </span>
-                  <span v-if="n.actor_name" class="flex items-center gap-1">
-                    <i class="far fa-user-edit text-slate-400"></i>{{ n.actor_name }}
+                  <span v-if="n.carry_on_month || n.ref_month" class="flex items-center gap-1 text-[10px] text-slate-500">
+                    <i class="far fa-calendar-alt"></i>{{ n.carry_on_month || n.ref_month }}
                   </span>
                 </div>
 
-                <!-- Note input (inline, optional) -->
+                <!-- Message -->
+                <p class="text-[12px] text-slate-600 leading-snug">{{ n.message }}</p>
+
+                <!-- Meta: actor only -->
+                <div v-if="n.actor_name" class="flex items-center gap-1 text-[10px] text-slate-400">
+                  <i class="far fa-user-edit"></i>{{ n.actor_name }}
+                </div>
+
+                <!-- Forward note input (inline, optional) -->
+                <div v-if="forwardNoteState[n.id]?.open" class="pt-1">
+                  <input
+                    v-model="forwardNoteState[n.id].text"
+                    type="text"
+                    placeholder="Add forward note (optional)…"
+                    class="w-full rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-100"
+                    @keydown.enter="forwardAdvanceDeduction(n)"
+                    @keydown.esc="forwardNoteState[n.id].open = false"
+                  />
+                </div>
+
+                <!-- Approve note input (inline, optional) -->
                 <div v-if="noteState[n.id]?.open" class="pt-1">
                   <input
                     v-model="noteState[n.id].text"
@@ -270,12 +321,45 @@ onMounted(async () => {
                     <i class="far fa-file-alt text-[9px]"></i> Show
                   </RouterLink>
 
-                  <!-- Approve -->
-                  <template v-if="isAdvanceDeduction(n) && entryId(n)">
+                  <!-- Forward (advance deduction, not yet forwarded, not a forwarded-type notification) -->
+                  <template v-if="isAdvanceDeduction(n) && entryId(n) && !n.forwarded_by_user_id && !isForwarded(n)">
+                    <button
+                      v-if="!forwardNoteState[n.id]?.open"
+                      type="button"
+                      :disabled="actioningId === n.id"
+                      class="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[11px] font-semibold text-indigo-700 hover:bg-indigo-100 transition disabled:opacity-50"
+                      @click="toggleForwardNote(n.id)"
+                    >
+                      <i class="far fa-share text-[9px]"></i> Forward
+                    </button>
+                    <template v-else>
+                      <button
+                        type="button"
+                        :disabled="actioningId === n.id"
+                        class="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-indigo-700 transition disabled:opacity-50"
+                        @click="forwardAdvanceDeduction(n)"
+                      >
+                        <i :class="['far text-[9px]', actioningId === n.id ? 'fa-spinner fa-spin' : 'fa-share']"></i>
+                        {{ actioningId === n.id ? 'Forwarding…' : 'Confirm Forward' }}
+                      </button>
+                      <button
+                        type="button"
+                        :disabled="actioningId === n.id"
+                        class="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[11px] text-slate-500 hover:bg-slate-50 transition disabled:opacity-40"
+                        @click="forwardNoteState[n.id].open = false"
+                      >
+                        Cancel
+                      </button>
+                    </template>
+                  </template>
+
+                  <!-- Approve (after forwarded, or forwarded-type notification) -->
+                  <template v-if="isAdvanceDeduction(n) && entryId(n) && (n.forwarded_by_user_id || isForwarded(n))">
                     <button
                       v-if="!noteState[n.id]?.open"
                       type="button"
-                      class="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100 transition"
+                      :disabled="actioningId === n.id"
+                      class="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100 transition disabled:opacity-50"
                       @click="toggleNote(n.id)"
                     >
                       <i class="far fa-check-circle text-[9px]"></i> Approve
@@ -288,18 +372,53 @@ onMounted(async () => {
                         @click="approveAdvanceDeduction(n)"
                       >
                         <i :class="['far text-[9px]', actioningId === n.id ? 'fa-spinner fa-spin' : 'fa-check']"></i>
-                        {{ actioningId === n.id ? 'Approving…' : 'Confirm' }}
+                        {{ actioningId === n.id ? 'Approving…' : 'Confirm Approve' }}
                       </button>
-                      <button type="button"
-                        class="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[11px] text-slate-500 hover:bg-slate-50 transition"
-                        @click="noteState[n.id].open = false">
+                      <button
+                        type="button"
+                        :disabled="actioningId === n.id"
+                        class="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[11px] text-slate-500 hover:bg-slate-50 transition disabled:opacity-40"
+                        @click="noteState[n.id].open = false"
+                      >
                         Cancel
                       </button>
                     </template>
                   </template>
 
-                  <!-- Verify -->
-                  <template v-if="isAdjustment(n) && entryId(n)">
+                  <!-- Forward (adjustment, not yet forwarded) -->
+                  <template v-if="isAdjustment(n) && entryId(n) && !n.forwarded_by_user_id && !isForwarded(n)">
+                    <button
+                      v-if="!forwardNoteState[n.id]?.open"
+                      type="button"
+                      :disabled="actioningId === n.id"
+                      class="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[11px] font-semibold text-indigo-700 hover:bg-indigo-100 transition disabled:opacity-50"
+                      @click="toggleForwardNote(n.id)"
+                    >
+                      <i class="far fa-share text-[9px]"></i> Forward
+                    </button>
+                    <template v-else>
+                      <button
+                        type="button"
+                        :disabled="actioningId === n.id"
+                        class="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-indigo-700 transition disabled:opacity-50"
+                        @click="forwardAdjustment(n)"
+                      >
+                        <i :class="['far text-[9px]', actioningId === n.id ? 'fa-spinner fa-spin' : 'fa-share']"></i>
+                        {{ actioningId === n.id ? 'Forwarding…' : 'Confirm Forward' }}
+                      </button>
+                      <button
+                        type="button"
+                        :disabled="actioningId === n.id"
+                        class="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[11px] text-slate-500 hover:bg-slate-50 transition disabled:opacity-40"
+                        @click="forwardNoteState[n.id].open = false"
+                      >
+                        Cancel
+                      </button>
+                    </template>
+                  </template>
+
+                  <!-- Verify (only after forwarded) -->
+                  <template v-if="isAdjustment(n) && entryId(n) && (n.forwarded_by_user_id || isForwarded(n))">
                     <button
                       v-if="!noteState[n.id]?.open"
                       type="button"

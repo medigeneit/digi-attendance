@@ -73,13 +73,18 @@ const load = async () => {
 }
 
 const forwardBusy = ref(false)
+const showForwardModal = ref(false)
+const forwardNote = ref('')
 const forwardAdjustment = async () => {
-  if (!confirm('Forward this adjustment?')) return
   forwardBusy.value = true
   try {
     const { default: apiClient } = await import('@/axios')
-    await apiClient.patch(`/payroll-adjustments/${props.id}/forward`)
+    await apiClient.patch(`/payroll-adjustments/${props.id}/forward`, {
+      note: forwardNote.value.trim() || undefined,
+    })
     toast.success('Forwarded successfully.')
+    forwardNote.value = ''
+    showForwardModal.value = false
     await load()
   } catch (e) {
     toast.error(e.response?.data?.message || e.message || 'Forward failed.')
@@ -222,12 +227,11 @@ onMounted(load)
         <div class="no-print mt-4 flex flex-wrap gap-2">
           <button
             v-if="canForward"
-            class="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100"
+            class="pulse-indigo inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100"
             :disabled="forwardBusy"
-            @click="forwardAdjustment"
+            @click="showForwardModal = true"
           >
-            <i :class="['far text-[10px]', forwardBusy ? 'fa-spinner fa-spin' : 'fa-share']"></i>
-            {{ forwardBusy ? 'Forwarding...' : 'Forward' }}
+            <i class="far fa-share text-[10px]"></i> Forward
           </button>
           <button
             v-if="canVerify && ['pending', 'verified'].includes(item.status) && item.forwarded_by_user_id"
@@ -295,6 +299,30 @@ onMounted(load)
 
     <div v-else class="rounded-xl border border-dashed border-slate-200 bg-white p-10 text-center text-slate-500">
       Adjustment not found.
+    </div>
+
+    <div v-if="showForwardModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4">
+      <div class="w-full max-w-lg rounded-3xl bg-white p-5 shadow-2xl">
+        <h3 class="text-lg font-semibold text-slate-900">Forward Adjustment</h3>
+        <p class="mt-1 text-sm text-slate-500">Optionally add a note before forwarding.</p>
+        <textarea
+          v-model="forwardNote"
+          rows="4"
+          class="mt-4 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-100"
+          placeholder="Note (optional)"
+        />
+        <div class="mt-4 flex justify-end gap-2">
+          <button class="btn-3" :disabled="forwardBusy" @click="showForwardModal = false">Cancel</button>
+          <button
+            class="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100"
+            :disabled="forwardBusy"
+            @click="forwardAdjustment"
+          >
+            <i class="far" :class="forwardBusy ? 'fa-spinner fa-spin' : 'fa-share'"></i>
+            {{ forwardBusy ? 'Forwarding...' : 'Forward' }}
+          </button>
+        </div>
+      </div>
     </div>
 
     <div v-if="showRejectModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4">
@@ -413,4 +441,19 @@ onMounted(load)
   height: 0;
   margin-top: 4px;
 }
+
+@keyframes btn-ping {
+  75%, 100% { transform: scale(1.7); opacity: 0; }
+}
+.pulse-indigo { position: relative; overflow: hidden; }
+.pulse-indigo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: rgba(99, 102, 241, 0.4);
+  animation: btn-ping 1.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+.pulse-indigo:hover::after { animation: none; opacity: 0; }
 </style>
