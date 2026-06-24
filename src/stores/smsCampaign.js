@@ -66,6 +66,7 @@ export const useSmsCampaignStore = defineStore('smsCampaign', () => {
       employee_types: filters.employee_types || [],
       employee_ids: filters.employee_ids || [],
       include_inactive: !!filters.include_inactive,
+      external_phones: filters.external_phones || [],
     }
   }
 

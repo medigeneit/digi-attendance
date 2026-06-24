@@ -308,7 +308,7 @@ const exchangeTagColor = (s) => ({
   align-items: center;
   padding: 0 4px 8px;
   font-size: 10px;
-  color: #64748b;
+  color: #0a0a0a;
 }
 .att-legend > span { display: flex; align-items: center; gap: 4px; }
 .att-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
@@ -335,7 +335,7 @@ const exchangeTagColor = (s) => ({
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .06em;
-  color: #94a3b8;
+  color: #0a0a0a;
   border-bottom: 1px solid #e2e8f0;
   white-space: nowrap;
 }
@@ -351,7 +351,7 @@ const exchangeTagColor = (s) => ({
 .att-row--today:hover { background: #528cd8; }
 /* Weekend / Holiday: only the text changes, no row color */
 .att-row--weekend td { color: #94a3b8; }
-.att-row--holiday td { color: #7c3aed22; }
+.att-row--holiday td { color: #08080822; }
 .att-row--holiday .att-cell--date,
 .att-row--holiday td:nth-child(2),
 .att-row--holiday td:nth-child(n + 4):nth-child(-n + 10),

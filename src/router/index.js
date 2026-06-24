@@ -702,7 +702,7 @@ const router = createRouter({
             requiresAuth: true,
             roles: ['admin', 'super_admin', 'developer'],
             feature: 'sms.view',
-            title: 'Bulk SMS Campaigns',
+            title: 'Bulk SMS Events',
           },
         },
         {
@@ -713,7 +713,7 @@ const router = createRouter({
             requiresAuth: true,
             roles: ['admin', 'super_admin', 'developer'],
             feature: 'sms.manage',
-            title: 'New Bulk SMS Campaign',
+            title: 'New Bulk SMS Event',
           },
         },
         {
@@ -724,7 +724,7 @@ const router = createRouter({
             requiresAuth: true,
             roles: ['admin', 'super_admin', 'developer'],
             feature: 'sms.view',
-            title: 'Bulk SMS Campaign',
+            title: 'Bulk SMS Event',
           },
         },
 

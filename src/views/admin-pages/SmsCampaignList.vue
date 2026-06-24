@@ -92,7 +92,7 @@ const openCampaign = (c) => router.push(`/sms-campaigns/${c.id}`)
     <!-- Header -->
     <div class="flex flex-wrap items-center justify-between gap-2">
       <div>
-        <h1 class="text-lg md:text-xl font-semibold tracking-tight text-zinc-900">Bulk SMS Campaigns</h1>
+        <h1 class="text-lg md:text-xl font-semibold tracking-tight text-zinc-900">Bulk SMS Events</h1>
         <p class="text-xs text-zinc-500">Send targeted SMS messages by company, department, type, or selection.</p>
       </div>
       <RouterLink
@@ -100,7 +100,7 @@ const openCampaign = (c) => router.push(`/sms-campaigns/${c.id}`)
         class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-white text-xs font-semibold shadow-sm bg-blue-600 hover:bg-blue-700 transition"
       >
         <i class="far fa-plus"></i>
-        New Campaign
+        New Event
       </RouterLink>
     </div>
 
@@ -131,7 +131,7 @@ const openCampaign = (c) => router.push(`/sms-campaigns/${c.id}`)
         <input
           v-model.trim="search"
           type="text"
-          placeholder="Search campaigns..."
+          placeholder="Search events..."
           class="w-full pl-8 pr-3 py-1.5 rounded-lg border border-zinc-200 text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         />
       </div>
@@ -146,7 +146,7 @@ const openCampaign = (c) => router.push(`/sms-campaigns/${c.id}`)
         <option value="sent">Sent</option>
         <option value="failed">Failed</option>
       </select>
-      <span v-if="meta.total" class="text-[11px] text-zinc-400 sm:ml-auto">{{ meta.total }} campaign{{ meta.total === 1 ? '' : 's' }}</span>
+      <span v-if="meta.total" class="text-[11px] text-zinc-400 sm:ml-auto">{{ meta.total }} event{{ meta.total === 1 ? '' : 's' }}</span>
     </div>
 
     <!-- Data table -->
@@ -166,7 +166,7 @@ const openCampaign = (c) => router.push(`/sms-campaigns/${c.id}`)
           <thead class="sticky top-0 z-20 bg-zinc-50/95 backdrop-blur">
             <tr class="text-left text-[10.5px] font-semibold uppercase tracking-wide text-zinc-600">
               <th class="sticky left-0 z-30 bg-zinc-50/95 px-3 py-2">SL</th>
-              <th class="px-3 py-2">Campaign</th>
+              <th class="px-3 py-2">Event</th>
               <th class="px-3 py-2">Status</th>
               <th class="px-3 py-2 text-right">Recipients</th>
               <th class="px-3 py-2">Created By</th>
@@ -197,9 +197,9 @@ const openCampaign = (c) => router.push(`/sms-campaigns/${c.id}`)
                 <div class="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 text-zinc-400">
                   <i class="far fa-comment-sms"></i>
                 </div>
-                <p class="text-xs font-medium text-zinc-600">No campaigns found.</p>
+                <p class="text-xs font-medium text-zinc-600">No events found.</p>
                 <p class="text-[11px] text-zinc-400 mt-0.5">
-                  {{ search || statusFilter ? 'Try adjusting your search or filters.' : 'Create your first bulk SMS campaign to get started.' }}
+                  {{ search || statusFilter ? 'Try adjusting your search or filters.' : 'Create your first bulk SMS event to get started.' }}
                 </p>
               </td>
             </tr>

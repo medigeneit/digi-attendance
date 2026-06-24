@@ -58,11 +58,11 @@ const showSendConfirm = ref(false)
 const sendCampaign = async () => {
   try {
     await campaignStore.sendCampaign(campaignId.value)
-    toast.success('Campaign queued for sending.')
+    toast.success('Event queued for sending.')
     await load()
     if (isActive.value) startPolling()
   } catch (e) {
-    toast.error(e?.response?.data?.message || 'Failed to queue campaign for sending.')
+    toast.error(e?.response?.data?.message || 'Failed to queue event for sending.')
   }
 }
 
@@ -120,6 +120,9 @@ const targetingChips = computed(() => {
   if (filters.include_inactive) {
     chips.push({ key: 'inactive', label: 'Includes inactive employees', icon: 'fa-user-clock' })
   }
+  if (filters.external_phones?.length) {
+    chips.push({ key: 'ext', label: `${filters.external_phones.length} external number(s)`, icon: 'fa-phone' })
+  }
 
   return chips
 })
@@ -129,7 +132,7 @@ const targetingChips = computed(() => {
   <div class="mx-auto max-w-4xl px-4 md:px-6 py-6 space-y-6">
     <div class="flex items-center justify-between">
       <RouterLink to="/sms-campaigns" class="text-sm text-blue-600 hover:underline inline-flex items-center gap-1">
-        <i class="far fa-arrow-left"></i> Back to Campaigns
+        <i class="far fa-arrow-left"></i> Back to Events
       </RouterLink>
       <button
         v-if="canSend"
@@ -138,7 +141,7 @@ const targetingChips = computed(() => {
         class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold shadow-sm bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
       >
         <i class="far" :class="sending ? 'fa-spinner fa-spin' : 'fa-paper-plane'"></i>
-        {{ sending ? 'Queuing...' : 'Send Campaign' }}
+        {{ sending ? 'Queuing...' : 'Send Event' }}
       </button>
     </div>
 
@@ -255,7 +258,7 @@ const targetingChips = computed(() => {
 
     <DeleteModal
       :show="showSendConfirm"
-      title="Send Campaign?"
+      title="Send Event?"
       :message="`This will queue '${campaign?.name}' for sending to ${campaign?.recipient_count} recipient(s) right away. This cannot be undone.`"
       @close="showSendConfirm = false"
       @confirm="sendCampaign"

@@ -299,8 +299,8 @@ const careerMenu = [
 const careerRouteNames = careerMenu.map((i) => i.routeName)
 
 const smsMenu = [
-  { label: 'Campaigns', routeName: 'SmsCampaignList', feature: 'sms.view' },
-  { label: 'New Campaign', routeName: 'SmsCampaignAdd', feature: 'sms.manage' },
+  { label: 'Events', routeName: 'SmsCampaignList', feature: 'sms.view' },
+  { label: 'New Event', routeName: 'SmsCampaignAdd', feature: 'sms.manage' },
 ]
 const smsRouteNames = smsMenu.map((i) => i.routeName)
 
