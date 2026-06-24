@@ -1629,6 +1629,13 @@ const router = createRouter({
 router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
   const isAuthenticated = !!authStore.token || localStorage.getItem('auth_token')
+
+  // On page reload, Pinia resets authStore.user to null.
+  // Fetch the user before running role/feature checks so they don't falsely fail.
+  if (isAuthenticated && !authStore.user) {
+    await authStore.fetchUser()
+  }
+
   const storedUser = (() => {
     try {
       return JSON.parse(localStorage.getItem('user') || 'null')
