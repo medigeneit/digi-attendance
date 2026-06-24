@@ -342,110 +342,85 @@ function printPage() {
       </div>
     </div>
 
-    <div v-if="isLoading" class="py-8 text-center"><LoaderView /></div>
+    <div v-if="isLoading && !current?.id" class="py-8 text-center"><LoaderView /></div>
     <div v-else-if="error" class="rounded-md border border-red-200 bg-red-50 p-3 text-red-700">
       {{ error }}
     </div>
 
-    <div v-else-if="current" class="rounded-2xl bg-white p-5 shadow-sm space-y-4">
+    <div v-else-if="current" class="rounded-2xl bg-white p-4 shadow-sm space-y-3">
       <!-- Header -->
-      <div class="text-center">
-        <h2 class="text-xl font-semibold">Key Performance Indicator (KPI)</h2>
-        <p class="text-sm text-gray-600">
-          Bi-monthly: {{ current.form?.start_month
-          }}{{ current.form?.end_month ? ` – ${current.form.end_month}` : '' }}
-        </p>
-      </div>
-
-      <!-- Meta -->
-      <div class="grid grid-cols-12 gap-2 text-sm">
-        <div class="col-span-6 border p-2 rounded">
-          NAME: <span class="font-medium">{{ current?.user?.name }}</span>
+      <div class="flex items-center justify-between gap-4 print:block print:text-center">
+        <div>
+          <h2 class="text-base font-semibold leading-tight">Key Performance Indicator (KPI)</h2>
+          <p class="text-xs text-gray-500 mt-0.5">
+            Bi-monthly: {{ current.form?.start_month }}{{ current.form?.end_month ? ` – ${current.form.end_month}` : '' }}
+          </p>
         </div>
-        <div class="col-span-3 border p-2 rounded">
-          DESIGNATION: <span class="font-medium">{{ current?.user?.designation }}</span>
+        <!-- Live totals inline -->
+        <div class="flex items-center gap-2 print:hidden">
+          <div v-if="showInChargeField" class="rounded border px-2.5 py-1 text-center text-xs">
+            <div class="text-gray-400 leading-tight">In-charge</div>
+            <div class="font-semibold text-slate-700">{{ inchargeTotal }} / {{ grandMax }}</div>
+          </div>
+          <div v-if="showCoordinatorField" class="rounded border px-2.5 py-1 text-center text-xs">
+            <div class="text-gray-400 leading-tight">Coordinator</div>
+            <div class="font-semibold text-slate-700">{{ coordinatorTotal }} / {{ grandMax }}</div>
+          </div>
+          <div class="rounded border px-2.5 py-1 text-center text-xs">
+            <div class="text-gray-400 leading-tight">Final</div>
+            <div class="font-semibold text-slate-700">{{ finalTotal }} / {{ grandMax }}</div>
+          </div>
         </div>
-        <div class="col-span-3 border p-2 rounded">
-          DATE OF JOINING: {{ current?.user?.joining_date }}
-        </div>
-        <div class="col-span-6 border p-2 rounded">DEPARTMENT: {{ current?.user?.department }}</div>
-        <div class="col-span-3 border p-2 rounded">
-          COMPANY:<span class="font-medium">{{ current?.user?.company }}</span>
-        </div>
-      </div>
-
-      <!-- Live totals -->
-      <div class="grid grid-cols-1 print:grid-cols-3 md:grid-cols-3 gap-2 text-sm">
-        <div v-if="showInChargeField" class="rounded-lg border p-2 text-center">
-          <div class="text-gray-500">In-charge total</div>
-          <div class="font-semibold">{{ inchargeTotal }} / {{ grandMax }}</div>
-        </div>
-        <div v-if="showCoordinatorField" class="rounded-lg border p-2 text-center">
-          <div class="text-gray-500">Coordinator total</div>
-          <div class="font-semibold">{{ coordinatorTotal }} / {{ grandMax }}</div>
-        </div>
-        <div class="rounded-lg border p-2 text-center">
-          <div class="text-gray-500">Final (server)</div>
-          <div class="font-semibold">{{ finalTotal }} / {{ grandMax }}</div>
+        <!-- Print totals -->
+        <div class="hidden print:flex gap-4">
+          <span v-if="showInChargeField" class="text-xs">In-charge: <b>{{ inchargeTotal }}/{{ grandMax }}</b></span>
+          <span v-if="showCoordinatorField" class="text-xs">Coordinator: <b>{{ coordinatorTotal }}/{{ grandMax }}</b></span>
+          <span class="text-xs">Final: <b>{{ finalTotal }}/{{ grandMax }}</b></span>
         </div>
       </div>
 
-      <!-- Main table -->
-      <div class="rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-800 print:hidden">
-        Score input range follows each row max mark. Save button activates only when score is changed.
+      <!-- Meta — compact single row -->
+      <div class="flex flex-wrap gap-x-4 gap-y-0.5 text-xs border rounded px-3 py-1.5 bg-gray-50">
+        <span><span class="text-gray-500">Name:</span> <span class="font-medium">{{ current?.user?.name }}</span></span>
+        <span class="text-gray-300">|</span>
+        <span><span class="text-gray-500">Designation:</span> <span class="font-medium">{{ current?.user?.designation }}</span></span>
+        <span class="text-gray-300">|</span>
+        <span><span class="text-gray-500">Dept:</span> {{ current?.user?.department }}</span>
+        <span class="text-gray-300">|</span>
+        <span><span class="text-gray-500">Company:</span> <span class="font-medium">{{ current?.user?.company }}</span></span>
+        <span class="text-gray-300">|</span>
+        <span><span class="text-gray-500">Joining:</span> {{ current?.user?.joining_date }}</span>
       </div>
       <div class="overflow-x-auto">
-        <table class="min-w-full border text-sm">
+        <table class="min-w-full border text-xs">
           <thead>
             <tr class="bg-gray-100 text-gray-800">
-              <th class="border px-2 py-2 w-10">ক্রম</th>
-              <th class="border px-2 py-2">কার্যসম্পাদন বিষয়</th>
-              <th class="border px-2 py-2 w-32 text-right">সর্বোচ্চ</th>
-              <th v-if="showInChargeField" class="border px-2 py-2 w-40 text-right">
-                <div class="font-semibold">In-charge</div>
-                <div class="text-xs text-slate-500 truncate">
-                  {{ inchargeEvaluatorName || 'Not assigned' }}
-                </div>
-                <div class="mt-1">
-                  <span
-                    class="rounded-full px-2 py-0.5 text-xs font-medium"
-                    :class="
-                      inchargeMarkingStatusText === 'Editable'
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : 'bg-slate-100 text-slate-600'
-                    "
-                  >
-                    {{ inchargeMarkingStatusText }}
-                  </span>
-                </div>
+              <th class="border px-2 py-1.5 w-8">ক্রম</th>
+              <th class="border px-2 py-1.5">কার্যসম্পাদন বিষয়</th>
+              <th class="border px-2 py-1.5 w-20 text-right">সর্বোচ্চ</th>
+              <th v-if="showInChargeField" class="border px-2 py-1.5 w-36 text-right">
+                <div class="font-semibold text-xs">In-charge</div>
+                <div class="text-[10px] text-slate-500 truncate">{{ inchargeEvaluatorName || 'Not assigned' }}</div>
+                <span
+                  class="inline-block mt-0.5 rounded-full px-1.5 py-px text-[10px] font-medium leading-tight"
+                  :class="inchargeMarkingStatusText === 'Editable' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'"
+                >{{ inchargeMarkingStatusText }}</span>
               </th>
-              <th v-if="showCoordinatorField" class="border px-2 py-2 w-44 text-right">
-                <div class="font-semibold">Coordinator/AD/DD</div>
-                <div class="text-xs text-slate-500 truncate">
-                  {{ coordinatorEvaluatorName || 'Not assigned' }}
-                </div>
-                <div class="mt-1">
-                  <span
-                    class="rounded-full px-2 py-0.5 text-xs font-medium"
-                    :class="
-                      coordinatorMarkingStatusText === 'Editable'
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : coordinatorMarkingStatusText === 'Locked by hierarchy'
-                          ? 'bg-amber-100 text-amber-700'
-                          : 'bg-slate-100 text-slate-600'
-                    "
-                  >
-                    {{ coordinatorMarkingStatusText }}
-                  </span>
-                </div>
+              <th v-if="showCoordinatorField" class="border px-2 py-1.5 w-40 text-right">
+                <div class="font-semibold text-xs">Coordinator/AD/DD</div>
+                <div class="text-[10px] text-slate-500 truncate">{{ coordinatorEvaluatorName || 'Not assigned' }}</div>
+                <span
+                  class="inline-block mt-0.5 rounded-full px-1.5 py-px text-[10px] font-medium leading-tight"
+                  :class="coordinatorMarkingStatusText === 'Editable' ? 'bg-emerald-100 text-emerald-700' : coordinatorMarkingStatusText === 'Locked by hierarchy' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'"
+                >{{ coordinatorMarkingStatusText }}</span>
               </th>
             </tr>
           </thead>
           <tbody>
             <!-- ১) Performance -->
             <tr>
-              <td class="border px-2 py-2 align-top text-center">১</td>
-              <td class="border px-2 py-2 align-top">
+              <td class="border px-2 py-1.5 align-top text-center">১</td>
+              <td class="border px-2 py-1.5 align-top">
                 <!-- CSS-only clamp + toggle + print-safe -->
                 <div v-if="u?.criteria_assignments?.description" class="mt-0.5">
                   <!-- Hidden state checkbox -->
@@ -507,17 +482,17 @@ function printPage() {
                 </div>
               </td>
 
-              <td class="border px-2 py-2 align-top text-right">{{ perfMax }}</td>
-              <td v-if="showInChargeField" class="border px-2 py-2 align-top">
-                <div class="rounded-md border border-slate-200 bg-slate-50/70 p-2">
-                  <div class="flex items-center justify-end gap-2">
+              <td class="border px-2 py-1.5 align-top text-right">{{ perfMax }}</td>
+              <td v-if="showInChargeField" class="border px-2 py-1.5 align-top">
+                <div class="rounded border border-slate-200 bg-slate-50/70 p-1.5">
+                  <div class="flex items-center justify-end gap-1.5">
                     <input
                       type="number"
                       min="0"
                       :max="perfMax"
                       :readonly="finalized || !canMarkInCharge"
                       v-model.number="perf.incharge_score"
-                      class="w-20 rounded-md border px-2 py-1 text-right focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200"
+                      class="w-16 rounded border px-1.5 py-0.5 text-right text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200"
                     />
                     <button
                       class="btn-4 print:hidden"
@@ -532,16 +507,16 @@ function printPage() {
                   </div>
                 </div>
               </td>
-              <td v-if="showCoordinatorField" class="border px-2 py-2 align-top">
-                <div class="rounded-md border border-slate-200 bg-slate-50/70 p-2">
-                  <div class="flex items-center justify-end gap-2">
+              <td v-if="showCoordinatorField" class="border px-2 py-1.5 align-top">
+                <div class="rounded border border-slate-200 bg-slate-50/70 p-1.5">
+                  <div class="flex items-center justify-end gap-1.5">
                     <input
                       type="number"
                       min="0"
                       :max="perfMax"
                       :readonly="finalized || !canMarkCoordinator"
                       v-model.number="perf.coordinator_score"
-                      class="w-20 rounded-md border px-2 py-1 text-right focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200"
+                      class="w-16 rounded border px-1.5 py-0.5 text-right text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200"
                     />
                     <button
                       class="btn-4 print:hidden"
@@ -560,33 +535,33 @@ function printPage() {
 
             <!-- ২) Target (text + score) -->
             <tr>
-              <td class="border px-2 py-2 align-top text-center">২</td>
-              <td class="border px-2 py-2">
-                <label class="block text-xs text-gray-600 mb-1">Target (মাসিক লক্ষ্য)</label>
+              <td class="border px-2 py-1.5 align-top text-center">২</td>
+              <td class="border px-2 py-1.5">
+                <label class="block text-[10px] text-gray-500 mb-0.5">Target (মাসিক লক্ষ্য)</label>
                 <textarea
-                  rows="3"
+                  rows="2"
                   v-model="current.monthly_target"
                   :readonly="finalized"
-                  class="w-full rounded-md border px-2 py-1 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200"
+                  class="w-full rounded border px-2 py-1 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200"
                   placeholder="এই মাসের স্পষ্ট টার্গেট লিখুন…"
                 ></textarea>
-                <div class="mt-2 flex justify-end gap-2 print:hidden">
+                <div class="mt-1 flex justify-end gap-2 print:hidden">
                   <button class="btn-4" :disabled="isSaving || finalized" @click="saveTargetText">
                     Save Target
                   </button>
                 </div>
               </td>
-              <td class="border px-2 py-2 align-top text-right">{{ targetMax }}</td>
-              <td v-if="showInChargeField" class="border px-2 py-2 align-top">
-                <div class="rounded-md border border-slate-200 bg-slate-50/70 p-2">
-                  <div class="flex items-center justify-end gap-2">
+              <td class="border px-2 py-1.5 align-top text-right">{{ targetMax }}</td>
+              <td v-if="showInChargeField" class="border px-2 py-1.5 align-top">
+                <div class="rounded border border-slate-200 bg-slate-50/70 p-1.5">
+                  <div class="flex items-center justify-end gap-1.5">
                     <input
                       type="number"
                       min="0"
                       :max="targetMax"
                       :readonly="finalized || !canMarkInCharge"
                       v-model.number="target.incharge_score"
-                      class="w-20 rounded-md border px-2 py-1 text-right focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200"
+                      class="w-16 rounded border px-1.5 py-0.5 text-right text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200"
                     />
                     <button
                       class="btn-4 print:hidden"
@@ -596,21 +571,19 @@ function printPage() {
                       {{ isScoreDirty('target', 'incharge') ? 'Save' : 'Saved' }}
                     </button>
                   </div>
-                  <div class="mt-1 text-right text-xs text-slate-500">
-                    Range: 0-{{ targetMax }}
-                  </div>
+                  <div class="text-right text-[10px] text-slate-400">0–{{ targetMax }}</div>
                 </div>
               </td>
-              <td v-if="showCoordinatorField" class="border px-2 py-2 align-top">
-                <div class="rounded-md border border-slate-200 bg-slate-50/70 p-2">
-                  <div class="flex items-center justify-end gap-2">
+              <td v-if="showCoordinatorField" class="border px-2 py-1.5 align-top">
+                <div class="rounded border border-slate-200 bg-slate-50/70 p-1.5">
+                  <div class="flex items-center justify-end gap-1.5">
                     <input
                       type="number"
                       min="0"
                       :max="targetMax"
                       :readonly="finalized || !canMarkCoordinator"
                       v-model.number="target.coordinator_score"
-                      class="w-20 rounded-md border px-2 py-1 text-right focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200"
+                      class="w-16 rounded border px-1.5 py-0.5 text-right text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200"
                     />
                     <button
                       class="btn-4 print:hidden"
@@ -620,19 +593,17 @@ function printPage() {
                       {{ isScoreDirty('target', 'coordinator') ? 'Save' : 'Saved' }}
                     </button>
                   </div>
-                  <div class="mt-1 text-right text-xs text-slate-500">
-                    Range: 0-{{ targetMax }}
-                  </div>
+                  <div class="text-right text-[10px] text-slate-400">0–{{ targetMax }}</div>
                 </div>
               </td>
             </tr>
 
             <!-- Totals -->
-            <tr class="bg-gray-50 font-medium">
-              <td class="border px-2 py-2 text-right" colspan="2">সর্বমোট</td>
-              <td class="border px-2 py-2 text-right">{{ grandMax }}</td>
-              <td v-if="showInChargeField" class="border px-2 py-2 text-right">{{ inchargeTotal }}</td>
-              <td v-if="showCoordinatorField" class="border px-2 py-2 text-right">{{ coordinatorTotal }}</td>
+            <tr class="bg-gray-50 font-medium text-xs">
+              <td class="border px-2 py-1 text-right" colspan="2">সর্বমোট</td>
+              <td class="border px-2 py-1 text-right">{{ grandMax }}</td>
+              <td v-if="showInChargeField" class="border px-2 py-1 text-right">{{ inchargeTotal }}</td>
+              <td v-if="showCoordinatorField" class="border px-2 py-1 text-right">{{ coordinatorTotal }}</td>
             </tr>
           </tbody>
         </table>
@@ -640,7 +611,7 @@ function printPage() {
 
       <div
         v-if="showCoordinatorLockedHint"
-        class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800"
+        class="rounded border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs text-amber-800"
       >
         Coordinator marking will show after In-charge completes both Performance and Target marking.
       </div>
