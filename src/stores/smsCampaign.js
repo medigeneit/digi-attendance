@@ -22,6 +22,10 @@ export const useSmsCampaignStore = defineStore('smsCampaign', () => {
   const saving = ref(false)
   const sending = ref(false)
 
+  const recipients = ref([])
+  const recipientsMeta = ref({ page: 1, per_page: 50, total: 0, last_page: 1 })
+  const recipientsLoading = ref(false)
+
   async function fetchCampaigns(params = {}) {
     loading.value = true
     error.value = null
@@ -108,6 +112,27 @@ export const useSmsCampaignStore = defineStore('smsCampaign', () => {
     }
   }
 
+  async function fetchRecipients(id, params = {}) {
+    recipientsLoading.value = true
+    error.value = null
+    try {
+      const res = await apiClient.get(`/sms-campaigns/${id}/recipients`, { params })
+      const payload = res?.data?.data || {}
+      recipients.value = payload.data || []
+      recipientsMeta.value = {
+        page: payload.current_page || 1,
+        per_page: payload.per_page || 50,
+        total: payload.total || 0,
+        last_page: payload.last_page || 1,
+      }
+    } catch (err) {
+      recipients.value = []
+      error.value = messageFromError(err, 'Failed to load recipients.')
+    } finally {
+      recipientsLoading.value = false
+    }
+  }
+
   async function sendCampaign(id) {
     sending.value = true
     error.value = null
@@ -141,5 +166,9 @@ export const useSmsCampaignStore = defineStore('smsCampaign', () => {
     previewRecipients,
     createCampaign,
     sendCampaign,
+    fetchRecipients,
+    recipients,
+    recipientsMeta,
+    recipientsLoading,
   }
 })

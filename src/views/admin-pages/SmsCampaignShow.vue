@@ -134,6 +134,14 @@ const smsPartCount = computed(() => {
           <i class="far fa-arrows-rotate fa-spin text-[10px]"></i> Live
         </span>
 
+        <RouterLink
+          :to="`/sms-campaigns/${campaignId}/recipients`"
+          class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200 bg-white text-sm text-slate-600 hover:bg-slate-50 transition"
+        >
+          <i class="far fa-list-alt"></i>
+          Delivery Log
+        </RouterLink>
+
         <button
           v-if="canSend"
           :disabled="sending"
@@ -197,7 +205,7 @@ const smsPartCount = computed(() => {
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
                 <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-100 text-purple-600">
-                  <i class="fas fa-message text-xs"></i>
+                  <i class="fas fa-comment-alt text-xs"></i>
                 </span>
                 SMS Message
               </div>

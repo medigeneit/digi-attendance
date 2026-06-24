@@ -302,7 +302,7 @@ const smsMenu = [
   { label: 'Events', routeName: 'SmsCampaignList', feature: 'sms.view' },
   { label: 'New Event', routeName: 'SmsCampaignAdd', feature: 'sms.manage' },
 ]
-const smsRouteNames = smsMenu.map((i) => i.routeName)
+const smsRouteNames = [...smsMenu.map((i) => i.routeName), 'SmsCampaignShow', 'SmsCampaignRecipients']
 
 const payrollMenu = [
   { label: 'Salary Structures', routeName: 'PayrollSalaryStructureList', feature: 'payroll.salary_structures.view' },
@@ -1091,7 +1091,7 @@ watch(
             >
               <div class="flex items-center justify-between w-full">
                 <div class="flex items-center gap-2">
-                  <i class="far fa-comment-sms py-2"></i>
+                  <i class="fas fa-sms py-2"></i>
                   <h4 v-if="open">Bulk SMS</h4>
                 </div>
 

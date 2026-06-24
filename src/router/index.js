@@ -727,6 +727,17 @@ const router = createRouter({
             title: 'Bulk SMS Event',
           },
         },
+        {
+          path: '/sms-campaigns/:id/recipients',
+          name: 'SmsCampaignRecipients',
+          component: () => import('@/views/admin-pages/SmsCampaignRecipients.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['admin', 'super_admin', 'developer'],
+            feature: 'sms.view',
+            title: 'SMS Delivery Log',
+          },
+        },
 
         {
           path: '/reports',

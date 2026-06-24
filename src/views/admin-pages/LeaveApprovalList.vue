@@ -49,6 +49,21 @@ const selectedDepartmentId = ref(route.query.department_id || '')
 
 const toolbarRef = ref(null)
 const toolbarH = ref(0)
+const showApprovalRulesHelp = ref(false)
+let approvalRulesHelpTimer = null
+
+const toggleApprovalRulesHelp = () => {
+  if (approvalRulesHelpTimer) clearTimeout(approvalRulesHelpTimer)
+  approvalRulesHelpTimer = null
+
+  showApprovalRulesHelp.value = !showApprovalRulesHelp.value
+  if (!showApprovalRulesHelp.value) return
+
+  approvalRulesHelpTimer = setTimeout(() => {
+    showApprovalRulesHelp.value = false
+    approvalRulesHelpTimer = null
+  }, 8000)
+}
 
 const applicationTypes = computed(() => {
   const apiTypes = leaveApprovalStore.applicationTypes || []
@@ -454,6 +469,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', measureToolbar)
+  if (approvalRulesHelpTimer) clearTimeout(approvalRulesHelpTimer)
 })
 
 const TAB_ICONS = {
@@ -485,10 +501,22 @@ const configuredCount = (approval) =>
             <i class="fas fa-layer-group mr-1"></i>{{ pageTitle }}
           </p>
         </div>
-        <button class="btn-2 py-1.5" @click="openAddModal">
-          <i class="fas fa-plus text-xs"></i>
-          <span class="hidden sm:inline">Add New</span>
-        </button>
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            class="flex h-9 w-9 items-center justify-center rounded-full border border-blue-200 text-blue-600 transition-colors hover:bg-blue-50"
+            :aria-expanded="showApprovalRulesHelp"
+            aria-label="Show how approval rules work"
+            title="How Approval Rules Work"
+            @click="toggleApprovalRulesHelp"
+          >
+            <i class="fas fa-info-circle"></i>
+          </button>
+          <button class="btn-2 py-1.5" @click="openAddModal">
+            <i class="fas fa-plus text-xs"></i>
+            <span class="hidden sm:inline">Add New</span>
+          </button>
+        </div>
       </div>
 
       <!-- Tab bar -->
@@ -524,7 +552,7 @@ const configuredCount = (approval) =>
     <div class="px-2 md:px-4 pt-4 space-y-4">
 
       <!-- How it works note -->
-      <div class="rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-3 text-xs text-blue-800 space-y-1.5">
+      <div v-if="showApprovalRulesHelp" class="rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-3 text-xs text-blue-800 space-y-1.5">
         <p class="font-semibold text-blue-900 flex items-center gap-1.5">
           <i class="fas fa-info-circle text-blue-500"></i>
           How Approval Rules Work

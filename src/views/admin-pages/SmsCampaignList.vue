@@ -16,7 +16,7 @@ const statCards = computed(() => {
   const counts = statusCounts.value || {}
   const sum = (keys) => keys.reduce((total, k) => total + (Number(counts[k]) || 0), 0)
   return [
-    { key: '', label: 'Total', value: sum(['draft', 'queued', 'sending', 'sent', 'failed']), icon: 'fa-comment-sms', classes: 'bg-blue-50 text-blue-600' },
+    { key: '', label: 'Total', value: sum(['draft', 'queued', 'sending', 'sent', 'failed']), icon: 'fa-sms', classes: 'bg-blue-50 text-blue-600' },
     { key: 'draft', label: 'Drafts', value: sum(['draft']), icon: 'fa-pen-to-square', classes: 'bg-slate-100 text-slate-600' },
     { key: 'sending', label: 'In Progress', value: sum(['queued', 'sending']), icon: 'fa-paper-plane', classes: 'bg-amber-50 text-amber-600' },
     { key: 'sent', label: 'Sent', value: sum(['sent']), icon: 'fa-circle-check', classes: 'bg-emerald-50 text-emerald-600' },
@@ -195,7 +195,7 @@ const openCampaign = (c) => router.push(`/sms-campaigns/${c.id}`)
             <tr v-else-if="!campaigns.length">
               <td colspan="7" class="px-3 py-12 text-center">
                 <div class="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 text-zinc-400">
-                  <i class="far fa-comment-sms"></i>
+                  <i class="far fa-sms"></i>
                 </div>
                 <p class="text-xs font-medium text-zinc-600">No events found.</p>
                 <p class="text-[11px] text-zinc-400 mt-0.5">
