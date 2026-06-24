@@ -71,6 +71,8 @@ export const useSmsCampaignStore = defineStore('smsCampaign', () => {
       employee_ids: filters.employee_ids || [],
       include_inactive: !!filters.include_inactive,
       external_phones: filters.external_phones || [],
+      excluded_user_ids: filters.excluded_user_ids || [],
+      excluded_phones: filters.excluded_phones || [],
     }
   }
 
@@ -81,6 +83,7 @@ export const useSmsCampaignStore = defineStore('smsCampaign', () => {
       const res = await apiClient.post('/sms-campaigns/preview', buildFilterPayload(filters))
       previewResult.value = {
         recipient_count: res?.data?.recipient_count || 0,
+        recipients: res?.data?.recipients || res?.data?.sample || [],
         sample: res?.data?.sample || [],
       }
       return previewResult.value

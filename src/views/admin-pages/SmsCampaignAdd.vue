@@ -1,10 +1,10 @@
 <script setup>
-import MultiselectDropdown from '@/components/MultiselectDropdown.vue'
+import EmpReportMultiFilter from '@/components/reports/EmpReportMultiFilter.vue'
 import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
 import { useSmsCampaignStore } from '@/stores/smsCampaign'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 
@@ -46,9 +46,9 @@ const toggleEmployeeType = (value) => {
   else form.employee_types.push(value)
 }
 
-const selectedCompanies = ref([])
-const selectedDepartments = ref([])
-const selectedEmployees = ref([])
+const selectedCompanyIds = ref([])
+const selectedDepartmentIds = ref([])
+const selectedEmployeeIds = ref([])
 const externalPhonesRaw = ref('')
 
 const externalPhonesParsed = computed(() =>
@@ -64,21 +64,22 @@ const companiesList = computed(() => companies.value || [])
 const departmentsList = computed(() => departmentStore.departments || [])
 const employeesList = computed(() => departmentStore.employees || [])
 
-const company_ids = computed(() => selectedCompanies.value.map((c) => c.id))
-const department_ids = computed(() => selectedDepartments.value.map((d) => d.id))
-const employee_ids = computed(() => selectedEmployees.value.map((e) => e.id))
+const company_ids = computed(() => selectedCompanyIds.value.map(Number).filter(Number.isInteger))
+const department_ids = computed(() => selectedDepartmentIds.value.map(Number).filter(Number.isInteger))
+const employee_ids = computed(() => selectedEmployeeIds.value.map(Number).filter(Number.isInteger))
+const selectedCompanies = computed(() =>
+  companiesList.value.filter((company) => company_ids.value.includes(Number(company.id))),
+)
+const selectedDepartments = computed(() =>
+  departmentsList.value.filter((department) => department_ids.value.includes(Number(department.id))),
+)
 
 const effectiveDepartmentIds = computed(() =>
   department_ids.value.length ? department_ids.value : departmentsList.value.map((d) => d.id),
 )
 
-onMounted(async () => {
-  await companyStore.fetchCompanies()
-})
-
 watch(company_ids, async (ids) => {
-  selectedDepartments.value = []
-  selectedEmployees.value = []
+  selectedEmployeeIds.value = []
   departmentStore.employees = []
   if (ids.length) {
     await departmentStore.fetchDepartments(ids)
@@ -87,14 +88,20 @@ watch(company_ids, async (ids) => {
   }
 })
 
-watch([effectiveDepartmentIds, company_ids], async ([deptIds, companyIds]) => {
-  selectedEmployees.value = []
-  if (companyIds.length && deptIds.length) {
-    await departmentStore.fetchDepartmentActiveEmployee(deptIds, 'all')
-  } else {
-    departmentStore.employees = []
-  }
-})
+watch(
+  [effectiveDepartmentIds, company_ids, () => form.include_inactive],
+  async ([deptIds, companyIds, includeInactive]) => {
+    selectedEmployeeIds.value = []
+    if (companyIds.length && deptIds.length) {
+      const fetchEmployees = includeInactive
+        ? departmentStore.fetchDepartmentEmployee
+        : departmentStore.fetchDepartmentActiveEmployee
+      await fetchEmployees(deptIds, 'all')
+    } else {
+      departmentStore.employees = []
+    }
+  },
+)
 
 const currentFilters = computed(() => ({
   company_ids: showInternal.value ? company_ids.value : [],
@@ -134,7 +141,53 @@ const filterSummary = computed(() => {
 })
 
 const previewDirty = ref(false)
-watch(currentFilters, () => { previewDirty.value = true; campaignStore.previewResult = null }, { deep: true })
+const excludedRecipientKeys = ref([])
+const previewRecipientList = computed(() => previewResult.value?.recipients || [])
+const recipientKey = (recipient) => recipient.id != null
+  ? `user:${recipient.id}`
+  : `phone:${recipient.phone}`
+const isRecipientSelected = (recipient) => !excludedRecipientKeys.value.includes(recipientKey(recipient))
+const selectedRecipientCount = computed(() =>
+  previewRecipientList.value.filter(isRecipientSelected).length,
+)
+const allPreviewRecipientsSelected = computed(() =>
+  previewRecipientList.value.length > 0 && selectedRecipientCount.value === previewRecipientList.value.length,
+)
+const somePreviewRecipientsSelected = computed(() =>
+  selectedRecipientCount.value > 0 && !allPreviewRecipientsSelected.value,
+)
+const excludedRecipients = computed(() =>
+  previewRecipientList.value.filter(recipient => !isRecipientSelected(recipient)),
+)
+const excludedUserIds = computed(() =>
+  excludedRecipients.value
+    .filter(recipient => recipient.id != null)
+    .map(recipient => Number(recipient.id)),
+)
+const excludedPhones = computed(() =>
+  excludedRecipients.value
+    .filter(recipient => recipient.id == null)
+    .map(recipient => recipient.phone),
+)
+
+const togglePreviewRecipient = (recipient) => {
+  const key = recipientKey(recipient)
+  excludedRecipientKeys.value = excludedRecipientKeys.value.includes(key)
+    ? excludedRecipientKeys.value.filter(item => item !== key)
+    : [...excludedRecipientKeys.value, key]
+}
+
+const toggleAllPreviewRecipients = () => {
+  excludedRecipientKeys.value = allPreviewRecipientsSelected.value
+    ? previewRecipientList.value.map(recipientKey)
+    : []
+}
+
+watch(currentFilters, () => {
+  previewDirty.value = true
+  excludedRecipientKeys.value = []
+  campaignStore.previewResult = null
+}, { deep: true })
 
 const previewRecipients = async () => {
   if (!hasAnyFilter.value) {
@@ -143,6 +196,7 @@ const previewRecipients = async () => {
   }
   try {
     await campaignStore.previewRecipients(currentFilters.value)
+    excludedRecipientKeys.value = []
     previewDirty.value = false
   } catch (e) {
     toast.error(e?.response?.data?.message || 'Failed to preview recipients.')
@@ -171,11 +225,20 @@ const validate = () => {
   if (!form.name?.trim()) errors.name = 'Event name is required'
   if (!form.message?.trim()) errors.message = 'Message is required'
   if (!hasAnyFilter.value) errors.filters = 'Select at least one recipient filter'
+  if (previewResult.value && !previewDirty.value && selectedRecipientCount.value === 0) {
+    errors.filters = 'Select at least one preview recipient'
+  }
   return Object.keys(errors).length === 0
 }
 
 const saving = computed(() => campaignStore.saving)
-const canSave = computed(() => !saving.value && !!form.name?.trim() && !!form.message?.trim() && hasAnyFilter.value)
+const canSave = computed(() =>
+  !saving.value
+  && !!form.name?.trim()
+  && !!form.message?.trim()
+  && hasAnyFilter.value
+  && (!previewResult.value || previewDirty.value || selectedRecipientCount.value > 0),
+)
 
 const saveCampaign = async () => {
   if (!validate()) {
@@ -183,7 +246,12 @@ const saveCampaign = async () => {
     return
   }
   try {
-    const created = await campaignStore.createCampaign({ ...currentFilters.value, ...form })
+    const created = await campaignStore.createCampaign({
+      ...currentFilters.value,
+      ...form,
+      excluded_user_ids: excludedUserIds.value,
+      excluded_phones: excludedPhones.value,
+    })
     toast.success('Event created successfully.')
     router.replace(`/sms-campaigns/${created.id}`)
   } catch (e) {
@@ -295,35 +363,15 @@ const saveCampaign = async () => {
                 <i class="fas fa-building-user text-blue-400"></i> Internal Employees
               </p>
 
-              <div class="grid md:grid-cols-2 gap-4">
-                <div class="space-y-1.5">
-                  <label class="block text-xs font-medium text-slate-600">Companies</label>
-                  <MultiselectDropdown
-                    v-model="selectedCompanies"
-                    :options="companiesList"
-                    :multiple="true"
-                    :searchable="true"
-                    track-by="id"
-                    label="name"
-                    top-label="Select Companies"
-                    placeholder="Any company"
-                  />
-                </div>
-                <div class="space-y-1.5">
-                  <label class="block text-xs font-medium text-slate-600">Departments</label>
-                  <MultiselectDropdown
-                    v-model="selectedDepartments"
-                    :options="departmentsList"
-                    :multiple="true"
-                    :searchable="true"
-                    :disabled="!company_ids.length"
-                    track-by="id"
-                    label="name"
-                    top-label="Select Departments"
-                    :placeholder="company_ids.length ? 'Any department' : 'Select a company first'"
-                  />
-                </div>
-              </div>
+              <EmpReportMultiFilter
+                v-model:company-ids="selectedCompanyIds"
+                v-model:department-ids="selectedDepartmentIds"
+                v-model:employee-ids="selectedEmployeeIds"
+                :employees="employeesList"
+                :employees-loading="departmentStore.loading"
+                :show-employees="true"
+                :horizontal="true"
+              />
 
               <div class="space-y-1.5">
                 <label class="block text-xs font-medium text-slate-600">Employee Line Type</label>
@@ -344,24 +392,6 @@ const saveCampaign = async () => {
                     {{ opt.label }}
                   </button>
                 </div>
-              </div>
-
-              <div class="space-y-1.5">
-                <label class="block text-xs font-medium text-slate-600">Specific Employees</label>
-                <MultiselectDropdown
-                  v-model="selectedEmployees"
-                  :options="employeesList"
-                  :multiple="true"
-                  :searchable="true"
-                  :disabled="!company_ids.length"
-                  track-by="id"
-                  label="name"
-                  top-label="Select Employees"
-                  :placeholder="company_ids.length ? 'Add specific employees' : 'Select a company first'"
-                />
-                <p class="text-[11px] text-slate-400">
-                  <i class="far fa-circle-info mr-1"></i>Always included alongside the filters above.
-                </p>
               </div>
 
               <label class="inline-flex items-center gap-2 text-sm text-slate-600 cursor-pointer select-none">
@@ -442,8 +472,13 @@ const saveCampaign = async () => {
                 <i class="fas fa-users text-sm"></i>
               </span>
               <div class="leading-tight">
-                <div class="text-xl font-bold text-slate-900">{{ previewResult.recipient_count }}</div>
-                <div class="text-[11px] text-slate-400">recipient(s) will receive this SMS</div>
+                <div class="text-xl font-bold text-slate-900">{{ selectedRecipientCount }}</div>
+                <div class="text-[11px] text-slate-400">
+                  recipient(s) selected
+                  <span v-if="excludedRecipientKeys.length" class="text-amber-600">
+                    · {{ excludedRecipientKeys.length }} skipped
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -453,17 +488,48 @@ const saveCampaign = async () => {
           </div>
 
           <!-- Preview table -->
-          <div v-if="previewResult?.sample?.length && !previewDirty" class="rounded-xl border border-slate-200 overflow-hidden">
+          <div v-if="previewRecipientList.length && !previewDirty" class="rounded-xl border border-slate-200 overflow-hidden">
+            <div class="flex items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-4 py-2">
+              <label class="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-600">
+                <input
+                  type="checkbox"
+                  class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  :checked="allPreviewRecipientsSelected"
+                  :indeterminate="somePreviewRecipientsSelected"
+                  @change="toggleAllPreviewRecipients"
+                />
+                Select all recipients
+              </label>
+              <span class="text-[11px] text-slate-400">
+                {{ selectedRecipientCount }} / {{ previewResult.recipient_count }} selected
+              </span>
+            </div>
+            <div class="max-h-80 overflow-y-auto">
             <table class="w-full text-sm">
               <thead class="bg-slate-50 text-left text-[11px] uppercase tracking-wide text-slate-400">
                 <tr>
+                  <th class="w-10 px-4 py-2.5"></th>
                   <th class="px-4 py-2.5">Name / Number</th>
                   <th class="px-4 py-2.5">Phone</th>
                   <th class="px-4 py-2.5">Type</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
-                <tr v-for="r in previewResult.sample" :key="r.id ?? r.phone" class="hover:bg-slate-50 transition">
+                <tr
+                  v-for="r in previewRecipientList"
+                  :key="recipientKey(r)"
+                  class="hover:bg-slate-50 transition"
+                  :class="!isRecipientSelected(r) ? 'bg-slate-50 opacity-55' : ''"
+                >
+                  <td class="px-4 py-2.5">
+                    <input
+                      type="checkbox"
+                      class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                      :checked="isRecipientSelected(r)"
+                      :aria-label="`Include ${r.name || r.phone}`"
+                      @change="togglePreviewRecipient(r)"
+                    />
+                  </td>
                   <td class="px-4 py-2.5 text-slate-700 font-medium">{{ r.name }}</td>
                   <td class="px-4 py-2.5 font-mono text-xs text-slate-500">{{ r.phone }}</td>
                   <td class="px-4 py-2.5">
@@ -477,9 +543,7 @@ const saveCampaign = async () => {
                 </tr>
               </tbody>
             </table>
-            <p v-if="previewResult.recipient_count > previewResult.sample.length" class="px-4 py-2.5 text-xs text-slate-400 bg-slate-50 border-t border-slate-100">
-              Showing {{ previewResult.sample.length }} of {{ previewResult.recipient_count }} recipients.
-            </p>
+            </div>
           </div>
 
           <!-- Empty state -->
@@ -503,7 +567,8 @@ const saveCampaign = async () => {
               <i class="fas fa-users text-xs"></i>
             </span>
             <span class="text-slate-500 truncate">
-              <strong class="text-slate-800">{{ previewResult.recipient_count }}</strong> recipient(s) selected
+              <strong class="text-slate-800">{{ selectedRecipientCount }}</strong> recipient(s) selected
+              <span v-if="excludedRecipientKeys.length"> ({{ excludedRecipientKeys.length }} skipped)</span>
             </span>
           </template>
           <template v-else-if="previewResult && previewDirty">
