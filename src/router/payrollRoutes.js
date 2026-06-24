@@ -178,4 +178,21 @@ export const payrollRoutes = [
     props: true,
     meta: payrollMeta('Adjustment Details', 'payroll.adjustments.view', PAYROLL_ADJUSTMENT_ROLES),
   },
+
+  // PF Historical Balances
+  {
+    path: '/payroll/pf-historical-balances',
+    name: 'PfHistoricalBalanceList',
+    component: () => import('@/views/admin-pages/payroll/PfHistoricalBalanceList.vue'),
+    meta: payrollMeta('PF Historical Balances', 'pf.view'),
+  },
+
+  // PF Statement
+  {
+    path: '/payroll/pf-statement/:userId',
+    name: 'PfStatementShow',
+    component: () => import('@/views/admin-pages/payroll/PfStatementShow.vue'),
+    props: true,
+    meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'developer', 'hr', 'employee'], feature: 'pf.view', title: 'PF Statement' },
+  },
 ]

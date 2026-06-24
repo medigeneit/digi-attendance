@@ -41,6 +41,8 @@ const payrollFeatureKeys = [
   'payroll.loans.manage',
   'payroll.advance_deductions.view',
   'payroll.advance_deductions.manage',
+  'pf.view',
+  'pf.manage',
   'payroll.arrears.view',
   'payroll.arrears.manage',
   'payroll.security_money.view',
@@ -321,9 +323,9 @@ const payrollMenu = [
   { label: 'Payroll Slip List', routeName: 'PayrollSlipList', feature: 'payroll.slips.view' },
   { label: 'Payrolls', routeName: 'PayrollList', feature: 'payroll.reports.view' },
   { label: 'Post Payroll Adjustments', routeName: 'PayrollAdjustmentList', feature: 'payroll.adjustments.view' },
-
+  { label: 'PF Historical Balances', routeName: 'PfHistoricalBalanceList', feature: 'pf.view' },
 ]
-const payrollRouteNames = payrollMenu.map((i) => i.routeName)
+const payrollRouteNames = [...payrollMenu.map((i) => i.routeName), 'PfStatementShow']
 const filterBySearch = (items) =>
   normalizedQuery.value ? items.filter((i) => matchesQuery(i.label)) : items
 
