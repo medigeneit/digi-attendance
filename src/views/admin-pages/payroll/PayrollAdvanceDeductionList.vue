@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { storeToRefs } from 'pinia'
@@ -11,6 +11,7 @@ import { formatCurrency, toNum } from '@/utils/currency'
 import { usePayrollAdvanceDeductionStore } from '@/stores/payrollAdvanceDeduction'
 import { useUserStore } from '@/stores/user'
 import { useAuthStore } from '@/stores/auth'
+import PayrollAdvanceDeductionCreate from './PayrollAdvanceDeductionCreate.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -21,6 +22,7 @@ const authStore = useAuthStore()
 
 const canManage = computed(() => authStore.canFeature('payroll.advance_deductions.manage'))
 const { list, loading, error, pagination } = storeToRefs(store)
+const viewTab = ref(route.query.tab === 'list' ? 'list' : 'add')
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
@@ -97,7 +99,7 @@ const hydrateFiltersFromQuery = () => {
 
 const load = async () => {
   const params = buildFilterParams()
-  await router.replace({ query: params })
+  await router.replace({ query: { ...params, tab: viewTab.value } })
   await store.fetchList(params)
 }
 
@@ -124,6 +126,19 @@ const setTab = (status) => {
   filters.value.page   = 1
   load()
 }
+
+const setViewTab = (tab) => {
+  viewTab.value = tab
+  router.replace({ query: { ...route.query, tab } })
+  if (tab === 'list') load()
+}
+
+watch(
+  () => route.query.tab,
+  (tab) => {
+    viewTab.value = tab === 'list' ? 'list' : 'add'
+  },
+)
 
 const resetFilters = () => {
   filters.value = {
@@ -231,21 +246,56 @@ const saveSingle = async () => {
     savingSingle.value = false
   }
 }
+
+const goBack = () => router.go(-1)
+
 </script>
 
 <template>
   <div class="space-y-0 bg-slate-50 min-h-screen">
+    <div class="border-b border-slate-200 bg-white px-4 py-2">
+      <div class="flex w-fit rounded-lg border border-slate-200 bg-slate-100 p-1">
+        <button
+          v-if="canManage"
+          type="button"
+          :class="[
+            'inline-flex items-center gap-1.5 rounded-md px-4 py-1.5 text-xs font-semibold transition',
+            viewTab === 'add' ? 'bg-white text-rose-700 shadow-sm' : 'text-slate-500 hover:text-slate-700',
+          ]"
+          @click="setViewTab('add')"
+        >
+          <i class="far fa-plus text-[10px]"></i>
+          Add
+        </button>
+        <button
+          type="button"
+          :class="[
+            'inline-flex items-center gap-1.5 rounded-md px-4 py-1.5 text-xs font-semibold transition',
+            viewTab === 'list' || !canManage ? 'bg-white text-rose-700 shadow-sm' : 'text-slate-500 hover:text-slate-700',
+          ]"
+          @click="setViewTab('list')"
+        >
+          <i class="far fa-list text-[10px]"></i>
+          List
+        </button>
+      </div>
+    </div>
+
+    <PayrollAdvanceDeductionCreate v-if="viewTab === 'add' && canManage" />
 
     <!-- ── Toolbar ─────────────────────────────────────────────────────── -->
-    <div class="sticky top-0 z-20 border-b border-slate-200 bg-white px-4 py-2.5 shadow-sm">
+    <div v-if="viewTab === 'list' || !canManage" class="sticky top-0 z-20 border-b border-slate-200 bg-white px-4 py-2.5 shadow-sm">
       <div class="flex flex-wrap items-center justify-between gap-2">
 
-        <!-- Left: title + meta -->
+        <button class="btn-3" aria-label="Go back" @click="goBack">
+          <i class="far fa-arrow-left"></i>
+          <B></B>Back
+        </button>
+
+        <!-- Center: title + meta -->
         <div class="flex items-center gap-3 min-w-0">
           <div class="min-w-0">
             <div class="flex items-center gap-2">
-              <span class="text-[10px] font-bold uppercase tracking-[0.22em] text-rose-500">Payroll</span>
-              <span class="text-slate-300">/</span>
               <span class="text-sm font-bold text-slate-800">Advance Deductions</span>
               <span v-if="monthLabel" class="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] text-slate-600">
                 {{ monthLabel }}
@@ -330,7 +380,7 @@ const saveSingle = async () => {
     </div>
 
     <!-- ── Table card ──────────────────────────────────────────────────── -->
-    <div class="bg-white">
+    <div v-if="viewTab === 'list' || !canManage" class="bg-white">
 
       <!-- Status tab bar -->
       <div class="flex items-center justify-between border-b border-slate-100 px-4">

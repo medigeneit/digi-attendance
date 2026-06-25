@@ -18,7 +18,7 @@ const toast = useToast()
 const store = usePayrollAdvanceDeductionStore()
 const userStore = useUserStore()
 
-const activeTab = ref('bulk') // Default: bulk (client requirement)
+const activeTab = ref('single')
 
 const defaultMonth = () => new Date().toISOString().slice(0, 7)
 
@@ -355,7 +355,7 @@ const saveSingleEntry = async () => {
 const backToList = () => {
   router.push({
     name: 'PayrollAdvanceDeductionList',
-    query: { carry_on_month: bulkForm.value.carry_on_month, status: 'pending' },
+    query: { carry_on_month: bulkForm.value.carry_on_month, status: 'pending', tab: 'list' },
   })
 }
 
@@ -393,19 +393,6 @@ onMounted(() => {
         type="button"
         :class="[
           'rounded-lg px-5 py-2 text-sm font-semibold transition-all',
-          activeTab === 'bulk'
-            ? 'bg-white text-rose-700 shadow-sm ring-1 ring-slate-200'
-            : 'text-slate-500 hover:text-slate-700',
-        ]"
-        @click="activeTab = 'bulk'"
-      >
-        <i class="far fa-users mr-1.5"></i>
-        Bulk Entry
-      </button>
-      <button
-        type="button"
-        :class="[
-          'rounded-lg px-5 py-2 text-sm font-semibold transition-all',
           activeTab === 'single'
             ? 'bg-white text-rose-700 shadow-sm ring-1 ring-slate-200'
             : 'text-slate-500 hover:text-slate-700',
@@ -415,82 +402,103 @@ onMounted(() => {
         <i class="far fa-user mr-1.5"></i>
         Single Entry
       </button>
+      <button
+        type="button"
+        :class="[
+          'rounded-lg px-5 py-2 text-sm font-semibold transition-all',
+          activeTab === 'bulk'
+            ? 'bg-white text-rose-700 shadow-sm ring-1 ring-slate-200'
+            : 'text-slate-500 hover:text-slate-700',
+        ]"
+        @click="activeTab = 'bulk'"
+      >
+        <i class="far fa-users mr-1.5"></i>
+        Bulk Entry
+      </button>
     </div>
 
     <!-- ── Single Entry Tab ───────────────────────────────────────────────── -->
-    <div v-if="activeTab === 'single'" class="rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div class="border-b border-slate-100 px-5 py-4">
-        <h2 class="text-sm font-semibold text-slate-800">Single Employee Advance Deduction</h2>
-        <p class="mt-0.5 text-xs text-slate-500">Search an employee and enter the deduction details.</p>
+    <div v-if="activeTab === 'single'" class="max-w-xl overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div class="flex items-start justify-between border-b border-slate-100 px-4 py-3">
+        <div>
+          <h2 class="text-base font-bold text-slate-900">Add Advance</h2>
+          <p class="mt-0.5 text-xs text-slate-500">Single employee entry</p>
+        </div>
+        <button
+          type="button"
+          class="flex h-7 w-7 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+          @click="backToList"
+        >
+          <i class="far fa-times text-xs"></i>
+        </button>
       </div>
-      <div class="p-5 space-y-4">
 
-        <div class="grid gap-4 md:grid-cols-2">
-          <!-- Employee Select -->
-          <div class="md:col-span-2">
-            <MultiselectDropdown
-              v-model="selectedEmployee"
-              :options="userStore.users"
-              :multiple="false"
-              :required="false"
-              label="name"
-              labelPrefix="employee_id"
-              top-label="Employee"
-              placeholder="Search employee..."
-            />
-            <p v-if="singleErrors.employee" class="mt-1 text-xs text-rose-600">{{ singleErrors.employee }}</p>
-          </div>
+      <div class="advance-add-form space-y-4 px-4 py-4">
+        <div>
+          <MultiselectDropdown
+            v-model="selectedEmployee"
+            :options="userStore.users"
+            :multiple="false"
+            :required="false"
+            label="name"
+            labelPrefix="employee_id"
+            top-label="Employee"
+            placeholder="Search employee..."
+          />
+          <p v-if="singleErrors.employee" class="mt-1 text-[11px] text-rose-600">{{ singleErrors.employee }}</p>
+        </div>
 
-          <!-- Month -->
-          <div>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div class="advance-month-control min-w-0">
             <FlexibleDatePicker
               v-model="singleMonthPeriod"
               :show-year="false"
               :show-month="true"
               :show-date="false"
-              label="Carry On Month"
+              label="Month"
             />
-            <p v-if="singleErrors.carry_on_month" class="mt-1 text-xs text-rose-600">{{ singleErrors.carry_on_month }}</p>
+            <p v-if="singleErrors.carry_on_month" class="mt-1 text-[11px] text-rose-600">{{ singleErrors.carry_on_month }}</p>
           </div>
 
-          <!-- Amount -->
-          <div>
-            <label class="mb-1 block text-xs font-semibold text-slate-600">Amount</label>
-            <input
-              v-model="singleForm.amount"
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="0.00"
-              class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-100"
-            />
-            <p v-if="singleErrors.amount" class="mt-1 text-xs text-rose-600">{{ singleErrors.amount }}</p>
-          </div>
-
-          <!-- Note -->
-          <div class="md:col-span-2">
-            <label class="mb-1 block text-xs font-semibold text-slate-600">Note <span class="font-normal text-slate-400">(optional)</span></label>
-            <input
-              v-model.trim="singleForm.note"
-              type="text"
-              placeholder="e.g. Salary advance recovery"
-              class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-100"
-            />
+          <div class="relative min-w-0">
+            <label class="top-label -top-1">Amount</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-2.5 flex items-center text-xs text-slate-400">৳</span>
+              <input
+                v-model="singleForm.amount"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                class="h-11 w-full rounded-lg border border-slate-200 bg-white py-2 pl-7 pr-2.5 text-sm text-slate-800 shadow-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-100"
+              />
+            </div>
+            <p v-if="singleErrors.amount" class="mt-1 text-[11px] text-rose-600">{{ singleErrors.amount }}</p>
           </div>
         </div>
 
-        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-          <button type="button" class="btn-3" @click="backToList">Cancel</button>
-          <button
-            type="button"
-            class="btn-2"
-            :disabled="savingSingle"
-            @click="saveSingleEntry"
-          >
-            <i class="far" :class="savingSingle ? 'fa-spinner fa-spin' : 'fa-save'"></i>
-            {{ savingSingle ? 'Saving...' : 'Save Deduction' }}
-          </button>
+        <div class="relative">
+          <label class="top-label -top-1">Note <span class="font-normal text-slate-400">(optional)</span></label>
+          <input
+            v-model.trim="singleForm.note"
+            type="text"
+            placeholder="e.g. Salary advance recovery"
+            class="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-100"
+          />
         </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 border-t border-slate-100 px-4 py-3">
+        <button type="button" class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50" @click="backToList">Cancel</button>
+        <button
+          type="button"
+          class="inline-flex items-center gap-1.5 rounded-lg bg-rose-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-rose-700 disabled:opacity-60"
+          :disabled="savingSingle"
+          @click="saveSingleEntry"
+        >
+          <i class="far" :class="savingSingle ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+          {{ savingSingle ? 'Saving...' : 'Save' }}
+        </button>
       </div>
     </div>
 
@@ -658,3 +666,44 @@ onMounted(() => {
 
   </div>
 </template>
+
+<style scoped>
+.advance-add-form :deep(.top-label) {
+  color: rgb(37 99 235);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.advance-add-form :deep(.smart-multi.multiselect) {
+  min-height: 2.75rem;
+  border-color: rgb(226 232 240);
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px 0 rgb(15 23 42 / 0.05);
+}
+
+.advance-add-form :deep(.smart-multi .multiselect__tags) {
+  min-height: 2.5rem;
+}
+
+.advance-add-form :deep(.multiselect__placeholder),
+.advance-add-form input::placeholder {
+  color: rgb(148 163 184);
+}
+
+.advance-month-control :deep(> .flex) {
+  width: 100%;
+}
+
+.advance-month-control :deep(.inline-flex.items-center.gap-1) {
+  min-height: 2.75rem;
+  width: 100%;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px 0 rgb(15 23 42 / 0.05);
+}
+
+.advance-month-control :deep(button:not([aria-label])) {
+  flex: 1 1 auto;
+  justify-content: center;
+  min-width: 0;
+}
+</style>
