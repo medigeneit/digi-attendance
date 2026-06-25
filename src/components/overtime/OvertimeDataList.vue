@@ -85,7 +85,8 @@ const approvalTimeUserId = (o) =>
     o?.user?.other_approval?.recommend_by_user_id ??
       o?.user?.otherApproval?.recommend_by_user_id ??
       o?.user?.overtime_approval?.recommend_by_user_id ??
-      o?.overtime_approval?.recommend_by_user_id,
+      o?.overtime_approval?.recommend_by_user_id ??
+      8,
   )
 
 const canSetApprovalTime = (o) =>
@@ -215,6 +216,7 @@ const totalApprovedHours = computed(() =>
               </td>
 
               <td class="px-2 py-1.5 text-center">
+                
                 <div
                   class="inline-flex items-center justify-center gap-1 rounded-lg px-1.5 py-0.5"
                   :class="needsApprovalTime(overtime) ? 'bg-amber-50 ring-1 ring-inset ring-amber-200' : ''"
@@ -254,6 +256,7 @@ const totalApprovedHours = computed(() =>
 
               <td class="px-2 py-1.5">
                 <div class="flex items-center justify-center gap-1.5">
+                  
                   <div
                     v-if="canTakeAction(overtime)"
                     class="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-1.5 py-0.5"

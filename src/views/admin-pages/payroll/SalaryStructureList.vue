@@ -105,6 +105,19 @@ const showAllowanceModal = ref(false)
 const selectedAllowanceItem = ref(null)
 const exportLoading = ref(false)
 
+const showGrossModal = ref(false)
+const grossModalItem = ref(null)
+
+const openGrossModal = (item) => {
+  grossModalItem.value = item
+  showGrossModal.value = true
+}
+
+const closeGrossModal = () => {
+  showGrossModal.value = false
+  grossModalItem.value = null
+}
+
 const showCloseModal = ref(false)
 const closeTargetItem = ref(null)
 const closeEndDate = ref('')
@@ -551,15 +564,10 @@ const exportExcel = async () => {
             <th class="px-4 py-3 text-left">#</th>
             <th class="px-4 py-3 text-left">Employee</th>
             <th class="px-4 py-3 text-left">Department</th>
-            <th class="px-4 py-3 text-right">Basic</th>
-            <th class="px-4 py-3 text-right">H.Rent</th>
-            <th class="px-4 py-3 text-right">Medical</th>
-            <th class="px-4 py-3 text-right">Conveyance</th>
+            <th class="px-4 py-3 text-right">Gross <span class="normal-case font-normal text-blue-400 text-[10px]">(click)</span></th>
             <th class="px-4 py-3 text-right">Allowances</th>
             <th class="px-4 py-3 text-right">Revisions</th>
             <th class="py-3 text-right">Revision Date</th>
-            <th class="px-4 py-3 text-right">PF</th>
-            <th class="px-4 py-3 text-right">Gross</th>
             <th class="px-4 py-3 text-center">Effective From</th>
             <th class="px-4 py-3 text-center">Status</th>
             <th class="px-4 py-3 text-left">Created By</th>
@@ -590,20 +598,18 @@ const exportExcel = async () => {
             <td class="px-4 py-3">
               <div class="text-xs text-gray-400">{{ item.user?.department?.name }}</div>
             </td>
-            <td class="px-4 py-3 text-right font-mono text-gray-700">
-              {{ formatCurrency(item.basic_salary) }}
-            </td>
-            <td class="px-4 py-3 text-right font-mono text-gray-700">
-              {{ formatCurrency(item.house_rent) }}
-            </td>
-            <td class="px-4 py-3 text-right font-mono text-gray-700">
-              {{ formatCurrency(item.medical_allowance) }}
-            </td>
-            <td class="px-4 py-3 text-right font-mono text-gray-700">
-              {{ formatCurrency(item.conveyance_allowance) }}
+            <td class="px-4 py-3 text-right">
+              <button
+                type="button"
+                class="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 font-mono font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
+                @click="openGrossModal(item)"
+              >
+                {{ formatCurrency(item.gross_salary) }}
+                <i class="far fa-info-circle text-[11px] text-blue-400"></i>
+              </button>
             </td>
             <td class="px-4 py-3 text-right">
-              <div class="inline-flex  flex-col items-end gap-1.5">
+              <div class="inline-flex flex-col items-end gap-1.5">
                 <button
                   type="button"
                   class="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 transition-colors"
@@ -620,31 +626,13 @@ const exportExcel = async () => {
                   </span>
                   <i class="far fa-eye text-xs"></i>
                 </button>
-                <!-- <div
-                  v-if="!getAllowanceSummary(item).allowances.length"
-                  class="text-xs text-slate-400"
-                >
-                  No allowance
-                </div> -->
               </div>
             </td>
-            <td class="px-4 py-3 text-right font-mono text-gray-700 ">
-              <span class="text-green-500">{{ item.latest_revision?.increment_value}}</span>
+            <td class="px-4 py-3 text-right font-mono text-gray-700">
+              <span class="text-green-500">{{ item.latest_revision?.increment_value }}</span>
             </td>
             <td class="px-4 py-3 text-right font-mono text-gray-700">
-              <div class="text-xs min-w-[66px]"> {{ item.latest_revision?.effective_month }}</div>
-            </td>
-            <td class="px-4 py-3 text-right font-mono text-gray-700">
-              {{
-                item.pf_deduction != null
-                  ? formatCurrency(item.pf_deduction)
-                  : item.pf_percent != null && item.basic_salary != null
-                    ? formatCurrency((Number(item.basic_salary) * Number(item.pf_percent)) / 100)
-                    : '—'
-              }}
-            </td>
-            <td class="px-4 py-3 text-right font-mono font-semibold text-blue-700">
-              {{ formatCurrency(item.gross_salary) }}
+              <div class="text-xs min-w-[66px]">{{ item.latest_revision?.effective_month }}</div>
             </td>
             <td class="px-4 py-3 text-center text-gray-600 text-xs">
               {{ item.effective_from || '—' }}
@@ -687,10 +675,11 @@ const exportExcel = async () => {
                 </button>
                 <button
                   @click="openCloseModal(item)"
-                  class="p-1.5 text-amber-500 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors"
+                  class="inline-flex items-center gap-1 px-2 py-1.5 text-amber-600 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition-colors text-xs font-medium"
                   title="Set End Date"
                 >
-                  <i class="far fa-calendar-times text-xs"></i>
+                  <i class="far fa-calendar-times text-[11px]"></i>
+                  Close
                 </button>
                 <button
                   @click="goToEdit(item)"
@@ -729,6 +718,76 @@ const exportExcel = async () => {
       @close="closeDelete"
       @confirm="handleDelete"
     />
+
+    <!-- Gross Breakdown Modal -->
+    <div
+      v-if="showGrossModal"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      @click.self="closeGrossModal"
+    >
+      <div class="w-full max-w-sm rounded-xl bg-white shadow-xl border border-gray-200">
+        <div class="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
+          <div>
+            <h3 class="text-base font-semibold text-gray-800">Salary Breakdown</h3>
+            <p class="text-xs text-gray-500 mt-0.5">
+              {{ grossModalItem?.user?.name || '—' }}
+              <span class="text-gray-400">({{ grossModalItem?.user?.employee_id || '—' }})</span>
+            </p>
+          </div>
+          <button class="text-gray-400 hover:text-gray-700" @click="closeGrossModal">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <div class="px-5 py-4 space-y-2">
+          <div class="flex justify-between items-center py-1.5 border-b border-gray-50 text-sm">
+            <span class="text-gray-500">Basic Salary</span>
+            <span class="font-mono font-medium text-gray-800">{{ formatCurrency(grossModalItem?.basic_salary) }}</span>
+          </div>
+          <div class="flex justify-between items-center py-1.5 border-b border-gray-50 text-sm">
+            <span class="text-gray-500">House Rent</span>
+            <span class="font-mono font-medium text-gray-800">{{ formatCurrency(grossModalItem?.house_rent) }}</span>
+          </div>
+          <div class="flex justify-between items-center py-1.5 border-b border-gray-50 text-sm">
+            <span class="text-gray-500">Medical Allowance</span>
+            <span class="font-mono font-medium text-gray-800">{{ formatCurrency(grossModalItem?.medical_allowance) }}</span>
+          </div>
+          <div class="flex justify-between items-center py-1.5 border-b border-gray-50 text-sm">
+            <span class="text-gray-500">Conveyance</span>
+            <span class="font-mono font-medium text-gray-800">{{ formatCurrency(grossModalItem?.conveyance_allowance) }}</span>
+          </div>
+          <div
+            v-if="grossModalItem?.pf_deduction != null || (grossModalItem?.pf_percent != null && grossModalItem?.basic_salary != null)"
+            class="flex justify-between items-center py-1.5 border-b border-gray-50 text-sm"
+          >
+            <span class="text-gray-500">PF Deduction</span>
+            <span class="font-mono font-medium text-red-600">
+              − {{
+                grossModalItem?.pf_deduction != null
+                  ? formatCurrency(grossModalItem.pf_deduction)
+                  : formatCurrency((Number(grossModalItem.basic_salary) * Number(grossModalItem.pf_percent)) / 100)
+              }}
+            </span>
+          </div>
+          <div
+            v-if="getAllowanceSummary(grossModalItem).total > 0"
+            class="flex justify-between items-center py-1.5 border-b border-gray-50 text-sm"
+          >
+            <span class="text-gray-500">Other Allowances</span>
+            <span class="font-mono font-medium text-indigo-700">{{ formatCurrency(getAllowanceSummary(grossModalItem).total) }}</span>
+          </div>
+          <div class="flex justify-between items-center py-2 pt-3 text-sm font-semibold">
+            <span class="text-gray-700">Gross Salary</span>
+            <span class="font-mono text-blue-700 text-base">{{ formatCurrency(grossModalItem?.gross_salary) }}</span>
+          </div>
+        </div>
+
+        <div class="px-5 py-3 border-t border-gray-100 flex justify-between items-center text-xs text-gray-400">
+          <span>Effective: {{ grossModalItem?.effective_from || '—' }} → {{ grossModalItem?.effective_to || 'present' }}</span>
+          <button class="text-blue-500 hover:text-blue-700 font-medium" @click="closeGrossModal">Close</button>
+        </div>
+      </div>
+    </div>
 
     <!-- Set End Date Modal -->
     <div
