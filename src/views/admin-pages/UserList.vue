@@ -564,16 +564,16 @@ onBeforeUnmount(() => {
     <!-- header -->
     <div class="mb-3 rounded-md border border-slate-200 bg-white shadow-sm">
       <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+        <button
+          class="btn-3"
+          title="Back"
+          @click="goBack"
+        >
+          <i class="far fa-arrow-left"></i>
+           Back 
+        </button>
         <div class="flex min-w-0 items-center gap-3">
-          <button
-            class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-            title="Back"
-            @click="goBack"
-          >
-            <i class="far fa-arrow-left"></i>
-          </button>
           <div class="min-w-0">
-            <div class="text-[10px] font-bold uppercase tracking-[0.22em] text-blue-700">Settings / Employee Master</div>
             <h1 class="mt-0.5 truncate text-xl font-semibold leading-tight text-slate-950">Employee Directory</h1>
             <p class="mt-1 text-xs text-slate-500">
               Shift, weekend, KPI, status and exit controls in one operational grid.

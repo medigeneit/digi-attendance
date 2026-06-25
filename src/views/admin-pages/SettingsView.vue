@@ -11,7 +11,7 @@
     </RouterLink>
     <RouterLink :to="{ name: 'LeaveApprovalList', params: { type: 'leave' } }" class="main-button">
       <i class="fas fa-users-class text-3xl"></i>
-      Approval Rules
+      Approval Settings
     </RouterLink>
     <RouterLink :to="{ name: 'LeaveTypeList' }" class="main-button">
       <i class="fas fa-list text-3xl"></i>

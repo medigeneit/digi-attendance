@@ -48,8 +48,8 @@ export const useLeaveApprovalStore = defineStore('leaveApproval', () => {
       leaveApprovals.value = response.data?.data || []
       return response.data
     } catch (err) {
-      error.value = err.response?.data?.message || 'Failed to fetch approval rules.'
-      console.error('Error fetching approval rules:', err)
+      error.value = err.response?.data?.message || 'Failed to fetch approval settings.'
+      console.error('Error fetching approval settings:', err)
     } finally {
       loading.value = false
     }

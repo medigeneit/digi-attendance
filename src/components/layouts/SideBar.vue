@@ -271,7 +271,7 @@ const empRouteNames = ['checklists.board', 'lifecycle.board', 'lifecycle.detail'
 const settingsMenu = [
   { label: 'User List', routeName: 'UserList', feature: 'settings.user.view' },
   { label: 'Holiday List', routeName: 'HoliDayList', feature: 'settings.holiday.view' },
-  { label: 'Approval Rules', routeName: 'LeaveApprovalList', params: { type: 'leave' }, feature: 'settings.approval.view' },
+  { label: 'Approval List', routeName: 'LeaveApprovalList', params: { type: 'leave' }, feature: 'settings.approval.view' },
   { label: 'Leave Type List', routeName: 'LeaveTypeList', feature: 'settings.leave_type.view' },
   { label: 'Shift List', routeName: 'ShiftList', feature: 'settings.shift.view' },
   { label: 'Designation List', routeName: 'DesignationList', feature: 'settings.designation.view' },

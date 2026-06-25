@@ -278,149 +278,150 @@ const defaultAttendanceMessage = computed(() => {
 <template>
   <main class="attendance-page">
     <section class="job-card-console">
-    <header class="page-header">
-      <button class="icon-button" aria-label="Go back" @click="goBack">
-        <i class="far fa-arrow-left"></i>
-      </button>
-      <div class="min-w-0 flex-1">
-        <p class="section-kicker">Attendance operations</p>
-        <h1 class="truncate text-lg font-bold tracking-tight text-slate-950">Employee Job Card</h1>
+      <header class="flex justify-between items-center gap-3 border-b border-slate-100 bg-white rounded px-2.5 py-1.5">
+        <button class="btn-3" aria-label="Go back" @click="goBack">
+          <i class="far fa-arrow-left"></i>
+          <B></B>Back
+        </button>
+        <div class="min-w-0">
+          <p class="section-kicker">Attendance operations</p>
+          <h1 class="truncate text-lg font-bold tracking-tight text-slate-950">Employee Job Card</h1>
+        </div>
+
+        <div class="month-chip"><i class="far fa-calendar"></i>{{ selectedMonthLabel }}</div>
+      </header>
+
+      <section class="">
+        <div class="filter-heading"><span><i class="far fa-filter mr-1.5 text-slate-400"></i>Report filters</span><span class="hidden font-normal normal-case tracking-normal text-slate-400 sm:block">Employee and payroll month</span></div>
+        <div class="p-3">
+        <EmployeeFilter
+          :company_id="filters.company_id"
+          :department_id="filters.department_id"
+          :employee_id="filters.employee_id"
+          :line_type="filters.line_type"
+          :with-type="true"
+          :active-only="true"
+          :initial-value="$route.query"
+          @update:company_id="filters.company_id = $event"
+          @update:department_id="filters.department_id = $event"
+          @update:employee_id="filters.employee_id = $event"
+          @update:line_type="filters.line_type = $event"
+          @filter-change="handleFilterChange"
+          class="w-full"
+        >
+        <FlexibleDatePicker
+          v-model="period"
+          :show-year="false"
+          :show-month="true"
+          :show-date="false"
+          label="Month"
+        />
+        </EmployeeFilter>
+        </div>
+      </section>
+      <div class=" text-slate-700">
+        <div class="overview-grid">
+          <!-- LEFT: Employee profile + actions -->
+          <section v-if="hasSelection" class="employee-panel ep-flex">
+            <div class="ep-identity">
+              <div class="employee-avatar">
+                <img v-if="selectedUser?.photo" :src="selectedUser.photo" :alt="selectedUser?.name" />
+                <span v-else>{{ employeeInitials }}</span>
+              </div>
+              <div class="min-w-0">
+                <h2 class="truncate text-sm font-bold text-slate-950">{{ selectedUser?.name || '…' }}</h2>
+                <p class="mt-0.5 truncate text-[10px] text-slate-400">{{ employeeSubtitle }}</p>
+              </div>
+            </div>
+
+            <dl class="ep-meta">
+              <div><dt>Employee ID</dt><dd class="font-mono">{{ selectedUser?.employee_id || '—' }}</dd></div>
+              <div><dt>Phone</dt><dd>{{ selectedUser?.phone || '—' }}</dd></div>
+              <div><dt>Line type</dt><dd class="capitalize">{{ selectedUser?.type || '—' }}</dd></div>
+              <div><dt>Joining date</dt><dd>{{ selectedUser?.joining_date || '—' }}</dd></div>
+            </dl>
+
+            <div class="ep-actions">
+              <UserMessageSender
+                :user-id="employeeMessageUserId"
+                :user-name="employeeMessageName"
+                :default-message="defaultAttendanceMessage"
+                :context="attendanceMessageContext"
+                :recent-messages="employeeRecentMessages"
+                :show-recent-messages="true"
+                :disabled="!employeeMessageUserId"
+                button-label="Message"
+                modal-title="Attendance message"
+                recent-title="Recent message history"
+                disabled-title="Select an employee first"
+              />
+              <router-link
+                :to="{ name: 'MonthWiseApplicationLog', query: { ...$route.query } }"
+                class="sp-link-btn"
+                target="_blank" rel="noopener noreferrer"
+              >
+                <i class="far fa-clock"></i> App History
+              </router-link>
+            </div>
+          </section>
+
+          <!-- RIGHT: Summary stats -->
+          <section v-if="hasSelection" class="summary-panel">
+
+            <div class="sp-header">
+              <div>
+                <h2 class="sp-title">Monthly summary</h2>
+                <p class="sp-sub">
+                  Weekend {{ attendanceStore?.summary?.total_weekend_days || 0 }}d ·
+                  Holiday {{ attendanceStore?.summary?.total_holiday_days || 0 }}d
+                </p>
+              </div>
+              <div class="sp-rate" :title="`${presentRate}% attendance rate`">
+                <div class="sp-bar"><span class="sp-bar__fill" :style="{ width: `${Math.min(100, presentRate)}%` }"></span></div>
+                <span>{{ presentRate }}%</span>
+              </div>
+            </div>
+
+            <div class="sp-stats">
+              <div class="sp-stat">
+                <span class="sp-stat__num">{{ attendanceStore?.summary?.total_working_days || 0 }}</span>
+                <span class="sp-stat__lbl">Working</span>
+              </div>
+              <div class="sp-stat sp-stat--success">
+                <span class="sp-stat__num">{{ attendanceStore?.summary?.total_present_days || 0 }}</span>
+                <span class="sp-stat__lbl">Present</span>
+              </div>
+              <div class="sp-stat sp-stat--warn">
+                <span class="sp-stat__num">{{ attendanceStore?.summary?.actual_late_day || 0 }}</span>
+                <span class="sp-stat__lbl">Late</span>
+              </div>
+              <div class="sp-stat sp-stat--danger">
+                <span class="sp-stat__num">{{ attendanceStore?.summary?.total_absent_days || 0 }}</span>
+                <span class="sp-stat__lbl">Absent</span>
+              </div>
+            </div>
+
+            <div class="sp-hours">
+              <div class="sp-hour">
+                <span class="sp-hour__lbl">Working / Shift</span>
+                <span class="sp-hour__val">
+                  {{ (attendanceStore?.summary?.total_working_hours ?? '').toString().trim() || '—' }}
+                  / {{ (attendanceStore?.summary?.total_shift_hours ?? '').toString().trim() || '—' }}
+                </span>
+              </div>
+              <div class="sp-hour__sep"></div>
+              <div class="sp-hour">
+                <span class="sp-hour__lbl">Approved OT / Total OT</span>
+                <span class="sp-hour__val">
+                  {{ fmtHours(attendanceStore?.summary?.approved_overtimes) }}
+                  / {{ attendanceStore?.summary?.total_overtime_hours || '0h' }}
+                </span>
+              </div>
+            </div>
+
+          </section>
+        </div>
       </div>
-
-      <div class="month-chip"><i class="far fa-calendar"></i>{{ selectedMonthLabel }}</div>
-    </header>
-
-    <section class="filter-panel">
-      <div class="filter-heading"><span><i class="far fa-filter mr-1.5 text-slate-400"></i>Report filters</span><span class="hidden font-normal normal-case tracking-normal text-slate-400 sm:block">Employee and payroll month</span></div>
-      <div class="p-3">
-      <EmployeeFilter
-        :company_id="filters.company_id"
-        :department_id="filters.department_id"
-        :employee_id="filters.employee_id"
-        :line_type="filters.line_type"
-        :with-type="true"
-        :active-only="true"
-        :initial-value="$route.query"
-        @update:company_id="filters.company_id = $event"
-        @update:department_id="filters.department_id = $event"
-        @update:employee_id="filters.employee_id = $event"
-        @update:line_type="filters.line_type = $event"
-        @filter-change="handleFilterChange"
-        class="w-full"
-      >
-      <FlexibleDatePicker
-        v-model="period"
-        :show-year="false"
-        :show-month="true"
-        :show-date="false"
-        label="Month"
-      />
-      </EmployeeFilter>
-      </div>
-    </section>
-    <div class="overview-area text-slate-700">
-      <div class="overview-grid">
-        <!-- LEFT: Employee profile + actions -->
-        <section v-if="hasSelection" class="employee-panel ep-flex">
-          <div class="ep-identity">
-            <div class="employee-avatar">
-              <img v-if="selectedUser?.photo" :src="selectedUser.photo" :alt="selectedUser?.name" />
-              <span v-else>{{ employeeInitials }}</span>
-            </div>
-            <div class="min-w-0">
-              <h2 class="truncate text-sm font-bold text-slate-950">{{ selectedUser?.name || '…' }}</h2>
-              <p class="mt-0.5 truncate text-[10px] text-slate-400">{{ employeeSubtitle }}</p>
-            </div>
-          </div>
-
-          <dl class="ep-meta">
-            <div><dt>Employee ID</dt><dd class="font-mono">{{ selectedUser?.employee_id || '—' }}</dd></div>
-            <div><dt>Phone</dt><dd>{{ selectedUser?.phone || '—' }}</dd></div>
-            <div><dt>Line type</dt><dd class="capitalize">{{ selectedUser?.type || '—' }}</dd></div>
-            <div><dt>Joining date</dt><dd>{{ selectedUser?.joining_date || '—' }}</dd></div>
-          </dl>
-
-          <div class="ep-actions">
-            <UserMessageSender
-              :user-id="employeeMessageUserId"
-              :user-name="employeeMessageName"
-              :default-message="defaultAttendanceMessage"
-              :context="attendanceMessageContext"
-              :recent-messages="employeeRecentMessages"
-              :show-recent-messages="true"
-              :disabled="!employeeMessageUserId"
-              button-label="Message"
-              modal-title="Attendance message"
-              recent-title="Recent message history"
-              disabled-title="Select an employee first"
-            />
-            <router-link
-              :to="{ name: 'MonthWiseApplicationLog', query: { ...$route.query } }"
-              class="sp-link-btn"
-              target="_blank" rel="noopener noreferrer"
-            >
-              <i class="far fa-clock"></i> App History
-            </router-link>
-          </div>
-        </section>
-
-        <!-- RIGHT: Summary stats -->
-        <section v-if="hasSelection" class="summary-panel">
-
-          <div class="sp-header">
-            <div>
-              <h2 class="sp-title">Monthly summary</h2>
-              <p class="sp-sub">
-                Weekend {{ attendanceStore?.summary?.total_weekend_days || 0 }}d ·
-                Holiday {{ attendanceStore?.summary?.total_holiday_days || 0 }}d
-              </p>
-            </div>
-            <div class="sp-rate" :title="`${presentRate}% attendance rate`">
-              <div class="sp-bar"><span class="sp-bar__fill" :style="{ width: `${Math.min(100, presentRate)}%` }"></span></div>
-              <span>{{ presentRate }}%</span>
-            </div>
-          </div>
-
-          <div class="sp-stats">
-            <div class="sp-stat">
-              <span class="sp-stat__num">{{ attendanceStore?.summary?.total_working_days || 0 }}</span>
-              <span class="sp-stat__lbl">Working</span>
-            </div>
-            <div class="sp-stat sp-stat--success">
-              <span class="sp-stat__num">{{ attendanceStore?.summary?.total_present_days || 0 }}</span>
-              <span class="sp-stat__lbl">Present</span>
-            </div>
-            <div class="sp-stat sp-stat--warn">
-              <span class="sp-stat__num">{{ attendanceStore?.summary?.actual_late_day || 0 }}</span>
-              <span class="sp-stat__lbl">Late</span>
-            </div>
-            <div class="sp-stat sp-stat--danger">
-              <span class="sp-stat__num">{{ attendanceStore?.summary?.total_absent_days || 0 }}</span>
-              <span class="sp-stat__lbl">Absent</span>
-            </div>
-          </div>
-
-          <div class="sp-hours">
-            <div class="sp-hour">
-              <span class="sp-hour__lbl">Working / Shift</span>
-              <span class="sp-hour__val">
-                {{ (attendanceStore?.summary?.total_working_hours ?? '').toString().trim() || '—' }}
-                / {{ (attendanceStore?.summary?.total_shift_hours ?? '').toString().trim() || '—' }}
-              </span>
-            </div>
-            <div class="sp-hour__sep"></div>
-            <div class="sp-hour">
-              <span class="sp-hour__lbl">Approved OT / Total OT</span>
-              <span class="sp-hour__val">
-                {{ fmtHours(attendanceStore?.summary?.approved_overtimes) }}
-                / {{ attendanceStore?.summary?.total_overtime_hours || '0h' }}
-              </span>
-            </div>
-          </div>
-
-        </section>
-      </div>
-    </div>
     </section>
 
     <div v-if="!selectedUser">
@@ -471,7 +472,7 @@ const defaultAttendanceMessage = computed(() => {
 }
 .overview-grid {
   display: grid;
-  grid-template-columns: minmax(300px, .72fr) minmax(0, 1.65fr);
+  grid-template-columns: minmax(100px, .72fr) minmax(0, 1fr);
   align-items: stretch;
   gap: 6px;
   font-size: 14px;

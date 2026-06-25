@@ -101,7 +101,7 @@ const backendType = computed(() => {
   if (!group || group === 'other') return 'other'
   return group  // 'leave'
 })
-const pageTitle = computed(() => `${selectedApplicationType.value?.name || 'Approval'} Approval Rules`)
+const pageTitle = computed(() => `${selectedApplicationType.value?.name || 'Approval'} Approval Settings`)
 
 // All possible step definitions (canonical order)
 const ALL_APPROVER_COLUMNS = [
@@ -485,18 +485,25 @@ const tabIcon = (code) => TAB_ICONS[code] || 'fas fa-circle'
 
 const configuredCount = (approval) =>
   approverColumns.value.filter((col) => approverName(approval, col.key)).length
+
+const goBack = () => router.go(-1)
+
 </script>
 
 <template>
   <div class="pb-8">
 
     <!-- ── Sticky toolbar ── -->
-    <div ref="toolbarRef" class="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
+    <div ref="toolbarRef" class="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200  rounded">
 
       <!-- Page header -->
       <div class="flex items-center justify-between gap-3 px-4 py-3">
+        <button class="btn-3" @click="goBack">
+          <i class="far fa-arrow-left"></i>
+          <span class="hidden md:flex">Back</span>
+        </button>
         <div>
-          <h1 class="title-lg leading-tight">Approval Rules</h1>
+          <h1 class="title-lg leading-tight">Approval Settings</h1>
           <p class="text-xs text-gray-400 mt-0.5">
             <i class="fas fa-layer-group mr-1"></i>{{ pageTitle }}
           </p>
@@ -506,8 +513,8 @@ const configuredCount = (approval) =>
             type="button"
             class="flex h-9 w-9 items-center justify-center rounded-full border border-blue-200 text-blue-600 transition-colors hover:bg-blue-50"
             :aria-expanded="showApprovalRulesHelp"
-            aria-label="Show how approval rules work"
-            title="How Approval Rules Work"
+            aria-label="Show how approval settings work"
+            title="How Approval Settings Work"
             @click="toggleApprovalRulesHelp"
           >
             <i class="fas fa-info-circle"></i>
@@ -555,7 +562,7 @@ const configuredCount = (approval) =>
       <div v-if="showApprovalRulesHelp" class="rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-3 text-xs text-blue-800 space-y-1.5">
         <p class="font-semibold text-blue-900 flex items-center gap-1.5">
           <i class="fas fa-info-circle text-blue-500"></i>
-          How Approval Rules Work
+          How Approval Settings Work
         </p>
         <ul class="space-y-1 pl-4 list-disc text-blue-700">
           <li>
@@ -584,21 +591,24 @@ const configuredCount = (approval) =>
 
       <!-- Table -->
       <div v-else-if="filteredApprovals.length" class="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-        <div class="overflow-x-auto overflow-y-visible">
+        <div
+          class="overflow-x-auto overflow-y-auto"
+          :style="{ maxHeight: `calc(100vh - ${toolbarH + 32}px)` }"
+        >
           <table class="min-w-[980px] w-full text-sm">
-            <thead>
+            <thead class="sticky top-0 z-10">
               <tr class="bg-gray-50 border-b border-gray-200">
-                <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 w-36">Department</th>
-                <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Rule Name</th>
+                <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 w-40 bg-gray-50">Department</th>
+                <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 bg-gray-50">Rule Name</th>
                 <th
                   v-for="col in approverColumns"
                   :key="col.key"
-                  class="px-3 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-gray-500"
+                  class="px-3 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-gray-500 bg-gray-50"
                 >
                   {{ col.label }}
                 </th>
-                <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 w-40">Last Update</th>
-                <th class="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-gray-500 w-24">Actions</th>
+                <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 w-40 bg-gray-50">Last Update</th>
+                <th class="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-gray-500 w-24 bg-gray-50">Actions</th>
               </tr>
             </thead>
 
@@ -610,7 +620,7 @@ const configuredCount = (approval) =>
               >
                 <!-- Department -->
                 <td class="px-4 py-2.5">
-                  <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-200">
+                  <span class="inline-flex items-center max-w-[130px] truncate rounded-md bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-200" :title="approval?.department?.name || '—' ">
                     {{ approval?.department?.name || '—' }}
                   </span>
                 </td>
