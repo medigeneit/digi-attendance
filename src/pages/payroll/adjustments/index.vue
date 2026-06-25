@@ -46,7 +46,7 @@ const filters = ref({
   page:          1,
   per_page:      15,
 })
-const showFilters = ref(false)
+const showFilters = ref(true)
 
 const monthPeriod = computed({
   get: () => monthToPeriod(filters.value.month),
@@ -379,9 +379,9 @@ onMounted(() => {
               <td class="px-3 py-2 text-right">
                 <span
                   class="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 font-mono text-xs font-bold"
-                  :class="Number(row.amount) >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'"
+                  :class="row.adjustment_type?.toLowerCase() === 'deduction' ? 'bg-rose-50 text-rose-700' : (Number(row.amount) >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700')"
                 >
-                  {{ Number(row.amount) >= 0 ? '+' : '' }}{{ formatCurrency(row.amount) }}
+                  {{ row.adjustment_type?.toLowerCase() === 'deduction' ? '-' : (Number(row.amount) >= 0 ? '+' : '') }}{{ formatCurrency(row.amount) }}
                 </span>
               </td>
 
