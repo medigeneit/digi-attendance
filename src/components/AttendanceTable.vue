@@ -297,8 +297,8 @@ const exchangeTagColor = (s) => ({
 <style scoped>
 /* ── Container ── */
 .att-wrap   { width: 100%; }
-.att-scroll { width: 100%; overflow: auto; max-height: 80vh; }
-.att-wrap--neutral .att-scroll { max-height: 72vh; }
+.att-scroll { width: 100%; overflow: auto; max-height: 72vh; }
+.att-wrap--neutral .att-scroll { max-height: 62vh; }
 
 /* ── Legend ── */
 .att-legend {
