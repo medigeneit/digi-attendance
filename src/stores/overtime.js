@@ -7,6 +7,7 @@ export const useOvertimeStore = defineStore('overtime', () => {
   const overtimes = ref([])
   const reports = ref([])
   const overtime = ref(null)
+  const duplicateOvertime = ref(null)
   const loading = ref(false)
   const error = ref(null)
   const selectedMonth = ref(new Date().toISOString().substring(0, 7))
@@ -63,8 +64,13 @@ export const useOvertimeStore = defineStore('overtime', () => {
     error.value = null
     try {
       const response = await apiClient.get(`/${overtimeApplicationId}/user-overtimes`)
-      overtimes.value = response.data
-      selectedMonth.value = new Date(overtimes.value[0].date).toISOString().substring(0, 7)
+      const responseData = response.data?.data ?? response.data
+      overtimes.value = Array.isArray(responseData) ? responseData : []
+
+      const firstOvertimeDate = overtimes.value[0]?.date
+      if (firstOvertimeDate) {
+        selectedMonth.value = String(firstOvertimeDate).substring(0, 7)
+      }
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch overtimes'
       console.error('Error fetching overtimes:', err)
@@ -76,12 +82,17 @@ export const useOvertimeStore = defineStore('overtime', () => {
   const createOvertime = async (data = {}) => {
     loading.value = true
     error.value = null
+    duplicateOvertime.value = null
     try {
       const response = await apiClient.post('/user-overtimes', data)
       overtimes.value.push(response.data.overtime)
       return response.data.overtime
     } catch (err) {
-      error.value = err.response?.data?.message || 'Failed to create overtime'
+      duplicateOvertime.value = err.response?.status === 409 ? err.response?.data?.overtime || null : null
+      error.value =
+        err.response?.data?.message ||
+        err.response?.data?.errors?.date?.[0] ||
+        'Failed to create overtime'
       console.error('Error creating overtime:', err)
       throw new Error(error.value)
     } finally {
@@ -96,7 +107,7 @@ export const useOvertimeStore = defineStore('overtime', () => {
     try {
       const response = await apiClient.get(`/overtimes/${id}`)
 
-      overtime.value = response.data || {}
+      overtime.value = response.data?.data || response.data?.overtime || response.data || {}
 
       const notificationStore = useNotificationStore()
 
@@ -231,6 +242,7 @@ export const useOvertimeStore = defineStore('overtime', () => {
     overtimes,
     reports,
     overtime,
+    duplicateOvertime,
     loading,
     error,
     selectedMonth,

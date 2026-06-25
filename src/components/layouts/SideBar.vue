@@ -26,6 +26,73 @@ const currentName = computed(() => route.name)
 const isAdmin = computed(() => ['admin', 'super_admin', 'developer'].includes(props.user?.role))
 
 const isSuperAdminOrDev = computed(() => ['super_admin', 'developer'].includes(props.user?.role))
+const canFeature = (permissionKey) => authStore.canFeature(permissionKey)
+const canAnyFeature = (permissionKeys) => permissionKeys.some((key) => canFeature(key))
+const canReports = computed(() => canAnyFeature(['attendance.report', 'attendance.export']))
+const canKpi = computed(() => canAnyFeature(['kpi.view', 'kpi.manage', 'kpi.review', 'kpi.export']))
+const canHrd = computed(() => canAnyFeature(['attendance.view', 'attendance.report', 'attendance.adjust']))
+const payrollFeatureKeys = [
+  'payroll.salary_structures.view',
+  'payroll.salary_structures.manage',
+  'payroll.salary_revisions.manage',
+  'payroll.meal_entries.view',
+  'payroll.meal_entries.manage',
+  'payroll.loans.view',
+  'payroll.loans.manage',
+  'payroll.advance_deductions.view',
+  'payroll.advance_deductions.manage',
+  'payroll.arrears.view',
+  'payroll.arrears.manage',
+  'payroll.security_money.view',
+  'payroll.security_money.manage',
+  'payroll.batches.view',
+  'payroll.batches.generate',
+  'payroll.batches.approve',
+  'payroll.reports.view',
+  'payroll.reports.export',
+  'payroll.doctor.view',
+  'payroll.doctor.manage',
+  'payroll.bank_adviser.view',
+  'payroll.slips.view',
+  'payroll.adjustments.view',
+  'payroll.adjustments.manage',
+]
+const canPayroll = computed(() => canAnyFeature(payrollFeatureKeys))
+const canSettings = computed(() =>
+  canAnyFeature([
+    'settings.user.view',
+    'settings.holiday.view',
+    'settings.approval.view',
+    'settings.leave_type.view',
+    'settings.shift.view',
+    'settings.designation.view',
+    'settings.department.view',
+    'settings.company.view',
+    'settings.unit.view',
+    'settings.company_bank.view',
+    'settings.device.view',
+    'settings.zk_user.view',
+    'settings.permission.view',
+    'settings.feature_permission.view',
+    'settings.kpi_criteria.view',
+    'settings.kpi_forms.view',
+    'settings.kpi_permissions.view',
+    'settings.joining_template.view',
+    'settings.exit_template.view',
+  ]),
+)
+const canEmpManage = computed(() =>
+  canAnyFeature(['employee.view', 'emp_reports.view', 'lifecycle.view']),
+)
+const canCareers = computed(() =>
+  canAnyFeature([
+    'careers.jobs.view',
+    'careers.jobs.manage',
+    'careers.applications.view',
+    'careers.applications.manage',
+  ]),
+)
+const canSms = computed(() => canAnyFeature(['sms.view', 'sms.manage']))
 
 const logout = () => {
   authStore.logout()
@@ -56,6 +123,7 @@ const matchesQuery = (label) => {
 // Core (visible for everyone)
 const coreMenu = [
   { label: 'Dashboard', to: { path: '/dashboard' }, icon: 'fad fa-table' },
+  { label: 'My Work', to: { path: '/my-work' }, icon: 'fad fa-calendar-check' },
   { label: 'Task List', to: { path: '/my-requirement-tasks' }, icon: 'fad fa-tasks' },
   { label: 'Profile', to: { path: '/profile' }, icon: 'fad fa-user' },
   { label: 'Notifications', to: { path: '/notifications' }, icon: 'fad fa-bells' },
@@ -127,6 +195,12 @@ const hrdRouteNames = hrdMenu.map((i) => i.routeName)
 // EmpManage
 const empManageMenu = [
   {
+    key: 'reports_lists',
+    label: 'Reports & Lists',
+    to: { name: 'emp-manage.reports' },
+    items: [],
+  },
+  {
     key: 'onboarding',
     label: 'Onboarding',
     to: { name: 'lifecycle.board', params: { flowType: 'onboarding' } },
@@ -191,90 +265,114 @@ const empManageMenu = [
     ],
   },
 ]
-const empRouteNames = ['checklists.board', 'lifecycle.board', 'lifecycle.detail']
+const empRouteNames = ['checklists.board', 'lifecycle.board', 'lifecycle.detail', 'emp-manage.reports']
 
 // Settings
 const settingsMenu = [
-  { label: 'User List', routeName: 'UserList' },
-  { label: 'Holiday List', routeName: 'HoliDayList' },
-  { label: 'Leave Approval List', routeName: 'LeaveApprovalList' },
-  { label: 'Other Approval List', routeName: 'OtherApprovalList' },
-  { label: 'Leave Type List', routeName: 'LeaveTypeList' },
-  { label: 'Shift List', routeName: 'ShiftList' },
-  { label: 'Designation List', routeName: 'DesignationList' },
-  { label: 'Department List', routeName: 'DepartmentList' },
-  { label: 'Company List', routeName: 'CompanyList' },
-  { label: 'Company Bank Accounts', routeName: 'CompanyBankAccountList' },
-  { label: 'Device List', routeName: 'DeviceList' },
-  { label: 'ZK User Management', routeName: 'ZKUsers' },
-  { label: 'Permission List', routeName: 'PermissionList' },
-  { label: 'Monthly KPI Criteria', routeName: 'KpiMonthlyList' },
-  { label: 'KPI Forms', routeName: 'KpiCycles' },
-  { label: 'KPI Permissions', routeName: 'LaneOverrides' },
-  { label: 'Joining Template Items', routeName: 'TemplateItems', params: { id: 1 } },
-  { label: 'Exit Template Items', routeName: 'TemplateItems', params: { id: 2 } },
+  { label: 'User List', routeName: 'UserList', feature: 'settings.user.view' },
+  { label: 'Holiday List', routeName: 'HoliDayList', feature: 'settings.holiday.view' },
+  { label: 'Approval List', routeName: 'LeaveApprovalList', params: { type: 'leave' }, feature: 'settings.approval.view' },
+  { label: 'Leave Type List', routeName: 'LeaveTypeList', feature: 'settings.leave_type.view' },
+  { label: 'Shift List', routeName: 'ShiftList', feature: 'settings.shift.view' },
+  { label: 'Designation List', routeName: 'DesignationList', feature: 'settings.designation.view' },
+  { label: 'Department List', routeName: 'DepartmentList', feature: 'settings.department.view' },
+  { label: 'Company List', routeName: 'CompanyList', feature: 'settings.company.view' },
+  { label: 'Unit List', routeName: 'UnitList', feature: 'settings.unit.view' },
+  { label: 'Bank Accounts', routeName: 'CompanyBankAccountList', feature: 'settings.company_bank.view' },
+  { label: 'Device List', routeName: 'DeviceList', feature: 'settings.device.view' },
+  { label: 'ZK User Management', routeName: 'ZKUsers', feature: 'settings.zk_user.view' },
+  { label: 'Permission List', routeName: 'PermissionList', feature: 'settings.permission.view' },
+  { label: 'Feature Permissions', routeName: 'FeaturePermissionList', feature: 'settings.feature_permission.view' },
+  { label: 'Monthly KPI Criteria', routeName: 'KpiMonthlyList', feature: 'settings.kpi_criteria.view' },
+  { label: 'KPI Forms', routeName: 'KpiCycles', feature: 'settings.kpi_forms.view' },
+  { label: 'KPI Permissions', routeName: 'LaneOverrides', feature: 'settings.kpi_permissions.view' },
+  { label: 'Joining Template Items', routeName: 'TemplateItems', params: { id: 1 }, feature: 'settings.joining_template.view' },
+  { label: 'Exit Template Items', routeName: 'TemplateItems', params: { id: 2 }, feature: 'settings.exit_template.view' },
 ]
 const settingsRouteNames = settingsMenu.map((i) => i.routeName)
 
 // Careers
 const careerMenu = [
-  { label: 'Job Circulars', routeName: 'AdminCareersJobs' },
-  { label: 'Applications', routeName: 'AdminCareersApplications' },
+  { label: 'Job Circulars', routeName: 'AdminCareersJobs', feature: 'careers.jobs.view' },
+  { label: 'Applications', routeName: 'AdminCareersApplications', feature: 'careers.applications.view' },
 ]
 const careerRouteNames = careerMenu.map((i) => i.routeName)
 
+const smsMenu = [
+  { label: 'Events', routeName: 'SmsCampaignList', feature: 'sms.view' },
+  { label: 'New Event', routeName: 'SmsCampaignAdd', feature: 'sms.manage' },
+]
+const smsRouteNames = [...smsMenu.map((i) => i.routeName), 'SmsCampaignShow', 'SmsCampaignRecipients']
+
 const payrollMenu = [
-  { label: 'Salary Structures', routeName: 'PayrollSalaryStructureList' },
-  { label: 'Salary Revisions', routeName: 'PayrollSalaryRevisionCreate' },
-  { label: 'Meal Entries', routeName: 'PayrollMealEntryList' },
-  { label: 'Loans', routeName: 'PayrollEmployeeLoanList' },
-  { label: 'Advance Deductions', routeName: 'PayrollAdvanceDeductionList' },
+  { label: 'Salary Structures', routeName: 'PayrollSalaryStructureList', feature: 'payroll.salary_structures.view' },
+  { label: 'Salary Revisions', routeName: 'PayrollSalaryRevisionCreate', feature: 'payroll.salary_revisions.manage' },
+  { label: 'Meal Entries', routeName: 'PayrollMealEntryList', feature: 'payroll.meal_entries.view' },
+  { label: 'Loans', routeName: 'PayrollEmployeeLoanList', feature: 'payroll.loans.view' },
+  { label: 'Advance Deductions', routeName: 'PayrollAdvanceDeductionList', feature: 'payroll.advance_deductions.view' },
   // { label: 'Bulk Advance Deduction', routeName: 'PayrollAdvanceDeductionCreate' },
-  { label: 'Payroll Arrears', routeName: 'PayrollArrearEntryList' },
+  { label: 'Payroll Arrears', routeName: 'PayrollArrearEntryList', feature: 'payroll.arrears.view' },
   // { label: 'Bulk Arrear Entry', routeName: 'PayrollArrearEntryCreate' },
-  { label: 'Security Money', routeName: 'PayrollSecurityMoneyList' },
-  { label: 'Payroll Batches', routeName: 'PayrollBatchList' },
-  { label: 'Generate Payroll', routeName: 'PayrollBatchGenerate' },
-  { label: 'Bank Adviser List', routeName: 'PayrollBankAdviserList' },
-  { label: 'Payroll Slip List', routeName: 'PayrollSlipList' },
-  { label: 'Payrolls', routeName: 'PayrollList' },
-  { label: 'Post Payroll Adjustments', routeName: 'PayrollAdjustmentList' },
+  { label: 'Security Money', routeName: 'PayrollSecurityMoneyList', feature: 'payroll.security_money.view' },
+  { label: 'Payroll Batches', routeName: 'PayrollBatchList', feature: 'payroll.batches.view' },
+  { label: 'Generate Payroll', routeName: 'PayrollBatchGenerate', feature: 'payroll.batches.generate' },
+  { label: 'Doctor Payroll', routeName: 'DoctorPayrollList', feature: 'payroll.doctor.view' },
+  { label: 'Bank Advise', routeName: 'PayrollBankAdviserList', feature: 'payroll.bank_adviser.view' },
+  { label: 'Payroll Slip List', routeName: 'PayrollSlipList', feature: 'payroll.slips.view' },
+  { label: 'Payrolls', routeName: 'PayrollList', feature: 'payroll.reports.view' },
+  { label: 'Post Payroll Adjustments', routeName: 'PayrollAdjustmentList', feature: 'payroll.adjustments.view' },
 
 ]
 const payrollRouteNames = payrollMenu.map((i) => i.routeName)
-const filteredPayrollMenu = computed(() =>
-  normalizedQuery.value ? payrollMenu.filter((i) => matchesQuery(i.label)) : payrollMenu,
-)
+const filterBySearch = (items) =>
+  normalizedQuery.value ? items.filter((i) => matchesQuery(i.label)) : items
 
-const filteredReportsMenu = computed(() =>
-  normalizedQuery.value ? reportsMenu.filter((i) => matchesQuery(i.label)) : reportsMenu,
-)
-const filteredKpiMenu = computed(() =>
-  normalizedQuery.value ? kpiMenu.filter((i) => matchesQuery(i.label)) : kpiMenu,
-)
-const filteredHrdMenu = computed(() =>
-  normalizedQuery.value ? hrdMenu.filter((i) => matchesQuery(i.label)) : hrdMenu,
-)
+const filteredPayrollMenu = computed(() => {
+  if (!canPayroll.value) return []
+  return filterBySearch(payrollMenu.filter((item) => !item.feature || canFeature(item.feature)))
+})
+
+const filteredReportsMenu = computed(() => (canReports.value ? filterBySearch(reportsMenu) : []))
+const filteredKpiMenu = computed(() => (canKpi.value ? filterBySearch(kpiMenu) : []))
+const filteredHrdMenu = computed(() => (canHrd.value ? filterBySearch(hrdMenu) : []))
 const filteredEmpManageMenu = computed(() => {
-  if (!normalizedQuery.value) return empManageMenu
+  const allowedGroups = empManageMenu.filter((group) => {
+    if (group.key === 'reports_lists') return canFeature('emp_reports.view')
+    return canFeature('lifecycle.view')
+  })
 
-  return empManageMenu
+  if (!normalizedQuery.value) return allowedGroups
+
+  return allowedGroups
     .map((group) => {
       const groupMatched = matchesQuery(group.label)
+      // Direct-link entries (no subitems) — keep only if group label matches
+      if (!group.items?.length) return groupMatched ? group : null
       const items = groupMatched
         ? group.items
         : group.items.filter((item) => matchesQuery(item.label))
-
       return { ...group, items }
     })
-    .filter((group) => group.items.length > 0)
+    .filter((group) => {
+      if (!group) return false
+      if (!group.items?.length) return true   // direct-link — label already checked above
+      return group.items.length > 0
+    })
 })
-const filteredSettingsMenu = computed(() =>
-  normalizedQuery.value ? settingsMenu.filter((i) => matchesQuery(i.label)) : settingsMenu,
-)
-const filteredCareerMenu = computed(() =>
-  normalizedQuery.value ? careerMenu.filter((i) => matchesQuery(i.label)) : careerMenu,
-)
+const filteredSettingsMenu = computed(() => {
+  if (!canSettings.value) return []
+  return filterBySearch(settingsMenu.filter((item) => !item.feature || canFeature(item.feature)))
+})
+const filteredCareerMenu = computed(() => {
+  if (!canCareers.value) return []
+  const allowedItems = careerMenu.filter((item) => !item.feature || canFeature(item.feature))
+  return normalizedQuery.value ? allowedItems.filter((i) => matchesQuery(i.label)) : allowedItems
+})
+const filteredSmsMenu = computed(() => {
+  if (!canSms.value) return []
+  const allowedItems = smsMenu.filter((item) => !item.feature || canFeature(item.feature))
+  return normalizedQuery.value ? allowedItems.filter((i) => matchesQuery(i.label)) : allowedItems
+})
 
 const submenuOpen = (key, filteredList) =>
   normalizedQuery.value ? filteredList.length > 0 : isSubmenuOpen(key)
@@ -308,6 +406,9 @@ const isEmpGroupActive = (group) => {
       route.params.flowType === group.to.params?.flowType
   }
 
+  // Direct-link entry (no subitems) — match on route name
+  if (!group.items?.length) return currentName.value === group.to.name
+
   return group.items?.some((item) => isEmpItemActive(item))
 }
 
@@ -323,7 +424,8 @@ const hasSearchHit = computed(() => {
     filteredHrdMenu.value.length ||
     filteredEmpManageMenu.value.length ||
     filteredSettingsMenu.value.length ||
-    filteredCareerMenu.value.length
+    filteredCareerMenu.value.length ||
+    filteredSmsMenu.value.length
   || filteredPayrollMenu.value.length
 
   return coreHits || (isAdmin.value && authStore.isAdminMood && (adminTopHits || anySubmenuHit))
@@ -346,6 +448,7 @@ onMounted(() => {
   else if (groupActive(careerRouteNames, '/admin/careers')) expandedMenuKey.value = 'careers'
   else if (groupActive(payrollRouteNames, '/payroll') || groupActive(payrollRouteNames, '/payrolls'))
     expandedMenuKey.value = 'payroll'
+  else if (groupActive(smsRouteNames, '/sms-campaigns')) expandedMenuKey.value = 'sms'
 })
 
 // close submenus when sidebar collapsed
@@ -560,7 +663,7 @@ watch(
           <h4 v-if="open">Task Management</h4>
         </RouterLink>
 
-        <template v-if="!isSearching || filteredReportsMenu.length">
+        <template v-if="filteredReportsMenu.length">
           <RouterLink
             to="/reports"
             custom
@@ -632,7 +735,7 @@ watch(
           </transition>
         </template>
 
-        <template v-if="!isSearching || filteredKpiMenu.length">
+        <template v-if="filteredKpiMenu.length">
           <RouterLink to="/kpi" custom v-slot="{ navigate }">
             <div
               class="side-menu"
@@ -697,7 +800,7 @@ watch(
           </transition>
         </template>
 
-        <template v-if="!isSearching || filteredHrdMenu.length">
+        <template v-if="filteredHrdMenu.length">
           <RouterLink to="/hrd" custom v-slot="{ navigate }">
             <div
               class="side-menu"
@@ -762,7 +865,7 @@ watch(
           </transition>
         </template>
 
-        <template v-if="isSuperAdminOrDev && (!isSearching || filteredEmpManageMenu.length)">
+        <template v-if="isAdmin && canEmpManage && (!isSearching || filteredEmpManageMenu.length)">
           <RouterLink to="/employee-management" custom v-slot="{ navigate }">
             <div
               class="side-menu"
@@ -814,7 +917,7 @@ watch(
                   }"
                 >
                   <span class="flex-1">{{ group.label }}</span>
-                  <span class="text-[11px] text-slate-400">/</span>
+                  <span v-if="group.items?.length" class="text-[11px] text-slate-400">/</span>
                 </RouterLink>
 
                 <RouterLink
@@ -841,7 +944,7 @@ watch(
           </transition>
         </template>
 
-        <template v-if="!isSearching || filteredSettingsMenu.length">
+        <template v-if="filteredSettingsMenu.length">
           <RouterLink to="/settings" custom v-slot="{ navigate }">
             <div
               class="side-menu"
@@ -976,7 +1079,75 @@ watch(
           </transition>
         </template>
 
-        <template v-if="!isSearching || filteredPayrollMenu.length">
+        <template v-if="!isSearching || filteredSmsMenu.length">
+          <RouterLink to="/sms-campaigns" custom v-slot="{ navigate }">
+            <div
+              class="side-menu"
+              :class="{
+                'flex justify-center': !open,
+                'side-menu-active': groupActive(smsRouteNames, '/sms-campaigns'),
+              }"
+              @click="navigate"
+            >
+              <div class="flex items-center justify-between w-full">
+                <div class="flex items-center gap-2">
+                  <i class="fas fa-sms py-2"></i>
+                  <h4 v-if="open">Bulk SMS</h4>
+                </div>
+
+                <button
+                  v-if="open"
+                  class="p-1 rounded hover:bg-gray-100 hover:text-black"
+                  @click.stop="toggleSubmenu('sms')"
+                  :aria-expanded="submenuOpen('sms', filteredSmsMenu)"
+                >
+                  <i
+                    class="fas text-xs"
+                    :class="
+                      submenuOpen('sms', filteredSmsMenu)
+                        ? 'fa-chevron-up'
+                        : 'fa-chevron-down'
+                    "
+                  ></i>
+                </button>
+              </div>
+            </div>
+          </RouterLink>
+
+          <transition name="submenu">
+            <nav
+              v-if="open && submenuOpen('sms', filteredSmsMenu)"
+              class="submenu-accordion relative mt-2 ml-3 space-y-1 rounded-xl bg-slate-50/70 px-2 py-2 shadow-sm"
+            >
+              <span
+                aria-hidden="true"
+                class="absolute left-3 top-2 bottom-2 w-px bg-slate-200"
+              ></span>
+              <RouterLink
+                v-for="item in filteredSmsMenu"
+                :key="item.routeName"
+                :to="{ name: item.routeName }"
+                class="group relative flex items-center gap-2 rounded-lg py-2 pl-7 pr-3 text-[13px] text-slate-600 transition duration-200 ease-out hover:bg-slate-100 hover:text-slate-900 hover:translate-x-0.5"
+                :class="{
+                  'bg-blue-50/80 text-blue-700 font-semibold shadow-sm':
+                    currentName === item.routeName,
+                }"
+              >
+                <span
+                  class="absolute left-3 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-slate-300 transition group-hover:bg-blue-400"
+                  :class="currentName === item.routeName ? 'bg-blue-500' : ''"
+                ></span>
+                <span class="flex-1">{{ item.label }}</span>
+                <span
+                  class="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-blue-600 opacity-0 transition"
+                  :class="currentName === item.routeName ? 'opacity-100' : 'group-hover:opacity-60'"
+                ></span>
+              </RouterLink>
+            </nav>
+          </transition>
+        </template>
+
+        <template v-if="filteredPayrollMenu.length">
           <RouterLink to="/payroll/salary-structures" custom v-slot="{ navigate }">
             <div
               class="side-menu"

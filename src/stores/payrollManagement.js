@@ -79,6 +79,16 @@ export const usePayrollManagementStore = defineStore('payrollManagement', () => 
     }
   }
 
+  const fetchAudit = async (id) => {
+    try {
+      const res = await apiClient.get(`/payrolls/${id}/audit`)
+      return res.data?.data || res.data
+    } catch (err) {
+      const e = toError(err, 'Failed to fetch payroll audit details')
+      throw e
+    }
+  }
+
   const updateAdvanceDeduction = async (id, payload) => {
     loading.value = true
     error.value = null
@@ -94,6 +104,29 @@ export const usePayrollManagementStore = defineStore('payrollManagement', () => 
       return res.data
     } catch (err) {
       const e = toError(err, 'Failed to update advance deduction')
+      error.value = e.message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const recalculateNetPayment = async (id) => {
+    loading.value = true
+    error.value = null
+    try {
+      const res = await apiClient.patch(`/payrolls/${id}/net-payment`)
+      const updated = res.data?.data || res.data
+      if (item.value && String(item.value.id) === String(id)) {
+        item.value = { ...item.value, ...updated }
+      }
+      const idx = list.value.findIndex((r) => String(r.id) === String(id))
+      if (idx !== -1) {
+        list.value[idx] = { ...list.value[idx], ...updated }
+      }
+      return res.data
+    } catch (err) {
+      const e = toError(err, 'Failed to update net payment')
       error.value = e.message
       throw e
     } finally {
@@ -161,7 +194,9 @@ export const usePayrollManagementStore = defineStore('payrollManagement', () => 
     fetchList,
     fetchItem,
     updatePaymentStatus,
+    fetchAudit,
     updateAdvanceDeduction,
+    recalculateNetPayment,
     addArrear,
     downloadExcel,
   }

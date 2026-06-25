@@ -1,19 +1,27 @@
-import { defineStore } from 'pinia';
-import { computed, ref } from 'vue';
-import apiClient from '../axios';
+import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
+import apiClient from '../axios'
+
+function storedUser() {
+  try {
+    return JSON.parse(localStorage.getItem('user') || 'null')
+  } catch {
+    return null
+  }
+}
 
 export const useAuthStore = defineStore('auth', () => {
-  const user = ref(null);
-  const token = ref(null);
-  const error = ref(null);
+  const user = ref(null)
+  const token = ref(null)
+  const error = ref(null)
+  const featurePermissions = ref({})          // effective (includes role + super_admin bypass)
+  const explicitPermissions = ref({})         // user_feature_permissions only — no role bypass
+  const featurePermissionsLoaded = ref(false)
 
-  const isAuthenticated = computed(() => !!token.value);
-
-  // ✅ Admin Mode state
+  const isAuthenticated = computed(() => !!token.value)
   const isAdminMood = ref(localStorage.getItem('admin_mode') === 'true')
 
-
-   function toggleAdminMode() {
+  function toggleAdminMode() {
     isAdminMood.value = !isAdminMood.value
     localStorage.setItem('admin_mode', isAdminMood.value)
   }
@@ -25,65 +33,115 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function register(name, phone, password) {
     try {
-      const response = await apiClient.post('/register', { name, phone, password });
-      user.value = response.data.user;
-      token.value = response.data.access_token;
-      localStorage.setItem('auth_token', token.value);
-      localStorage.setItem('user', JSON.stringify(user.value));
-      error.value = null;
+      const response = await apiClient.post('/register', { name, phone, password, client_type: 'web' })
+      user.value = response.data.user
+      token.value = response.data.access_token
+      localStorage.setItem('auth_token', token.value)
+      localStorage.setItem('user', JSON.stringify(user.value))
+      await fetchFeaturePermissions(true)
+      error.value = null
     } catch (err) {
-      error.value = err.response?.data?.message || 'Registration failed.';
+      error.value = err.response?.data?.message || 'Registration failed.'
     }
   }
 
-  async function login(email, password) {
+  async function login(email, password, remember = false) {
     try {
-      const response = await apiClient.post('/login', { email, password });
-      user.value = response.data.user;
-      token.value = response.data.token;
-      localStorage.setItem('auth_token', token.value);
-      localStorage.setItem('user', JSON.stringify(user.value));
-      error.value = null;
+      const response = await apiClient.post('/login', { email, password, remember, client_type: 'web' })
+      user.value = response.data.user
+      token.value = response.data.token
+      localStorage.setItem('auth_token', token.value)
+      localStorage.setItem('user', JSON.stringify(user.value))
+      await fetchFeaturePermissions(true)
+      error.value = null
     } catch (err) {
-      error.value = err.response?.data?.message || 'Login failed.';
+      error.value = err.response?.data?.message || 'Login failed.'
     }
   }
 
   function logout() {
-    user.value = null;
-    token.value = null;
-    isAdminMood.value = false;
-    localStorage.clear();
+    user.value = null
+    token.value = null
+    featurePermissions.value = {}
+    explicitPermissions.value = {}
+    featurePermissionsLoaded.value = false
+    isAdminMood.value = false
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('user')
+    localStorage.removeItem('admin_mode')
+    localStorage.removeItem('next')
   }
 
   async function checkPhone(phone) {
     try {
-      const response = await apiClient.post('/check-phone', { phone });
-      return response.data.isRegistered;
+      const response = await apiClient.post('/check-phone', { phone })
+      return response.data.isRegistered
     } catch (err) {
-      error.value = err.response?.data?.message || 'Failed to check phone.';
-      return false;
+      error.value = err.response?.data?.message || 'Failed to check phone.'
+      return false
     }
   }
 
   async function fetchUser() {
     try {
-      const storedToken = localStorage.getItem('auth_token');
+      const storedToken = localStorage.getItem('auth_token')
       if (storedToken) {
         const response = await apiClient.get('/user', {
           headers: {
             Authorization: `Bearer ${storedToken}`,
           },
-        });
-        user.value = response.data;
-        token.value = storedToken;
+        })
+        user.value = response.data
+        token.value = storedToken
+        await fetchFeaturePermissions()
       }
     } catch (err) {
       if (err?.response?.status === 401) {
-        logout();
+        logout()
       }
-      error.value = err.response?.data?.message || 'Failed to fetch user.';
+      error.value = err.response?.data?.message || 'Failed to fetch user.'
     }
+  }
+
+  async function fetchFeaturePermissions(force = false) {
+    if (featurePermissionsLoaded.value && !force) return featurePermissions.value
+
+    const storedToken = token.value || localStorage.getItem('auth_token')
+    if (!storedToken) return {}
+
+    try {
+      const response = await apiClient.get('/me/feature-permissions', {
+        headers: {
+          Authorization: `Bearer ${storedToken}`,
+        },
+      })
+      featurePermissions.value = response.data?.data?.effective || {}
+      explicitPermissions.value = response.data?.data?.permissions || {}
+      featurePermissionsLoaded.value = true
+      return featurePermissions.value
+    } catch (err) {
+      if (err?.response?.status === 401) {
+        logout()
+      }
+      error.value = err.response?.data?.message || 'Failed to fetch feature permissions.'
+      return featurePermissions.value
+    }
+  }
+
+  function canFeature(permissionKey) {
+    if (!permissionKey) return true
+    const currentUser = user.value || storedUser()
+    if (['super_admin', 'developer'].includes(currentUser?.role)) return true
+    if (!featurePermissionsLoaded.value) return true
+    return featurePermissions.value[permissionKey] !== false
+  }
+
+  // Explicit check — no super_admin/developer bypass.
+  // Only true if explicitly granted in user_feature_permissions.
+  function canExplicit(permissionKey) {
+    if (!permissionKey) return false
+    if (!featurePermissionsLoaded.value) return false
+    return explicitPermissions.value[permissionKey] === true
   }
 
   async function updateProfile(payload) {
@@ -92,12 +150,12 @@ export const useAuthStore = defineStore('auth', () => {
         headers: {
           Authorization: `Bearer ${token.value}`,
         },
-      });
-      user.value = response.data.user;
-      localStorage.setItem('user', JSON.stringify(user.value));
-      error.value = null;
+      })
+      user.value = response.data.user
+      localStorage.setItem('user', JSON.stringify(user.value))
+      error.value = null
     } catch (err) {
-      error.value = err.response?.data?.message || 'Failed to update profile.';
+      error.value = err.response?.data?.message || 'Failed to update profile.'
     }
   }
 
@@ -108,12 +166,12 @@ export const useAuthStore = defineStore('auth', () => {
           Authorization: `Bearer ${token.value}`,
           'Content-Type': 'multipart/form-data',
         },
-      });
-      user.value = response.data.user;
-      localStorage.setItem('user', JSON.stringify(user.value));
-      error.value = null;
+      })
+      user.value = response.data.user
+      localStorage.setItem('user', JSON.stringify(user.value))
+      error.value = null
     } catch (err) {
-      error.value = err.response?.data?.message || 'Failed to upload profile photo.';
+      error.value = err.response?.data?.message || 'Failed to upload profile photo.'
     }
   }
 
@@ -123,11 +181,11 @@ export const useAuthStore = defineStore('auth', () => {
         current_password: payload?.old_password,
         new_password: payload?.new_password,
         new_password_confirmation: payload?.confirm_password,
-      });
-      error.value = null;
-      return response.data.message;
+      })
+      error.value = null
+      return response.data.message
     } catch (err) {
-      error.value = err.response?.data?.message || 'Failed to change password.';
+      error.value = err.response?.data?.message || 'Failed to change password.'
     }
   }
 
@@ -137,14 +195,14 @@ export const useAuthStore = defineStore('auth', () => {
         headers: {
           Authorization: `Bearer ${token.value}`,
         },
-      });
-      return response.data;
+      })
+      return response.data
     } catch (err) {
       if (err?.response?.status === 401) {
-        logout();
+        logout()
       }
-      error.value = err.response?.data?.message || 'Failed to fetch attendance.';
-      return null;
+      error.value = err.response?.data?.message || 'Failed to fetch attendance.'
+      return null
     }
   }
 
@@ -153,18 +211,23 @@ export const useAuthStore = defineStore('auth', () => {
     token,
     error,
     isAuthenticated,
-    // isSuperAdmin,
-    isAdminMood, // ✅ exposed state
-    toggleAdminMode, // ✅ exposed action
+    isAdminMood,
+    featurePermissions,
+    featurePermissionsLoaded,
+    toggleAdminMode,
     setAdminMode,
     register,
     login,
     logout,
     checkPhone,
     fetchUser,
+    fetchFeaturePermissions,
+    canFeature,
+    canExplicit,
+    explicitPermissions,
     updateProfile,
     uploadProfilePhoto,
     changePassword,
     fetchAttendance,
-  };
-});
+  }
+})

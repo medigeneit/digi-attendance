@@ -16,6 +16,11 @@ export const useNotificationStore = defineStore('notification', () => {
   const approvalPermissions = ref({})
   const applicationApprovalPermissions = ref([])
 
+  const normalizeApplicationId = (applicationId) => {
+    const id = Number(applicationId)
+    return Number.isInteger(id) && id > 0 ? id : null
+  }
+
   const icons = ref({
     leave_applications: 'fas fa-file-alt',
     short_leave_applications: 'fas fa-clock',
@@ -26,6 +31,8 @@ export const useNotificationStore = defineStore('notification', () => {
     probation: 'fas fa-flask',
     application_feedback: 'fas fa-comments',
     discipline_attachments: 'fas fa-file-signature',
+    payroll_advance_deductions: 'fas fa-money-bill-wave',
+    payroll_adjustments: 'fas fa-sliders-h',
   })
 
   const total_notifications = computed(() => {
@@ -47,6 +54,7 @@ export const useNotificationStore = defineStore('notification', () => {
       grouped_counts.value = response?.data?.grouped_counts
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch notifications'
+      throw err
     } finally {
       loading.value = false
     }
@@ -64,7 +72,8 @@ export const useNotificationStore = defineStore('notification', () => {
       totalUnreadNotifications.value = response?.data?.total_unread
       grouped_counts.value = response?.data?.grouped_counts
     } catch (err) {
-      error.value = err.response?.data?.message || 'Failed to fetch notifications'
+      error.value = err.response?.data?.message || 'Failed to update notification'
+      throw err
     } finally {
       loading.value = false
     }
@@ -75,13 +84,21 @@ export const useNotificationStore = defineStore('notification', () => {
     error.value = null
 
     try {
+      const id = normalizeApplicationId(applicationId)
+
+      if (!id) {
+        approvalPermissions.value = {}
+        return
+      }
+
       const response = await apiClient.get(
-        `/pending-notifications/${notificationType}/${applicationId}/permissions`,
+        `/pending-notifications/${notificationType}/${id}/permissions`,
       )
 
       approvalPermissions.value = response.data || {}
     } catch (err) {
-      error.value = err.response?.data?.message || 'Failed to fetch notifications'
+      error.value = err.response?.data?.message || 'Failed to update notification'
+      throw err
     } finally {
       loading.value = false
     }
@@ -95,13 +112,21 @@ export const useNotificationStore = defineStore('notification', () => {
     error.value = null
 
     try {
+      const ids = [...new Set((applicationIds || []).map((id) => Number(id)).filter(Boolean))]
+
+      if (!ids.length) {
+        applicationApprovalPermissions.value = {}
+        return
+      }
+
       const response = await apiClient.get(
-        `/pending-notifications/${notificationType}/${applicationIds.join(',')}/application-permissions`,
+        `/pending-notifications/${notificationType}/${ids.join(',')}/application-permissions`,
       )
 
-      applicationApprovalPermissions.value = response.data || []
+      applicationApprovalPermissions.value = response.data || {}
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch notifications'
+      applicationApprovalPermissions.value = {}
       console.log({
         fetchApprovalPermissionsByUserApplicationIds: err,
       })

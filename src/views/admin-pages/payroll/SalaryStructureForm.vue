@@ -1048,7 +1048,7 @@ const inputClass =
                 />
               </label>
               <p v-if="!usesBasicOnlySalaryPolicy" class="text-xs text-slate-500">
-                When enabled, the default PF allowance row remains locked; changing PF deduction changes net payment.
+                When enabled, the default PF Office row remains locked; changing PF deduction changes net payment.
               </p>
             </div>
           </div>
@@ -1158,7 +1158,7 @@ const inputClass =
             class="grid gap-4 sm:grid-cols-2"
           >
             <div class="sm:col-span-2">
-              <label class="mb-1 block text-sm font-medium text-slate-700">Company Bank Account</label>
+              <label class="mb-1 block text-sm font-medium text-slate-700">Bank Account</label>
               <select v-model="bankUpdateDraft.bank_account_id" :class="inputClass">
                 <option value="">Select bank account</option>
                 <option v-for="account in companyBankAccounts" :key="account.id" :value="account.id">

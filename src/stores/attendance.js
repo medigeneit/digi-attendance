@@ -15,6 +15,11 @@ export const useAttendanceStore = defineStore('attendance', () => {
   const error = ref(null)
   const isLoading = ref(false)
   const reportMeta = ref(null)
+  const localDate = () => {
+    const date = new Date()
+    const offset = date.getTimezoneOffset()
+    return new Date(date.getTime() - offset * 60000).toISOString().slice(0, 10)
+  }
 
   const getUserDailyLogsByDate = async (_userId, date) => {
     const formattedDate = formatDateToDayMonthYear(date)
@@ -48,7 +53,15 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   }
 
-  const getDateRangeAttendanceSummary = async (startDate, endDate, companyId, line_type, userId, ignorePermission = false) => {
+  const getDateRangeAttendanceSummary = async (
+    startDate,
+    endDate,
+    companyId,
+    line_type,
+    userId,
+    ignorePermission = false,
+    departmentId = null,
+  ) => {
     if (!companyId || !startDate || !endDate) {
       error.value = 'Company, Start Date, and End Date are required'
       return
@@ -60,6 +73,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
       const response = await apiClient.get(`/attendance/date-range-summary`, {
         params: {
           company_id: companyId,
+          department_id: departmentId || undefined,
           line_type: line_type || 'all',
           start_date: startDate,
           end_date: endDate,
@@ -85,6 +99,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     companyId,
     line_type = 'all',
     userId = null,
+    departmentId = null,
   ) => {
     if (!companyId || !startDate || !endDate) {
       error.value = 'Company, Start Date, and End Date are required'
@@ -97,6 +112,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
       const response = await apiClient.get('/attendance/date-range-summary?flag=excel', {
         params: {
           company_id: companyId,
+          department_id: departmentId || undefined,
           start_date: startDate,
           end_date: endDate,
           employee_id: userId || undefined,
@@ -187,6 +203,22 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
   }
 
+  const sendTodayAttendanceMessage = async (payload = {}) => {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const response = await apiClient.post('/attendance/today/send-message', payload)
+      return response.data
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Message sending failed'
+      console.error('[Attendance Message Error]', error.value)
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
 
   const getMonthlyAttendanceLateReport = async (
     company_id,
@@ -234,20 +266,22 @@ export const useAttendanceStore = defineStore('attendance', () => {
   ) => {
     isLoading.value = true
     try {
+      const normalizedType = type || 'daily'
+      const normalizedValue = value || (normalizedType === 'daily' ? selectedDate.value || localDate() : selectedMonth.value)
       const params = {
         company_id,
         department_id,
         line_type, // eg: "executive"
         employee_id, // eg: 5
-        type, // 'daily'
-        ...(type === 'daily' ? { date: value } : { month: value }),
+        type: normalizedType, // 'daily'
+        ...(normalizedType === 'daily' ? { date: normalizedValue } : { month: normalizedValue }),
       }
 
       const response = await apiClient.get('/attendance/late-reports', { params })
 
-      if (type === 'daily') {
+      if (normalizedType === 'daily') {
         dailyLateLogs.value = response.data
-      } else if (type === 'monthly') {
+      } else if (normalizedType === 'monthly') {
         monthlyLateLogs.value = response.data
       }
 
@@ -288,7 +322,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
       error.value = null
     } catch (err) {
       error.value = err?.response?.data?.message || 'Something went wrong'
-      console.error(error.value)
+      throw new Error(error.value)
     } finally {
       isLoading.value = false
     }
@@ -602,6 +636,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     getUserDailyLogsByDate,
     getMonthlyAttendanceByShift,
     getTodayAttendanceReport,
+    sendTodayAttendanceMessage,
     getMonthlyAttendanceLateReport,
     getMonthlyAttendanceSummaryReport,
     postPayrollPeriods,

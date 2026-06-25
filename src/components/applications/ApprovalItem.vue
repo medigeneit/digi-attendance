@@ -29,21 +29,23 @@ const title = computed(() => {
 })
 
 const approvalKey = computed(() => {
-  let key = ''
-
   switch (type) {
     case 'overtime_applications':
-      key = 'overtime_approval'
-      break
+      return 'overtime_approval'
     case 'leave_applications':
-      key = 'leave_approval'
-      break
+      return 'leave_approval'
+    case 'manual_attendance_applications':
+      return 'manual_attendance_approval'
+    case 'short_leave_applications':
+      return 'short_leave_approval'
+    case 'shift':
+    case 'offday':
+    case 'shift_exchange_applications':
+    case 'offday_exchange_applications':
+      return 'exchange_approval'
     default:
-      key = 'other_approval'
-      break
+      return 'other_approval'
   }
-
-  return key
 })
 
 const itemUser = computed(() => application?.[`${item}_user`])
@@ -51,6 +53,8 @@ const itemUserId = computed(() => application?.[`${item}_user_id`])
 const itemNote = computed(() => application?.[`${item}_note`] || '')
 
 const approvalUser = computed(() => application?.user?.[approvalKey.value]?.[`${item}_user`] || {})
+const approvalUserId = computed(() => application?.user?.[approvalKey.value]?.[`${item}_user_id`])
+const isConfigured = computed(() => Boolean(itemUserId.value || approvalUserId.value || approvalUser.value?.id))
 
 const hasPermission = computed(() => notificationStore.approvalPermissions?.[`allow_${item}`])
 
@@ -78,7 +82,7 @@ const isPending = computed(
 </script>
 
 <template>
-  <div class="flex flex-col justify-center items-center text-sm md:text-base text-center">
+  <div v-if="isConfigured" class="flex flex-col justify-center items-center text-sm md:text-base text-center">
     <div v-if="itemUserId" class="text-center">
       <p class="text-center">{{ itemUser?.name || '' }}</p>
 
@@ -87,7 +91,7 @@ const isPending = computed(
       </div>
     </div>
     <p v-else class="text-center">
-      {{ approvalUser?.name || 'N/A' }}
+      {{ approvalUser?.name || '' }}
     </p>
 
     <AcceptAndRejectHandler

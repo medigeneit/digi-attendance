@@ -8,242 +8,312 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const shortLeaveStore = useShortLeaveStore()
 
-const goBack = () => {
-  router.go(-1)
-}
-
 const now = new Date()
-const period = ref({
-  year: now.getFullYear(),
-  month: now.getMonth() + 1,
-  day: now.getDate(),
-})
+const period = ref({ year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() })
 
-const pad = (value) => value.toString().padStart(2, '0')
+const pad = (v) => v.toString().padStart(2, '0')
 
 const periodMonth = computed(() => {
-  const value = period.value || {}
-  if (!value.year || !value.month) return ''
-  return `${value.year}-${pad(value.month)}`
-})
-
-const fetchShortLeaves = async (date) => {
-  shortLeaveStore.fetchMyShortLeaves({ date })
-}
-
-watch(
-  periodMonth,
-  (value) => {
-    if (!value) return
-    shortLeaveStore.selectedMonth = value
-    fetchShortLeaves(value)
-  },
-  { immediate: true }
-)
-
-const statusBadgeClass = (status) => {
-  const normalized = (status || '').toLowerCase()
-  if (['approved', 'approved by hr', 'approved by incharge'].includes(normalized)) {
-    return 'border border-emerald-200 bg-emerald-50 text-emerald-700'
-  }
-  if (['rejected', 'cancelled', 'declined'].includes(normalized)) {
-    return 'border border-red-200 bg-red-50 text-red-700'
-  }
-  if (normalized === 'pending' || !normalized) {
-    return 'border border-amber-200 bg-amber-50 text-amber-800'
-  }
-  return 'border border-slate-200 bg-slate-50 text-slate-800'
-}
-
-const myShortLeaves = computed(() => {
-  return shortLeaveStore.shortLeaves || []
-})
-
-const totalLeaves = computed(() => {
-  return Array.isArray(myShortLeaves.value) ? myShortLeaves.value.length : 0
+  const { year, month } = period.value || {}
+  return year && month ? `${year}-${pad(month)}` : ''
 })
 
 const selectedMonthLabel = computed(() => {
-  const raw = periodMonth.value
-  if (!raw) return 'All months'
-  const [year, month] = raw.split('-')
-  if (!year || !month) return 'All months'
-  const date = new Date(Number(year), Number(month) - 1)
-  return date.toLocaleString('en-US', { month: 'long', year: 'numeric' })
+  const [y, m] = (periodMonth.value || '').split('-')
+  if (!y || !m) return 'Month'
+  return new Date(Number(y), Number(m) - 1).toLocaleString('en-US', { month: 'long', year: 'numeric' })
 })
 
-function deleteApplication(applicationId) {
-  const confirmed = confirm('Are you sure you want to delete this application?')
-  if (confirmed) {
-    shortLeaveStore.deleteShortLeave(applicationId)
+watch(periodMonth, (v) => {
+  if (!v) return
+  shortLeaveStore.selectedMonth = v
+  shortLeaveStore.fetchMyShortLeaves({ date: v })
+}, { immediate: true })
+
+const goBack = () => router.go(-1)
+const list   = computed(() => shortLeaveStore.shortLeaves || [])
+
+const summary = computed(() => {
+  const out = { total: list.value.length, pending: 0, approved: 0, rejected: 0, totalMinutes: 0 }
+  for (const r of list.value) {
+    const s = (r.status || '').toLowerCase()
+    if (s === 'approved') out.approved++
+    else if (['rejected', 'cancelled', 'declined'].includes(s)) out.rejected++
+    else out.pending++
+    out.totalMinutes += Number(r.total_minutes) || 0
   }
+  return out
+})
+
+const formatDate = (v) => {
+  if (!v) return '—'
+  return new Date(v).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-const formatDate = (date) => {
-  if (!date) return 'N/A'
-  return new Date(date).toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric'
-  })
+const formatTime = (v) => {
+  if (!v) return '—'
+  const [h, m] = v.split(':').map(Number)
+  const d = new Date(); d.setHours(h, m)
+  return d.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
 }
 
-const formatTime = (timeString) => {
-  if (!timeString) return 'N/A'
-  const [hour, minute] = timeString.split(':').map(Number) // Extract hour & minute
-  const date = new Date()
-  date.setHours(hour, minute)
+const fmtMinutes = (min) => {
+  if (!min) return '—'
+  const h = Math.floor(min / 60), m = min % 60
+  return h ? `${h}h ${m}m` : `${m}m`
+}
 
-  return date.toLocaleString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true, // Ensures AM/PM format
-  })
+const typeIcon = (type) => {
+  const t = (type || '').toLowerCase()
+  if (t === 'delay')      return { icon: 'fas fa-clock',          color: 'bg-amber-50 text-amber-700 ring-amber-200' }
+  if (t === 'early')      return { icon: 'fas fa-sign-out-alt',   color: 'bg-blue-50 text-blue-700 ring-blue-200' }
+  if (t === 'officetime') return { icon: 'fas fa-business-time',  color: 'bg-violet-50 text-violet-700 ring-violet-200' }
+  return { icon: 'fas fa-calendar-minus', color: 'bg-gray-100 text-gray-600 ring-gray-200' }
+}
+
+const rowAccent = (status) => {
+  const s = (status || '').toLowerCase()
+  if (s === 'approved') return 'border-l-[3px] border-l-emerald-400'
+  if (['rejected','cancelled','declined'].includes(s)) return 'border-l-[3px] border-l-red-400'
+  return 'border-l-[3px] border-l-amber-400'
+}
+
+const badgeClass = (status) => {
+  const s = (status || '').toLowerCase()
+  if (s === 'approved') return 'bg-emerald-50 text-emerald-700 ring-emerald-200'
+  if (['rejected','cancelled','declined'].includes(s)) return 'bg-red-50 text-red-700 ring-red-200'
+  return 'bg-amber-50 text-amber-800 ring-amber-200'
+}
+
+const canDelete = (r) => !r.status || r.status === 'Pending'
+
+function deleteApplication(id) {
+  if (confirm('Delete this short leave request?')) {
+    shortLeaveStore.deleteShortLeave(id)
+  }
 }
 </script>
 
 <template>
-  <div class="space-y-6 px-4 py-5">
-    <div class="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm md:px-6">
-      <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <div>
-          <button class="btn-3 order-2 md:order-1" @click="goBack">
-            <i class="far fa-arrow-left"></i>
-            <span class="hidden md:inline-flex">Back</span>
-          </button>
-        </div>
-        <div class="space-y-1">
-          <p class="text-2xl font-semibold text-slate-900">
-            Short Leaves Applications
-          </p>
-          <!-- <p class="text-2xl font-semibold text-slate-900">
-            {{ totalLeaves }} {{ totalLeaves === 1 ? 'application' : 'applications' }}
-          </p> -->
-          <!-- <p class="text-sm text-slate-500">
-            Showing <span class="font-medium text-slate-600">{{ selectedMonthLabel }}</span>
-          </p> -->
-        </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <RouterLink
-            :to="{ name: 'ShortLeaveAdd' }"
-            class="btn-2 order-1 md:order-2"
-          >
-            <i class="far fa-plus mr-1"></i>
-            New Short Leave
-          </RouterLink>
-          <FlexibleDatePicker
-            v-model="period"
-            :show-year="false"
-            :show-month="true"
-            :show-date="false"
-            label="Month"
-          />
-        </div>
-      </div>
-    </div>
+  <div class="min-h-screen bg-gray-50/40">
 
-    <div v-if="shortLeaveStore?.loading" class="text-center py-10">
-      <LoaderView />
-    </div>
+    <!-- ── Sticky toolbar ── -->
+    <div class="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
 
-    <div v-else class="space-y-4">
-      <div v-if="totalLeaves === 0" class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-slate-600">
-        <p class="text-lg font-semibold text-slate-800">No requests yet</p>
-        <p class="text-sm text-slate-500">Create your first short leave for {{ selectedMonthLabel }}</p>
-        <RouterLink
-          :to="{ name: 'ShortLeaveAdd' }"
-          class="mt-3 inline-flex rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm hover:bg-indigo-100"
+      <!-- Top row -->
+      <div class="flex items-center gap-2 px-4 py-2">
+        <button class="btn-3 py-1 text-xs" @click="goBack">
+          <i class="far fa-arrow-left text-[11px]"></i>
+          <span class="hidden sm:inline">Back</span>
+        </button>
+
+        <button
+          type="button"
+          class="btn-3 py-1 text-xs"
+          title="Reload"
+          @click="shortLeaveStore.fetchMyShortLeaves({ date: periodMonth })"
         >
-          <i class="far fa-plus mr-2"></i>
-          Create short leave
+          <i class="fas fa-sync text-[11px]" :class="{ 'animate-spin': shortLeaveStore.loading }"></i>
+        </button>
+
+        <h1 class="flex-1 text-center text-sm font-bold text-gray-900 tracking-tight">
+          Short Leave Requests
+        </h1>
+
+        <FlexibleDatePicker
+          v-model="period"
+          :show-year="false"
+          :show-month="true"
+          :show-date="false"
+          label="Month"
+        />
+
+        <RouterLink :to="{ name: 'ShortLeaveAdd' }" class="btn-2 py-1 text-xs">
+          <i class="far fa-plus text-[11px]"></i>
+          <span class="hidden sm:inline">Request</span>
         </RouterLink>
       </div>
 
-      <div v-else class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3">
-          <p class="text-sm font-semibold text-slate-600">Showing {{ totalLeaves }} records</p>
-          <span class="text-xs text-slate-500">
-            Updated just now
-          </span>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-slate-100 text-sm">
-            <thead class="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500">
-              <tr>
-                <th class="px-4 py-3 text-left">#</th>
-                <th class="px-4 py-3 text-left">Created Date</th>
-                <th class="px-4 py-3 text-left">Leave Date</th>
-                <th class="px-4 py-3 text-left">Type</th>
-                <th class="px-4 py-3 text-left">Time</th>
-                <th class="px-4 py-3 text-left">Minutes</th>
-                <th class="px-4 py-3 text-left">Attachment</th>
-                <th class="px-4 py-3 text-left">Status</th>
-                <th class="px-4 py-3 text-right">Actions</th>
+      <!-- Stats pill bar -->
+      <div class="flex items-center gap-x-3 flex-wrap px-4 pb-2 text-[11px]">
+        <span class="font-medium text-gray-500">{{ selectedMonthLabel }}</span>
+        <span class="text-gray-300">|</span>
+
+        <span class="flex items-center gap-1 text-gray-700">
+          <i class="fas fa-layer-group text-[9px] text-gray-400"></i>
+          <b>{{ summary.total }}</b> total
+        </span>
+
+        <span v-if="summary.totalMinutes" class="flex items-center gap-1 text-gray-700">
+          <i class="fas fa-clock text-[9px] text-blue-400"></i>
+          <b>{{ fmtMinutes(summary.totalMinutes) }}</b>
+        </span>
+
+        <span v-if="summary.pending" class="flex items-center gap-1 text-amber-700">
+          <i class="fas fa-hourglass-half text-[9px]"></i>
+          <b>{{ summary.pending }}</b> pending
+        </span>
+
+        <span v-if="summary.approved" class="flex items-center gap-1 text-emerald-700">
+          <i class="fas fa-check-circle text-[9px]"></i>
+          <b>{{ summary.approved }}</b> approved
+        </span>
+
+        <span v-if="summary.rejected" class="flex items-center gap-1 text-red-600">
+          <i class="fas fa-times-circle text-[9px]"></i>
+          <b>{{ summary.rejected }}</b> rejected
+        </span>
+      </div>
+    </div>
+
+    <!-- ── Content ── -->
+    <div class="px-4 py-3">
+
+      <LoaderView v-if="shortLeaveStore.loading" class="py-16" />
+
+      <div v-else class="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+
+        <!-- Table -->
+        <div v-if="list.length" class="overflow-x-auto">
+          <table class="min-w-[680px] w-full text-sm">
+
+            <thead>
+              <tr class="bg-gray-50 border-b border-gray-200 text-[10px] uppercase tracking-wider text-gray-500">
+                <th class="w-8 px-3 py-2.5 text-center">#</th>
+                <th class="px-3 py-2.5 text-left min-w-[120px]">Date</th>
+                <th class="px-3 py-2.5 text-center w-24">Type</th>
+                <th class="px-3 py-2.5 text-center min-w-[150px]">Time</th>
+                <th class="px-3 py-2.5 text-center w-16">Min</th>
+                <th class="px-3 py-2.5 text-center w-16">File</th>
+                <th class="px-3 py-2.5 text-center w-24">Status</th>
+                <th class="px-3 py-2.5 text-center w-20">Act.</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100">
+
+            <tbody class="divide-y divide-gray-100">
               <tr
-                v-for="(leave, index) in myShortLeaves"
+                v-for="(leave, index) in list"
                 :key="leave?.id"
-                class="hover:bg-slate-50 transition"
+                class="group hover:bg-gray-50/70 transition-colors"
+                :class="rowAccent(leave?.status)"
               >
-                <td class="px-4 py-3 font-semibold text-slate-600">{{ index + 1 }}</td>
-                <td class="px-4 py-3 text-slate-700">{{ formatDate(leave?.created_at) }}</td>
-                <td class="px-4 py-3 text-slate-700">{{ formatDate(leave?.date) }}</td>
-                <td class="px-4 py-3 text-slate-700">{{ leave?.type || 'Short Leave' }}</td>
-                <td class="px-4 py-3 text-slate-700">
-                  {{ formatTime(leave?.start_time) }} - {{ formatTime(leave?.end_time) }}
+                <!-- # -->
+                <td class="px-3 py-2.5 text-center text-xs font-medium text-gray-400">
+                  {{ index + 1 }}
                 </td>
-                <td class="px-4 py-3 text-slate-700">{{ leave?.total_minutes || '—' }}</td>
-                <td class="px-4 py-3">
-                  <div v-if="leave?.attachment" class="flex items-center gap-1 text-xs font-semibold text-indigo-600">
-                    <i class="far fa-paperclip"></i>
-                    Attached
+
+                <!-- Date -->
+                <td class="px-3 py-2.5">
+                  <div class="text-xs font-semibold text-gray-900 whitespace-nowrap">
+                    {{ formatDate(leave?.date) }}
                   </div>
-                  <span v-else class="text-xs text-slate-400">None</span>
+                  <div class="mt-0.5 text-[10px] text-gray-400 whitespace-nowrap">
+                    Applied {{ formatDate(leave?.created_at) }}
+                  </div>
                 </td>
-                <td class="px-4 py-3">
+
+                <!-- Type badge -->
+                <td class="px-3 py-2.5 text-center">
                   <span
-                    :class="['inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold tracking-wide', statusBadgeClass(leave?.status)]"
+                    class="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset"
+                    :class="typeIcon(leave?.type).color"
+                  >
+                    <i :class="[typeIcon(leave?.type).icon, 'text-[9px]']"></i>
+                    {{ leave?.type || 'Leave' }}
+                  </span>
+                </td>
+
+                <!-- Time -->
+                <td class="px-3 py-2.5 text-center">
+                  <div class="text-[11px] text-gray-700 whitespace-nowrap tabular-nums">
+                    <span class="font-medium">{{ formatTime(leave?.start_time) }}</span>
+                    <span class="text-gray-300 mx-0.5">→</span>
+                    <span class="font-medium">{{ formatTime(leave?.end_time) }}</span>
+                  </div>
+                </td>
+
+                <!-- Minutes -->
+                <td class="px-3 py-2.5 text-center text-[11px] font-semibold text-gray-700 tabular-nums">
+                  {{ fmtMinutes(leave?.total_minutes) }}
+                </td>
+
+                <!-- Attachment -->
+                <td class="px-3 py-2.5 text-center">
+                  <a
+                    v-if="leave?.attachment"
+                    :href="leave.attachment"
+                    target="_blank"
+                    rel="noreferrer"
+                    class="inline-flex h-6 w-6 items-center justify-center rounded-md border border-indigo-100 text-indigo-400 hover:border-indigo-300 hover:text-indigo-600 transition-colors"
+                    title="Download attachment"
+                  >
+                    <i class="far fa-paperclip text-[10px]"></i>
+                  </a>
+                  <span v-else class="text-gray-200">—</span>
+                </td>
+
+                <!-- Status -->
+                <td class="px-3 py-2.5 text-center">
+                  <span
+                    class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset whitespace-nowrap"
+                    :class="badgeClass(leave?.status)"
                   >
                     {{ leave?.status || 'Pending' }}
                   </span>
                 </td>
-                <td class="px-4 py-3">
-                  <div class="flex items-center justify-end gap-2">
+
+                <!-- Actions -->
+                <td class="px-3 py-2.5">
+                  <div class="flex items-center justify-center gap-1">
                     <RouterLink
                       :to="{ name: 'ShortLeaveShow', params: { id: leave?.id } }"
-                      class="inline-flex items-center rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-indigo-200 hover:text-indigo-700"
+                      class="inline-flex h-6 w-6 items-center justify-center rounded-md border border-gray-200 text-gray-500 hover:border-indigo-300 hover:text-indigo-600 transition-colors"
+                      title="View"
                     >
-                      <i class="far fa-eye mr-1"></i>
-                      View
+                      <i class="far fa-eye text-[10px]"></i>
                     </RouterLink>
                     <button
-                      v-if="leave.status == 'Pending' || !leave.status"
+                      v-if="canDelete(leave)"
                       type="button"
+                      class="inline-flex h-6 w-6 items-center justify-center rounded-md border border-red-100 text-red-400 hover:border-red-300 hover:text-red-600 transition-colors"
+                      title="Delete"
                       @click="deleteApplication(leave?.id)"
-                      class="inline-flex items-center rounded-full border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:border-red-300 hover:text-red-700"
                     >
-                      <i class="far fa-trash mr-1"></i>
-                      Delete
+                      <i class="far fa-trash text-[10px]"></i>
                     </button>
-                    <a
-                      v-if="leave?.attachment"
-                      :href="leave.attachment"
-                      target="_blank"
-                      rel="noreferrer"
-                      class="inline-flex items-center rounded-full border border-indigo-200 px-3 py-1.5 text-xs font-semibold text-indigo-600 transition hover:border-indigo-300 hover:text-indigo-800"
-                    >
-                      <i class="far fa-download mr-1"></i>
-                      Download
-                    </a>
                   </div>
                 </td>
               </tr>
             </tbody>
+
+            <!-- Totals footer -->
+            <tfoot class="bg-gray-50 border-t-2 border-gray-200">
+              <tr class="text-[11px] font-semibold text-gray-600">
+                <td colspan="4" class="px-3 py-2 text-right text-gray-400 font-medium">Totals</td>
+                <td class="px-3 py-2 text-center text-gray-800 tabular-nums">
+                  {{ fmtMinutes(summary.totalMinutes) }}
+                </td>
+                <td colspan="3" class="px-3 py-2" />
+              </tr>
+            </tfoot>
+
           </table>
         </div>
+
+        <!-- Empty state -->
+        <div v-else class="flex flex-col items-center justify-center py-16 text-center">
+          <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+            <i class="fas fa-calendar-minus text-xl text-gray-300"></i>
+          </div>
+          <p class="font-semibold text-gray-700 text-sm">No short leave requests</p>
+          <p class="mt-1 text-xs text-gray-400">for {{ selectedMonthLabel }}</p>
+          <RouterLink :to="{ name: 'ShortLeaveAdd' }" class="btn-2 mt-4 py-1.5 text-xs">
+            <i class="far fa-plus text-[11px]"></i> New Request
+          </RouterLink>
+        </div>
+
       </div>
     </div>
+
   </div>
 </template>

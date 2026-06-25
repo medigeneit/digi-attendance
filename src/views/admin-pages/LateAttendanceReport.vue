@@ -1,11 +1,12 @@
 <script setup>
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
+import UserMessageSender from '@/components/common/UserMessageSender.vue'
 import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
 import LoaderView from '@/components/common/LoaderView.vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { storeToRefs } from 'pinia'
 import Swal from 'sweetalert2'
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -45,6 +46,19 @@ const filters = ref({
 
 const hasRequiredFilters = () => Boolean(filters.value.company_id && filters.value.employee_id && selectedDate.value)
 
+async function fetchApplicationsByUser(params) {
+  if (params?.company_id && params?.employee_id && selectedDate.value) {
+     await lateAttendanceStore.getMonthlyAttendanceLateReport(
+      params?.company_id,
+       params?.department_id ,
+       params?.line_type,
+       params?.employee_id,
+       selectedDate.value,
+       'monthly',
+     )
+  }
+}
+
 const applySelectedDate = () => {
   if (!selectedDate.value) return
   router.replace({
@@ -81,19 +95,6 @@ watch(
 )
 
 
-const fetchApplicationsByUser = async (params) => {
-  if (params?.company_id && params?.employee_id && selectedDate.value) {
-     await lateAttendanceStore.getMonthlyAttendanceLateReport(
-      params?.company_id, 
-       params?.department_id , 
-       params?.line_type, 
-       params?.employee_id,
-       selectedDate.value,
-       'monthly',
-     )
-  }
-}
-
 const getExportExcel = async () => {
   if (filters.value.company_id && filters.value.employee_id && selectedDate.value) {
     await lateAttendanceStore.lateReportDownloadExcel(
@@ -120,11 +121,82 @@ const goBack = () => {
   router.go(-1)
 }
 
-const statusClass = (status) => {
-  if (status === 'Pending') return 'text-yellow-700'
-  if (status === 'Approved') return 'text-green-700'
-  return 'text-red-500'
+
+const parseDurationMinutes = (duration) => {
+  const value = String(duration || '').toLowerCase()
+  if (!value.trim()) return 0
+
+  const hourMatch = value.match(/(\d+)\s*h/)
+  const minuteMatch = value.match(/(\d+)\s*m/)
+  const clockMatch = value.match(/^(\d{1,2}):(\d{2})$/)
+
+  if (clockMatch) {
+    return (Number(clockMatch[1]) * 60) + Number(clockMatch[2])
+  }
+
+  return (hourMatch ? Number(hourMatch[1]) * 60 : 0) + (minuteMatch ? Number(minuteMatch[1]) : 0)
 }
+
+const formatMonthLabel = (value) => {
+  if (!value) return ''
+  const [year, month] = value.split('-')
+  const date = new Date(Number(year), Number(month) - 1, 1)
+  if (Number.isNaN(date.getTime())) return value
+
+  return date.toLocaleString('en-US', { month: 'long', year: 'numeric' })
+}
+
+const formatLateSummaryDuration = (minutes) => {
+  const total = Number(minutes) || 0
+  const hours = Math.floor(total / 60)
+  const remainingMinutes = total % 60
+
+  return hours ? `${hours}h ${remainingMinutes}m (${total} minutes)` : `${total} minutes`
+}
+
+const lateSummary = computed(() => {
+  const logs = monthlyLateLogs.value || []
+  const totalLateMinutes = logs.reduce((total, report) => {
+    return total + parseDurationMinutes(report?.late_duration)
+  }, 0)
+  const lateDays = logs.filter((report) => parseDurationMinutes(report?.late_duration) > 0).length
+  const approvedApplications = logs.filter((report) => report?.short_leave?.status === 'Approved').length
+  const pendingApplications = logs.filter((report) => report?.short_leave?.status === 'Pending').length
+  const rejectedApplications = logs.filter((report) => {
+    return report?.short_leave?.status && !['Approved', 'Pending'].includes(report.short_leave.status)
+  }).length
+  const noApplications = logs.filter((report) => !report?.short_leave).length
+
+  return {
+    averageLateMinutes: lateDays ? Math.round(totalLateMinutes / lateDays) : 0,
+    approvedApplications,
+    lateDays,
+    noApplications,
+    pendingApplications,
+    rejectedApplications,
+    totalEntries: logs.length,
+    totalLateMinutes,
+    totalLateDuration: formatLateSummaryDuration(totalLateMinutes),
+  }
+})
+
+const selectedEmployeeName = computed(() => monthlyLateLogs.value?.[0]?.user_name || 'Employee')
+
+const selectedEmployeeUserId = computed(() => monthlyLateLogs.value?.[0]?.user_id || filters.value.employee_id)
+
+const defaultLateSummaryMessage = computed(() => {
+  const month = formatMonthLabel(selectedDate.value)
+  const { lateDays, totalLateMinutes } = lateSummary.value
+
+  return `Dear ${selectedEmployeeName.value}, in ${month} you were late ${lateDays} day(s), total ${totalLateMinutes} minutes. Please contact HR.`
+})
+
+const lateSummaryContext = computed(() => ({
+  source: 'monthly_late_attendance',
+  month: selectedDate.value,
+  late_days: lateSummary.value.lateDays,
+  total_late_minutes: lateSummary.value.totalLateMinutes,
+}))
 
 const handleFilterChange = async() => {
   // You can trigger your fetch here
@@ -198,9 +270,49 @@ const handleFilterChange = async() => {
 
     <div v-else class="space-y-4">
       <div v-if="hasRequiredFilters()" class="rounded-2xl border border-slate-200 bg-white shadow overflow-hidden">
-        <div class="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
-          <span>Monthly late attendance</span>
-          <span class="text-xs text-slate-500">Updated after each filter change</span>
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
+          <div>
+            <span>Monthly late attendance</span>
+            <div class="mt-1 text-xs font-medium text-slate-500">
+              Late {{ lateSummary.lateDays }} day(s), total {{ lateSummary.totalLateDuration }}
+            </div>
+          </div>
+          <UserMessageSender
+            :user-id="selectedEmployeeUserId"
+            :user-name="selectedEmployeeName"
+            :default-message="defaultLateSummaryMessage"
+            :context="lateSummaryContext"
+            :disabled="!selectedEmployeeUserId || !lateSummary.lateDays"
+            button-label="Message Summary"
+            modal-title="Monthly late attendance message"
+            disabled-title="No late summary available to message"
+          />
+        </div>
+        <div class="grid gap-3 border-b border-slate-100 bg-white p-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div class="rounded-lg border border-amber-100 bg-amber-50 px-4 py-3">
+            <div class="text-xs font-semibold uppercase tracking-wide text-amber-700">Late Days</div>
+            <div class="mt-1 text-2xl font-bold text-amber-800">{{ lateSummary.lateDays }}</div>
+            <div class="mt-1 text-xs text-amber-700">Total records {{ lateSummary.totalEntries }}</div>
+          </div>
+          <div class="rounded-lg border border-rose-100 bg-rose-50 px-4 py-3">
+            <div class="text-xs font-semibold uppercase tracking-wide text-rose-700">Total Late</div>
+            <div class="mt-1 text-2xl font-bold text-rose-800">{{ lateSummary.totalLateMinutes }}m</div>
+            <div class="mt-1 text-xs text-rose-700">{{ lateSummary.totalLateDuration }}</div>
+          </div>
+          <div class="rounded-lg border border-sky-100 bg-sky-50 px-4 py-3">
+            <div class="text-xs font-semibold uppercase tracking-wide text-sky-700">Average Late</div>
+            <div class="mt-1 text-2xl font-bold text-sky-800">{{ lateSummary.averageLateMinutes }}m</div>
+            <div class="mt-1 text-xs text-sky-700">Per late day</div>
+          </div>
+          <div class="rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3">
+            <div class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Applications</div>
+            <div class="mt-1 text-sm font-semibold text-emerald-800">
+              Approved {{ lateSummary.approvedApplications }} | Pending {{ lateSummary.pendingApplications }}
+            </div>
+            <div class="mt-2 text-xs text-emerald-700">
+              No application {{ lateSummary.noApplications }}<span v-if="lateSummary.rejectedApplications"> | Other {{ lateSummary.rejectedApplications }}</span>
+            </div>
+          </div>
         </div>
         <div class="overflow-x-auto">
           <table class="min-w-full text-sm text-slate-600">

@@ -12,8 +12,13 @@ const props = defineProps({
   employee_id: { type: [String, Number], default: '' },
   line_type: { type: String, default: 'all' }, // 'all'|'executive'|'support_staff'|'doctor'|'academy_body'
   slotClass: { type: String, default: '' },
+  gridClass: {
+    type: String,
+    default: 'grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5',
+  },
   withType: { type: Boolean, default: true },
   withEmployee: { type: Boolean, default: true },
+  activeOnly: { type: Boolean, default: false },
   initialValue: { type: Object, default: () => ({}) },
 })
 
@@ -154,7 +159,10 @@ watch(selectedEmployeeId, () => {
 async function loadCompanyDeps(companyId) {
   await Promise.all([
     departmentStore.fetchDepartments(companyId),
-    companyStore.fetchEmployee(companyId, { with: 'department,company' }),
+    companyStore.fetchEmployee(companyId, {
+      with: 'department,company',
+      ...(props.activeOnly ? { status: 'active' } : {}),
+    }),
   ])
 }
 
@@ -240,7 +248,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
+  <div :class="gridClass">
     <!-- Company -->
     <div class="relative min-w-0">
       <SelectDropdown

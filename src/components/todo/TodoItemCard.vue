@@ -44,12 +44,11 @@ const emit = defineEmits([
 
 <template>
   <div
-    class="px-4 py-4 md:py-2 cursor-pointer flex flex-wrap items-center gap-y-2 gap-x-4 text-sm"
+    class="px-1 py-1 mb-2 cursor-pointer flex flex-wrap items-center gap-y-2 gap-x-4 text-sm rounded transition-colors duration-200 border shadow-sm border-transparent"
     :class="{
-      'bg-green-100': todoDate.status == 'COMPLETED',
-      'hover:bg-gray-50': todoDate.status != 'COMPLETED',
-      'bg-orange-100 text-orange-800 border-b border-orange-200 hover:bg-orange-100':
-        todoDate.status == 'WORKING' && dateIsLessThanToday(todoDate.date),
+      'bg-green-50 border-green-200 text-green-900': todoDate.status == 'COMPLETED',
+      'bg-white hover:bg-blue-50 border-gray-200 hover:border-blue-300': todoDate.status != 'COMPLETED',
+      'bg-orange-50 text-orange-800 border-orange-200 hover:bg-orange-100': todoDate.status == 'WORKING' && dateIsLessThanToday(todoDate.date),
     }"
     @click.prevent="emit('clickTodo', todoDate)"
   >
@@ -69,12 +68,34 @@ const emit = defineEmits([
           <span class="font-semibold">{{ todoDate.todo?.id }} -</span>
           <span class="line-clamp-1">{{ todoDate.title }}</span>
         </div>
-        <div
-          v-if="todoDate.todo?.todo_project?.title"
-          class="text-[11px] font-semibold text-blue-600 mt-0.5"
-        >
-          <i class="fas fa-project-diagram mr-1 text-[10px]"></i>
-          {{ todoDate.todo.todo_project.title }}
+        <div class="flex items-center gap-4">
+          <div
+            v-if="todoDate.todo?.todo_project?.title"
+            class="text-[11px] font-semibold text-blue-600 mt-0.5"
+          >
+            <i class="fas fa-project-diagram mr-1 text-[10px]"></i>
+            {{ todoDate.todo.todo_project.title }}
+          </div>
+
+          <RouterLink
+            @click.stop="null"
+            :to="{
+              name: 'RequirementTaskShow',
+              params: { id: todoDate.todo?.todo_type_id },
+            }"
+            class="line-clamp-2 text-gray-500 whitespace-nowrap text-[11px]  border border-transparent hover:border-gray-300 rounded px-1 max-w-max"
+            v-if="todoDate.todo?.todo_type && todoDate.todo?.todo_type_id"
+          >
+            <span class="text-[11px] uppercase mr-1">
+              {{ todoDate.todo?.todo_type }}
+            </span>
+            <span
+              class="text-blue-600 font-semibold underline hover:text-sky-400 text-[12px] font-bold"
+            >
+              <i class="fas fa-link"></i>
+              {{ todoDate.todo?.todo_type_id }}
+            </span>
+          </RouterLink>
         </div>
       </div>
 
@@ -82,24 +103,6 @@ const emit = defineEmits([
         <UserChip :user="todoDate.user" avatar-size="xsmall" v-if="!hideUser" />
         <DepartmentChip :department="todoDate?.user?.department" v-if="!hideDepartment" />
       </div>
-    </div>
-
-    <div
-      class="line-clamp-2 text-gray-500 whitespace-nowrap mr-2"
-      v-if="todoDate.todo?.todo_type && todoDate.todo?.todo_type_id"
-    >
-      {{ todoDate.todo?.todo_type }}
-      <RouterLink
-        class="text-blue-600 font-semibold underline hover:text-sky-400"
-        @click.stop="null"
-        :to="{
-          name: 'RequirementTaskShow',
-          params: { id: todoDate.todo?.todo_type_id },
-        }"
-      >
-        <i class="fas fa-link"></i>
-        {{ todoDate.todo?.todo_type_id }}
-      </RouterLink>
     </div>
 
     <div
@@ -117,7 +120,7 @@ const emit = defineEmits([
         <button
           title="Mark as Completed"
           v-if="todoDate.status === 'WORKING'"
-          class="btn-icon bg-transparent text-green-400 border-green-400 border hover:bg-green-400 hover:text-white"
+          class="btn-icon size-8 bg-transparent text-green-400 border-green-400 border hover:bg-green-400 hover:text-white"
           @click.prevent.stop="() => emit('clickChangeStatus', todoDate, 'COMPLETED')"
         >
           <i class="fas fa-check"></i>
@@ -126,21 +129,21 @@ const emit = defineEmits([
         <button
           v-if="todoDate.status === 'PENDING' && dateIsLessThanOrEqualToday(todoDate.date)"
           title="Start Working"
-          class="btn-icon bg-transparent text-red-400 border-red-400 border hover:bg-red-400 hover:text-white"
+          class="btn-icon size-8 bg-transparent text-red-400 border-red-400 border hover:bg-red-400 hover:text-white"
           @click.prevent.stop="() => emit('clickChangeStatus', todoDate, 'WORKING')"
         >
           <i class="fas fa-play ml-[4px]"></i>
         </button>
 
         <button
-          class="btn-icon bg-sky-400 text-white hover:bg-sky-600 hover:text-white"
+          class="btn-icon size-8 bg-sky-400 text-white hover:bg-sky-600 hover:text-white"
           @click.prevent.stop="emit('clickEdit', todoDate?.todo)"
         >
           <i class="fas fa-pen"></i>
         </button>
 
         <button
-          class="btn-icon bg-red-400 text-white hover:bg-red-600 hover:text-white"
+          class="btn-icon size-8 bg-red-400 text-white hover:bg-red-600 hover:text-white"
           @click.prevent.stop="() => emit('clickDelete', todoDate)"
         >
           <i class="fas fa-trash-alt"></i>
@@ -149,7 +152,7 @@ const emit = defineEmits([
       <button
         v-if="!hideSortingBtn"
         @click.stop.prevent="() => null"
-        class="btn-icon bg-gray-400 text-white hover:bg-gray-600 hover:text-white handle"
+        class="btn-icon size-8 bg-gray-400 text-white hover:bg-gray-600 hover:text-white handle"
       >
         <i class="fas fa-arrows-alt-v"></i>
       </button>

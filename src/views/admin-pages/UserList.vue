@@ -71,7 +71,7 @@ const weekendDays = (u) => (hasWeekend(u) ? u.assign_weekend.weekends.join(', ')
 const matchesQuickSearch = (u, q) => {
   if (!q) return true
   const s = q.toLowerCase()
-  return [u?.name, u?.phone, u?.employee_id, u?.company?.name, u?.department?.name, u?.designation?.title].some((val) =>
+  return [u?.name, u?.phone, u?.employee_id, u?.company?.name, u?.unit?.name, u?.department?.name, u?.designation?.title].some((val) =>
     String(val || '')
       .toLowerCase()
       .includes(s)
@@ -128,7 +128,8 @@ const filters = reactive({
   line_type: String(route.query.line_type ?? 'all'),
   status: String(route.query.status ?? 'active'), // 'all' | 'active' | 'in_active'
   employee_id: String(route.query.employee_id ?? ''),
-  q: String(route.query.q ?? '')
+  q: String(route.query.q ?? ''),
+  no_unit: route.query.no_unit === '1',
 })
 
 /* ------------ query sync (debounced) ------------ */
@@ -141,6 +142,7 @@ const normalizedQuery = computed(() => {
   if (filters.status && filters.status !== 'all') q.status = filters.status
   if (filters.employee_id) q.employee_id = filters.employee_id
   if (filters.q) q.q = filters.q
+  if (filters.no_unit) q.no_unit = '1'
   if (route.query.action) q.action = route.query.action
   return q
 })
@@ -155,6 +157,7 @@ watch(filters, replaceQueryDebounced, { deep: true })
 
 /* ------------ lifecycle ------------ */
 onMounted(async () => {
+  loadTableColumnVisibility()
   await companyStore.fetchCompanies()
   if (filters.company && filters.company !== 'all') {
     await departmentStore.fetchDepartments(filters.company)
@@ -170,6 +173,7 @@ watch(
 
 async function fetchFromRoute() {
   await userStore.fetchUsers({
+    include_inactive: 1,
     company_id: route.query.company,
     department_id: route.query.department,
     line_type: route.query.line_type,
@@ -201,6 +205,8 @@ const statusMatches = (u) => {
   return filters.status === 'active' ? !inactive : inactive
 }
 
+const hasNoUnit = (u) => !u?.unit_id && !u?.unit?.id
+
 /* Base filtered list (before grouping) */
 const filteredUsers = computed(() => {
   const list = Array.isArray(storeUsers.value) ? storeUsers.value : []
@@ -211,6 +217,7 @@ const filteredUsers = computed(() => {
     if (filters.employee_id && String(u?.id) !== String(filters.employee_id)) return false
     if (!statusMatches(u)) return false
     if (!matchesQuickSearch(u, filters.q)) return false
+    if (filters.no_unit && !hasNoUnit(u)) return false
     return true
   })
 })
@@ -218,10 +225,12 @@ const filteredUsers = computed(() => {
 /* Summary chips */
 const summary = computed(() => {
   const list = filteredUsers.value
+  const allList = Array.isArray(storeUsers.value) ? storeUsers.value : []
   const total = list.length
   const active = list.filter((u) => Number(u?.is_active ?? 0) === 1).length
   const withShift = list.filter((u) => hasShift(u)).length
   const withWeekend = list.filter((u) => hasWeekend(u)).length
+  const withoutUnit = allList.filter((u) => hasNoUnit(u) && statusMatches(u)).length
   return {
     total,
     active,
@@ -229,7 +238,8 @@ const summary = computed(() => {
     withShift,
     withoutShift: total - withShift,
     withWeekend,
-    withoutWeekend: total - withWeekend
+    withoutWeekend: total - withWeekend,
+    withoutUnit,
   }
 })
 
@@ -242,6 +252,63 @@ const groupedUsers = computed(() => {
   }
   return grouped
 })
+
+const TABLE_COLUMNS = [
+  { key: 'sl', label: 'SL', locked: true },
+  { key: 'employee', label: 'Employee Info', locked: true },
+  { key: 'employeeId', label: 'Employee ID', defaultVisible: false },
+  { key: 'department', label: 'Department', defaultVisible: false },
+  { key: 'designation', label: 'Designation', defaultVisible: false },
+  { key: 'unit', label: 'Unit', defaultVisible: true },
+  { key: 'lineType', label: 'Line Type', defaultVisible: false },
+  { key: 'contact', label: 'Contact', defaultVisible: false },
+  { key: 'phone', label: 'Phone' },
+  { key: 'email', label: 'Email' },
+  { key: 'fingerId', label: 'Finger ID' },
+  { key: 'joining', label: 'Joining' },
+  { key: 'role', label: 'Role' },
+  { key: 'exitDate', label: 'Exit Date', defaultVisible: false },
+  { key: 'shift', label: 'Shift' },
+  { key: 'weekend', label: 'Weekend' },
+  { key: 'status', label: 'Status' },
+  { key: 'kpi', label: 'KPI' },
+  { key: 'actions', label: 'Actions', locked: true },
+]
+
+const TABLE_COLUMN_STORAGE_KEY = 'settings.user-list.table-columns.v1'
+const tableColumnVisible = reactive(Object.fromEntries(TABLE_COLUMNS.map((column) => [column.key, column.defaultVisible !== false])))
+const visibleTableColumns = computed(() => TABLE_COLUMNS.filter((column) => tableColumnVisible[column.key]))
+const showColumnMenu = ref(false)
+
+function isTableColumnVisible(key) {
+  return !!tableColumnVisible[key]
+}
+
+function normalizeTableColumnVisibility(next = {}) {
+  for (const column of TABLE_COLUMNS) {
+    tableColumnVisible[column.key] = column.locked ? true : next[column.key] ?? column.defaultVisible !== false
+  }
+}
+
+function loadTableColumnVisibility() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(TABLE_COLUMN_STORAGE_KEY) || '{}')
+    normalizeTableColumnVisibility(saved)
+  } catch {
+    normalizeTableColumnVisibility()
+  }
+}
+
+watch(
+  tableColumnVisible,
+  (value) => {
+    for (const column of TABLE_COLUMNS) {
+      if (column.locked) value[column.key] = true
+    }
+    localStorage.setItem(TABLE_COLUMN_STORAGE_KEY, JSON.stringify({ ...value }))
+  },
+  { deep: true }
+)
 
 /* ------------ selection / modals ------------ */
 const selectedUser = ref(null)
@@ -475,6 +542,7 @@ function resetFilters() {
   filters.status = 'active'
   filters.employee_id = ''
   filters.q = ''
+  filters.no_unit = false
 }
 
 watch(showExitModal, (open) => {
@@ -492,36 +560,56 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="space-y-3 p-5">
+  <div class="min-h-screen bg-slate-50 px-3 py-3 text-slate-800 md:px-5">
     <!-- header -->
-    <div class="flex items-center justify-between gap-2">
-      <button class="btn-3" @click="goBack">
-        <i class="far fa-arrow-left"></i>
-        <span class="hidden md:flex">Back</span>
-      </button>
-
-      <h1 class="title-md md:title-lg flex-wrap text-center">Employee List</h1>
-
-      <div class="flex gap-3">
-        <RouterLink :to="{ name: 'UserAdd', query: { company: route.query.company } }" class="btn-2">
-          <span class="hidden md:flex">Add New</span>
-          <i class="far fa-plus"></i>
-        </RouterLink>
-        <button type="button" @click="excelDownload" class="btn-3">
-          <i class="far fa-file-excel text-2xl text-green-500"></i>Excel
+    <div class="mb-3 rounded-md border border-slate-200 bg-white shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+        <button
+          class="btn-3"
+          title="Back"
+          @click="goBack"
+        >
+          <i class="far fa-arrow-left"></i>
+           Back 
         </button>
+        <div class="flex min-w-0 items-center gap-3">
+          <div class="min-w-0">
+            <h1 class="mt-0.5 truncate text-xl font-semibold leading-tight text-slate-950">Employee Directory</h1>
+            <p class="mt-1 text-xs text-slate-500">
+              Shift, weekend, KPI, status and exit controls in one operational grid.
+            </p>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            @click="excelDownload"
+            class="inline-flex h-8 items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 text-xs font-semibold text-emerald-700 hover:bg-emerald-100"
+          >
+            <i class="far fa-file-excel"></i>
+            Excel
+          </button>
+          <RouterLink
+            :to="{ name: 'UserAdd', query: { company: route.query.company } }"
+            class="inline-flex h-8 items-center gap-2 rounded-md bg-blue-700 px-3 text-xs font-semibold text-white shadow-sm hover:bg-blue-800"
+          >
+            <i class="far fa-user-plus"></i>
+            Add Employee
+          </RouterLink>
+        </div>
       </div>
     </div>
 
-    <div v-if="isClearanceContext" class="rounded-md border border-indigo-200 bg-indigo-50 p-3 text-sm text-indigo-800">
+    <div v-if="isClearanceContext" class="mb-3 rounded-md border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm text-indigo-800">
       Select a user to view clearance & print.
     </div>
 
     <!-- filters -->
     <div
-      class="sticky top-14 z-40 -mx-5 px-5 py-3 bg-white/90 supports-[backdrop-filter]:bg-white/70 backdrop-blur border-b border-zinc-200"
+      class="sticky top-14 z-40 mb-3 rounded-md border border-slate-200 bg-white/95 shadow-sm supports-[backdrop-filter]:bg-white/80 backdrop-blur"
     >
-      <div class="flex flex-col md:flex-row md:items-end gap-2">
+      <div class="flex flex-col gap-2 border-b border-slate-100 p-3 md:flex-row md:items-end">
         <EmployeeFilter
           v-model:company_id="filters.company"
           v-model:department_id="filters.department"
@@ -532,89 +620,164 @@ onBeforeUnmount(() => {
           class="w-full"
         >
           <!-- Status segmented -->
-          <div class="flex items-center gap-1">
+          <div class="flex items-center overflow-hidden rounded-md border border-slate-200 bg-slate-50">
             <button
-              class="h-8 px-3 text-xs rounded-l-md border transition"
+              class="h-8 px-3 text-xs font-semibold transition"
               :class="filters.status === 'all'
-                ? 'bg-zinc-800 text-white border-zinc-800'
-                : 'bg-white border-zinc-300 hover:bg-zinc-50'"
+                ? 'bg-slate-800 text-white'
+                : 'bg-white text-slate-600 hover:bg-slate-50'"
               @click.prevent="filters.status = 'all'"
             >All</button>
 
             <button
-              class="h-8 px-3 text-xs border-y transition"
+              class="h-8 border-l border-slate-200 px-3 text-xs font-semibold transition"
               :class="filters.status === 'active'
-                ? 'bg-emerald-600 text-white border-emerald-600'
-                : 'bg-white border-zinc-300 hover:bg-zinc-50'"
+                ? 'bg-emerald-600 text-white'
+                : 'bg-white text-slate-600 hover:bg-slate-50'"
               @click.prevent="filters.status = 'active'"
             >Active</button>
 
             <button
-              class="h-8 px-3 text-xs rounded-r-md border transition"
+              class="h-8 border-l border-slate-200 px-3 text-xs font-semibold transition"
               :class="filters.status === 'in_active'
-                ? 'bg-rose-600 text-white border-rose-600'
-                : 'bg-white border-zinc-300 hover:bg-zinc-50'"
+                ? 'bg-rose-600 text-white'
+                : 'bg-white text-slate-600 hover:bg-slate-50'"
               @click.prevent="filters.status = 'in_active'"
             >Inactive</button>
           </div>
+
+          <!-- No Unit filter toggle -->
+          <button
+            type="button"
+            class="inline-flex h-8 items-center gap-1.5 rounded-md border px-3 text-xs font-semibold transition"
+            :class="filters.no_unit
+              ? 'border-orange-400 bg-orange-500 text-white shadow-sm'
+              : 'border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100'"
+            :title="filters.no_unit ? 'Showing only employees without unit' : 'Filter: no unit assigned'"
+            @click.prevent="filters.no_unit = !filters.no_unit"
+          >
+            <i class="far fa-exclamation-triangle text-[10px]"></i>
+            No Unit
+            <span
+              v-if="summary.withoutUnit > 0"
+              class="inline-flex h-4 min-w-[18px] items-center justify-center rounded-full px-1 text-[9px] font-bold"
+              :class="filters.no_unit ? 'bg-white/30 text-white' : 'bg-orange-200 text-orange-800'"
+            >{{ summary.withoutUnit }}</span>
+          </button>
         </EmployeeFilter>
 
         <!-- Quick search + Reset -->
-        <div class="flex items-center gap-2 w-full md:w-auto">
-          <input v-model.trim="filters.q" type="text" placeholder="Search name / phone / ID" class="input-1 h-8 text-sm w-full md:w-64" />
+        <div class="flex w-full items-center gap-2 md:w-auto">
+          <div class="relative w-full md:w-72">
+            <i class="far fa-search pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
+            <input
+              v-model.trim="filters.q"
+              type="text"
+              placeholder="Search name, phone, ID"
+              class="h-8 w-full rounded-md border border-slate-200 bg-white pl-8 pr-3 text-xs text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
           <button
             type="button"
             @click="resetFilters"
-            class="inline-flex h-8 items-center rounded-md border border-zinc-300 bg-zinc-50 px-3 text-[12px] font-medium text-zinc-700 hover:bg-white active:scale-[.99]"
+            class="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50"
             title="Reset filters"
           >
-            <i class="far fa-undo mr-1"></i> Reset
+            <i class="far fa-undo"></i> Reset
           </button>
+          <div class="relative">
+            <button
+              type="button"
+              class="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-3 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+              title="Show/hide table columns"
+              @click="showColumnMenu = !showColumnMenu"
+            >
+              <i class="far fa-table-columns"></i>
+              Columns
+            </button>
+            <div
+              v-if="showColumnMenu"
+              class="absolute right-0 top-9 z-50 max-h-80 w-56 overflow-y-auto rounded-md border border-slate-200 bg-white p-2 text-xs shadow-lg"
+            >
+              <div class="mb-1 border-b border-slate-100 px-2 pb-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                Table columns
+              </div>
+              <label
+                v-for="column in TABLE_COLUMNS"
+                :key="column.key"
+                class="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-slate-700 hover:bg-slate-50"
+                :class="column.locked ? 'cursor-not-allowed opacity-60' : ''"
+              >
+                <input
+                  v-model="tableColumnVisible[column.key]"
+                  type="checkbox"
+                  class="h-3.5 w-3.5 rounded border-slate-300 text-blue-600"
+                  :disabled="column.locked"
+                />
+                <span class="flex-1">{{ column.label }}</span>
+                <i v-if="column.locked" class="far fa-lock text-[10px] text-slate-400"></i>
+              </label>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- summary chips -->
-      <div class="mt-2 flex flex-wrap gap-2 text-[12px]">
-        <span class="px-2 py-1 rounded-full bg-zinc-100 text-zinc-700">Total: {{ summary.total }}</span>
-        <span class="px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">Active: {{ summary.active }}</span>
-        <span class="px-2 py-1 rounded-full bg-rose-100 text-rose-700">Inactive: {{ summary.inactive }}</span>
-        <span class="px-2 py-1 rounded-full bg-amber-100 text-amber-800">With Shift: {{ summary.withShift }}</span>
-        <span class="px-2 py-1 rounded-full bg-zinc-100 text-zinc-700">No Shift: {{ summary.withoutShift }}</span>
-        <span class="px-2 py-1 rounded-full bg-emerald-100 text-emerald-800">With Weekend: {{ summary.withWeekend }}</span>
-        <span class="px-2 py-1 rounded-full bg-zinc-100 text-zinc-700">No Weekend: {{ summary.withoutWeekend }}</span>
+      <div class="grid gap-px bg-slate-100 text-xs sm:grid-cols-2 lg:grid-cols-8">
+        <div class="bg-white px-3 py-2"><div class="text-[10px] font-bold uppercase text-slate-400">Total</div><div class="text-base font-semibold text-slate-950">{{ summary.total }}</div></div>
+        <div class="bg-white px-3 py-2"><div class="text-[10px] font-bold uppercase text-slate-400">Active</div><div class="text-base font-semibold text-emerald-700">{{ summary.active }}</div></div>
+        <div class="bg-white px-3 py-2"><div class="text-[10px] font-bold uppercase text-slate-400">Inactive</div><div class="text-base font-semibold text-rose-700">{{ summary.inactive }}</div></div>
+        <div class="bg-white px-3 py-2"><div class="text-[10px] font-bold uppercase text-slate-400">With Shift</div><div class="text-base font-semibold text-amber-700">{{ summary.withShift }}</div></div>
+        <div class="bg-white px-3 py-2"><div class="text-[10px] font-bold uppercase text-slate-400">No Shift</div><div class="text-base font-semibold text-slate-700">{{ summary.withoutShift }}</div></div>
+        <div class="bg-white px-3 py-2"><div class="text-[10px] font-bold uppercase text-slate-400">Weekend</div><div class="text-base font-semibold text-emerald-700">{{ summary.withWeekend }}</div></div>
+        <div class="bg-white px-3 py-2"><div class="text-[10px] font-bold uppercase text-slate-400">No Weekend</div><div class="text-base font-semibold text-slate-700">{{ summary.withoutWeekend }}</div></div>
+        <button
+          type="button"
+          class="px-3 py-2 text-left transition"
+          :class="filters.no_unit ? 'bg-orange-500' : 'bg-white hover:bg-orange-50'"
+          :title="filters.no_unit ? 'Click to clear No Unit filter' : 'Click to filter employees without unit'"
+          @click="filters.no_unit = !filters.no_unit"
+        >
+          <div class="text-[10px] font-bold uppercase" :class="filters.no_unit ? 'text-orange-100' : 'text-orange-500'">No Unit</div>
+          <div class="text-base font-semibold" :class="filters.no_unit ? 'text-white' : 'text-orange-600'">{{ summary.withoutUnit }}</div>
+        </button>
       </div>
     </div>
 
     <!-- loader -->
-    <div v-if="isLoading" class="text-center py-6">
+    <div v-if="isLoading" class="rounded-md border border-slate-200 bg-white py-10 text-center">
       <LoaderView />
     </div>
 
     <!-- results -->
-    <div v-else class="space-y-4">
-      <div v-if="Object.keys(groupedUsers).length === 0" class="text-center py-6 text-lg italic text-gray-500">
-        No users found
+    <div v-else class="space-y-3">
+      <div v-if="Object.keys(groupedUsers).length === 0" class="rounded-md border border-dashed border-slate-300 bg-white px-4 py-10 text-center">
+        <div class="mx-auto flex h-10 w-10 items-center justify-center rounded-md bg-slate-100 text-slate-500">
+          <i class="far fa-user-slash"></i>
+        </div>
+        <div class="mt-3 text-sm font-semibold text-slate-800">No users found</div>
+        <div class="mt-1 text-xs text-slate-500">Adjust filters or reset the search criteria.</div>
       </div>
 
       <!-- per-company groups -->
-      <div v-for="(users, companyName) in groupedUsers" :key="companyName" class="space-y-2">
+      <section v-for="(users, companyName) in groupedUsers" :key="companyName" class="rounded-md border border-slate-200 bg-white shadow-sm">
         <!-- mobile cards -->
         <div class="grid grid-cols-1 gap-2 md:hidden">
-          <div v-for="user in users" :key="user.id" class="rounded-lg border border-zinc-200 bg-white p-3 shadow-sm">
+          <div v-for="user in users" :key="user.id" class="rounded-md border border-slate-200 bg-white p-3 shadow-sm">
             <div class="flex items-start gap-3">
-              <div class="h-10 w-10 shrink-0 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
+              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-blue-50 font-bold text-blue-700">
                 {{ (user?.name || '?').charAt(0).toUpperCase() }}
               </div>
 
               <div class="min-w-0">
-                <div class="font-medium leading-5 truncate">{{ user?.name }}</div>
+                <div class="truncate font-semibold leading-5 text-slate-950">{{ user?.name }}</div>
                 <div class="text-[12px] text-zinc-500">ID: {{ user?.employee_id }} • {{ user?.designation?.title || '—' }}</div>
                 <div class="mt-1 text-[12px] text-zinc-600">Shift: {{ shiftName(user) }}</div>
                 <div class="text-[12px] text-zinc-600">Weekend: {{ weekendDays(user) }}</div>
 
                 <div class="mt-1">
                   <span
-                    class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
+                    class="inline-flex items-center rounded px-2 py-0.5 text-[11px] font-semibold"
                     :class="isInactiveUser(user) ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'"
                   >
                     {{ isInactiveUser(user) ? 'Inactive' : 'Active' }}
@@ -629,21 +792,21 @@ onBeforeUnmount(() => {
 
                 <div class="mt-2 flex flex-wrap gap-1">
                   <button
-                    class="btn-3 !px-2 !py-1"
+                    class="rounded border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
                     :class="isInactiveUser(user) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''"
                     :disabled="isInactiveUser(user)"
                     @click="openShift(user)"
                   >Shift</button>
 
                   <button
-                    class="btn-3 !px-2 !py-1"
+                    class="rounded border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
                     :class="isInactiveUser(user) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''"
                     :disabled="isInactiveUser(user)"
                     @click="openWeekend(user)"
                   >Weekend</button>
 
                   <button
-                    class="btn-3 !px-2 !py-1"
+                    class="rounded border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
                     :class="isInactiveUser(user) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''"
                     :disabled="isInactiveUser(user)"
                     @click="openAssign(user)"
@@ -671,7 +834,7 @@ onBeforeUnmount(() => {
 
                   <RouterLink
                     :to="{ name: 'UserShow', params: { id: user.id }, query: { company: route.query.company } }"
-                    class="btn-3 !px-2 !py-1"
+                    class="rounded border border-blue-200 bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700 hover:bg-blue-100"
                   >View</RouterLink>
                 </div>
               </div>
@@ -681,27 +844,23 @@ onBeforeUnmount(() => {
 
         <!-- desktop table (UPDATED for sticky group title + sticky head) -->
         <div class="hidden md:block">
+          <div class="group-sticky sticky top-[11.5rem] z-30 flex h-9 items-center justify-between border-b border-blue-200 bg-blue-700 px-3 text-white">
+            <h2 class="truncate text-xs font-bold uppercase tracking-wide">{{ companyName }}</h2>
+            <span class="shrink-0 rounded bg-white/15 px-2 py-0.5 text-[10px] font-semibold">{{ users.length }} employees</span>
+          </div>
           <!-- ONE scroll container: group title + thead sticky works together -->
-          <div class="group-scroll relative overflow-auto max-h-[70vh] rounded-md border border-zinc-200 bg-white shadow-sm">
-            <!-- Sticky group title INSIDE scroll -->
-            <div class="group-sticky sticky top-0 z-40 flex items-center justify-between h-11 px-3 bg-white/95 backdrop-blur border-b border-zinc-200">
-              <h2 class="title-md">{{ companyName }} ({{ users.length }})</h2>
-            </div>
-
-            <table class="min-w-full table-auto">
+          <div class="group-scroll relative bg-white">
+            <table class="min-w-full table-auto text-slate-700">
               <thead class="user-group-table-head">
                 <tr>
-                  <th class="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">#</th>
-                  <th class="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">Name</th>
-                  <th class="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">Phone & Email</th>
-                  <th class="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">Finger ID</th>
-                  <th class="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">Joining</th>
-                  <th class="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">Role</th>
-                  <th class="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">Shift</th>
-                  <th class="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">Weekend</th>
-                  <th class="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">Status</th>
-                  <th class="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">KPI Criteria</th>
-                  <th class="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">Action</th>
+                  <th
+                    v-for="column in visibleTableColumns"
+                    :key="column.key"
+                    class="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500"
+                    :class="column.key === 'sl' ? 'text-center' : ''"
+                  >
+                    {{ column.label }}
+                  </th>
                 </tr>
               </thead>
 
@@ -709,29 +868,54 @@ onBeforeUnmount(() => {
                 <tr
                   v-for="(user, index) in users"
                   :key="user.id"
-                  :class="['border-b text-sm border-gray-100 hover:bg-indigo-50/50', isInactiveUser(user) ? 'opacity-70' : '']"
+                  :class="[
+                    'border-b border-slate-100 text-[11px]',
+                    isInactiveUser(user) ? 'opacity-70' : '',
+                    hasNoUnit(user) ? 'bg-orange-50/60 hover:bg-orange-50' : 'hover:bg-blue-50/60',
+                  ]"
                 >
-                  <td class="border border-gray-100 px-2 py-2">{{ index + 1 }}</td>
+                  <td v-if="isTableColumnVisible('sl')" class="px-2 py-1.5 text-center font-semibold text-slate-500">{{ index + 1 }}</td>
 
-                  <td class="border border-gray-100 px-3 py-2">
-                    <div class="flex items-start gap-2">
-                      <div v-if="user.photo" class="h-8 w-8 shrink-0 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold overflow-hidden">
-                        <img :src="user.photo" :alt="user?.name" class="h-8 w-8 rounded-full object-cover" />
+                  <td v-if="isTableColumnVisible('employee')" class="px-2 py-1.5">
+                    <div class="flex items-start gap-1.5">
+                      <div v-if="user.photo" class="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded bg-blue-50 font-bold text-blue-700">
+                        <img :src="user.photo" :alt="user?.name" class="h-7 w-7 rounded object-cover" />
                       </div>
-                      <div v-else class="h-8 w-8 shrink-0 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
+                      <div v-else class="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-blue-50 font-bold text-blue-700">
                         {{ (user?.name || '?').charAt(0).toUpperCase() }}
                       </div>
 
                       <div class="min-w-0">
-                        <div class="font-medium truncate max-w-[220px]">{{ user?.name }}</div>
-                        <div class="text-[11px] text-zinc-500">{{ user?.bn_name }}</div>
+                        <div class="max-w-[260px] truncate font-semibold leading-4 text-slate-950">
+                          {{ user?.name || '-' }}
+                          <span v-if="user?.bn_name" class="font-medium text-slate-500">({{ user.bn_name }})</span>
+                        </div>
                         <div class="text-[11px] text-zinc-500">{{ user?.designation?.title || '—' }}</div>
-                        <div class="text-[11px] text-zinc-500">ID: {{ user?.employee_id }}</div>
+                        <div class="hidden text-[10px] text-zinc-500">ID: {{ user?.employee_id }}</div>
                       </div>
                     </div>
                   </td>
 
-                  <td class="border border-gray-100 px-2 py-2">
+                  <td v-if="isTableColumnVisible('employeeId')" class="whitespace-nowrap px-2 py-1.5 font-semibold text-slate-700">
+                    {{ user?.employee_id || '-' }}
+                  </td>
+                  <td v-if="isTableColumnVisible('department')" class="whitespace-nowrap px-2 py-1.5">
+                    {{ user?.department?.name || '-' }}
+                  </td>
+                  <td v-if="isTableColumnVisible('designation')" class="whitespace-nowrap px-2 py-1.5">
+                    {{ user?.designation?.title || '-' }}
+                  </td>
+                  <td v-if="isTableColumnVisible('unit')" class="whitespace-nowrap px-2 py-1.5">
+                    <span v-if="user?.unit?.name">{{ user.unit.name }}</span>
+                    <span v-else class="inline-flex items-center gap-1 rounded border border-orange-200 bg-orange-50 px-1.5 py-0.5 text-[10px] font-semibold text-orange-600">
+                      <i class="far fa-exclamation-triangle text-[9px]"></i> Not Assigned
+                    </span>
+                  </td>
+                  <td v-if="isTableColumnVisible('lineType')" class="whitespace-nowrap px-2 py-1.5">
+                    {{ user?.type || '-' }}
+                  </td>
+
+                  <td v-if="isTableColumnVisible('contact')" class="px-2 py-1.5">
                     <div class="flex items-center gap-2">
                       <a class="underline" :href="'tel:' + user?.phone">{{ user?.phone || '—' }}</a>
                     </div>
@@ -740,17 +924,28 @@ onBeforeUnmount(() => {
                     </div>
                   </td>
 
-                  <td class="border border-gray-100 px-2 py-2 whitespace-nowrap">{{ user?.device_user_id }}</td>
-                  <td class="border border-gray-100 px-2 py-2 whitespace-nowrap">{{ user?.joining_date }}</td>
-                  <td class="border border-gray-100 px-2 py-2 whitespace-nowrap">{{ user?.role }}</td>
+                  <td v-if="isTableColumnVisible('phone')" class="whitespace-nowrap px-2 py-1.5">
+                    <a v-if="user?.phone" class="underline" :href="'tel:' + user.phone">{{ user.phone }}</a>
+                    <span v-else>-</span>
+                  </td>
+                  <td v-if="isTableColumnVisible('email')" class="whitespace-nowrap px-2 py-1.5">
+                    <a v-if="user?.email" class="underline" :href="'mailto:' + user.email">{{ user.email }}</a>
+                    <span v-else>-</span>
+                  </td>
+                  <td v-if="isTableColumnVisible('fingerId')" class="whitespace-nowrap px-2 py-1.5">{{ user?.device_user_id || '-' }}</td>
+                  <td v-if="isTableColumnVisible('joining')" class="whitespace-nowrap px-2 py-1.5">{{ user?.joining_date || '-' }}</td>
+                  <td v-if="isTableColumnVisible('role')" class="whitespace-nowrap px-2 py-1.5">{{ user?.role || '-' }}</td>
+                  <td v-if="isTableColumnVisible('exitDate')" class="whitespace-nowrap px-2 py-1.5">
+                    {{ normalizeDate(user?.last_working_date) || '-' }}
+                  </td>
 
                   <!-- SHIFT -->
-                  <td class="border border-gray-100 px-3 py-2 whitespace-nowrap">
+                  <td v-if="isTableColumnVisible('shift')" class="whitespace-nowrap px-2 py-1.5">
                     <button
                       @click="openShift(user)"
                       :title="hasShift(user) ? 'Manage Shift' : 'Assign Shift'"
                       :class="[
-                        'group inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium transition',
+                        'group inline-flex h-6 items-center rounded border px-1.5 text-[10px] font-semibold transition',
                         'focus:outline-none focus:ring-2 focus:ring-offset-1',
                         isInactiveUser(user) ? 'opacity-50 cursor-not-allowed pointer-events-none' : '',
                         hasShift(user)
@@ -761,22 +956,22 @@ onBeforeUnmount(() => {
                     >
                       <span class="ml-1 hidden lg:inline">{{ hasShift(user) ? 'Manage' : 'Assign' }}</span>
                       <span
-                        class="ml-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1 text-[10px] font-semibold"
+                        class="ml-1 inline-flex h-4 min-w-[18px] items-center justify-center rounded-full px-1 text-[9px] font-semibold"
                         :class="hasShift(user) ? 'bg-amber-600 text-white' : 'bg-slate-200 text-slate-700'"
                       >
                         {{ user?.shifts_count || (hasShift(user) ? 1 : 0) }}
                       </span>
                     </button>
-                    <div class="mt-1 text-[11px] text-gray-500">{{ shiftName(user) }}</div>
+                    <div class="mt-0.5 max-w-[130px] truncate text-[10px] text-slate-500">{{ shiftName(user) }}</div>
                   </td>
 
                   <!-- WEEKEND -->
-                  <td class="border border-gray-100 px-3 py-2 whitespace-nowrap">
+                  <td v-if="isTableColumnVisible('weekend')" class="whitespace-nowrap px-2 py-1.5">
                     <button
                       @click="openWeekend(user)"
                       :title="hasWeekend(user) ? 'Manage Weekend' : 'Assign Weekend'"
                       :class="[
-                        'group inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium transition',
+                        'group inline-flex h-6 items-center rounded border px-1.5 text-[10px] font-semibold transition',
                         'focus:outline-none focus:ring-2 focus:ring-offset-1',
                         isInactiveUser(user) ? 'opacity-50 cursor-not-allowed pointer-events-none' : '',
                         hasWeekend(user)
@@ -787,35 +982,35 @@ onBeforeUnmount(() => {
                     >
                       <span class="ml-1 hidden lg:inline">{{ hasWeekend(user) ? 'Manage' : 'Assign' }}</span>
                       <span
-                        class="ml-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1 text-[10px] font-semibold"
+                        class="ml-1 inline-flex h-4 min-w-[18px] items-center justify-center rounded-full px-1 text-[9px] font-semibold"
                         :class="hasWeekend(user) ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700'"
                       >
                         {{ user?.assign_weekends_count || (hasWeekend(user) ? user?.assign_weekend?.weekends?.length || 0 : 0) }}
                       </span>
                     </button>
-                    <div class="mt-1 text-[11px] text-gray-500">{{ weekendDays(user) }}</div>
+                    <div class="mt-0.5 max-w-[130px] truncate text-[10px] text-slate-500">{{ weekendDays(user) }}</div>
                   </td>
 
                   <!-- STATUS -->
-                  <td class="border border-gray-100 px-2 py-2">
+                  <td v-if="isTableColumnVisible('status')" class="px-2 py-1.5">
                     <span
-                      class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                      class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold"
                       :class="isInactiveUser(user) ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'"
                     >
                       {{ isInactiveUser(user) ? 'Inactive' : 'Active' }}
                     </span>
-                    <div v-if="isExitInactive(user)" class="mt-1 text-[11px] text-rose-600">
+                    <div v-if="isExitInactive(user)" class="mt-0.5 text-[10px] text-rose-600">
                       Exit: {{ normalizeDate(user?.last_working_date) }}
                     </div>
                   </td>
 
                   <!-- KPI -->
-                  <td class="border border-gray-100 px-3 py-2 whitespace-nowrap">
+                  <td v-if="isTableColumnVisible('kpi')" class="whitespace-nowrap px-2 py-1.5">
                     <button
                       @click="openAssign(user)"
                       :title="(user?.criteria_assignments?.length || 0) > 0 ? 'Manage KPI criteria' : 'Assign KPI criteria'"
                       :class="[
-                        'group inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium transition',
+                        'group inline-flex h-6 items-center rounded border px-1.5 text-[10px] font-semibold transition',
                         'focus:outline-none focus:ring-2 focus:ring-offset-1',
                         isInactiveUser(user) ? 'opacity-50 cursor-not-allowed pointer-events-none' : '',
                         (user?.criteria_assignments?.length || 0) > 0
@@ -826,7 +1021,7 @@ onBeforeUnmount(() => {
                     >
                       <span class="ml-1 hidden lg:inline">{{ (user?.criteria_assignments?.length || 0) > 0 ? 'Manage' : 'Assign' }}</span>
                       <span
-                        class="ml-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1 text-[10px] font-semibold"
+                        class="ml-1 inline-flex h-4 min-w-[18px] items-center justify-center rounded-full px-1 text-[9px] font-semibold"
                         :class="(user?.criteria_assignments?.length || 0) > 0 ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'"
                       >
                         {{ user?.criteria_assignments?.length || 0 }}
@@ -835,11 +1030,11 @@ onBeforeUnmount(() => {
                   </td>
 
                   <!-- ACTION -->
-                  <td class="border border-gray-100 px-2 py-2">
-                    <div class="flex gap-2">
+                  <td v-if="isTableColumnVisible('actions')" class="px-2 py-1.5">
+                    <div class="flex items-center gap-1">
                       <RouterLink
                         :to="{ name: 'UserShow', params: { id: user.id }, query: { company: route.query.company } }"
-                        class="btn-icon"
+                        class="btn-icon !h-7 !w-7"
                         title="View"
                       >
                         <i class="far fa-eye"></i>
@@ -847,7 +1042,7 @@ onBeforeUnmount(() => {
 
                       <RouterLink
                         :to="{ name: 'UserEdit', params: { id: user.id }, query: { company: route.query.company } }"
-                        :class="['btn-icon', isInactiveUser(user) ? 'pointer-events-none opacity-50' : '']"
+                        :class="['btn-icon !h-7 !w-7', isInactiveUser(user) ? 'pointer-events-none opacity-50' : '']"
                         :tabindex="isInactiveUser(user) ? -1 : 0"
                         title="Edit"
                       >
@@ -856,7 +1051,7 @@ onBeforeUnmount(() => {
 
                       <RouterLink
                         :to="{ name: 'KpiReview', params: { employeeId: user.id } }"
-                        :class="['btn-icon', isInactiveUser(user) ? 'pointer-events-none opacity-50' : '']"
+                        :class="['btn-icon !h-7 !min-w-7 !px-2 !text-[10px]', isInactiveUser(user) ? 'pointer-events-none opacity-50' : '']"
                         :tabindex="isInactiveUser(user) ? -1 : 0"
                         title="KPI"
                       >
@@ -891,7 +1086,7 @@ onBeforeUnmount(() => {
         </div>
 
         
-      </div>
+      </section>
     </div>
 
     <!-- Exit / Leave Modal -->
@@ -1147,19 +1342,22 @@ onBeforeUnmount(() => {
 </style>
 
 <style scoped>
-/* keep sticky math in one place */
 .group-scroll {
-  --group-header-h: 44px; /* h-11 */
+  --group-sticky-top: 11.5rem;
+  --group-header-h: 36px;
 }
 
-/* table head sticky: sits under group title */
 .user-group-table-head th {
   position: sticky;
-  top: var(--group-header-h);
-  z-index: 30;
+  top: calc(var(--group-sticky-top) + var(--group-header-h));
+  z-index: 20;
   background: #f8fafc;
   border-bottom: 1px solid #e5e7eb;
   text-align: left;
+}
+
+.user-group-table-head th:first-child {
+  text-align: center;
 }
 
 /* optional: nicer row align */

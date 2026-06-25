@@ -25,8 +25,19 @@ const rejectReason = ref('')
 const rejectBusy = ref(false)
 const showRejectModal = ref(false)
 
-const canVerify = computed(() => Boolean(item.value?.can_verify))
-const canReject = computed(() => ['admin', 'super_admin', 'developer'].includes(String(authStore.user?.role || '').toLowerCase()))
+const canVerify  = computed(() => Boolean(item.value?.can_verify))
+const canReject  = computed(() => ['admin', 'super_admin', 'developer'].includes(String(authStore.user?.role || '').toLowerCase()))
+const canForward = computed(() => {
+  if (!['pending'].includes(item.value?.status)) return false
+  if (item.value?.forwarded_by_user_id) return false
+  if (item.value?.raised_by === authStore.user?.id) return false
+  const role = String(authStore.user?.role || '')
+  if (['super_admin', 'developer'].includes(role)) {
+    return authStore.canExplicit('payroll.adjustments.forward')
+  }
+  return authStore.canFeature('payroll.adjustments.forward')
+})
+const forwardedByName = computed(() => userName(item.value?.forwarded_by))
 
 const userName = (user) => {
   if (!user) return ''
@@ -61,10 +72,31 @@ const load = async () => {
   }
 }
 
+const forwardBusy = ref(false)
+const showForwardModal = ref(false)
+const forwardNote = ref('')
+const forwardAdjustment = async () => {
+  forwardBusy.value = true
+  try {
+    const { default: apiClient } = await import('@/axios')
+    await apiClient.patch(`/payroll-adjustments/${props.id}/forward`, {
+      note: forwardNote.value.trim() || undefined,
+    })
+    toast.success('Forwarded successfully.')
+    forwardNote.value = ''
+    showForwardModal.value = false
+    await load()
+  } catch (e) {
+    toast.error(e.response?.data?.message || e.message || 'Forward failed.')
+  } finally {
+    forwardBusy.value = false
+  }
+}
+
 const verify = async () => {
   try {
     await store.verify(props.id, approveNote.value)
-    toast.success('Adjustment approved.')
+    toast.success('Adjustment marked ready to apply.')
     approveNote.value = ''
     await load()
   } catch (e) {
@@ -126,7 +158,7 @@ onMounted(load)
           <div class="mt-1 text-2xl font-bold uppercase tracking-wide text-slate-950">
             Payroll Adjustment Slip
           </div>
-          <div class="mt-1 text-xs font-medium text-slate-600">For internal approval and record</div>
+          <div class="mt-1 text-xs font-medium text-slate-600">For internal authorization and payroll application record</div>
           <div class="absolute right-0 top-0 text-right text-[11px] text-slate-500">
             <div>Slip No.</div>
             <div class="font-semibold text-slate-900">#{{ item.id }}</div>
@@ -193,35 +225,63 @@ onMounted(load)
         </div>
 
         <div class="no-print mt-4 flex flex-wrap gap-2">
-          <button v-if="canVerify && ['pending', 'verified'].includes(item.status)" class="btn-2" @click="verify">
-            <i class="far fa-check-circle"></i> Approve
+          <button
+            v-if="canForward"
+            class="pulse-indigo inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100"
+            :disabled="forwardBusy"
+            @click="showForwardModal = true"
+          >
+            <i class="far fa-share text-[10px]"></i> Forward
           </button>
-          <button v-if="canReject && ['pending', 'verified'].includes(item.status)" class="btn-3" @click="showRejectModal = true">
+          <button
+            v-if="canVerify && ['pending', 'verified'].includes(item.status) && item.forwarded_by_user_id"
+            class="btn-2"
+            @click="verify"
+          >
+            <i class="far fa-check-circle"></i> Mark Ready to Apply
+          </button>
+          <button
+            v-if="canReject && ['pending', 'verified'].includes(item.status) && item.forwarded_by_user_id"
+            class="btn-3"
+            @click="showRejectModal = true"
+          >
             <i class="far fa-times-circle"></i> Reject
           </button>
+          <span
+            v-if="canVerify && ['pending'].includes(item.status) && !item.forwarded_by_user_id"
+            class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-400"
+          >
+            <i class="far fa-lock text-[10px]"></i> Waiting for forward
+          </span>
         </div>
 
-        <div v-if="canVerify && ['pending', 'verified'].includes(item.status)" class="no-print mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Approval Note</label>
+        <div v-if="canVerify && ['pending', 'verified'].includes(item.status) && item.forwarded_by_user_id" class="no-print mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Authorization Note</label>
           <textarea
             v-model="approveNote"
             rows="3"
             class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-100"
-            placeholder="Optional note for approval"
+            placeholder="Optional note for authorization"
           />
           <div class="mt-3 flex justify-end">
             <button class="btn-2" @click="verify">
               <i class="far fa-check"></i>
-              Approve with Note
+              Mark Ready with Note
             </button>
           </div>
         </div>
 
-        <div class="signature-grid mt-8 grid grid-cols-3 gap-6">
+        <!-- Hierarchy: Prepared → Forwarded → Authorized → Received -->
+        <div class="signature-grid mt-8 grid grid-cols-4 gap-4">
           <div class="text-center">
             <div class="signature-name mt-1 text-sm font-semibold text-slate-900">{{ preparedByName }}</div>
             <div class="signature-line mx-auto"></div>
             <div class="signature-label mt-1 text-xs font-bold uppercase tracking-wide text-slate-700">Prepared By</div>
+          </div>
+          <div class="text-center">
+            <div class="signature-name mt-1 text-sm font-semibold text-slate-900">{{ forwardedByName }}</div>
+            <div class="signature-line mx-auto"></div>
+            <div class="signature-label mt-1 text-xs font-bold uppercase tracking-wide text-slate-700">Forwarded By</div>
           </div>
           <div class="text-center">
             <div class="signature-name mt-1 text-sm font-semibold text-slate-900">{{ authorizedByName }}</div>
@@ -239,6 +299,30 @@ onMounted(load)
 
     <div v-else class="rounded-xl border border-dashed border-slate-200 bg-white p-10 text-center text-slate-500">
       Adjustment not found.
+    </div>
+
+    <div v-if="showForwardModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4">
+      <div class="w-full max-w-lg rounded-3xl bg-white p-5 shadow-2xl">
+        <h3 class="text-lg font-semibold text-slate-900">Forward Adjustment</h3>
+        <p class="mt-1 text-sm text-slate-500">Optionally add a note before forwarding.</p>
+        <textarea
+          v-model="forwardNote"
+          rows="4"
+          class="mt-4 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-100"
+          placeholder="Note (optional)"
+        />
+        <div class="mt-4 flex justify-end gap-2">
+          <button class="btn-3" :disabled="forwardBusy" @click="showForwardModal = false">Cancel</button>
+          <button
+            class="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100"
+            :disabled="forwardBusy"
+            @click="forwardAdjustment"
+          >
+            <i class="far" :class="forwardBusy ? 'fa-spinner fa-spin' : 'fa-share'"></i>
+            {{ forwardBusy ? 'Forwarding...' : 'Forward' }}
+          </button>
+        </div>
+      </div>
     </div>
 
     <div v-if="showRejectModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4">
@@ -357,4 +441,19 @@ onMounted(load)
   height: 0;
   margin-top: 4px;
 }
+
+@keyframes btn-ping {
+  75%, 100% { transform: scale(1.7); opacity: 0; }
+}
+.pulse-indigo { position: relative; overflow: hidden; }
+.pulse-indigo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: rgba(99, 102, 241, 0.4);
+  animation: btn-ping 1.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+.pulse-indigo:hover::after { animation: none; opacity: 0; }
 </style>

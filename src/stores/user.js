@@ -10,6 +10,7 @@ export const useUserStore = defineStore('user', () => {
   const handoverUsers = ref([])
   const user = ref({})
   const userDashboard = ref({})
+  const employeeDashboardOverview = ref({})
   const dashboardInfo = ref({})
   const error = ref(null)
   const isLoading = ref(false) // লোডিং স্টেট
@@ -41,6 +42,7 @@ export const useUserStore = defineStore('user', () => {
       isLoading.value = true
       const response = await apiClient.get('/users', {
         params: {
+          include_inactive: 1,
           flag: 'excel',
           company_id: payload.data.company_id,
           department_id: payload.data.department_id,
@@ -163,6 +165,24 @@ export const useUserStore = defineStore('user', () => {
       return data
     } catch (err) {
       error.value = err.response?.data?.message || 'Something went wrong'
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const fetchEmployeeDashboardOverview = async (params = {}) => {
+    try {
+      isLoading.value = true
+      const response = await apiClient.get('/dashboard/employee-overview', { params })
+      const data = response.data
+      if (data) {
+        employeeDashboardOverview.value = data
+      }
+      error.value = null
+      return data
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Something went wrong'
+      throw err
     } finally {
       isLoading.value = false
     }
@@ -339,6 +359,7 @@ export const useUserStore = defineStore('user', () => {
     errorMessage,
     dashboardInfo,
     userDashboard,
+    employeeDashboardOverview,
     selectedDate,
     fetchUsers,
     fetchUser,
@@ -346,6 +367,7 @@ export const useUserStore = defineStore('user', () => {
     updateUser,
     deleteUser,
     fetchUserDashboardData,
+    fetchEmployeeDashboardOverview,
     fetchAdminDashboardData,
     fetchAdminDashboardAttendanceTrend,
     fetchAdminDashboardLeaveAnalytics,

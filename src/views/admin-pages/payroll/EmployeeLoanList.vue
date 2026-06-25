@@ -7,7 +7,6 @@ import { useEmployeeLoanStore } from '@/stores/employeeLoan'
 import LoaderView from '@/components/common/LoaderView.vue'
 import DeleteModal from '@/components/common/DeleteModal.vue'
 import PaginationBar from '@/components/PaginationBar.vue'
-import AsyncUserCombobox from '@/components/common/AsyncUserCombobox.vue'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import LoanInstallmentPreview from '@/components/payroll/LoanInstallmentPreview.vue'
 import apiClient from '@/axios'
@@ -41,6 +40,12 @@ const previousLoanHistory = ref([])
 const previousLoanHistoryLoading = ref(false)
 const previousLoanHistoryError = ref('')
 const selectedPreviousLoanId = ref(null)
+const modalFilters = ref({
+  company_id: '',
+  department_id: '',
+  line_type: 'all',
+  user_id: '',
+})
 
 const blankForm = () => ({
   user_id: null,
@@ -62,7 +67,6 @@ const blankForm = () => ({
 })
 
 const modalForm = ref(blankForm())
-const modalUserDisplay = ref({ name: null, dept: null })
 const isEditMode = computed(() => !!selectedItem.value?.id)
 
 const previewLoan = computed(() => ({
@@ -114,11 +118,6 @@ const applyAutoInstallmentAmount = () => {
   isAutoSettingInstallment.value = false
   lastAutoInstallmentAmount.value = autoAmount
 }
-
-const fetchUsersFn = (params) =>
-  apiClient
-    .get('/users', { params })
-    .then((r) => (Array.isArray(r.data) ? r.data : r.data?.data || r.data?.users || []))
 
 const parseQueryInt = (value, fallback = 1) => {
   if (value === undefined || value === null || value === '') return fallback
@@ -207,10 +206,15 @@ const goToDetails = (item) => {
 const openCreate = () => {
   selectedItem.value = null
   modalForm.value = blankForm()
+  modalFilters.value = {
+    company_id: '',
+    department_id: '',
+    line_type: 'all',
+    user_id: '',
+  }
   resetPreviousLoanHistoryState()
   isInstallmentManuallyCustomized.value = false
   lastAutoInstallmentAmount.value = null
-  modalUserDisplay.value = { name: null, dept: null }
   modalErrors.value = {}
   showModal.value = true
 }
@@ -243,9 +247,12 @@ const openEdit = (item) => {
     modalForm.value.installment_amount !== '' &&
     modalForm.value.installment_amount !== null &&
     Number(modalForm.value.installment_amount) !== Number(lastAutoInstallmentAmount.value)
-  modalUserDisplay.value = item.user
-    ? { name: item.user.name, dept: item.user.department?.name || null }
-    : { name: null, dept: null }
+  modalFilters.value = {
+    company_id: item.user?.company_id || '',
+    department_id: item.user?.department_id || '',
+    line_type: item.user?.type || 'all',
+    user_id: item.user_id || '',
+  }
   modalErrors.value = {}
   resetPreviousLoanHistoryState()
   showModal.value = true
@@ -332,6 +339,16 @@ const handlePreviousLoanToggle = async () => {
   }
 
   await fetchPreviousLoanHistory()
+}
+
+const onModalEmployeeFilterChange = (payload = {}) => {
+  modalFilters.value = {
+    company_id: payload.company_id || '',
+    department_id: payload.department_id || '',
+    line_type: payload.line_type || 'all',
+    user_id: payload.employee_id || '',
+  }
+  modalForm.value.user_id = payload.employee_id || null
 }
 
 watch(
@@ -770,11 +787,23 @@ const inputClass =
                 <label class="block text-sm font-medium text-gray-700 mb-1"
                   >Employee <span class="text-red-500">*</span></label
                 >
-                <AsyncUserCombobox
-                  v-model="modalForm.user_id"
-                  v-model:display="modalUserDisplay"
-                  :fetcher="fetchUsersFn"
-                  placeholder="Search employee..."
+                <EmployeeFilter
+                  :company_id="modalFilters.company_id"
+                  :department_id="modalFilters.department_id"
+                  :line_type="modalFilters.line_type"
+                  :employee_id="modalFilters.user_id"
+                  grid-class="grid grid-cols-1 gap-3 md:grid-cols-2"
+                  @update:company_id="(value) => (modalFilters.company_id = value)"
+                  @update:department_id="(value) => (modalFilters.department_id = value)"
+                  @update:line_type="(value) => (modalFilters.line_type = value)"
+                  @update:employee_id="
+                    (value) => {
+                      modalFilters.user_id = value
+                      modalForm.user_id = value || null
+                    }
+                  "
+                  @filter-change="onModalEmployeeFilterChange"
+                  class="w-full"
                 />
                 <p v-if="modalErrors.user_id" class="text-red-500 text-xs mt-1">
                   {{ modalErrors.user_id }}

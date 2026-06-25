@@ -1,303 +1,475 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { storeToRefs } from 'pinia'
-import LoaderView from '@/components/common/LoaderView.vue'
-import AdjustmentStatusBadge from '@/components/payroll/adjustments/AdjustmentStatusBadge.vue'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
 import FlexibleDatePicker from '@/components/FlexibleDatePicker.vue'
+import PaginationBar from '@/components/PaginationBar.vue'
+import AdjustmentStatusBadge from '@/components/payroll/adjustments/AdjustmentStatusBadge.vue'
 import { useAdjustmentStore } from '@/stores/adjustmentStore'
-import { useAuthStore } from '@/stores/auth'
 import { formatCurrency } from '@/utils/currency'
 
-const router = useRouter()
-const toast = useToast()
-const adjustmentStore = useAdjustmentStore()
-const authStore = useAuthStore()
-const { adjustments, loading, error } = storeToRefs(adjustmentStore)
+defineOptions({ name: 'PayrollAdjustmentIndex' })
 
-defineOptions({
-  name: 'PayrollAdjustmentIndex',
-})
+const route   = useRoute()
+const router  = useRouter()
+const toast   = useToast()
+const store   = useAdjustmentStore()
+const { adjustments: list, loading, error, pagination } = storeToRefs(store)
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const defaultMonth = () => new Date().toISOString().slice(0, 7)
+
+const monthToPeriod = (v) => {
+  const m = String(v || '').slice(0, 7)
+  if (!/^\d{4}-\d{2}$/.test(m)) return { year: null, month: null, day: 1 }
+  return { year: Number(m.slice(0, 4)), month: Number(m.slice(5, 7)), day: 1 }
+}
+const periodToMonth = (v) => {
+  if (!v?.year || !v?.month) return ''
+  return `${v.year}-${String(v.month).padStart(2, '0')}`
+}
+const parseQueryInt = (v, fb = 1) => {
+  const n = Number.parseInt(String(v ?? ''), 10)
+  return Number.isNaN(n) ? fb : n
+}
+
+// ── Filters ───────────────────────────────────────────────────────────────────
 const filters = ref({
-  company_id: '',
+  month:         defaultMonth(),
+  company_id:    '',
   department_id: '',
-  employee_id: '',
-  line_type: 'all',
-  month: new Date().toISOString().slice(0, 7),
+  employee_id:   '',
+  line_type:     'all',
+  status:        '',
+  page:          1,
+  per_page:      15,
 })
+const showFilters = ref(false)
 
-const activeTab = ref('all')
-
-const monthToPeriod = (value) => {
-  const month = String(value || '').slice(0, 7)
-  if (!/^\d{4}-\d{2}$/.test(month)) return { year: null, month: null, day: 1 }
-  return { year: Number(month.slice(0, 4)), month: Number(month.slice(5, 7)), day: 1 }
-}
-
-const periodToMonth = (value) => {
-  if (!value?.year || !value?.month) return ''
-  return `${value.year}-${String(value.month).padStart(2, '0')}`
-}
-
-const filterMonthPeriod = computed({
+const monthPeriod = computed({
   get: () => monthToPeriod(filters.value.month),
-  set: (value) => {
-    filters.value.month = periodToMonth(value)
-  },
+  set: (v) => { filters.value.month = periodToMonth(v) },
 })
 
-const canCreate = computed(() => ['hr', 'super_admin', 'developer'].includes(String(authStore.user?.role || '').toLowerCase()))
-const canVerify = computed(() => ['accounts', 'super_admin', 'developer'].includes(String(authStore.user?.role || '').toLowerCase()))
-const canReject = computed(() => ['admin', 'super_admin', 'developer'].includes(String(authStore.user?.role || '').toLowerCase()))
-
-const filteredByMonth = computed(() => {
-  const month = filters.value.month ? String(filters.value.month) : ''
-  const selectedYear = month ? Number(month.slice(0, 4)) : null
-  const selectedMonth = month ? Number(month.slice(5, 7)) : null
-
-  return (adjustments.value || []).filter((item) => {
-    if (filters.value.employee_id && String(item.employee_id) !== String(filters.value.employee_id)) {
-      return false
-    }
-
-    if (selectedYear && Number(item.ref_year) !== selectedYear) return false
-    if (selectedMonth && Number(item.ref_month) !== selectedMonth) return false
-    return true
-  })
+const monthLabel = computed(() => {
+  const raw = filters.value.month
+  if (!raw) return ''
+  const [y, m] = raw.split('-')
+  return new Date(Number(y), Number(m) - 1).toLocaleString('en-US', { month: 'short', year: 'numeric' })
 })
 
-const visibleAdjustments = computed(() => {
-  const rows = filteredByMonth.value
-  if (activeTab.value === 'all') return rows
-  return rows.filter((item) => item.status === activeTab.value)
-})
+// ── Status tabs ───────────────────────────────────────────────────────────────
+const statusTabs = [
+  { value: '',         label: 'All',            dot: 'bg-slate-400'   },
+  { value: 'pending',  label: 'Pending',         dot: 'bg-amber-400'   },
+  { value: 'verified', label: 'Verified',        dot: 'bg-blue-400'    },
+  { value: 'approved', label: 'Ready to Apply',  dot: 'bg-emerald-400' },
+  { value: 'carried',  label: 'Applied',         dot: 'bg-indigo-400'  },
+]
 
-const counts = computed(() => {
-  const rows = filteredByMonth.value
-  return {
-    all: rows.length,
-    pending: rows.filter((r) => r.status === 'pending').length,
-    verified: rows.filter((r) => r.status === 'verified').length,
-    approved: rows.filter((r) => r.status === 'approved').length,
-    carried: rows.filter((r) => r.status === 'carried').length,
+// ── Build params ──────────────────────────────────────────────────────────────
+const buildParams = () => {
+  const p = {}
+  if (filters.value.month) {
+    p.ref_year  = Number(filters.value.month.slice(0, 4))
+    p.ref_month = Number(filters.value.month.slice(5, 7))
   }
-})
+  if (filters.value.company_id)    p.company_id    = filters.value.company_id
+  if (filters.value.department_id) p.department_id = filters.value.department_id
+  if (filters.value.employee_id)   p.employee_id   = filters.value.employee_id
+  if (filters.value.line_type && filters.value.line_type !== 'all') p.line_type = filters.value.line_type
+  if (filters.value.status)        p.status        = filters.value.status
+  p.page     = filters.value.page
+  p.per_page = filters.value.per_page
+  return p
+}
 
-const summaryCards = computed(() => [
-  { label: 'All', value: counts.value.all, tone: 'border-slate-200 bg-white text-slate-800' },
-  { label: 'Pending', value: counts.value.pending, tone: 'border-amber-200 bg-amber-50 text-amber-800' },
-  { label: 'Verified', value: counts.value.verified, tone: 'border-blue-200 bg-blue-50 text-blue-800' },
-  { label: 'Approved', value: counts.value.approved, tone: 'border-emerald-200 bg-emerald-50 text-emerald-800' },
-  { label: 'Carried', value: counts.value.carried, tone: 'border-slate-200 bg-slate-50 text-slate-700' },
-])
-
-const activeMonthLabel = computed(() => {
-  if (!filters.value.month) return '-'
-  const [year, month] = String(filters.value.month).split('-').map(Number)
-  return new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' }).format(
-    new Date(Date.UTC(year, month - 1, 1)),
-  )
-})
+const hydrateFromQuery = () => {
+  const q = route.query || {}
+  const year  = q.ref_year  ? String(q.ref_year)  : ''
+  const month = q.ref_month ? String(q.ref_month).padStart(2, '0') : ''
+  filters.value = {
+    month:         q.month ? String(q.month).slice(0, 7)
+                           : (year && month ? `${year}-${month}` : defaultMonth()),
+    company_id:    q.company_id    ? String(q.company_id)    : '',
+    department_id: q.department_id ? String(q.department_id) : '',
+    employee_id:   q.employee_id   ? String(q.employee_id)   : '',
+    line_type:     q.line_type     ? String(q.line_type)     : 'all',
+    status:        q.status        ? String(q.status)        : '',
+    page:          parseQueryInt(q.page, 1),
+    per_page:      parseQueryInt(q.per_page, 15),
+  }
+}
 
 const load = async () => {
+  const params = buildParams()
+  const query  = { ...params, month: filters.value.month }
+  delete query.ref_year
+  delete query.ref_month
+  await router.replace({ query })
   try {
-    await adjustmentStore.fetchAll({
-      employee_id: filters.value.employee_id || undefined,
-      ref_year: filters.value.month ? Number(filters.value.month.slice(0, 4)) : undefined,
-      ref_month: filters.value.month ? Number(filters.value.month.slice(5, 7)) : undefined,
-    })
+    await store.fetchAll(params)
   } catch (e) {
     toast.error(e.message || 'Failed to load adjustments.')
   }
 }
 
-const onEmployeeFilterChange = (payload = {}) => {
-  filters.value.company_id = payload.company_id || ''
+const onFilterChange = (payload = {}) => {
+  filters.value.company_id    = payload.company_id    || ''
   filters.value.department_id = payload.department_id || ''
-  filters.value.employee_id = payload.employee_id || ''
-  filters.value.line_type = payload.line_type || 'all'
+  filters.value.employee_id   = payload.employee_id   || ''
+  filters.value.line_type     = payload.line_type     || 'all'
+  filters.value.page = 1
+  load()
 }
 
-const approveRow = async (row) => {
+const setTab = (status) => {
+  filters.value.status = status
+  filters.value.page   = 1
+  load()
+}
+
+const pageChanged = (page) => { filters.value.page = page; load() }
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+const pendingCount  = computed(() => list.value.filter(r => r.status === 'pending').length)
+const approvedCount = computed(() => list.value.filter(r => r.status === 'approved').length)
+
+// ── Row actions ───────────────────────────────────────────────────────────────
+const verifyingId = ref(null)
+const deletingId  = ref(null)
+
+const verifyRow = async (row) => {
   const note = window.prompt('Approval note (optional):', '')
   if (note === null) return
-
+  verifyingId.value = row.id
   try {
-    await adjustmentStore.verify(row.id, note)
-    toast.success('Adjustment approved.')
+    await store.verify(row.id, note)
+    toast.success('Adjustment marked ready to apply.')
     await load()
   } catch (e) {
-    toast.error(e.message || 'Approval failed.')
+    toast.error(e.message || 'Action failed.')
+  } finally {
+    verifyingId.value = null
   }
 }
 
-const openDetail = (row) => {
-  router.push({ name: 'PayrollAdjustmentShow', params: { id: row.id } })
+const deleteRow = async (row) => {
+  if (!['pending', 'rejected'].includes(row.status)) return
+  if (!confirm(`Delete adjustment for ${row.employee?.name || 'this employee'}?`)) return
+  deletingId.value = row.id
+  try {
+    await store.remove(row.id)
+    toast.success('Deleted.')
+    await load()
+  } catch (e) {
+    toast.error(e.message || 'Delete failed.')
+  } finally {
+    deletingId.value = null
+  }
 }
 
-watch(
-  () => filters.value.month,
-  () => {
-    load()
-  },
-)
-
-onMounted(load)
+onMounted(() => {
+  hydrateFromQuery()
+  load()
+})
 </script>
 
 <template>
-  <div class="space-y-4 p-4 md:p-6">
-    <div class="rounded-3xl border border-slate-200 bg-gradient-to-r from-slate-50 via-white to-amber-50 p-5 shadow-sm">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 class="text-2xl font-bold text-slate-900">Post-Payroll Adjustments</h1>
-          <p class="mt-1 text-sm text-slate-500">
-            Manage approved carry-forward adjustments for {{ activeMonthLabel }}.
-          </p>
+  <div class="space-y-0 bg-slate-50 min-h-screen">
+
+    <!-- ── Sticky Toolbar ─────────────────────────────────────────────────── -->
+    <div class="sticky top-0 z-20 border-b border-slate-200 bg-white px-4 py-2.5 shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+
+        <!-- Left: title + meta -->
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-bold uppercase tracking-[0.22em] text-rose-500">Payroll</span>
+              <span class="text-slate-300">/</span>
+              <span class="text-sm font-bold text-slate-800">Post-Payroll Adjustments</span>
+              <span v-if="monthLabel" class="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] text-slate-600">
+                {{ monthLabel }}
+              </span>
+              <svg v-if="loading" class="h-3.5 w-3.5 animate-spin text-rose-400" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
+              </svg>
+            </div>
+            <!-- Mini stats -->
+            <div class="mt-0.5 flex items-center gap-3 text-[11px]">
+              <span class="text-amber-600">
+                <span class="font-bold">{{ pendingCount }}</span> pending
+              </span>
+              <span class="text-slate-300">|</span>
+              <span class="text-emerald-600">
+                <span class="font-bold">{{ approvedCount }}</span> ready to apply
+              </span>
+            </div>
+          </div>
         </div>
-        <div class="flex flex-wrap gap-2">
-          <button class="btn-3" @click="router.push({ name: 'PayrollAdjustmentCarryPreview' })">
-            <i class="far fa-eye"></i> Carry Preview
+
+        <!-- Right: actions -->
+        <div class="flex items-center gap-1.5">
+          <button
+            type="button"
+            class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+            @click="showFilters = !showFilters"
+          >
+            <i class="far fa-filter text-[10px]"></i>
+            Filter
+            <i :class="['far text-[10px] ml-0.5', showFilters ? 'fa-chevron-up' : 'fa-chevron-down']"></i>
           </button>
-          <button v-if="canCreate" class="btn-2" @click="router.push({ name: 'PayrollAdjustmentCreate' })">
-            <i class="far fa-plus"></i> New Adjustment
+          <button
+            type="button"
+            class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
+            @click="router.push({ name: 'PayrollAdjustmentCarryPreview' })"
+          >
+            <i class="far fa-eye text-[10px]"></i>
+            Carry Preview
+          </button>
+          <button
+            type="button"
+            class="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700"
+            @click="router.push({ name: 'PayrollAdjustmentCreate' })"
+          >
+            <i class="far fa-plus text-[10px]"></i>
+            New Adjustment
           </button>
         </div>
       </div>
-    </div>
 
-    <div class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div class="grid gap-4 lg:grid-cols-[8fr_0.8fr_auto] items-end">
-        <div>
-          <label class="mb-1 block text-xs font-medium text-slate-600">Employee</label>
-          <EmployeeFilter
-            :company_id="filters.company_id"
-            :department_id="filters.department_id"
-            :employee_id="filters.employee_id"
-            :line_type="filters.line_type"
-            :with-type="true"
-            @update:company_id="filters.company_id = $event"
-            @update:department_id="filters.department_id = $event"
-            @update:employee_id="filters.employee_id = $event"
-            @update:line_type="filters.line_type = $event"
-            @filter-change="onEmployeeFilterChange"
-          >
+      <!-- ── Filter panel ──────────────────────────────────────────────── -->
+      <div v-if="showFilters" class="mt-2.5 space-y-2 border-t border-slate-100 pt-2.5">
+        <EmployeeFilter
+          :company_id="filters.company_id"
+          :department_id="filters.department_id"
+          :employee_id="filters.employee_id"
+          :line_type="filters.line_type"
+          @filter-change="onFilterChange"
+        >
           <FlexibleDatePicker
-            v-model="filterMonthPeriod"
+            v-model="monthPeriod"
             :show-year="false"
             :show-month="true"
             :show-date="false"
             label="Month"
+            @change="filters.page = 1; load()"
           />
-          </EmployeeFilter> 
-        </div>
-        <div>
-          <button class="btn-1" @click="load">
-            <i class="far fa-search"></i> Load
+        </EmployeeFilter>
+        <div class="flex justify-end">
+          <button
+            type="button"
+            class="text-xs text-slate-400 hover:text-rose-600 transition"
+            @click="filters = { month: defaultMonth(), company_id: '', department_id: '', employee_id: '', line_type: 'all', status: '', page: 1, per_page: 15 }; load()"
+          >
+            <i class="far fa-undo mr-1"></i>Reset all filters
           </button>
         </div>
       </div>
     </div>
 
-    <div class="grid gap-2 md:grid-cols-2 xl:grid-cols-5">
-      <button
-        v-for="card in summaryCards"
-        :key="card.label"
-        class="rounded-2xl border p-3 text-left shadow-sm transition hover:-translate-y-0.5"
-        :class="card.tone"
-        @click="activeTab = card.label.toLowerCase()"
-      >
-        <div class="text-[11px] font-semibold uppercase tracking-[0.2em] opacity-70">{{ card.label }}</div>
-        <div class="mt-1 text-xl font-bold">{{ card.value }}</div>
-      </button>
-    </div>
+    <!-- ── Table card ──────────────────────────────────────────────────────── -->
+    <div class="bg-white">
 
-    <div class="rounded-3xl border border-slate-200 bg-white shadow-sm">
-      <div class="border-b border-slate-100 px-4 py-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex flex-wrap gap-2">
-            <button
-              v-for="tab in ['all', 'pending', 'verified', 'approved', 'carried']"
-              :key="tab"
-              class="rounded-full border px-3 py-1.5 text-sm font-medium transition"
-              :class="activeTab === tab ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600'"
-              @click="activeTab = tab"
-            >
-              {{ tab.charAt(0).toUpperCase() + tab.slice(1) }}
-              <span class="ml-1 rounded-full bg-slate-100 px-1.5 py-0.5 text-[11px]">{{ counts[tab] }}</span>
-            </button>
-          </div>
-          <div class="text-xs text-slate-400">Rows: {{ visibleAdjustments.length }}</div>
+      <!-- Status tab bar -->
+      <div class="flex items-center justify-between border-b border-slate-100 px-4">
+        <div class="flex">
+          <button
+            v-for="tab in statusTabs"
+            :key="tab.value"
+            type="button"
+            :class="[
+              'flex items-center gap-1.5 border-b-2 px-4 py-2.5 text-xs font-semibold transition',
+              filters.status === tab.value
+                ? 'border-rose-500 text-rose-600'
+                : 'border-transparent text-slate-500 hover:text-slate-700',
+            ]"
+            @click="setTab(tab.value)"
+          >
+            <span :class="['h-1.5 w-1.5 rounded-full', tab.dot]"></span>
+            {{ tab.label }}
+          </button>
+        </div>
+        <div class="flex items-center gap-2 py-2">
+          <span class="text-[11px] text-slate-400">
+            {{ pagination.total ?? list.length }} records
+          </span>
+          <button
+            type="button"
+            class="inline-flex h-6 w-6 items-center justify-center rounded border border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+            :disabled="loading"
+            @click="load"
+          >
+            <i :class="['far fa-sync-alt text-[10px]', loading ? 'animate-spin' : '']"></i>
+          </button>
         </div>
       </div>
 
-      <LoaderView v-if="loading" />
-
-      <div v-else-if="error" class="m-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-        {{ error }}
+      <!-- Error -->
+      <div v-if="error" class="border-b border-rose-100 bg-rose-50 px-4 py-2 text-xs text-rose-700">
+        <i class="far fa-exclamation-circle mr-1"></i>{{ error }}
       </div>
 
-      <div v-else-if="!visibleAdjustments.length" class="p-12 text-center text-slate-500">
-        <i class="far fa-folder-open text-3xl text-slate-300"></i>
-        <p class="mt-2 text-sm font-medium">No adjustments found.</p>
-      </div>
-
-      <div v-else class="overflow-x-auto">
-        <table class="min-w-[1180px] w-full border-collapse text-sm">
-          <thead class="bg-slate-50 text-slate-700">
-            <tr>
-              <th class="border border-slate-200 px-3 py-2 text-left">Employee</th>
-              <th class="border border-slate-200 px-3 py-2 text-left">Type</th>
-              <th class="border border-slate-200 px-3 py-2 text-right">Amount</th>
-              <th class="border border-slate-200 px-3 py-2 text-center">Ref Month</th>
-              <th class="border border-slate-200 px-3 py-2 text-center">Carry To</th>
-              <th class="border border-slate-200 px-3 py-2 text-center">Status</th>
-              <th class="border border-slate-200 px-3 py-2 text-center">Actions</th>
+      <!-- Table -->
+      <div class="overflow-x-auto">
+        <table class="min-w-full border-collapse text-xs">
+          <thead>
+            <tr class="bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              <th class="w-8 border-b border-slate-200 px-3 py-2 text-center">#</th>
+              <th class="border-b border-slate-200 px-3 py-2 text-left">Employee</th>
+              <th class="border-b border-slate-200 px-3 py-2 text-left">Type / Reason</th>
+              <th class="border-b border-slate-200 px-3 py-2 text-right">Amount</th>
+              <th class="border-b border-slate-200 px-3 py-2 text-center">Ref Month</th>
+              <th class="border-b border-slate-200 px-3 py-2 text-center">Carry To</th>
+              <th class="border-b border-slate-200 px-3 py-2 text-center">Status</th>
+              <th class="w-24 border-b border-slate-200 px-3 py-2 text-center">Actions</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="row in visibleAdjustments" :key="row.id" class="odd:bg-white even:bg-slate-50/40">
-              <td class="border border-slate-200 px-3 py-2">
-                <div class="font-semibold text-slate-900">{{ row.employee?.name || '-' }}</div>
-                <div class="text-xs text-slate-500">{{ row.employee?.employee_id || '-' }}</div>
+
+            <!-- Skeleton -->
+            <template v-if="loading && !list.length">
+              <tr v-for="i in 8" :key="`sk-${i}`" class="animate-pulse border-b border-slate-100">
+                <td class="px-3 py-2.5 text-center"><div class="mx-auto h-3 w-4 rounded bg-slate-100"></div></td>
+                <td class="px-3 py-2.5"><div class="h-3 w-28 rounded bg-slate-100"></div><div class="mt-1 h-2.5 w-16 rounded bg-slate-100"></div></td>
+                <td class="px-3 py-2.5"><div class="h-3 w-24 rounded bg-slate-100"></div><div class="mt-1 h-2.5 w-32 rounded bg-slate-100"></div></td>
+                <td class="px-3 py-2.5 text-right"><div class="ml-auto h-3 w-16 rounded bg-slate-100"></div></td>
+                <td class="px-3 py-2.5 text-center"><div class="mx-auto h-3 w-14 rounded bg-slate-100"></div></td>
+                <td class="px-3 py-2.5 text-center"><div class="mx-auto h-3 w-14 rounded bg-slate-100"></div></td>
+                <td class="px-3 py-2.5 text-center"><div class="mx-auto h-4 w-16 rounded-full bg-slate-100"></div></td>
+                <td class="px-3 py-2.5 text-center"><div class="mx-auto flex gap-1 justify-center"><div class="h-5 w-5 rounded bg-slate-100"></div><div class="h-5 w-5 rounded bg-slate-100"></div></div></td>
+              </tr>
+            </template>
+
+            <!-- Data rows -->
+            <tr
+              v-for="(row, idx) in list"
+              :key="row.id"
+              :class="[
+                'group border-b border-slate-100 border-l-2 transition hover:bg-rose-50/20',
+                row.status === 'pending'  ? 'border-l-amber-300'   :
+                row.status === 'verified' ? 'border-l-blue-400'    :
+                row.status === 'approved' ? 'border-l-emerald-400' :
+                row.status === 'carried'  ? 'border-l-indigo-400'  : 'border-l-slate-200',
+                idx % 2 === 1 ? 'bg-slate-50/30' : 'bg-white',
+              ]"
+            >
+              <td class="px-3 py-2 text-center font-mono text-[11px] text-slate-400">
+                {{ (filters.page - 1) * filters.per_page + idx + 1 }}
               </td>
-              <td class="border border-slate-200 px-3 py-2">
-                <div class="capitalize text-slate-800">{{ row.adjustment_type?.replace(/_/g, ' ') }}</div>
-                <div class="text-xs text-slate-500 break-words">{{ row.reason }}</div>
+
+              <td class="px-3 py-2">
+                <div class="font-semibold text-slate-800 leading-tight">{{ row.employee?.name || '-' }}</div>
+                <div class="text-[10px] text-slate-400 mt-0.5">{{ row.employee?.employee_id || '—' }}</div>
               </td>
-              <td class="border border-slate-200 px-3 py-2 text-right font-mono font-semibold" :class="Number(row.amount) >= 0 ? 'text-emerald-700' : 'text-rose-700'">
-                {{ Number(row.amount) >= 0 ? '+' : '' }}{{ formatCurrency(row.amount) }}
+
+              <td class="px-3 py-2">
+                <div class="font-medium capitalize text-slate-700 leading-tight">
+                  {{ row.adjustment_type?.replace(/_/g, ' ') || '-' }}
+                </div>
+                <div class="mt-0.5 max-w-[200px] truncate text-[10px] text-slate-400" :title="row.reason">
+                  {{ row.reason || '—' }}
+                </div>
               </td>
-              <td class="border border-slate-200 px-3 py-2 text-center font-mono text-slate-700">{{ row.ref_month_label }}</td>
-              <td class="border border-slate-200 px-3 py-2 text-center font-mono text-slate-700">{{ row.carry_to_label || '-' }}</td>
-              <td class="border border-slate-200 px-3 py-2 text-center"><AdjustmentStatusBadge :status="row.status" /></td>
-              <td class="border border-slate-200 px-3 py-2">
-                <div class="flex flex-wrap items-center justify-center gap-1">
-                  <button class="btn-3 h-8 text-xs" @click="openDetail(row)">
-                    <i class="far fa-eye"></i> View
-                  </button>
-                  <button
-                    v-if="canVerify && ['pending', 'verified'].includes(row.status)"
-                    class="btn-3 h-8 text-xs"
-                    @click="approveRow(row)"
+
+              <td class="px-3 py-2 text-right">
+                <span
+                  class="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 font-mono text-xs font-bold"
+                  :class="Number(row.amount) >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'"
+                >
+                  {{ Number(row.amount) >= 0 ? '+' : '' }}{{ formatCurrency(row.amount) }}
+                </span>
+              </td>
+
+              <td class="px-3 py-2 text-center">
+                <span class="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-600">
+                  {{ row.ref_month_label || `${row.ref_year}-${String(row.ref_month).padStart(2,'0')}` || '—' }}
+                </span>
+              </td>
+
+              <td class="px-3 py-2 text-center">
+                <span v-if="row.carry_to_label || row.carry_to_year" class="rounded bg-indigo-50 px-1.5 py-0.5 font-mono text-[10px] text-indigo-600">
+                  {{ row.carry_to_label || `${row.carry_to_year}-${String(row.carry_to_month).padStart(2,'0')}` }}
+                </span>
+                <span v-else class="text-slate-300">—</span>
+              </td>
+
+              <td class="px-3 py-2 text-center">
+                <AdjustmentStatusBadge :status="row.status" />
+              </td>
+
+              <td class="px-3 py-2">
+                <div class="flex items-center justify-center gap-1">
+                  <!-- View -->
+                  <RouterLink
+                    :to="{ name: 'PayrollAdjustmentShow', params: { id: row.id } }"
+                    class="inline-flex h-6 w-6 items-center justify-center rounded border border-slate-200 text-slate-400 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600"
+                    title="View details"
                   >
-                    <i class="far fa-check-circle"></i> Approve
-                  </button>
+                    <i class="far fa-file-alt text-[10px]"></i>
+                  </RouterLink>
+
+                  <!-- Verify -->
                   <button
-                    v-else-if="canReject && ['pending', 'verified'].includes(row.status)"
-                    class="btn-3 h-8 text-xs"
-                    @click="openDetail(row)"
+                    v-if="['pending', 'verified'].includes(row.status)"
+                    type="button"
+                    :disabled="verifyingId === row.id"
+                    class="inline-flex h-6 w-6 items-center justify-center rounded border border-emerald-200 text-emerald-500 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-40"
+                    title="Mark ready to apply"
+                    @click="verifyRow(row)"
                   >
-                    <i class="far fa-clipboard-list"></i> Review
+                    <i :class="['far text-[10px]', verifyingId === row.id ? 'fa-spinner fa-spin' : 'fa-check-circle']"></i>
+                  </button>
+
+                  <!-- Delete -->
+                  <button
+                    v-if="['pending', 'rejected'].includes(row.status)"
+                    type="button"
+                    :disabled="deletingId === row.id"
+                    class="inline-flex h-6 w-6 items-center justify-center rounded border border-rose-100 text-rose-400 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-40"
+                    title="Delete"
+                    @click="deleteRow(row)"
+                  >
+                    <i :class="['far text-[10px]', deletingId === row.id ? 'fa-spinner fa-spin' : 'fa-trash-alt']"></i>
                   </button>
                 </div>
               </td>
             </tr>
+
+            <!-- Empty state -->
+            <tr v-if="!loading && !list.length">
+              <td colspan="8" class="py-16 text-center">
+                <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100">
+                  <i class="far fa-inbox text-xl text-slate-300"></i>
+                </div>
+                <p class="mt-3 text-sm font-semibold text-slate-500">No adjustments found</p>
+                <p class="text-xs text-slate-400">Try a different month or status tab</p>
+                <button
+                  type="button"
+                  class="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-rose-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-rose-700"
+                  @click="router.push({ name: 'PayrollAdjustmentCreate' })"
+                >
+                  <i class="far fa-plus"></i> New Adjustment
+                </button>
+              </td>
+            </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="border-t border-slate-100 px-4 py-2.5">
+        <PaginationBar
+          :page="Number(filters.page)"
+          :per-page="Number(filters.per_page)"
+          :total="Number(pagination.total || 0)"
+          :last-page="Number(pagination.last_page || 1)"
+          @page-change="pageChanged"
+        />
       </div>
     </div>
   </div>

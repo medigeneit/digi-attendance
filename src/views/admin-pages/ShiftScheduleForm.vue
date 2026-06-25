@@ -59,7 +59,7 @@ const lastScheduleKey   = ref(null)
 /* ==== Colors ==== */
 const shiftColorMap = ref({
   WEEKEND: '#B91C1C', // red-700
-  HOLIDAY: '#6B7280', // gray-500
+  HOLIDAY: '#0D9488', // teal-600
 })
 const colorPool = [
   '#FF5733', '#33C1FF', '#33FF57', '#FF33D4', '#FFD633', '#7D33FF',
@@ -499,6 +499,25 @@ watch(
   { deep: true },
 )
 
+/* ==== Today detection ==== */
+const todayDay = computed(() => {
+  const now = dayjs()
+  return now.format('YYYY-MM') === periodMonth.value ? now.date() : null
+})
+
+const isWeekendDayName = (day) => ['Fri', 'Sat'].includes(getDayName(day))
+
+/* ==== Cell abbreviation ==== */
+const getShiftAbbr = (empId, day) => {
+  const val = scheduleMap.value?.[k(empId)]?.[day]
+  if (!val) return ''
+  if (val === 'WEEKEND') return 'WE'
+  if (val === 'HOLIDAY') return 'HOL'
+  const s = byId(val)(allShifts.value)
+  if (!s?.name) return ''
+  return s.name.length <= 4 ? s.name : s.name.slice(0, 3)
+}
+
 /* ==== filteredEmployees ==== */
 const filteredEmployees = computed(() => {
   if (!isFiltersReady.value) return []
@@ -657,7 +676,7 @@ function toggleSelectAllVisible(checked) {
         :class="{ 'ring-2 ring-blue-500': selectedShift === 'HOLIDAY' }"
         @click="selectedShift = 'HOLIDAY'"
       >
-        <div class="w-4 h-4 rounded bg-gray-500"></div>
+        <div class="w-4 h-4 rounded" :style="{ backgroundColor: shiftColorMap['HOLIDAY'] }"></div>
         <span>Holiday</span>
       </div>
 
@@ -733,11 +752,16 @@ function toggleSelectAllVisible(checked) {
             <th
               v-for="day in daysInMonth"
               :key="day"
-              class="border text-center p-1 min-w-[32px] md:min-w-[40px]"
+              class="border text-center p-1 min-w-[36px] md:min-w-[44px] transition-colors"
+              :class="{
+                'bg-sky-200 text-sky-900 ring-1 ring-inset ring-sky-400': day === todayDay,
+                'bg-red-50 text-red-700': day !== todayDay && isWeekendDayName(day),
+              }"
               :title="`${selectedMonth}-${String(day).padStart(2,'0')}`"
             >
-              <div class="font-medium leading-none">{{ day }}</div>
-              <div class="text-[9px] md:text-[10px] text-gray-500">
+              <div class="font-bold leading-none text-xs">{{ day }}</div>
+              <div class="text-[9px] md:text-[10px] leading-tight mt-0.5"
+                   :class="day === todayDay ? 'text-sky-700 font-semibold' : 'text-gray-500'">
                 {{ getDayName(day) }}
               </div>
             </th>
@@ -779,15 +803,23 @@ function toggleSelectAllVisible(checked) {
             <td
               v-for="day in daysInMonth"
               :key="day"
-              class="border text-center"
-              :class="isChecked(emp.id) ? 'cursor-pointer hover:bg-gray-100' : 'cursor-default opacity-70'"
+              class="border text-center p-0"
+              :class="{
+                'cursor-pointer': isChecked(emp.id),
+                'cursor-default opacity-60': !isChecked(emp.id),
+                'ring-1 ring-inset ring-sky-400': day === todayDay,
+              }"
               @click="isChecked(emp.id) && assignShift(emp.id, day)"
               :title="getCellTitle(emp.id, day)"
             >
               <div
                 :style="getShiftColorStyle(emp.id, day)"
-                class="w-full h-5 md:h-6 rounded transition"
-              ></div>
+                class="w-full h-7 md:h-8 rounded transition flex items-center justify-center"
+              >
+                <span class="text-white text-[8px] md:text-[9px] font-bold leading-none select-none drop-shadow-sm">
+                  {{ getShiftAbbr(emp.id, day) }}
+                </span>
+              </div>
             </td>
           </tr>
 

@@ -19,6 +19,18 @@ const loading = ref(true)
 const attachment = ref(null)
 
 const exchange = computed(() => exchangeStore.exchange)
+const fallbackApprovalSteps = [
+  { key: 'in_charge' },
+  { key: 'coordinator' },
+  { key: 'operational_admin' },
+  { key: 'recommend_by' },
+  { key: 'approved_by' },
+]
+
+const approvalSteps = computed(() => {
+  const steps = (exchange.value?.approval_steps || []).filter((step) => step.key !== 'handover')
+  return steps.length ? steps : fallbackApprovalSteps
+})
 
 onMounted(async () => {
   try {
@@ -232,37 +244,11 @@ const uploadAttachment = async () => {
         />
 
         <ApprovalItem
+          v-for="step in approvalSteps"
+          :key="step.key"
           :application="exchange"
           type="offday_exchange_applications"
-          item="in_charge"
-          :onAction="onAction"
-        />
-        
-        <ApprovalItem
-          :application="exchange"
-          type="offday_exchange_applications"
-          item="coordinator"
-          :onAction="onAction"
-        />
-
-         <ApprovalItem
-            :application="exchange"
-            type="offday_exchange_applications"
-            item="operational_admin"
-            :onAction="onAction"
-          />
-
-        <ApprovalItem
-          :application="exchange"
-          type="offday_exchange_applications"
-          item="recommend_by"
-          :onAction="onAction"
-        />
-
-        <ApprovalItem
-          :application="exchange"
-          type="offday_exchange_applications"
-          item="approved_by"
+          :item="step.key"
           :onAction="onAction"
         />
       </div>

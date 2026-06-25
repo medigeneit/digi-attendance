@@ -39,20 +39,17 @@ const submitOffdayExchange = async () => {
   error.value = null
 
   try {
-    const payload = {
-      user_id: authStore?.user?.id,
-      ...form.value,
-    }
+    const payload = { ...form.value }
     if (!form.value.handover_user_id) {
       checkUserRequired.value = true
       return
     }
 
     const newExchange = await exchangeStore.createExchange(payload)
-
-    router.push({ name: 'ExchangeOffdayShow', params: { id: newExchange?.id } })
+    if (!newExchange?.id) throw new Error(exchangeStore.error || 'Failed to create exchange')
+    router.push({ name: 'ExchangeOffdayShow', params: { id: newExchange.id } })
   } catch (err) {
-    // error.value = err.message || 'Failed to submit offday exchange request'
+    error.value = err.response?.data?.message || 'Failed to submit offday exchange request'
   } finally {
     loading.value = false
   }

@@ -4,6 +4,7 @@ import { useChecklistStore } from '@/stores/checklist'
 import AttachmentUploader from './AttachmentUploader.vue'
 
 const props = defineProps({ items: { type: Array, required: true } })
+const emit = defineEmits(['updated'])
 const store = useChecklistStore()
 
 const statuses = [
@@ -41,6 +42,7 @@ const saveCommentDebounced = debounce(async (item) => {
   try {
     setSaving(item.id, true)
     await store.saveItem(item, { comment: item.comment || null })
+    emit('updated')
     if (window?.notify?.success) window.notify.success('Note saved')
   } catch (error) {
     if (window?.notify?.error) window.notify.error('Failed to save note')
@@ -53,6 +55,7 @@ async function onStatusChange(item) {
   try {
     setSaving(item.id, true)
     await store.saveItem(item, { status: item.status })
+    emit('updated')
     if (window?.notify?.success) window.notify.success('Status updated')
   } catch (error) {
     if (window?.notify?.error) window.notify.error('Failed to update status')
@@ -66,6 +69,7 @@ async function onAttachment(item, doc) {
     setSaving(item.id, true)
     await store.saveItem(item, { attachment_id: doc.id })
     item.attachment = { ...doc }
+    emit('updated')
     if (window?.notify?.success) window.notify.success('Attachment linked')
   } catch (error) {
     if (window?.notify?.error) window.notify.error('Failed to link file')
@@ -86,9 +90,9 @@ function fmtDate(value) {
 </script>
 
 <template>
-  <div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
+  <div class="overflow-hidden rounded-md border border-slate-200 bg-white">
     <div class="w-full overflow-x-auto">
-      <table class="min-w-full text-sm">
+      <table class="min-w-full text-xs">
         <thead class="sticky top-0 bg-slate-50 backdrop-blur">
           <tr class="border-b text-left">
             <th class="w-10 px-2.5 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">#</th>
@@ -110,7 +114,7 @@ function fmtDate(value) {
           >
             <td class="px-2.5 py-2.5 text-xs text-slate-500">{{ index + 1 }}</td>
 
-            <td class="px-2.5 py-2.5 font-medium text-slate-800">{{ labelOf(item) }}</td>
+            <td class="px-2.5 py-2 font-medium text-slate-800">{{ labelOf(item) }}</td>
 
             <td class="px-2.5 py-2.5">
               <span
@@ -126,7 +130,7 @@ function fmtDate(value) {
             <td class="px-2.5 py-2.5">
               <select
                 v-model="item.status"
-                class="w-full rounded-lg border px-2 py-1.5 text-sm focus:outline-none focus:ring disabled:opacity-60"
+                class="w-full rounded-md border px-2 py-1 text-xs focus:outline-none focus:ring disabled:opacity-60"
                 :disabled="saving[item.id]"
                 @change="onStatusChange(item)"
               >
@@ -139,7 +143,7 @@ function fmtDate(value) {
             <td class="px-2.5 py-2.5">
               <textarea
                 v-model="item.comment"
-                class="h-10 w-full resize-y rounded-lg border p-2 text-sm focus:outline-none focus:ring disabled:opacity-60"
+                class="h-8 w-full resize-y rounded-md border p-1.5 text-xs focus:outline-none focus:ring disabled:opacity-60"
                 :disabled="saving[item.id]"
                 placeholder="Notes..."
                 @input="saveCommentDebounced(item)"

@@ -9,13 +9,9 @@
       <i class="fas fa-mosque text-3xl"></i>
       Holiday List
     </RouterLink>
-    <RouterLink :to="{ name: 'LeaveApprovalList' }" class="main-button">
+    <RouterLink :to="{ name: 'LeaveApprovalList', params: { type: 'leave' } }" class="main-button">
       <i class="fas fa-users-class text-3xl"></i>
-      Leave Approval List
-    </RouterLink>
-    <RouterLink :to="{ name: 'OtherApprovalList' }" class="main-button">
-      <i class="fas fa-users-class text-3xl"></i>
-      Other Approval List
+      Approval Settings
     </RouterLink>
     <RouterLink :to="{ name: 'LeaveTypeList' }" class="main-button">
       <i class="fas fa-list text-3xl"></i>
@@ -37,9 +33,13 @@
       <i class="fas fa-building text-3xl"></i>
       Company List
     </RouterLink>
+    <RouterLink :to="{ name: 'UnitList' }" class="main-button">
+      <i class="fas fa-sitemap text-3xl"></i>
+      Unit List
+    </RouterLink>
     <RouterLink :to="{ name: 'CompanyBankAccountList' }" class="main-button">
       <i class="fas fa-university text-3xl"></i>
-      Company Bank Accounts
+      Bank Accounts
     </RouterLink>
     <RouterLink :to="{ name: 'DeviceList' }" class="main-button">
       <i class="fas fa-cash-register text-3xl"></i>
@@ -52,6 +52,10 @@
     <RouterLink :to="{ name: 'PermissionList' }" class="main-button">
       <i class="fas fa-users text-3xl"></i>
       Permission List
+    </RouterLink>
+    <RouterLink :to="{ name: 'FeaturePermissionList' }" class="main-button">
+      <i class="fas fa-th-large text-3xl"></i>
+      Feature Permissions
     </RouterLink>
     <RouterLink :to="{ name: 'KpiMonthlyList' }" class="main-button">
       <i class="far fa-file-chart-line text-3xl"></i>

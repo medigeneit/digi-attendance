@@ -104,6 +104,10 @@ onMounted(async () => {
               <p class="text-lg text-gray-800">{{ user?.company?.name || 'N/A' }}</p>
             </div>
             <div>
+              <p class="text-sm font-bold text-gray-600">Unit:</p>
+              <p class="text-lg text-gray-800">{{ user?.unit?.name || 'N/A' }}</p>
+            </div>
+            <div>
               <p class="text-sm font-bold text-gray-600">Department:</p>
               <p class="text-lg text-gray-800">{{ user?.department?.name || 'N/A' }}</p>
             </div>

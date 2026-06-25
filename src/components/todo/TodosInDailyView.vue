@@ -67,58 +67,67 @@ const userWiseTodos = (todos) => {
 // })
 </script>
 <template>
-  <div class="relative bg-white p-4">
-    <div
-      class="text-red-500 text-sm border border-red-300 max-w-6xl mx-auto py-2 gap-2 shadow-sm rounded flex items-center px-3"
-      v-if="todoStore.error"
-    >
-      <i class="fad fa-exclamation-circle"></i>
-      <div>
-        {{ todoStore.error }}
-      </div>
-    </div>
+  <!-- Error message -->
+  <div
+    v-if="todoStore.error"
+    class="max-w-6xl mx-auto mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3 text-red-700"
+  >
+    <i class="fad fa-exclamation-circle text-red-600"></i>
+    <div class="text-sm">{{ todoStore.error }}</div>
+  </div>
 
-    <div class="max-w-6xl mx-auto border rounded my-5">
-      <div class="text-gray-700 border-b py-2 px-4 flex items-center">
-        <button class="fa fa-arrow-left btn-icon mr-2" @click.prevent="emit('backClick')"></button>
-        <div class="text-lg font-semibold flex items-center gap-2">
-          {{ getDisplayDate(selectedDate, { weekDay: 'long' }) }}
-
+  <!-- Header -->
+  <div class="max-w-6xl mx-auto px-4">
+    <div class="flex items-center justify-between py-2 mb-8  border-b border-gray-200">
+      <div class="flex items-center gap-3">
+        <button
+          class="btn btn-icon text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+          @click.prevent="emit('backClick')"
+        >
+          <i class="fa fa-arrow-left"></i>
+        </button>
+        <div class="flex items-center gap-2">
+          <h2 class="text-lg font-bold text-gray-800">{{ getDisplayDate(selectedDate, { weekDay: 'long' }) }}</h2>
           <span
             v-if="dateIsToday(date)"
-            class="rounded-md border text-xs px-2 py-[1px] text-red-500 border-red-500 bg-red-50"
+            class="rounded-full px-3 py-1 text-xs font-semibold text-white bg-red-500"
           >
             Today
           </span>
         </div>
-
-        <div class="ml-auto flex items-center gap-2" v-if="userRole == 'employee'">
-          <button class="btn btn-icon" @click.prevent="emit('clickAdd', props.date)">
-            <i class="fas fa-plus"></i>
-          </button>
-        </div>
       </div>
-      <TodosInDate :date="date" max-items="all" class="w-full space-y-4 p-2">
-        <template #todoItems="{ allTodos }">
-          <template v-for="user in userWiseTodos(allTodos)" :key="user.id">
-            <UserTodos
-              :todosDates="user?.todos || []"
-              :user="user"
-              @clickTodo="(todo) => emit('clickTodo', todo)"
-              @clickEdit="(todo) => emit('clickEdit', todo)"
-              @update="(todo) => emit('update')"
-              :user-role="userRole"
-            />
-          </template>
-        </template>
-        <template #noTodos>
-          <div
-            class="flex min-h-[38vh] items-center justify-center text-gray-400 text-center rounded-md"
-          >
-            No Todos
-          </div>
-        </template>
-      </TodosInDate>
+
+      <button
+        v-if="userRole == 'employee'"
+        class="btn btn-primary flex items-center gap-2"
+        @click.prevent="emit('clickAdd', props.date)"
+      >
+        <i class="fas fa-plus"></i>
+        <span class="hidden sm:inline">Add Todo</span>
+      </button>
     </div>
   </div>
+
+  <!-- Todos list -->
+  <TodosInDate :date="date" max-items="all" class="max-w-6xl mx-auto px-4">
+    <template #todoItems="{ allTodos }">
+      <template v-for="user in userWiseTodos(allTodos)" :key="user.id">
+        <UserTodos
+          :todosDates="user?.todos || []"
+          :user="user"
+          @clickTodo="(todo) => emit('clickTodo', todo)"
+          @clickEdit="(todo) => emit('clickEdit', todo)"
+          @update="(_todo) => emit('update')"
+          :user-role="userRole"
+        />
+      </template>
+    </template>
+    <template #noTodos>
+      <div
+        class="flex min-h-[38vh] items-center justify-center text-gray-400 text-center rounded-md"
+      >
+        No Todos
+      </div>
+    </template>
+  </TodosInDate>
 </template>

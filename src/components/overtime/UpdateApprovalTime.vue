@@ -71,7 +71,14 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <i @click="openModal" class="fa fa-edit cursor-pointer text-sky-600"></i>
+  <button
+    type="button"
+    @click="openModal"
+    class="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-sky-200 bg-sky-50 text-sky-700 transition hover:border-sky-300 hover:bg-sky-100"
+    title="Update approval time"
+  >
+    <i class="fa fa-edit text-xs"></i>
+  </button>
 
   <!-- Single reusable modal -->
   <div v-if="isModalOpen" class="fixed inset-0 z-50 flex justify-center items-center bg-black/50">

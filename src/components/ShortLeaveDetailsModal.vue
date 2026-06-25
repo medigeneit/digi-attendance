@@ -215,6 +215,20 @@ const onAction = async () => {
                 <ApprovalItem
                   :application="shortLeave"
                   type="short_leave_applications"
+                  item="coordinator"
+                  :onAction="onAction"
+                />
+
+                <ApprovalItem
+                  :application="shortLeave"
+                  type="short_leave_applications"
+                  item="operational_admin"
+                  :onAction="onAction"
+                />
+
+                <ApprovalItem
+                  :application="shortLeave"
+                  type="short_leave_applications"
                   item="recommend_by"
                   :onAction="onAction"
                 />

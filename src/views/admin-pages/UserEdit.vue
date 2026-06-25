@@ -8,6 +8,7 @@ import { useDepartmentStore } from '@/stores/department'
 import { useDesignationStore } from '@/stores/designation'
 import { useLeaveApprovalStore } from '@/stores/leave-approval'
 import { useShiftStore } from '@/stores/shift'
+import { useUnitStore } from '@/stores/unit'
 import { useUserStore } from '@/stores/user'
 
 import dayjs from 'dayjs'
@@ -23,10 +24,12 @@ const departmentStore = useDepartmentStore()
 const designationStore = useDesignationStore()
 const leaveApprovalStore = useLeaveApprovalStore()
 const shiftStore = useShiftStore()
+const unitStore = useUnitStore()
 const userStore = useUserStore()
 
 const { designations } = storeToRefs(designationStore)
 const { shifts } = storeToRefs(shiftStore)
+const { units } = storeToRefs(unitStore)
 const { error } = storeToRefs(userStore)
 
 const route = useRoute()
@@ -60,6 +63,7 @@ const form = reactive({
   device_user_id: null,
   is_active: true,
   company_id: '',
+  unit_id: '',
   department_id: '',
   designation_id: '',
   shift_id: '',
@@ -101,6 +105,17 @@ const computedShifts = computed(() => {
   const m = shifts.value || {}
   return m[currentCompany.value.id] || m[currentCompany.value.name] || []
 })
+
+const unitOptionLabel = (unit) => {
+  const unitName = unit?.name || 'Unit'
+  const projectName = unit?.project_name || unit?.project?.name || ''
+  const projectCode = unit?.project_code || unit?.project?.code || ''
+  const projectLabel = [projectName, projectCode && projectCode !== projectName ? projectCode : '']
+    .filter(Boolean)
+    .join(' / ')
+
+  return projectLabel ? `${unitName} - ${projectLabel}` : unitName
+}
 
 /* ------------------------------ VALIDATION ------------------------------- */
 const errors = reactive({})
@@ -172,6 +187,7 @@ async function loadUser() {
   form.weekends = user.weekends || []
   form.is_active = Boolean(user.is_active)
   form.company_id = user.company_id || ''
+  form.unit_id = user.unit_id || ''
   form.department_id = user.department_id || ''
   form.designation_id = user.designation_id || ''
   form.shift_id = user.shift_id || ''
@@ -194,6 +210,7 @@ onMounted(async () => {
     // Prime dropdowns in parallel
     await Promise.all([
       companyStore.fetchCompanies(),
+      unitStore.fetchUnits(),
       leaveApprovalStore.fetchLeaveApprovals(),
     ])
     await loadUser()
@@ -399,6 +416,16 @@ function clearWeekend() {
             </div>
 
             <div>
+              <label for="unit">Unit</label>
+              <select id="unit" v-model="form.unit_id" class="input-light">
+                <option value="">Select a unit</option>
+                <option v-for="unit in units" :key="unit?.id" :value="unit?.id">
+                  {{ unitOptionLabel(unit) }}
+                </option>
+              </select>
+            </div>
+
+            <div>
               <label for="department">Department<span class="text-red-500">*</span></label>
               <select
                 id="department"
@@ -563,7 +590,7 @@ function clearWeekend() {
           <legend class="title-md px-2">Bank &amp; Payment Info</legend>
           <div class="grid md:grid-cols-2 gap-4">
             <div>
-              <label for="bankAccountId">Company Bank Account</label>
+              <label for="bankAccountId">Bank Account</label>
               <select id="bankAccountId" v-model="form.bank_account_id" class="input-light">
                 <option value="">— Select —</option>
                 <option v-for="account in companyBankAccounts" :key="account.id" :value="account.id">
@@ -619,6 +646,8 @@ function clearWeekend() {
               >
                 <option value="employee">Employee</option>
                 <option value="admin">Admin</option>
+                <option value="hr_manager">HR Manager</option>
+                <option value="accounts">Accounts</option>
                 <option value="super_admin">Super Admin</option>
                 <option value="developer">Developer</option>
               </select>
@@ -656,12 +685,12 @@ function clearWeekend() {
                   id="password"
                   v-model="form.password"
                   :type="showPassword ? 'text' : 'password'"
-                  class="`${input-light} pr-10`"
+                  class="input-light pr-10"
                   autocomplete="new-password"
                   placeholder="Create a secure password"
                 />
                 <button type="button" class="absolute inset-y-0 right-2 px-1 text-gray-600" @click="showPassword = !showPassword" :aria-label="showPassword ? 'Hide password' : 'Show password'">
-                  <i class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                  <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
                 </button>
               </div>
             </div>

@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useWeeklyUpdatesStore } from '@/stores/useWeeklyUpdatesStore'
 import EmployeeFilter from '@/components/common/EmployeeFilter.vue'
+import UserMessageSender from '@/components/common/UserMessageSender.vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const store = useWeeklyUpdatesStore()
@@ -14,12 +15,6 @@ const router = useRouter()
 const ui = ref({
   detailsOpen: false,
   selectedItem: null,
-
-  smsOpen: false,
-  smsMessage: '',
-  smsTarget: null,
-
-  busyKey: null,
   toast: null,
 })
 
@@ -31,9 +26,8 @@ let ro = null
 const calcHeaderTop = async () => {
   await nextTick()
   const stickyH = stickyBarRef.value?.offsetHeight || 0
-  const controlsH = controlsRef.value?.offsetHeight || 0
   const gap = 12
-  headerTop.value = stickyH + controlsH + gap
+  headerTop.value = stickyH + gap
 }
 
 const headerTopStyle = computed(() => ({ top: `${headerTop.value}px` }))
@@ -162,6 +156,11 @@ const latestMessages = (context, limit = 3) => {
 
 const messageHistoryCount = (context) => getMessageHistory(context).length
 
+const latestMessagePreview = (context) => {
+  const [latest] = latestMessages(context, 1)
+  return latest?.message || ''
+}
+
 const isExchangeItem = (item) => String(item?.kind || '').toLowerCase() === 'exchange'
 
 /* ---------------- toast ---------------- */
@@ -177,12 +176,6 @@ function showToast(type, text) {
   window.clearTimeout(showToast._t)
   showToast._t = window.setTimeout(() => (ui.value.toast = null), 2500)
 }
-
-/* ---------------- SMS ---------------- */
-const canSendSms = computed(() => {
-  const message = String(ui.value.smsMessage || '').trim()
-  return !!message && !!ui.value.smsTarget?.item && !ui.value.busyKey
-})
 
 const isSmsKindAllowed = (item) => {
   const kind = String(item?.kind || '').toLowerCase()
@@ -208,63 +201,36 @@ const getLastItem = (row) => {
   return null
 }
 
-const openSmsForRow = (row) => {
-  const last = getLastItem(row)
-  if (!last) return showToast('info', 'No application found in this range.')
-  ui.value.smsTarget = { item: last, user: row?.user || null }
-  ui.value.smsMessage = ''
-  ui.value.smsOpen = true
-}
-
-const closeSmsModal = () => {
-  ui.value.smsOpen = false
-  ui.value.smsMessage = ''
-  ui.value.smsTarget = null
-}
-
-const sendForItem = async (item, message = '') => {
-  if (!item?.kind || !item?.ref_id) return false
-
-  const key = `${item.kind}:${item.ref_id}`
-  ui.value.busyKey = key
-
-  try {
-    const payload = {
-      kind: String(item.kind).toLowerCase(),
-      ref_id: item.ref_id,
-      message,
-    }
-    // Only include status if it exists
-    if (item.status) {
-      payload.status = item.status
-    }
-    await store.sendWeeklyMessage(payload)
-    showToast('success', `SMS sent (${item.code || item.kind} #${item.ref_id})`)
-    return true
-  } catch (e) {
-    showToast('error', e?.response?.data?.message || 'Failed to send SMS.')
-    return false
-  } finally {
-    ui.value.busyKey = null
-  }
-}
-
-const sendSms = async () => {
-  const item = ui.value.smsTarget?.item
-  const message = String(ui.value.smsMessage || '').trim()
-
-  if (!item) return
-  if (!message) return showToast('error', 'Please write a message before sending.')
-
-  const ok = await sendForItem(item, message)
-  if (ok) closeSmsModal()
-}
-
 /* ---------------- Meta range ---------------- */
 const metaRange = computed(() => {
   if (!meta.value?.start_date || !meta.value?.end_date) return ''
   return `${formatDate(meta.value.start_date)} - ${formatDate(meta.value.end_date)}`
 })
+
+const defaultWeeklyMessage = (row) => {
+  const employeeName = row?.user?.name || 'Employee'
+  const last = getLastItem(row)
+  const itemLabel = last
+    ? `${last.label || last.code || last.kind}${last.status ? ` (${last.status})` : ''}`
+    : 'weekly update'
+  const range = metaRange.value || 'selected date range'
+
+  return `Dear ${employeeName}, this is a reminder regarding your ${itemLabel} within ${range}. Please contact HR if any update is needed.`
+}
+
+const weeklyMessageContext = (row) => {
+  const last = getLastItem(row)
+
+  return {
+    source: 'weekly_updates',
+    start_date: meta.value?.start_date || '',
+    end_date: meta.value?.end_date || '',
+    anchor_date: params.value.anchor_date || meta.value?.anchor_date || '',
+    item_kind: last?.kind || '',
+    item_ref_id: last?.ref_id || '',
+    item_status: last?.status || '',
+  }
+}
 
 /* ---------------- Month key for attendance route ---------------- */
 const reportAnchorDate = computed(() => {
@@ -533,27 +499,25 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- Info note -->
-    <div v-if="!loading && !error && rows.length" class="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800">
+    <div v-if="!loading && !error && rows.length" class="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-[11px] text-blue-800">
       <span class="font-semibold flex-shrink-0 mt-0.5">ℹ️</span>
       <span>This list shows only employees with <strong>active leave applications or offday exchanges</strong> within the selected date range. To send messages to other employees, please check their application history.</span>
     </div>
 
     <!-- Table -->
-    <div v-if="!loading && !error" class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div>
-        <table class="min-w-max w-full text-sm">
+    <div v-if="!loading && !error" class="rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div class="max-h-[calc(100vh-285px)] min-h-[360px] overflow-auto">
+        <table class="min-w-max w-full border-separate border-spacing-0 text-xs">
           <thead class="text-slate-600">
             <tr>
               <th
-                class="sticky left-0 z-30 w-10 border-r border-slate-200 bg-slate-50 p-2 text-left text-xs font-semibold uppercase tracking-wide"
-                :style="headerTopStyle"
+                class="sticky left-0 top-0 z-50 w-10 min-w-10 border-b border-r border-slate-200 bg-slate-50 px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide shadow-sm"
               >
                 #
               </th>
 
               <th
-                class="sticky left-12 z-30 border-r border-slate-200 bg-slate-50 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide"
-                :style="headerTopStyle"
+                class="sticky left-10 top-0 z-50 w-[250px] min-w-[250px] border-b border-r border-slate-200 bg-slate-50 px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide shadow-sm"
               >
                 Employee
               </th>
@@ -561,16 +525,17 @@ onBeforeUnmount(() => {
               <th
                 v-for="date in dates"
                 :key="date"
-                class="sticky z-20 min-w-[40px] p-2 text-center hover:bg-slate-100"
+                class="sticky top-0 z-40 min-w-[68px] border-b border-r border-slate-200 px-1.5 py-2 text-center shadow-sm hover:bg-slate-100"
                 :class="thClass(date)"
-                :style="headerTopStyle"
               >
-                <div class="text-[11px] font-semibold text-slate-400">{{ formatDay(date) }}</div>
-                <div class="text-xs font-semibold text-slate-800">{{ formatDate(date) }}</div>
-                <div v-if="isToday(date)" class="mt-1 text-[10px] font-semibold text-amber-700">Today</div>
+                <div class="text-[10px] font-semibold text-slate-400">{{ formatDay(date) }}</div>
+                <div class="text-[11px] font-semibold leading-tight text-slate-800">{{ formatDate(date) }}</div>
+                <div v-if="isToday(date)" class="mt-0.5 text-[9px] font-semibold text-amber-700">Today</div>
               </th>
 
-              <th class="sticky z-20 bg-slate-50 px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide">
+              <th
+                class="sticky top-0 z-40 w-[165px] min-w-[165px] border-b border-slate-200 bg-slate-50 px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide shadow-sm"
+              >
                 Message
               </th>
             </tr>
@@ -580,27 +545,27 @@ onBeforeUnmount(() => {
             <tr
               v-for="(row, index) in rows"
               :key="row.user.id"
-              class="border-t border-slate-200 hover:bg-sky-50/70"
+              class="group border-t border-slate-200 hover:bg-sky-50/70"
             >
-              <td class="sticky left-0 z-20 w-10 border-r border-slate-200 bg-white p-2 text-xs font-semibold text-slate-600">
+              <td class="sticky left-0 z-10 w-10 min-w-10 border-r border-slate-200 bg-white px-2 py-1.5 text-[11px] font-semibold text-slate-600 group-hover:bg-sky-50">
                 {{ index + 1 }}
               </td>
 
               <!-- Employee column: CLICK -> hrd/em-attendance -->
-              <td class="sticky left-12 z-20 border-r border-slate-200 bg-white p-2">
+              <td class="sticky left-10 z-10 w-[250px] min-w-[250px] border-r border-slate-200 bg-white px-3 py-1.5 group-hover:bg-sky-50">
                 <div class="min-w-0">
                   <a
                     :href="employeeAttendanceUrl(row.user)"
                     target="_blank"
                     rel="noopener"
-                    class="group inline-flex items-center gap-2 truncate font-semibold text-slate-900 hover:text-slate-900"
+                    class="inline-flex max-w-full items-center gap-2 truncate font-semibold text-slate-900 hover:text-slate-900"
                     :title="`Open Attendance (${anchorYearMonth})`"
                   >
                     <span class="truncate group-hover:underline decoration-slate-400 underline-offset-4">
                       {{ row.user.name }}
                     </span>
                   </a>
-                  <div class="mt-0.5 text-[11px] text-slate-500">
+                  <div class="mt-0.5 truncate text-[10px] text-slate-500">
                     {{ row.user.company?.name || '—' }} · {{ row.user.department?.name || '—' }}
                   </div>
                 </div>
@@ -610,14 +575,14 @@ onBeforeUnmount(() => {
               <td
                 v-for="date in dates"
                 :key="`${row.user.id}-${date}`"
-                class="p-2 border-r border-slate-200 text-center"
+                class="border-r border-slate-200 px-1.5 py-1.5 text-center"
                 :class="tdClass(date)"
               >
-                <div v-if="dayItems(row, date).length" class="flex flex-wrap items-center justify-center gap-1">
+                <div v-if="dayItems(row, date).length" class="flex flex-wrap items-center justify-center gap-0.5">
                   <span
                     v-for="item in dayItems(row, date)"
                     :key="`${item.kind}-${item.ref_id}-${item.code}`"
-                    class="inline-flex items-center rounded-full px-2 py-1 text-[11px] font-semibold ring-1 ring-inset select-none"
+                    class="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset select-none"
                     :class="[
                       isDayMarker(item)
                         ? 'text-gray-400 ring-transparent'
@@ -631,17 +596,32 @@ onBeforeUnmount(() => {
                   </span>
                 </div>
 
-                <span v-else class="text-slate-300 text-sm">&mdash;</span>
+                <span v-else class="text-xs text-slate-300">&mdash;</span>
               </td>
 
-              <!-- SMS -->
-              <td class="px-2 py-2 align-top">
-                <div class="flex flex-col gap-2">
-                  <div class="flex items-center justify-between gap-2 text-xs text-slate-600">
-                    <span class="truncate font-medium">{{ row.user.phone || 'No phone' }}</span>
+              <!-- Message -->
+              <td class="w-[165px] min-w-[165px] px-1.5 py-1.5 align-top">
+                <div class="rounded-lg border border-slate-200 bg-white p-1.5 shadow-sm">
+                  <div class="flex items-start justify-between gap-1.5">
+                    <div class="min-w-0">
+                      <div class="flex items-center gap-1 text-[10px] font-semibold text-slate-700">
+                        <i class="far fa-phone text-slate-400"></i>
+                        <span class="truncate">{{ row.user.phone || 'No phone' }}</span>
+                      </div>
+                      <p
+                        v-if="latestMessagePreview(row)"
+                        class="mt-0.5 max-w-[108px] truncate text-[10px] leading-snug text-slate-500"
+                        :title="latestMessagePreview(row)"
+                      >
+                        {{ latestMessagePreview(row) }}
+                      </p>
+                      <p v-else class="mt-0.5 text-[10px] text-slate-400">
+                        No message
+                      </p>
+                    </div>
                     <span
-                      v-if="messageHistoryCount(row)"
-                      class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700"
+                      class="shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold"
+                      :class="messageHistoryCount(row) ? 'bg-slate-100 text-slate-700' : 'bg-slate-50 text-slate-400'"
                     >
                       {{ messageHistoryCount(row) }} recent
                     </span>
@@ -661,20 +641,37 @@ onBeforeUnmount(() => {
                     </div>
                   </div> -->
 
-                  <button
-                    type="button"
-                    class="btn-4"
-                    :disabled="!getLastItem(row) || !!ui.busyKey"
-                    @click="openSmsForRow(row)"
+                  <UserMessageSender
+                    :user-id="row.user.id"
+                    :user-name="row.user.name"
+                    :default-message="defaultWeeklyMessage(row)"
+                    :context="weeklyMessageContext(row)"
+                    :recent-messages="latestMessages(row, 5)"
+                    :show-recent-messages="true"
+                    :disabled="!row.user?.id"
+                    button-label="Send"
+                    modal-title="Weekly update message"
+                    recent-title="Recent message history"
+                    disabled-title="Employee user id missing"
                   >
-                    <span v-if="ui.busyKey">Sending...</span>
-                    <span v-else>
-                      Send
-                      <span class="font-bold" v-if="(row.user?.yearly_messages_count ?? row.user?.yearly_message_count)">
-                        ({{ row.user?.yearly_messages_count ?? row.user?.yearly_message_count }})
-                      </span>
-                    </span>
-                  </button>
+                    <template #trigger="{ open, disabled, sending }">
+                      <button
+                        type="button"
+                        class="mt-1.5 inline-flex h-7 w-full items-center justify-center gap-1 rounded-md border border-sky-200 bg-sky-50 px-2 text-[10px] font-semibold text-sky-700 transition hover:bg-sky-100 disabled:cursor-not-allowed disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-300"
+                        :disabled="disabled || sending"
+                        @click="open"
+                      >
+                        <i class="far" :class="sending ? 'fa-spinner fa-spin' : 'fa-comment-alt'"></i>
+                        <span v-if="sending">Sending...</span>
+                        <span v-else>
+                          Send
+                          <span class="font-bold" v-if="(row.user?.yearly_messages_count ?? row.user?.yearly_message_count)">
+                            ({{ row.user?.yearly_messages_count ?? row.user?.yearly_message_count }})
+                          </span>
+                        </span>
+                      </button>
+                    </template>
+                  </UserMessageSender>
                 </div>
               </td>
             </tr>

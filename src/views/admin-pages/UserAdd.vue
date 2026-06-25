@@ -5,6 +5,7 @@ import { useCompanyStore } from '@/stores/company'
 import { useDepartmentStore } from '@/stores/department'
 import { useDesignationStore } from '@/stores/designation'
 import { useLeaveApprovalStore } from '@/stores/leave-approval'
+import { useUnitStore } from '@/stores/unit'
 import { useUserStore } from '@/stores/user'
 import dayjs from 'dayjs'
 import { storeToRefs } from 'pinia'
@@ -19,8 +20,10 @@ const companyBankAccountStore = useCompanyBankAccountStore()
 const departmentStore = useDepartmentStore()
 const designationStore = useDesignationStore()
 const leaveApprovalStore = useLeaveApprovalStore()
+const unitStore = useUnitStore()
 const { designations } = storeToRefs(designationStore)
 const { companies } = storeToRefs(companyStore)
+const { units } = storeToRefs(unitStore)
 const { error } = storeToRefs(userStore)
 const showPassword = ref(false)
 const modalOpen = ref(false)
@@ -37,6 +40,7 @@ const form = reactive({
   device_user_id: null,
   is_active: true,
   company_id: '',
+  unit_id: '',
   department_id: '',
   designation_id: '',
   shift_id: '',
@@ -64,6 +68,7 @@ const selectedWeekend = ref({
 
 onMounted(async () => {
   await companyStore.fetchCompanies()
+  await unitStore.fetchUnits()
   await leaveApprovalStore.fetchLeaveApprovals()
 })
 
@@ -103,6 +108,7 @@ const saveUser = async () => {
       device_user_id: form.device_user_id,
       is_active: form.is_active,
       company_id: form.company_id,
+      unit_id: form.unit_id || null,
       department_id: form.department_id,
       designation_id: form.designation_id,
       // shift_id: form.shift_id,
@@ -146,6 +152,17 @@ const computedDesignations = computed(() => {
 
 const companyBankAccounts = computed(() => companyBankAccountStore.items || [])
 const PAYMENT_METHODS = Object.freeze(['Cash', 'Bank Transfer', 'bKash', 'Nagad', 'Rocket', 'Cheque', 'Other'])
+
+const unitOptionLabel = (unit) => {
+  const unitName = unit?.name || 'Unit'
+  const projectName = unit?.project_name || unit?.project?.name || ''
+  const projectCode = unit?.project_code || unit?.project?.code || ''
+  const projectLabel = [projectName, projectCode && projectCode !== projectName ? projectCode : '']
+    .filter(Boolean)
+    .join(' / ')
+
+  return projectLabel ? `${unitName} - ${projectLabel}` : unitName
+}
 </script>
 
 <template>
@@ -252,6 +269,16 @@ const PAYMENT_METHODS = Object.freeze(['Cash', 'Bank Transfer', 'bKash', 'Nagad'
                       {{ company?.name }}
                     </option>
                   </template>
+                </select>
+              </div>
+
+              <div class="space-y-1">
+                <label class="block text-sm font-semibold text-gray-700">Unit</label>
+                <select v-model="form.unit_id" class="input-light">
+                  <option value="">Select a unit</option>
+                  <option v-for="unit in units" :key="unit?.id" :value="unit?.id">
+                    {{ unitOptionLabel(unit) }}
+                  </option>
                 </select>
               </div>
 
@@ -485,7 +512,7 @@ const PAYMENT_METHODS = Object.freeze(['Cash', 'Bank Transfer', 'bKash', 'Nagad'
             <hr class="my-2" />
             <div class="grid md:grid-cols-2 gap-4">
               <div class="space-y-1">
-                <label class="block text-sm font-semibold text-gray-700">Company Bank Account</label>
+                <label class="block text-sm font-semibold text-gray-700">Bank Account</label>
                 <select v-model="form.bank_account_id" class="input-light">
                   <option value="">Select bank account</option>
                   <option v-for="account in companyBankAccounts" :key="account.id" :value="account.id">
@@ -525,6 +552,8 @@ const PAYMENT_METHODS = Object.freeze(['Cash', 'Bank Transfer', 'bKash', 'Nagad'
                 <select v-model="form.role" class="input-light" required>
                   <option value="employee">Employee</option>
                   <option value="admin">Admin</option>
+                  <option value="hr_manager">HR Manager</option>
+                  <option value="accounts">Accounts</option>
                   <option value="super_admin">Super Admin</option>
                   <option value="developer">Developer</option>
                 </select>
