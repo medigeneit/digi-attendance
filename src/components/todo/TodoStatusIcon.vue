@@ -15,9 +15,9 @@ const color = computed(() => {
     case 'COMPLETED':
       return 'text-green-400'
     case 'DEPENDANT':
-      return 'text-orange-400'
+      return 'text-purple-500'
     case 'BACK_LOG':
-      return 'text-purple-400'
+      return 'text-purple-300'
   }
   return ''
 })
