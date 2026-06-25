@@ -105,6 +105,44 @@ const showAllowanceModal = ref(false)
 const selectedAllowanceItem = ref(null)
 const exportLoading = ref(false)
 
+const showCloseModal = ref(false)
+const closeTargetItem = ref(null)
+const closeEndDate = ref('')
+const closeLoading = ref(false)
+
+const openCloseModal = (item) => {
+  closeTargetItem.value = item
+  closeEndDate.value = item.effective_to || ''
+  showCloseModal.value = true
+}
+
+const cancelCloseModal = () => {
+  showCloseModal.value = false
+  closeTargetItem.value = null
+  closeEndDate.value = ''
+}
+
+const submitCloseModal = async () => {
+  if (!closeEndDate.value) {
+    toast.error('Please select an end date.')
+    return
+  }
+  closeLoading.value = true
+  try {
+    await apiClient.patch(`/salary-structures/${closeTargetItem.value.id}/close`, {
+      effective_to: closeEndDate.value,
+    })
+    toast.success('End date set successfully.')
+    cancelCloseModal()
+    await load()
+  } catch (e) {
+    const msg = e?.response?.data?.message || e?.response?.data?.errors?.effective_to?.[0] || 'Failed to set end date.'
+    toast.error(msg)
+  } finally {
+    closeLoading.value = false
+  }
+}
+
 async function load() {
  const params = buildCleanParams()
 
@@ -524,6 +562,8 @@ const exportExcel = async () => {
             <th class="px-4 py-3 text-right">Gross</th>
             <th class="px-4 py-3 text-center">Effective From</th>
             <th class="px-4 py-3 text-center">Status</th>
+            <th class="px-4 py-3 text-left">Created By</th>
+            <th class="px-4 py-3 text-left">Updated By</th>
             <th class="px-4 py-3 text-center">Actions</th>
           </tr>
         </thead>
@@ -621,6 +661,20 @@ const exportExcel = async () => {
                 {{ item.is_active ? 'Active' : 'Inactive' }}
               </span>
             </td>
+            <td class="px-4 py-3 min-w-[130px]">
+              <template v-if="item.created_by">
+                <div class="text-xs font-medium text-gray-700">{{ item.created_by?.name || '—' }}</div>
+                <div class="text-[11px] text-gray-400 mt-0.5">{{ item.created_at ? new Date(item.created_at).toLocaleDateString() : '' }}</div>
+              </template>
+              <span v-else class="text-xs text-gray-400">—</span>
+            </td>
+            <td class="px-4 py-3 min-w-[130px]">
+              <template v-if="item.updated_by">
+                <div class="text-xs font-medium text-gray-700">{{ item.updated_by?.name || '—' }}</div>
+                <div class="text-[11px] text-gray-400 mt-0.5">{{ item.updated_at ? new Date(item.updated_at).toLocaleDateString() : '' }}</div>
+              </template>
+              <span v-else class="text-xs text-gray-400">—</span>
+            </td>
             <td class="px-4 py-3 text-center">
               <div class="flex items-center justify-center gap-1">
                 <button
@@ -630,6 +684,13 @@ const exportExcel = async () => {
                 >
                   <i class="far fa-sync-alt text-[11px]"></i>
                   <span class="text-[11px]">Revision</span>
+                </button>
+                <button
+                  @click="openCloseModal(item)"
+                  class="p-1.5 text-amber-500 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors"
+                  title="Set End Date"
+                >
+                  <i class="far fa-calendar-times text-xs"></i>
                 </button>
                 <button
                   @click="goToEdit(item)"
@@ -668,6 +729,50 @@ const exportExcel = async () => {
       @close="closeDelete"
       @confirm="handleDelete"
     />
+
+    <!-- Set End Date Modal -->
+    <div
+      v-if="showCloseModal"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      @click.self="cancelCloseModal"
+    >
+      <div class="w-full max-w-sm rounded-xl bg-white shadow-xl border border-gray-200 p-6 space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-semibold text-gray-800">Set End Date</h3>
+          <button class="text-gray-400 hover:text-gray-700" @click="cancelCloseModal">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <p class="text-sm text-gray-500">
+          <span class="font-medium text-gray-700">{{ closeTargetItem?.user?.name }}</span>
+          — effective from <span class="font-medium">{{ closeTargetItem?.effective_from }}</span>
+        </p>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Effective To *</label>
+          <input
+            v-model="closeEndDate"
+            type="date"
+            :min="closeTargetItem?.effective_from"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-300"
+          />
+        </div>
+        <div class="flex justify-end gap-2 pt-1">
+          <button
+            class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 text-sm text-gray-600 hover:bg-gray-100"
+            @click="cancelCloseModal"
+          >
+            Cancel
+          </button>
+          <button
+            class="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600 disabled:opacity-50"
+            :disabled="closeLoading"
+            @click="submitCloseModal"
+          >
+            {{ closeLoading ? 'Saving...' : 'Set End Date' }}
+          </button>
+        </div>
+      </div>
+    </div>
 
     <div
       v-if="showAllowanceModal"
